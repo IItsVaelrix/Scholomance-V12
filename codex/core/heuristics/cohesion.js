@@ -1,3 +1,5 @@
+import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
+
 /**
  * Heuristic: Syntactic Cohesion
  * Measures whether the verse advances with controlled prose logic.
@@ -46,7 +48,7 @@ function getSentenceLengths(input, text) {
     .split(/[.!?]+|\n+/g)
     .map((segment) => segment.trim())
     .filter(Boolean)
-    .map((segment) => (segment.match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g) || []).length)
+    .map((segment) => (segment.match(WORD_REGEX_GLOBAL) || []).length)
     .filter((value) => value > 0);
 }
 
@@ -58,7 +60,7 @@ function getTokens(input, text) {
       .filter(Boolean);
   }
 
-  return (text.match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g) || [])
+  return (text.match(WORD_REGEX_GLOBAL) || [])
     .map((token) => token.toLowerCase());
 }
 

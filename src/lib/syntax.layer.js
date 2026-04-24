@@ -158,7 +158,7 @@ export function buildSyntaxLayer(analyzedDoc) {
 
   // Attach per-token HHM state
   tokens.forEach(token => {
-    const identity = getSyntaxIdentityKey(token.lineNumber, token.wordIndex, token.charStart);
+    const identity = `${token.lineNumber}:${token.wordIndex}:${token.charStart}`;
     token.hhm = tokenStateByIdentity.get(identity) || null;
   });
 
@@ -178,23 +178,3 @@ export function buildSyntaxLayer(analyzedDoc) {
   };
 }
 
-/**
- * Legacy compatibility export.
- */
-export function classifySyntaxToken(analyzedWord, lineContext = {}) {
-    const wordIndex = Number.isInteger(lineContext.wordIndex) ? lineContext.wordIndex : 0;
-    const lineWordCount = Number.isInteger(lineContext.lineWordCount) ? lineContext.lineWordCount : 1;
-    
-    // Create a line with dummy words to satisfy lineWordCount for role logic
-    const dummyWords = new Array(lineWordCount).fill(null).map((_, i) => 
-        i === wordIndex ? analyzedWord : { text: "dummy" }
-    );
-    
-    const dummyDoc = { lines: [{ words: dummyWords, number: lineContext.lineNumber || 0 }] };
-    const layer = buildSyntaxLayer(dummyDoc);
-    return layer.tokens[wordIndex];
-}
-
-export function getSyntaxIdentityKey(lineNumber, wordIndex, charStart) {
-  return `${lineNumber}:${wordIndex}:${charStart}`;
-}

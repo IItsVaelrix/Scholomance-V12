@@ -7,7 +7,7 @@
  * Optimized for high-frequency updates (typing).
  */
 
-import { WORD_TOKEN_REGEX } from '../../wordTokenization';
+import { WORD_TOKEN_REGEX, LINE_TOKEN_REGEX } from '../../wordTokenization';
 
 export interface AdaptiveGridTopology {
   originX: number;
@@ -139,9 +139,6 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
     let lineType = "normal";
     if (lineText.startsWith("#")) lineType = "heading";
     else if (lineText.startsWith("- ") || lineText.startsWith("* ")) lineType = "list-item";
-
-    // Use canonical regex for matching - atomic word tokens, explicit whitespace segments, and punctuation
-    const LINE_TOKEN_REGEX = /[A-Za-z]+(?:['-][A-Za-z]+)*|\s+|[^A-Za-z'\s]+/g;
 
     const matches = [...lineText.matchAll(LINE_TOKEN_REGEX)];
     

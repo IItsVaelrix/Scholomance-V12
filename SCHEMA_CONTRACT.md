@@ -474,6 +474,30 @@ interface RitualPredictionArtifact {
   pixelbrainProjection: PredictionPixelBrainProjection;
 }
 
+interface EntropyOracleRequest {
+  filePath: string;
+  proposedChange: string;
+  contextBlocks: string[];
+}
+
+interface EntropyOracleNode {
+  type: string;
+  identifier: string;
+  complexityScore: number;
+  inboundEdges: number;
+  outboundEdges: number;
+}
+
+interface EntropyOracleVolatilityReport {
+  timestamp: number;
+  filePath: string;
+  volatilityScore: number;
+  thresholdExceeded: boolean;
+  criticalRisks: string[];
+  nodesAffected: EntropyOracleNode[];
+  actionRecommendation: "PROCEED" | "REFACTOR" | "REJECT";
+}
+
 // Reserved export family for future persisted/shared ritual prediction artifacts.
 // Runtime callers currently exchange structured RitualPredictionArtifact objects.
 type RitualPredictionBytecodeFamily = "PB-PRED-v1";

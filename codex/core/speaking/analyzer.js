@@ -1,3 +1,4 @@
+import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
 import { analyzeAffect } from './affect.js';
 import { analyzeProsody } from './prosody.js';
 import { analyzeSeverityLexicon, analyzeSpeechActs } from './speechActs.js';
@@ -62,7 +63,7 @@ function extractTokens(text, analyzedDoc) {
     return docTokens.filter(Boolean);
   }
   return String(text || '')
-    .match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g)
+    .match(WORD_REGEX_GLOBAL)
     ?.map((token) => normalizeToken(token))
     .filter(Boolean)
     || [];
