@@ -28,10 +28,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:3000',
-      '/auth': 'http://localhost:3000',
-      '/collab': 'http://localhost:3000',
-      '/audio': 'http://localhost:3000',
+      '/api': 'http://localhost:8080',
+      '/auth': 'http://localhost:8080',
+      '/collab': 'http://localhost:8080',
+      '/audio': 'http://localhost:8080',
     },
   },
   test: {
