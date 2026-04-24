@@ -5,6 +5,17 @@ import { useWordLookup } from '../../hooks/useWordLookup.jsx';
 import { ScholomanceDictionaryAPI } from '../../lib/scholomanceDictionary.api.js';
 import { ScholomanceCorpusAPI } from '../../lib/scholomanceCorpus.api.js';
 import { getCachedWord, setCachedWord } from '../../lib/platform/wordCache.js';
+import OracleSubmitAnimation from './OracleSubmitAnimation.jsx';
+import { getOracleSchoolTheme } from './OracleSchoolTheme.jsx';
+import {
+  AstrologyTrace,
+  CapabilityTruth,
+  ChannelConstellation,
+  DefinitionArchive,
+  FrequencySpectrum,
+  ResonanceMap,
+  SemanticKinConstellation,
+} from './OracleVisualizations.jsx';
 import './IDE.css';
 
 const BOOT_LINES = [
@@ -42,12 +53,6 @@ function uniqueStrings(values) {
 function formatLookupSource(source) {
   if (!source) return 'standby';
   return String(source).replace(/[^a-z0-9+_-]+/gi, ' ').trim().toLowerCase() || 'standby';
-}
-
-function toTitleCase(word) {
-  const value = String(word || '').trim();
-  if (!value) return '';
-  return value.replace(/\b([a-z])/g, (match) => match.toUpperCase());
 }
 
 // Echo-family groups always render when an entry is present, even if empty
@@ -153,6 +158,7 @@ export default function SearchPanel({
   const inputIdRef = useRef(`oracle-query-${Math.random().toString(36).slice(2, 9)}`);
   const userOverrideRef = useRef(false);
   const seedRef = useRef('');
+  const castTimeoutRef = useRef(null);
 
   // — WORD mode state —
   const [query, setQuery] = useState('');
@@ -160,6 +166,7 @@ export default function SearchPanel({
   const [lookupOverride, setLookupOverride] = useState(null);
   const [suggestions, setSuggestions] = useState([]);
   const [isSuggesting, setIsSuggesting] = useState(false);
+  const [castSignal, setCastSignal] = useState(null);
 
   // — Mode state —
   const [mode, setMode] = useState('WORD'); // 'WORD' | 'CORPUS'
@@ -173,10 +180,6 @@ export default function SearchPanel({
   // — Semantic kin state (WORD mode, section 07) —
   const [semanticKin, setSemanticKin] = useState([]);
 
-  // — GrimDesign: phoneme-physics token color for echo channels —
-  // Derived from the resolved word so all rhyming tokens share a deterministic hue.
-  const [grimTokenColor, setGrimTokenColor] = useState(null);
-
   const {
     lookup,
     data,
@@ -187,6 +190,7 @@ export default function SearchPanel({
   } = useWordLookup();
 
   const normalizedQuery = useMemo(() => normalizeLookupWord(query), [query]);
+  const schoolTheme = useMemo(() => getOracleSchoolTheme(selectedSchool), [selectedSchool]);
   const activeEntry = lookupOverride ?? data;
   const resolvedLookupWord = useMemo(
     () => normalizeLookupWord(activeEntry?.word || resolvedWord || normalizedQuery),
@@ -239,6 +243,31 @@ export default function SearchPanel({
 
     await lookup(normalized);
   }, [lookup, reset]);
+
+  const triggerSubmitCast = useCallback((nextWord) => {
+    const normalized = normalizeLookupWord(nextWord);
+    if (!normalized) return;
+
+    if (castTimeoutRef.current) {
+      window.clearTimeout(castTimeoutRef.current);
+    }
+
+    setCastSignal((previous) => ({
+      id: (previous?.id || 0) + 1,
+      word: normalized,
+    }));
+
+    castTimeoutRef.current = window.setTimeout(() => {
+      setCastSignal(null);
+      castTimeoutRef.current = null;
+    }, prefersReducedMotion ? 320 : 1450);
+  }, [prefersReducedMotion]);
+
+  useEffect(() => () => {
+    if (castTimeoutRef.current) {
+      window.clearTimeout(castTimeoutRef.current);
+    }
+  }, []);
 
   // — Cache resolved word data —
   useEffect(() => {
@@ -341,40 +370,15 @@ export default function SearchPanel({
     return () => { isCancelled = true; };
   }, [activeEntry?.word, resolvedWord, mode]);
 
-  // — GrimDesign: derive deterministic phoneme-physics color for echo tokens —
-  // Words sharing a vowel nucleus (e.g. core/bore/more) produce the same blendedHsl,
-  // so their tokens always share one color regardless of query order.
-  useEffect(() => {
-    if (mode !== 'WORD') return undefined;
-    const word = resolvedLookupWord;
-    if (!word) {
-      setGrimTokenColor(null);
-      return undefined;
-    }
-
-    let isCancelled = false;
-    fetch('/api/grimdesign/analyze', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ intent: word }),
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (!isCancelled && json?.decisions?.color) {
-          setGrimTokenColor({ base: json.decisions.color, muted: json.decisions.colorMuted });
-        }
-      })
-      .catch(() => {});
-
-    return () => { isCancelled = true; };
-  }, [resolvedLookupWord, mode]);
-
   const handleSubmit = useCallback((event) => {
     event.preventDefault();
     if (mode === 'WORD') {
-      void performLookup(query);
+      const normalized = normalizeLookupWord(query);
+      if (!normalized) return;
+      triggerSubmitCast(normalized);
+      void performLookup(normalized);
     }
-  }, [performLookup, query, mode]);
+  }, [performLookup, query, mode, triggerSubmitCast]);
 
   const handleClear = useCallback(() => {
     userOverrideRef.current = false;
@@ -386,7 +390,11 @@ export default function SearchPanel({
     setCorpusError(null);
     setActiveTypeFilter(null);
     setSemanticKin([]);
-    setGrimTokenColor(null);
+    setCastSignal(null);
+    if (castTimeoutRef.current) {
+      window.clearTimeout(castTimeoutRef.current);
+      castTimeoutRef.current = null;
+    }
     reset();
   }, [reset]);
 
@@ -407,6 +415,11 @@ export default function SearchPanel({
     setActiveTypeFilter(null);
     setSuggestions([]);
     setSemanticKin([]);
+    setCastSignal(null);
+    if (castTimeoutRef.current) {
+      window.clearTimeout(castTimeoutRef.current);
+      castTimeoutRef.current = null;
+    }
   }, []);
 
   const statusTone = error
@@ -450,17 +463,20 @@ export default function SearchPanel({
   return (
     <div
       className={`search-panel search-panel--oracle search-panel--${variant}`}
-      data-school={selectedSchool}
+      data-school={schoolTheme.id}
+      data-oracle-scanline={schoolTheme.scanline}
       data-status={mode === 'WORD' ? statusTone : (isCorpusLoading ? 'loading' : corpusError ? 'error' : corpusResults.length ? 'resolved' : 'idle')}
     >
       <div className="oracle-shell">
 
         {/* Chrome bar — mode toggle + label */}
-        <div className="oracle-chrome" aria-hidden="true">
-          <span className="oracle-chrome-dot oracle-chrome-dot--hot" />
-          <span className="oracle-chrome-dot oracle-chrome-dot--warm" />
-          <span className="oracle-chrome-dot oracle-chrome-dot--cool" />
-          <span className="oracle-chrome-label">PIXELBRAIN LEXICON ORACLE</span>
+        <div className="oracle-chrome">
+          <span className="oracle-chrome-dot oracle-chrome-dot--hot" aria-hidden="true" />
+          <span className="oracle-chrome-dot oracle-chrome-dot--warm" aria-hidden="true" />
+          <span className="oracle-chrome-dot oracle-chrome-dot--cool" aria-hidden="true" />
+          <span className="oracle-chrome-label">
+            <span aria-hidden="true">{schoolTheme.glyph}</span> PIXELBRAIN LEXICON ORACLE
+          </span>
           <div className="oracle-mode-toggle" role="group" aria-label="Oracle mode">
             <button
               type="button"
@@ -510,7 +526,7 @@ export default function SearchPanel({
             </button>
           )}
           {mode === 'WORD' && (
-            <button type="submit" className="oracle-query-submit">
+            <button type="submit" className="oracle-query-submit" aria-label="Resolve word in the Lexicon Oracle">
               resolve
             </button>
           )}
@@ -556,6 +572,7 @@ export default function SearchPanel({
                   type="button"
                   className="oracle-suggestion-chip"
                   onClick={() => handleSuggestionSelect(word)}
+                  aria-label={`Resolve suggested word ${word}`}
                 >
                   {word}
                 </button>
@@ -572,6 +589,7 @@ export default function SearchPanel({
               className={`oracle-facet-pill${!activeTypeFilter ? ' oracle-facet-pill--active' : ''}`}
               onClick={() => setActiveTypeFilter(null)}
               aria-pressed={!activeTypeFilter}
+              aria-label="Show all corpus result types"
             >
               all
             </button>
@@ -582,6 +600,7 @@ export default function SearchPanel({
                 className={`oracle-facet-pill${activeTypeFilter === type ? ' oracle-facet-pill--active' : ''}`}
                 onClick={() => setActiveTypeFilter(activeTypeFilter === type ? null : type)}
                 aria-pressed={activeTypeFilter === type}
+                aria-label={`Filter corpus results by ${type}`}
               >
                 {type}
               </button>
@@ -744,26 +763,13 @@ export default function SearchPanel({
                       <span className="oracle-section-index">01</span>
                       <span className="oracle-section-label">Capability Truth</span>
                     </div>
-                    <div className="oracle-summary-grid">
-                      <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                        <span className="oracle-summary-key">word</span>
-                        <span className="oracle-summary-value oracle-summary-value--major">
-                          {String(headerWord || '').toUpperCase()}
-                        </span>
-                      </motion.div>
-                      <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                        <span className="oracle-summary-key">class</span>
-                        <span className="oracle-summary-value">{partOfSpeech}</span>
-                      </motion.div>
-                      <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                        <span className="oracle-summary-key">ipa</span>
-                        <span className="oracle-summary-value">{activeEntry?.ipa || 'unresolved'}</span>
-                      </motion.div>
-                      <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                        <span className="oracle-summary-key">echo key</span>
-                        <span className="oracle-summary-value">{scrollContext?.core?.rhymeKey || 'pending'}</span>
-                      </motion.div>
-                    </div>
+                    <CapabilityTruth
+                      word={headerWord}
+                      partOfSpeech={partOfSpeech}
+                      ipa={activeEntry?.ipa || ''}
+                      echoKey={scrollContext?.core?.rhymeKey || ''}
+                      schoolTheme={schoolTheme}
+                    />
                   </motion.section>
 
                   {/* 02 — Archive Stack */}
@@ -773,64 +779,26 @@ export default function SearchPanel({
                         <span className="oracle-section-index">02</span>
                         <span className="oracle-section-label">Archive Stack</span>
                       </div>
-                      <div className="oracle-log-list">
-                        {definitionRows.map((definition, index) => (
-                          <motion.div
-                            key={`${definition}-${index}`}
-                            className="oracle-log-row"
-                            {...streamLineMotionProps}
-                          >
-                            <span className="oracle-log-index">{String(index + 1).padStart(2, '0')}</span>
-                            <span className="oracle-log-text">{definition}</span>
-                          </motion.div>
-                        ))}
-                      </div>
+                      <DefinitionArchive
+                        definitions={definitionRows}
+                        etymology={activeEntry?.etymology}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
                   {/* 03 — Measured Reality */}
-                  {scrollContext && (scrollContext.foundInScroll || scrollContext.resonanceLinks.length > 0 || scrollContext.assonanceLinks.length > 0) && (
+                  {scrollContext && (scrollContext.foundInScroll || (scrollContext.resonanceLinks?.length || 0) > 0 || (scrollContext.assonanceLinks?.length || 0) > 0) && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
                         <span className="oracle-section-index">03</span>
                         <span className="oracle-section-label">Measured Reality</span>
                       </div>
-                      <div className="oracle-summary-grid oracle-summary-grid--context">
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">vowel family</span>
-                          <span className="oracle-summary-value">{scrollContext?.core?.vowelFamily || 'unknown'}</span>
-                        </motion.div>
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">school</span>
-                          <span className="oracle-summary-value">
-                            {scrollContext?.core?.schoolGlyph || '+'} {scrollContext?.core?.schoolName || 'unbound'}
-                          </span>
-                        </motion.div>
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">syllables</span>
-                          <span className="oracle-summary-value">{scrollContext?.core?.syllableCount || '--'}</span>
-                        </motion.div>
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">occurrences</span>
-                          <span className="oracle-summary-value">{scrollContext.totalOccurrences}</span>
-                        </motion.div>
-                      </div>
-                      {scrollContext.occurrences.length > 0 && (
-                        <div className="oracle-line-bank">
-                          {scrollContext.occurrences.map((occurrence, index) => (
-                            <motion.button
-                              key={`${occurrence.line}-${occurrence.charStart}-${index}`}
-                              type="button"
-                              className="oracle-line-link"
-                              onClick={() => onJumpToLine?.(occurrence.line)}
-                              {...streamLineMotionProps}
-                            >
-                              <span className="oracle-line-link-label">line {occurrence.line}</span>
-                              <span className="oracle-line-link-text">{occurrence.word}</span>
-                            </motion.button>
-                          ))}
-                        </div>
-                      )}
+                      <ResonanceMap
+                        scrollContext={scrollContext}
+                        onJumpToLine={onJumpToLine}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
@@ -841,47 +809,11 @@ export default function SearchPanel({
                         <span className="oracle-section-index">04</span>
                         <span className="oracle-section-label">Signal Channels</span>
                       </div>
-                      <div className="oracle-channel-stack">
-                        {channelGroups.map((group) => {
-                          // Echo groups (rhyme/slant) get deterministic GrimDesign color.
-                          // Semantic groups (synonym/antonym) keep fixed semantic palette.
-                          const isEchoGroup = group.id === 'rhymes' || group.id === 'slantRhymes';
-                          const blockStyle = isEchoGroup && grimTokenColor
-                            ? {
-                                '--oracle-token-color': grimTokenColor.base,
-                                '--oracle-token-color-muted': grimTokenColor.muted,
-                              }
-                            : undefined;
-                          return (
-                          <motion.div
-                            key={group.id}
-                            className="oracle-channel-block"
-                            data-tone={group.tone}
-                            style={blockStyle}
-                            {...streamLineMotionProps}
-                          >
-                            <div className="oracle-channel-label">{group.label}</div>
-                            {group.empty ? (
-                              <span className="oracle-channel-null">no echoes in archive</span>
-                            ) : (
-                              <div className="oracle-token-bank">
-                                {group.words.map((word) => (
-                                  <button
-                                    key={`${group.id}-${word}`}
-                                    type="button"
-                                    className="oracle-token"
-                                    data-tone={group.tone}
-                                    onClick={() => handleSuggestionSelect(word)}
-                                  >
-                                    {toTitleCase(word)}
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </motion.div>
-                          );
-                        })}
-                      </div>
+                      <ChannelConstellation
+                        groups={channelGroups}
+                        onTokenSelect={handleSuggestionSelect}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
@@ -892,36 +824,11 @@ export default function SearchPanel({
                         <span className="oracle-section-index">05</span>
                         <span className="oracle-section-label">Astrology Trace</span>
                       </div>
-                      <div className="oracle-summary-grid oracle-summary-grid--context">
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">sign</span>
-                          <span className="oracle-summary-value">{scrollContext.astrology.sign || 'unmarked'}</span>
-                        </motion.div>
-                        <motion.div className="oracle-summary-cell" {...streamLineMotionProps}>
-                          <span className="oracle-summary-key">cluster count</span>
-                          <span className="oracle-summary-value">{scrollContext.astrology.clusters?.length || 0}</span>
-                        </motion.div>
-                      </div>
-                      {scrollContext.astrology.topMatches?.length > 0 && (
-                        <div className="oracle-token-bank">
-                          {scrollContext.astrology.topMatches.map((match, index) => {
-                            const token = String(match?.token || '').trim();
-                            if (!token) return null;
-                            const score = Math.round((Number(match?.overallScore) || 0) * 100);
-                            return (
-                              <button
-                                key={`${token}-${index}`}
-                                type="button"
-                                className="oracle-token"
-                                data-tone="assonance"
-                                onClick={() => handleSuggestionSelect(token)}
-                              >
-                                {toTitleCase(token)} [{score}%]
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
+                      <AstrologyTrace
+                        astrology={scrollContext.astrology}
+                        onTokenSelect={handleSuggestionSelect}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
@@ -932,22 +839,11 @@ export default function SearchPanel({
                         <span className="oracle-section-index">06</span>
                         <span className="oracle-section-label">Live Resonance</span>
                       </div>
-                      <div className="oracle-log-list">
-                        {scrollContext.resonanceLinks.map((link, index) => (
-                          <motion.button
-                            key={`${link.word}-${link.line}-${index}`}
-                            type="button"
-                            className="oracle-log-row oracle-log-row--interactive"
-                            onClick={() => onJumpToLine?.(link.line)}
-                            {...streamLineMotionProps}
-                          >
-                            <span className="oracle-log-index">{String(index + 1).padStart(2, '0')}</span>
-                            <span className="oracle-log-text">
-                              {link.word} :: {link.type} :: L{link.line || '--'} :: {Math.round((link.score || 0) * 100)}%
-                            </span>
-                          </motion.button>
-                        ))}
-                      </div>
+                      <FrequencySpectrum
+                        links={scrollContext.resonanceLinks}
+                        onJumpToLine={onJumpToLine}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
@@ -958,26 +854,11 @@ export default function SearchPanel({
                         <span className="oracle-section-index">07</span>
                         <span className="oracle-section-label">Phonemic Kin</span>
                       </div>
-                      <div className="oracle-channel-block">
-                      <div className="oracle-token-bank">
-                        {semanticKin.map((kin, index) => {
-                          const score = Math.round((Number(kin.score) || 0) * 100);
-                          return (
-                            <button
-                              key={`kin-${kin.word}-${index}`}
-                              type="button"
-                              className="oracle-token oracle-token--kin"
-                              data-school={kin.school || ''}
-                              onClick={() => handleSuggestionSelect(kin.word)}
-                              aria-label={`${kin.word}, phonemic similarity ${score}%`}
-                            >
-                              {toTitleCase(kin.word)}
-                              {score > 0 && <span className="oracle-token-score">{score}%</span>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                      </div>
+                      <SemanticKinConstellation
+                        semanticKin={semanticKin}
+                        onTokenSelect={handleSuggestionSelect}
+                        itemMotionProps={streamLineMotionProps}
+                      />
                     </motion.section>
                   )}
 
@@ -1014,6 +895,14 @@ export default function SearchPanel({
             )}
           </AnimatePresence>
         </div>
+
+        <OracleSubmitAnimation
+          active={Boolean(castSignal)}
+          animationKey={castSignal?.id || 0}
+          word={castSignal?.word || resolvedLookupWord || normalizedQuery}
+          selectedSchool={schoolTheme.id}
+          prefersReducedMotion={prefersReducedMotion}
+        />
       </div>
     </div>
   );

@@ -37,7 +37,8 @@ RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_
 # --- App build ---
 RUN SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
     SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
-    npm run build:rhyme-astrology:index -- --output /app/data/rhyme-astrology || \
+    RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology \
+    npm run build:rhyme-astrology:index || \
     echo "Rhyme astrology build failed — index will be computed at runtime"
 RUN npm run build
 RUN npm prune --omit=dev
@@ -51,6 +52,7 @@ ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite
+ENV RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
@@ -66,6 +68,7 @@ COPY --from=build /app/verseir_palette_payload.json ./verseir_palette_payload.js
 # Copy pre-built dictionary and corpus (seed data — copied to persistent disk on first boot)
 COPY --from=build /app/data/scholomance_dict.sqlite /app/data/scholomance_dict.sqlite
 COPY --from=build /app/data/scholomance_corpus.sqlite /app/data/scholomance_corpus.sqlite
+COPY --from=build /app/data/rhyme-astrology ./data/rhyme-astrology
 
 EXPOSE 8080
 
