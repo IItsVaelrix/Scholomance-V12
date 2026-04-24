@@ -214,297 +214,107 @@ function getCursorCoordsFromTextarea(textarea, mirrored = false, topology = null
   const rect = textarea.getBoundingClientRect();
   const pos = textarea.selectionStart;
   const text = textarea.value.substring(0, pos);
-  const lines = text.split('\n');
-  const lineNum = lines.length - 1;
-  const currentLineText = lines[lineNum];
+  const lines = text.split("\n");
+  const lineCount = lines.length;
+  const currentLineText = lines[lineCount - 1];
 
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-  const textWidth = ctx.measureText(currentLineText).width;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  const textWidth = context.measureText(currentLineText).width;
 
   let x = paddingLeft + textWidth;
+  let y = paddingTop + (lineCount - 1) * lineHeight;
 
-  // Apply mirroring if enabled
   if (mirrored && topology) {
-    // For a single point (the caret), we use the point mirror formula: x' = (totalWidth - x)
-    // We base it on the topology content width
-    x = topology.totalWidth - x;
+    const axisX = (topology.totalWidth - 1) / 2;
+    x = (2 * axisX) - x;
   }
 
-  return {
-    x: rect.left + x,
-    y: rect.top + paddingTop + (lineNum * lineHeight) + (lineHeight * 0.8) - textarea.scrollTop,
-  };
+  return { x, y };
 }
 
-const ScrollEditor = forwardRef(function ScrollEditor({
-  documentIdentity = "new:0",
-  initialTitle = "",
-  initialContent = "",
-  onSave,
-  onCancel,
-  isEditable = true,
-  disabled = false,
+const ScrollEditor = forwardRef(({
+  content: initialContent = "",
+  title: initialTitle = "",
+  isEditable = false,
   isTruesight = false,
   isPredictive = false,
+  disabled = false,
   onContentChange,
   onTitleChange,
-  analyzedWords = new Map(),
-  analyzedWordsByIdentity = new Map(),
-  analyzedWordsByCharStart = new Map(),
-  activeConnections = [],
-  lineSyllableCounts = [],
-  highlightedLines = [],
-  pinnedLines = null,
-  syntaxLayer = null,
-  analysisMode = 'none',
-  onWordActivate,
+  onSave,
+  onCancel,
   onCursorChange,
+  onWordActivate,
   onScrollChange,
-  predict,
-  getCompletions,
-  checkSpelling,
-  getSpellingSuggestions,
-  predictorReady,
-  plsPhoneticFeatures,
-  mirrored = false,
-  vowelColors = {},
+  analyzedDocument = null,
+  analyzedWords = new Map(),
+  analyzedWordsByCharStart = new Map(),
+  analyzedWordsByIdentity = new Map(),
+  analysisMode = "none",
+  activeConnections = [],
+  highlightedLines = [],
+  pinnedLines = [],
+  vowelColors = null,
   vowelColorResolver = null,
-}, ref) {
-  const [title, setTitle] = useState(initialTitle);
+}, ref) => {
+  const { theme: activeTheme } = useTheme();
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
+  const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
-  const [lineHeightPx, setLineHeightPx] = useState(DEFAULT_LINE_HEIGHT);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
   const [intellisenseSuggestions, setIntellisenseSuggestions] = useState([]);
-  const scrollTopRef = useRef(0);
-  const [ghostData, setGhostData] = useState(null);   // { sortedLines, initialYMap }
-  const [isGhostPinned, setIsGhostPinned] = useState(false);
   const [intellisenseIndex, setIntellisenseIndex] = useState(0);
+  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
+  const [viewportState, setViewportState] = useState(null);
+  const [adaptiveTopology, setAdaptiveTopology] = useState(null);
+  const [isGhostPinned, setIsGhostPinned] = useState(false);
+  const [ghostData, setGhostData] = useState(null);
+  const [bytecodeArtifacts, setBytecodeArtifacts] = useState([]);
+
+  const wrapperRef = useRef(null);
   const textareaRef = useRef(null);
   const wordBackgroundLayerRef = useRef(null);
   const markdownRef = useRef(null);
-  const bootPayloadRef = useRef({
-    title: String(initialTitle || ""),
-    content: String(initialContent || ""),
-  });
-  const isReadOnlyTruesight = isTruesight && !isEditable;
-  const isReadOnlyPlain = !isTruesight && !isEditable;
+  const scrollTopRef = useRef(0);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const reducedMotion = prefersReducedMotion;
 
-  bootPayloadRef.current = {
-    title: String(initialTitle || ""),
-    content: String(initialContent || ""),
-  };
-
-  // Bytecode-driven viewport integration
-  const [viewportState, setViewportState] = useState(() => ViewportChannel.getState());
-  
-  // Subscribe to viewport bytecode channel
-  useEffect(() => {
-    const unsubscribe = ViewportChannel.bind('scroll-editor', (vp) => {
-      setViewportState(vp);
-    });
-    
-    return unsubscribe;
-  }, []);
-  
-  // Load corpus for CEAG (Corpus-Enhanced Adaptive Grid)
-  useEffect(() => {
-    loadCorpusFrequencies().then(freq => {
-      if (freq.size > 0) {
-        console.log(`[ScrollEditor] CEAG loaded ${freq.size} corpus words`);
-      }
-    });
-  }, []);
-  
-  // Bytecode-driven cursor alignment
-  // Adaptive grid topology that updates on resize/CSS variable changes
-  const wrapperRef = useRef(null);
-
-  // --- Accessibility Fix: Blur hidden textarea ---
-  useEffect(() => {
-    if (isReadOnlyTruesight && !!onWordActivate) {
-      if (document.activeElement === textareaRef.current) {
-        textareaRef.current.blur();
-      }
-    }
-  }, [isReadOnlyTruesight, onWordActivate]);
-
-  const [computedTypography, setComputedTypography] = useState(null);
-  const [gridTopology, setGridTopology] = useState(null);
-  const [adaptiveTopology, setAdaptiveTopology] = useState(null);
-  const [, setBytecodeArtifacts] = useState([]);
+  const isReadOnlyPlain = !isEditable && !isTruesight;
+  const isReadOnlyTruesight = !isEditable && isTruesight;
 
   useLayoutEffect(() => {
-    const { title: nextTitle, content: nextContent } = bootPayloadRef.current;
+    setContent(initialContent);
+    setContentForOverlay(initialContent);
+  }, [initialContent]);
 
-    setTitle(nextTitle);
-    setContent(nextContent);
-    setContentForOverlay(nextContent);
-    setIsSaving(false);
-    setScrollTop(0);
-    scrollTopRef.current = 0;
-    setCursorCoords({ x: 0, y: 0 });
-    setIntellisenseSuggestions([]);
-    setIntellisenseIndex(0);
-    setGhostData(null);
-    setIsGhostPinned(false);
-    cachedEditorStyles = null;
+  useLayoutEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
 
-    for (const node of [textareaRef.current, wordBackgroundLayerRef.current, markdownRef.current]) {
-      if (!node) continue;
-      node.scrollTop = 0;
-      node.scrollLeft = 0;
-    }
-  }, [documentIdentity]);
-
-  // --- Bytecode Guard: Style Invariant Verification ---
-  const verifyTypographyInvariant = useCallback((textareaStyles, overlayStyles) => {
-    const criticalFields = ['fontFamily', 'fontSize', 'lineHeight', 'paddingLeft', 'paddingTop'];
-    for (const field of criticalFields) {
-      if (textareaStyles[field] !== overlayStyles[field]) {
-        const error = new BytecodeError(
-          ERROR_CATEGORIES.TYPE,
-          ERROR_SEVERITY.CRIT,
-          MODULE_IDS.SHARED,
-          ERROR_CODES.TYPE_MISMATCH,
-          {
-            field,
-            expected: textareaStyles[field],
-            actual: overlayStyles[field],
-            component: 'ScrollEditor',
-            reason: 'Typography mismatch between substrate and overlay'
-          }
-        );
-        console.error(`[PB-GUARD] Typography Invariant Violated: ${error.bytecode}`);
-        setBytecodeArtifacts(prev => [...prev.slice(-4), error.bytecode]);
-        return false;
-      }
-    }
-    return true;
-  }, []);
-
-  // --- Bytecode Guard: Overlay Geometry Invariant ---
-  // Verifies that the Truesight overlay and the textarea share the exact bounding rect.
-  // A mismatch means pixel-perfect word hit-testing is broken.
-  useEffect(() => {
-    if (!isTruesight) return;
-    const overlay = wordBackgroundLayerRef.current;
-    const textarea = textareaRef.current;
-    if (!overlay || !textarea) return;
-
-    const overlayRect = overlay.getBoundingClientRect();
-    const textareaRect = textarea.getBoundingClientRect();
-    const TOLERANCE = 1; // 1px — sub-pixel rounding is acceptable
-
-    const dTop  = Math.abs(overlayRect.top    - textareaRect.top);
-    const dLeft = Math.abs(overlayRect.left   - textareaRect.left);
-    const dW    = Math.abs(overlayRect.width  - textareaRect.width);
-    const dH    = Math.abs(overlayRect.height - textareaRect.height);
-
-    if (dTop > TOLERANCE || dLeft > TOLERANCE || dW > TOLERANCE || dH > TOLERANCE) {
-      const geoError = new BytecodeError(
-        ERROR_CATEGORIES.COORD,
-        ERROR_SEVERITY.CRIT,
-        MODULE_IDS.SHARED,
-        ERROR_CODES.COORD_OUT_OF_BOUNDS,
-        {
-          reason: 'Truesight overlay geometry diverges from substrate textarea — pixel-perfect word hit-testing is compromised',
-          delta: { top: dTop.toFixed(2), left: dLeft.toFixed(2), width: dW.toFixed(2), height: dH.toFixed(2) },
-          overlay:  { top: overlayRect.top.toFixed(1), left: overlayRect.left.toFixed(1), w: overlayRect.width.toFixed(1),  h: overlayRect.height.toFixed(1) },
-          textarea: { top: textareaRect.top.toFixed(1), left: textareaRect.left.toFixed(1), w: textareaRect.width.toFixed(1), h: textareaRect.height.toFixed(1) },
-          component: 'ScrollEditor'
-        }
-      );
-      console.error(`[PB-GUARD] Overlay Geometry Invariant Violated: ${geoError.bytecode}`);
-      setBytecodeArtifacts(prev => [...prev.slice(-4), geoError.bytecode]);
-    }
-  }, [isTruesight, computedTypography]);
-
-  // Compute typography from the active surface and geometry from the wrapper.
-  // Plain read-only mode, editable mode, and TrueSight all render through
-  // different substrates, so the style source must follow the active surface.
   const updateTypography = useCallback(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
+    const styles = window.getComputedStyle(wrapper);
+    const width = wrapper.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    const height = wrapper.clientHeight;
+    setContainerWidth(width);
+    setContainerHeight(height);
+    
+    const topology = computeAdaptiveGridTopology(wrapper, []);
+    setAdaptiveTopology(topology);
+  }, []);
 
-    const start = performance.now();
-
-    if (import.meta.env.MODE === 'test') {
-      console.log(`[ScrollEditor] updateTypography: ${wrapper.clientWidth}x${wrapper.clientHeight}, content: ${content?.length}`);
-    }
-
-    const styleSource =
-      (isReadOnlyPlain ? markdownRef.current : null) ||
-      (isTruesight ? wordBackgroundLayerRef.current : null) ||
-      textareaRef.current ||
-      wrapper;
-    const styles = window.getComputedStyle(styleSource);
-    const topology = computeGridTopology(wrapper);
-
-    // Collect sample tokens from content for adaptive measurement
-    const sampleTokens = content?.split(/\s+/).slice(0, 10) || [];
-    const adaptiveTopo = computeAdaptiveGridTopology(wrapper, sampleTokens);
-
-    setComputedTypography({
-      fontFamily: styles.fontFamily,
-      fontSize: styles.fontSize,
-      lineHeight: styles.lineHeight,
-      letterSpacing: styles.letterSpacing,
-      wordSpacing: styles.wordSpacing,
-      paddingTop: styles.paddingTop,
-      paddingRight: styles.paddingRight,
-      paddingBottom: styles.paddingBottom,
-      paddingLeft: styles.paddingLeft,
-      fontStyle: styles.fontStyle,
-      fontWeight: styles.fontWeight,
-    });
-
-    if (topology) {
-      setGridTopology(topology);
-    }
-
-    if (adaptiveTopo) {
-      setAdaptiveTopology(adaptiveTopo);
-      if (adaptiveTopo.baseCellHeight) {
-        setLineHeightPx(adaptiveTopo.baseCellHeight);
-      }
-    }
-
-    const duration = performance.now() - start;
-    // Typography measurement is a synchronous layout read that legitimately exceeds
-    // one frame on large documents. Only emit UI_STASIS for durations that represent
-    // an actionable freeze (>100ms), not routine recalculation.
-    if (duration > 100) {
-      const stasisErr = new BytecodeError(
-        ERROR_CATEGORIES.UI_STASIS,
-        ERROR_SEVERITY.WARN,
-        'UISTAS',
-        0x0E01,
-        {
-          operation: 'updateTypography',
-          actualDuration: duration,
-          timeoutMs: 100,
-          contentLength: content?.length || 0
-        }
-      );
-      console.warn(`[PB-GUARD] UI Stasis Detected: ${stasisErr.bytecode}`);
-    }
-  }, [content, isReadOnlyPlain, isTruesight]);
-  
-  // Initial capture + adaptive updates via ResizeObserver
   useLayoutEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
     
-    // Initial computation
     updateTypography();
     
-    // Adaptive: watch for CSS variable changes via ResizeObserver
-    // Guarded by requestAnimationFrame to prevent layout recursion/thrashing
     let frameId;
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(frameId);
@@ -520,134 +330,42 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       cancelAnimationFrame(frameId);
     };
   }, [updateTypography]);
-  
+
+  useEffect(() => {
+    const sub = ViewportChannel.subscribe(setViewportState);
+    return sub;
+  }, []);
+
+  const { overlayLines, allOverlayTokens } = useMemo(() => {
+    if (!adaptiveTopology || containerWidth <= 0) return { overlayLines: [], allOverlayTokens: [] };
+    const result = buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology);
+    return { overlayLines: result.lines, allOverlayTokens: result.allTokens };
+  }, [contentForOverlay, containerWidth, adaptiveTopology]);
+
+  const lineSyllableCounts = useMemo(() => {
+    if (analyzedDocument?.lineSyllableCounts) return analyzedDocument.lineSyllableCounts;
+    return overlayLines.map(() => 0);
+  }, [analyzedDocument, overlayLines]);
+
+  const syntaxLayer = useMemo(() => analyzedDocument?.syntaxSummary || null, [analyzedDocument]);
+
+  const mirrored = false;
+
   const cursorSync = useMemo(() => {
-    if (!computedTypography || !gridTopology) return null;
-    
-    const textareaStyles = {
-      fontFamily: computedTypography.fontFamily,
-      fontSize: computedTypography.fontSize,
-      lineHeight: computedTypography.lineHeight,
-      letterSpacing: computedTypography.letterSpacing,
-      wordSpacing: computedTypography.wordSpacing,
-      paddingTop: computedTypography.paddingTop,
-      paddingRight: computedTypography.paddingRight,
-      paddingBottom: computedTypography.paddingBottom,
-      paddingLeft: computedTypography.paddingLeft,
-      tabSize: 2,
-      MozTabSize: 2,
-      boxSizing: 'border-box',
-      WebkitTextFillColor: 'currentColor',
-      resize: 'none',
-      overflow: 'auto',
-    };
-
+    if (!adaptiveTopology) return null;
+    const { baseCellHeight } = adaptiveTopology;
     const overlayStyles = {
-      fontFamily: computedTypography.fontFamily,
-      fontSize: computedTypography.fontSize,
-      lineHeight: computedTypography.lineHeight,
-      letterSpacing: computedTypography.letterSpacing,
-      wordSpacing: computedTypography.wordSpacing,
-      paddingTop: computedTypography.paddingTop,
-      paddingRight: computedTypography.paddingRight,
-      paddingBottom: computedTypography.paddingBottom,
-      paddingLeft: computedTypography.paddingLeft,
-      tabSize: 2,
-      MozTabSize: 2,
-      boxSizing: 'border-box',
-      overflow: 'hidden',
-      pointerEvents: 'none',
+      paddingLeft: `${adaptiveTopology.originX}px`,
+      paddingTop: `${adaptiveTopology.originY}px`,
+      lineHeight: `${baseCellHeight}px`,
     };
-
-    // --- Bytecode Guard: Final Typography Validation ---
-    verifyTypographyInvariant(textareaStyles, overlayStyles);
-
-    return {
-      textareaStyles,
-      overlayStyles,
-      gridTopology,
+    const textareaStyles = {
+      lineHeight: `${baseCellHeight}px`,
     };
-  }, [computedTypography, gridTopology, verifyTypographyInvariant]);
-
-  useEffect(() => {
-    let resizeTimer;
-    const handleResize = () => { 
-      cachedEditorStyles = null;
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        updateTypography();
-      }, 100);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(resizeTimer);
-    };
-  }, [updateTypography]);
-
-  const reducedMotion = usePrefersReducedMotion();
-  const { theme: activeTheme } = useTheme();
-
-  // Trigger ritual prediction when typing (debounced)
-  useEffect(() => {
-    if (!isEditable || !isPredictive || !predict || !predictorReady || !content) {
-      setIntellisenseSuggestions(prev => (prev.length === 0 ? prev : []));
-      return;
-    }
-
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-
-    const timeoutId = setTimeout(async () => {
-      const pos = textarea.selectionStart;
-      const textBefore = content.substring(0, pos);
-      const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
-      const prefix = lastWordMatch ? lastWordMatch[1] : '';
-      
-      // Look back for the previous word to provide bigram context
-      const prevText = textBefore.substring(0, textBefore.length - prefix.length).trim();
-      const prevWordMatch = prevText.match(/([a-zA-Z']+)$/);
-      const prevWord = prevWordMatch ? prevWordMatch[1] : null;
-
-      try {
-        const lineWords = textBefore.split('\n').pop().split(/\s+/).filter(Boolean);
-        const verseIRState = resolvePlsVerseIRState({
-          prevLineEndWord: prevWord, // Simplified heuristic for prev line end
-          currentLineWords: lineWords,
-          plsPhoneticFeatures,
-        });
-
-        const suggestions = await predict(prefix, prevWord, 6, {
-          syntaxContext: syntaxLayer,
-          currentLineWords: lineWords,
-          verseIRState,
-        });
-        
-        if (Array.isArray(suggestions)) {
-          const coords = getCursorCoordsFromTextarea(textarea, mirrored, adaptiveTopology);
-          setCursorCoords(coords);
-          setIntellisenseSuggestions(suggestions.map(s => ({ token: s })));
-          setIntellisenseIndex(0);
-        }
-      } catch (err) {
-        console.error('[ScrollEditor] Prediction failed:', err);
-      }
-    }, 180);
-
-    return () => clearTimeout(timeoutId);
-  }, [content, isEditable, isPredictive, predict, predictorReady, syntaxLayer, plsPhoneticFeatures, adaptiveTopology, mirrored]);
-
-  const containerWidth = useMemo(() => {
-    if (adaptiveTopology && adaptiveTopology.totalWidth > 0) {
-      return adaptiveTopology.totalWidth;
-    }
-    return 800;
+    return { overlayStyles, textareaStyles };
   }, [adaptiveTopology]);
 
-  const { lines: overlayLines, allTokens: allOverlayTokens } = useMemo(
-    () => adaptiveTopology ? buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology) : { lines: [], allTokens: [] },
-    [contentForOverlay, containerWidth, adaptiveTopology]
-  );
+  const lineHeightPx = adaptiveTopology?.baseCellHeight || DEFAULT_LINE_HEIGHT;
 
   const derivedAnalyzedWordsByCharStart = useMemo(() => {
     const map = new Map();
@@ -719,8 +437,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       const residualLeft = Math.abs(syncedLeft - nextLeft);
       const residualDelta = Math.max(residualTop, residualLeft);
 
-      // --- Bytecode Guard: Sync Invariant ---
-      // Only warn when a peer remains misaligned after synchronization is applied.
       if (residualDelta > 1 && !isReadOnlyPlain && !isReadOnlyTruesight) {
         const error = new BytecodeError(
           ERROR_CATEGORIES.COORD,
@@ -933,12 +649,44 @@ const ScrollEditor = forwardRef(function ScrollEditor({
   const handleTextareaClick = useCallback((event) => {
     const textarea = event.currentTarget;
     emitCursorChange(textarea);
+    
+    // Sync scroll if overlay is active
+    handleTextareaScroll(event);
+
     if (!onWordActivate || textarea.selectionStart !== textarea.selectionEnd) return;
-    const tokenEntry = resolveWordTokenAtOffset(textarea.selectionStart, syntaxLayer, content);
-    const wordPayload = buildWordPayloadFromToken(tokenEntry);
-    if (!wordPayload) return;
+    
+    const cursorOffset = textarea.selectionStart;
+    const tokenEntry = resolveWordTokenAtOffset(cursorOffset, syntaxLayer, content);
+    if (!tokenEntry || !tokenEntry.token) return;
+
+    const clean = tokenEntry.token.trim().toUpperCase();
+    const identityKey = `${tokenEntry.lineNumber}:${tokenEntry.wordIndex}:${tokenEntry.charStart}`;
+    
+    const analysis = analyzedWordsByIdentity.get(identityKey) || 
+                     derivedAnalyzedWordsByCharStart.get(tokenEntry.charStart) || 
+                     (allowLegacyWordFallback ? analyzedWords.get(clean) : null);
+
+    const wordPayload = {
+      ...buildWordPayloadFromToken(tokenEntry),
+      analysis
+    };
+    
+    if (!wordPayload.word) return;
+
     const caretCoords = getCursorCoordsFromTextarea(textarea, mirrored, adaptiveTopology);
     const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || DEFAULT_LINE_HEIGHT;
+
+    // ─── UNIFIED WORD ACTIVATION (V12 DIVORCE) ─────────────────────────────
+    // Directly signaling the activator to bypass Truesight-only listeners.
+    onWordActivate?.({
+      ...wordPayload,
+      trigger: 'textarea_tap',
+      charStart: tokenEntry.charStart,
+      charEnd: tokenEntry.charEnd,
+      lineIndex: tokenEntry.lineNumber,
+      wordIndex: tokenEntry.wordIndex
+    });
+
     emitWordActivation("pin", wordPayload, {
       anchorRect: {
         left: caretCoords.x,
@@ -953,7 +701,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       detail: event.detail,
       source: "pointer",
     }, onWordActivate);
-  }, [content, emitCursorChange, mirrored, onWordActivate, adaptiveTopology, syntaxLayer]);
+  }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology]);
 
   const handleContentChange = useCallback((event) => {
     const nextValue = event.target.value;
@@ -973,8 +721,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       onContentChange(nextValue);
     }
   }, [emitCursorChange, onContentChange]);
-
-  const containerHeight = viewportState?.height || 800;
 
   return (
     <motion.div
@@ -1102,8 +848,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         };
 
                         if (!isWord) {
-                          // Render whitespace/punctuation to maintain perfect layout sync.
-                          // We use currentColor (or inherit) so they are visible in Truesight.
                           return (
                             <span 
                               key={localStart} 
@@ -1123,9 +867,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
                         const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
-                        
-                        // GrimDesign-aligned: phase=0 keeps color deterministic per vowel nucleus.
-                        // Same vowel family → same hue, regardless of word position in the document.
                         const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
@@ -1240,7 +981,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                     >
                       {lineData.tokens.map(({ token, localStart, localEnd, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
-                        
                         const commonStyle = {
                           position: 'absolute',
                           left: `${tokenX}px`,
@@ -1275,9 +1015,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
                         const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
-                        
-                        // GrimDesign-aligned: phase=0 keeps color deterministic per vowel nucleus.
-                        // Same vowel family → same hue, regardless of word position in the document.
                         const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
@@ -1361,5 +1098,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
     </motion.div>
   );
 });
+
+ScrollEditor.displayName = "ScrollEditor";
 
 export default ScrollEditor;

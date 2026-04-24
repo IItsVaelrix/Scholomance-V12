@@ -1090,26 +1090,22 @@ export default function ReadPage() {
 
     const effectiveLookupData = lookupOverride ?? lookupData;
 
-    if (!tooltipState.pinned || !effectiveLookupData) {
-      return baseWordData;
+    // Prioritize Corpus/Lookup data as the authoritative source
+    if (effectiveLookupData && 
+        String(effectiveLookupData.word || "").toUpperCase() === String(tooltipState.token.normalizedWord || "").toUpperCase()) {
+      return {
+        ...baseWordData,
+        ...effectiveLookupData,
+        word: effectiveLookupData.word || baseWordData.word,
+        vowelFamily: effectiveLookupData.vowelFamily || baseWordData.vowelFamily,
+        terminalVowelFamily: effectiveLookupData.terminalVowelFamily || baseWordData.terminalVowelFamily,
+        rhymeKey: effectiveLookupData.rhymeKey || baseWordData.rhymeKey,
+        rhymeTailSignature: effectiveLookupData.rhymeTailSignature || baseWordData.rhymeTailSignature,
+        syllableCount: effectiveLookupData.syllableCount || baseWordData.syllableCount,
+      };
     }
 
-    const selectedWord = String(tooltipState.token.normalizedWord || "").toUpperCase();
-    const lookupWord = String(effectiveLookupData.word || "").toUpperCase();
-    if (lookupWord && lookupWord !== selectedWord) {
-      return baseWordData;
-    }
-
-    return {
-      ...baseWordData,
-      ...effectiveLookupData,
-      word: effectiveLookupData.word || baseWordData.word,
-      vowelFamily: effectiveLookupData.vowelFamily || baseWordData.vowelFamily,
-      terminalVowelFamily: effectiveLookupData.terminalVowelFamily || baseWordData.terminalVowelFamily,
-      rhymeKey: effectiveLookupData.rhymeKey || baseWordData.rhymeKey,
-      rhymeTailSignature: effectiveLookupData.rhymeTailSignature || baseWordData.rhymeTailSignature,
-      syllableCount: effectiveLookupData.syllableCount || baseWordData.syllableCount,
-    };
+    return baseWordData;
   }, [lookupData, lookupOverride, tooltipState]);
 
   const totalSyllables = useMemo(() => {
