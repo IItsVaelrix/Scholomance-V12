@@ -35,7 +35,9 @@ RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_
     || echo "WARNING: No local dictionary/corpus DBs available. Ensure Turso is configured."
 
 # --- App build ---
-RUN npm run build:rhyme-astrology:index -- --output /app/data/rhyme-astrology || \
+RUN SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
+    SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
+    npm run build:rhyme-astrology:index -- --output /app/data/rhyme-astrology || \
     echo "Rhyme astrology build failed — index will be computed at runtime"
 RUN npm run build
 RUN npm prune --omit=dev

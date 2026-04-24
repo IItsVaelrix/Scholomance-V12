@@ -36,5 +36,5 @@ export function resolveDatabasePath(rawPath, defaultBasename) {
     }
   }
   
-  return resolved;
+  return resolved ?? path.resolve(defaultBasename);
 }
