@@ -27,9 +27,14 @@ const reducedMotionVariants = {
 
 function AuthScopedProviders({ children }) {
   const { user, isLoading } = useAuth();
+  const authReady = !isLoading;
+  const isAuthenticated = Boolean(user);
+
   return (
-    <ProgressionProvider authReady={!isLoading} isAuthenticated={Boolean(user)}>
-      {children}
+    <ProgressionProvider authReady={authReady} isAuthenticated={isAuthenticated}>
+      <ScrollsProvider>
+        {children}
+      </ScrollsProvider>
     </ProgressionProvider>
   );
 }
