@@ -429,11 +429,6 @@ export function onXPEvent(event, callback) {
     if (idx > -1) listeners.splice(idx, 1);
   };
 }
-rap callbacks in useCallback where performance is critical.
-    const unsubscribe = onXPEvent(event, callback);
-    return unsubscribe;
-  }, [event, callback]);
-}
 
 /**
  * @deprecated Use useXPEventListener in React components to avoid memory leaks.

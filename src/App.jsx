@@ -104,6 +104,3 @@ export default function App() {
     </CODExProvider>
   );
 }
-ODExProvider>
-  );
-}

@@ -327,7 +327,7 @@ function normalizeWorldEntityRow(row) {
 async function ensureWorldSeedData(database) {
   try {
     // ─── STEP 1: Check if seeding is already current ──────────────────────────
-    database.exec(`CREATE TABLE IF NOT EXISTS _world_meta (key TEXT PRIMARY KEY, value TEXT)`);
+    await database.execute(`CREATE TABLE IF NOT EXISTS _world_meta (key TEXT PRIMARY KEY, value TEXT)`);
     const seedVersionRow = await database.execute(`SELECT value FROM _world_meta WHERE key = 'seed_version'`);
     const CURRENT_SEED_VERSION = '1.0.0'; // Manually increment when core entities change
     
