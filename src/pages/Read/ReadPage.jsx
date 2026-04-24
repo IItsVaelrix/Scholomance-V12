@@ -26,6 +26,7 @@ import { parseBooleanEnvFlag } from "../../hooks/useCODExPipeline.jsx";
 import { patternColor } from "../../lib/patternColor.js";
 import { getCachedWord, setCachedWord, pruneOldCaches } from "../../lib/platform/wordCache.js";
 import { useAuroraLevel, cycleAuroraLevel, useAtmosphere } from "../../hooks/useAtmosphere.js";
+import { useAutoSave } from "../../hooks/useAutoSave.js";
 import { useAdaptivePalette } from "../../hooks/useAdaptivePalette.js";
 
 import AnalysisPanel from "./AnalysisPanel.jsx";
@@ -63,7 +64,6 @@ const TOOLTIP_HEIGHT = 510;
 const TOOLTIP_MARGIN = 12;
 const TOOLTIP_OFFSET_X = 14;
 const TOOLTIP_OFFSET_Y = -8;
-const AUTOSAVE_DELAY_MS = 180000; // 3 minutes
 
 const ENABLE_SYNTAX_RHYME_LAYER = parseBooleanEnvFlag(
   import.meta.env.VITE_ENABLE_SYNTAX_RHYME_LAYER,
@@ -140,7 +140,22 @@ export default function ReadPage() {
   
   const [highlightedLines, setHighlightedLines] = useState([]);
   const [pinnedLines, setPinnedLines] = useState([]);
-  const [_saveStatus, setSaveStatus] = useState("Saved");
+  
+  const activeScroll = activeScrollId ? getScrollById(activeScrollId) : null;
+
+  const { saveStatus, bumpAutosaveContext, isSaving } = useAutoSave({
+    title: editorTitle,
+    content: editorContent,
+    id: activeScrollId,
+    isEditable,
+    submittedAt: activeScroll?.submittedAt
+  }, {
+    onSaveSuccess: (savedScroll) => {
+      if (!isEditing) setIsEditing(true);
+      setEditorTitle(String(savedScroll.title || ""));
+    }
+  });
+
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
   const [sidebarTab, setSidebarTab] = useState("FILES");
@@ -250,215 +265,62 @@ export default function ReadPage() {
     setHighlightedLines([]);
   }, [updateSettings]);
 
-  useLayoutEffect(() => {
-    // Combined activity bar width — drives IDE.css label reveal thresholds
-    const layout = settings?.ideLayout;
-    // Support old 5-element layout (icons + labels were separate) → merge them
-    const isOldLayout = layout?.length === 5;
-    const combinedPct = isOldLayout
-      ? (layout[0] + layout[1])
-      : (layout?.[0] ?? 3);
-    const el = document.querySelector('.ide-activity-combined');
-    if (el) el.setAttribute('data-panel-size', combinedPct.toFixed(1));
-  }, [settings?.ideLayout]);
-
-  const {
-    lookup,
-    data: lookupData,
-    isLoading: isLookupLoading,
-    error: lookupError,
-    reset: resetWordLookup,
-  } = useWordLookup();
-
-  // Session history: words explicitly pinned via Truesight (not suggestion navigations)
-  const [sessionWords, setSessionWords] = useState([]);
-  const [sessionIndex, setSessionIndex] = useState(-1);
-  // lookupOverride: inject cached word data without going through the hook
-  const [lookupOverride, setLookupOverride] = useState(null);
-
-  const editorRef = useRef(null);
-  const _activityBarRef = useRef(null);
-  const focusReturnRef = useRef(null);
-  const tooltipCloseGuardRef = useRef({
-    expiresAt: 0,
-    lineIndex: null,
-    charStart: null,
-  });
-  const autosaveInFlightRef = useRef(false);
-  const queuedAutosaveRef = useRef(null);
-  const autosaveScrollIdRef = useRef(null);
-  const autosaveContextRef = useRef(0);
-  const lastAutosaveFingerprintRef = useRef("");
-  const autosaveInputsRef = useRef({
-    isEditable: false,
-    editorContent: "",
-    editorTitle: "",
-    activeScrollTitle: "",
-    activeScrollId: null,
-    activeScrollSubmittedAt: null,
-  });
-  const [tooltipState, setTooltipState] = useState({
-    visible: false,
-    pinned: false,
-    token: null,
-    position: { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN },
-    localAnalysis: null,
-  });
-
-  // Prune stale day-cache keys on mount (Backgrounded to prevent stutter)
-  useEffect(() => { 
-    if (window.requestIdleCallback) {
-      window.requestIdleCallback(() => pruneOldCaches());
-    } else {
-      setTimeout(pruneOldCaches, 100);
-    }
+  const handleSchoolChange = useCallback((schoolId) => {
+    setSelectedSchool(schoolId);
   }, []);
-  const activeScroll = activeScrollId ? getScrollById(activeScrollId) : null;
+
+  const handleInfoBeamToggle = useCallback(() => {
+    setInfoBeamEnabled((prev) => !prev);
+  }, []);
+
   const activeScrollContent = String(activeScroll?.content || "");
+
   const editorInitialTitle = isEditable
     ? String(editorTitle || "")
     : String(activeScroll?.title || editorTitle || "");
+
   const editorInitialContent = isEditable
     ? String(editorContent || "")
-    : String(activeScroll?.content || editorContent || "");
-  const documentContent = isEditable ? editorContent : activeScrollContent;
-  const truesightContent = documentContent;
+    : activeScrollContent;
 
-  useEffect(() => {
-    autosaveScrollIdRef.current = activeScrollId || null;
-  }, [activeScrollId]);
+  const truesightContent = isEditable ? editorContent : activeScrollContent;
 
-  useEffect(() => {
-    autosaveInputsRef.current = {
-      isEditable,
-      editorContent,
-      editorTitle,
-      activeScrollTitle: String(activeScroll?.title || ""),
-      activeScrollId,
-      activeScrollSubmittedAt: activeScroll?.submittedAt || null,
-    };
-  }, [isEditable, editorContent, editorTitle, activeScroll?.title, activeScroll?.submittedAt, activeScrollId]);
-
-  const lineCount = useMemo(() => {
-    return truesightContent.split("\n").length;
-  }, [truesightContent]);
-
-  const currentLineText = useMemo(() => {
-    const lines = String(editorContent || "").split("\n");
-    // If no cursor, default to the last line being typed
-    const currentLineIdx = Number.isInteger(cursorPos?.lineNumber) ? cursorPos.lineNumber - 1 : lines.length - 1;
-    return lines[currentLineIdx] || "";
-  }, [editorContent, cursorPos]);
-
-  const schoolList = useMemo(
-    () => getSchoolsByUnlock(),
-    []
-  );
-
-  const activeVowelColors = useMemo(
-    () => getVowelColorsForSchool(selectedSchool, theme),
-    [selectedSchool, theme]
-  );
   const analyzedWords = useMemo(() => {
+    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
     const map = new Map();
-    const wordProfiles = Array.isArray(deepAnalysis?.wordAnalyses) ? deepAnalysis.wordAnalyses : [];
-    for (const profile of wordProfiles) {
-      const normalized = String(profile?.normalizedWord || "").toUpperCase();
-      if (!normalized || map.has(normalized)) continue;
-      map.set(normalized, {
-        word: String(profile?.word || ""),
-        normalizedWord: normalized,
-        lineIndex: Number.isInteger(profile?.lineIndex) ? profile.lineIndex : -1,
-        wordIndex: Number.isInteger(profile?.wordIndex) ? profile.wordIndex : -1,
-        charStart: Number.isInteger(profile?.charStart) ? profile.charStart : -1,
-        charEnd: Number.isInteger(profile?.charEnd) ? profile.charEnd : -1,
-        vowelFamily: normalizeVowelFamily(profile?.vowelFamily || profile?.phonetics?.vowelFamily) || null,
-        phonemes: Array.isArray(profile?.phonemes) ? profile.phonemes : (Array.isArray(profile?.phonetics?.phonemes) ? profile.phonetics.phonemes : []),
-        visualBytecode: profile?.visualBytecode || null,
-        trueVisionBytecode: profile?.trueVisionBytecode || null,
-        syllableCount: Number(profile?.syllableCount) || 0,
-        primaryStressedVowelFamily: normalizeVowelFamily(profile?.primaryStressedVowelFamily) || null,
-        terminalVowelFamily: normalizeVowelFamily(profile?.terminalVowelFamily) || null,
-        rhymeKey: profile?.rhymeKey || null,
-        rhymeTailSignature: profile?.rhymeTailSignature || profile?.rhymeKey || null,
-        stressPattern: String(profile?.stressPattern || ""),
-        role: String(profile?.role || ""),
-        lineRole: String(profile?.lineRole || ""),
-        stressRole: String(profile?.stressRole || ""),
-        rhymePolicy: String(profile?.rhymePolicy || ""),
-      });
-    }
-    return map;
-  }, [deepAnalysis]);
-  const analyzedWordsByIdentity = useMemo(() => {
-    const map = new Map();
-    const wordProfiles = Array.isArray(deepAnalysis?.wordAnalyses) ? deepAnalysis.wordAnalyses : [];
-    for (const profile of wordProfiles) {
-      const lineIndex = Number(profile?.lineIndex);
-      const wordIndex = Number(profile?.wordIndex);
-      const charStart = Number(profile?.charStart);
-      if (!Number.isInteger(lineIndex) || !Number.isInteger(wordIndex) || !Number.isInteger(charStart) || charStart < 0) {
-        continue;
-      }
-      map.set(`${lineIndex}:${wordIndex}:${charStart}`, {
-        word: String(profile?.word || ""),
-        normalizedWord: String(profile?.normalizedWord || "").toUpperCase(),
-        lineIndex,
-        wordIndex,
-        charStart,
-        charEnd: Number.isInteger(profile?.charEnd) ? profile.charEnd : -1,
-        vowelFamily: normalizeVowelFamily(profile?.vowelFamily || profile?.phonetics?.vowelFamily) || null,
-        phonemes: Array.isArray(profile?.phonemes) ? profile.phonemes : (Array.isArray(profile?.phonetics?.phonemes) ? profile.phonetics.phonemes : []),
-        visualBytecode: profile?.visualBytecode || null,
-        trueVisionBytecode: profile?.trueVisionBytecode || null,
-        syllableCount: Number(profile?.syllableCount) || 0,
-        primaryStressedVowelFamily: normalizeVowelFamily(profile?.primaryStressedVowelFamily) || null,
-        terminalVowelFamily: normalizeVowelFamily(profile?.terminalVowelFamily) || null,
-        rhymeKey: profile?.rhymeKey || null,
-        rhymeTailSignature: profile?.rhymeTailSignature || profile?.rhymeKey || null,
-        stressPattern: String(profile?.stressPattern || ""),
-        role: String(profile?.role || ""),
-        lineRole: String(profile?.lineRole || ""),
-        stressRole: String(profile?.stressRole || ""),
-        rhymePolicy: String(profile?.rhymePolicy || ""),
-      });
-    }
-    return map;
-  }, [deepAnalysis]);
-  const analyzedWordsByCharStart = useMemo(() => {
-    const map = new Map();
-    const wordProfiles = Array.isArray(deepAnalysis?.wordAnalyses) ? deepAnalysis.wordAnalyses : [];
-    for (const profile of wordProfiles) {
-      const charStart = Number(profile?.charStart);
-      if (!Number.isInteger(charStart) || charStart < 0) continue;
-      map.set(charStart, {
-        word: String(profile?.word || ""),
-        normalizedWord: String(profile?.normalizedWord || "").toUpperCase(),
-        lineIndex: Number.isInteger(profile?.lineIndex) ? profile.lineIndex : -1,
-        wordIndex: Number.isInteger(profile?.wordIndex) ? profile.wordIndex : -1,
-        charStart,
-        charEnd: Number.isInteger(profile?.charEnd) ? profile.charEnd : -1,
-        vowelFamily: normalizeVowelFamily(profile?.vowelFamily || profile?.phonetics?.vowelFamily) || null,
-        phonemes: Array.isArray(profile?.phonemes) ? profile.phonemes : (Array.isArray(profile?.phonetics?.phonemes) ? profile.phonetics.phonemes : []),
-        visualBytecode: profile?.visualBytecode || null,
-        trueVisionBytecode: profile?.trueVisionBytecode || null,
-        syllableCount: Number(profile?.syllableCount) || 0,
-        primaryStressedVowelFamily: normalizeVowelFamily(profile?.primaryStressedVowelFamily) || null,
-        terminalVowelFamily: normalizeVowelFamily(profile?.terminalVowelFamily) || null,
-        rhymeKey: profile?.rhymeKey || null,
-        rhymeTailSignature: profile?.rhymeTailSignature || profile?.rhymeKey || null,
-        stressPattern: String(profile?.stressPattern || ""),
-        role: String(profile?.role || ""),
-        lineRole: String(profile?.lineRole || ""),
-        stressRole: String(profile?.stressRole || ""),
-        rhymePolicy: String(profile?.rhymePolicy || ""),
-      });
+    for (const profile of deepAnalysis.wordAnalyses) {
+      map.set(profile.normalizedWord, profile);
     }
     return map;
   }, [deepAnalysis]);
 
-  // Bytecode is already on wordAnalyses from the backend — no need to build colorMap
-  // The visualBytecode field on each wordAnalysis is authoritative and produced by Codex
+  const analyzedWordsByCharStart = useMemo(() => {
+    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
+    const map = new Map();
+    for (const profile of deepAnalysis.wordAnalyses) {
+      map.set(Number(profile.charStart), profile);
+    }
+    return map;
+  }, [deepAnalysis]);
+
+  const analyzedWordsByIdentity = useMemo(() => {
+    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
+    const map = new Map();
+    for (const profile of deepAnalysis.wordAnalyses) {
+      const key = `${profile.lineIndex}:${profile.wordIndex}:${profile.charStart}`;
+      map.set(key, {
+        ...profile,
+        vowelFamily: normalizeVowelFamily(profile?.vowelFamily) || null,
+        rhymeKey: String(profile?.rhymeKey || ""),
+        stressPattern: String(profile?.stressPattern || ""),
+        role: String(profile?.role || ""),
+        lineRole: String(profile?.lineRole || ""),
+        stressRole: String(profile?.stressRole || ""),
+        rhymePolicy: String(profile?.rhymePolicy || ""),
+      });
+    }
+    return map;
+  }, [deepAnalysis]);
 
   const [committedAnalysis, setCommittedAnalysis] = useState({
     analyzedWords: new Map(),
@@ -494,109 +356,15 @@ export default function ReadPage() {
     [truesightContent]
   );
 
-  // Ambient analysis: always run on content change.
-  // usePanelAnalysis already handles source selection and debounce, so this surface
-  // should forward content immediately instead of layering another visual delay.
   useEffect(() => {
     if (!truesightContent) return;
     analyzeDocument(truesightContent);
   }, [truesightContent, analyzeDocument]);
 
-  const bumpAutosaveContext = useCallback(() => {
-    autosaveContextRef.current += 1;
-    queuedAutosaveRef.current = null;
-    autosaveScrollIdRef.current = null;
-    lastAutosaveFingerprintRef.current = "";
-  }, []);
-
   const issueEditorDocumentIdentity = useCallback((label = "new") => {
     editorDocumentSerialRef.current += 1;
     setEditorDocumentIdentity(`${label || "new"}:${editorDocumentSerialRef.current}`);
   }, []);
-
-  const runAutosave = useCallback(async (draft) => {
-    if (!draft || draft.context !== autosaveContextRef.current) return;
-
-    const normalizedDraft = {
-      context: draft.context,
-      id: draft.id || autosaveScrollIdRef.current || undefined,
-      title: String(draft.title || "").trim() || "Untitled Scroll",
-      content: String(draft.content || ""),
-      submittedAt: draft.submittedAt || null,
-    };
-    const draftFingerprint = `${normalizedDraft.id || "new"}|${normalizedDraft.title}|${normalizedDraft.content}`;
-    if (draftFingerprint === lastAutosaveFingerprintRef.current) {
-      return;
-    }
-
-    if (autosaveInFlightRef.current) {
-      queuedAutosaveRef.current = normalizedDraft;
-      return;
-    }
-
-    autosaveInFlightRef.current = true;
-    try {
-      const savedScroll = await saveScroll({
-        ...normalizedDraft,
-        submit: false,
-      });
-      if (!savedScroll) return;
-      if (normalizedDraft.context !== autosaveContextRef.current) return;
-
-      const savedId = String(savedScroll.id || normalizedDraft.id || "");
-      const savedTitle = String(savedScroll.title || normalizedDraft.title || "");
-      const savedContent = String(savedScroll.content || normalizedDraft.content || "");
-      lastAutosaveFingerprintRef.current = `${savedId || "new"}|${savedTitle}|${savedContent}`;
-
-      if (savedId) {
-        autosaveScrollIdRef.current = savedId;
-        setActiveScrollId((prev) => prev || savedId);
-      }
-      if (!normalizedDraft.id && savedId) {
-        setIsEditing(true);
-      }
-      setEditorTitle(savedTitle);
-      setSaveStatus("Saved");
-    } catch (error) {
-      console.error("Autosave failed:", error);
-    } finally {
-      autosaveInFlightRef.current = false;
-      const queuedDraft = queuedAutosaveRef.current;
-      queuedAutosaveRef.current = null;
-      if (queuedDraft) {
-        void runAutosave({
-          ...queuedDraft,
-          id: queuedDraft.id || autosaveScrollIdRef.current || undefined,
-        });
-      }
-    }
-  }, [saveScroll, setActiveScrollId]);
-
-  useEffect(() => {
-    const snapshot = autosaveInputsRef.current;
-    if (!snapshot.isEditable) {
-      return;
-    }
-
-    const content = String(snapshot.editorContent || "");
-    const title = String(snapshot.editorTitle || snapshot.activeScrollTitle || "").trim();
-    const hasExistingDraft = Boolean(snapshot.activeScrollId || autosaveScrollIdRef.current);
-    if (!hasExistingDraft && !content.trim() && !title) {
-      return;
-    }
-
-    const timerId = window.setTimeout(() => {
-      void runAutosave({
-        context: autosaveContextRef.current,
-        id: snapshot.activeScrollId || autosaveScrollIdRef.current || undefined,
-        title,
-        content,
-        submittedAt: snapshot.activeScrollSubmittedAt || null,
-      });
-    }, AUTOSAVE_DELAY_MS);
-
-    return () => window.clearTimeout(timerId);
-  }, [activeScroll?.submittedAt, activeScrollId, editorContent, editorTitle, isEditable, runAutosave]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -611,7 +379,6 @@ export default function ReadPage() {
     async (title, content) => {
       bumpAutosaveContext();
       ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.SAVING);
-      setSaveStatus("Saving...");
       const isUpdate = Boolean(isEditing && activeScrollId);
       const wasSubmitted = Boolean(activeScroll?.submittedAt);
       const savedScroll = await saveScroll({
@@ -623,7 +390,6 @@ export default function ReadPage() {
       });
       if (!savedScroll) {
         ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
-        setSaveStatus("Error");
         addToast("Failed to save scroll", "error");
         return;
       }
@@ -651,12 +417,8 @@ export default function ReadPage() {
       }
 
       ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.SAVED);
-      setSaveStatus("Saved");
+      setEditorTitle(savedScroll.title);
       setActiveScrollId(savedScroll.id);
-      setEditorContent(String(savedScroll.content || content || ""));
-      setEditorTitle(String(savedScroll.title || title || ""));
-      autosaveScrollIdRef.current = savedScroll.id || null;
-      lastAutosaveFingerprintRef.current = `${savedScroll.id || "new"}|${String(savedScroll.title || title || "")}|${String(savedScroll.content || content || "")}`;
       setIsEditing(false);
       setIsEditable(false);
     },
@@ -674,7 +436,6 @@ export default function ReadPage() {
     setIsEditing(false);
     setIsEditable(false);
     setHighlightedLines([]);
-    setSaveStatus("Saved");
   }, [bumpAutosaveContext, getScrollById, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleNewScroll = useCallback(() => {
@@ -686,7 +447,6 @@ export default function ReadPage() {
     setIsEditing(false);
     setIsEditable(true);
     setHighlightedLines([]);
-    setSaveStatus("Unsaved");
   }, [bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleEditScroll = useCallback(() => {
@@ -697,13 +457,12 @@ export default function ReadPage() {
     setIsEditing(true);
     setIsEditable(true);
     setHighlightedLines([]);
-    setSaveStatus("Unsaved");
   }, [activeScroll?.title, activeScrollContent, activeScrollId, bumpAutosaveContext, issueEditorDocumentIdentity]);
 
   const handleEditScrollById = useCallback((id) => {
-    bumpAutosaveContext();
     const scroll = getScrollById(id);
     if (!scroll) return;
+    bumpAutosaveContext();
     setActiveScrollId(id);
     setEditorTitle(String(scroll.title || ""));
     setEditorContent(String(scroll.content || ""));
@@ -711,7 +470,6 @@ export default function ReadPage() {
     setIsEditing(true);
     setIsEditable(true);
     setHighlightedLines([]);
-    setSaveStatus("Unsaved");
   }, [getScrollById, bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleCancelEdit = useCallback(() => {
@@ -722,363 +480,150 @@ export default function ReadPage() {
       issueEditorDocumentIdentity(activeScrollId);
       setIsEditing(false);
       setIsEditable(false);
-      setSaveStatus("Saved");
+    } else {
+      setActiveScrollId(null);
+      setEditorTitle("");
+      setEditorContent("");
+      issueEditorDocumentIdentity("new");
+      setIsEditing(false);
+      setIsEditable(false);
     }
-  }, [activeScrollId, activeScroll?.title, activeScrollContent, bumpAutosaveContext, issueEditorDocumentIdentity]);
+  }, [activeScroll?.title, activeScrollContent, activeScrollId, bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
-  const handleEditorContentChange = useCallback((content) => {
-    setEditorContent(content);
+  const handleEditorContentChange = useCallback((newContent) => {
+    setEditorContent(newContent);
     ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
-    setSaveStatus("Unsaved");
   }, []);
 
-  const handleEditorTitleChange = useCallback((title) => {
-    setEditorTitle(String(title || ""));
-    if (isEditable) {
-      ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
-      setSaveStatus("Unsaved");
+  const handleEditorTitleChange = useCallback((newTitle) => {
+    setEditorTitle(newTitle);
+    ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
+  }, []);
+
+  const handleCloseTooltip = useCallback(() => {
+    handleWordActivate(null);
+  }, [handleWordActivate]);
+
+  const handleTooltipDrag = useCallback((pos) => {
+    handleWordActivate({ ...tooltipState, position: pos });
+  }, [handleWordActivate, tooltipState]);
+
+  const handleSuggestionClick = useCallback((suggestedWord) => {
+    if (!tooltipState.token) return;
+    const { word: original, charStart } = tooltipState.token;
+    const replacement = applyMatchCase(original, suggestedWord);
+    const newContent = editorContent.slice(0, charStart) + replacement + editorContent.slice(charStart + original.length);
+    handleEditorContentChange(newContent);
+    handleCloseTooltip();
+    addToast(`Transmuted "${original}" to "${replacement}"`, "success");
+  }, [editorContent, handleEditorContentChange, handleCloseTooltip, tooltipState.token, addToast]);
+
+  const handleSessionNavigate = useCallback((direction) => {
+    const nextIndex = sessionIndex + direction;
+    if (nextIndex >= 0 && nextIndex < sessionWords.length) {
+      const nextWord = sessionWords[nextIndex];
+      setSessionIndex(nextIndex);
+      setLookupOverride(null);
+      resetWordLookup();
+      lookup(nextWord);
     }
-  }, [isEditable]);
+  }, [sessionIndex, sessionWords, lookup, resetWordLookup]);
 
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
-        e.preventDefault();
-        setSidebarTab('SEARCH');
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        // Toggle sidebar visibility could go here, but for now let's switch tabs
-        setSidebarTab(prev => prev === 'FILES' ? 'TOOLS' : 'FILES');
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+  const lineCount = scrollLines.length;
+  const currentLineText = cursorPos.line > 0 ? scrollLines[cursorPos.line - 1] || "" : "";
+  const totalSyllables = useMemo(() => {
+    const counts = deepAnalysis?.lineSyllableCounts;
+    if (!Array.isArray(counts)) return 0;
+    return counts.reduce((sum, c) => sum + (Number(c) || 0), 0);
+  }, [deepAnalysis]);
+
+  const ritualPalette = getRitualPalette(selectedSchool);
+  const activeSchoolLabel = SCHOOLS[selectedSchool]?.name || "Universal";
+  const mobileVisionLabel = isTruesight ? "Truesight active" : "Ink view";
+  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
+
+  const [tooltipState, setTooltipState] = useState({
+    token: null,
+    position: { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN },
+    localAnalysis: null,
+    pinned: false,
+  });
+
+  const [sessionWords, setSessionWords] = useState([]);
+  const [sessionIndex, setSessionIndex] = useState(-1);
+  const [lookupOverride, setLookupOverride] = useState(null);
+
+  const tooltipCloseGuardRef = useRef({ expiresAt: 0, lineIndex: -1, charStart: -1 });
+
+  const resolveTooltipPosition = useCallback((anchorRect) => {
+    if (!anchorRect) return { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN };
+    const rawX = anchorRect.left + TOOLTIP_OFFSET_X;
+    const rawY = anchorRect.top + TOOLTIP_OFFSET_Y - TOOLTIP_HEIGHT;
+    return clampTooltipPosition({ x: rawX, y: rawY });
   }, []);
-
-  const resolveTooltipPosition = useCallback((activation) => {
-    const rect = activation?.anchorRect;
-    const x = rect?.right
-      ? rect.right + TOOLTIP_OFFSET_X
-      : (Number.isFinite(activation?.clientX) ? activation.clientX + TOOLTIP_OFFSET_X : TOOLTIP_MARGIN);
-    const y = rect?.top
-      ? rect.top + TOOLTIP_OFFSET_Y
-      : (Number.isFinite(activation?.clientY) ? activation.clientY + TOOLTIP_OFFSET_Y : TOOLTIP_MARGIN);
-    return clampTooltipPosition({ x, y });
-  }, []);
-
-  function getSchoolMetaFromVowelFamily(familyId) {
-    const schoolId = VOWEL_FAMILY_TO_SCHOOL[familyId] || null;
-    if (!schoolId) return { schoolName: "Unbound", schoolGlyph: "\u2736" };
-    return {
-      schoolName: SCHOOLS[schoolId]?.name || schoolId,
-      schoolGlyph: SCHOOL_GLYPHS[schoolId] || "\u2736",
-    };
-  }
 
   const buildTooltipAnalysis = useCallback((activation) => {
-    const normalizedWord = String(activation?.normalizedWord || "").toUpperCase();
-    const localWordAnalysis = analyzedWordsByCharStart.get(activation?.charStart) || analyzedWords.get(normalizedWord) || null;
-    const fallbackVowelFamily = normalizeVowelFamily(
-      activation?.vowelFamily || localWordAnalysis?.vowelFamily
-    );
-    const schoolMeta = getSchoolMetaFromVowelFamily(fallbackVowelFamily);
-
-    const allConnections = Array.isArray(deepAnalysis?.allConnections) ? deepAnalysis.allConnections : [];
-    const tokenLinks = allConnections
-      .filter((connection) => {
-        const matchesA = connection?.wordA?.lineIndex === activation?.lineIndex &&
-          connection?.wordA?.charStart === activation?.charStart;
-        const matchesB = connection?.wordB?.lineIndex === activation?.lineIndex &&
-          connection?.wordB?.charStart === activation?.charStart;
-        return matchesA || matchesB;
-      })
-      .map((connection) => {
-        const matchesA = connection?.wordA?.lineIndex === activation?.lineIndex &&
-          connection?.wordA?.charStart === activation?.charStart;
-        const opposite = matchesA ? connection?.wordB : connection?.wordA;
-        return {
-          type: connection?.type || "near",
-          score: Number(connection?.score) || 0,
-          groupLabel: connection?.groupLabel || null,
-          linkedWord: opposite?.word || "",
-          gate: ENABLE_SYNTAX_RHYME_LAYER ? (connection?.syntax?.gate || null) : null,
-          reasons: ENABLE_SYNTAX_RHYME_LAYER && Array.isArray(connection?.syntax?.reasons)
-            ? connection.syntax.reasons
-            : [],
-        };
-      });
-
-    const astrologyAnchors = Array.isArray(rhymeAstrology?.inspector?.anchors)
-      ? rhymeAstrology.inspector.anchors
-      : [];
-    const astrologyClusters = Array.isArray(rhymeAstrology?.inspector?.clusters)
-      ? rhymeAstrology.inspector.clusters
-      : [];
-    const anchorMatch = astrologyAnchors.find((anchor) => {
-      const matchesLine = Number(anchor?.lineIndex) === Number(activation?.lineIndex);
-      const matchesCharStart = Number(anchor?.charStart) === Number(activation?.charStart);
-      return matchesLine && matchesCharStart;
-    }) || astrologyAnchors.find((anchor) => {
-      const normalizedAnchor = String(anchor?.normalizedWord || "").toUpperCase();
-      return normalizedAnchor && normalizedAnchor === normalizedWord;
-    }) || null;
-    const anchorSign = String(anchorMatch?.sign || "").trim();
-    const anchorClusters = anchorSign
-      ? astrologyClusters.filter((cluster) => String(cluster?.sign || "").trim() === anchorSign).slice(0, 3)
-      : [];
-
-    const syntaxSummary = deepAnalysis?.syntaxSummary;
-    const syntaxIdentity = `${activation?.lineIndex}:${activation?.wordIndex}:${activation?.charStart}`;
-    const syntaxToken = ENABLE_SYNTAX_RHYME_LAYER
-      ? (
-        syntaxSummary?.tokenByIdentity?.get?.(syntaxIdentity) ||
-        syntaxSummary?.tokenByCharStart?.get?.(activation?.charStart) ||
-        null
-      )
-      : null;
-
+    const { word, analysis, charStart, lineIndex } = activation;
+    const core = analysis || {};
     return {
+      word,
+      charStart,
+      lineIndex,
       core: {
-        vowelFamily: fallbackVowelFamily || null,
-        schoolName: schoolMeta.schoolName,
-        schoolGlyph: schoolMeta.schoolGlyph,
-        skin: selectedSchool,
-        syllableCount: Number(localWordAnalysis?.syllableCount) || null,
-        rhymeKey: localWordAnalysis?.rhymeKey || null,
-        rhymeTailSignature: localWordAnalysis?.rhymeTailSignature || localWordAnalysis?.rhymeKey || null,
-        terminalVowelFamily: localWordAnalysis?.terminalVowelFamily || fallbackVowelFamily || null,
-      },
-      rhyme: {
-        links: tokenLinks,
-        gateReasons: Array.from(new Set(tokenLinks.flatMap((link) => link.reasons))).slice(0, 6),
-      },
-      rhymeAstrology: {
-        enabled: Boolean(rhymeAstrology?.enabled),
-        sign: anchorSign || null,
-        topMatches: Array.isArray(anchorMatch?.topMatches) ? anchorMatch.topMatches.slice(0, 5) : [],
-        clusters: anchorClusters,
-        diagnostics: anchorMatch?.diagnostics || null,
-        features: rhymeAstrology?.features || null,
-      },
-      syntax: syntaxToken
-        ? {
-          role: syntaxToken.role,
-          lineRole: syntaxToken.lineRole,
-          stressRole: syntaxToken.stressRole,
-          rhymePolicy: syntaxToken.rhymePolicy,
-          reasons: Array.isArray(syntaxToken.reasons) ? syntaxToken.reasons : [],
-        }
-        : null,
+        vowelFamily: core.vowelFamily || null,
+        terminalVowelFamily: core.terminalVowelFamily || null,
+        rhymeKey: core.rhymeKey || null,
+        rhymeTailSignature: core.rhymeTailSignature || null,
+        syllableCount: core.syllableCount || 0,
+        phonemes: core.phonemes || [],
+        stressPattern: core.stressPattern || "",
+      }
     };
-  }, [analyzedWords, analyzedWordsByCharStart, deepAnalysis, rhymeAstrology, selectedSchool]);
-
-  const resolveLexiconContext = useCallback((word) => {
-    const normalizedWord = normalizeComparableWord(word);
-    if (!normalizedWord) return null;
-
-    const localWordAnalysis = analyzedWords.get(normalizedWord) || null;
-    const schoolMeta = getSchoolMetaFromVowelFamily(localWordAnalysis?.vowelFamily || null);
-    const wordProfiles = Array.isArray(deepAnalysis?.wordAnalyses) ? deepAnalysis.wordAnalyses : [];
-    const matchingProfiles = wordProfiles.filter(
-      (profile) => normalizeComparableWord(profile?.normalizedWord || profile?.word) === normalizedWord
-    );
-
-    const allConnections = Array.isArray(deepAnalysis?.allConnections) ? deepAnalysis.allConnections : [];
-    const matchedLinks = allConnections.flatMap((connection) => {
-      const wordA = normalizeComparableWord(connection?.wordA?.normalizedWord || connection?.wordA?.word);
-      const wordB = normalizeComparableWord(connection?.wordB?.normalizedWord || connection?.wordB?.word);
-      if (wordA !== normalizedWord && wordB !== normalizedWord) return [];
-
-      const opposite = wordA === normalizedWord ? connection?.wordB : connection?.wordA;
-      return [{
-        word: String(opposite?.word || ""),
-        line: Number.isInteger(opposite?.lineIndex) ? opposite.lineIndex + 1 : null,
-        charStart: Number.isInteger(opposite?.charStart) ? opposite.charStart : null,
-        score: Number(connection?.score) || 0,
-        type: String(connection?.type || "near"),
-        groupLabel: String(connection?.groupLabel || ""),
-      }];
-    }).sort((a, b) => (b.score - a.score) || a.word.localeCompare(b.word));
-
-    const astrologyAnchors = Array.isArray(rhymeAstrology?.inspector?.anchors)
-      ? rhymeAstrology.inspector.anchors
-      : [];
-    const astrologyClusters = Array.isArray(rhymeAstrology?.inspector?.clusters)
-      ? rhymeAstrology.inspector.clusters
-      : [];
-    const anchorMatch = astrologyAnchors.find(
-      (anchor) => normalizeComparableWord(anchor?.normalizedWord || anchor?.word) === normalizedWord
-    ) || null;
-    const anchorSign = String(anchorMatch?.sign || "").trim();
-
-    if (!localWordAnalysis && matchingProfiles.length === 0 && matchedLinks.length === 0 && !anchorSign) {
-      return null;
-    }
-
-    return {
-      foundInScroll: matchingProfiles.length > 0,
-      totalOccurrences: matchingProfiles.length,
-      occurrences: matchingProfiles.slice(0, 8).map((profile) => ({
-        word: String(profile?.word || "").trim() || normalizedWord.toLowerCase(),
-        line: Number.isInteger(profile?.lineIndex) ? profile.lineIndex + 1 : null,
-        charStart: Number.isInteger(profile?.charStart) ? profile.charStart : null,
-      })),
-      core: {
-        vowelFamily: localWordAnalysis?.vowelFamily || null,
-        terminalVowelFamily: localWordAnalysis?.terminalVowelFamily || null,
-        rhymeKey: localWordAnalysis?.rhymeKey || null,
-        rhymeTailSignature: localWordAnalysis?.rhymeTailSignature || localWordAnalysis?.rhymeKey || null,
-        syllableCount: Number(localWordAnalysis?.syllableCount) || null,
-        schoolName: schoolMeta.schoolName,
-        schoolGlyph: schoolMeta.schoolGlyph,
-      },
-      resonanceLinks: matchedLinks.filter((link) => link.type !== "assonance").slice(0, 6),
-      assonanceLinks: matchedLinks.filter((link) => link.type === "assonance").slice(0, 6),
-      astrology: anchorSign ? {
-        sign: anchorSign,
-        topMatches: Array.isArray(anchorMatch?.topMatches) ? anchorMatch.topMatches.slice(0, 4) : [],
-        clusters: astrologyClusters
-          .filter((cluster) => String(cluster?.sign || "").trim() === anchorSign)
-          .slice(0, 3),
-      } : null,
-    };
-  }, [analyzedWords, deepAnalysis, rhymeAstrology]);
-
-  const handleCloseTooltip = useCallback((options = {}) => {
-    const shouldRestoreFocus = options?.restoreFocus !== false;
-    const token = tooltipState.token;
-    tooltipCloseGuardRef.current = {
-      expiresAt: Date.now() + 300,
-      lineIndex: Number.isInteger(token?.lineIndex) ? token.lineIndex : null,
-      charStart: Number.isInteger(token?.charStart) ? token.charStart : null,
-    };
-    setTooltipState((prev) => ({
-      ...prev,
-      visible: false,
-      pinned: false,
-      token: null,
-      localAnalysis: null,
-    }));
-    resetWordLookup();
-    if (shouldRestoreFocus && focusReturnRef.current && typeof focusReturnRef.current.focus === "function") {
-      focusReturnRef.current.focus();
-    }
-    focusReturnRef.current = null;
-  }, [resetWordLookup, tooltipState.token]);
-
-  const handleTooltipDrag = useCallback((position) => {
-    setTooltipState((prev) => ({
-      ...prev,
-      position: clampTooltipPosition(position),
-    }));
   }, []);
+
+  const { lookup, data: lookupData, isLoading: isLookupLoading, error: lookupError, reset: resetWordLookup } = useWordLookup();
 
   const handleWordActivate = useCallback((activation) => {
     if (!activation || !activation.normalizedWord) {
-      return;
-    }
-
-    // NEW REQUIREMENT: Wordtooltips and all phonemic activation logic only work during Truesight.
-    // This prevents hierarchy issues with annotations and keeps the grimoire surface clean during drafting.
-    if (!isTruesight) {
+      setTooltipState({ token: null, position: { x: 0, y: 0 }, localAnalysis: null, pinned: false });
       return;
     }
 
     const closeGuard = tooltipCloseGuardRef.current;
     if (Date.now() < closeGuard.expiresAt) {
-      const sameToken = closeGuard.lineIndex === activation.lineIndex &&
-        closeGuard.charStart === activation.charStart;
-      if (sameToken && activation.trigger !== "leave") {
-        return;
-      }
+      const sameToken = closeGuard.lineIndex === activation.lineIndex && closeGuard.charStart === activation.charStart;
+      if (sameToken) return;
     }
 
-    if (activation.trigger === "leave") {
-      setTooltipState((prev) => {
-        if (prev.pinned) return prev;
-        return {
-          ...prev,
-          visible: false,
-          token: null,
-          localAnalysis: null,
-        };
+    const pos = resolveTooltipPosition(activation.anchorRect);
+    const analysis = buildTooltipAnalysis(activation);
+
+    setTooltipState({
+      token: { 
+        word: activation.word, 
+        normalizedWord: activation.normalizedWord, 
+        charStart: activation.charStart, 
+        lineIndex: activation.lineIndex 
+      },
+      position: pos,
+      localAnalysis: analysis,
+      pinned: true,
+    });
+
+    if (activation.normalizedWord) {
+      setSessionWords((prev) => {
+        const next = [...prev, activation.normalizedWord].slice(-20);
+        setSessionIndex(next.length - 1);
+        return next;
       });
-      return;
+      setLookupOverride(null);
+      resetWordLookup();
+      lookup(activation.normalizedWord);
     }
-
-    const position = resolveTooltipPosition(activation);
-    const localAnalysis = buildTooltipAnalysis(activation);
-
-    if (activation.trigger === "hover") {
-      setTooltipState((prev) => {
-        if (prev.pinned) return prev;
-        return {
-          ...prev,
-          visible: true,
-          pinned: false,
-          token: activation,
-          position,
-          localAnalysis,
-        };
-      });
-      return;
-    }
-
-    if (activation.trigger === "pin") {
-      // Block reopening if already pinned for this specific word instance
-      if (tooltipState.pinned &&
-        tooltipState.token?.charStart === activation.charStart &&
-        tooltipState.token?.lineIndex === activation.lineIndex) {
-        return;
-      }
-
-      if (typeof document !== "undefined" && document.activeElement) {
-        focusReturnRef.current = document.activeElement;
-      }
-      
-      const normalized = activation.normalizedWord;
-      setOracleWord(normalized);
-      
-      setTooltipState((prev) => ({
-        ...prev,
-        visible: true,
-        pinned: true,
-        token: activation,
-        // Keep card's current position if already pinned — let it morph in place
-        position: (prev.pinned && prev.visible) ? prev.position : position,
-        localAnalysis,
-      }));
-
-      // Session history — navigate to existing entry or append new one
-      const existingIdx = sessionWords.findIndex(e => e.word === activation.normalizedWord);
-      if (existingIdx >= 0) {
-        setSessionIndex(existingIdx);
-      } else {
-        const newIdx = sessionWords.length;
-        setSessionWords(prev => [...prev, { word: activation.normalizedWord, localAnalysis }]);
-        setSessionIndex(newIdx);
-      }
-
-      // Cache check before live lookup
-      const cached = getCachedWord(activation.normalizedWord);
-      if (cached) {
-        setLookupOverride(cached);
-        resetWordLookup();
-      } else {
-        setLookupOverride(null);
-        resetWordLookup();
-        lookup(activation.normalizedWord);
-      }
-    }
-  }, [buildTooltipAnalysis, isTruesight, lookup, resetWordLookup, resolveTooltipPosition, sessionWords, tooltipState.pinned, tooltipState.token?.charStart, tooltipState.token?.lineIndex]);
-
-  // Note: tooltip state is now explicitly cleared/blocked when Truesight turns OFF
-  // to maintain hierarchy integrity and prevent annotation conflicts.
+  }, [buildTooltipAnalysis, lookup, resetWordLookup, resolveTooltipPosition]);
 
   const tooltipWordData = useMemo(() => {
     if (!tooltipState.token) return null;
-
     const baseWordData = {
       word: tooltipState.token.word,
       vowelFamily: tooltipState.localAnalysis?.core?.vowelFamily || null,
@@ -1087,12 +632,8 @@ export default function ReadPage() {
       rhymeTailSignature: tooltipState.localAnalysis?.core?.rhymeTailSignature || null,
       syllableCount: tooltipState.localAnalysis?.core?.syllableCount || undefined,
     };
-
     const effectiveLookupData = lookupOverride ?? lookupData;
-
-    // Prioritize Corpus/Lookup data as the authoritative source
-    if (effectiveLookupData && 
-        String(effectiveLookupData.word || "").toUpperCase() === String(tooltipState.token.normalizedWord || "").toUpperCase()) {
+    if (effectiveLookupData && String(effectiveLookupData.word || "").toUpperCase() === String(tooltipState.token.normalizedWord || "").toUpperCase()) {
       return {
         ...baseWordData,
         ...effectiveLookupData,
@@ -1104,449 +645,127 @@ export default function ReadPage() {
         syllableCount: effectiveLookupData.syllableCount || baseWordData.syllableCount,
       };
     }
-
     return baseWordData;
   }, [lookupData, lookupOverride, tooltipState]);
 
-  const totalSyllables = useMemo(() => {
-    const counts = deepAnalysis?.lineSyllableCounts;
-    if (!Array.isArray(counts)) return 0;
-    return counts.reduce((a, b) => a + (Number(b) || 0), 0);
+  const { predict, getCompletions, checkSpelling, getSpellingSuggestions, ready: predictorReady } = usePredictor();
+  const misspellings = useMemo(() => {
+    if (!isPredictive || !scoreData?.misspellings) return [];
+    return scoreData.misspellings;
+  }, [isPredictive, scoreData]);
+
+  const applySpellcheckCorrection = useCallback((original, correction) => {
+    const replacement = applyMatchCase(original, correction);
+    const escapedOriginal = escapeRegExp(original);
+    const regex = new RegExp(`\\b${escapedOriginal}\\b`, "g");
+    const newContent = editorContent.replace(regex, replacement);
+    handleEditorContentChange(newContent);
+    addToast(`Corrected "${original}" to "${replacement}"`, "success");
+  }, [editorContent, handleEditorContentChange, addToast]);
+
+  const activeVowelColors = useMemo(() => getVowelColorsForSchool(selectedSchool), [selectedSchool]);
+  const lexiconSeedWord = useMemo(() => oracleWord || "", [oracleWord]);
+  const resolveLexiconContext = useCallback((word) => {
+    setOracleWord(word);
+    setSidebarTab("SEARCH");
+  }, []);
+
+  const truesightDebugWords = useMemo(() => {
+    if (!deepAnalysis?.wordAnalyses) return [];
+    return deepAnalysis.wordAnalyses.map(w => ({
+      text: w.word,
+      phonemes: w.phonemes || [],
+      vowelFamily: w.vowelFamily
+    }));
   }, [deepAnalysis]);
 
-  // Save resolved lookup to day-cache
   useEffect(() => {
-    if (!lookupData || !tooltipState.pinned || !tooltipState.token?.normalizedWord) return;
-    const tokenWord = String(tooltipState.token.normalizedWord).toLowerCase();
-    const dataWord = String(lookupData.word || "").toLowerCase();
-    if (!dataWord || dataWord === tokenWord) {
-      setCachedWord(tooltipState.token.normalizedWord, lookupData);
-    }
-  }, [lookupData, tooltipState.pinned, tooltipState.token?.normalizedWord]);
-
-  // Handle clicking a suggestion rune inside the card
-  const handleSuggestionClick = useCallback((word) => {
-    const normalized = String(word || "").toLowerCase().trim();
-    if (!normalized) return;
-
-    setOracleWord(normalized);
-
-    // Reset live lookup state first
-    resetWordLookup();
-    setLookupOverride(null);
-
-    // Update token word (keep card pinned in place, clear local analysis)
-    setTooltipState(prev => ({
-      ...prev,
-      token: prev.token ? { ...prev.token, word: normalized, normalizedWord: normalized } : prev.token,
-      localAnalysis: null,
-    }));
-
-    // Cache hit or live fetch
-    const cached = getCachedWord(normalized);
-    if (cached) {
-      setLookupOverride(cached);
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => pruneOldCaches());
     } else {
-      lookup(normalized);
+      setTimeout(pruneOldCaches, 100);
     }
-  }, [lookup, resetWordLookup]);
+  }, []);
 
-  // Handle session footer navigation (◂ ▸)
-  const handleSessionNavigate = useCallback((index) => {
-    if (index < 0 || index >= sessionWords.length) return;
-    const entry = sessionWords[index];
-    setSessionIndex(index);
-    setOracleWord(entry.word);
-
-    setTooltipState(prev => ({
-      ...prev,
-      token: prev.token
-        ? { ...prev.token, word: entry.word, normalizedWord: entry.word }
-        : prev.token,
-      localAnalysis: entry.localAnalysis,
-    }));
-
-    resetWordLookup();
-    setLookupOverride(null);
-
-    const cached = getCachedWord(entry.word);
-    if (cached) {
-      setLookupOverride(cached);
-    } else {
-      lookup(entry.word);
-    }
-  }, [sessionWords, lookup, resetWordLookup]);
-
-  const lexiconSeedWord = oracleWord;
-
-  const { predict, getCompletions, checkSpelling, getSpellingSuggestions, isReady: predictorReady } = usePredictor();
-  const [misspellings, setMisspellings] = useState([]);
-  const applySpellcheckCorrection = useCallback((misspelledWord, suggestion) => {
-    const sourceWord = String(misspelledWord || "").trim();
-    const replacement = String(suggestion || "").trim();
-    if (!sourceWord || !replacement || !editorContent) return;
-
-    const wordPattern = new RegExp(`\\b${escapeRegExp(sourceWord)}\\b`, "gi");
-    const newContent = editorContent.replace(
-      wordPattern,
-      (matchedWord) => applyMatchCase(matchedWord, replacement)
-    );
-    if (newContent === editorContent) return;
-    editorRef.current?.replaceContent?.(newContent);
-  }, [editorContent]);
-
-  // Document-wide spellcheck (debounced via editorContent)
-  useEffect(() => {
-    if (!isEditable || !isPredictive || !predictorReady || !editorContent) {
-      setMisspellings([]);
-      return;
-    }
-
-    let cancelled = false;
-
-    const runSpellcheck = async () => {
-      const allWords = editorContent.match(/[a-zA-Z']+/g) || [];
-      const uniqueWords = [...new Set(allWords.map((word) => String(word || '').toLowerCase()))];
-      const candidateWords = uniqueWords.filter((word) => word.length > 2);
-      const prevContextByWord = new Map();
-
-      for (let i = 0; i < allWords.length; i++) {
-        const normalizedWord = String(allWords[i] || '').toLowerCase();
-        if (!normalizedWord || prevContextByWord.has(normalizedWord)) continue;
-        const previous = i > 0 ? String(allWords[i - 1] || '').toLowerCase() : null;
-        prevContextByWord.set(normalizedWord, previous || null);
-      }
-
-      const checked = await Promise.all(candidateWords.map(async (word) => {
-        const isValid = await checkSpelling(word);
-        if (isValid) return null;
-
-        const prevWord = prevContextByWord.get(word) || null;
-        const suggestions = await getSpellingSuggestions(word, prevWord, 5);
-
-        return {
-          word,
-          suggestions: Array.isArray(suggestions) ? suggestions : [],
-        };
-      }));
-
-      if (cancelled) return;
-      setMisspellings(checked.filter(Boolean));
-    };
-
-    void runSpellcheck();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [editorContent, isEditable, isPredictive, predictorReady, checkSpelling, getSpellingSuggestions]);
-
-  /* ── TrueSight debug color panel — derives school from vowelFamily ── */
-  const truesightDebugWords = useMemo(() => {
-    if (!isTruesight) return [];
-    const result = [];
-    for (const profile of committedAnalysis.analyzedWords.values()) {
-      const school = profile.vowelFamily
-        ? (VOWEL_FAMILY_TO_SCHOOL[profile.vowelFamily] ?? 'UNCLASSIFIED')
-        : 'UNCLASSIFIED';
-      result.push({ text: profile.word, school });
-    }
-    return result;
-  }, [isTruesight, committedAnalysis.analyzedWords]);
-
-  /* ── Shared content blocks used in both mobile and desktop ── */
   const isAstrologyMode = analysisMode === ANALYSIS_MODES.ASTROLOGY;
   const isAnalyzeMode = isTruesight && analysisMode === ANALYSIS_MODES.ANALYZE;
   const isAnalysisPanelVisible = isAnalyzeMode || isAstrologyMode;
-  const analysisPanelTitle = isAstrologyMode ? "Rhyme Astrology" : "Analyze";
-  const analysisPanelCloseLabel = isAstrologyMode ? "Close Rhyme Astrology" : "Close Analysis";
+  const analysisPanelTitle = isAstrologyMode ? "Rhyme Astrology" : "Phonetic Analysis";
+  const analysisPanelCloseLabel = isAstrologyMode ? "Close Astrology" : "Close Analysis";
 
-  const editorBlock = (
-    <div className="codex-workspace">
-      <div className="document-container">
-        {activeScrollId || isEditable ? (
-          <ScrollEditor
-            key={editorDocumentIdentity}
-            ref={editorRef}
-            documentIdentity={editorDocumentIdentity}
-            title={editorInitialTitle}
-            content={editorInitialContent}
-            onSave={handleSaveScroll}
-            onCancel={isEditing ? handleCancelEdit : undefined}
-            isEditable={isEditable}
-            disabled={false}
-            isTruesight={isTruesight}
-            isPredictive={isPredictive}
-            predict={predict}
-            getCompletions={getCompletions}
-            checkSpelling={checkSpelling}
-            getSpellingSuggestions={getSpellingSuggestions}
-            predictorReady={predictorReady}
-            plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
-            onContentChange={handleEditorContentChange}
-            onTitleChange={handleEditorTitleChange}
-            analyzedWords={committedAnalysis.analyzedWords}
-            analyzedWordsByIdentity={committedAnalysis.analyzedWordsByIdentity}
-            analyzedWordsByCharStart={committedAnalysis.analyzedWordsByCharStart}
-            activeConnections={overlayConnections}
-            lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
-            highlightedLines={effectiveHighlightedLines}
-            pinnedLines={pinnedLines}
-            vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
-            vowelColorResolver={isTruesight ? adaptiveColorResolver : null}
-            syntaxLayer={deepAnalysis?.syntaxSummary}
-            analysisMode={analysisMode}
-            theme={theme}
-            onWordActivate={handleWordActivate}
-            onCursorChange={setCursorPos}
-            mirrored={mirrored}
-          />
-        ) : (
-          <div className="scroll-placeholder">
-            <button type="button" className="btn btn-primary" onClick={handleNewScroll}>
-              Begin New Scroll
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  const mobileTabs = useMemo(() => [
+    { id: "EDITOR", label: "Editor", hint: "Ink & Vision" },
+    { id: "FILES",  label: "Scrolls", hint: "Archive" },
+    { id: "SEARCH", label: "Oracle", hint: "Lexicon" },
+    { id: "TOOLS",  label: "Hex",    hint: "Controls" },
+    { id: "STATS",  label: "Power",  hint: "Metrics" },
+  ], []);
 
-  const filesBlock = (
-    <ScrollList
-      scrolls={scrolls}
-      activeScrollId={activeScrollId}
-      onSelect={(id) => { handleSelectScroll(id); if (isMobileViewport) setMobileActiveTab("EDITOR"); }}
-      onDelete={deleteScroll}
-      onNewScroll={() => { handleNewScroll(); if (isMobileViewport) setMobileActiveTab("EDITOR"); }}
-      onEdit={(id) => { handleEditScrollById(id); if (isMobileViewport) setMobileActiveTab("EDITOR"); }}
-    />
-  );
+  const currentMobileTab = useMemo(() => {
+    const base = mobileTabs.find(t => t.id === mobileActiveTab) || mobileTabs[0];
+    const descriptions = {
+      EDITOR: "The primary manifestation surface for thy verses.",
+      FILES:  "Survey the records of thy past rituals.",
+      SEARCH: "Query the Abyss for linguistic echoes and resonance.",
+      TOOLS:  "Tweak the laws of sight and predictive anticipation.",
+      STATS:  "Observe the numerical weight of thy current casting.",
+    };
+    const eyebrows = { EDITOR: "Drafting", FILES: "Archive", SEARCH: "Oracle", TOOLS: "Alchemical", STATS: "Judiciary" };
+    return { 
+      ...base, 
+      description: descriptions[mobileActiveTab], 
+      eyebrow: eyebrows[mobileActiveTab],
+      badge: mobileActiveTab === "STATS" && scoreData ? `${scoreData.totalScore} Power` : ""
+    };
+  }, [mobileActiveTab, scoreData, mobileTabs]);
 
-  const searchBlock = (
-    <SearchPanel
-      seedWord={lexiconSeedWord}
-      selectedSchool={selectedSchool}
-      contextLookup={resolveLexiconContext}
-      onJumpToLine={(line) => {
-        editorRef.current?.jumpToLine?.(line);
-        if (isMobileViewport) setMobileActiveTab("EDITOR");
-      }}
-      variant="sidebar"
-    />
-  );
+  const MobileTabIcon = ({ tabId }) => {
+    if (tabId === "FILES") return <FolderIcon />;
+    if (tabId === "SEARCH") return <SearchIcon />;
+    if (tabId === "TOOLS") return <ToolsIcon />;
+    if (tabId === "STATS") return <SettingsIcon />;
+    return <span className="material-symbols-outlined">edit_note</span>;
+  };
 
   const toolsBlock = (
-    <div className="sidebar-tools">
-      <ToolsSidebar
-        editorRef={editorRef}
-        isEditable={isEditable}
-        isTruesight={isTruesight}
-        onToggleTruesight={handleToggleTruesight}
-        isPredictive={isPredictive}
-        onTogglePredictive={() => setIsPredictive(prev => !prev)}
-        mirrored={mirrored}
-        onToggleMirrored={handleToggleMirrored}
-        analysisMode={analysisMode}
-        onModeChange={handleModeChange}
-        isAnalyzing={isAnalyzing}
-        showScorePanel={showScorePanel}
-        onToggleScorePanel={() => setShowScorePanel(!showScorePanel)}
-        selectedSchool={selectedSchool}
-        onSchoolChange={setSelectedSchool}
-        schoolList={schoolList}
-      />
-      {analysisMode === ANALYSIS_MODES.RHYME && (
-        <div className="sidebar-sub-panel">
-          <RhymeDiagramPanel
-            connections={overlayConnections}
-            lineCount={lineCount}
-            visible={true}
-            onPairSelect={(lines) => {
-              setPinnedLines(lines);
-              if (!lines) setHighlightedLines([]);
-              if (lines) editorRef.current?.scrollToTopSmooth?.();
-            }}
-            onConnectionClick={() => {
-              editorRef.current?.scrollToTopSmooth?.();
-            }}
-            highlightedLines={effectiveHighlightedLines}
-          />
-        </div>
-      )}
-      {isAstrologyMode && (
-        <div className="sidebar-sub-panel">
-          <AnalysisPanel
-            scheme={schemeDetection}
-            meter={meterDetection}
-            statistics={deepAnalysis?.statistics}
-            literaryDevices={literaryDevices}
-            emotion={emotion}
-            genreProfile={genreProfile}
-            hhmSummary={deepAnalysis?.syntaxSummary?.hhm}
-            scoreData={scoreData}
-            rhymeAstrology={rhymeAstrology}
-            narrativeAMP={narrativeAMP}
-            oracle={oracle}
-            onGroupHover={highlightRhymeGroup}
-            onGroupLeave={clearHighlight}
-            infoBeamEnabled={infoBeamEnabled}
-            onInfoBeamToggle={() => setInfoBeamEnabled((prev) => !prev)}
-            onGroupClick={handleInfoBeamClick}
-            activeInfoBeamFamily={infoBeamFamily}
-            surfaceMode="astrology"
-            currentLineText={currentLineText}
-          />
-        </div>
-      )}
-      {isTruesight && (
-        <div className="sidebar-sub-panel">
-          <VowelFamilyPanel
-            visible={true}
-            families={vowelSummary?.families ?? []}
-            totalWords={vowelSummary?.totalWords ?? 0}
-            uniqueWords={vowelSummary?.uniqueWords ?? 0}
-            isEmbedded={true}
-          />
-        </div>
-      )}
-      {isTruesight && (
-        <div className="sidebar-sub-panel">
-          <TruesightDebugColorPanel
-            analyzedWords={truesightDebugWords}
-            activeSchool={selectedSchool}
-          />
-        </div>
-      )}
-    </div>
+    <ToolsSidebar 
+      editorRef={editorRef}
+      isEditable={isEditable}
+      isTruesight={isTruesight}
+      onToggleTruesight={handleToggleTruesight}
+      isPredictive={isPredictive}
+      onTogglePredictive={handleTogglePredictive}
+      mirrored={mirrored}
+      onToggleMirrored={handleToggleMirrored}
+      analysisMode={analysisMode}
+      onModeChange={handleModeChange}
+      isAnalyzing={isAnalyzing}
+      showScorePanel={showScorePanel}
+      onToggleScorePanel={() => setShowScorePanel(!showScorePanel)}
+      selectedSchool={selectedSchool}
+      onSchoolChange={setSelectedSchool}
+      schoolList={getSchoolsByUnlock(progression)}
+    />
   );
 
-  const scoreBlock = scoreData ? (
+  const scoreBlock = (
     <HeuristicScorePanel
       scoreData={scoreData}
       genreProfile={genreProfile}
       visible={true}
       isEmbedded={true}
     />
-  ) : (
-    <div style={{ padding: "var(--space-6)", textAlign: "center", color: "var(--read-text-muted)", fontFamily: "var(--font-mono)", fontSize: "var(--text-xs)" }}>
-      Write or select a scroll to see metrics
-    </div>
   );
 
-  const ritualPalette = useMemo(
-    () => getRitualPalette(selectedSchool, theme),
-    [selectedSchool, theme]
-  );
+  const editorRef = useRef(null);
+  const schoolList = getSchoolsByUnlock(progression);
 
-  const activeSchoolLabel = useMemo(
-    () => schoolList.find((school) => school.id === selectedSchool)?.name || "Truesight",
-    [schoolList, selectedSchool]
-  );
-
-  const mobileVisionLabel = isAstrologyMode
-    ? "Astrology"
-    : isAnalyzeMode
-      ? "Analyze"
-      : isTruesight
-        ? "Truesight"
-        : "Draft";
-
-  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "New Scroll" : "Scholomance IDE");
-  const mobileTabs = [
-    {
-      id: "EDITOR",
-      label: "Editor",
-      hint: isEditable ? "Write" : "Read",
-      eyebrow: "Writing chamber",
-      description: "Compose and revise within the grimoire surface without leaving the live ritual.",
-      badge: isEditable ? "Live edit" : "Read only",
-    },
-    {
-      id: "FILES",
-      label: "Files",
-      hint: "Library",
-      eyebrow: "Archive stacks",
-      description: "Open drafts, revisit scrolls, or begin a new working from the library ledger.",
-      badge: `${scrolls.length} scrolls`,
-    },
-    {
-      id: "SEARCH",
-      label: "Oracle",
-      hint: "Query",
-      eyebrow: "Archive terminal",
-      description: "Summon definitions, rhyme fields, shadow echoes, and live scroll resonance from one terminal surface.",
-      badge: "Lexicon live",
-    },
-    {
-      id: "TOOLS",
-      label: "Tools",
-      hint: "Tune",
-      eyebrow: "School controls",
-      description: "Adjust Truesight, predictive guidance, and school attunement from one control rail.",
-      badge: activeSchoolLabel,
-    },
-    {
-      id: "SCORE",
-      label: "Score",
-      hint: "Metrics",
-      eyebrow: "Combat trace",
-      description: scoreData
-        ? "Inspect total power and the heuristic trail behind every point of damage."
-        : "Metrics appear here as soon as the scroll has enough language to score.",
-      badge: scoreData ? `${scoreData.traces?.length ?? 0} traces` : "Awaiting data",
-    },
-  ];
-
-  const currentMobileTab = mobileTabs.find((tab) => tab.id === mobileActiveTab) || mobileTabs[0];
-
-  const MobileTabIcon = ({ tabId }) => {
-    switch (tabId) {
-      case "EDITOR":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-          </svg>
-        );
-      case "FILES":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
-          </svg>
-        );
-      case "SEARCH":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        );
-      case "TOOLS":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-          </svg>
-        );
-      case "SCORE":
-        return (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M18 20V10" />
-            <path d="M12 20V4" />
-            <path d="M6 20v-6" />
-          </svg>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const activeMobilePanel =
-    mobileActiveTab === "EDITOR" ? editorBlock :
-    mobileActiveTab === "FILES" ? <div className="ide-mobile-panel">{filesBlock}</div> :
-    mobileActiveTab === "SEARCH" ? <div className="ide-mobile-panel">{searchBlock}</div> :
+  const activeMobilePanel = mobileActiveTab === "EDITOR" ? null :
+    mobileActiveTab === "FILES" ? <ScrollList scrolls={scrolls} activeScrollId={activeScrollId} onSelect={(id) => { handleSelectScroll(id); setMobileActiveTab("EDITOR"); }} onNewScroll={handleNewScroll} /> :
+    mobileActiveTab === "SEARCH" ? <SearchPanel seedWord={lexiconSeedWord} selectedSchool={selectedSchool} contextLookup={resolveLexiconContext} onJumpToLine={(line) => { editorRef.current?.jumpToLine?.(line); setMobileActiveTab("EDITOR"); }} /> :
     mobileActiveTab === "TOOLS" ? <div className="ide-mobile-panel">{toolsBlock}</div> :
     <div className="ide-mobile-panel">{scoreBlock}</div>;
+
 
   /* ── MOBILE RENDER ── */
   if (isMobileViewport) {
@@ -1630,6 +849,44 @@ export default function ReadPage() {
               <span className="ide-mobile-stage-badge">{currentMobileTab.badge}</span>
             </header>
             <div className={`ide-mobile-stage-body${mobileActiveTab === "EDITOR" ? " ide-mobile-stage-body--editor" : ""}`}>
+              {mobileActiveTab === "EDITOR" && (
+                <ScrollEditor
+                  key={editorDocumentIdentity}
+                  ref={editorRef}
+                  documentIdentity={editorDocumentIdentity}
+                  title={editorInitialTitle}
+                  content={editorInitialContent}
+                  onSave={handleSaveScroll}
+                  onCancel={isEditing ? handleCancelEdit : undefined}
+                  isEditable={isEditable}
+                  disabled={false}
+                  isTruesight={isTruesight}
+                  isPredictive={isPredictive}
+                  predict={predict}
+                  getCompletions={getCompletions}
+                  checkSpelling={checkSpelling}
+                  getSpellingSuggestions={getSpellingSuggestions}
+                  predictorReady={predictorReady}
+                  plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                  onContentChange={handleEditorContentChange}
+                  onTitleChange={handleEditorTitleChange}
+                  analyzedWords={committedAnalysis.analyzedWords}
+                  analyzedWordsByIdentity={committedAnalysis.analyzedWordsByIdentity}
+                  analyzedWordsByCharStart={committedAnalysis.analyzedWordsByCharStart}
+                  activeConnections={overlayConnections}
+                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
+                  highlightedLines={effectiveHighlightedLines}
+                  pinnedLines={pinnedLines}
+                  vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
+                  vowelColorResolver={isTruesight ? adaptiveColorResolver : null}
+                  syntaxLayer={deepAnalysis?.syntaxSummary}
+                  analysisMode={analysisMode}
+                  theme={theme}
+                  onWordActivate={handleWordActivate}
+                  onCursorChange={setCursorPos}
+                  mirrored={mirrored}
+                />
+              )}
               {activeMobilePanel}
             </div>
           </section>
@@ -1727,29 +984,27 @@ export default function ReadPage() {
             defaultSize={isNarrowViewport ? 10 : 4}
             minSize={isNarrowViewport ? 8 : 4}
             maxSize={isNarrowViewport ? 15 : 6}
-            className="ide-activity-bar icon-bar-anchor"
+            className="activity-icons-col"
           >
-            <div className="activity-icons-col">
-              <div className="activity-bar-content">
-                {['FILES', 'SEARCH', 'TOOLS'].map((tab) => {
-                  const Icon = tab === 'FILES' ? FolderIcon : tab === 'SEARCH' ? SearchIcon : ToolsIcon;
-                  return (
-                    <button
-                      key={tab}
-                      className={`activity-item icon-only ${sidebarTab === tab ? 'active' : ''}`}
-                      onClick={() => setSidebarTab(tab)}
-                      title={tab}
-                    >
-                      <Icon size={28} />
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="activity-bar-footer">
-                <button className="activity-item icon-only" title="Settings">
-                  <SettingsIcon size={24} />
-                </button>
-              </div>
+            <div className="activity-bar-content">
+              {['FILES', 'SEARCH', 'TOOLS'].map((tab) => {
+                const Icon = tab === 'FILES' ? FolderIcon : tab === 'SEARCH' ? SearchIcon : ToolsIcon;
+                return (
+                  <button
+                    key={tab}
+                    className={`activity-item icon-only ${sidebarTab === tab ? 'active' : ''}`}
+                    onClick={() => setSidebarTab(tab)}
+                    title={tab}
+                  >
+                    <Icon size={28} />
+                  </button>
+                );
+              })}
+            </div>
+            <div className="activity-bar-footer">
+              <button className="activity-item icon-only" title="Settings">
+                <SettingsIcon size={24} />
+              </button>
             </div>
           </Panel>
 
@@ -1873,8 +1128,8 @@ export default function ReadPage() {
                     key={editorDocumentIdentity}
                     ref={editorRef}
                     documentIdentity={editorDocumentIdentity}
-                    initialTitle={editorInitialTitle}
-                    initialContent={editorInitialContent}
+                    title={editorInitialTitle}
+                    content={editorInitialContent}
                     onSave={handleSaveScroll}
                     onCancel={isEditing ? handleCancelEdit : undefined}
                     isEditable={isEditable}
@@ -1899,7 +1154,6 @@ export default function ReadPage() {
                     vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
                     vowelColorResolver={isTruesight ? adaptiveColorResolver : null}
                     syntaxLayer={deepAnalysis?.syntaxSummary}
-
                     analysisMode={analysisMode}
                     theme={theme}
                     onWordActivate={handleWordActivate}
