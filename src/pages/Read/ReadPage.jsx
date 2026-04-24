@@ -1269,8 +1269,8 @@ export default function ReadPage() {
             key={editorDocumentIdentity}
             ref={editorRef}
             documentIdentity={editorDocumentIdentity}
-            initialTitle={editorInitialTitle}
-            initialContent={editorInitialContent}
+            title={editorInitialTitle}
+            content={editorInitialContent}
             onSave={handleSaveScroll}
             onCancel={isEditing ? handleCancelEdit : undefined}
             isEditable={isEditable}
@@ -1560,6 +1560,7 @@ export default function ReadPage() {
           isEditable={isEditable}
           activeScrollId={activeScrollId}
           onEdit={handleEditScroll}
+          onNewScroll={handleNewScroll}
           progression={progression}
           auroraLevel={auroraLevel}
           onCycleAuroraLevel={cycleAuroraLevel}
@@ -1710,6 +1711,7 @@ export default function ReadPage() {
         isEditable={isEditable}
         activeScrollId={activeScrollId}
         onEdit={handleEditScroll}
+        onNewScroll={handleNewScroll}
         progression={progression}
         auroraLevel={auroraLevel}
         onCycleAuroraLevel={cycleAuroraLevel}

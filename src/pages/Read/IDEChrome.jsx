@@ -35,6 +35,15 @@ function EditIcon() {
   );
 }
 
+function NewIcon() {
+  return (
+    <Svg>
+      <line x1="7.5" y1="2" x2="7.5" y2="13" />
+      <line x1="2" y1="7.5" x2="13" y2="7.5" />
+    </Svg>
+  );
+}
+
 function MapIcon() {
   return (
     <Svg>
@@ -84,6 +93,7 @@ export function TopBar({
   isEditable,
   activeScrollId,
   onEdit,
+  onNewScroll,
   progression,
   auroraLevel = 2,
   onCycleAuroraLevel,
@@ -115,9 +125,14 @@ export function TopBar({
       </div>
 
       <div className="ide-topbar-right">
-        {!isEditable && activeScrollId && (
+        {!isEditable && onEdit && (
           <button className="ide-icon-btn" title="Edit Scroll" onClick={onEdit} aria-label="Edit Scroll">
             <EditIcon />
+          </button>
+        )}
+        {!isEditable && onNewScroll && (
+          <button className="ide-icon-btn" title="New Scroll" onClick={onNewScroll} aria-label="New Scroll">
+            <NewIcon />
           </button>
         )}
         {showMinimapControl && (
