@@ -1,0 +1,676 @@
+/**
+ * AgentRegisterWizard — Grimoire aesthetic, collab palette
+ */
+
+/* ─── Backdrop & Modal ──────────────────────────────────────────────────── */
+
+.arw-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 16px;
+}
+
+.arw-modal {
+    background: var(--color-collab-surface, #12121e);
+    border: var(--border-collab-gold, 1px solid rgba(197, 160, 89, 0.3));
+    border-radius: 8px;
+    width: 560px;
+    max-width: 96vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(197, 160, 89, 0.08),
+        inset 0 1px 0 rgba(197, 160, 89, 0.06);
+    overflow: hidden;
+}
+
+/* ─── Header ────────────────────────────────────────────────────────────── */
+
+.arw-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(100, 100, 160, 0.2);
+    flex-shrink: 0;
+}
+
+.arw-header__title {
+    font-family: var(--font-collab-display, 'Cinzel', serif);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-collab-gold, #c5a059);
+    letter-spacing: 0.08em;
+    margin: 0;
+}
+
+.arw-header__close {
+    background: transparent;
+    border: none;
+    color: var(--color-collab-text-dim, #606080);
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px 6px;
+    transition: color 0.15s ease;
+}
+
+.arw-header__close:hover {
+    color: var(--color-collab-text, #e0e0ff);
+}
+
+/* ─── Progress ──────────────────────────────────────────────────────────── */
+
+.arw-progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 10px 20px;
+    border-bottom: 1px solid rgba(100, 100, 160, 0.12);
+    flex-shrink: 0;
+}
+
+.arw-progress__step {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    position: relative;
+    opacity: 0.4;
+    transition: opacity 0.2s ease;
+}
+
+.arw-progress__step:first-child {
+    padding-left: 0;
+}
+
+.arw-progress__step::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 12px;
+    background: rgba(100, 100, 160, 0.25);
+}
+
+.arw-progress__step:last-child::after {
+    display: none;
+}
+
+.arw-progress__step--active,
+.arw-progress__step--done {
+    opacity: 1;
+}
+
+.arw-progress__glyph {
+    font-size: 10px;
+    color: var(--color-collab-gold, #c5a059);
+}
+
+.arw-progress__step--active .arw-progress__glyph {
+    color: var(--color-collab-gold, #c5a059);
+    filter: drop-shadow(0 0 4px rgba(197, 160, 89, 0.6));
+}
+
+.arw-progress__step--done .arw-progress__glyph {
+    color: var(--color-collab-success, #40ff80);
+}
+
+.arw-progress__label {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-collab-text-muted, #9090b0);
+}
+
+.arw-progress__step--active .arw-progress__label {
+    color: var(--color-collab-gold, #c5a059);
+}
+
+.arw-progress__step--done .arw-progress__label {
+    color: var(--color-collab-success, #40ff80);
+}
+
+/* ─── Body ──────────────────────────────────────────────────────────────── */
+
+.arw-body {
+    padding: 24px 20px 8px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+}
+
+.arw-step__hint {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 12px;
+    color: var(--color-collab-text-muted, #9090b0);
+    margin: 0 0 20px;
+    font-style: italic;
+}
+
+/* ─── Step 1: Role Cards ────────────────────────────────────────────────── */
+
+.arw-role-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.arw-role-card {
+    background: var(--color-collab-surface-elevated, #1a1a2e);
+    border: 1px solid rgba(100, 100, 160, 0.2);
+    border-radius: 6px;
+    padding: 16px 18px;
+    text-align: left;
+    cursor: pointer;
+    display: grid;
+    grid-template-columns: 28px 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: 12px;
+    row-gap: 2px;
+    transition: border-color 0.2s ease, background 0.2s ease;
+    width: 100%;
+}
+
+.arw-role-card:hover {
+    border-color: rgba(197, 160, 89, 0.4);
+    background: rgba(197, 160, 89, 0.04);
+}
+
+.arw-role-card__glyph {
+    grid-row: 1 / 4;
+    font-size: 22px;
+    color: var(--color-collab-gold, #c5a059);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+}
+
+.arw-role-card__label {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-collab-text, #e0e0ff);
+    letter-spacing: 0.02em;
+    align-self: end;
+}
+
+.arw-role-card__desc {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 11px;
+    color: var(--color-collab-text-muted, #9090b0);
+}
+
+.arw-role-card__flavor {
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+    font-size: 10px;
+    color: var(--color-collab-text-dim, #606080);
+    font-style: italic;
+    letter-spacing: 0.01em;
+}
+
+/* ─── Step 2: Identity ──────────────────────────────────────────────────── */
+
+.arw-step--identity {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.arw-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.arw-field__label {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-collab-text-muted, #9090b0);
+}
+
+.arw-field__optional {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--color-collab-text-dim, #606080);
+}
+
+.arw-field__input {
+    background: var(--color-collab-void, #06060c);
+    border: 1px solid rgba(100, 100, 160, 0.25);
+    border-radius: 4px;
+    padding: 10px 12px;
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 13px;
+    color: var(--color-collab-text, #e0e0ff);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.arw-field__input--mono {
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+}
+
+.arw-field__input:focus {
+    outline: none;
+    border-color: var(--color-collab-gold, #c5a059);
+    box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.12);
+}
+
+.arw-field__input::placeholder {
+    color: var(--color-collab-text-dim, #606080);
+}
+
+.arw-field__help {
+    font-size: 10px;
+    color: var(--color-collab-text-dim, #606080);
+    font-style: italic;
+}
+
+/* ─── Step 3: Capabilities ──────────────────────────────────────────────── */
+
+.arw-step--caps {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.arw-caps-box {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    background: var(--color-collab-void, #06060c);
+    border: 1px solid rgba(100, 100, 160, 0.25);
+    border-radius: 4px;
+    padding: 8px 10px;
+    min-height: 44px;
+    cursor: text;
+    transition: border-color 0.15s ease;
+}
+
+.arw-caps-box:focus-within {
+    border-color: var(--color-collab-gold, #c5a059);
+    box-shadow: 0 0 0 2px rgba(197, 160, 89, 0.12);
+}
+
+.arw-cap-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(197, 160, 89, 0.1);
+    border: 1px solid rgba(197, 160, 89, 0.25);
+    border-radius: 3px;
+    padding: 2px 7px;
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+    font-size: 11px;
+    color: var(--color-collab-gold, #c5a059);
+    white-space: nowrap;
+}
+
+.arw-cap-chip--sm {
+    font-size: 10px;
+    padding: 1px 5px;
+}
+
+.arw-cap-chip__remove {
+    background: transparent;
+    border: none;
+    color: var(--color-collab-text-dim, #606080);
+    cursor: pointer;
+    padding: 0;
+    font-size: 13px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    transition: color 0.15s ease;
+}
+
+.arw-cap-chip__remove:hover {
+    color: var(--color-collab-error, #ff4060);
+}
+
+.arw-caps-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+    font-size: 12px;
+    color: var(--color-collab-text, #e0e0ff);
+    flex: 1;
+    min-width: 100px;
+    padding: 2px 0;
+}
+
+.arw-caps-input::placeholder {
+    color: var(--color-collab-text-dim, #606080);
+}
+
+/* ─── Step 4: Confirm ───────────────────────────────────────────────────── */
+
+.arw-step--confirm {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.arw-summary {
+    background: var(--color-collab-surface-elevated, #1a1a2e);
+    border: var(--border-collab-gold, 1px solid rgba(197, 160, 89, 0.3));
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.arw-summary__row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(100, 100, 160, 0.12);
+}
+
+.arw-summary__row:last-child {
+    border-bottom: none;
+}
+
+.arw-summary__key {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-collab-text-dim, #606080);
+    min-width: 90px;
+    padding-top: 1px;
+    flex-shrink: 0;
+}
+
+.arw-summary__val {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 13px;
+    color: var(--color-collab-text, #e0e0ff);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 5px;
+}
+
+.arw-summary__val--mono {
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+    font-size: 12px;
+    color: var(--color-collab-info, #60c0ff);
+}
+
+.arw-summary__glyph {
+    color: var(--color-collab-gold, #c5a059);
+    margin-right: 4px;
+}
+
+.arw-summary__none {
+    color: var(--color-collab-text-dim, #606080);
+    font-style: italic;
+    font-size: 12px;
+}
+
+/* ─── Step 5: Summoning ─────────────────────────────────────────────────── */
+
+.arw-step--summoning {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 20px;
+}
+
+.arw-summon-shimmer {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(
+        135deg,
+        rgba(197, 160, 89, 0.05) 0%,
+        rgba(197, 160, 89, 0.25) 50%,
+        rgba(197, 160, 89, 0.05) 100%
+    );
+    background-size: 200% 200%;
+    animation: arw-shimmer-pulse 1.4s ease-in-out infinite;
+    border: 1px solid rgba(197, 160, 89, 0.2);
+}
+
+@keyframes arw-shimmer-pulse {
+    0%, 100% {
+        background-position: 0% 50%;
+        box-shadow: 0 0 12px rgba(197, 160, 89, 0.1);
+    }
+    50% {
+        background-position: 100% 50%;
+        box-shadow: 0 0 28px rgba(197, 160, 89, 0.35);
+    }
+}
+
+.arw-summon-text {
+    font-family: var(--font-collab-mono, 'JetBrains Mono', monospace);
+    font-size: 11px;
+    color: var(--color-collab-text-muted, #9090b0);
+    letter-spacing: 0.04em;
+    text-align: center;
+}
+
+/* ─── Step 6: Success ───────────────────────────────────────────────────── */
+
+.arw-step--success {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    gap: 16px;
+    text-align: center;
+}
+
+.arw-success-sigil {
+    font-size: 52px;
+    color: var(--color-collab-gold, #c5a059);
+    filter: drop-shadow(0 0 16px rgba(197, 160, 89, 0.6));
+    line-height: 1;
+}
+
+.arw-success-text {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 13px;
+    color: var(--color-collab-text-muted, #9090b0);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.arw-success-text strong {
+    color: var(--color-collab-gold, #c5a059);
+    font-weight: 600;
+}
+
+/* ─── Error ─────────────────────────────────────────────────────────────── */
+
+.arw-error {
+    background: rgba(255, 64, 96, 0.08);
+    border: 1px solid rgba(255, 64, 96, 0.3);
+    border-radius: 4px;
+    padding: 9px 12px;
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 12px;
+    color: var(--color-collab-error, #ff4060);
+}
+
+/* ─── Footer ────────────────────────────────────────────────────────────── */
+
+.arw-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid rgba(100, 100, 160, 0.15);
+    flex-shrink: 0;
+}
+
+.arw-footer__right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────────── */
+
+.arw-btn {
+    font-family: var(--font-collab-sans, 'Space Grotesk', sans-serif);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 8px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+}
+
+.arw-btn--ghost {
+    background: transparent;
+    border-color: rgba(100, 100, 160, 0.3);
+    color: var(--color-collab-text-muted, #9090b0);
+}
+
+.arw-btn--ghost:hover {
+    border-color: rgba(100, 100, 160, 0.6);
+    color: var(--color-collab-text, #e0e0ff);
+}
+
+.arw-btn--skip {
+    font-size: 10px;
+    padding: 8px 12px;
+    opacity: 0.7;
+}
+
+.arw-btn--primary {
+    background: rgba(197, 160, 89, 0.1);
+    border-color: rgba(197, 160, 89, 0.4);
+    color: var(--color-collab-gold, #c5a059);
+}
+
+.arw-btn--primary:hover {
+    background: rgba(197, 160, 89, 0.18);
+    border-color: rgba(197, 160, 89, 0.7);
+}
+
+.arw-btn--summon {
+    background: var(--color-collab-gold, #c5a059);
+    border-color: var(--color-collab-gold, #c5a059);
+    color: #000;
+    font-size: 12px;
+    padding: 9px 24px;
+    letter-spacing: 0.08em;
+}
+
+.arw-btn--summon:hover {
+    background: #d4af6a;
+    border-color: #d4af6a;
+    box-shadow: 0 0 16px rgba(197, 160, 89, 0.3);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+    .arw-backdrop {
+        padding: 0;
+        align-items: flex-end;
+    }
+
+    .arw-modal {
+        width: 100%;
+        max-width: 100%;
+        border-radius: 10px 10px 0 0;
+        max-height: 92vh;
+    }
+
+    .arw-footer {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+/* ─── Reduced motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .arw-summon-shimmer {
+        animation: none;
+        opacity: 0.5;
+    }
+}
+
+/* ─── Framework Step ─────────────────────────────────────────────────────── */
+
+.arw-framework-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.arw-framework-card {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-collab-chrome);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    color: var(--color-collab-text);
+}
+
+.arw-framework-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--color-collab-info);
+}
+
+.arw-framework-card--active {
+    background: rgba(96, 192, 255, 0.1);
+    border-color: var(--color-collab-info);
+    box-shadow: 0 0 15px rgba(96, 192, 255, 0.15);
+}
+
+.arw-framework-card__icon {
+    font-size: 24px;
+}
+
+.arw-framework-card__label {
+    font-family: var(--font-collab-mono);
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.arw-framework-card__desc {
+    font-size: 10px;
+    color: var(--color-collab-text-dim);
+}

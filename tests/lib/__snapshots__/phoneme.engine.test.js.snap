@@ -1,0 +1,798 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep output stable for a deterministic corpus sample 1`] = `
+{
+  "baseline": [
+    {
+      "extendedRhymeKeys": [
+        "AE-open",
+      ],
+      "rhymeKey": "AE-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "TH",
+          "stress": 1,
+          "vowel": "EH1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "THE",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-ND",
+      ],
+      "rhymeKey": "AE-ND",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "ND",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "AE1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "AND",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-F",
+      ],
+      "rhymeKey": "A-F",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "F",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "AA1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "OF",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-open",
+      ],
+      "rhymeKey": "A-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "T",
+          "stress": 1,
+          "vowel": "AA1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "TO",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-N",
+      ],
+      "rhymeKey": "IH-N",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "N",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "IN",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-open",
+      ],
+      "rhymeKey": "AE-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "H",
+          "stress": 1,
+          "vowel": "EH1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "HE",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-S",
+      ],
+      "rhymeKey": "IH-S",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "S",
+          "index": 0,
+          "onset": "H",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "HIS",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-T",
+      ],
+      "rhymeKey": "AE-T",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "T",
+          "index": 0,
+          "onset": "TH",
+          "stress": 1,
+          "vowel": "AE1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "THAT",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-S",
+      ],
+      "rhymeKey": "AE-S",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "S",
+          "index": 0,
+          "onset": "W",
+          "stress": 1,
+          "vowel": "AE1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "WAS",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-R",
+      ],
+      "rhymeKey": "AE-R",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "R",
+          "index": 0,
+          "onset": "H",
+          "stress": 1,
+          "vowel": "EH1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "HER",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-D",
+      ],
+      "rhymeKey": "AE-D",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "D",
+          "index": 0,
+          "onset": "H",
+          "stress": 1,
+          "vowel": "AE1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "HAD",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-T",
+      ],
+      "rhymeKey": "IH-T",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "T",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "IT",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-TH",
+      ],
+      "rhymeKey": "IH-TH",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "TH",
+          "index": 0,
+          "onset": "W",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "WITH",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-R",
+      ],
+      "rhymeKey": "A-R",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "R",
+          "index": 0,
+          "onset": "F",
+          "stress": 1,
+          "vowel": "AA1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "FOR",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-open",
+      ],
+      "rhymeKey": "A-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "Y",
+          "stress": 1,
+          "vowel": "AW1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "YOU",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-S",
+      ],
+      "rhymeKey": "AE-S",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "S",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "AE1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "AS",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-open",
+      ],
+      "rhymeKey": "AE-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "SH",
+          "stress": 1,
+          "vowel": "EH1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "SHE",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-S",
+      ],
+      "rhymeKey": "IH-S",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "S",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "IS",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-T",
+      ],
+      "rhymeKey": "A-T",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "T",
+          "index": 0,
+          "onset": "B",
+          "stress": 1,
+          "vowel": "AH1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "BUT",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-T",
+      ],
+      "rhymeKey": "A-T",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "T",
+          "index": 0,
+          "onset": "N",
+          "stress": 1,
+          "vowel": "AA1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "NOT",
+    },
+    {
+      "extendedRhymeKeys": [
+        "EY-open",
+      ],
+      "rhymeKey": "EY-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "M",
+          "stress": 1,
+          "vowel": "AY1",
+          "vowelFamily": "EY",
+        },
+      ],
+      "word": "MY",
+    },
+    {
+      "extendedRhymeKeys": [
+        "IH-M",
+      ],
+      "rhymeKey": "IH-M",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "M",
+          "index": 0,
+          "onset": "H",
+          "stress": 1,
+          "vowel": "IH1",
+          "vowelFamily": "IH",
+        },
+      ],
+      "word": "HIM",
+    },
+    {
+      "extendedRhymeKeys": [
+        "AE-open",
+      ],
+      "rhymeKey": "AE-open",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "",
+          "index": 0,
+          "onset": "B",
+          "stress": 1,
+          "vowel": "EH1",
+          "vowelFamily": "AE",
+        },
+      ],
+      "word": "BE",
+    },
+    {
+      "extendedRhymeKeys": [
+        "A-N",
+      ],
+      "rhymeKey": "A-N",
+      "stressPattern": "1",
+      "syllableCount": 1,
+      "syllables": [
+        {
+          "coda": "N",
+          "index": 0,
+          "onset": "",
+          "stress": 1,
+          "vowel": "AA1",
+          "vowelFamily": "A",
+        },
+      ],
+      "word": "ON",
+    },
+  ],
+  "words": [
+    "the",
+    "and",
+    "of",
+    "to",
+    "in",
+    "he",
+    "his",
+    "that",
+    "was",
+    "her",
+    "had",
+    "it",
+    "with",
+    "for",
+    "you",
+    "as",
+    "she",
+    "is",
+    "but",
+    "not",
+    "my",
+    "him",
+    "be",
+    "on",
+  ],
+}
+`;
+
+exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord output stable for a deterministic corpus sample 1`] = `
+{
+  "baseline": [
+    {
+      "coda": null,
+      "phonemes": [
+        "TH",
+        "EH1",
+      ],
+      "rhymeKey": "AE-open",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "THE",
+    },
+    {
+      "coda": "ND",
+      "phonemes": [
+        "AE1",
+        "N",
+        "D",
+      ],
+      "rhymeKey": "AE-ND",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "AND",
+    },
+    {
+      "coda": "F",
+      "phonemes": [
+        "AA1",
+        "F",
+      ],
+      "rhymeKey": "A-F",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "OF",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "T",
+        "AA1",
+      ],
+      "rhymeKey": "A-open",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "TO",
+    },
+    {
+      "coda": "N",
+      "phonemes": [
+        "IH1",
+        "N",
+      ],
+      "rhymeKey": "IH-N",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "IN",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "H",
+        "EH1",
+      ],
+      "rhymeKey": "AE-open",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "HE",
+    },
+    {
+      "coda": "S",
+      "phonemes": [
+        "H",
+        "IH1",
+        "S",
+      ],
+      "rhymeKey": "IH-S",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "HIS",
+    },
+    {
+      "coda": "T",
+      "phonemes": [
+        "TH",
+        "AE1",
+        "T",
+      ],
+      "rhymeKey": "AE-T",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "THAT",
+    },
+    {
+      "coda": "S",
+      "phonemes": [
+        "W",
+        "AE1",
+        "S",
+      ],
+      "rhymeKey": "AE-S",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "WAS",
+    },
+    {
+      "coda": "R",
+      "phonemes": [
+        "H",
+        "EH1",
+        "R",
+      ],
+      "rhymeKey": "AE-R",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "HER",
+    },
+    {
+      "coda": "D",
+      "phonemes": [
+        "H",
+        "AE1",
+        "D",
+      ],
+      "rhymeKey": "AE-D",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "HAD",
+    },
+    {
+      "coda": "T",
+      "phonemes": [
+        "IH1",
+        "T",
+      ],
+      "rhymeKey": "IH-T",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "IT",
+    },
+    {
+      "coda": "TH",
+      "phonemes": [
+        "W",
+        "IH1",
+        "TH",
+      ],
+      "rhymeKey": "IH-TH",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "WITH",
+    },
+    {
+      "coda": "R",
+      "phonemes": [
+        "F",
+        "AA1",
+        "R",
+      ],
+      "rhymeKey": "A-R",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "FOR",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "Y",
+        "AW1",
+      ],
+      "rhymeKey": "A-open",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "YOU",
+    },
+    {
+      "coda": "S",
+      "phonemes": [
+        "AE1",
+        "S",
+      ],
+      "rhymeKey": "AE-S",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "AS",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "SH",
+        "EH1",
+      ],
+      "rhymeKey": "AE-open",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "SHE",
+    },
+    {
+      "coda": "S",
+      "phonemes": [
+        "IH1",
+        "S",
+      ],
+      "rhymeKey": "IH-S",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "IS",
+    },
+    {
+      "coda": "T",
+      "phonemes": [
+        "B",
+        "AH1",
+        "T",
+      ],
+      "rhymeKey": "A-T",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "BUT",
+    },
+    {
+      "coda": "T",
+      "phonemes": [
+        "N",
+        "AA1",
+        "T",
+      ],
+      "rhymeKey": "A-T",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "NOT",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "M",
+        "AY1",
+      ],
+      "rhymeKey": "EY-open",
+      "syllableCount": 1,
+      "vowelFamily": "EY",
+      "word": "MY",
+    },
+    {
+      "coda": "M",
+      "phonemes": [
+        "H",
+        "IH1",
+        "M",
+      ],
+      "rhymeKey": "IH-M",
+      "syllableCount": 1,
+      "vowelFamily": "IH",
+      "word": "HIM",
+    },
+    {
+      "coda": null,
+      "phonemes": [
+        "B",
+        "EH1",
+      ],
+      "rhymeKey": "AE-open",
+      "syllableCount": 1,
+      "vowelFamily": "AE",
+      "word": "BE",
+    },
+    {
+      "coda": "N",
+      "phonemes": [
+        "AA1",
+        "N",
+      ],
+      "rhymeKey": "A-N",
+      "syllableCount": 1,
+      "vowelFamily": "A",
+      "word": "ON",
+    },
+  ],
+  "words": [
+    "the",
+    "and",
+    "of",
+    "to",
+    "in",
+    "he",
+    "his",
+    "that",
+    "was",
+    "her",
+    "had",
+    "it",
+    "with",
+    "for",
+    "you",
+    "as",
+    "she",
+    "is",
+    "but",
+    "not",
+    "my",
+    "him",
+    "be",
+    "on",
+  ],
+}
+`;

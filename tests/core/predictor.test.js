@@ -1,0 +1,134 @@
+import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { TriePredictor } from '../../codex/core/trie.js';
+import { Spellchecker } from '../../codex/core/spellchecker.js';
+
+describe('Predictive Text Logic (Trie-based N-gram)', () => {
+  let predictor;
+
+  beforeAll(() => {
+    predictor = new TriePredictor();
+    const corpus = ['into', 'the', 'void', 'into', 'the', 'abyss'];
+    for (let i = 0; i < corpus.length - 1; i++) {
+      predictor.insert(corpus[i], corpus[i + 1]);
+    }
+    predictor.insert(corpus[corpus.length - 1]);
+  });
+
+  it('predicts words by prefix', () => {
+    const results = predictor.predict('in');
+    expect(results).toContain('into');
+  });
+
+  it('predicts next word based on context (Bigram)', () => {
+    const results = predictor.predictNext('the');
+    expect(results).toContain('void');
+    expect(results).toContain('abyss');
+  });
+
+  it('returns empty for unknown prefixes', () => {
+    const results = predictor.predict('xyz');
+    expect(results).toHaveLength(0);
+  });
+
+  it('executes predictions in under 50ms', () => {
+    const start = performance.now();
+    predictor.predict('v');
+    const end = performance.now();
+    expect(end - start).toBeLessThan(50);
+  });
+});
+
+describe('Spellchecker Logic (Levenshtein-based)', () => {
+  let spellchecker;
+
+  beforeAll(() => {
+    spellchecker = new Spellchecker();
+    spellchecker.init(['hello', 'world', 'ritual', 'scholomance', 'void']);
+  });
+
+  it('correctly identifies valid words', () => {
+    expect(spellchecker.check('hello')).toBe(true);
+    expect(spellchecker.check('VOID')).toBe(true);
+  });
+
+  it('identifies misspelled words', () => {
+    expect(spellchecker.check('helo')).toBe(false);
+    expect(spellchecker.check('riutual')).toBe(false);
+  });
+
+  it('provides corrections for misspelled words', () => {
+    const suggestions = spellchecker.suggest('helo');
+    expect(suggestions).toContain('hello');
+  });
+
+  it('respects the edit distance threshold (limit 2)', () => {
+    const suggestions = spellchecker.suggest('scholomancy'); // distance 1 from scholomance
+    expect(suggestions).toContain('scholomance');
+    
+    const tooFar = spellchecker.suggest('abcdefg');
+    expect(tooFar).not.toContain('hello');
+  });
+
+  it('disambiguates sound-alike words (e.g., bruise vs brooze)', () => {
+    spellchecker.init(['bruise', 'juice', 'fruit']);
+    
+    // "brooze" sounds like "bruise"
+    const suggestions = spellchecker.suggest('brooze');
+    expect(suggestions).toContain('bruise');
+
+    // "froot" sounds like "fruit"
+    const frootSuggestions = spellchecker.suggest('froot');
+    expect(frootSuggestions).toContain('fruit');
+  });
+
+  it('bridges async validation and caches positive dictionary hits', async () => {
+    const dynamicSpellchecker = new Spellchecker();
+    dynamicSpellchecker.init(['ritual', 'void']);
+
+    const validateWord = vi.fn(async (word) => word === 'galaxy');
+    dynamicSpellchecker.configureAsync({ validateWord });
+
+    await expect(dynamicSpellchecker.checkAsync('galaxy')).resolves.toBe(true);
+    expect(dynamicSpellchecker.check('galaxy')).toBe(true);
+    await dynamicSpellchecker.checkAsync('galaxy');
+    expect(validateWord).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds async dictionary suggestions to fallback candidates', async () => {
+    const dynamicSpellchecker = new Spellchecker();
+    dynamicSpellchecker.init(['ritual', 'void']);
+    dynamicSpellchecker.configureAsync({
+      suggestWords: async () => ['design', 'designer', 'designed'],
+    });
+
+    const suggestions = await dynamicSpellchecker.suggestAsync('desgin', 5);
+    expect(suggestions).toContain('design');
+    expect(dynamicSpellchecker.check('design')).toBe(true);
+  });
+
+  it('uses previous-word context to rank corrections', () => {
+    const contextualSpellchecker = new Spellchecker();
+    contextualSpellchecker.init([
+      'to', 'steal',
+      'to', 'steal',
+      'to', 'steal',
+      'cold', 'steel',
+    ]);
+
+    const suggestions = contextualSpellchecker.suggest('stel', 3, 'to');
+    expect(suggestions[0]).toBe('steal');
+    expect(suggestions).toContain('steel');
+  });
+
+  it('queries shorter prefixes when async suggestor cannot resolve raw typo', async () => {
+    const dynamicSpellchecker = new Spellchecker();
+    dynamicSpellchecker.init(['ritual']);
+
+    dynamicSpellchecker.configureAsync({
+      suggestWords: async (prefix) => (prefix === 'des' ? ['design'] : []),
+    });
+
+    const suggestions = await dynamicSpellchecker.suggestAsync('desgin', 5);
+    expect(suggestions).toContain('design');
+  });
+});

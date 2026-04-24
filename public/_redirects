@@ -1,0 +1,2 @@
+/api/*  https://scholomance.fly.dev/api/:splat  200
+/health/*  https://scholomance.fly.dev/health/:splat  200

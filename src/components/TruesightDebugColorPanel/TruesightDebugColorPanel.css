@@ -1,0 +1,188 @@
+/* TruesightDebugColorPanel
+ * GrimDesign signal: NECROMANCY/SONIC blend — hsl(102, 82%, 55%) — RESONANT
+ * Complexity: 3 (header + body + footer/meta row)
+ */
+
+.truesight-debug-panel {
+  --grim-color:        hsl(102, 82%, 55%);
+  --grim-color-muted:  hsl(102, 82%, 70%);
+  --grim-glow:         0 0 12px hsla(102, 82%, 75%, 0.5);
+  --grim-border:       1px solid hsla(102, 82%, 70%, 0.35);
+  --grim-transition:   400ms ease-in-out;
+  --grim-font-size:    0.78rem;
+  --grim-font-weight:  400;
+
+  display: flex;
+  flex-direction: column;
+  background: hsla(0, 0%, 8%, 0.88);
+  border: var(--grim-border);
+  border-radius: 4px;
+  box-shadow: var(--grim-glow);
+  color: var(--grim-color);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: var(--grim-font-size);
+  font-weight: var(--grim-font-weight);
+  transition: box-shadow var(--grim-transition), border-color var(--grim-transition);
+  overflow: hidden;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .truesight-debug-panel:not(.truesight-debug-panel--no-anim) {
+    animation: truesight-debug-pulse 2400ms ease-in-out infinite;
+  }
+}
+
+@keyframes truesight-debug-pulse {
+  0%   { box-shadow: 0 0 8px  hsla(102, 82%, 75%, 0.3); }
+  50%  { box-shadow: 0 0 16px hsla(102, 82%, 75%, 0.6); }
+  100% { box-shadow: 0 0 8px  hsla(102, 82%, 75%, 0.3); }
+}
+
+/* ── HEADER ── */
+
+.truesight-debug-panel__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: var(--grim-border);
+  background: hsla(102, 82%, 55%, 0.06);
+  flex-shrink: 0;
+}
+
+.truesight-debug-panel__glyph {
+  color: var(--grim-color);
+  font-size: 0.8rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.truesight-debug-panel__title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--grim-color-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.truesight-debug-panel__active-school {
+  margin-left: auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--grim-color);
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+/* ── BODY ── */
+
+.truesight-debug-panel__body {
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  max-height: 220px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: hsla(102, 82%, 55%, 0.3) transparent;
+}
+
+.truesight-debug-panel__school-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.truesight-debug-panel__swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 3px;
+  background: var(--grim-color);
+}
+
+/* Swatches pull the actual generated school variables */
+.truesight-debug-panel__swatch[data-school="sonic"]        { background: var(--sonic-primary,      #22d3ee); }
+.truesight-debug-panel__swatch[data-school="psychic"]      { background: var(--psychic-primary,    #818cf8); }
+.truesight-debug-panel__swatch[data-school="alchemy"]      { background: var(--alchemy-primary,    #e879f9); }
+.truesight-debug-panel__swatch[data-school="will"]         { background: var(--will-primary,       #fb923c); }
+.truesight-debug-panel__swatch[data-school="void"]         { background: var(--void-primary,       #a1a1aa); }
+.truesight-debug-panel__swatch[data-school="necromancy"]   { background: var(--necromancy-primary, #4ade80); }
+.truesight-debug-panel__swatch[data-school="divination"]   { background: var(--divination-primary, #facc15); }
+.truesight-debug-panel__swatch[data-school="abjuration"]   { background: var(--abjuration-primary, #60a5fa); }
+.truesight-debug-panel__swatch[data-school="unclassified"] { background: hsla(0, 0%, 50%, 0.4); }
+
+.truesight-debug-panel__school-name {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--grim-color-muted);
+  min-width: 72px;
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.truesight-debug-panel__word-chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.truesight-debug-panel__chip {
+  background: hsla(102, 82%, 55%, 0.08);
+  border: 1px solid hsla(102, 82%, 55%, 0.22);
+  border-radius: 2px;
+  padding: 1px 5px;
+  font-size: 0.65rem;
+  color: var(--grim-color);
+  line-height: 1.5;
+}
+
+/* Chips take their school's color accent */
+.truesight-debug-panel__chip[data-school="sonic"]        { color: var(--sonic-primary,      #22d3ee); border-color: hsla(175, 85%, 55%, 0.22); background: hsla(175, 85%, 55%, 0.08); }
+.truesight-debug-panel__chip[data-school="psychic"]      { color: var(--psychic-primary,    #818cf8); border-color: hsla(220, 90%, 60%, 0.22); background: hsla(220, 90%, 60%, 0.08); }
+.truesight-debug-panel__chip[data-school="alchemy"]      { color: var(--alchemy-primary,    #e879f9); border-color: hsla(325, 80%, 58%, 0.22); background: hsla(325, 80%, 58%, 0.08); }
+.truesight-debug-panel__chip[data-school="will"]         { color: var(--will-primary,       #fb923c); border-color: hsla(0,   85%, 48%, 0.22); background: hsla(0,   85%, 48%, 0.08); }
+.truesight-debug-panel__chip[data-school="void"]         { color: var(--void-primary,       #a1a1aa); border-color: hsla(215, 15%, 41%, 0.22); background: hsla(215, 15%, 41%, 0.08); }
+.truesight-debug-panel__chip[data-school="necromancy"]   { color: var(--necromancy-primary, #4ade80); border-color: hsla(120, 75%, 40%, 0.22); background: hsla(120, 75%, 40%, 0.08); }
+.truesight-debug-panel__chip[data-school="divination"]   { color: var(--divination-primary, #facc15); border-color: hsla(45,  90%, 68%, 0.22); background: hsla(45,  90%, 68%, 0.08); }
+.truesight-debug-panel__chip[data-school="abjuration"]   { color: var(--abjuration-primary, #60a5fa); border-color: hsla(180, 80%, 68%, 0.22); background: hsla(180, 80%, 68%, 0.08); }
+
+.truesight-debug-panel__empty {
+  margin: 4px 0;
+  color: hsla(102, 82%, 55%, 0.4);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+/* ── FOOTER ── */
+
+.truesight-debug-panel__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 12px;
+  border-top: var(--grim-border);
+  background: hsla(102, 82%, 55%, 0.04);
+  flex-shrink: 0;
+}
+
+.truesight-debug-panel__meta {
+  font-size: 0.62rem;
+  color: hsla(102, 82%, 55%, 0.5);
+}
+
+.truesight-debug-panel__signal {
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--grim-color);
+  opacity: 0.7;
+}

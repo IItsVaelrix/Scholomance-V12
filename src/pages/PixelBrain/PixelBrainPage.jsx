@@ -1,0 +1,680 @@
+/**
+ * PixelBrainPage — Game Asset Generation with Bytecode
+ * 
+ * Main page component integrating the new UI overhaul
+ */
+
+import { useState, useCallback, useRef, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { usePredictor } from "../../hooks/usePredictor.js";
+import { usePanelAnalysis } from "../../hooks/usePanelAnalysis.js";
+
+// New components
+import { UploadSection } from "./components/UploadSection.jsx";
+import { AnalysisResults } from "./components/AnalysisResults.jsx";
+import { StyleTransmuter } from "./components/StyleTransmuter.jsx";
+import { ParameterSliders } from "./components/ParameterSliders.jsx";
+import { ExtensionSelector } from "./components/ExtensionSelector.jsx";
+import { StatusDisplay } from "./components/StatusDisplay.jsx";
+import { DuplicateSection } from "./components/DuplicateSection.jsx";
+
+import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
+
+// Core logic
+import { 
+  generatePixelArtFromImage, 
+  evaluateFormulaWithColor, 
+  formulaToBytecode
+} from "../../lib/pixelbrain.adapter.js";
+import { processorBridge } from "../../lib/processor-bridge.js";
+import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
+
+import "./PixelBrainPage.css";
+
+// Map slider keys to formula keys
+const PARAM_MAP = {
+  amplitude: 'a',
+  frequency: 'b',
+  phase: 'c',
+  points: 'n',
+  scale: 'scale',
+  complexity: 'complexity',
+  cx: 'cx',
+  cy: 'cy'
+};
+
+const REVERSE_PARAM_MAP = Object.entries(PARAM_MAP).reduce((acc, [k, v]) => {
+  acc[v] = k;
+  return acc;
+}, {});
+
+const TOKEN_PATTERN = /[A-Za-z']+/g;
+const DEFAULT_PIXEL_CANVAS = Object.freeze({ width: 160, height: 144, gridSize: 1 });
+
+function extractLineTokens(line) {
+  return String(line || '').match(TOKEN_PATTERN) || [];
+}
+
+function buildPlsContext(text, analysis, plsPhoneticFeatures) {
+  const lines = String(text || '').split(/\r?\n/);
+  const currentLineRaw = lines.at(-1) || '';
+  const currentLineTokens = extractLineTokens(currentLineRaw);
+  const endsWithPartialToken = /[A-Za-z']$/.test(currentLineRaw);
+  const prefix = endsWithPartialToken ? (currentLineTokens.at(-1) || '') : '';
+  const completedCurrentLineWords = endsWithPartialToken
+    ? currentLineTokens.slice(0, -1)
+    : currentLineTokens;
+
+  let prevLineEndWord = null;
+  for (let index = lines.length - 2; index >= 0; index -= 1) {
+    const lineTokens = extractLineTokens(lines[index]);
+    if (lineTokens.length > 0) {
+      prevLineEndWord = lineTokens.at(-1) || null;
+      break;
+    }
+  }
+
+  const lineSyllableCounts = Array.isArray(analysis?.lineSyllableCounts)
+    ? analysis.lineSyllableCounts.map((value) => Number(value) || 0)
+    : [];
+
+  return {
+    prefix,
+    prevWord: completedCurrentLineWords.at(-1) || null,
+    prevLineEndWord,
+    currentLineWords: completedCurrentLineWords,
+    targetSyllableCount: lineSyllableCounts.at(-1) || null,
+    priorLineSyllableCounts: lineSyllableCounts.slice(0, -1),
+    plsPhoneticFeatures,
+  };
+}
+
+function spliceSuggestionIntoVerse(text, suggestion) {
+  const baseText = String(text || '');
+  const nextToken = String(suggestion || '').trim();
+  if (!nextToken) return baseText;
+
+  const partialMatch = baseText.match(/([A-Za-z']+)$/);
+  if (partialMatch) {
+    return `${baseText.slice(0, -partialMatch[1].length)}${nextToken} `;
+  }
+
+  if (!baseText) return `${nextToken} `;
+  if (/\s$/.test(baseText)) return `${baseText}${nextToken} `;
+  return `${baseText} ${nextToken} `;
+}
+
+function describeVerseAmplifier(verseAmplifier) {
+  if (!verseAmplifier || typeof verseAmplifier !== 'object') {
+    return 'PLS awaits a stable line ending.';
+  }
+
+  const dominantTier = String(verseAmplifier.dominantTier || 'DORMANT').toUpperCase();
+  const dominantArchetype = String(verseAmplifier?.dominantArchetype?.label || '').trim();
+  const trueVisionBand = String(verseAmplifier?.trueVision?.dominantBand?.label || '').trim();
+  const confidence = Math.round((Number(verseAmplifier?.trueVision?.confidence) || 0) * 100);
+
+  if (dominantArchetype) {
+    return `${dominantTier} resonance leans toward ${dominantArchetype}.${trueVisionBand ? ` TrueVision tracks ${trueVisionBand} at ${confidence}% confidence.` : ''}`;
+  }
+
+  return `${dominantTier} resonance is present.${trueVisionBand ? ` TrueVision tracks ${trueVisionBand} at ${confidence}% confidence.` : ''}`;
+}
+
+export default function PixelBrainPage() {
+  const { getCompletions, isReady: isPredictorReady } = usePredictor();
+  const {
+    analysis: verseAnalysis,
+    scoreData: verseScoreData,
+    rhymeAstrology,
+    analyzeDocument,
+    isAnalyzing: isVerseAnalyzing,
+    error: verseAnalysisError,
+  } = usePanelAnalysis();
+  
+  // State
+  const [activeSchool] = useState('VOID');
+  const [referenceImage, setReferenceImage] = useState(null);
+  const [imageAnalysis, setImageAnalysis] = useState(null);
+  const [formula, setFormula] = useState(null);
+  const [coordinates, setCoordinates] = useState([]);
+  const [palettes, setPalettes] = useState([]);
+  const [parameters, setParameters] = useState({});
+  const [extensions, setExtensions] = useState([]);
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState(null);
+  const [showTerminal, setShowTerminal] = useState(false);
+  const [leftTab, setLeftTab] = useState('upload'); // 'upload' or 'transmute'
+  const [verseText, setVerseText] = useState('');
+  const [plsSuggestions, setPlsSuggestions] = useState([]);
+  const [pixelCanvas, setPixelCanvas] = useState(DEFAULT_PIXEL_CANVAS);
+  
+  const canvasRef = useRef(null);
+
+  const bridgedPlsFeatures = verseScoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null;
+  const verseAmplifier = verseAnalysis?.verseIRAmplifier || null;
+  const versePixelBrainPayload = verseAmplifier?.pixelBrain || null;
+  const amplifierExplanation = describeVerseAmplifier(verseAmplifier);
+
+  // Sync parameters state from formula
+  useEffect(() => {
+    if (formula?.coordinateFormula?.parameters) {
+      const newParams = {};
+      Object.entries(formula.coordinateFormula.parameters).forEach(([k, v]) => {
+        const sliderKey = REVERSE_PARAM_MAP[k] || k;
+        newParams[sliderKey] = v;
+      });
+      setParameters(newParams);
+    }
+  }, [formula]);
+
+  // Handle parameter change
+  const handleParameterChange = useCallback((key, value) => {
+    setParameters(prev => {
+      const updated = { ...prev, [key]: value };
+      
+      // If we have a formula, update it and regenerate coordinates
+      if (formula) {
+        const formulaKey = PARAM_MAP[key] || key;
+        const updatedFormula = {
+          ...formula,
+          coordinateFormula: {
+            ...formula.coordinateFormula,
+            parameters: {
+              ...formula.coordinateFormula.parameters,
+              [formulaKey]: value
+            }
+          }
+        };
+        
+        // Evaluate formula to get new coordinates
+        const newCoords = evaluateFormulaWithColor(updatedFormula, { width: 160, height: 144 });
+        setCoordinates(newCoords);
+        setFormula(updatedFormula);
+      }
+      
+      return updated;
+    });
+  }, [formula]);
+
+  // Handle image upload
+  // PRIMARY path: client-side Canvas API analysis (no backend needed).
+  // SECONDARY path: server enhancement attempted silently — never blocks.
+  const handleImageUpload = useCallback(async (file) => {
+    setStatus('analyzing');
+    setError(null);
+
+    try {
+      // Step 1: Client-side decode — PNG/JPEG/BMP via Canvas API, always works
+      const preview = URL.createObjectURL(file);
+      setReferenceImage({ file, preview });
+
+      let analysis = await analyzeImageClientSide(file);
+      analysis = { ...analysis, preview };
+
+      // Step 2: Server enhancement — optional, non-fatal
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+        const response = await fetch('/api/image/analyze', {
+          method: 'POST', body: formData, signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        if (response.ok) {
+          const responseData = await response.json();
+          // Guard both correct and double-wrapped server response shapes
+          const serverAnalysis = responseData.analysis?.colors
+            ? responseData.analysis
+            : responseData.analysis?.analysis;
+          if (serverAnalysis?.colors) {
+            analysis = { ...serverAnalysis, preview };
+          }
+        }
+      } catch { /* server unavailable — client analysis is sufficient */ }
+
+      setImageAnalysis(analysis);
+      setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+      setStatus('generating');
+
+      // Step 3: Background edge trace (non-fatal — generatePixelArtFromImage
+      // runs its own internal trace if workerResult.coordinates is empty)
+      const workerResult = await processorBridge.execute('pixel.trace', {
+        pixelData: analysis.pixelData,
+        dimensions: analysis.dimensions,
+        threshold: 30,
+      });
+
+      // Step 4: Generate pixel art coords + formula
+      const result = await generatePixelArtFromImage(
+        { ...analysis, coordinates: workerResult.coordinates },
+        { width: 160, height: 144, gridSize: 1 },
+        extensions.length > 0 ? extensions[0] : null
+      );
+
+      setFormula(result.formula);
+      setCoordinates(result.coordinates ?? []);
+      setPalettes(result.palettes ?? []);
+      setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+      setStatus('ready');
+
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setError(err.message || 'Image analysis failed. Please try again.');
+      setStatus('error');
+      setReferenceImage(null);
+      setImageAnalysis(null);
+    }
+  }, [extensions]);
+
+  const handleTransmuteResult = useCallback((result) => {
+    setCoordinates(result.coordinates);
+    setPalettes(result.palettes);
+    setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+    // Note: Transmuter returns canvas info, we could update page canvas state here
+    setStatus('ready');
+  }, []);
+
+  // Handle export
+  const handleExport = useCallback(async (presetKey) => {
+    try {
+      setStatus('generating');
+      
+      const preset = {
+        GODOT: { scale: 1, name: 'godot' },
+        UNITY: { scale: 2, name: 'unity' },
+        WEB: { scale: 1, name: 'web' },
+        FORMULA: { format: 'json', name: 'formula' }
+      }[presetKey];
+
+      if (preset.format === 'json') {
+        const data = JSON.stringify({ formula, coordinates, palettes }, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${Date.now()}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        // Render to temporary canvas at requested scale
+        const exportCanvas = document.createElement('canvas');
+        const scale = preset.scale || 1;
+        exportCanvas.width = 160 * scale;
+        exportCanvas.height = 144 * scale;
+        const ectx = exportCanvas.getContext('2d');
+        
+        // Background (transparent for assets)
+        ectx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
+        
+        // Draw coordinates
+        coordinates.forEach(coord => {
+          ectx.fillStyle = coord.color;
+          const px = Math.round(coord.x * scale);
+          const py = Math.round(coord.y * scale);
+          ectx.fillRect(px, py, scale, scale);
+        });
+        
+        // Download PNG
+        const url = exportCanvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${preset.name}_${Date.now()}.png`;
+        link.click();
+      }
+      
+      setStatus('ready');
+      
+    } catch (err) {
+      setError(err.message || 'Export failed');
+      setStatus('error');
+    }
+  }, [coordinates, palettes, formula, activeSchool]);
+
+  // Handle clear
+  const handleClear = useCallback(() => {
+    setReferenceImage(null);
+    setImageAnalysis(null);
+    setFormula(null);
+    setCoordinates([]);
+    setPalettes([]);
+    setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+    setParameters({});
+    setStatus('idle');
+    setError(null);
+  }, []);
+
+  const handleApplySuggestion = useCallback((suggestion) => {
+    setVerseText((current) => spliceSuggestionIntoVerse(current, suggestion));
+  }, []);
+
+  const handleSynthesizeFromVerse = useCallback(() => {
+    if (!versePixelBrainPayload) {
+      setError(verseAnalysisError || 'VerseIR amplifier did not emit PixelBrain payload.');
+      setStatus('error');
+      return;
+    }
+
+    setReferenceImage(null);
+    setImageAnalysis(null);
+    setFormula(null);
+    setCoordinates(Array.isArray(versePixelBrainPayload.coordinates) ? versePixelBrainPayload.coordinates : []);
+    setPalettes(Array.isArray(versePixelBrainPayload.palettes) ? versePixelBrainPayload.palettes : []);
+    setPixelCanvas(versePixelBrainPayload.canvas || DEFAULT_PIXEL_CANVAS);
+    setStatus('ready');
+    setError(null);
+  }, [verseAnalysisError, versePixelBrainPayload]);
+
+  useEffect(() => {
+    analyzeDocument(verseText);
+  }, [analyzeDocument, verseText]);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadSuggestions() {
+      if (!isPredictorReady || !verseText.trim()) {
+        if (!isCancelled) setPlsSuggestions([]);
+        return;
+      }
+
+      const completions = await getCompletions(
+        buildPlsContext(verseText, verseAnalysis, bridgedPlsFeatures),
+        { limit: 6 }
+      );
+
+      if (!isCancelled) {
+        setPlsSuggestions(Array.isArray(completions) ? completions : []);
+      }
+    }
+
+    void loadSuggestions();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [bridgedPlsFeatures, getCompletions, isPredictorReady, verseAnalysis, verseText]);
+
+  // Render canvas preview — flat 2D only, no Z transforms
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+
+    // Use detected source dimensions (no arbitrary standard)
+    const srcW = imageAnalysis?.dimensions?.width || pixelCanvas?.width || 32;
+    const srcH = imageAnalysis?.dimensions?.height || pixelCanvas?.height || 32;
+
+    // Calculate scale to fit canvas while preserving aspect ratio
+    const scale = Math.min(canvas.width / srcW, canvas.height / srcH) * 0.85;
+    const offsetX = Math.floor((canvas.width - srcW * scale) / 2);
+    const offsetY = Math.floor((canvas.height - srcH * scale) / 2);
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.fillStyle = '#0a0a12';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    if (imageAnalysis?.preview) {
+      const img = new Image();
+      img.onload = () => {
+        // Draw full sprite at native dimensions (nearest-neighbor, fully colored)
+        ctx.drawImage(img, offsetX, offsetY, srcW * scale, srcH * scale);
+
+        // Draw pixel grid overlay
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = Math.max(0.5, scale * 0.1);
+        
+        // Vertical lines
+        for (let x = 0; x <= srcW; x++) {
+          const px = offsetX + x * scale;
+          ctx.beginPath();
+          ctx.moveTo(px, offsetY);
+          ctx.lineTo(px, offsetY + srcH * scale);
+          ctx.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= srcH; y++) {
+          const py = offsetY + y * scale;
+          ctx.beginPath();
+          ctx.moveTo(offsetX, py);
+          ctx.lineTo(offsetX + srcW * scale, py);
+          ctx.stroke();
+        }
+
+        // Draw coordinate dots for edge visualization
+        if (coordinates.length > 0) {
+          coordinates.forEach(coord => {
+            const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
+            const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
+            ctx.fillStyle = '#ffffff';
+            ctx.globalAlpha = 0.8;
+            ctx.fillRect(px, py, Math.max(1, scale * 0.3), Math.max(1, scale * 0.3));
+            ctx.globalAlpha = 1;
+          });
+        }
+      };
+      img.src = imageAnalysis.preview;
+    } else if (coordinates.length > 0) {
+      // No image, just coordinates (formula-only mode)
+      coordinates.forEach(coord => {
+        const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
+        const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
+        ctx.fillStyle = coord.color || '#a0a0c0';
+        ctx.fillRect(px, py, Math.max(1, scale), Math.max(1, scale));
+      });
+    }
+  }, [coordinates, imageAnalysis, pixelCanvas]);
+
+  const terminalAnalysisResult = imageAnalysis ? {
+    ...imageAnalysis,
+    coordinates,
+    palettes,
+    formula,
+    canvas: { width: 160, height: 144, gridSize: 1 },
+    referenceImage,
+  } : versePixelBrainPayload ? {
+    ...versePixelBrainPayload,
+    coordinates,
+    palettes,
+    formula,
+    canvas: pixelCanvas,
+    referenceImage: null,
+  } : null;
+
+  return (
+    <div className="pixelbrain-page">
+      {/* Surgical Matrix Topbar */}
+      <div className="pixelbrain-topbar">
+        <div className="topbar-left">
+          <span className="topbar-title">PIXELBRAIN // VOID_ECHO v1.1</span>
+          <span className="telemetry-text">[STATUS: {status.toUpperCase()}] [MODE: TRANSMUTATION]</span>
+        </div>
+        <div className="topbar-right">
+          <span className="telemetry-text">0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</span>
+          <button
+            className="telemetry-text"
+            style={{ background: 'none', border: '1px solid #444', padding: '2px 8px', marginLeft: '12px', cursor: 'pointer' }}
+            onClick={() => setShowTerminal(!showTerminal)}
+          >
+            {showTerminal ? 'HIDE_TERMINAL' : 'SHOW_TERMINAL'}
+          </button>
+        </div>
+      </div>
+
+      <div className="pixelbrain-main">
+        {/* Left Sidebar: Controls */}
+        <aside className="pixelbrain-panel pixelbrain-panel--left">
+          <div className="panel-tabs">
+            <button 
+              className={`tab-btn ${leftTab === 'upload' ? 'active' : ''}`}
+              onClick={() => setLeftTab('upload')}
+            >
+              UPLINK
+            </button>
+            <button 
+              className={`tab-btn ${leftTab === 'transmute' ? 'active' : ''}`}
+              onClick={() => setLeftTab('transmute')}
+            >
+              MATRIX
+            </button>
+            <button 
+              className={`tab-btn ${leftTab === 'echo' ? 'active' : ''}`}
+              onClick={() => setLeftTab('echo')}
+            >
+              ECHO
+            </button>
+          </div>
+
+          <div className="tab-content">
+            {leftTab === 'upload' && (
+              <>
+                <div className="verse-seed-panel">
+                  <div className="section-header">
+                    <span className="telemetry-text">VERSEIR UPLINK</span>
+                  </div>
+                  <label className="section-label telemetry-text" htmlFor="pixelbrain-verse-seed">
+                    Seed verse for PLS and VerseIR amplification
+                  </label>
+                  <textarea
+                    id="pixelbrain-verse-seed"
+                    className="pixelbrain-verse-input telemetry-text"
+                    value={verseText}
+                    onChange={(event) => setVerseText(event.target.value)}
+                    placeholder="write the verse that should collapse into lattice..."
+                    aria-label="Verse seed input for PixelBrain"
+                  />
+                  <div className="pixelbrain-verse-toolbar">
+                    <button
+                      className="transmute-ignite-btn pixelbrain-verse-btn"
+                      onClick={handleSynthesizeFromVerse}
+                      disabled={!versePixelBrainPayload || isVerseAnalyzing}
+                    >
+                      {isVerseAnalyzing ? 'AMPLIFYING_VERSE...' : 'SYNTHESIZE_VERSE_LATTICE'}
+                    </button>
+                    <span className="telemetry-text pixelbrain-verse-status">
+                      {verseAnalysisError
+                        ? `VERSEIR ERROR: ${verseAnalysisError}`
+                        : amplifierExplanation}
+                    </span>
+                  </div>
+                  {plsSuggestions.length > 0 && (
+                    <div className="pixelbrain-pls-shell" aria-label="PLS suggestions">
+                      {plsSuggestions.map((candidate) => (
+                        <button
+                          key={`${candidate.token}-${candidate.score}`}
+                          className="pixelbrain-pls-chip"
+                          onClick={() => handleApplySuggestion(candidate.token)}
+                          type="button"
+                        >
+                          <span>{candidate.token}</span>
+                          <span>{Math.round((Number(candidate.score) || 0) * 100)}%</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <UploadSection
+                  onImageUpload={handleImageUpload}
+                  analysis={imageAnalysis}
+                  onClear={handleClear}
+                  uploadError={error}
+                />
+                {imageAnalysis && (
+                  <AnalysisResults analysis={imageAnalysis} />
+                )}
+              </>
+            )}
+            {leftTab === 'transmute' && (
+              <StyleTransmuter 
+                referenceFile={referenceImage?.file}
+                onTransmute={handleTransmuteResult}
+                isProcessing={status === 'analyzing'}
+              />
+            )}
+            {leftTab === 'echo' && (
+              <DuplicateSection 
+                referenceFile={referenceImage?.file}
+                isProcessing={status === 'generating'}
+                onProcessingChange={(p) => setStatus(p ? 'generating' : 'ready')}
+              />
+            )}
+          </div>
+        </aside>
+
+        {/* Center: Viewport */}
+        <section className="pixelbrain-panel pixelbrain-panel--center">
+          <div className="canvas-container">
+            <canvas
+              ref={canvasRef}
+              className="preview-canvas"
+              width={800}
+              height={600}
+            />
+          </div>
+
+          <StatusDisplay
+            status={status}
+            error={error}
+          />
+        </section>
+
+        {/* Right Sidebar: Telemetry & Compiler */}
+        <aside className="pixelbrain-panel pixelbrain-panel--right">
+          <div className="section-header">
+            <span className="telemetry-text">LATTICE COMPILER</span>
+          </div>
+          
+          <div className="bytecode-terminal">
+            <div className="terminal-header telemetry-text">0xF_SYNTAX_STREAM</div>
+            <textarea 
+              className="terminal-textarea telemetry-text"
+              style={{ width: '100%', height: '120px', background: '#000', border: '1px solid #333', color: '#00FF41', padding: '8px', fontSize: '12px' }}
+              value={formula ? formulaToBytecode(formula) : "AWAITING_TRANSMUTATION..."}
+              readOnly
+            />
+          </div>
+
+          <ParameterSliders
+            parameters={parameters}
+            onChange={handleParameterChange}
+            school={activeSchool}
+          />
+          
+          <ExtensionSelector
+            selectedExtensions={extensions}
+            onChange={setExtensions}
+          />
+          
+          <button 
+            className="transmute-ignite-btn"
+            onClick={() => handleExport('FORMULA')}
+            disabled={!formula}
+          >
+            EXECUTE_BURN_TO_LATTICE
+          </button>
+        </aside>
+      </div>
+
+      {/* Terminal Overlay */}
+      <AnimatePresence>
+        {showTerminal && (
+          <motion.div
+            className="terminal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <PixelBrainTerminal
+              mode={terminalAnalysisResult ? "result" : "input"}
+              analysisResult={terminalAnalysisResult}
+              onClose={() => setShowTerminal(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

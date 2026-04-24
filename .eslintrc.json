@@ -1,0 +1,130 @@
+{
+  "root": true,
+  "env": {
+    "browser": true,
+    "es2020": true,
+    "jest": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:react/jsx-runtime",
+    "plugin:react-hooks/recommended",
+    "plugin:jsx-a11y/recommended"
+  ],
+  "plugins": [
+    "react",
+    "react-hooks",
+    "jsx-a11y"
+  ],
+  "ignorePatterns": ["dist", ".eslintrc.json"],
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "settings": {
+    "react": {
+      "version": "18.2"
+    }
+  },
+  "overrides": [
+    {
+      "files": [
+        "codex/**/*.js",
+        "scripts/**/*.js",
+        "playwright.config.js",
+        "vite.config.js",
+        "mailer.adapter.js"
+      ],
+      "env": {
+        "node": true
+      }
+    },
+    {
+      "files": [
+        "tests/**/*.js",
+        "tests/**/*.jsx"
+      ],
+      "env": {
+        "node": true,
+        "jest": true
+      }
+    },
+    {
+      "files": [
+        "src/pages/**/*.js",
+        "src/pages/**/*.jsx",
+        "src/pages/**/*.ts",
+        "src/pages/**/*.tsx",
+        "src/components/**/*.js",
+        "src/components/**/*.jsx",
+        "src/components/**/*.ts",
+        "src/components/**/*.tsx",
+        "src/App.jsx",
+        "src/App.tsx",
+        "src/main.jsx",
+        "src/main.tsx",
+        "src/hooks/useAtmosphere.js",
+        "src/hooks/useAtmosphere.jsx",
+        "src/hooks/useAtmosphere.ts",
+        "src/hooks/useAtmosphere.tsx",
+        "src/hooks/useAmbientPlayer.js",
+        "src/hooks/useAmbientPlayer.jsx",
+        "src/hooks/useAmbientPlayer.ts",
+        "src/hooks/useAmbientPlayer.tsx",
+        "src/hooks/usePrefersReducedMotion.js",
+        "src/hooks/usePrefersReducedMotion.jsx",
+        "src/hooks/usePrefersReducedMotion.ts",
+        "src/hooks/usePrefersReducedMotion.tsx"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "**/codex/**"
+                ],
+                "message": "UI surface files may not import codex/* directly. Go through Codex-owned logic hooks, provider bridges, or src/lib adapters."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "**/*.ts",
+        "**/*.tsx"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "plugins": [
+        "@typescript-eslint"
+      ],
+      "extends": [
+        "plugin:@typescript-eslint/recommended"
+      ],
+      "rules": {
+        "no-unused-vars": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unused-vars": [
+          "warn",
+          { "argsIgnorePattern": "^_" }
+        ]
+      }
+    }
+  ],
+  "rules": {
+    "no-undef": "error",
+    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "react/prop-types": "off",
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": "error",
+    "jsx-a11y/anchor-is-valid": "warn",
+    "jsx-a11y/click-events-have-key-events": "error",
+    "jsx-a11y/no-noninteractive-element-interactions": "warn",
+    "jsx-a11y/role-has-required-aria-props": "error",
+    "jsx-a11y/aria-props": "error"
+  }
+}

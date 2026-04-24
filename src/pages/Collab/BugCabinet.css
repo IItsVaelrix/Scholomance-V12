@@ -1,0 +1,892 @@
+/**
+ * PAC-OPS BUG CABINET — Structural Styles
+ * World-law: The cabinet is a deterministic machine.
+ * Layout is governed by symmetry, snap-grid, and vertical centering.
+ */
+
+:root {
+    --cabinet-bg: #100a1f;
+    --cabinet-border: #3a1a5e;
+    --cabinet-glow: rgba(106, 42, 158, 0.4);
+    --cabinet-accent: #ffd700;
+    --cabinet-axis-color: rgba(255, 255, 255, 0.05);
+    
+    --cabinet-width: 800px;
+    --wing-width: 280px;
+    --cabinet-h-gap: 24px;
+    
+    --terminal-crt-bg: #0a0a14;
+    --terminal-scanline: rgba(18, 16, 16, 0.12);
+    --terminal-bloom: rgba(60, 40, 120, 0.15);
+    
+    /* Severity Colors */
+    --severity-crit: #FF0000;
+    --severity-high: #FFB8FF;
+    --severity-med: #00FFFF;
+    --severity-low: #FFB847;
+    --severity-info: #9B59B6;
+
+    /* Timing (Gear-Glide) */
+    --timing-machine-fast: 0.18s;
+    --timing-machine-std: 0.32s;
+    --timing-machine-slow: 0.6s;
+}
+
+/* --- TERMINAL HEADER --- */
+
+.terminal-header {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+}
+
+.terminal-header__top {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.terminal-bug-id {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    color: #666;
+}
+
+.terminal-bug-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    color: #fff;
+}
+
+.terminal-bug-severity {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+.terminal-header__bottom {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    color: #888;
+}
+
+.terminal-meta-item {
+    opacity: 0.8;
+}
+
+.terminal-checksum {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.terminal-copy-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #666;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 6px;
+    padding: 2px 4px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+}
+
+.terminal-copy-btn:hover {
+    color: var(--cabinet-accent);
+    border-color: var(--cabinet-accent);
+    background: rgba(255, 215, 0, 0.05);
+}
+
+.checksum-indicator {
+    padding: 2px 4px;
+    border-radius: 2px;
+}
+
+.checksum-indicator.ok {
+    color: #4CAF50;
+    background: rgba(76, 175, 80, 0.1);
+}
+
+.checksum-indicator.fail {
+    color: #FF5252;
+    background: rgba(255, 82, 82, 0.1);
+}
+
+.bug-cabinet-shell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100%;
+    width: 100%;
+    position: relative;
+    overflow-x: hidden;
+    padding: 40px 20px;
+    perspective: 1200px;
+}
+
+/* Vertical Symmetry Axis (Diagnostic/Aesthetic) */
+.bug-cabinet-shell::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--cabinet-axis-color);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.bug-cabinet-container {
+    display: grid;
+    grid-template-columns: var(--wing-width) var(--cabinet-width) var(--wing-width);
+    grid-template-rows: auto 1fr auto;
+    gap: 0 var(--cabinet-h-gap);
+    width: min-content;
+    position: relative;
+    z-index: 1;
+}
+
+/* --- SIDE RAILS --- */
+
+.cabinet-rail {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 4px;
+    background: var(--cabinet-border);
+    opacity: 0.6;
+}
+
+.cabinet-rail--left { left: calc(var(--wing-width) + var(--cabinet-h-gap) / 2 - 2px); }
+.cabinet-rail--right { right: calc(var(--wing-width) + var(--cabinet-h-gap) / 2 - 2px); }
+
+.rail-bracket {
+    position: absolute;
+    width: 20px;
+    height: 4px;
+    background: var(--cabinet-border);
+}
+
+.cabinet-rail--left .rail-bracket { left: -20px; }
+.cabinet-rail--right .rail-bracket { right: -20px; }
+
+/* --- ANCHOR POINTS --- */
+
+.anchor-point {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 50;
+}
+
+.anchor-point::before, .anchor-point::after {
+    content: '';
+    position: absolute;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.anchor-point::before { top: 50%; left: -10px; right: -10px; height: 1px; }
+.anchor-point::after { left: 50%; top: -10px; bottom: -10px; width: 1px; }
+
+/* --- GHOSTS --- */
+
+.ghost-icon__body {
+    width: 100%;
+    height: 100%;
+    background-color: var(--ghost-color);
+    border-radius: 50% 50% 0 0;
+    position: relative;
+    box-shadow: inset -2px -2px 0 rgba(0, 0, 0, 0.2);
+}
+
+.ghost-icon__eye {
+    width: 25%;
+    height: 25%;
+    background: #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 25%;
+}
+
+.ghost-icon__eye::after {
+    content: '';
+    width: 50%;
+    height: 50%;
+    background: #0000FF;
+    border-radius: 50%;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+}
+
+.ghost-icon__eye--left { left: 15%; }
+.ghost-icon__eye--right { right: 15%; }
+
+.ghost-icon__skirt {
+    width: 100%;
+    height: 20%;
+    position: absolute;
+    bottom: -15%;
+    background-image: radial-gradient(circle at 50% 0, var(--ghost-color) 50%, transparent 50%);
+    background-size: 33.33% 100%;
+}
+
+.diagnostic-ghost {
+    width: 48px;
+    height: 60px;
+    z-index: 5;
+}
+
+.diagnostic-ghost__hat {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 12px;
+    background: #333;
+    border-radius: 4px 4px 0 0;
+}
+
+.diagnostic-ghost__hat::after {
+    content: '+';
+    color: #FF0000;
+    font-size: 10px;
+    font-family: monospace;
+    font-weight: bold;
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.diagnostic-ghost__body {
+    width: 100%;
+    height: 100%;
+    background: #eee;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+    box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.1);
+}
+
+.diagnostic-ghost__eye {
+    width: 8px;
+    height: 10px;
+    background: #333;
+    border-radius: 50%;
+    position: absolute;
+    top: 18px;
+}
+
+.diagnostic-ghost__eye--left { left: 12px; }
+.diagnostic-ghost__eye--right { right: 12px; }
+
+.diagnostic-ghost__skirt {
+    width: 100%;
+    height: 12px;
+    position: absolute;
+    bottom: -8px;
+    background-image: radial-gradient(circle at 50% 0, #eee 50%, transparent 50%);
+    background-size: 16px 100%;
+}
+
+.diagnostic-ghost__aura {
+    position: absolute;
+    inset: -10px;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px 30px 10px 10px;
+    z-index: -1;
+}
+
+/* --- CENTER CABINET --- */
+
+.cabinet-center {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    background: var(--cabinet-bg);
+    border: 4px solid var(--cabinet-border);
+    border-radius: 12px;
+    box-shadow: 
+        0 20px 80px rgba(0, 0, 0, 0.9),
+        0 0 0 2px var(--cabinet-glow),
+        inset 0 2px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
+    transform-style: preserve-3d;
+}
+
+.cabinet-marquee {
+    height: 60px;
+    border-bottom: 2px solid var(--cabinet-border);
+    background: linear-gradient(180deg, #1a0a2e 0%, #0a0514 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 2;
+}
+
+.cabinet-viewport-area {
+    flex: 1;
+    position: relative;
+    background: #000;
+    min-height: 480px;
+}
+
+.cabinet-deck {
+    height: 100px;
+    border-top: 4px solid var(--cabinet-border);
+    background: linear-gradient(180deg, #2a1050 0%, #1a0a2e 100%);
+    padding: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+}
+
+/* --- MARQUEE --- */
+
+.bug-marquee {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.marquee-glow {
+    position: absolute;
+    inset: 0;
+    filter: blur(20px);
+    z-index: 0;
+}
+
+.marquee-text {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 1.2rem;
+    color: #fff;
+    z-index: 2;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.marquee-accent {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1;
+}
+
+.marquee-accent--left { left: 24px; }
+.marquee-accent--right { right: 24px; }
+
+.marquee-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.marquee-line {
+    width: 40px;
+    height: 2px;
+    opacity: 0.4;
+}
+
+/* --- DECK --- */
+
+.bug-deck {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 40px;
+}
+
+.deck-cluster {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+.deck-btn {
+    position: relative;
+    width: 80px;
+    height: 50px;
+    background: #1a0a2e;
+    border: 2px solid var(--btn-color);
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 0 var(--btn-color);
+}
+
+.deck-btn:active {
+    box-shadow: 0 1px 0 var(--btn-color);
+    transform: translateY(3px);
+}
+
+.deck-btn--primary {
+    width: 100px;
+    height: 60px;
+    font-weight: bold;
+}
+
+.deck-btn__label {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    color: #fff;
+    text-align: center;
+    line-height: 1.4;
+    pointer-events: none;
+}
+
+.deck-btn__hint {
+    position: absolute;
+    bottom: 4px;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 6px;
+    color: var(--btn-color);
+    filter: brightness(1.5);
+    opacity: 0.8;
+}
+
+.deck-btn__top {
+
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.2);
+    pointer-events: none;
+}
+
+/* --- TERMINAL --- */
+
+.bug-cabinet-terminal {
+    width: 100%;
+    height: 100%;
+    background: var(--terminal-crt-bg);
+    position: relative;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.terminal-inner {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 30px;
+}
+
+.terminal-scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 12px;
+}
+
+.terminal-scroll-area::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-scroll-area::-webkit-scrollbar-thumb {
+    background: var(--cabinet-border);
+    border-radius: 3px;
+}
+
+.terminal-content {
+    padding-bottom: 40px;
+}
+
+/* --- WING MODULES --- */
+
+.checksum-shrine, .recovery-module {
+    width: 100%;
+    background: rgba(10, 5, 20, 0.8);
+    border: 1px solid var(--cabinet-border);
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 16px;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.shrine-header, .recovery-header {
+    font-size: 8px;
+    color: var(--cabinet-accent);
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    padding-bottom: 4px;
+}
+
+.shrine-body {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shrine-orb {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+}
+
+.shrine-orb.verified { background: #4CAF50; }
+.shrine-orb.failed { background: #FF5252; }
+
+.shrine-data {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.shrine-label { font-size: 6px; color: #666; }
+.shrine-hash { font-size: 8px; color: #fff; word-break: break-all; }
+.shrine-status { font-size: 8px; font-weight: bold; }
+.shrine-status.ok { color: #4CAF50; }
+.shrine-status.fail { color: #FF5252; }
+
+.shrine-footer, .recovery-footer {
+    font-size: 6px;
+    color: #444;
+    text-align: right;
+    margin-top: 10px;
+}
+
+.recovery-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.recovery-item {
+    display: flex;
+    gap: 8px;
+}
+
+.recovery-index {
+    font-size: 8px;
+    color: var(--cabinet-accent);
+    opacity: 0.6;
+}
+
+.recovery-text {
+    font-size: 8px;
+    line-height: 1.4;
+    color: #eee;
+}
+
+.recovery-empty {
+    font-size: 8px;
+    color: #444;
+    text-align: center;
+    padding: 10px 0;
+}
+
+/* --- LATTICE MAP --- */
+
+.bug-lattice-map {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.lattice-status {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Press Start 2P', cursive;
+    font-size: 6px;
+    color: #666;
+}
+
+.lattice-status-text {
+    color: var(--cabinet-accent);
+}
+
+/* --- QUEUE RAIL --- */
+
+.bug-queue-rail {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: rgba(10, 5, 20, 0.4);
+    border: 1px solid var(--cabinet-border);
+    border-radius: 4px;
+    padding: 10px;
+    font-family: 'Press Start 2P', cursive;
+}
+
+.rail-header {
+    font-size: 8px;
+    color: var(--cabinet-accent);
+    margin-bottom: 12px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.rail-scroll {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.rail-scroll::-webkit-scrollbar { width: 4px; }
+.rail-scroll::-webkit-scrollbar-thumb { background: var(--cabinet-border); }
+
+.queue-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border-radius: 2px;
+    position: relative;
+    border: 1px solid transparent;
+}
+
+.queue-row.selected {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.queue-row__ghost-container {
+    width: 14px;
+    height: 18px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.queue-row__info {
+
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.queue-row__info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.queue-row__title {
+    font-size: 6px;
+    color: #eee;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.queue-row__id {
+    font-size: 5px;
+    color: #666;
+}
+
+.queue-row__indicator {
+    position: absolute;
+    right: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    box-shadow: 0 0 8px currentColor;
+}
+
+.rail-footer {
+    font-size: 6px;
+    color: #444;
+    text-align: right;
+    margin-top: 10px;
+}
+
+.bug-cabinet-terminal::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(
+        var(--terminal-scanline) 50%,
+        rgba(0, 0, 0, 0) 50%
+    );
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.bug-cabinet-terminal::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.5);
+    background: radial-gradient(
+        circle at 50% 50%,
+        var(--terminal-bloom) 0%,
+        transparent 100%
+    );
+    pointer-events: none;
+    z-index: 11;
+}
+
+.terminal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    text-align: center;
+    opacity: 0.8;
+}
+
+.terminal-empty h3 {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 14px;
+    margin-bottom: 20px;
+    color: #fff;
+    letter-spacing: 2px;
+}
+
+.terminal-empty p {
+    font-family: 'Press Start 2P', cursive;
+    font-size: 8px;
+    color: #666;
+}
+
+/* Cabinet Silhouette Extensions */
+.cabinet-center::before {
+    content: '';
+    position: absolute;
+    top: -20px; left: 10%; right: 10%;
+    height: 20px;
+    background: var(--cabinet-border);
+    clip-path: polygon(0 100%, 10% 0, 90% 0, 100% 100%);
+}
+
+.cabinet-center::after {
+    content: '';
+    position: absolute;
+    bottom: -10px; left: 5%; right: 5%;
+    height: 10px;
+    background: var(--cabinet-border);
+    clip-path: polygon(0 0, 100% 0, 95% 100%, 5% 100%);
+}
+
+/* --- WINGS --- */
+
+.cabinet-wing {
+    display: flex;
+    flex-direction: column;
+    padding-top: 60px;
+}
+
+.cabinet-wing--left {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    align-items: flex-end;
+}
+
+.cabinet-wing--right {
+    grid-column: 3;
+    grid-row: 1 / -1;
+    align-items: flex-start;
+}
+
+/* Wing Support Rail Aesthetic */
+.wing-rail {
+    width: 100%;
+    background: rgba(26, 10, 46, 0.4);
+    border: 2px solid var(--cabinet-border);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.wing-rail::before {
+    content: '';
+    position: absolute;
+    top: 50%; width: 30px; height: 4px;
+    background: var(--cabinet-border);
+}
+
+.cabinet-wing--left .wing-rail::before {
+    right: -32px;
+}
+
+.cabinet-wing--right .wing-rail::before {
+    left: -32px;
+}
+
+/* --- RESPONSIVE --- */
+
+@media (max-width: 1400px) {
+    :root {
+        --wing-width: 220px;
+        --cabinet-width: 600px;
+    }
+}
+
+@media (max-width: 1100px) {
+    .bug-cabinet-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto auto;
+        gap: 20px 0;
+        width: 100%;
+        max-width: 700px;
+    }
+    
+    .cabinet-center {
+        grid-column: 1;
+        grid-row: 2;
+        width: 100%;
+    }
+    
+    .cabinet-wing--left {
+        grid-column: 1;
+        grid-row: 1;
+        padding-top: 0;
+        align-items: stretch;
+    }
+    
+    .cabinet-wing--right {
+        grid-column: 1;
+        grid-row: 3;
+        padding-top: 0;
+        align-items: stretch;
+    }
+    
+    .wing-rail::before {
+        display: none;
+    }
+}

@@ -1,0 +1,325 @@
+/* ─── GrimDesignPanel ────────────────────────────────────────────────────────
+ *
+ * Developer tool aesthetic: grimoire-minimal. Not a player-facing surface.
+ * Uses JetBrains Mono for data and Space Grotesk for labels per design system.
+ * All layout is flex — no grid, no magic numbers.
+ * --------------------------------------------------------------------------- */
+
+.grim-panel {
+  border-top: 1px solid rgba(180, 160, 220, 0.12);
+  margin-top: var(--space-2, 8px);
+  padding-top: var(--space-2, 8px);
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.grim-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 4px 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(200, 185, 230, 0.75);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-align: left;
+  transition: color 200ms ease-in-out;
+}
+
+.grim-panel-header:hover {
+  color: rgba(200, 185, 230, 0.95);
+}
+
+.grim-panel-glyph {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.grim-panel-title {
+  flex: 1;
+}
+
+.grim-panel-chevron {
+  font-size: 0.65rem;
+  opacity: 0.5;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────────── */
+
+.grim-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+/* ── Intent input ──────────────────────────────────────────────────────────── */
+
+.grim-intent-label {
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(180, 160, 220, 0.55);
+}
+
+.grim-intent-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(10, 8, 20, 0.6);
+  border: 1px solid rgba(180, 160, 220, 0.18);
+  border-radius: 3px;
+  color: rgba(220, 210, 240, 0.9);
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 0.72rem;
+  line-height: 1.55;
+  padding: 6px 8px;
+  resize: vertical;
+  min-height: 56px;
+  outline: none;
+  transition: border-color 200ms ease-in-out;
+}
+
+.grim-intent-input:focus {
+  border-color: rgba(180, 160, 220, 0.4);
+}
+
+.grim-intent-input::placeholder {
+  color: rgba(180, 160, 220, 0.3);
+  font-style: italic;
+}
+
+.grim-intent-hint {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.63rem;
+  color: rgba(180, 160, 220, 0.35);
+  letter-spacing: 0.02em;
+}
+
+/* ── Loading ───────────────────────────────────────────────────────────────── */
+
+.grim-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 18px;
+}
+
+.grim-loading-bar {
+  display: block;
+  width: 32px;
+  height: 2px;
+  background: rgba(180, 160, 220, 0.25);
+  border-radius: 1px;
+  position: relative;
+  overflow: hidden;
+}
+
+.grim-loading-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(180, 160, 220, 0.7);
+  transform: translateX(-100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grim-loading-bar::after {
+    animation: grim-scan 1s ease-in-out infinite;
+  }
+}
+
+@keyframes grim-scan {
+  0%   { transform: translateX(-100%); }
+  50%  { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.grim-loading-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.65rem;
+  color: rgba(180, 160, 220, 0.45);
+  letter-spacing: 0.04em;
+}
+
+/* ── Error ─────────────────────────────────────────────────────────────────── */
+
+.grim-error {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.68rem;
+  color: rgba(255, 120, 120, 0.75);
+  background: rgba(255, 80, 80, 0.06);
+  border: 1px solid rgba(255, 80, 80, 0.18);
+  border-radius: 3px;
+  padding: 5px 8px;
+}
+
+/* ── Results ───────────────────────────────────────────────────────────────── */
+
+.grim-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Signal row: swatch + effectClass + school + HSL ──────────────────────── */
+
+.grim-signal-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Color swatch ──────────────────────────────────────────────────────────── */
+
+.grim-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+  transition: box-shadow 400ms ease-in-out;
+}
+
+.grim-swatch--empty {
+  background: rgba(60, 50, 80, 0.4);
+  border-style: dashed;
+}
+
+/* ── Signal meta (effectClass badge + school label) ───────────────────────── */
+
+.grim-signal-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grim-effect-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.60rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 1px 5px;
+  border-radius: 2px;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.grim-effect-badge--rank-0 { /* INERT */
+  color: rgba(140, 130, 160, 0.7);
+  border-color: rgba(140, 130, 160, 0.2);
+}
+
+.grim-effect-badge--rank-1 { /* RESONANT */
+  color: rgba(160, 200, 220, 0.85);
+  border-color: rgba(160, 200, 220, 0.3);
+}
+
+.grim-effect-badge--rank-2 { /* HARMONIC */
+  color: rgba(180, 160, 255, 0.9);
+  border-color: rgba(180, 160, 255, 0.4);
+}
+
+.grim-effect-badge--rank-3 { /* TRANSCENDENT */
+  color: rgba(255, 240, 180, 0.95);
+  border-color: rgba(255, 240, 180, 0.5);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grim-effect-badge--rank-3 {
+    animation: grim-pulse 2400ms ease-in-out infinite;
+  }
+}
+
+@keyframes grim-pulse {
+  0%, 100% { opacity: 0.85; }
+  50%       { opacity: 1.0; }
+}
+
+.grim-school-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.60rem;
+  color: rgba(180, 160, 220, 0.5);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.grim-hsl-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.60rem;
+  color: rgba(180, 160, 220, 0.45);
+  margin-left: auto;
+}
+
+/* ── Provenance list ───────────────────────────────────────────────────────── */
+
+.grim-provenance {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: rgba(10, 8, 20, 0.4);
+  border: 1px solid rgba(180, 160, 220, 0.1);
+  border-radius: 3px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.grim-provenance-line {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.60rem;
+  color: rgba(180, 160, 220, 0.6);
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.grim-provenance-line::before {
+  content: '→ ';
+  opacity: 0.4;
+}
+
+/* ── Copy button ───────────────────────────────────────────────────────────── */
+
+.grim-copy-btn {
+  align-self: flex-end;
+  padding: 4px 10px;
+  background: rgba(60, 50, 90, 0.4);
+  border: 1px solid rgba(180, 160, 220, 0.25);
+  border-radius: 3px;
+  color: rgba(200, 185, 230, 0.75);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 200ms ease-in-out, color 200ms ease-in-out,
+              border-color 200ms ease-in-out;
+}
+
+.grim-copy-btn:hover:not(:disabled) {
+  background: rgba(80, 65, 115, 0.5);
+  color: rgba(220, 210, 245, 0.9);
+  border-color: rgba(180, 160, 220, 0.45);
+}
+
+.grim-copy-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.grim-copy-btn--copied {
+  color: rgba(140, 220, 160, 0.9);
+  border-color: rgba(140, 220, 160, 0.35);
+  background: rgba(40, 80, 50, 0.3);
+}

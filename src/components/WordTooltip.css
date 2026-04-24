@@ -1,0 +1,967 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   SCHOLOMANCE — ARCANE GRIMOIRE WORD CARD
+   Living sigil oracle · Parchment inscriptions · School-resonant chrome
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────────────────
+   DESIGN TOKENS (card-scoped)
+   ────────────────────────────────────────────────────────────────────────── */
+.word-tooltip-container {
+  --card-void:          #04020a;
+  --card-abyss:         #0c0818;
+  --card-eldritch:      #140d24;
+  --card-gold:          #c8a84b;
+  --card-gold-bright:   #f0c060;
+  --card-gold-dim:      rgba(200, 168, 75, 0.28);
+  --card-gold-glow:     rgba(200, 168, 75, 0.18);
+  --card-silver:        #8ca0b0;
+  --card-parchment:     #ecddb8;
+  --card-parchment-mid: #dece9e;
+  --card-parchment-dk:  #c4a870;
+  --card-ink:           #180f28;
+  --card-text-light:    #f0e4c4;
+  --card-text-muted:    #a89070;
+
+  pointer-events: auto;
+  max-width: calc(100vw - 24px);
+  perspective: 1000px;
+  filter: drop-shadow(0 22px 55px rgba(0, 0, 0, 0.85));
+  transition: filter 0.4s ease;
+}
+
+.word-tooltip-container:has(.word-card:hover) {
+  filter:
+    drop-shadow(0 26px 65px rgba(0, 0, 0, 0.9))
+    drop-shadow(0 0 22px var(--card-gold-glow));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CARD SHELL
+   ────────────────────────────────────────────────────────────────────────── */
+.word-card {
+  --school-frame-color: var(--card-gold);
+  --school-bg-color:    #0d0a18;
+  --school-accent-color: var(--card-gold-dim);
+  width: 100%;
+  height: 100%;
+  position: relative;
+  font-family: Georgia, serif;
+  pointer-events: auto;
+  user-select: none;
+}
+
+/* School frame overrides — jewel-tone anchors */
+.word-card[data-school="SONIC"]      { --school-frame-color: #6548b8; --school-bg-color: #0e0820; --school-accent-color: hsla(265, 48%, 50%, 0.3); }
+.word-card[data-school="PSYCHIC"]    { --school-frame-color: #4470b8; --school-bg-color: #080e20; --school-accent-color: hsla(220, 48%, 49%, 0.3); }
+.word-card[data-school="VOID"]       { --school-frame-color: #6a5a78; --school-bg-color: #0e0a14; --school-accent-color: hsla(310, 15%, 41%, 0.3); }
+.word-card[data-school="ALCHEMY"]    { --school-frame-color: #b84882; --school-bg-color: #140818; --school-accent-color: hsla(330, 48%, 50%, 0.3); }
+.word-card[data-school="WILL"]       { --school-frame-color: #b85c48; --school-bg-color: #180c08; --school-accent-color: hsla(15, 48%, 50%, 0.3); }
+.word-card[data-school="DIVINATION"] { --school-frame-color: #a88440; --school-bg-color: #181208; --school-accent-color: hsla(50, 46%, 46%, 0.3); }
+.word-card[data-school="NECROMANCY"] { --school-frame-color: #389468; --school-bg-color: #081810; --school-accent-color: hsla(155, 44%, 40%, 0.3); }
+.word-card[data-school="ABJURATION"] { --school-frame-color: #38849c; --school-bg-color: #081418; --school-accent-color: hsla(195, 46%, 42%, 0.3); }
+
+.card-frame {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  background:
+    radial-gradient(ellipse at 18% 14%, var(--school-accent-color) 0%, transparent 52%),
+    radial-gradient(ellipse at 50% 50%, var(--school-bg-color) 0%, var(--card-void) 100%);
+  border: 2px solid var(--school-frame-color);
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.5),
+    0 0 20px rgba(0, 0, 0, 0.8),
+    inset 0 0 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Secondary inner border */
+.card-frame::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border: 1px solid var(--card-gold-dim);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Scanline texture overlay */
+.card-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.06) 3px,
+    rgba(0, 0, 0, 0.06) 4px
+  );
+  pointer-events: none;
+  opacity: 0.55;
+  z-index: 1;
+}
+
+/* Legendary foil shimmer */
+.word-card--legendary .card-frame > .card-foil {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    125deg,
+    transparent 0%, transparent 40%,
+    rgba(255, 255, 255, 0.10) 45%,
+    rgba(255, 255, 255, 0.28) 50%,
+    rgba(255, 255, 255, 0.10) 55%,
+    transparent 60%, transparent 100%
+  );
+  background-size: 200% 200%;
+  animation: foil-shimmer 4s infinite linear;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 6px;
+}
+
+@keyframes foil-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SIGIL CHAMBER — Phaser canvas container
+   Positioned directly inside card-frame, before card-inner
+   ────────────────────────────────────────────────────────────────────────── */
+.sigil-chamber {
+  position: relative;
+  width: 100%;
+  height: 160px;
+  overflow: hidden;
+  flex-shrink: 0;
+  /* Subtle border separating sigil from inscription below */
+  border-bottom: 1px solid var(--card-gold-dim);
+  /* School-tinted inner glow — deepens the void effect */
+  box-shadow:
+    inset 0 -12px 28px rgba(0, 0, 0, 0.6),
+    inset 0 0 40px rgba(0, 0, 0, 0.4);
+  border-radius: 4px 4px 0 0;
+}
+
+/* Phaser drops the canvas as a direct child — size it correctly */
+.sigil-chamber canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CARD INNER — flex column for all text content
+   ────────────────────────────────────────────────────────────────────────── */
+.card-inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   INSCRIPTION HEADER — word name carved in gold light
+   Primary drag zone
+   ────────────────────────────────────────────────────────────────────────── */
+.card-inscription-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 40px 8px;
+  position: relative;
+  gap: 3px;
+}
+
+/* Horizontal ornament lines flanking the word name */
+.card-inscription-ornament {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--card-gold-dim) 25%,
+    var(--card-gold) 50%,
+    var(--card-gold-dim) 75%,
+    transparent 100%
+  );
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* Small diamond at the ornament center */
+.card-inscription-ornament::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 5px;
+  height: 5px;
+  background: var(--card-gold);
+  opacity: 0.7;
+}
+
+.card-word-name {
+  margin: 0;
+  font-family: var(--font-family-display, 'Cinzel', serif);
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--card-gold-bright);
+  text-transform: capitalize;
+  text-align: center;
+  letter-spacing: 2px;
+  text-shadow:
+    0 0 18px rgba(240, 192, 80, 0.5),
+    0 0 40px rgba(240, 192, 80, 0.18),
+    1px 1px 2px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.2;
+  padding: 4px 0 2px;
+}
+
+.card-ipa {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  color: var(--card-text-muted);
+  letter-spacing: 0.04em;
+  opacity: 0.75;
+  text-align: center;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   TYPE LINE — school · part of speech
+   ────────────────────────────────────────────────────────────────────────── */
+.card-type-line {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(20, 12, 6, 0.94) 8%,
+    rgba(22, 14, 8, 0.97) 50%,
+    rgba(20, 12, 6, 0.94) 92%,
+    transparent 100%
+  );
+  padding: 4px 12px;
+  margin: 0 0 6px 0;
+  border-top: 1px solid var(--card-gold-dim);
+  border-bottom: 1px solid var(--card-gold-dim);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-type-line::before,
+.card-type-line::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--card-gold-dim));
+}
+.card-type-line::after {
+  background: linear-gradient(90deg, var(--card-gold-dim), transparent);
+}
+
+.card-type {
+  font-family: var(--font-family-heading, 'Cinzel', serif);
+  font-size: 0.68rem;
+  color: var(--card-gold);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   ARCANE PROPERTIES — replaces power/toughness
+   Three glyphed stat badges: Depth · Rarity · Echo
+   ────────────────────────────────────────────────────────────────────────── */
+.card-arcane-props {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 5px 12px 7px;
+  flex-shrink: 0;
+}
+
+.arcane-prop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  background: rgba(4, 2, 10, 0.75);
+  border: 1px solid var(--card-gold-dim);
+  border-radius: 3px;
+  padding: 4px 10px 3px;
+  min-width: 52px;
+  position: relative;
+}
+
+/* Subtle corner clips on prop badges */
+.arcane-prop::before,
+.arcane-prop::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-color: var(--card-gold-dim);
+  border-style: solid;
+  opacity: 0.6;
+}
+.arcane-prop::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+.arcane-prop::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+.arcane-prop-value {
+  font-family: var(--font-family-display, 'Cinzel', serif);
+  font-size: 1.0rem;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 0 8px currentColor;
+}
+
+.arcane-prop-label {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.55rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--card-text-muted);
+  line-height: 1;
+}
+
+/* Rarity prop — wider to fit the tier name */
+.arcane-prop--rarity {
+  min-width: 110px;
+  flex-direction: row;
+  gap: 6px;
+  justify-content: center;
+}
+
+.arcane-prop-label--rarity {
+  font-size: 0.6rem;
+  color: var(--card-text-muted);
+}
+
+/* Rarity gem — diamond-cut */
+.arcane-rarity-gem {
+  width: 12px;
+  height: 12px;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  flex-shrink: 0;
+}
+
+.arcane-rarity-gem[data-rarity="common"] {
+  background: linear-gradient(135deg, #a0aab4 0%, #6b7280 100%);
+  filter: drop-shadow(0 0 2px rgba(156, 163, 175, 0.4));
+}
+.arcane-rarity-gem[data-rarity="rare"] {
+  background: linear-gradient(135deg, #93c5fd 0%, #2563eb 100%);
+  filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.8));
+}
+.arcane-rarity-gem[data-rarity="epic"] {
+  background: linear-gradient(135deg, #c084fc 0%, #7c3aed 100%);
+  filter: drop-shadow(0 0 7px rgba(167, 85, 247, 0.9));
+}
+.arcane-rarity-gem[data-rarity="legendary"] {
+  background: linear-gradient(135deg, #fde68a 0%, #d97706 100%);
+  animation: legendary-gem 2.2s ease-in-out infinite;
+}
+
+@keyframes legendary-gem {
+  0%, 100% { filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.7)); }
+  50%       { filter: drop-shadow(0 0 14px rgba(251, 191, 36, 1)) drop-shadow(0 0 22px rgba(251, 191, 36, 0.4)); }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   TEXT BOX — aged parchment with inscription content
+   ────────────────────────────────────────────────────────────────────────── */
+.card-text-box {
+  flex: 1;
+  min-height: 0;
+  background:
+    radial-gradient(circle at 12% 88%, rgba(100, 70, 20, 0.14) 0%, transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(80, 55, 20, 0.10) 0%, transparent 22%),
+    linear-gradient(172deg, #ecddb8 0%, #e0cf9e 32%, #e8d8a8 62%, #d8c888 100%);
+  border: 1px solid rgba(140, 110, 60, 0.55);
+  border-radius: 2px;
+  padding: 10px 12px;
+  overflow-y: auto;
+  will-change: transform;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.18),
+    inset 0 0 18px rgba(100, 70, 20, 0.07);
+}
+
+.card-text-box::-webkit-scrollbar        { width: 4px; }
+.card-text-box::-webkit-scrollbar-track  { background: rgba(100, 70, 20, 0.08); }
+.card-text-box::-webkit-scrollbar-thumb  { background: rgba(140, 110, 50, 0.42); border-radius: 2px; }
+
+.card-definition-type {
+  font-family: var(--font-family-heading, 'Cinzel', serif);
+  font-size: 0.65rem;
+  color: #4a3010;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+  font-weight: 700;
+  border-bottom: 1px solid rgba(74, 48, 16, 0.15);
+  padding-bottom: 4px;
+}
+
+.card-definition {
+  margin: 0 0 6px 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #190f08;
+  font-family: Georgia, serif;
+}
+
+.card-insight-section {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(100, 70, 20, 0.28);
+}
+
+.card-insight-title {
+  margin: 0 0 3px 0;
+  font-family: var(--font-family-heading, 'Cinzel', serif);
+  font-size: 0.67rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4a3010;
+}
+
+.card-insight-line {
+  margin: 0 0 3px 0;
+  color: #2a1c08;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+/* Rhyme Astrology section */
+.card-insight-section--astrology {
+  border-bottom-color: rgba(35, 97, 120, 0.26);
+}
+.card-insight-section--astrology .card-insight-title {
+  color: #1e4f66;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.card-astro-icon {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.card-astro-sign-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.card-astro-sign-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #3a6a80;
+  font-family: "Space Grotesk", sans-serif;
+  flex-shrink: 0;
+}
+.card-astro-sign {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: #165d80;
+  background: rgba(22, 93, 128, 0.1);
+  border: 1px solid rgba(22, 93, 128, 0.25);
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+.card-astro-clusters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.card-astro-cluster-chip {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: rgba(35, 97, 120, 0.1);
+  border: 1px solid rgba(35, 97, 120, 0.22);
+  color: #1e6680;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.03em;
+}
+
+.card-astro-matches       { display: flex; flex-direction: column; gap: 5px; }
+.card-astro-matches-label {
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #3a6a80;
+  font-family: "Space Grotesk", sans-serif;
+  margin: 0 0 2px;
+}
+.card-astro-match-row     { display: flex; flex-direction: column; gap: 2px; }
+.card-astro-match-header  { display: flex; align-items: center; justify-content: space-between; }
+.card-astro-match-word    { font-size: 0.72rem; font-weight: 700; color: #1a3d50; font-family: Georgia, serif; }
+.card-astro-match-score   { font-family: "JetBrains Mono", monospace; font-size: 0.62rem; color: #1e6680; }
+.card-astro-match-bar-track {
+  height: 2px;
+  background: rgba(35, 97, 120, 0.12);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.card-astro-match-bar-fill {
+  height: 100%;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #165d80 0%, #2a9bc0 100%);
+  min-width: 2px;
+  max-width: 100%;
+}
+.card-astro-reason-pills  { display: flex; flex-wrap: wrap; gap: 3px; }
+.card-astro-reason-pill {
+  font-size: 0.56rem;
+  padding: 0px 4px;
+  border-radius: 2px;
+  background: rgba(35, 97, 120, 0.08);
+  color: #3a6a80;
+  font-family: "Space Grotesk", sans-serif;
+  letter-spacing: 0.01em;
+  line-height: 1.6;
+}
+
+.card-flavor-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(100, 70, 20, 0.45) 18%, rgba(100, 70, 20, 0.45) 82%, transparent 100%);
+  margin: 6px 0;
+}
+
+.card-flavor-text {
+  margin: 3px 0;
+  font-size: 0.76rem;
+  font-style: italic;
+  color: #3a2810;
+  line-height: 1.35;
+}
+
+.flavor-label {
+  font-style: normal;
+  font-weight: 700;
+  color: #2a1808;
+  font-family: var(--font-family-heading, 'Cinzel', serif);
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CORNER DECORATIONS — L-bracket ornaments
+   ────────────────────────────────────────────────────────────────────────── */
+.card-corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  pointer-events: none;
+  z-index: 10;
+}
+.card-corner::before {
+  content: '';
+  position: absolute;
+  background: var(--card-gold);
+  opacity: 0.65;
+}
+.card-corner::after {
+  content: '';
+  position: absolute;
+  background: var(--card-gold);
+  opacity: 0.65;
+}
+
+.card-corner--tl::before { width: 15px; height: 1px; top: 0; left: 0; }
+.card-corner--tr::before { width: 15px; height: 1px; top: 0; right: 0; }
+.card-corner--bl::before { width: 15px; height: 1px; bottom: 0; left: 0; }
+.card-corner--br::before { width: 15px; height: 1px; bottom: 0; right: 0; }
+
+.card-corner--tl::after  { width: 1px; height: 15px; top: 0; left: 0; }
+.card-corner--tr::after  { width: 1px; height: 15px; top: 0; right: 0; }
+.card-corner--bl::after  { width: 1px; height: 15px; bottom: 0; left: 0; }
+.card-corner--br::after  { width: 1px; height: 15px; bottom: 0; right: 0; }
+
+.card-corner--tl { top: 5px; left: 5px; }
+.card-corner--tr { top: 5px; right: 5px; }
+.card-corner--bl { bottom: 5px; left: 5px; }
+.card-corner--br { bottom: 5px; right: 5px; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RESIZE HANDLES — all 8 edges/corners
+   ────────────────────────────────────────────────────────────────────────── */
+.card-resize-handle {
+  position: absolute;
+  z-index: 25;
+  pointer-events: all;
+  opacity: 0;
+  transition: opacity 0.18s ease, background 0.18s ease;
+}
+
+.word-card:hover .card-resize-handle,
+.word-tooltip-container.is-interacting .card-resize-handle { opacity: 1; }
+
+.card-resize-handle--n  { top: 0; left: 16px; right: 24px; height: 12px; cursor: ns-resize; }
+.card-resize-handle--s  { bottom: 0; left: 16px; right: 16px; height: 12px; cursor: ns-resize; }
+.card-resize-handle--e  { right: 0; top: 24px; bottom: 16px; width: 12px; cursor: ew-resize; }
+.card-resize-handle--w  { left: 0; top: 16px; bottom: 16px; width: 12px; cursor: ew-resize; }
+
+.card-resize-handle--n::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to bottom, rgba(200, 168, 75, 0.28), transparent); }
+.card-resize-handle--s::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: linear-gradient(to top, rgba(200, 168, 75, 0.28), transparent); }
+.card-resize-handle--e::after { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 3px; background: linear-gradient(to left, rgba(200, 168, 75, 0.28), transparent); }
+.card-resize-handle--w::after { content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: linear-gradient(to right, rgba(200, 168, 75, 0.28), transparent); }
+
+.card-resize-handle--n:hover::after { background: linear-gradient(to bottom, rgba(200, 168, 75, 0.55), transparent); }
+.card-resize-handle--s:hover::after { background: linear-gradient(to top,    rgba(200, 168, 75, 0.55), transparent); }
+.card-resize-handle--e:hover::after { background: linear-gradient(to left,   rgba(200, 168, 75, 0.55), transparent); }
+.card-resize-handle--w:hover::after { background: linear-gradient(to right,  rgba(200, 168, 75, 0.55), transparent); }
+
+.card-resize-handle--nw { top: 0; left: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+.card-resize-handle--ne { top: 0; right: 0; width: 10px; height: 10px; cursor: nesw-resize; }
+.card-resize-handle--sw { bottom: 0; left: 0; width: 16px; height: 16px; cursor: nesw-resize; }
+
+/* SE corner — eldritch grip anchor */
+.card-resize-handle--se {
+  bottom: 0; right: 0;
+  width: 36px; height: 36px;
+  cursor: nwse-resize;
+  border-radius: 0 0 6px 0;
+  background: linear-gradient(135deg, transparent 50%, rgba(200, 168, 75, 0.18) 50%, rgba(200, 168, 75, 0.38) 100%);
+  opacity: 0.75 !important;
+  transition: opacity 0.2s, background 0.2s;
+}
+.card-resize-handle--se::before {
+  content: '';
+  position: absolute;
+  bottom: 6px; right: 6px;
+  width: 12px; height: 12px;
+  background:
+    radial-gradient(circle at 80% 80%, var(--card-gold) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 20% 80%, var(--card-gold) 1.5px, transparent 1.5px),
+    radial-gradient(circle at 80% 20%, var(--card-gold) 1.5px, transparent 1.5px);
+  opacity: 0.7;
+}
+.card-resize-handle--se:hover {
+  opacity: 1 !important;
+  background: linear-gradient(135deg, transparent 50%, rgba(200, 168, 75, 0.38) 50%, rgba(240, 192, 80, 0.72) 100%);
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   RARITY BORDER VARIANTS
+   ────────────────────────────────────────────────────────────────────────── */
+.word-card--common .card-frame {
+  border-color: #5a4838;
+}
+.word-card--rare .card-frame {
+  border-color: #3b82f6;
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.08),
+    0 0 0 5px rgba(4, 2, 10, 0.95),
+    0 0 0 6px rgba(59, 130, 246, 0.14),
+    inset 0 0 40px rgba(0, 0, 0, 0.65),
+    0 0 28px rgba(59, 130, 246, 0.22);
+}
+.word-card--epic .card-frame {
+  border-color: #8b5cf6;
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.08),
+    0 0 0 5px rgba(4, 2, 10, 0.95),
+    0 0 0 6px rgba(139, 92, 246, 0.18),
+    inset 0 0 40px rgba(0, 0, 0, 0.65),
+    0 0 35px rgba(139, 92, 246, 0.32);
+}
+.word-card--legendary .card-frame {
+  border-color: var(--card-gold);
+  animation: legendary-frame 3.5s ease-in-out infinite;
+}
+
+@keyframes legendary-frame {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(200, 168, 75, 0.18),
+      0 0 0 5px rgba(4, 2, 10, 0.95),
+      0 0 0 6px rgba(200, 168, 75, 0.22),
+      inset 0 0 40px rgba(0, 0, 0, 0.65),
+      0 0 40px rgba(200, 168, 75, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(200, 168, 75, 0.28),
+      0 0 0 5px rgba(4, 2, 10, 0.95),
+      0 0 0 6px rgba(200, 168, 75, 0.32),
+      inset 0 0 40px rgba(0, 0, 0, 0.65),
+      0 0 60px rgba(200, 168, 75, 0.55);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   LOADING / ERROR / EMPTY STATES
+   ────────────────────────────────────────────────────────────────────────── */
+.word-card--loading .card-inner,
+.word-card--error .card-inner,
+.word-card--empty .card-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  text-align: center;
+}
+
+.card-loading-spinner {
+  width: 44px;
+  height: 44px;
+  border: 2px solid rgba(200, 168, 75, 0.08);
+  border-top-color: var(--card-gold);
+  border-right-color: rgba(200, 168, 75, 0.38);
+  border-radius: 50%;
+  animation: eldritch-spin 1.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+@keyframes eldritch-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.card-loading-text,
+.card-error-text,
+.card-empty-text {
+  margin-top: 14px;
+  font-size: 0.82rem;
+  color: var(--card-text-muted);
+  font-style: italic;
+  font-family: Georgia, serif;
+}
+
+.card-error-icon,
+.card-empty-icon {
+  font-size: 2.5rem;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CLOSE BUTTON — diamond seal
+   ────────────────────────────────────────────────────────────────────────── */
+.card-close-btn {
+  position: absolute;
+  top: -11px;
+  right: -11px;
+  width: 30px;
+  height: 30px;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  background: linear-gradient(135deg, #2a1010, #1a0a0a);
+  border: none;
+  color: var(--card-text-muted);
+  font-size: 0.78rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 40;
+  pointer-events: auto;
+  touch-action: manipulation;
+  transition: color 0.2s ease, filter 0.2s ease;
+}
+.card-close-btn:hover {
+  color: #fff;
+  filter: drop-shadow(0 0 7px rgba(220, 60, 60, 0.7));
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   ACCESSIBILITY
+   ────────────────────────────────────────────────────────────────────────── */
+.word-card:focus-within { outline: none; }
+.card-close-btn:focus   { outline: none; }
+.card-close-btn:focus-visible { box-shadow: 0 0 0 2px rgba(220, 60, 60, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .word-card,
+  .arcane-rarity-gem,
+  .word-card--legendary .card-frame,
+  .card-loading-spinner {
+    animation: none !important;
+  }
+  .card-frame,
+  .word-card:hover .card-frame {
+    transform: none !important;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SUGGESTION RUNES — clickable word pills
+   ────────────────────────────────────────────────────────────────────────── */
+.suggestion-rune {
+  display: inline-block;
+  margin: 2px 3px 2px 0;
+  padding: 1px 7px;
+  font-family: Georgia, serif;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: #3a2810;
+  background: rgba(200, 168, 75, 0.08);
+  border: 1px solid rgba(140, 110, 60, 0.38);
+  border-radius: 20px;
+  cursor: pointer;
+  line-height: 1.5;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  user-select: none;
+  vertical-align: baseline;
+}
+.suggestion-rune:hover {
+  background: rgba(200, 168, 75, 0.2);
+  border-color: rgba(200, 168, 75, 0.6);
+  box-shadow: 0 0 6px rgba(200, 168, 75, 0.28);
+  color: #1a0f04;
+}
+.suggestion-rune:active { transform: scale(0.93); background: rgba(200, 168, 75, 0.32); }
+.suggestion-rune:focus-visible { outline: 1px solid rgba(200, 168, 75, 0.7); outline-offset: 1px; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   CARD BREADCRUMB — within-card word trail
+   ────────────────────────────────────────────────────────────────────────── */
+.card-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 7px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(140, 110, 60, 0.3);
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+.card-breadcrumb-item { display: inline-flex; align-items: center; gap: 0; }
+.card-breadcrumb-sep  { color: rgba(100, 70, 20, 0.45); font-size: 0.8rem; padding: 0 3px; user-select: none; }
+.card-breadcrumb-current { color: #1a0f04; font-weight: 600; font-style: italic; }
+.card-breadcrumb-ancestor {
+  color: rgba(58, 40, 16, 0.6);
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: Georgia, serif;
+  font-size: 0.72rem;
+  font-style: italic;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+  transition: color 0.12s ease;
+  line-height: inherit;
+}
+.card-breadcrumb-ancestor:hover { color: #3a2810; }
+.card-breadcrumb-ancestor.card-breadcrumb-truncated { text-decoration: none; cursor: default; pointer-events: none; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   SESSION NAV — pinned word history navigation
+   ────────────────────────────────────────────────────────────────────────── */
+.card-session-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--card-gold-dim);
+}
+
+.session-nav-btn {
+  background: none;
+  border: none;
+  color: var(--card-gold);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  border-radius: 2px;
+}
+.session-nav-btn:hover:not(:disabled) { opacity: 1; color: var(--card-gold-bright); }
+.session-nav-btn:disabled  { opacity: 0.25; cursor: default; }
+.session-nav-btn:focus-visible { outline: 1px solid var(--card-gold); outline-offset: 1px; }
+
+.session-nav-pos {
+  font-family: var(--font-family-display, 'Cinzel', serif);
+  font-size: 0.72rem;
+  color: var(--card-text-muted);
+  letter-spacing: 0.5px;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   MOBILE BOTTOM SHEET MODE
+   ────────────────────────────────────────────────────────────────────────── */
+.word-tooltip-mobile-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-height: 65vh;
+  background: var(--bg-surface, #0a0a18);
+  border-top: 1px solid var(--border-soft, rgba(255, 255, 255, 0.1));
+  border-radius: var(--radius-xl, 1rem) var(--radius-xl, 1rem) 0 0;
+  z-index: 1500;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.word-tooltip-mobile-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+  border-bottom: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.06));
+  flex-shrink: 0;
+}
+
+.word-tooltip-mobile-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Flatten card inside mobile sheet */
+.word-tooltip-mobile-body .word-card  { width: 100% !important; height: auto !important; position: static !important; }
+.word-tooltip-mobile-body .card-frame { width: 100% !important; height: auto !important; border-radius: 0; border: none; box-shadow: none; }
+.word-tooltip-mobile-body .card-inner { width: 100% !important; height: auto !important; }
+
+/* Hide resize handles on mobile */
+.word-tooltip-mobile-body .card-resize-handle,
+.word-tooltip-mobile-body .card-corner,
+.word-tooltip-mobile-body .card-close-btn { display: none !important; }
+
+.word-tooltip-mobile-body .card-inscription-header { cursor: default; }
+.word-tooltip-mobile-body .card-text-box { max-height: none; overflow: visible; }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   LEGACY COMPAT
+   ────────────────────────────────────────────────────────────────────────── */
+.react-resizable-handle { display: none; }

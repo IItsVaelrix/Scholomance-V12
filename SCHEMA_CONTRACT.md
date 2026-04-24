@@ -1,0 +1,1703 @@
+# SCHEMA_CONTRACT.md
+> Read first: `SHARED_PREAMBLE.md` -> `VAELRIX_LAW.md` -> this file.
+
+## Living Document - Owned by Codex, Read by All Agents
+
+**Version: 1.23** | Last updated: 2026-04-18
+
+> Bump the version on every schema change.
+> Notify Claude for UI-consumed field changes.
+> Notify Blackbox for fixture and regression-test changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Ritual prediction convergence contract
+- Version: 1.22 -> 1.23
+- Changed fields: added `RitualPrediction*` runtime and artifact contracts, including canonical context, candidate, diagnostic, artifact, and PixelBrain projection shapes used by the shared ritual prediction engine; reserved `PB-PRED-v1` as the export bytecode family for future persisted/shared artifacts
+- Breaking: no
+- Claude impact: editor and diagnostic consumers can rely on one shared ritual prediction artifact shape if they choose to surface backend or local prediction traces
+- Blackbox impact: predictor, PLS, and backend parity batteries can assert the shared ritual prediction result and artifact contract without inferring fields from individual callers
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: TrueSight rhyme color registry word-analysis contract
+- Version: 1.21 -> 1.22
+- Changed fields: added `WordAnalysis`; documented `WordAnalysis.rhymeKey: string | null` as a required Truesight field and formalized optional bytecode passthrough on the normalized analysis object
+- Breaking: no
+- Claude impact: `ReadPage` / `ScrollEditor` may rely on `analysis.rhymeKey` being present as `string | null` when building verse-scoped rhyme color registries
+- Blackbox impact: panel-analysis fixtures and Truesight overlay assertions can treat missing `rhymeKey` as a contract violation instead of an optional field
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Collab assignment preflight contract
+- Version: 1.19 -> 1.20
+- Changed fields: added `TaskAssignmentPreflightConflict` and `TaskAssignmentPreflightResponse`; documented `GET /collab/tasks/:id/preflight`
+- Breaking: no
+- Claude impact: Collab assignment UI can rely on a real backend preflight response instead of fallback optimistic copy
+- Blackbox impact: collab route, service, and UI fixtures can assert clean assignment, ownership-override, and lock-conflict preflight states
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Global UI Stacking Tiers
+- Version: 1.18 -> 1.19
+- Changed fields: Added `Z_BASE`, `Z_ABOVE`, `Z_OVERLAY`, `Z_SYSTEM` semantic constants.
+- Breaking: Yes (Prohibits hardcoded z-indexes per Law 10)
+- Claude impact: All components using hardcoded z-indexes must migrate to these semantic tiers.
+- Blackbox impact: Visual regression tests should validate that components remain in their assigned tiers.
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: VerseIR PixelBrain phase 1 bridge contract
+- Version: 1.17 -> 1.18
+- Changed fields: added `PixelBrainPalette`, `PixelBrainCoordinate`, and `PixelBrainPayload`; `VerseIRAmplifierPayload` may now optionally expose `pixelBrain`
+- Breaking: no
+- Claude impact: Read analysis surfaces may optionally consume `analysis.verseIRAmplifier.pixelBrain` for future pixel overlays, but no existing UI consumer is required to change
+- Blackbox impact: panel-analysis fixtures and VerseIR amplifier serialization snapshots can include the new optional `pixelBrain` payload
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: VerseIR Narrative AMP contract
+- Version: 1.16 -> 1.17
+- Changed fields: added `NarrativeAMPBeat`, `NarrativeAMPRevision`, `NarrativeAMPResonance`, and `NarrativeAMPPayload`; `/api/analysis/panels` may now include `narrativeAMP`; `oracle` is retained as a compatibility alias during migration
+- Breaking: no
+- Claude impact: Read analysis surfaces should prefer `narrativeAMP` and may fall back to `oracle` while older consumers are still migrating
+- Blackbox impact: panel-analysis fixtures can include the new optional payload while continuing to accept the legacy oracle alias
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: VerseIR TrueVision travelling-wave contract
+- Version: 1.15 -> 1.16
+- Changed fields: `VerseTokenIR` now optionally exposes `visualBytecode` and `trueVisionBytecode`; `VerseIRAmplifierResult` may carry plugin `payload`; `VerseIRAmplifierPayload` and `VerseIR` can now optionally expose `trueVision`
+- Breaking: no
+- Claude impact: Read/editor surfaces can keep using `visualBytecode` and may optionally consume `trueVisionBytecode` / `trueVision` for deeper Truesight overlays later
+- Blackbox impact: VerseIR fixtures, panel-analysis fixtures, and serialization snapshots can include the new optional bytecode and TrueVision payloads
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Scroll persistence contract
+- Version: 1.14 -> 1.15
+- Changed fields: `Scroll` now exposes optional `submittedAt`; scroll persistence can distinguish autosaved drafts from first-time submitted scrolls
+- Breaking: no
+- Claude impact: Read/editor surfaces can keep autosaving drafts while reserving one-time submission behaviors such as XP awards for explicit saves
+- Blackbox impact: scroll fixtures and persistence assertions can include `submittedAt` for draft-vs-submitted coverage
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: VerseIR substrate hardening contract
+- Version: 1.13 -> 1.14
+- Changed fields: `VerseLineIR`, `VerseTokenIR`, and `SyllableWindowIR` now expose parallel grapheme offsets; `VerseIR` adds `surfaceSpans`; VerseIR metadata now records applied window limits, offset semantics, grapheme support, and normalization policy; `VerseTokenIR` may expose `phoneticDiagnostics`; compiler descriptors may optionally surface the applied limits and grapheme metadata
+- Breaking: no
+- Claude impact: Analysis surfaces can keep using code-unit offsets, but may opt into the new grapheme offsets and `surfaceSpans` table for more exact hover/selection overlays
+- Blackbox impact: VerseIR fixtures, compiler snapshots, and rhyme-astrology compiler payload assertions can include the new optional metadata and surface span structures
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Phonemic Oracle contract
+- Version: 1.12 -> 1.13
+- Changed fields: added `OracleInsight`, `OracleSuggestion`, and `OraclePayload`; `/api/analysis/panels` response may include `oracle: OraclePayload | null`
+- Breaking: no
+- Claude impact: Analysis surfaces should render the new `oracle` commentary and suggestions when present
+- Blackbox impact: panel-analysis fixtures can assert the new optional `oracle` payload
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: VerseIR Synapse Slot contract
+- Version: 1.11 -> 1.12
+- Changed fields: added `VerseIRAmplifierArchetype`, `VerseIRAmplifierMatch`, `VerseIRAmplifierResult`, and `VerseIRAmplifierPayload`; `VerseIR` can now optionally expose `semanticDepth`, `archetypeResonance`, `elementMatches`, and `verseIRAmplifier`; `/api/analysis/panels` may include `analysis.verseIRAmplifier`
+- Breaking: no
+- Claude impact: Read analysis surfaces may render the optional Synapse Slot payload when present, but existing consumers remain valid without changes
+- Blackbox impact: panel-analysis fixtures can assert the new optional payload and combat scoring fixtures may observe the new `verseir_amplifier` trace when combat services attach VerseIR amplifier context
+
+---
+
+## Precedence
+
+- This file is the active shared contract for schemas and runtime payloads.
+- If this file conflicts with anything under `ARCHIVE REFERENCE DOCS/`, this file and `VAELRIX_LAW.md` win.
+- If a shape is missing, escalate and have Codex publish it here before it spreads across multiple files.
+
+---
+
+## Global UI Constants
+
+These constants define mandatory semantic tiers for UI rendering.
+
+```ts
+/** 
+ * MANDATORY STACKING TIERS (VAELRIX LAW 10)
+ * Hardcoded z-indexes > 1 are prohibited.
+ */
+enum StackingTier {
+  Z_BASE    = 0,    // Standard page content, static backgrounds
+  Z_ABOVE   = 10,   // Elements floating above content (tooltips, small menus)
+  Z_OVERLAY = 100,  // Full-screen overlays, modals, intrusive selection screens
+  Z_SYSTEM  = 1000  // Critical system elements (toasts, debug badges, errors)
+}
+```
+
+---
+
+## Core Schemas
+
+These are the current shared shapes used across `codex/core/`, `src/types/`, and bridge hooks.
+
+```ts
+interface Scroll {
+  id: string; // "scroll-{timestamp}-{7char}"
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+  submittedAt?: number | null;
+  authorId: string;
+}
+
+interface PhonemeAnalysis {
+  vowelFamily: VowelFamily;
+  phonemes: string[];
+  coda: string | null;
+  rhymeKey: string;
+}
+
+interface Diagnostic {
+  start: number;
+  end: number;
+  severity: DiagnosticSeverity;
+  message: string;
+  source?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface ScoreTrace {
+  heuristic: string;
+  rawScore: number;
+  weight: number;
+  contribution: number;
+  explanation: string;
+  commentary?: string;
+  diagnostics?: Diagnostic[];
+}
+
+interface CombatAction {
+  scrollId: string;
+  lines: string[];
+  timestamp: number;
+  playerId: string;
+}
+
+interface CombatResult {
+  damage: number;
+  statusEffects: string[];
+  resourceChanges: Record<string, number>;
+  explainTrace: ScoreTrace[];
+}
+
+interface XPEvent {
+  source: string;
+  amount: number;
+  timestamp: number;
+  playerId: string;
+  context?: string | Record<string, unknown>;
+}
+
+interface Definition {
+  text: string;
+  partOfSpeech: string;
+  source: string;
+}
+
+interface LexicalEntry {
+  word: string;
+  definition: Definition | null;
+  definitions: string[];
+  pos: string[];
+  synonyms: string[];
+  antonyms: string[];
+  rhymes: string[];
+  slantRhymes: string[];
+  etymology?: string;
+  ipa?: string;
+  lore?: Record<string, unknown>;
+  raw?: unknown;
+}
+
+interface TokenGraphNode {
+  id: string;
+  token: string;
+  normalized: string;
+  nodeType: "LEXEME" | "SCROLL_TOKEN" | "SCHOOL_ANCHOR" | "SEMANTIC_ANCHOR";
+  schoolBias: Partial<Record<School, number>>;
+  phoneticSignature?: {
+    phonemes: string[];
+    vowelSkeleton: string[];
+    consonantSkeleton: string[];
+    endingSignature: string;
+    onsetSignature: string;
+    stressPattern: string;
+    syllableCount: number;
+  };
+  semanticTags?: string[];
+  frequencyScore?: number;
+}
+
+interface TokenGraphEdge {
+  id: string;
+  fromId: string;
+  toId: string;
+  relation:
+    | "PHONETIC_SIMILARITY"
+    | "SEMANTIC_ASSOCIATION"
+    | "SYNTACTIC_COMPATIBILITY"
+    | "SCHOOL_RESONANCE"
+    | "MEMORY_AFFINITY"
+    | "SEQUENTIAL_LIKELIHOOD";
+  weight: number;
+  evidence: string[];
+  dimensions?: Record<string, number>;
+}
+
+interface ContextActivation {
+  anchorNodeIds: string[];
+  currentSchool: School | null;
+  syntaxContext: {
+    role?: string;
+    lineRole?: string;
+    stressRole?: string;
+    rhymePolicy?: string;
+  } | null;
+  decay: number;
+  maxDepth: number;
+  maxFanout: number;
+}
+
+interface CollabAgent {
+  id: string;
+  name: string;
+  role: "ui" | "backend" | "qa";
+  framework_origin?: string; // e.g. "native", "langchain", "autogen"
+  capabilities: string[];
+  status: "online" | "busy" | "offline";
+  current_task_id?: string | null;
+  last_seen: string; // ISO-8601
+  metadata: Record<string, unknown>;
+}
+
+interface CollabBugReport {
+  id: string;
+  title: string;
+  summary?: string;
+  status: "new" | "triaged" | "assigned" | "in_progress" | "fixed" | "verified" | "closed" | "duplicate";
+  priority: number;
+  source_type: "human" | "runtime" | "qa" | "pipeline" | "agent";
+  severity?: "INFO" | "WARN" | "CRIT" | "FATAL";
+  bytecode?: string;
+  solution_bytecode?: string;
+  solution_ledger_status?: "pending" | "active" | "flagged";
+  corroborating_agents?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface GraphCandidate {
+  nodeId: string;
+  token: string;
+  activationScore: number;
+  legalityScore: number;
+  semanticScore: number;
+  phoneticScore: number;
+  schoolScore: number;
+  noveltyScore: number;
+  totalScore: number;
+  trace: ScoreTrace[];
+}
+
+interface RitualPredictionAnchorToken {
+  token: string;
+  weight: number;
+}
+
+interface RitualPredictionLineVowelFamily {
+  id: string;
+  count: number;
+}
+
+interface RitualPredictionCurrentLineState {
+  lineIndex: number;
+  anchorCount: number;
+  anchorWords: string[];
+  dominantVowelFamily: string | null;
+  vowelFamilies: RitualPredictionLineVowelFamily[];
+  repeatedWindowCount: number;
+  repeatedWindowIds: number[];
+  repeatedWindowSignatures: string[];
+  windowSyllableLengths: number[];
+  terminalRhymeTailSignatures: string[];
+}
+
+interface RitualPredictionLineEndState {
+  word: string;
+  normalizedWord: string;
+  lineIndex: number;
+  tokenId: number;
+  charStart: number;
+  charEnd: number;
+  activeWindowIds: number[];
+  sign: string | null;
+  rhymeTailSignature: string | null;
+  primaryStressedVowelFamily: string | null;
+  terminalVowelFamily: string | null;
+  syllableCount: number;
+  isLineStart: boolean;
+  isLineEnd: boolean;
+}
+
+interface RitualPredictionVerseIRState {
+  compiler: TruesightCompilerDescriptor | null;
+  previousLineEnd: RitualPredictionLineEndState | null;
+  currentLine: RitualPredictionCurrentLineState | null;
+}
+
+interface RitualPredictionContext {
+  prefix: string;
+  currentToken: string | null;
+  prevToken: string | null;
+  lineEndToken: string | null;
+  currentLineWords: string[];
+  currentSchool: School | null;
+  syntaxContext: {
+    role?: string;
+    lineRole?: string;
+    stressRole?: string;
+    rhymePolicy?: string;
+    hhm?: Record<string, unknown>;
+  } | null;
+  verseIRState: RitualPredictionVerseIRState | null;
+  anchorTokens: RitualPredictionAnchorToken[];
+  decay: number;
+  maxDepth: number;
+  maxFanout: number;
+  maxCandidates: number;
+}
+
+interface RitualPredictionCandidate extends GraphCandidate {
+  connectedness: number;
+  pathCoherence: number;
+  path: {
+    nodeId: string;
+    activationScore: number;
+    pathNodes: string[];
+    pathEdges: TokenGraphEdge[];
+  };
+}
+
+interface RitualPredictionContextSnapshot {
+  prefix: string;
+  currentToken: string | null;
+  prevToken: string | null;
+  lineEndToken: string | null;
+  currentSchool: School | null;
+  currentLineWords: string[];
+  maxDepth: number;
+  maxFanout: number;
+  maxCandidates: number;
+  verseIRState: {
+    compiler: TruesightCompilerDescriptor | null;
+    previousLineEnd: {
+      normalizedWord: string | null;
+      lineIndex: number | null;
+      rhymeTailSignature: string | null;
+    } | null;
+    currentLine: {
+      lineIndex: number | null;
+      dominantVowelFamily: string | null;
+      repeatedWindowCount: number;
+    } | null;
+  } | null;
+}
+
+interface RitualPredictionCandidateSummary {
+  token: string;
+  totalScore: number;
+  activationScore: number;
+  legalityScore: number;
+  semanticScore: number;
+  phoneticScore: number;
+  schoolScore: number;
+  noveltyScore: number;
+  connectedness: number;
+  pathCoherence: number;
+  pathNodeIds: string[];
+  sourceRelations: TokenGraphEdge["relation"][];
+}
+
+interface RitualPredictionDiagnostic {
+  source: string;
+  severity: "info" | "warn" | "error";
+  message: string;
+}
+
+interface PredictionPixelBrainProjection {
+  version: string;
+  candidateCount: number;
+  paletteCount: number;
+  dominantAxis: "horizontal" | "vertical" | "diagonal" | "radial";
+  dominantSymmetry: "none" | "horizontal" | "vertical" | "radial";
+  canvas: {
+    width: number;
+    height: number;
+    gridSize: number;
+    goldenPoint: {
+      x: number;
+      y: number;
+    };
+  };
+  palettes: PixelBrainPalette[];
+  coordinates: PixelBrainCoordinate[];
+}
+
+interface RitualPredictionArtifact {
+  version: string;
+  requestHash: string;
+  traceChecksum: string;
+  context: RitualPredictionContextSnapshot;
+  winner: RitualPredictionCandidateSummary | null;
+  candidates: RitualPredictionCandidateSummary[];
+  diagnostics: RitualPredictionDiagnostic[];
+  pixelbrainProjection: PredictionPixelBrainProjection;
+}
+
+// Reserved export family for future persisted/shared ritual prediction artifacts.
+// Runtime callers currently exchange structured RitualPredictionArtifact objects.
+type RitualPredictionBytecodeFamily = "PB-PRED-v1";
+
+interface TruesightCompilerDescriptor {
+  verseIRVersion: string;
+  mode: TruesightAnalysisMode;
+  tokenCount: number;
+  lineCount: number;
+  maxWindowSyllables?: number;
+  maxWindowTokenSpan?: number;
+  syllableWindowCount: number;
+  lineBreakStyle: LineBreakStyle;
+  offsetSemantics?: string;
+  graphemeAware?: boolean;
+  graphemeCount?: number;
+  whitespaceFidelity: boolean;
+}
+
+interface VerseNormalizationPolicy {
+  lowercase: boolean;
+  unicodeForm: "none" | "NFC" | "NFD" | "NFKC" | "NFKD";
+  accentFolding: boolean;
+}
+
+interface VerseSurfaceSpanIR {
+  id: number;
+  lineIndex: number;
+  surfaceIndexInLine: number;
+  kind: "word" | "whitespace" | "punctuation";
+  text: string;
+  tokenId: number | null;
+  charStart: number;
+  charEnd: number;
+  graphemeStart: number;
+  graphemeEnd: number;
+}
+
+interface VerseLineIR {
+  lineIndex: number;
+  text: string;
+  normalizedText: string;
+  tokenIds: number[];
+  charStart: number;
+  charEnd: number;
+  graphemeStart: number;
+  graphemeEnd: number;
+  lineBreak: string;
+  lineBreakStart: number;
+  lineBreakEnd: number;
+  rawSlice: string;
+  isTerminalLine: boolean;
+}
+
+interface PhoneticDiagnosticTrail {
+  source: string;
+  branch: string;
+  fallbackPath: string[];
+  authoritySource: string | null;
+  usedAuthorityCache: boolean;
+  unknownReason: string | null;
+  notes: string[];
+}
+
+interface VerseTokenVisualBytecode {
+  version: number;
+  school: School | null;
+  rarity: string;
+  color: string;
+  glowIntensity: number;
+  saturationBoost: number;
+  syllableDepth: number;
+  isAnchor: boolean;
+  isStopWord: boolean;
+  effectClass: string;
+}
+
+interface VerseIRTrueVisionBand {
+  id: string;
+  label: string;
+  centerHz: number;
+  energy: number;
+}
+
+interface VerseIRTrueVisionTokenBytecode {
+  symbol: string;
+  dominantBand: string | null;
+  bandEnergy: number;
+  modulationDepth: number;
+  synchronousLock: number;
+  noiseFloor: number;
+  noiseSuppression: number;
+  confidence: number;
+  onsetSharpness: number;
+  codaDamping: number;
+  spectralTilt: number;
+  windowCoupling: number;
+}
+
+interface WordAnalysis {
+  word: string;
+  normalizedWord: string;
+  lineIndex: number;
+  wordIndex: number;
+  charStart: number;
+  charEnd: number;
+  vowelFamily: string | null;
+  syllableCount: number;
+  rhymeKey: string | null; // Terminal rhyme signature from VerseTokenIR. Null for stop words and unanalyzed tokens. Required for rhyme color registry.
+  stressPattern: string;
+  role: string;
+  lineRole: string;
+  stressRole: string;
+  rhymePolicy: string;
+  visualBytecode?: VerseTokenVisualBytecode | null;
+  trueVisionBytecode?: VerseIRTrueVisionTokenBytecode | null;
+}
+
+interface VerseIRTrueVisionWindowSummary {
+  windowId: number;
+  signature: string;
+  dominantBand: string | null;
+  tokenSpan: [number, number];
+  lineSpan: [number, number];
+  modulationDepth: number;
+  synchronousLock: number;
+  confidence: number;
+}
+
+interface VerseIRTrueVisionPayload {
+  version: string;
+  tokenCount: number;
+  trackedTokenCount: number;
+  dominantBand: VerseIRTrueVisionBand | null;
+  bandDistribution: VerseIRTrueVisionBand[];
+  synchronousLock: number;
+  modulationDepth: number;
+  noiseFloor: number;
+  noiseSuppression: number;
+  confidence: number;
+  salientWindows: VerseIRTrueVisionWindowSummary[];
+}
+
+interface VerseTokenIR {
+  id: number;
+  text: string;
+  normalized: string;
+  normalizedUpper: string;
+  lineIndex: number;
+  tokenIndexInLine: number;
+  globalTokenIndex: number;
+  charStart: number;
+  charEnd: number;
+  graphemeStart: number;
+  graphemeEnd: number;
+  syllableCount: number;
+  phonemes: string[];
+  stressPattern: string;
+  onset: string[];
+  nucleus: string[];
+  coda: string[];
+  vowelFamily: string[];
+  primaryStressedVowelFamily: string | null;
+  terminalVowelFamily: string | null;
+  rhymeTailSignature: string;
+  consonantSkeleton: string;
+  extendedRhymeKeys: string[];
+  flags: {
+    isLineStart: boolean;
+    isLineEnd: boolean;
+    isStopWordLike: boolean;
+    unknownPhonetics: boolean;
+  };
+  phoneticDiagnostics?: PhoneticDiagnosticTrail | null;
+  visualBytecode?: VerseTokenVisualBytecode | null;
+  trueVisionBytecode?: VerseIRTrueVisionTokenBytecode | null;
+}
+
+interface SyllableWindowIR {
+  id: number;
+  tokenSpan: [number, number];
+  lineSpan: [number, number];
+  charStart: number;
+  charEnd: number;
+  graphemeStart: number;
+  graphemeEnd: number;
+  syllableLength: number;
+  phonemeSpan: string[];
+  vowelSequence: string[];
+  stressContour: string;
+  codaContour: string;
+  signature: string;
+}
+
+interface OracleInsight {
+  id: string;
+  category: "TECHNICAL" | "ARCANE" | "STRATEGIC" | "WARNING";
+  message: string;
+  evidence?: string[];
+  scoreImpact?: number;
+}
+
+interface OracleSuggestion {
+  original: string;
+  suggested: string;
+  reason: string;
+  resonanceGain: number;
+}
+
+interface OraclePayload {
+  version: string;
+  persona: string;
+  mood: "ENLIGHTENED" | "CRITICAL" | "OBSERVANT" | "AWE";
+  summary: string;
+  insights: OracleInsight[];
+  suggestions: OracleSuggestion[];
+}
+
+interface VerseIRAmplifierArchetype {
+  id: string;
+  label: string;
+  score: number;
+}
+
+interface VerseIRAmplifierMatch {
+  id: string;
+  label: string;
+  hits: number;
+  score: number;
+  coverage: number;
+  lineSpread: number;
+  tokens: string[];
+}
+
+interface VerseIRAmplifierResult {
+  id: string;
+  label: string;
+  tier: "COMMON" | "RARE" | "INEXPLICABLE";
+  claimedWeight: number;
+  signal: number;
+  semanticDepth: number;
+  raritySignal: number;
+  effectiveSignal: number;
+  effectiveSemanticDepth: number;
+  effectiveRaritySignal: number;
+  matches: VerseIRAmplifierMatch[];
+  archetypes: VerseIRAmplifierArchetype[];
+  diagnostics: Diagnostic[];
+  commentary: string;
+  payload?: Record<string, unknown> | null;
+}
+
+interface PixelBrainPalette {
+  key: string;
+  bytecode: string;
+  schoolId: string | null;
+  rarity: string;
+  effect: string;
+  colors: string[];
+  byteMap: Record<string, string>;
+}
+
+interface PixelBrainCoordinate {
+  tokenId: number;
+  token: string;
+  lineIndex: number;
+  bytecode: string;
+  schoolId: string | null;
+  rarity: string;
+  effect: string;
+  emphasis: number;
+  x: number;
+  y: number;
+  z: number;
+  snappedX: number;
+  snappedY: number;
+  paletteKey: string;
+}
+
+interface PixelBrainPayload {
+  version: string;
+  tokenCount: number;
+  activeTokenCount: number;
+  paletteCount: number;
+  dominantAxis: "horizontal" | "vertical" | "diagonal" | "radial";
+  dominantSymmetry: "none" | "horizontal" | "vertical" | "radial";
+  canvas: {
+    width: number;
+    height: number;
+    gridSize: number;
+    goldenPoint: {
+      x: number;
+      y: number;
+    };
+  };
+  palettes: PixelBrainPalette[];
+  coordinates: PixelBrainCoordinate[];
+}
+
+interface VerseIRAmplifierPayload {
+  version: string;
+  activeAmplifiers: number;
+  noveltyBudget: number;
+  claimedWeight: number;
+  precisionScalar: number;
+  latencyMultiplier: number;
+  noveltySignal: number;
+  semanticDepth: number;
+  raritySignal: number;
+  impactMultiplier: number;
+  dominantTier: "COMMON" | "RARE" | "INEXPLICABLE" | "NONE";
+  dominantArchetype: VerseIRAmplifierArchetype | null;
+  archetypeResonance: VerseIRAmplifierArchetype[];
+  elementMatches: {
+    common: VerseIRAmplifierMatch[];
+    rare: VerseIRAmplifierMatch[];
+    inexplicable: VerseIRAmplifierMatch[];
+  };
+  pixelBrain?: PixelBrainPayload | null;
+  trueVision?: VerseIRTrueVisionPayload | null;
+  diagnostics: Diagnostic[];
+  amplifiers: VerseIRAmplifierResult[];
+}
+
+interface NarrativeAMPBeat {
+  id: string;
+  tone: "TECHNICAL" | "STRUCTURAL" | "ARCANE" | "REVISION";
+  title: string;
+  message: string;
+  evidence?: string[];
+  signal?: number | null;
+}
+
+interface NarrativeAMPRevision {
+  original: string;
+  suggested: string;
+  reason: string;
+  resonanceGain: number;
+}
+
+interface NarrativeAMPResonance {
+  source: "VERSEIR";
+  tokenCount: number;
+  lineCount: number;
+  activeAmplifiers: number;
+  dominantTier: "COMMON" | "RARE" | "INEXPLICABLE" | "NONE";
+  dominantArchetype: VerseIRAmplifierArchetype | null;
+  noveltySignal: number;
+  semanticDepth: number;
+  raritySignal: number;
+  trueVisionBand: string | null;
+  trueVisionConfidence: number;
+  leadingHeuristic: string | null;
+  leadingContribution: number;
+}
+
+interface NarrativeAMPPayload {
+  version: string;
+  engine: "VERSEIR";
+  narrator: string;
+  mood: "ENLIGHTENED" | "CRITICAL" | "OBSERVANT" | "AWE";
+  summary: string;
+  beats: NarrativeAMPBeat[];
+  revisions: NarrativeAMPRevision[];
+  resonance: NarrativeAMPResonance;
+}
+
+interface VerseIRIndexes {
+  tokenIdsByLineIndex: number[][];
+  lineEndTokenIds: number[];
+  tokenIdsByRhymeTail: Map<string, number[]>;
+  tokenIdsByVowelFamily: Map<string, number[]>;
+  tokenIdsByTerminalVowelFamily: Map<string, number[]>;
+  tokenIdsByStressedVowelFamily: Map<string, number[]>;
+  tokenIdsByConsonantSkeleton: Map<string, number[]>;
+  tokenIdsByStressContour: Map<string, number[]>;
+  windowIdsBySyllableLength: Map<number, number[]>;
+  windowIdsBySignature: Map<string, number[]>;
+}
+
+interface VerseIRFeatureTables {
+  tokenNeighborhoods: Array<{
+    tokenId: number;
+    lineIndex: number;
+    prevTokenId: number | null;
+    nextTokenId: number | null;
+  }>;
+  lineAdjacency: Array<{
+    lineIndex: number;
+    prevLineIndex: number | null;
+    nextLineIndex: number | null;
+  }>;
+  summary: {
+    tokenCount: number;
+    lineCount: number;
+    syllableWindowCount: number;
+  };
+}
+
+interface VerseIR {
+  version: string;
+  rawText: string;
+  normalizedText: string;
+  lines: VerseLineIR[];
+  tokens: VerseTokenIR[];
+  surfaceSpans: VerseSurfaceSpanIR[];
+  syllableWindows: SyllableWindowIR[];
+  indexes: VerseIRIndexes;
+  featureTables: VerseIRFeatureTables;
+  semanticDepth?: number;
+  archetypeResonance?: VerseIRAmplifierArchetype[];
+  elementMatches?: VerseIRAmplifierPayload["elementMatches"];
+  trueVision?: VerseIRTrueVisionPayload | null;
+  verseIRAmplifier?: VerseIRAmplifierPayload | null;
+  metadata: {
+    mode: TruesightAnalysisMode;
+    lineBreakStyle: LineBreakStyle;
+    tokenCount: number;
+    lineCount: number;
+    maxWindowSyllables: number;
+    maxWindowTokenSpan: number;
+    syllableWindowCount: number;
+    offsetSemantics: "code_unit_primary";
+    graphemeAware: boolean;
+    graphemeCount: number;
+    normalization: VerseNormalizationPolicy;
+    whitespaceFidelity: boolean;
+  };
+}
+
+interface SerializedVerseIRIndexes {
+  tokenIdsByLineIndex: Array<[number, number[]]>;
+  lineEndTokenIds: number[];
+  tokenIdsByRhymeTail: Array<[string, number[]]>;
+  tokenIdsByVowelFamily: Array<[string, number[]]>;
+  tokenIdsByTerminalVowelFamily: Array<[string, number[]]>;
+  tokenIdsByStressedVowelFamily: Array<[string, number[]]>;
+  tokenIdsByConsonantSkeleton: Array<[string, number[]]>;
+  tokenIdsByStressContour: Array<[string, number[]]>;
+  windowIdsBySyllableLength: Array<[number, number[]]>;
+  windowIdsBySignature: Array<[string, number[]]>;
+}
+
+interface SerializedVerseIR extends Omit<VerseIR, "indexes"> {
+  indexes: SerializedVerseIRIndexes;
+}
+
+interface RhymeAstrologyQueryCompilerContext {
+  verseIRVersion: string;
+  mode: TruesightAnalysisMode | string;
+  tokenCount: number;
+  lineCount: number;
+  maxWindowSyllables?: number;
+  maxWindowTokenSpan?: number;
+  syllableWindowCount: number;
+  lineBreakStyle: LineBreakStyle | string;
+  offsetSemantics?: string;
+  graphemeAware?: boolean;
+  graphemeCount?: number;
+  whitespaceFidelity: boolean;
+  source: "provided" | "compiled";
+  anchorTokenId?: number | null;
+  anchorLineIndex?: number | null;
+  activeTokenIds?: number[];
+  activeWindowIds?: number[];
+}
+
+interface RhymeAstrologyQueryPattern {
+  rawText: string;
+  tokens: string[];
+  resolvedNodes: Array<{
+    id: string;
+    token: string;
+    normalized: string;
+    endingSignature: string;
+    onsetSignature: string;
+    stressPattern: string;
+    syllableCount: number;
+    frequencyScore: number;
+  }>;
+  lineEndingSignature?: string;
+  internalPattern?: string[];
+  stressContour?: string;
+  compiler?: RhymeAstrologyQueryCompilerContext;
+}
+
+interface RhymeAstrologyMatch {
+  nodeId: string;
+  token: string;
+  overallScore: number;
+  reasons: string[];
+}
+
+interface RhymeAstrologyConstellation {
+  id: string;
+  anchorId: string;
+  label: string;
+  dominantVowelFamily: string[];
+  dominantStressPattern: string;
+  members: string[];
+  densityScore: number;
+  cohesionScore: number;
+}
+
+interface RhymeAstrologyResult {
+  query: RhymeAstrologyQueryPattern;
+  topMatches: RhymeAstrologyMatch[];
+  constellations: RhymeAstrologyConstellation[];
+  diagnostics: {
+    queryTimeMs: number;
+    cacheHit: boolean;
+    candidateCount: number;
+  };
+}
+
+interface RhymeAstrologyAnchorCompilerRef {
+  tokenId: number;
+  lineIndex: number;
+  tokenIndexInLine: number;
+  tokenSpan: [number, number];
+  activeWindowIds: number[];
+  charStart: number;
+  charEnd: number;
+  syllableCount: number;
+  stressPattern: string;
+  rhymeTailSignature: string;
+  primaryStressedVowelFamily: string | null;
+  terminalVowelFamily: string | null;
+  isLineStart: boolean;
+  isLineEnd: boolean;
+}
+
+interface RhymeAstrologyInspectorAnchor {
+  word: string;
+  normalizedWord: string;
+  lineIndex: number;
+  wordIndex: number;
+  charStart: number;
+  charEnd: number;
+  sign: string;
+  dominantVowelFamily: string;
+  tokenId: number;
+  activeWindowIds: number[];
+  compilerRef: RhymeAstrologyAnchorCompilerRef | null;
+  topMatches: RhymeAstrologyMatch[];
+  constellations: RhymeAstrologyConstellation[];
+  diagnostics: {
+    queryTimeMs: number;
+    cacheHit: boolean;
+    candidateCount: number;
+  };
+}
+
+interface RhymeAstrologyWindowSummary {
+  id: number;
+  lineIndex: number;
+  lineSpan: [number, number];
+  tokenIds: number[];
+  tokenSpan: [number, number];
+  charStart: number;
+  charEnd: number;
+  syllableLength: number;
+  signature: string;
+  stressContour: string;
+  codaContour: string;
+  vowelSequence: string[];
+  occurrenceCount: number;
+  repeated: boolean;
+  anchorTokenIds: number[];
+  anchorWords: string[];
+}
+
+interface RhymeAstrologySpan {
+  id: string;
+  kind: "anchor_token" | "syllable_window";
+  lineIndex: number;
+  charStart: number;
+  charEnd: number;
+  tokenIds: number[];
+  anchorTokenId: number | null;
+  windowId: number | null;
+  label: string;
+  sign: string | null;
+  clusterIds: string[];
+}
+
+interface RhymeAstrologyPanelPayload {
+  enabled: boolean;
+  features: {
+    rhymeAffinityScore: number;
+    constellationDensity: number;
+    internalRecurrenceScore: number;
+    phoneticNoveltyScore: number;
+  } | null;
+  inspector: {
+    anchors: RhymeAstrologyInspectorAnchor[];
+    clusters: Array<{
+      id: string;
+      label: string;
+      anchorWord: string;
+      sign: string;
+      dominantVowelFamily: string[];
+      dominantStressPattern: string;
+      densityScore: number;
+      cohesionScore: number;
+      membersCount: number;
+    }>;
+    windows: RhymeAstrologyWindowSummary[];
+    spans: RhymeAstrologySpan[];
+  };
+  diagnostics: {
+    anchorCount: number;
+    cacheHitCount: number;
+    averageQueryTimeMs: number;
+  };
+}
+
+interface WorldEntityRef {
+  entityId: string;
+  kind: "item" | "npc" | "location" | "glyph";
+  lexeme?: string | null;
+  roomId?: string | null;
+  instanceId?: string | null;
+}
+
+interface WorldRoom {
+  id: string;
+  name: string;
+  description: string;
+  school: School | null;
+  state: Record<string, unknown>;
+}
+
+interface WorldRoomEntitySummary {
+  entityId: string;
+  kind: "item" | "npc" | "location" | "glyph";
+  lexeme: string | null;
+  name: string;
+  summary: string;
+  roomId: string | null;
+  actions: string[];
+  school: School | null;
+  rarity: string;
+  inspectCount: number;
+}
+
+interface WorldRoomSnapshot {
+  room: WorldRoom | null;
+  entities: WorldRoomEntitySummary[];
+}
+
+interface InspectableEntity {
+  ref: WorldEntityRef;
+  title: string;
+  summary: string | null;
+  codex: {
+    word: string | null;
+    headword: string;
+    definition: string | null;
+    partOfSpeech: string | string[] | null;
+    ipa: string | null;
+    etymology: string | null;
+    synonyms: string[];
+    antonyms: string[];
+    rhymes: string[];
+    rhymeFamily: string | null;
+    tags: string[];
+    school: School | null;
+    loreSeed: string | null;
+  };
+  mud: {
+    entityType: string;
+    rarity: string;
+    school: School | null;
+    roomId: string | null;
+    roomName: string | null;
+    actions: string[];
+    state: Record<string, unknown>;
+    ownership: string | number | null;
+    inspectCount: number;
+    flavorText: string;
+  };
+  room: WorldRoom | null;
+}
+
+interface InspectWorldEntityActionResponse {
+  action: "inspect";
+  entity: InspectableEntity;
+  performedAt: string;
+}
+
+interface TaskAssignmentPreflightConflict {
+  kind: "ownership" | "lock";
+  file: string;
+  reason: string;
+  owner_role?: "ui" | "backend" | "qa" | null;
+  assigned_role?: "ui" | "backend" | "qa" | null;
+  locked_by?: string | null;
+  task_id?: string | null;
+}
+
+interface TaskAssignmentPreflightResponse {
+  valid: boolean;
+  requires_override: boolean;
+  info: string | null;
+  error: string | null;
+  warnings: string[];
+  conflicts: TaskAssignmentPreflightConflict[];
+  checked_at: string; // ISO-8601 timestamp
+}
+
+interface CombatScoreRequest {
+  scrollText: string;
+  weave?: string;
+  playerId?: string;
+  arenaSchool?: School;
+  opponentSchool?: School;
+}
+
+interface CombatIntent {
+  healing: boolean;
+  terrain: boolean;
+  buff: boolean;
+  debuff: boolean;
+  failureDisposition: "BUFF" | "DEBUFF" | "NEUTRAL";
+  speechAct?: CombatSpeechAct | null;
+  intonationTag?: string | null;
+  cadenceTag?: CombatCadenceTag | null;
+  bridgeIntent?: string | null;
+  statusEffect?: CombatStatusEffect | null;
+}
+
+type CombatSpeechAct =
+  | "COMMAND"
+  | "INVOCATION"
+  | "THREAT"
+  | "PLEA"
+  | "DECLARATION"
+  | "TAUNT"
+  | "QUESTION"
+  | "BANISHMENT"
+  | "CURSE"
+  | "BLESSING";
+
+type CombatCadenceTag =
+  | "RESOLVED"
+  | "SUSPENDED"
+  | "CLIPPED"
+  | "FALLING"
+  | "RISING"
+  | "LEVEL"
+  | "SURGING"
+  | "WITHHELD";
+
+interface WeightedCombatLabel {
+  label: string;
+  weight: number;
+}
+
+interface WeightedSpeechAct {
+  act: CombatSpeechAct;
+  weight: number;
+}
+
+interface SubemotionSignal {
+  id: string;
+  label: string;
+  school: School | null;
+  weight: number;
+}
+
+interface VoiceProfileSnapshot {
+  version: number;
+  speakerId: string;
+  speakerType: "PLAYER" | "OPPONENT";
+  school: School;
+  samples: number;
+  preferredSpeechAct: CombatSpeechAct;
+  preferredCadence: CombatCadenceTag;
+  preferredFoot: string;
+  preferredSeverity: string;
+  contourAverages: {
+    opening: number;
+    crest: number;
+    closure: number;
+    volatility: number;
+  };
+}
+
+interface CombatSpeakingAnalysis {
+  school: School | null;
+  speechAct: {
+    primary: CombatSpeechAct;
+    confidence: number;
+    topActs: WeightedSpeechAct[];
+  };
+  prosody: {
+    dominantFoot: string;
+    metricalGrid: string;
+    meterName: string;
+    feetPerLine: number;
+    beatAlignment: number;
+    controlledVariance: number;
+    closureScore: number;
+    deviation?: number;
+    cadence: {
+      dominantTag: CombatCadenceTag;
+      lineTags: Array<{
+        lineIndex: number;
+        tag: CombatCadenceTag;
+        beatAlignment: number;
+      }>;
+    };
+  };
+  intonation: {
+    mode: string;
+    primaryTag: CombatSpeechAct;
+    contour: {
+      opening: number;
+      crest: number;
+      closure: number;
+      volatility: number;
+    };
+    punctuation: {
+      questionCount: number;
+      exclamationCount: number;
+      commaCount: number;
+    };
+  };
+  affect: {
+    primaryEmotion: string;
+    scores: Array<{
+      emotion: string;
+      weight: number;
+    }>;
+    subemotions: SubemotionSignal[];
+  };
+  harmony: {
+    score: number;
+    adjacentLineScore: number;
+    coupletScore: number;
+    stanzaScore: number;
+    alliterationScore: number;
+    dominantVowel: string | null;
+  };
+  severity: {
+    ladderId: School | null;
+    label: string | null;
+    topLexeme: string | null;
+    tierIndex: number;
+    severityScore: number;
+    rarityAmplifier: number;
+    potency: number;
+    matches: Array<{
+      token: string;
+      label: string;
+      tierIndex: number;
+      rarity: number;
+    }>;
+  };
+  voice: {
+    speakerId: string;
+    speakerType: "PLAYER" | "OPPONENT";
+    resonance: number;
+    profile: VoiceProfileSnapshot;
+  };
+}
+
+interface CombatRarity {
+  id: "COMMON" | "UNCOMMON" | "GRIMOIRE" | "MYTHIC" | "LEGENDARY" | "SOURCE";
+  label: string;
+  minScore: number;
+  bonusMultiplier: number;
+  totalMultiplier: number;
+  ordinal: number;
+  score: number;
+  praise: string;
+}
+
+interface CombatSchoolDensity {
+  SONIC: number;
+  PSYCHIC: number;
+  VOID: number;
+  ALCHEMY: number;
+  WILL: number;
+}
+
+interface CombatStatusEffect {
+  school: School;
+  chainId: string;
+  label: string;
+  tier: 1 | 2 | 3 | 4 | 5;
+  turns: number;
+  turnsRemaining: number;
+  magnitude: number;
+  sourceBonus: string | null;
+  disposition: "BUFF" | "DEBUFF";
+  averageRarity: number;
+  hitCount: number;
+  matchedKeywords: string[];
+}
+
+interface CombatScoreResponse {
+  damage: number;
+  healing: number;
+  totalScore: number;
+  school: School;
+  schoolDensity: CombatSchoolDensity;
+  arenaSchool: School;
+  opponentSchool: School | null;
+  arenaResonanceMultiplier: number;
+  schoolAffinityMultiplier: number;
+  syntaxControlMultiplier: number;
+  speechActMultiplier: number;
+  prosodyMultiplier: number;
+  harmonyMultiplier: number;
+  severityMultiplier: number;
+  voiceResonanceMultiplier: number;
+  abyssalResonanceMultiplier: number;
+  cohesionScore: number;
+  rarity: CombatRarity;
+  intent: CombatIntent;
+  speaking: CombatSpeakingAnalysis | null;
+  voiceProfile: VoiceProfileSnapshot | null;
+  statusEffect: CombatStatusEffect | null;
+  failureCast: boolean;
+  commentary: string;
+  traceId: string;
+  traces: ScoreTrace[];
+  explainTrace: ScoreTrace[];
+}
+
+interface OpponentSpell {
+  spell: string;
+  damage: number;
+  school: School;
+  traces: ScoreTrace[];
+  explainTrace: ScoreTrace[];
+  rarity: CombatRarity;
+  schoolAffinityMultiplier: number;
+  memoryLinesUsed: number;
+  counterTokens: string[];
+  speaking?: CombatSpeakingAnalysis | null;
+  voiceProfile?: VoiceProfileSnapshot | null;
+  voiceResonance?: number;
+}
+```
+
+---
+
+## Type Enumerations
+
+```ts
+type VowelFamily =
+  | "A" | "AE" | "AO" | "AW" | "AY"
+  | "EH" | "ER" | "EY"
+  | "IH" | "IY"
+  | "OH" | "OW" | "OY"
+  | "UH" | "UW";
+
+type School = "SONIC" | "PSYCHIC" | "VOID" | "ALCHEMY" | "WILL";
+
+type DiagnosticSeverity = "info" | "warning" | "error" | "success";
+
+type TruesightAnalysisMode = "live_fast" | "balanced" | "deep_truesight";
+
+type LineBreakStyle = "lf" | "crlf" | "cr" | "mixed" | "none";
+```
+
+---
+
+## Implemented Runtime Event Bus
+
+This is the current runtime bus in `codex/runtime/`. It is string-event plus payload. It is not yet the structured `CODExEvent<T>` envelope described in older docs.
+
+```ts
+declare function emit(eventName: string, payload?: unknown): void;
+declare function on(eventName: string, callback: (payload: unknown) => void): () => void;
+
+type RuntimeEventName =
+  | "ui:word_lookup_requested"
+  | "runtime:word_lookup_result"
+  | "runtime:word_lookup_result:error"
+  | "ui:word_analysis_requested"
+  | "ui:combat_action_submitted";
+
+interface RuntimePayloadMap {
+  "ui:word_lookup_requested": {
+    word: string;
+    requestId?: string;
+    responseEvent?: string;
+  };
+  "runtime:word_lookup_result": {
+    word: string;
+    requestId?: string;
+    data: LexicalEntry | null;
+    source: string;
+  };
+  "runtime:word_lookup_result:error": {
+    word: string;
+    requestId?: string;
+    error: string;
+    code?: string;
+  };
+  "ui:word_analysis_requested": {
+    word: string;
+    responseEventName: string;
+  };
+  "ui:combat_action_submitted": {
+    responseEventName: string;
+    [key: string]: unknown;
+  };
+}
+```
+
+### Runtime Bus Rules
+
+- `runtime:word_lookup_result:error` is emitted as `${responseEvent}:error`.
+- `requestId` is the current request-correlation mechanism.
+- `traceId` is a future-state concept. Do not assume it exists in runtime payloads yet.
+- UI surface files do not import the runtime bus directly. Current sanctioned bridges live in Codex-owned logic hooks and providers such as `src/hooks/useCODExPipeline.jsx` and `src/hooks/useWordLookup.jsx`.
+
+---
+
+## Reserved Future Event Names
+
+These names are reserved for future typed gameplay/runtime events. They are not guaranteed to be emitted by the current runtime implementation yet.
+
+```ts
+type ReservedEventName =
+  | "COMBAT_PREVIEW"
+  | "COMBAT_RESOLVED"
+  | "XP_AWARDED"
+  | "SCHOOL_UNLOCKED"
+  | "SCROLL_SAVED"
+  | "RATE_LIMITED"
+  | "ENGINE_READY"
+  | "ENGINE_ERROR";
+```
+
+Until these are implemented in the runtime, no UI or test should assume they exist.
+
+---
+
+## Implemented HTTP Contracts
+
+```ts
+GET /collab/tasks/:id/preflight
+
+query params:
+  agent_id: string
+
+response body: TaskAssignmentPreflightResponse
+```
+
+Notes:
+- This is the authoritative assignment compatibility check used by the Collab task drawer before `POST /collab/tasks/:id/assign`.
+- `valid = true` means the current assignment can proceed without override.
+- `requires_override = true` means ownership boundaries are crossed but no active file lock blocks the assignment.
+- Lock conflicts are always blocking and surface in `conflicts` with `kind: "lock"`.
+- `checked_at` is an ISO-8601 timestamp describing when the control plane evaluated the task against the selected agent.
+
+```ts
+POST /api/combat/score
+
+request body: CombatScoreRequest
+response body: CombatScoreResponse
+```
+
+Notes:
+- `scrollText` is capped to 100 characters at the route boundary for MVP combat.
+- `weave` is optional and capped to 100 characters. When present, it feeds the authoritative Syntactic Bridge / spellweave calculation.
+- `playerId` is optional metadata. The current authoritative response does not depend on client-submitted damage or trace values.
+- `arenaSchool` and `opponentSchool` are optional context values that let the server apply arena resonance and defender affinity consistently.
+- `traces` is the canonical combat breakdown array. `explainTrace` is returned as an alias for existing consumers that still read the older field name.
+- `healing` is authoritative and may accompany offensive damage for alchemical/supportive casts.
+- `commentary` carries CODEx rarity praise for powerful spells.
+- `abyssalResonanceMultiplier` is the average Lexicon Abyss multiplier applied from public combat speech entropy for the resolved cast.
+- `traceId` is the authoritative Akashic replay handle recorded alongside the resolved cast.
+
+```ts
+GET /api/rhyme-astrology/query
+
+query params:
+  text: string
+  mode?: "word" | "line"
+  limit?: number
+  minScore?: number
+  includeConstellations?: boolean
+  includeDiagnostics?: boolean
+
+response body: RhymeAstrologyResult
+```
+
+Notes:
+- The public route remains text-query based and backward compatible.
+- Runtime implementations may internally compile a VerseIR substrate to resolve anchors and line/window context deterministically.
+- `query.compiler` is optional and may appear when the runtime used VerseIR-backed context resolution.
+
+```ts
+POST /api/analysis/panels
+
+request body: {
+  text: string;
+}
+
+response body: {
+  source: "server-analysis";
+  data: {
+    analysis: {
+      compiler?: TruesightCompilerDescriptor | null;
+      verseIRAmplifier?: VerseIRAmplifierPayload | null;
+      [key: string]: unknown;
+    } | null;
+    rhymeAstrology: RhymeAstrologyPanelPayload | null;
+    narrativeAMP: NarrativeAMPPayload | null;
+    oracle: OraclePayload | null;
+    [key: string]: unknown;
+  };
+}
+
+Notes:
+- `rhymeAstrology` is optional and feature-flag gated.
+- `analysis.verseIRAmplifier` is optional and carries the Synapse Slot / VerseIR amplifier payload when the server compiled VerseIR context for the request.
+- `narrativeAMP` is optional and carries the VerseIR-native narrative relay payload derived from compiler/amplifier state.
+- `oracle` is optional and retained as a compatibility alias for clients that still consume the older Phonemic Oracle shape.
+- When enabled, inspector anchors/windows/spans are decorative client guidance only; the server remains authoritative for scoring and persistence.
+
+```ts
+GET /api/world/rooms/:roomId
+
+response body: WorldRoomSnapshot
+
+GET /api/world/entities/:entityId
+
+response body: InspectableEntity
+
+POST /api/world/entities/:entityId/actions/inspect
+
+request body: {
+  roomId?: string;
+}
+
+response body: InspectWorldEntityActionResponse
+```
+
+Notes:
+- World routes require the same session gate as lexicon browsing: an authenticated user session or a guest session established through `/auth/csrf-token`.
+- `POST /api/world/entities/:entityId/actions/inspect` also requires the standard CSRF header once that session is established.
+- The `codex` block describes what the object is linguistically and semantically.
+- The `mud` block describes what the object is in the world right now, including inspect count, actions, and room presence.
+- `GET /api/world/entities/:entityId` is non-mutating state fetch. `POST .../actions/inspect` is the authoritative interaction that increments persistent inspect count.
+
+---
+
+## Handoff Matrix
+
+| If you are delivering... | Deliver to... | Format |
+|--------------------------|---------------|--------|
+| A new mechanic spec | Codex (to implement) + Claude (if UI surface needed) | `MECHANIC SPEC` block |
+| A new schema or contract change | All agents | `SCHEMA CHANGE NOTICE` block |
+| A new runtime event | Claude (consumer) + Blackbox (fixtures/tests) | Event name + payload shape |
+| A failing test | Owning agent (Gemini / Codex / Claude) | `MERLIN DATA REPORT` |
+| A domain conflict | Angel | `ESCALATION` block |
+| A visual regression | Claude | `WEAVE REPORT` entry |
+
+---
+
+## Schema Change Notice Format
+
+When any schema or runtime event changes, Codex issues this notice:
+
+```text
+SCHEMA CHANGE NOTICE - v[old] -> v[new] - [date]
+
+Changed: [interface/type name]
+Field: [field name]
+Change: [added / removed / renamed / type changed]
+Breaking: [yes / no]
+
+Consumers affected:
+- Claude: [yes/no - which component/hook reads this field]
+- Blackbox: [yes/no - which fixtures/tests use this field]
+
+Migration:
+[what each affected agent needs to do]
+
+Backward compatible until: [date or "immediate breaking change"]
+```
+
+---
+
+## Version Log
+
+| Version | Date | Change | Breaking |
+|---------|------|--------|----------|
+| 1.0 | 2026-03-10 | Initial schema contract established | no |
+| 1.1 | 2026-03-10 | Aligned combat/runtime contract to implemented types and current event-bus behavior | no |
+| 1.2 | 2026-03-10 | Added `POST /api/combat/score` request/response contract for server-authoritative combat scoring | no |
+| 1.3 | 2026-03-10 | Expanded combat scoring payload with school/rarity/healing metadata and published `OpponentSpell` | no |
+| 1.4 | 2026-03-14 | Added semantic status-effect payloads and cohesion metadata to authoritative combat scoring | no |
+| 1.5 | 2026-03-16 | Added optional `weave` to `CombatScoreRequest` and aligned authoritative combat scoring with Spellweave input | no |
+| 1.6 | 2026-03-16 | Added authoritative world room/entity inspection schemas and HTTP contracts | no |
+| 1.7 | 2026-03-17 | Added combat speaking analysis, voice-profile snapshots, and speaking multipliers to combat payloads | no |
+| 1.8 | 2026-03-21 | Added phonosemantic token-graph node/edge, activation, and graph-candidate contracts for prediction and judiciary traversal | no |
+| 1.9 | 2026-03-26 | Added VerseIR compiler contracts, whitespace-fidelity line metadata, syllable windows, and optional Truesight compiler metadata for panel analysis | no |
+| 1.10 | 2026-03-28 | Added compiler-aware rhyme astrology query/panel payload contracts, including VerseIR-backed anchors, windows, and spans | no |
+| 1.11 | 2026-03-28 | Added abyssal resonance multiplier and Akashic trace handle to authoritative combat scoring | no |
+| 1.12 | 2026-03-28 | Added VerseIR Synapse Slot amplifier payloads and optional panel-analysis exposure for semantic depth / archetype resonance | no |
+| 1.13 | 2026-03-28 | Added `OracleInsight`, `OracleSuggestion`, and `OraclePayload` plus optional analysis oracle commentary payloads | no |
+| 1.14 | 2026-03-28 | Hardened VerseIR with grapheme offsets, surface spans, normalization metadata, phonetic provenance, and applied window-limit metadata | no |
+| 1.15 | 2026-03-29 | Added optional `Scroll.submittedAt` so autosaved drafts can be distinguished from first-time submissions | no |
+| 1.16 | 2026-03-29 | Added VerseIR TrueVision travelling-wave payloads plus formalized token visual/trueVision bytecodes | no |
+| 1.17 | 2026-03-29 | Added VerseIR-native `narrativeAMP` panel-analysis payloads and documented `oracle` as a compatibility alias during migration | no |
+| 1.18 | 2026-03-30 | Added optional VerseIR amplifier `pixelBrain` payloads for the Phase 1 token-bytecode, coordinate, and palette bridge | no |
+| 1.19 | 2026-04-01 | Added semantic global UI stacking tiers and documented the Law 10 migration requirement | no |
+| 1.20 | 2026-04-03 | Added the Collab assignment preflight response shape and documented `GET /collab/tasks/:id/preflight` | no |
+| 1.21 | 2026-04-04 | Added `CollabAgent` framework_origin and `CollabBugReport` experience/ledger fields | no |
+| 1.22 | 2026-04-13 | Added `WordAnalysis` and documented required `rhymeKey` support for TrueSight rhyme color registry consumers | no |
+| 1.23 | 2026-04-18 | Added the canonical ritual prediction runtime and artifact contracts and reserved `PB-PRED-v1` for future exported prediction bytecode | no |
+
+---
+
+## Authorship
+
+This document is maintained by Codex with Angel's awareness.
+All agents read it before acting on shared data contracts.
