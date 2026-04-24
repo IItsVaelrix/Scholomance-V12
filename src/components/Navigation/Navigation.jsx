@@ -27,6 +27,19 @@ function isAdminUser(user) {
   return adminAllowlist.includes(username) || adminAllowlist.includes(email);
 }
 
+const MOBILE_ROUTE_COPY = {
+  watch: "Witness the live arena and current ritual signal.",
+  listen: "Tune stations, broadcasts, and ambient transmission.",
+  read: "Compose scrolls and inspect their hidden anatomy.",
+  combat: "Cast verses into live conflict and scoring.",
+  nexus: "Survey unlocked paths, schools, and progression.",
+  pixelbrain: "Neural network visualization and metadata mapping.",
+  career: "Transmute professional experience into high-acuity sigils.",
+  collab: "Coordinate agent work and active pipelines.",
+  profile: "Review account standing and inner-sanctum access.",
+  auth: "Enter the portal and secure your chamber.",
+};
+
 export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -88,7 +101,8 @@ export default function Navigation() {
     return () => { document.body.style.overflow = ""; };
   }, [isMenuOpen]);
   useEffect(() => {
-    return () => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); };
+    const timeoutId = navTimeoutRef.current;
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, []);
   const handleToggle = useCallback(() => {
     triggerHapticPulse(UI_HAPTICS.MEDIUM);

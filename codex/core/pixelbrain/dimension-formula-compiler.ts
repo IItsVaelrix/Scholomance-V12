@@ -679,15 +679,4 @@ export class DimensionRuntime {
 
     return { width, height, fitMode, anchor, snapMode, aspectRatio };
   }
-
-          this._lastResult = Object.freeze(result);
-          this._lastContext = { ...context };
-          this._lastInstructions = instructions;
-          return this._lastResult;
-        }
-      }
-    }
-
-    return { width, height, fitMode, anchor, snapMode, aspectRatio };
-  }
 }

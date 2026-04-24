@@ -118,9 +118,8 @@ export default function ReadPage() {
   const { theme } = useTheme();
   const { settings, updateSettings } = useUserSettings();
   const auroraLevel = useAuroraLevel();
-  const { scrolls, saveScroll, deleteScroll, getScrollById } = useScrolls();
+  const { scrolls, saveScroll, deleteScroll, getScrollById, activeScrollId, setActiveScrollId } = useScrolls();
   const { addXP, progression } = useProgression();
-  const [activeScrollId, setActiveScrollId] = useState(null);
   const [isEditable, setIsEditable] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editorContent, setEditorContent] = useState("");
@@ -306,8 +305,14 @@ export default function ReadPage() {
     localAnalysis: null,
   });
 
-  // Prune stale day-cache keys on mount
-  useEffect(() => { pruneOldCaches(); }, []);
+  // Prune stale day-cache keys on mount (Backgrounded to prevent stutter)
+  useEffect(() => { 
+    if (window.requestIdleCallback) {
+      window.requestIdleCallback(() => pruneOldCaches());
+    } else {
+      setTimeout(pruneOldCaches, 100);
+    }
+  }, []);
   const activeScroll = activeScrollId ? getScrollById(activeScrollId) : null;
   const activeScrollContent = String(activeScroll?.content || "");
   const editorInitialTitle = isEditable
@@ -565,7 +570,7 @@ export default function ReadPage() {
         });
       }
     }
-  }, [saveScroll]);
+  }, [saveScroll, setActiveScrollId]);
 
   useEffect(() => {
     const snapshot = autosaveInputsRef.current;
@@ -655,7 +660,7 @@ export default function ReadPage() {
       setIsEditing(false);
       setIsEditable(false);
     },
-    [isEditing, activeScrollId, activeScroll?.submittedAt, saveScroll, addXP, addToast, scoreData, bumpAutosaveContext]
+    [isEditing, activeScrollId, activeScroll?.submittedAt, saveScroll, addXP, addToast, scoreData, bumpAutosaveContext, setActiveScrollId]
   );
 
   const handleSelectScroll = useCallback((id) => {
@@ -670,7 +675,7 @@ export default function ReadPage() {
     setIsEditable(false);
     setHighlightedLines([]);
     setSaveStatus("Saved");
-  }, [bumpAutosaveContext, getScrollById, issueEditorDocumentIdentity]);
+  }, [bumpAutosaveContext, getScrollById, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleNewScroll = useCallback(() => {
     bumpAutosaveContext();
@@ -682,7 +687,7 @@ export default function ReadPage() {
     setIsEditable(true);
     setHighlightedLines([]);
     setSaveStatus("Unsaved");
-  }, [bumpAutosaveContext, issueEditorDocumentIdentity]);
+  }, [bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleEditScroll = useCallback(() => {
     bumpAutosaveContext();
@@ -707,7 +712,7 @@ export default function ReadPage() {
     setIsEditable(true);
     setHighlightedLines([]);
     setSaveStatus("Unsaved");
-  }, [getScrollById, bumpAutosaveContext, issueEditorDocumentIdentity]);
+  }, [getScrollById, bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleCancelEdit = useCallback(() => {
     bumpAutosaveContext();

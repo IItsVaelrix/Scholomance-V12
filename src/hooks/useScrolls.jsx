@@ -137,7 +137,9 @@ const readV2Scrolls = (storage) => {
       if (!schemaResult.success) continue;
       const enriched = withDerivedFields(schemaResult.data);
       if (enriched) scrolls.push(enriched);
-    } catch {}
+    } catch (err) {
+      // Ignore malformed individual entries
+    }
   }
   return scrolls;
 };
@@ -200,6 +202,7 @@ const upsertByRecency = (list, scroll, legacyId = null) => {
 export function ScrollsProvider({ children }) {
   const { user, isLoading: isAuthLoading } = useAuth();
   const [scrolls, setScrolls] = useState([]);
+  const [activeScrollId, setActiveScrollId] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchScrolls = useCallback(async (isSilent = false) => {
@@ -278,11 +281,16 @@ export function ScrollsProvider({ children }) {
   }, [user]);
 
   const value = useMemo(() => ({
-    scrolls, isLoading, saveScroll, deleteScroll,
+    scrolls,
+    activeScrollId,
+    setActiveScrollId,
+    isLoading,
+    saveScroll,
+    deleteScroll,
     getScrollById: (id) => scrolls.find(s => s.id === id) || null,
     scrollCount: scrolls.length,
     refreshScrolls: () => fetchScrolls(true)
-  }), [scrolls, isLoading, saveScroll, deleteScroll, fetchScrolls]);
+  }), [scrolls, activeScrollId, isLoading, saveScroll, deleteScroll, fetchScrolls]);
 
   return <ScrollsContext.Provider value={value}>{children}</ScrollsContext.Provider>;
 }
