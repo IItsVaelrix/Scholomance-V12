@@ -65,6 +65,6 @@ COPY --from=build /app/verseir_palette_payload.json ./verseir_palette_payload.js
 COPY --from=build /app/data/scholomance_dict.sqlite /app/data/scholomance_dict.sqlite
 COPY --from=build /app/data/scholomance_corpus.sqlite /app/data/scholomance_corpus.sqlite
 
-EXPOSE 3000
+EXPOSE 8080
 
 CMD node scripts/ritual-init.js --detach && node codex/server/index.js

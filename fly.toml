@@ -7,7 +7,7 @@ primary_region = "ord"
 [env]
   NODE_ENV = "production"
   HOST = "0.0.0.0"
-  PORT = "3000"
+  PORT = "8080"
   TRUST_PROXY = "true"
   ENABLE_COLLAB_API = "true"
   SCHOLOMANCE_DICT_PATH = "/app/data/scholomance_dict.sqlite"
@@ -15,7 +15,7 @@ primary_region = "ord"
   RHYME_ASTROLOGY_OUTPUT_DIR = "/app/data/rhyme-astrology"
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = false
   auto_start_machines = true
