@@ -4,6 +4,7 @@ playwright-report
 test-results
 .git
 .gitignore
+.claude
 .env
 .env.*
 *.log
@@ -11,6 +12,6 @@ npm-debug.log*
 coverage
 dict_data
 *.sqlite
+*.png
+*.bmp
 nul
-!scholomance_dict.sqlite
-!scholomance_corpus.sqlite
