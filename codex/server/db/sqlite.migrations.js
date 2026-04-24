@@ -36,6 +36,7 @@ export function applySqlitePragmas(db, options = {}) {
   );
 
   db.pragma('journal_mode = WAL');
+  db.pragma('synchronous = NORMAL');
   db.pragma('foreign_keys = ON');
   db.pragma(`busy_timeout = ${busyTimeoutMs}`);
 

@@ -529,20 +529,20 @@ export class DimensionRuntime {
     // 1. FAST PATH: Check if inputs are identical to last execution
     if (this._lastInstructions === instructions &&
         this._lastContext &&
-        this._lastContext.viewportWidth === context.viewportWidth &&
-        this._lastContext.viewportHeight === context.viewportHeight &&
-        this._lastContext.parentWidth === context.parentWidth &&
-        this._lastContext.parentHeight === context.parentHeight &&
+        Object.is(this._lastContext.viewportWidth, context.viewportWidth) &&
+        Object.is(this._lastContext.viewportHeight, context.viewportHeight) &&
+        Object.is(this._lastContext.parentWidth, context.parentWidth) &&
+        Object.is(this._lastContext.parentHeight, context.parentHeight) &&
         this._lastContext.deviceClass === context.deviceClass &&
         this._lastContext.orientation === context.orientation) {
       return this._lastResult;
     }
 
     const registers = new Float64Array(16);
-    registers[REGISTERS.VIEWPORT_WIDTH] = context.viewportWidth;
-    registers[REGISTERS.VIEWPORT_HEIGHT] = context.viewportHeight;
-    registers[REGISTERS.PARENT_WIDTH] = context.parentWidth;
-    registers[REGISTERS.PARENT_HEIGHT] = context.parentHeight;
+    registers[REGISTERS.VIEWPORT_WIDTH] = toFinite(context.viewportWidth);
+    registers[REGISTERS.VIEWPORT_HEIGHT] = toFinite(context.viewportHeight);
+    registers[REGISTERS.PARENT_WIDTH] = toFinite(context.parentWidth);
+    registers[REGISTERS.PARENT_HEIGHT] = toFinite(context.parentHeight);
     registers[REGISTERS.DEVICE_CLASS] = context.deviceClass ? ['desktop', 'tablet', 'mobile-android', 'mobile-ios'].indexOf(context.deviceClass) : 0;
     registers[REGISTERS.ORIENTATION] = context.orientation ? ['portrait', 'landscape', 'square'].indexOf(context.orientation) : 0;
 
@@ -584,7 +584,7 @@ export class DimensionRuntime {
           registers[inst[1] as number] = registers[inst[2] as number] * registers[inst[3] as number];
           break;
         case 'DIV':
-          registers[inst[1] as number] = registers[inst[2] as number] / registers[inst[3] as number];
+          registers[inst[1] as number] = safeDivide(registers[inst[2] as number], registers[inst[3] as number]);
           break;
         case 'MIN':
           registers[inst[1] as number] = Math.min(registers[inst[2] as number], registers[inst[3] as number]);
@@ -600,11 +600,11 @@ export class DimensionRuntime {
           break;
         case 'APPLY_VIEWPORT_UNITS': {
           const viewportDim = inst[3] === REGISTERS.VIEWPORT_WIDTH ? context.viewportWidth : context.viewportHeight;
-          registers[inst[1] as number] = (inst[2] as number / 100) * viewportDim;
+          registers[inst[1] as number] = safeDivide(inst[2] as number, 100) * viewportDim;
           break;
         }
         case 'APPLY_PARENT_PERCENT':
-          registers[inst[1] as number] = (inst[2] as number / 100) * context.parentWidth;
+          registers[inst[1] as number] = safeDivide(inst[2] as number, 100) * context.parentWidth;
           break;
         case 'SELECT_NEAREST': {
           const val = registers[inst[2] as number];
@@ -629,10 +629,10 @@ export class DimensionRuntime {
           registers[inst[1] as number] = Math.ceil(registers[inst[2] as number]);
           break;
         case 'SET_WIDTH':
-          width = registers[inst[1] as number];
+          width = toFinite(registers[inst[1] as number]);
           break;
         case 'SET_HEIGHT':
-          height = registers[inst[1] as number];
+          height = toFinite(registers[inst[1] as number]);
           break;
         case 'SET_ASPECT':
           aspectRatio = { numerator: inst[1] as number, denominator: inst[2] as number };
@@ -657,8 +657,8 @@ export class DimensionRuntime {
 
           // 2. REFERENTIAL STABILITY: If values are identical to last run, return the OLD reference
           if (this._lastResult &&
-              this._lastResult.width === result.width &&
-              this._lastResult.height === result.height &&
+              Object.is(this._lastResult.width, result.width) &&
+              Object.is(this._lastResult.height, result.height) &&
               this._lastResult.fitMode === result.fitMode &&
               this._lastResult.anchor === result.anchor &&
               this._lastResult.snapMode === result.snapMode &&
@@ -668,6 +668,17 @@ export class DimensionRuntime {
             this._lastInstructions = instructions;
             return this._lastResult;
           }
+
+          this._lastResult = Object.freeze(result);
+          this._lastContext = { ...context };
+          this._lastInstructions = instructions;
+          return this._lastResult;
+        }
+      }
+    }
+
+    return { width, height, fitMode, anchor, snapMode, aspectRatio };
+  }
 
           this._lastResult = Object.freeze(result);
           this._lastContext = { ...context };

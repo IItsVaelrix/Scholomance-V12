@@ -7,6 +7,7 @@ import { SongProvider } from "./hooks/useCurrentSong.jsx";
 import { CODExProvider } from "./hooks/useCODExPipeline.jsx";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { ProgressionProvider } from "./hooks/useProgression.jsx";
+import { ScrollsProvider } from "./hooks/useScrolls.jsx";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion.js";
 import { MotionInspector } from "./ui/animation/components/MotionInspector";
 import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
@@ -80,7 +81,7 @@ export default function App() {
                 Skip to main content
               </a>
               <Navigation />
-              <AnimatePresence mode="wait">
+              <AnimatePresence mode="popLayout" initial={false}>
                 <motion.main
                   key={location.pathname}
                   id="main-content"
@@ -89,7 +90,7 @@ export default function App() {
                   initial="initial"
                   animate="animate"
                   exit="exit"
-                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.15, ease: "easeOut" }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
                 >
                   <Suspense fallback={null}>
                     <Outlet />
@@ -101,5 +102,8 @@ export default function App() {
         </AuthScopedProviders>
       </AuthProvider>
     </CODExProvider>
+  );
+}
+ODExProvider>
   );
 }

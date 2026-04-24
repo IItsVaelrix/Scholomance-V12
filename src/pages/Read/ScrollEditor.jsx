@@ -504,14 +504,20 @@ const ScrollEditor = forwardRef(function ScrollEditor({
     updateTypography();
     
     // Adaptive: watch for CSS variable changes via ResizeObserver
+    // Guarded by requestAnimationFrame to prevent layout recursion/thrashing
+    let frameId;
     const observer = new ResizeObserver(() => {
-      updateTypography();
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        updateTypography();
+      });
     });
     
     observer.observe(wrapper);
     
     return () => {
       observer.disconnect();
+      cancelAnimationFrame(frameId);
     };
   }, [updateTypography]);
   

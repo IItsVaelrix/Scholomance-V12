@@ -5,29 +5,42 @@
  * Synchronizes external visual data with world-law color constraints.
  */
 
-import { SCHOOLS } from '../../constants/schools.js';
+import { SCHOOLS } from '../../../../src/data/schools.js';
+import { resolveSonicChroma } from '../../phonology/chroma.resolver.js';
 
 /**
  * Quantize colors to nearest school affinity
- * @param {Object} payload - { colors, schoolId }
+ * @param {Object} payload - { colors, schoolId, phonemes }
  * @returns {Object} { quantizedColors }
  */
-export function quantizeChroma({ colors, schoolId }) {
+export function quantizeChroma({ colors, schoolId, phonemes }) {
+  // 1. Resolve school hue from the world-law registry
   const targetSchool = SCHOOLS[String(schoolId || 'VOID').toUpperCase()] || SCHOOLS.VOID;
   const schoolHue = targetSchool.colorHsl?.h || 0;
+
+  // 2. Resolve phonetic hue if phonemes are provided (Higher precedence than school-only lerp)
+  let phoneticChroma = null;
+  if (Array.isArray(phonemes) && phonemes.length > 0) {
+    phoneticChroma = resolveSonicChroma(phonemes);
+  }
   
   const quantized = (Array.isArray(colors) ? colors : []).map(color => {
     const hex = typeof color === 'string' ? color : color.hex;
     const rgb = hexToRgb(hex);
     const hsl = rgbToHsl(rgb.r, rgb.g, rgb.b);
     
-    // Shift hue towards school hue if school is specified
-    const finalHue = schoolId ? lerpHue(hsl.h, schoolHue, 0.4) : hsl.h;
+    // Determine the anchor hue: Phonetic Nucleus wins, then School ID
+    const anchorHue = phoneticChroma ? phoneticChroma.h : schoolHue;
+    
+    // Shift hue towards the anchor with a deterministic 0.4 resonance factor
+    // This aligns with Law 4 (The Weight of the Nucleus)
+    const finalHue = (phoneticChroma || schoolId) ? lerpHue(hsl.h, anchorHue, 0.4) : hsl.h;
     
     return {
       original: hex,
       quantized: hslToHex(finalHue, hsl.s, hsl.l),
-      schoolAffinity: schoolId || 'NONE'
+      schoolAffinity: schoolId || 'NONE',
+      phoneticResonance: phoneticChroma ? phoneticChroma.bytecode : null
     };
   });
 

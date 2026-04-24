@@ -348,6 +348,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     resetProgression,
     checkUnlocked,
     getNextUnlock,
+    refreshProgression,
     levelInfo: currentLevelInfo,
     availableSchools: progression.unlockedSchools,
     totalSchools: Object.keys(SCHOOLS).length,
@@ -359,6 +360,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     resetProgression,
     checkUnlocked,
     getNextUnlock,
+    refreshProgression,
     currentLevelInfo
   ]);
 
@@ -401,6 +403,33 @@ export function useXPEventListener(event, callback) {
     // The callback is a dependency of the effect. 
     // If it's an inline function, it will cause the effect to re-run on every render.
     // Wrap callbacks in useCallback where performance is critical.
+    const unsubscribe = onXPEvent(event, callback);
+    return unsubscribe;
+  }, [event, callback]);
+}
+
+/**
+ * @deprecated Use useXPEventListener in React components to avoid memory leaks.
+ * Low-level event registration.
+ * Manually subscribe to a progression event.
+ *
+ * @param {string} event The event name.
+ * @param {function} callback The callback to fire.
+ * @returns {function} An unsubscribe function to clean up the listener.
+ */
+export function onXPEvent(event, callback) {
+  if (!eventListeners.has(event)) {
+    eventListeners.set(event, []);
+  }
+  eventListeners.get(event).push(callback);
+  return () => {
+    const listeners = eventListeners.get(event);
+    if (!listeners) return;
+    const idx = listeners.indexOf(callback);
+    if (idx > -1) listeners.splice(idx, 1);
+  };
+}
+rap callbacks in useCallback where performance is critical.
     const unsubscribe = onXPEvent(event, callback);
     return unsubscribe;
   }, [event, callback]);

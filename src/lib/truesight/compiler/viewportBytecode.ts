@@ -84,7 +84,10 @@ export function createViewportChannel(): {
     const pr = window.devicePixelRatio || 1;
 
     // Redundancy check: STOP if state hasn't actually changed
-    if (state.width === w && state.height === h && state.pixelRatio === pr) {
+    // Use Object.is to prevent NaN identity loops (NaN !== NaN)
+    if (Object.is(state.width, w) && 
+        Object.is(state.height, h) && 
+        Object.is(state.pixelRatio, pr)) {
       return;
     }
 

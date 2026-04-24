@@ -1,4 +1,5 @@
 import { SCHOOLS } from '../../../src/data/schools.js';
+import { resolveSonicChroma } from '../phonology/chroma.resolver.js';
 import {
   clamp01,
   createByteMap,
@@ -18,15 +19,14 @@ function resolveSchoolColor(schoolId, colorFeatures = {}) {
     colorHsl: { h: 0, s: 0, l: 50 },
   };
 
-  // For phoneme-based bytecodes (AA1, EH1) that aren't schools, generate unique hue
+  // ─── UNIFIED PHONETIC ANCHOR (V12) ─────────────────────────────────────────
+  // For phoneme-based bytecodes (AA1, EH1) that aren't schools, use the 
+  // deterministic phonetic resolver instead of manual string hashing.
   let baseHue = Number(school?.colorHsl?.h) || 0;
   if (safeSchoolId !== 'VOID' && !SCHOOLS[safeSchoolId]) {
-    // Generate deterministic hue from string
-    let hash = 0;
-    for (let i = 0; i < safeSchoolId.length; i++) {
-      hash = safeSchoolId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    baseHue = Math.abs(hash % 360);
+    // Treat the schoolId as a potential phoneme nucleus
+    const phoneticChroma = resolveSonicChroma([safeSchoolId]);
+    baseHue = phoneticChroma.h;
   }
 
   return Object.freeze({
