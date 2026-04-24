@@ -1,4 +1,4 @@
-app = "scholomance"
+app = "scholomance-v12"
 primary_region = "ord"
 
 [build]
