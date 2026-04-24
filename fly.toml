@@ -1,30 +1,35 @@
-app = "scholomance"
-primary_region = "ord"
+# fly.toml app configuration file generated for scholomance-v12 on 2026-04-24T11:13:34Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'scholomance-v12'
+primary_region = 'iad'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  NODE_ENV = "production"
-  HOST = "0.0.0.0"
-  PORT = "3000"
-  TRUST_PROXY = "true"
-  ENABLE_COLLAB_API = "true"
-  SCHOLOMANCE_DICT_PATH = "/app/data/scholomance_dict.sqlite"
-  SCHOLOMANCE_CORPUS_PATH = "/app/data/scholomance_corpus.sqlite"
-  RHYME_ASTROLOGY_OUTPUT_DIR = "/app/data/rhyme-astrology"
+  ENABLE_COLLAB_API = 'true'
+  HOST = '0.0.0.0'
+  NODE_ENV = 'production'
+  PORT = '3000'
+  RHYME_ASTROLOGY_OUTPUT_DIR = '/app/data/rhyme-astrology'
+  SCHOLOMANCE_CORPUS_PATH = '/app/data/scholomance_corpus.sqlite'
+  SCHOLOMANCE_DICT_PATH = '/app/data/scholomance_dict.sqlite'
+  TRUST_PROXY = 'true'
+
+[[mounts]]
+  source = 'scholomance_scratch'
+  destination = '/app/scratch'
 
 [http_service]
-  internal_port = 3000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = false
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
 [[vm]]
-  size = "shared-cpu-1x"
-  memory = "256mb"
-
-[mounts]
-  source = "scholomance_scratch"
-  destination = "/app/scratch"
+  size = 'shared-cpu-1x'
+  memory = '256mb'
