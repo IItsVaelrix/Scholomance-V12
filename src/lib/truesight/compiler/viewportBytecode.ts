@@ -101,8 +101,8 @@ export function createViewportChannel(): {
     
     state = newState;
     
-    // Notify all bindings
-    bindings.forEach(callback => callback(state));
+    // Notify all subscribers
+    subscribers.forEach(callback => callback(state));
   };
   
   let currentObserver: ResizeObserver | null = null;
