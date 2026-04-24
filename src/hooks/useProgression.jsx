@@ -173,6 +173,30 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     };
   }, [authReady, isAuthenticated]);
 
+  const refreshProgression = useCallback(async (isSilent = true) => {
+    if (!isAuthenticated) return;
+    if (!isSilent) setIsLoading(true);
+    try {
+      const response = await fetch(getApiUrl('/api/progression'), { credentials: "include" });
+      if (response.ok) {
+        canPersistRef.current = true;
+        const data = await response.json();
+        const parsed = ProgressionPayloadSchema.safeParse(data);
+        if (parsed.success) {
+          const serverData = { ...parsed.data };
+          if (!serverData.unlockedSchools?.length) {
+            serverData.unlockedSchools = defaultProgression.unlockedSchools;
+          }
+          setProgression((prev) => ({ ...prev, ...serverData }));
+        }
+      }
+    } catch (error) {
+      console.error("Manual progression refresh failed:", error);
+    } finally {
+      if (!isSilent) setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
   // Persist changes to the server
   useEffect(() => {
     // Don't save the initial default state before loading from server
@@ -430,24 +454,3 @@ export function onXPEvent(event, callback) {
   };
 }
 
-/**
- * @deprecated Use useXPEventListener in React components to avoid memory leaks.
- * Low-level event registration.
- * Manually subscribe to a progression event.
- *
- * @param {string} event The event name.
- * @param {function} callback The callback to fire.
- * @returns {function} An unsubscribe function to clean up the listener.
- */
-export function onXPEvent(event, callback) {
-  if (!eventListeners.has(event)) {
-    eventListeners.set(event, []);
-  }
-  eventListeners.get(event).push(callback);
-  return () => {
-    const listeners = eventListeners.get(event);
-    if (!listeners) return;
-    const idx = listeners.indexOf(callback);
-    if (idx > -1) listeners.splice(idx, 1);
-  };
-}
