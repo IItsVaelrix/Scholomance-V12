@@ -46,7 +46,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV PORT=8080
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite
 
@@ -54,10 +54,8 @@ COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/codex ./codex
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/src ./src
 COPY --from=build /app/public ./public
-COPY --from=build /app/scripts ./scripts
-COPY --from=build /app/docs ./docs
+COPY --from=build /app/scripts/ritual-init.js ./scripts/ritual-init.js
 COPY --from=build /app/mailer.adapter.js ./mailer.adapter.js
 COPY --from=build /app/verseir_palette_payload.json ./verseir_palette_payload.json
 
