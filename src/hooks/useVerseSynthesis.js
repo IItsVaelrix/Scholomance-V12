@@ -18,9 +18,15 @@ export function useVerseSynthesis(content, options = {}) {
   const [highlightedGroup, setHighlightedGroup] = useState(null);
   
   const requestCount = useRef(0);
+  const lastRequestContentRef = useRef("");
 
   const performSynthesis = useCallback(async (text) => {
+    // Deterministic Guard: Stop if content is identical to last issued request
+    if (text === lastRequestContentRef.current) return;
+    
     const requestId = ++requestCount.current;
+    lastRequestContentRef.current = text;
+    
     setIsSynthesizing(true);
     setError(null);
     try {
@@ -66,7 +72,10 @@ export function useVerseSynthesis(content, options = {}) {
       return;
     }
 
+    const requestId = ++requestCount.current;
+
     const timer = setTimeout(() => {
+      if (requestId !== requestCount.current) return;
       performSynthesis(content);
     }, 600); // 600ms debounce for heavy analysis
 

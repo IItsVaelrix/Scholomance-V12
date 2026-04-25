@@ -21,6 +21,7 @@ export function useAutoSave(inputs, options = {}) {
   const autosaveScrollIdRef = useRef(null);
   const lastAutosaveFingerprintRef = useRef("");
   const autosaveContextRef = useRef(0);
+  const requestCount = useRef(0);
 
   const { title, content, id, isEditable, submittedAt } = inputs;
   const { onSaveSuccess } = options;
@@ -35,6 +36,9 @@ export function useAutoSave(inputs, options = {}) {
 
   const runAutosave = useCallback(async (draft) => {
     if (!draft || draft.context !== autosaveContextRef.current) return;
+    
+    // Gating check: if a new request has already been issued, this one is stale
+    if (draft.requestId && draft.requestId !== requestCount.current) return;
 
     const normalizedDraft = {
       context: draft.context,
@@ -109,15 +113,28 @@ export function useAutoSave(inputs, options = {}) {
       return;
     }
 
+    const nextFingerprint = `${id || autosaveScrollIdRef.current || "new"}|${currentTitle}|${currentContent}`;
+    
+    // If the ink matches the last saved state, we are no longer dirty
+    if (nextFingerprint === lastAutosaveFingerprintRef.current) {
+      setSaveStatus("Saved");
+      return;
+    }
+
     setSaveStatus("Dirty");
+    const requestId = ++requestCount.current;
 
     const timerId = window.setTimeout(() => {
+      // Deterministic check: Is this still the active request?
+      if (requestId !== requestCount.current) return;
+
       void runAutosave({
         context: autosaveContextRef.current,
         id: id || autosaveScrollIdRef.current || undefined,
         title: currentTitle,
         content: currentContent,
         submittedAt: submittedAt || null,
+        requestId,
       });
     }, AUTOSAVE_DELAY_MS);
 
