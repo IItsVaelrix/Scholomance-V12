@@ -14,7 +14,7 @@ import { decodeBytecode } from "./bytecodeRenderer.js";
 import { buildRhymeColorRegistry, resolveTokenColor } from "../../lib/truesight/color/rhymeColorRegistry.js";
 import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
-import { resolveSonicChroma } from "../../lib/phonology/vowelWheel.js";
+import { resolveSonicChroma } from "../../lib/phonology.adapter.js";
 import { BytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, ERROR_CODES, MODULE_IDS } from "../../lib/pixelbrain.adapter.js";
 import AnimatedSurface from "../../components/AnimatedSurface";
 

@@ -1,17 +1,4 @@
-/**
- * Canonical vowel-family normalization used across grouping, analytics, and color rendering.
- * This avoids split buckets for equivalent family aliases.
- */
-
-const FAMILY_ALIASES = Object.freeze({
-  // Only actual phonetic aliases/equivalents, no more aggressive consolidation to 8.
-  YOO: "UW",
-  YUW: "UW",
-  IN: "IH",
-  EE: "IY",
-  OH: "OW",
-  OO: "UH", // OO (book) -> UH
-});
+import { FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
 
 /**
  * Normalizes a vowel-family token into the app's canonical family ids.
@@ -21,7 +8,7 @@ const FAMILY_ALIASES = Object.freeze({
 export function normalizeVowelFamily(value) {
   const family = String(value || "").trim().toUpperCase();
   if (!family) return "";
-  return FAMILY_ALIASES[family] || family;
+  return FAMILY_IDENTITY[family] || family;
 }
 
 /**

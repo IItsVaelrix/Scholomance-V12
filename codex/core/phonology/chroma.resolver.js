@@ -23,7 +23,8 @@ const CODA_SONORITY_WEIGHT = {
 export function resolveSonicChroma(phonemes = []) {
   if (!phonemes || phonemes.length === 0) {
     // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
-    return { h: 0, s: 0, l: 50, bytecode: 'PB-CHROMA-000000000' };
+    // Layout: H(000) S(00) L(50) NUC(__)
+    return { h: 0, s: 0, l: 50, bytecode: 'PB-CHROMA-0000050__' };
   }
 
   let nucleus = null;
@@ -46,7 +47,8 @@ export function resolveSonicChroma(phonemes = []) {
 
   if (!nucleus) {
     // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
-    return { h: 180, s: 0, l: 40, bytecode: 'PB-CHROMA-NULL00000' };
+    // Layout: H(180) S(00) L(40) NUC(__)
+    return { h: 180, s: 0, l: 40, bytecode: 'PB-CHROMA-b40028__' };
   }
 
   // 2. Resolve Hue (H) from Nucleus
@@ -76,7 +78,7 @@ export function resolveSonicChroma(phonemes = []) {
   const hueHex = Math.floor(h).toString(16).padStart(3, '0');
   const satHex = Math.floor(s).toString(16).padStart(2, '0');
   const litHex = Math.floor(l).toString(16).padStart(2, '0');
-  const bytecode = `PB-CHROMA-${hueHex}${satHex}${litHex}${nucleus.padStart(2, '_')}`;
+  const bytecode = `PB-CHROMA-${hueHex}${satHex}${litHex}${nucleus}`;
 
   return { h, s, l, bytecode };
 }

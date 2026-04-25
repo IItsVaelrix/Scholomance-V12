@@ -123,6 +123,13 @@ export function runSqliteMigrations(db, options) {
 
   applyPending(pending);
 
+  return {
+    namespace,
+    currentVersion: pending.length > 0 ? pending[pending.length - 1].version : currentVersion,
+    appliedVersions,
+  };
+}
+
 /**
  * Applies pending migrations for a namespace using an asynchronous database wrapper.
  * Supported by createDbWrapper (Turso/libSQL).

@@ -110,10 +110,7 @@ export function buildRhymeColorRegistry(tokens) {
 }
 
 function normalizeExplicitColor(color) {
-  if (!color || color === '#888888' || color === '#888' || color === 'rgb(136, 136, 136)') {
-    return null;
-  }
-  return color;
+  return color || null;
 }
 
 export function resolveTokenColor(rhymeKey, registry, pcaColor, options = {}) {

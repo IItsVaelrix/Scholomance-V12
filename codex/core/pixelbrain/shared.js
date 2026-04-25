@@ -115,7 +115,7 @@ export function parseBytecodeString(bytecode) {
 
   const parts = input.split('-');
   return Object.freeze({
-    version: parts[0] === 'VW' ? 'VW' : 'VW',
+    version: parts[0] === 'VW' ? 'VW' : 'UNKNOWN',
     schoolId: parts[1] || 'VOID',
     rarity: parts[2] || 'COMMON',
     effect: parts[3] || 'INERT',

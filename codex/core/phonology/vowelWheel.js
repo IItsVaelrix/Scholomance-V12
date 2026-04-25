@@ -28,9 +28,22 @@ export const VOWEL_HUE_MAP = Object.freeze({
   AW: 165,
   OY: 225,
   UR: 315,
-  OH: 225,
-  OO: 285,
-  YUW: 315,
+});
+
+/**
+ * V12 CANONICAL IDENTITY MAP
+ * Consolidates all V11/V12 naming variants into canonical ARPAbet families.
+ */
+export const FAMILY_IDENTITY = Object.freeze({
+  // Canonical: families that get their own hue and stay distinct
+  IY:'IY', IH:'IH', EY:'EY', EH:'EH', AE:'AE', AA:'AA', AH:'AH',
+  AO:'AO', OW:'OW', UH:'UH', UW:'UW', ER:'ER', AX:'AX',
+  AY:'AY', AW:'AW', OY:'OY', UR:'UR',
+  // Aliases: per-family decision, documented in Audit2.md
+  OH:'OW',  // OH is a notation for OW — fold
+  OO:'UH',  // OO is the "book" vowel — fold to UH
+  YUW:'UW', YOO:'UW', // Y-glide variants fold to UW
+  EE:'IY', IN:'IH',
 });
 
 export const VISEME_METRICS = Object.freeze({
@@ -48,5 +61,6 @@ export const VISEME_METRICS = Object.freeze({
  */
 export function getVowelHue(vowel) {
   const base = String(vowel || '').replace(/[0-2]/g, '').toUpperCase();
-  return VOWEL_HUE_MAP[base] ?? 180;
+  const canonical = FAMILY_IDENTITY[base] || base;
+  return VOWEL_HUE_MAP[canonical] ?? 180;
 }

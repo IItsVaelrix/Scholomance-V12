@@ -62,6 +62,11 @@ export function synthesizeVerse(text, options = {}) {
     const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
     
     // V12 PERFORMANCE: Pre-calculate expensive phonetic/visual properties
+    /**
+     * PIPELINE A: Phonetic Color (Sonic Chroma)
+     * Used exclusively for Tooltips to represent the word's raw phonetic identity.
+     * Diverges from inline Rhyme-Family color (Pipeline B) by design.
+     */
     const sonicChroma = (token.phonemes?.length > 0) ? resolveSonicChroma(token.phonemes) : null;
     const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
     

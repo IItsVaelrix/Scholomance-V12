@@ -13,7 +13,7 @@ import { VOWEL_FAMILY_TO_SCHOOL } from '../../data/schools.js';
 import { normalizeVowelFamily } from '../../lib/phonology/vowelFamily.js';
 import { decodeBytecode } from '../Read/bytecodeRenderer.js';
 import { resolveTokenColor, buildRhymeColorRegistry } from '../../lib/truesight/color/rhymeColorRegistry.js';
-import { resolveSonicChroma } from '../../lib/phonology/vowelWheel.js';
+import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
 
 /**
  * OracleScribe.jsx

@@ -1,9 +1,10 @@
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../../../data/schools.js';
 import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { mapFormantsToMetrics, getVisemeStyles } from './visemeMapping.js';
-import { VOWEL_HUE_MAP } from '../../phonology/vowelWheel.js';
+import { VOWEL_HUE_MAP, FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
 
 import { resolveSonicChroma } from '../../../../codex/core/phonology/chroma.resolver.js';
+import { hslToHex } from '../../../../codex/core/pixelbrain/shared.js';
 
 export function resolveSonicColor(phonemes = []) {
   const { h, s, l, bytecode } = resolveSonicChroma(phonemes);
@@ -95,44 +96,14 @@ function round(value, decimals = 6) {
   return Math.round(value * factor) / factor;
 }
 
-export function hslToHex(h, s, l) {
-  const hue = wrapHue(h) / 360;
-  const saturation = clamp(s, 0, 100) / 100;
-  const lightness = clamp(l, 0, 100) / 100;
-
-  if (saturation === 0) {
-    const gray = Math.round(lightness * 255);
-    const hex = gray.toString(16).padStart(2, '0');
-    return `#${hex}${hex}${hex}`;
-  }
-
-  const q = lightness < 0.5
-    ? lightness * (1 + saturation)
-    : lightness + saturation - (lightness * saturation);
-  const p = (2 * lightness) - q;
-
-  const hueToRgb = (t) => {
-    let shifted = t;
-    if (shifted < 0) shifted += 1;
-    if (shifted > 1) shifted -= 1;
-    if (shifted < 1 / 6) return p + ((q - p) * 6 * shifted);
-    if (shifted < 1 / 2) return q;
-    if (shifted < 2 / 3) return p + ((q - p) * (2 / 3 - shifted) * 6);
-    return p;
-  };
-
-  const toHex = (value) => Math.round(clamp(value, 0, 1) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(hueToRgb(hue + (1 / 3)))}${toHex(hueToRgb(hue))}${toHex(hueToRgb(hue - (1 / 3)))}`;
-}
-
 function resolveProjectionFamily(value) {
   const raw = String(value || '').trim().toUpperCase();
   if (!raw) return '';
 
-  const explicit = PCA_FAMILY_ALIASES[raw] || raw;
+  const explicit = FAMILY_IDENTITY[raw] || raw;
   if (PCA_VOWEL_FORMANTS[explicit]) return explicit;
 
-  const normalized = PCA_FAMILY_ALIASES[normalizeVowelFamily(raw)] || normalizeVowelFamily(raw);
+  const normalized = FAMILY_IDENTITY[normalizeVowelFamily(raw)] || normalizeVowelFamily(raw);
   return PCA_VOWEL_FORMANTS[normalized] ? normalized : '';
 }
 
@@ -327,7 +298,7 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
     return Object.freeze({
       family: '',
       school: null,
-      hex: '#888888',
+      hex: null,
       hsl: Object.freeze({ h: 0, s: 0, l: 53 }),
       projection: null,
     });
@@ -363,7 +334,7 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
     return Object.freeze({
       family: resolvedFamily,
       school: schoolKey,
-      hex: '#888888',
+      hex: null,
       hsl: { h: 0, s: 0, l: 50 },
       projection,
       viseme: mapFormantsToMetrics(PCA_VOWEL_FORMANTS[resolvedFamily]),

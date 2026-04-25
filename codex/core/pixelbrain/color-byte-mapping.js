@@ -33,8 +33,9 @@ function resolveSchoolColor(schoolId, colorFeatures = {}) {
   // ─── UNIFIED PHONETIC ANCHOR (V12) ─────────────────────────────────────────
   let baseHue = Number(school?.colorHsl?.h) || 0;
   if (safeSchoolId !== 'VOID' && !SCHOOLS[safeSchoolId]) {
-    const phoneticChroma = resolveSonicChroma([safeSchoolId]);
-    baseHue = phoneticChroma.h;
+    // V12 FIX: Use deterministic stable hue for unknown school IDs (Law of Entropy)
+    // Avoids the hardcoded 180 fallback of the legacy phonetic call.
+    baseHue = hashString(safeSchoolId) % 360;
   }
 
   return Object.freeze({
@@ -116,13 +117,6 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
     effect: safeParams.effect || 'INERT',
   });
 }
-
-/**
- * V12 REFACTOR: Legacy wrappers now consistently return objects.
- * Residue branch for test-compatibility removed. Tests must align with the law.
- */
-export const generatePaletteFromSemanticParameters = generateSemanticPalette;
-export const generatePaletteFromSemantics = generateSemanticPalette;
 
 /**
  * Internal color builder with deterministic pseudo-random variation
