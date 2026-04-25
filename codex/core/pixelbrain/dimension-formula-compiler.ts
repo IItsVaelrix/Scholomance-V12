@@ -436,6 +436,32 @@ export class DimensionCompiler {
 
   compile(spec: CanonicalDimensionSpec): BytecodeInstruction[] {
     const instructions: BytecodeInstruction[] = [];
+
+    if (spec.kind === 'orientation') {
+      if (!spec.orientation) {
+        throw new DimensionCompileError(`Orientation spec missing branches`, JSON.stringify(spec), DimensionErrorCode.INCOMPLETE_VARIANT);
+      }
+
+      instructions.push(['LOAD_ORIENTATION', REGISTERS.ORIENTATION]);
+      const branchToLandscape: BytecodeInstruction = ['BRANCH_ORIENTATION_LANDSCAPE', 0];
+      instructions.push(branchToLandscape);
+
+      this.compileSpecBody(spec.orientation.portrait, instructions);
+      instructions.push(['END']);
+
+      branchToLandscape[1] = instructions.length;
+      this.compileSpecBody(spec.orientation.landscape, instructions);
+      instructions.push(['END']);
+
+      return instructions;
+    }
+
+    this.compileSpecBody(spec, instructions);
+    instructions.push(['END']);
+    return instructions;
+  }
+
+  private compileSpecBody(spec: CanonicalDimensionSpec, instructions: BytecodeInstruction[]) {
     this.compileNode(spec.widthPolicy, REGISTERS.COMPUTED_WIDTH, instructions);
     instructions.push(['SET_WIDTH', REGISTERS.COMPUTED_WIDTH]);
 
@@ -449,9 +475,6 @@ export class DimensionCompiler {
     if (spec.anchor) instructions.push(['SET_ANCHOR', spec.anchor]);
     if (spec.snapMode) instructions.push(['SET_SNAP', spec.snapMode]);
     if (spec.deviceClass) instructions.push(['SET_DEVICE_CLASS', spec.deviceClass]);
-
-    instructions.push(['END']);
-    return instructions;
   }
 
   private compileNode(node: FormulaNode, targetReg: number, instructions: BytecodeInstruction[]) {
@@ -564,8 +587,11 @@ export class DimensionRuntime {
     registers[REGISTERS.VIEWPORT_HEIGHT] = toFinite(context.viewportHeight);
     registers[REGISTERS.PARENT_WIDTH] = toFinite(context.parentWidth);
     registers[REGISTERS.PARENT_HEIGHT] = toFinite(context.parentHeight);
-    registers[REGISTERS.DEVICE_CLASS] = context.deviceClass ? ['desktop', 'tablet', 'mobile-android', 'mobile-ios'].indexOf(context.deviceClass) : 0;
-    registers[REGISTERS.ORIENTATION] = context.orientation ? ['portrait', 'landscape', 'square'].indexOf(context.orientation) : 0;
+    const resolvedOrientation = context.orientation || detectOrientation(context.viewportWidth, context.viewportHeight);
+    const deviceClassIndex = context.deviceClass ? ['desktop', 'tablet', 'mobile-android', 'mobile-ios'].indexOf(context.deviceClass) : 0;
+    const orientationIndex = ['portrait', 'landscape', 'square'].indexOf(resolvedOrientation);
+    registers[REGISTERS.DEVICE_CLASS] = deviceClassIndex >= 0 ? deviceClassIndex : 0;
+    registers[REGISTERS.ORIENTATION] = orientationIndex >= 0 ? orientationIndex : 0;
 
     let width = 0;
     let height = 0;
@@ -574,7 +600,8 @@ export class DimensionRuntime {
     let snapMode: SnapMode | undefined;
     let aspectRatio: { numerator: number; denominator: number } | undefined;
 
-    for (const inst of instructions) {
+    for (let ip = 0; ip < instructions.length; ip++) {
+      const inst = instructions[ip];
       const op = inst[0];
       switch (op) {
         case 'LOAD_CONST':
@@ -591,6 +618,22 @@ export class DimensionRuntime {
           break;
         case 'LOAD_PARENT_HEIGHT':
           registers[inst[1] as number] = context.parentHeight;
+          break;
+        case 'LOAD_DEVICE_CLASS':
+          registers[inst[1] as number] = registers[REGISTERS.DEVICE_CLASS];
+          break;
+        case 'LOAD_ORIENTATION':
+          registers[inst[1] as number] = registers[REGISTERS.ORIENTATION];
+          break;
+        case 'BRANCH_ORIENTATION_PORTRAIT':
+          if (resolvedOrientation === 'portrait' || resolvedOrientation === 'square') {
+            ip = Math.max(-1, Math.min(instructions.length - 1, (inst[1] as number) - 1));
+          }
+          break;
+        case 'BRANCH_ORIENTATION_LANDSCAPE':
+          if (resolvedOrientation === 'landscape') {
+            ip = Math.max(-1, Math.min(instructions.length - 1, (inst[1] as number) - 1));
+          }
           break;
         case 'MOVE':
           registers[inst[1] as number] = registers[inst[2] as number];

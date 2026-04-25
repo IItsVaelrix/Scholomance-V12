@@ -65,7 +65,8 @@ export function measureTextWidth(
   const wordSpacing = options.wordSpacing ?? 0;
   
   // Cache key based on font properties and text
-  const fontKey = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily} LS${letterSpacing} WS${wordSpacing} @${dpr}`;
+  // V12 FIX: Drop dpr from key as it is not applied to measurement
+  const fontKey = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily} LS${letterSpacing} WS${wordSpacing}`;
   const cacheKey = `${fontKey}::${text}`;
   
   if (widthCache.has(cacheKey)) {
@@ -85,7 +86,14 @@ export function measureTextWidth(
     }
     
     lastFontKey = fontKey;
-    if (widthCache.size > 1000) widthCache.clear();
+    // V12 FIX: Clear entire cache on font change as old measurements are invalid
+    widthCache.clear();
+  }
+
+  // V12 PERFORMANCE: Use LRU-ish eviction instead of clearing entire map for size limit
+  if (widthCache.size > 1000) {
+    const oldestKey = widthCache.keys().next().value;
+    if (oldestKey !== undefined) widthCache.delete(oldestKey);
   }
 
   const metrics = ctx.measureText(text);
@@ -238,9 +246,11 @@ export function computeAdaptiveGridTopology(
   const lineHeight = parseFloat(styles.lineHeight) || fontSize * 1.9; // Law 1.9
   const paddingLeft = parseFloat(styles.paddingLeft) || 0;
   const paddingTop = parseFloat(styles.paddingTop) || 0;
+  const paddingRight = parseFloat(styles.paddingRight) || 0;
   const letterSpacing = parseFloat(styles.letterSpacing) || 0;
   const wordSpacing = parseFloat(styles.wordSpacing) || 0;
-  
+  const clientWidth = Number.isFinite(element.clientWidth) ? element.clientWidth : 0;
+
   return {
     originX: paddingLeft,
     originY: paddingTop,
@@ -248,7 +258,7 @@ export function computeAdaptiveGridTopology(
     baseCellHeight: lineHeight,
     adaptiveScale: 1.0,
     totalCols: 80,
-    totalWidth: element.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight),
+    totalWidth: Math.max(0, clientWidth - paddingLeft - paddingRight),
     fontFamily: styles.fontFamily,
     fontSize: styles.fontSize,
     fontStyle: styles.fontStyle,

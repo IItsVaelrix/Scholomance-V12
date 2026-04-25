@@ -7,7 +7,7 @@
  * 
  * BYTECODE ERROR SCHEMA:
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │ PB-ERR-v1-{CATEGORY}-{SEVERITY}-{MODULE}-{CODE}-{CHECKSUM}              │
+ * │ PB-ERR-v1-{CATEGORY}-{SEVERITY}-{MODULE}-{CODE}-{CONTEXT}-{CHECKSUM}    │
  * └─────────────────────────────────────────────────────────────────────────┘
  * 
  * COMPONENTS:
@@ -16,17 +16,48 @@
  *   - CATEGORY: Error domain (TYPE|VALUE|RANGE|STATE|HOOK|EXT|COORD|COLOR|NOISE|RENDER)
  *   - SEVERITY: Impact level (FATAL|CRIT|WARN|INFO)
  *   - MODULE: Source module identifier
- *   - CODE: Hex-encoded error code with embedded metadata
+ *   - CODE: Hex-encoded error code
+ *   - CONTEXT: Base64-encoded JSON with detailed metadata
  *   - CHECKSUM: FNV-1a hash for integrity verification
  * 
  * AI PARSING NOTES:
  *   - All fields are uppercase, dash-separated
- *   - CODE field contains base64-encoded JSON with detailed context
+ *   - CONTEXT field contains base64-encoded JSON with detailed context
  *   - CHECKSUM validates message integrity (prevents hallucination)
  *   - Deterministic: same error always produces same bytecode
  */
 
 import { hashString } from './shared.js';
+
+function bytesToBinary(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return binary;
+}
+
+function encodeBase64Utf8(value) {
+  const bufferCtor = globalThis.Buffer;
+  if (typeof bufferCtor?.from === 'function') {
+    return bufferCtor.from(value, 'utf8').toString('base64');
+  }
+  return btoa(bytesToBinary(new TextEncoder().encode(value)));
+}
+
+function decodeBase64Utf8(value) {
+  const bufferCtor = globalThis.Buffer;
+  if (typeof bufferCtor?.from === 'function') {
+    return bufferCtor.from(value, 'base64').toString('utf8');
+  }
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new TextDecoder().decode(bytes);
+}
 
 // ─── Error Categories ────────────────────────────────────────────────────────
 
@@ -242,7 +273,7 @@ export function encodeBytecodeError(category, severity, moduleId, errorCode, con
   
   // Encode context as base64 JSON
   const contextJSON = JSON.stringify(context);
-  const contextB64 = btoa(unescape(encodeURIComponent(contextJSON)));
+  const contextB64 = encodeBase64Utf8(contextJSON);
   
   // Build bytecode string (without checksum)
   const codeHex = errorCode.toString(16).toUpperCase().padStart(4, '0');
@@ -297,7 +328,7 @@ export function decodeBytecodeError(bytecode) {
     // Decode context
     let context = {};
     try {
-      const contextJSON = decodeURIComponent(escape(atob(contextB64)));
+      const contextJSON = decodeBase64Utf8(contextB64);
       context = JSON.parse(contextJSON);
     } catch (e) {
       context = { parseError: 'CONTEXT_DECODE_FAILED' };

@@ -193,6 +193,8 @@ export default function SearchPanel({
   const { checkSpelling, getSpellingSuggestions } = usePredictor();
   const [searchMisspelling, setSearchMisspelling] = useState(null);
 
+  const normalizedQuery = useMemo(() => normalizeLookupWord(query), [query]);
+
   useEffect(() => {
     if (mode !== 'WORD' || normalizedQuery.length < 2) {
       setSearchMisspelling(null);
@@ -213,8 +215,6 @@ export default function SearchPanel({
 
     return () => { isCancelled = true; };
   }, [normalizedQuery, mode, checkSpelling, getSpellingSuggestions]);
-
-  const normalizedQuery = useMemo(() => normalizeLookupWord(query), [query]);
   const schoolTheme = useMemo(() => getOracleSchoolTheme(selectedSchool), [selectedSchool]);
   const activeEntry = lookupOverride ?? data;
   const resolvedLookupWord = useMemo(

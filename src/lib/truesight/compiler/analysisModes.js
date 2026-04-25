@@ -1,9 +1,34 @@
-export const TRUESIGHT_ANALYSIS_MODES = Object.freeze({
+/**
+ * Canonical Analysis Modes for Truesight
+ * 
+ * Defines the unified mode registry used by UI, Toolbar, and Compiler.
+ */
+export const ANALYSIS_MODES = Object.freeze({
+  // Feature Modes
+  NONE: 'none',
+  RHYME: 'rhyme',
+  ANALYZE: 'analyze',
+  ASTROLOGY: 'astrology',
+  
+  // Authoritative / Special Render Modes
+  PIXELBRAIN: 'pixelbrain_transverse',
+  VOID_ECHO: 'void_echo',
+  
+  // Performance / Depth Levels (Compiler specific)
   LIVE_FAST: 'live_fast',
   BALANCED: 'balanced',
-  DEEP_TRUESIGHT: 'deep_truesight',
-  PIXELBRAIN_TRANSVERSE: 'pixelbrain_transverse',
-  VOID_ECHO: 'void_echo',
+  DEEP: 'deep_truesight',
+});
+
+/**
+ * Backward compatibility alias for the compiler's internal depth configs
+ */
+export const TRUESIGHT_ANALYSIS_MODES = Object.freeze({
+  LIVE_FAST: ANALYSIS_MODES.LIVE_FAST,
+  BALANCED: ANALYSIS_MODES.BALANCED,
+  DEEP_TRUESIGHT: ANALYSIS_MODES.DEEP,
+  PIXELBRAIN_TRANSVERSE: ANALYSIS_MODES.PIXELBRAIN,
+  VOID_ECHO: ANALYSIS_MODES.VOID_ECHO,
 });
 
 const DEFAULT_MODE = TRUESIGHT_ANALYSIS_MODES.BALANCED;

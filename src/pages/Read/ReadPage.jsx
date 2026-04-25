@@ -41,7 +41,7 @@ import { TruesightDebugColorPanel } from "../../components/TruesightDebugColorPa
 
 import ScrollEditor from "./ScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
-import { ANALYSIS_MODES } from "./TruesightControls.jsx";
+import { ANALYSIS_MODES } from "../../lib/truesight/compiler/analysisModes";
 import { TopBar, StatusBar } from "./IDEChrome.jsx";
 import ToolsSidebar from "./ToolsSidebar.jsx";
 import SearchPanel from "./SearchPanel.jsx";

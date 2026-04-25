@@ -246,7 +246,13 @@ function buildPcaBasis() {
   });
 }
 
-const PCA_BASIS = buildPcaBasis();
+let _pcaBasis = null;
+function getPCABasis() {
+  if (!_pcaBasis) {
+    _pcaBasis = buildPcaBasis();
+  }
+  return _pcaBasis;
+}
 
 function resolveSchoolKey(schoolId, family) {
   const requested = String(schoolId || '').trim().toUpperCase();
@@ -350,7 +356,20 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const sMod = Math.cos(rad) * themeConfig.resonanceSat;
   const lMod = Math.sin(rad * 1.5) * themeConfig.resonanceLit;
 
-  const canonicalHue = VOWEL_HUE_MAP[resolvedFamily] ?? 180;
+  const canonicalHue = VOWEL_HUE_MAP[resolvedFamily];
+  
+  if (canonicalHue === undefined) {
+    // V12 FIX: Return neutral gray fallback for unknown families to avoid 180-degree collision
+    return Object.freeze({
+      family: resolvedFamily,
+      school: schoolKey,
+      hex: '#888888',
+      hsl: { h: 0, s: 0, l: 50 },
+      projection,
+      viseme: mapFormantsToMetrics(PCA_VOWEL_FORMANTS[resolvedFamily]),
+    });
+  }
+
   // Explicit theme inputs should win over the canonical vowel wheel.
   const hue = usesThemeHue
     ? wrapHue(baseHsl.h + (deltaPc1 * themeConfig.huePc1) - (deltaPc2 * themeConfig.huePc2) + hMod)
@@ -403,7 +422,7 @@ export function buildVerseIrPalette(schoolId = 'DEFAULT') {
 export function getVerseIrColorProjection(family) {
   const resolvedFamily = resolveProjectionFamily(family);
   if (!resolvedFamily) return null;
-  return PCA_BASIS.projections[resolvedFamily] || null;
+  return getPCABasis().projections[resolvedFamily] || null;
 }
 
-export const VERSE_IR_PCA_CHROMA_BASIS = PCA_BASIS;
+export const VERSE_IR_PCA_CHROMA_BASIS = getPCABasis();

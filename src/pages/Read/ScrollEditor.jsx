@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../hooks/useTheme.jsx";
 import { useColorCodex } from "../../hooks/useColorCodex.js";
 import IntelliSense from "../../components/IntelliSense.jsx";
-import { computeGridTopology } from "../../lib/truesight/compiler/truesightGrid";
 import { computeAdaptiveGridTopology, buildTruesightOverlayLines } from "../../lib/truesight/compiler/adaptiveWhitespaceGrid";
 import { loadCorpusFrequencies } from "../../lib/truesight/compiler/corpusWhitespaceGrid";
 import { ViewportChannel } from "../../lib/truesight/compiler/viewportBytecode";
@@ -310,7 +309,10 @@ const ScrollEditor = forwardRef(({
     if (!wrapper) return;
 
     const styles = window.getComputedStyle(wrapper);
-    const width = wrapper.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
+    const clientWidth = Number.isFinite(wrapper.clientWidth) ? wrapper.clientWidth : 0;
+    const width = Math.max(0, clientWidth - paddingLeft - paddingRight);
     const height = wrapper.clientHeight;
 
     // Only update state if dimensions or critical font styles actually changed, or if forced
@@ -365,7 +367,9 @@ const ScrollEditor = forwardRef(({
   }, []);
 
   const { overlayLines, allOverlayTokens } = useMemo(() => {
-    if (!adaptiveTopology || containerWidth <= 0) return { overlayLines: [], allOverlayTokens: [] };
+    if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
+      return { overlayLines: [], allOverlayTokens: [] };
+    }
     const result = buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology);
     return { overlayLines: result.lines, allOverlayTokens: result.allTokens };
   }, [contentForOverlay, containerWidth, adaptiveTopology]);

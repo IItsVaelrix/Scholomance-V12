@@ -16,6 +16,14 @@ import {
  * Maps bytecode strings to color palettes using semantic parameters.
  */
 
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) return numberValue;
+  }
+  return undefined;
+}
+
 function resolveSchoolColor(schoolId, colorFeatures = {}) {
   const safeSchoolId = String(schoolId || 'VOID').trim().toUpperCase();
   const school = SCHOOLS[safeSchoolId] || SCHOOLS.VOID || {
@@ -54,7 +62,7 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
   const { color = {}, surface = {}, light = {}, form = {} } = safeParams;
 
   // 1. Resolve Hue (Semantic or Light color)
-  let baseHue = Number(color.primaryHue) || Number(safeParams.primaryHue) || 0;
+  let baseHue = firstFiniteNumber(color.primaryHue, safeParams.primaryHue, 0);
   if (light.color) {
     const hex = String(light.color).replace('#', '');
     if (/^[0-9A-F]{6}$/i.test(hex)) {
@@ -66,14 +74,18 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
   }
 
   // 2. Resolve Saturation & Brightness
-  const saturation = clamp01(
-    Number(color.saturation || safeParams.saturation) || 
-    (0.5 + (surface.reflectivity || 0) * 0.3)
-  );
-  const brightness = clamp01(
-    Number(color.brightness || safeParams.brightness) || 
-    (0.5 * (light.intensity || 0.5) + 0.25)
-  );
+  const reflectivity = firstFiniteNumber(surface.reflectivity, 0);
+  const lightIntensity = firstFiniteNumber(light.intensity, 0.5);
+  const saturation = clamp01(firstFiniteNumber(
+    color.saturation,
+    safeParams.saturation,
+    0.5 + reflectivity * 0.3
+  ));
+  const brightness = clamp01(firstFiniteNumber(
+    color.brightness,
+    safeParams.brightness,
+    0.5 * lightIntensity + 0.25
+  ));
 
   // 3. Resolve Size via Contract
   const paletteSize = paletteSizeOverride !== undefined 

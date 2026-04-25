@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-04-13T18:03:50.730Z
+Generated at: 2026-04-25T13:52:48.748Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -13,35 +13,35 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/codex/animation/bytecode-bridge/parser/blueprintParser.ts
 - [ ] src/codex/animation/bytecode-bridge/qa/blueprintQA.ts
 - [ ] src/codex/animation/bytecode-bridge/validator/blueprintValidator.ts
+- [ ] src/components/ArchiveEventRingPulse.jsx
+- [ ] src/hooks/useBattleScoring.js
+- [ ] src/lib/combatMechanics.js
+- [ ] src/lib/combatScoring.js
 - [ ] src/lib/css/schoolStyles.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
 - [ ] src/lib/truesight/compiler/pixelbrainTruesightAMP.ts
 - [ ] src/lib/truesight/compiler/verseIRQueries.js
+- [ ] src/lib/workers/analysis.client.js
 - [ ] src/lib/workers/analysis.worker.js
 - [ ] src/pages/Collab/BugBoard.jsx
+- [ ] src/pages/Combat/BattleScrollInput.jsx
+- [ ] src/pages/Combat/PlayerDisplay.jsx
 - [ ] src/pages/PixelBrain/TemplateEditor.jsx
 - [ ] src/pages/PixelBrain/components/ExportOptions.jsx
 - [ ] src/pages/PixelBrain/components/FormulaEditor.jsx
-- [ ] src/pages/Read/KeystrokeSparksCanvas.jsx
-- [ ] src/pages/Read/Minimap.jsx
-- [ ] src/pages/Read/scenes/KeystrokeSparksScene.js
 - [ ] src/types/core/analysis.ts
 - [ ] src/types/core/combat.ts
 - [ ] src/types/core/judiciary.ts
 - [ ] src/types/core/lexical.ts
 - [ ] src/types/core/scoring.ts
-- [ ] src/types/core/scroll.ts
 - [ ] src/types/index.ts
 - [ ] src/types/lib/literary.ts
 - [ ] src/types/lib/phoneme.ts
 - [ ] src/types/lib/phonological.ts
 - [ ] src/types/lib/pls.ts
 - [ ] src/types/lib/rhyme.ts
-- [ ] src/types/runtime/runtime.ts
-- [ ] src/ui/animation/adapters/motionToCssVars.ts
 - [ ] src/ui/animation/adapters/motionToFramerProps.ts
-- [ ] src/ui/animation/adapters/motionToPhaserTween.ts
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
 - [ ] src/ui/animation/hooks/useCursorSync.ts
 - [ ] src/ui/animation/hooks/useResolvedMotion.ts
@@ -49,11 +49,11 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/animation/amp/run-animation-amp.ts
 - [ ] codex/core/animation/contracts/motion-contract.ts
 - [ ] codex/core/animation/processors/dimension-processor.ts
+- [ ] codex/core/combat.session.js
 - [ ] codex/core/pixelbrain/coord-symmetry-errors.js
 - [ ] codex/core/pixelbrain/dimension-formula-compiler.ts
 - [ ] codex/core/pixelbrain/extensions/physics-extensions.js
 - [ ] codex/core/pixelbrain/extensions/style-extensions.js
-- [ ] codex/core/pixelbrain/image-texturing.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
 - [ ] codex/core/pixelbrain-phase3.js
 - [ ] codex/core/rhyme/dataset.js
@@ -66,14 +66,12 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/server/collab/mcp-probe.js
 - [ ] codex/server/persistence.adapter.js
 - [ ] codex/server/services/imageAnalysis.service.js
-- [ ] codex/server/services/narrativeAMP.service.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
 - [ ] codex/services/adapters/abstract-persistence.adapter.js
 - [ ] codex/services/adapters/index.js
 - [ ] codex/services/adapters/persistence.adapter.js
 - [ ] codex/services/adapters/transport.adapter.js
-- [ ] codex/services/token-graph/phonetic.repo.js
 
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
@@ -198,6 +196,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `scaleProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
 - [ ] `rotateProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
 - [ ] `anchorProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
+- [ ] `ArchiveEventRingPulse` in `src/components/ArchiveEventRingPulse.jsx`
 - [ ] `BookIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsRightIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsLeftIcon` in `src/components/Icons.jsx`
@@ -218,6 +217,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getDefaultSonicStationTrackUrl` in `src/data/sonicStationBuckets.js`
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
+- [ ] `useBattleScoring` in `src/hooks/useBattleScoring.js`
 - [ ] `emitXPEvent` in `src/hooks/useProgression.jsx`
 - [ ] `useXPEventListener` in `src/hooks/useProgression.jsx`
 - [ ] `onXPEvent` in `src/hooks/useProgression.jsx`
@@ -243,13 +243,15 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
 - [ ] `ARPABET_CONSONANTS` in `src/lib/phonology/phoneme.constants.js`
 - [ ] `PHONOLOGICAL_PROCESS_RULES` in `src/lib/phonology/phonologicalProcesses.js`
+- [ ] `VISEME_METRICS` in `src/lib/phonology/vowelWheel.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`
+- [ ] `buildPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
+- [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
 - [ ] `getXpForLevel` in `src/lib/progressionUtils.js`
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
+- [ ] `isComplexScheme` in `src/lib/rhymeScheme.detector.js`
 - [ ] `SyntaxAnalyzer` in `src/lib/syntax.layer.js`
-- [ ] `classifySyntaxToken` in `src/lib/syntax.layer.js`
-- [ ] `getSyntaxIdentityKey` in `src/lib/syntax.layer.js`
 - [ ] `buildVerseIrPalette` in `src/lib/truesight/color/pcaChroma.js`
 - [ ] `getVerseIrColorProjection` in `src/lib/truesight/color/pcaChroma.js`
 - [ ] `VERSE_IR_PCA_CHROMA_BASIS` in `src/lib/truesight/color/pcaChroma.js`
@@ -294,14 +296,30 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `neighborsOf` in `src/lib/truesight/compiler/verseIRQueries.js`
 - [ ] `deserializeVerseIR` in `src/lib/truesight/compiler/verseIRSerialization.js`
 - [ ] `ViewportState` in `src/lib/truesight/compiler/viewportBytecode.ts`
+- [ ] `DEFAULT_VIEWPORT_STATE` in `src/lib/truesight/compiler/viewportBytecode.ts`
 - [ ] `ViewportBytecode` in `src/lib/truesight/compiler/viewportBytecode.ts`
 - [ ] `encodeViewportBytecode` in `src/lib/truesight/compiler/viewportBytecode.ts`
 - [ ] `createViewportChannel` in `src/lib/truesight/compiler/viewportBytecode.ts`
 - [ ] `WORD_PATTERN` in `src/lib/wordTokenization.js`
-- [ ] `getSyntacticIntegrity` in `src/pages/Combat/components/Spellbook.jsx`
+- [ ] `warmAnalysisWorker` in `src/lib/workers/analysis.client.js`
+- [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
+- [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `keyToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getEuclideanDistance` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getNeighbors` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getAllNeighbors` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getLineTiles` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getDiamondPattern` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getConePattern` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `labelToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
+- [ ] `getLinePattern` in `src/pages/Combat/state/combatPreviewUtils.js`
 - [ ] `TemplateEditor` in `src/pages/PixelBrain/TemplateEditor.jsx`
 - [ ] `ExportOptions` in `src/pages/PixelBrain/components/ExportOptions.jsx`
 - [ ] `FormulaEditor` in `src/pages/PixelBrain/components/FormulaEditor.jsx`
+- [ ] `OracleWordTitle` in `src/pages/Read/OracleVisualizations.jsx`
+- [ ] `ArticulationStrip` in `src/pages/Read/OracleVisualizations.jsx`
+- [ ] `PhonemeStrip` in `src/pages/Read/OracleVisualizations.jsx`
+- [ ] `WaveformIndicator` in `src/pages/Read/OracleVisualizations.jsx`
 - [ ] `DocumentStats` in `src/types/core/analysis.ts`
 - [ ] `DocumentParsed` in `src/types/core/analysis.ts`
 - [ ] `JudiciaryLayer` in `src/types/core/judiciary.ts`
@@ -322,12 +340,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `RhymeSubtype` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGate` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGatingStats` in `src/types/lib/rhyme.ts`
-- [ ] `CacheEntry` in `src/types/runtime/runtime.ts`
-- [ ] `EventCallback` in `src/types/runtime/runtime.ts`
-- [ ] `motionToCssVars` in `src/ui/animation/adapters/motionToCssVars.ts`
 - [ ] `FramerMotionProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
 - [ ] `motionToFramerProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
-- [ ] `motionToPhaserTween` in `src/ui/animation/adapters/motionToPhaserTween.ts`
 - [ ] `CursorSyncBlueprint` in `src/ui/animation/hooks/useCursorSync.ts`
 - [ ] `CursorSyncOutput` in `src/ui/animation/hooks/useCursorSync.ts`
 - [ ] `compileCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
@@ -337,6 +351,19 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `AnimationTargetType` in `codex/core/animation/contracts/motion-contract.ts`
 - [ ] `SCHOOL_EFFECTIVENESS` in `codex/core/combat.balance.js`
 - [ ] `STATUS_TIER_DEFINITIONS` in `codex/core/combat.balance.js`
+- [ ] `computeCombatManaRegen` in `codex/core/combat.balance.js`
+- [ ] `computeCombatXpAward` in `codex/core/combat.balance.js`
+- [ ] `scoreDataToDamage` in `codex/core/combat.scoring.js`
+- [ ] `buildSpellHistoryEntry` in `codex/core/combat.session.js`
+- [ ] `createInitialCombatState` in `codex/core/combat.session.js`
+- [ ] `setCombatState` in `codex/core/combat.session.js`
+- [ ] `applyPlayerCastPreview` in `codex/core/combat.session.js`
+- [ ] `applyResolvedPlayerCast` in `codex/core/combat.session.js`
+- [ ] `restoreFailedPlayerCast` in `codex/core/combat.session.js`
+- [ ] `startOpponentCast` in `codex/core/combat.session.js`
+- [ ] `completeOpponentTurn` in `codex/core/combat.session.js`
+- [ ] `markCombatVictory` in `codex/core/combat.session.js`
+- [ ] `markCombatDefeat` in `codex/core/combat.session.js`
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
 - [ ] `TEMPLATE_VOCAB` in `codex/core/commentary/phrase-bank.js`
 - [ ] `MODEL_CORPUS` in `codex/core/commentary/phrase-bank.js`
@@ -358,6 +385,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
+- [ ] `generateSemanticPalette` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
 - [ ] `COORDSYM_ERROR_CODES` in `codex/core/pixelbrain/coord-symmetry-errors.js`
 - [ ] `COORDSYM_ERROR_METADATA` in `codex/core/pixelbrain/coord-symmetry-errors.js`
@@ -368,7 +396,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createCoordinateOutOfBoundsError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
 - [ ] `createGridSnapFailedError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
 - [ ] `DimensionCompileError` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
-- [ ] `Unit` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FormulaNode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FitMode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `AnchorMode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
@@ -396,7 +423,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `syncMultipleElements` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `getTimeForRotation` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `generateRotationKeyframes` in `codex/core/pixelbrain/gear-glide-amp.js`
-- [ ] `applyTexture` in `codex/core/pixelbrain/image-texturing.js`
 - [ ] `extractEdgePoints` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `fitParametricCurve` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `detectGridPattern` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
@@ -417,6 +443,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createFrame` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getOnionSkins` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `importFromAseprite` in `codex/core/pixelbrain/template-grid-engine.js`
+- [ ] `semanticToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `tokenToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `buildPixelBrainTokenBytecodeWithSemantics` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `RHYME_ASTROLOGY_API_VERSION` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_MODES` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_DEFAULTS` in `codex/core/rhyme-astrology/contracts.js`
@@ -432,6 +461,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildWeightedScoreBreakdown` in `codex/core/rhyme-astrology/scoring.js`
 - [ ] `isVowelPhoneme` in `codex/core/rhyme-astrology/signatures.js`
 - [ ] `RHYME_ASTROLOGY_TYPES_VERSION` in `codex/core/rhyme-astrology/types.js`
+- [ ] `runRitualPrediction` in `codex/core/ritual-prediction/run.js`
 - [ ] `DEFAULT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `COMBAT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `getCombatScoringHeuristics` in `codex/core/scoring.defaults.js`
@@ -491,10 +521,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `SendGridMailerAdapter` in `codex/server/services/mailer.service.js`
 - [ ] `ResendMailerAdapter` in `codex/server/services/mailer.service.js`
 - [ ] `MailerService` in `codex/server/services/mailer.service.js`
-- [ ] `createNarrativeAMPService` in `codex/server/services/narrativeAMP.service.js`
 - [ ] `getPendingCount` in `codex/server/services/wordLookupCoalescer.js`
 - [ ] `RHYME_ASTROLOGY_ARTIFACT_FILES` in `codex/server/utils/rhymeAstrologyPaths.js`
 - [ ] `hasRhymeAstrologyArtifactBundle` in `codex/server/utils/rhymeAstrologyPaths.js`
 - [ ] `FreeDictionaryAdapter` in `codex/services/adapters/freeDictionary.adapter.js`
 - [ ] `createAdapterChain` in `codex/services/adapters/index.js`
-- [ ] `createTokenGraphPhoneticRepo` in `codex/services/token-graph/phonetic.repo.js`

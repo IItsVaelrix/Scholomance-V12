@@ -1,16 +1,5 @@
 import PropTypes from 'prop-types';
-
-/**
- * Analysis mode options for Truesight.
- */
-export const ANALYSIS_MODES = {
-  NONE: 'none',
-  RHYME: 'rhyme',
-  ANALYZE: 'analyze',
-  ASTROLOGY: 'astrology',
-  PIXELBRAIN: 'pixelbrain_transverse',
-  VOIDECHO: 'void_echo',
-};
+import { ANALYSIS_MODES } from '../../lib/truesight/compiler/analysisModes';
 
 /**
  * Truesight mode control panel.

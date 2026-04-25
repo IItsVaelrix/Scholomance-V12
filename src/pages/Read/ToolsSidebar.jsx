@@ -1,4 +1,4 @@
-import { ANALYSIS_MODES } from './TruesightControls.jsx';
+import { ANALYSIS_MODES } from '../../lib/truesight/compiler/analysisModes';
 import { EyeIcon, SparkleIcon, MetricsIcon, AnalyzeIcon, RhymeIcon, AstrologyIcon } from '../../components/Icons.jsx';
 import GrimDesignPanel from './GrimDesignPanel.jsx';
 import './IDE.css';

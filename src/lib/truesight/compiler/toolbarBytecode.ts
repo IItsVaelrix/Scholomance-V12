@@ -11,6 +11,8 @@
  * - Scheme Detection (active/inactive)
  */
 
+import { ANALYSIS_MODES } from './analysisModes';
+
 export const TOOLBAR_TOOL = {
   TRUESIGHT: 'truesight',
   PREDICTIVE: 'predictive',
@@ -19,12 +21,7 @@ export const TOOLBAR_TOOL = {
   SCHEME_DETECTION: 'scheme_detection',
 };
 
-export const ANALYSIS_MODE = {
-  NONE: 'none',
-  RHYME: 'rhyme',
-  ANALYZE: 'analyze',
-  ASTROLOGY: 'astrology',
-} as const;
+export const ANALYSIS_MODE = ANALYSIS_MODES;
 
 export const SAVE_STATE = {
   CLEAN: 'clean',
@@ -39,7 +36,7 @@ export type SaveState = typeof SAVE_STATE[keyof typeof SAVE_STATE];
 export interface ToolbarState {
   truesight: boolean;
   predictive: boolean;
-  analysisMode: AnalysisMode;
+  analysisMode: string;
   saveState: SaveState;
   schemeDetection: boolean;
   timestamp: number;
@@ -126,8 +123,8 @@ export function createToolbarChannel(): {
   const subscribers = new Set<(state: ToolbarState) => void>();
   const history: Array<{ tool: string; action: string; timestamp: number }> = [];
   
-  const notify = () => {
-    state = { ...state, timestamp: Date.now() };
+  const updateState = (updater: (prev: ToolbarState) => Partial<ToolbarState>) => {
+    state = { ...state, ...updater(state), timestamp: Date.now() };
     subscribers.forEach(cb => cb(state));
   };
   
@@ -137,30 +134,34 @@ export function createToolbarChannel(): {
     getBytecode: () => encodeToolbarBytecode(state),
     
     setTool: (tool: string, value: any) => {
-      switch (tool) {
-        case TOOLBAR_TOOL.TRUESIGHT:
-          state.truesight = value;
-          history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
-          break;
-        case TOOLBAR_TOOL.PREDICTIVE:
-          state.predictive = value;
-          history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
-          break;
-        case TOOLBAR_TOOL.ANALYSIS_MODE:
-          state.analysisMode = value;
-          history.push({ tool, action: `SET_${value.toUpperCase()}`, timestamp: Date.now() });
-          break;
-        case TOOLBAR_TOOL.SAVE_STATE:
-          state.saveState = value;
-          history.push({ tool, action: value.toUpperCase(), timestamp: Date.now() });
-          break;
-        case TOOLBAR_TOOL.SCHEME_DETECTION:
-          state.schemeDetection = value;
-          history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
-          break;
-      }
-      
-      notify();
+      updateState(prev => {
+        const delta: Partial<ToolbarState> = {};
+        
+        switch (tool) {
+          case TOOLBAR_TOOL.TRUESIGHT:
+            delta.truesight = value;
+            history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
+            break;
+          case TOOLBAR_TOOL.PREDICTIVE:
+            delta.predictive = value;
+            history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
+            break;
+          case TOOLBAR_TOOL.ANALYSIS_MODE:
+            delta.analysisMode = value;
+            history.push({ tool, action: `SET_${String(value).toUpperCase()}`, timestamp: Date.now() });
+            break;
+          case TOOLBAR_TOOL.SAVE_STATE:
+            delta.saveState = value;
+            history.push({ tool, action: String(value).toUpperCase(), timestamp: Date.now() });
+            break;
+          case TOOLBAR_TOOL.SCHEME_DETECTION:
+            delta.schemeDetection = value;
+            history.push({ tool, action: value ? 'ENABLED' : 'DISABLED', timestamp: Date.now() });
+            break;
+        }
+        
+        return delta;
+      });
     },
     
     subscribe: (callback: (state: ToolbarState) => void) => {
