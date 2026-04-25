@@ -58,44 +58,17 @@ function resolveTerminalVowelFamily(token) {
     return null;
   }
 
-  const directCandidates = [
-    token.terminalVowelFamily,
-    token.analysis?.terminalVowelFamily,
-    token.compilerRef?.terminalVowelFamily,
-  ];
-
-  for (const candidate of directCandidates) {
-    const normalized = normalizeVowelFamily(candidate);
-    if (normalized) {
-      return normalized;
-    }
+  // V12 CANONICAL: Use the pre-computed terminalVowelFamily from the VerseIR analysis
+  const canonical = token.terminalVowelFamily || token.analysis?.terminalVowelFamily;
+  const normalized = normalizeVowelFamily(canonical);
+  
+  if (normalized) {
+    return normalized;
   }
 
-  const rhymeFamily = resolveRhymeFamilyFromKey(resolveRhymeKey(token));
-  if (rhymeFamily) {
-    return rhymeFamily;
-  }
-
+  // Final fallback: Use the last vowel in the family list if explicitly present
   if (Array.isArray(token.vowelFamily) && token.vowelFamily.length > 0) {
-    const normalized = normalizeVowelFamily(token.vowelFamily[token.vowelFamily.length - 1]);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  const fallbackCandidates = [
-    token.vowelFamily,
-    token.analysis?.vowelFamily,
-    token.primaryStressedVowelFamily,
-    token.analysis?.primaryStressedVowelFamily,
-    token.compilerRef?.primaryStressedVowelFamily,
-  ];
-
-  for (const candidate of fallbackCandidates) {
-    const normalized = normalizeVowelFamily(candidate);
-    if (normalized) {
-      return normalized;
-    }
+    return normalizeVowelFamily(token.vowelFamily[token.vowelFamily.length - 1]);
   }
 
   return null;
