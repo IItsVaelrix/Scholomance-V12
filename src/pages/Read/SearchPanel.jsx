@@ -500,7 +500,7 @@ export default function SearchPanel({
           <span className="oracle-chrome-dot oracle-chrome-dot--warm" aria-hidden="true" />
           <span className="oracle-chrome-dot oracle-chrome-dot--cool" aria-hidden="true" />
           <span className="oracle-chrome-label">
-            <span aria-hidden="true">{schoolTheme.glyph}</span> PIXELBRAIN LEXICON ORACLE
+            <span aria-hidden="true">{schoolTheme.glyph}</span> SCHOLOMANCE LEXICON ORACLE
           </span>
           <div className="oracle-mode-toggle" role="group" aria-label="Oracle mode">
             <button

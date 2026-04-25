@@ -36,15 +36,19 @@ export const LIBRARY = {
 };
 
 
+const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+
 export const LINKS = [
   { id: "watch",  path: "/watch",  label: "Watch" },
   { id: "listen", path: "/listen", label: "Listen" },
   { id: "read",   path: "/read",   label: "Scribe" },
   { id: "combat", path: "/combat", label: "Combat" },
   { id: "nexus",  path: "/nexus",  label: "Nexus" },
-  { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
-  { id: "career", path: "/career", label: "Career" },
-  { id: "collab", path: "/collab", label: "Collab" },
+  ...(IS_PROD ? [] : [
+    { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
+    { id: "career", path: "/career", label: "Career" },
+    { id: "collab", path: "/collab", label: "Collab" },
+  ]),
 ];
 
 // Dynamically generate COLORS from SCHOOLS source of truth
