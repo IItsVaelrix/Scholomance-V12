@@ -7,6 +7,40 @@ export const DEFAULT_PIXELBRAIN_CANVAS = Object.freeze({
   gridSize: 1,
 });
 
+/**
+ * PALETTE_CONTRACT — Deterministic thresholds for PixelBrain V12
+ */
+export const PALETTE_CONTRACT = Object.freeze({
+  TIERS: {
+    INEXPLICABLE: 'INEXPLICABLE',
+    RARE: 'RARE',
+    COMMON: 'COMMON',
+    TRANSCENDENT: 'TRANSCENDENT',
+    HARMONIC: 'HARMONIC',
+    RESONANT: 'RESONANT',
+  },
+  SIZES: {
+    INEXPLICABLE: 5,
+    RARE: 4,
+    COMMON: 3,
+  },
+  SHIFTS: {
+    INEXPLICABLE: 18,
+    RARE: 10,
+    COMMON: 6,
+  },
+  LIFT: {
+    TRANSCENDENT: 12,
+    HARMONIC: 7,
+    RESONANT: 4,
+    INERT: 0,
+  },
+  ADDRESSING: {
+    PAGE_SIZE: 8, // 8-byte addressing blocks for SSD alignment
+    BLOCK_SIZE: 64,
+  }
+});
+
 export function clamp01(value) {
   if (Number.isNaN(value)) return 0;
   return Math.max(0, Math.min(1, value));
@@ -34,6 +68,15 @@ export function hashString(value) {
   }
 
   return hash >>> 0;
+}
+
+/**
+ * Deterministic pseudo-random number generator for mathematical purity
+ */
+export function pseudoRandom(seed) {
+  const h = hashString(seed);
+  // Splitmix64-style state transition
+  return (h % 1000000) / 1000000;
 }
 
 export function normalizeDegrees(value) {
