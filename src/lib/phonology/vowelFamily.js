@@ -1,4 +1,4 @@
-import { FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
+import { FAMILY_IDENTITY } from '../../../codex/core/phonology/vowelWheel.js';
 
 /**
  * Normalizes a vowel-family token into the app's canonical family ids.

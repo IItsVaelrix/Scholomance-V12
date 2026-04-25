@@ -14,7 +14,7 @@ import { compileVerseToIR } from "./compileVerseToIR.js";
 import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
 import { buildVowelSummary, normalizeVowelFamily } from "../../phonology/vowelFamily.js";
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
-import { resolveSonicChroma } from "../../phonology/vowelWheel.js";
+import { resolveSonicChroma } from "../../../../codex/core/phonology/chroma.resolver.js";
 import { decodeBytecode } from "../../../pages/Read/bytecodeRenderer.js";
 
 /**

@@ -4,7 +4,9 @@ import { mapFormantsToMetrics, getVisemeStyles } from './visemeMapping.js';
 import { VOWEL_HUE_MAP, FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
 
 import { resolveSonicChroma } from '../../../../codex/core/phonology/chroma.resolver.js';
-import { hslToHex } from '../../../../codex/core/pixelbrain/shared.js';
+import { hslToHex as coreHslToHex } from '../../../../codex/core/pixelbrain/shared.js';
+
+export const hslToHex = coreHslToHex;
 
 export function resolveSonicColor(phonemes = []) {
   const { h, s, l, bytecode } = resolveSonicChroma(phonemes);
