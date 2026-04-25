@@ -1085,7 +1085,7 @@ export default function ReadPage() {
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
                       isPredictive={true}
-                      onTogglePredictive={handleTogglePredictive}
+                      onTogglePredictive={() => {}}
                       mirrored={mirrored}
                       onToggleMirrored={handleToggleMirrored}
                       analysisMode={analysisMode}

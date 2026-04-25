@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { useWordLookup } from '../../hooks/useWordLookup.jsx';
+import { usePredictor } from '../../hooks/usePredictor.js';
 import { ScholomanceDictionaryAPI } from '../../lib/scholomanceDictionary.api.js';
 import { ScholomanceCorpusAPI } from '../../lib/scholomanceCorpus.api.js';
 import { getCachedWord, setCachedWord } from '../../lib/platform/wordCache.js';

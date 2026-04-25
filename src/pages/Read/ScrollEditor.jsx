@@ -258,6 +258,13 @@ const ScrollEditor = forwardRef(({
   pinnedLines = [],
   vowelColors = null,
   vowelColorResolver = null,
+  predict = null,
+  getCompletions = null,
+  checkSpelling = null,
+  getSpellingSuggestions = null,
+  predictorReady = false,
+  plsPhoneticFeatures = null,
+  theme = null,
 }, ref) => {
   const { theme: activeTheme } = useTheme();
   const [content, setContent] = useState(initialContent);
@@ -491,6 +498,12 @@ const ScrollEditor = forwardRef(({
     if (!textarea) return;
     syncScrollPosition(textarea.scrollTop, textarea.scrollLeft, textarea);
   }, [isReadOnlyPlain, syncScrollPosition]);
+
+  const handleOverlayScroll = useCallback(() => {
+    const layer = wordBackgroundLayerRef.current;
+    if (!layer) return;
+    syncScrollPosition(layer.scrollTop, layer.scrollLeft, layer);
+  }, [syncScrollPosition]);
 
   const [localMisspellings, setLocalMisspellings] = useState(new Set());
 
