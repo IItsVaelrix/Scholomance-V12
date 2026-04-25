@@ -30,7 +30,8 @@ const STOP_WORDS = new Set([
  */
 export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = null, options = {}) {
   const { analysisMode = 'none' } = options;
-  const isAMPMode = analysisMode === 'pixelbrain_transverse' || analysisMode === 'void_echo';
+  // V12 Consolidation: Archived modes no longer trigger specialized AMP coloring
+  const isAMPMode = false; 
   const connectionCount = Array.isArray(activeConnections) ? activeConnections.length : 0;
 
   const analysisByCharStart = useMemo(() => {

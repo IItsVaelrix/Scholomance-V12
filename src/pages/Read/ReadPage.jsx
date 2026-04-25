@@ -211,7 +211,10 @@ export default function ReadPage() {
     analyzedWords,
     tokenByIdentity: analyzedWordsByIdentity,
     tokenByCharStart: analyzedWordsByCharStart,
-  } = useVerseSynthesis(truesightContent);
+  } = useVerseSynthesis(truesightContent, {
+    mode: analysisMode,
+    school: selectedSchool
+  });
 
   // Fallbacks for legacy fields moving to AMP
   const scoreData = deepAnalysis?.scoreData || null;

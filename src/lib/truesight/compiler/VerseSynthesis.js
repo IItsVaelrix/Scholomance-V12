@@ -16,6 +16,8 @@ import { buildVowelSummary, normalizeVowelFamily } from "../../phonology/vowelFa
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../../codex/core/phonology/chroma.resolver.js";
 import { decodeBytecode } from "../../../pages/Read/bytecodeRenderer.js";
+import { buildRhymeColorRegistry, resolveTokenColor } from "../color/rhymeColorRegistry.js";
+import { resolveVerseIrColor } from "../color/pcaChroma.js";
 
 /**
  * Executes a total linguistic synthesis of the given text.
@@ -52,26 +54,29 @@ export function synthesizeVerse(text, options = {}) {
     hhmSummary: hhm.summary
   }).emotion;
 
-  // 6. Token Identity Mapping (The Coordinates)
+  // 6. Token Identity Mapping & Chromatic Unification
   const tokenByIdentity = new Map();
   const tokenByCharStart = new Map();
   const tokenByNormalizedWord = new Map();
+
+  const currentSchool = options.school || 'DEFAULT';
 
   verseIR.tokens.forEach((token, index) => {
     const syntaxToken = syntaxLayer.tokens[index] || {};
     const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
     
-    // V12 PERFORMANCE: Pre-calculate expensive phonetic/visual properties
-    /**
-     * PIPELINE A: Phonetic Color (Sonic Chroma)
-     * Used exclusively for Tooltips to represent the word's raw phonetic identity.
-     * Diverges from inline Rhyme-Family color (Pipeline B) by design.
-     */
+    // PIPELINE A: Phonetic Anchor
     const sonicChroma = (token.phonemes?.length > 0) ? resolveSonicChroma(token.phonemes) : null;
-    const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
     
-    // We pre-decode with defaults; UI can still override if reduced-motion is active,
-    // but having the baseline 'style' and 'color' ready is O(1) in the render loop.
+    // PIPELINE B: Unified Visual (Locked to Anchor)
+    const verseIrColor = token.terminalVowelFamily 
+      ? resolveVerseIrColor(token.terminalVowelFamily, currentSchool, {
+          forcedHue: sonicChroma?.h ?? null,
+          phase: index / (verseIR.tokens.length || 1)
+        })
+      : null;
+
+    const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
     const decoded = visualBytecode ? decodeBytecode(visualBytecode) : null;
 
     const unifiedToken = {
@@ -79,10 +84,11 @@ export function synthesizeVerse(text, options = {}) {
       ...syntaxToken,
       hhm: hhm.tokenStateByIdentity.get(identityKey) || null,
       vowelFamily: normalizeVowelFamily(token.primaryStressedVowelFamily),
+      verseIrColor,
       precomputed: {
         sonicChroma,
         decoded,
-        hex: sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null
+        hex: verseIrColor?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
       }
     };
 
@@ -93,6 +99,9 @@ export function synthesizeVerse(text, options = {}) {
       tokenByNormalizedWord.set(token.normalizedWord, unifiedToken);
     }
   });
+
+  // 7. Authority Registry Unification
+  const rhymeColorRegistry = buildRhymeColorRegistry(Array.from(tokenByIdentity.values()));
 
   return Object.freeze({
     timestamp: Date.now(),
@@ -107,6 +116,7 @@ export function synthesizeVerse(text, options = {}) {
     tokenByIdentity,
     tokenByCharStart,
     tokenByNormalizedWord,
+    rhymeColorRegistry,
     totalSyllables: verseIR.metadata.syllableCount || 0,
     isPure: true
   });

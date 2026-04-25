@@ -70,18 +70,18 @@ const RARITY_NAMES = {
 };
 
 const WordTooltip = ({
-  wordData,
-  analysis,
-  isLoading,
-  error,
+  wordData = null,
+  analysis = null,
+  isLoading = false,
+  error = null,
   x,
   y,
   onDrag,
   onClose,
-  onSuggestionClick,
-  sessionHistory,
-  sessionIndex,
-  onSessionNavigate,
+  onSuggestionClick = () => {},
+  sessionHistory = [],
+  sessionIndex = -1,
+  onSessionNavigate = () => {},
 }) => {
   const { theme } = useTheme();
   const vowelPalette  = getVowelColorsForSchool("DEFAULT", theme);
@@ -772,17 +772,6 @@ WordTooltip.propTypes = {
   ),
   sessionIndex: PropTypes.number,
   onSessionNavigate: PropTypes.func,
-};
-
-WordTooltip.defaultProps = {
-  wordData: null,
-  analysis: null,
-  isLoading: false,
-  error: null,
-  onSuggestionClick: () => {},
-  sessionHistory: [],
-  sessionIndex: -1,
-  onSessionNavigate: () => {},
 };
 
 export default WordTooltip;

@@ -296,6 +296,8 @@ export function computeBlendedHsl(schoolWeights, schools = SCHOOLS) {
 
 export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const resolvedFamily = resolveProjectionFamily(family);
+  const { forcedHue = null, phase = 0 } = options;
+
   if (!resolvedFamily) {
     return Object.freeze({
       family: '',
@@ -321,17 +323,14 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const deltaRadius = clamp(Math.hypot(deltaPc1, deltaPc2) / 1.6, 0, 1);
 
   // Phasic Modulation (Cyclical Resonance)
-  // phase is 0-1 (e.g. from word index or position)
-  // We use a sine wave to create smooth, repeating alternating patterns
-  const phase = options.phase ?? 0;
   const rad = phase * Math.PI * 2;
   const hMod = Math.sin(rad) * themeConfig.resonanceHue;
   const sMod = Math.cos(rad) * themeConfig.resonanceSat;
   const lMod = Math.sin(rad * 1.5) * themeConfig.resonanceLit;
 
-  const canonicalHue = VOWEL_HUE_MAP[resolvedFamily];
+  const canonicalHue = forcedHue !== null ? forcedHue : VOWEL_HUE_MAP[resolvedFamily];
   
-  if (canonicalHue === undefined) {
+  if (canonicalHue === undefined || canonicalHue === null) {
     // V12 FIX: Return neutral gray fallback for unknown families to avoid 180-degree collision
     return Object.freeze({
       family: resolvedFamily,
@@ -344,7 +343,7 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   }
 
   // Explicit theme inputs should win over the canonical vowel wheel.
-  const hue = usesThemeHue
+  const hue = (usesThemeHue && forcedHue === null)
     ? wrapHue(baseHsl.h + (deltaPc1 * themeConfig.huePc1) - (deltaPc2 * themeConfig.huePc2) + hMod)
     : wrapHue(canonicalHue + (deltaPc1 * 6) - (deltaPc2 * 6) + hMod);
 

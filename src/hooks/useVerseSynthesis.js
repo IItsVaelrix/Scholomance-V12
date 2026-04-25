@@ -13,7 +13,7 @@ export function useVerseSynthesis(content, options = {}) {
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const [error, setError] = useState(null);
 
-  const { mode = 'balanced' } = options;
+  const { mode = 'balanced', school = 'DEFAULT' } = options;
 
   const [highlightedGroup, setHighlightedGroup] = useState(null);
   
@@ -25,7 +25,7 @@ export function useVerseSynthesis(content, options = {}) {
     setError(null);
     try {
       // In V12, we offload this to the VerseSynthesis Microprocessor
-      const result = await verseIRMicroprocessors.execute('nlu.synthesizeVerse', { text, options: { mode } });
+      const result = await verseIRMicroprocessors.execute('nlu.synthesizeVerse', { text, options: { mode, school } });
       
       if (requestId === requestCount.current) {
         setArtifact(result);
@@ -35,7 +35,7 @@ export function useVerseSynthesis(content, options = {}) {
         console.error("[PB-SYNTHESIS] Transmutation failed:", err);
         setError(err.message || 'Synthesis failed');
         // Fallback to local synchronous analysis if microprocessor fails
-        const fallback = synthesizeVerse(text, { mode });
+        const fallback = synthesizeVerse(text, { mode, school });
         setArtifact(fallback);
       }
     } finally {
@@ -43,7 +43,7 @@ export function useVerseSynthesis(content, options = {}) {
         setIsSynthesizing(false);
       }
     }
-  }, [mode]);
+  }, [mode, school]);
 
   const highlightRhymeGroup = useCallback((groupLabel) => {
     setHighlightedGroup(groupLabel);

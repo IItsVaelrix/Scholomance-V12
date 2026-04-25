@@ -424,8 +424,8 @@ const ScrollEditor = forwardRef(({
   }, [highlightedLines]);
 
   const rhymeColorRegistry = useMemo(
-    () => buildRhymeColorRegistry(Array.from(analyzedWordsByIdentity.values())),
-    [analyzedWordsByIdentity]
+    () => analyzedDocument?.rhymeColorRegistry || new Map(),
+    [analyzedDocument]
   );
 
   const { shouldColorWord } = useColorCodex(

@@ -6,18 +6,24 @@
 export const ANALYSIS_MODES = Object.freeze({
   // Feature Modes
   NONE: 'none',
-  RHYME: 'rhyme',
   ANALYZE: 'analyze',
   ASTROLOGY: 'astrology',
-  
-  // Authoritative / Special Render Modes
-  PIXELBRAIN: 'pixelbrain_transverse',
-  VOID_ECHO: 'void_echo',
   
   // Performance / Depth Levels (Compiler specific)
   LIVE_FAST: 'live_fast',
   BALANCED: 'balanced',
   DEEP: 'deep_truesight',
+});
+
+/**
+ * ARCHIVED MODES (Phased out for V12 consolidation)
+ * These modes were divorced from Truesight to simplify the state machine
+ * and ensure that only the primary toggle activates phonetic color.
+ */
+export const ARCHIVED_MODES = Object.freeze({
+  RHYME: 'rhyme',
+  PIXELBRAIN: 'pixelbrain_transverse',
+  VOID_ECHO: 'void_echo',
 });
 
 /**
@@ -27,8 +33,8 @@ export const TRUESIGHT_ANALYSIS_MODES = Object.freeze({
   LIVE_FAST: ANALYSIS_MODES.LIVE_FAST,
   BALANCED: ANALYSIS_MODES.BALANCED,
   DEEP_TRUESIGHT: ANALYSIS_MODES.DEEP,
-  PIXELBRAIN_TRANSVERSE: ANALYSIS_MODES.PIXELBRAIN,
-  VOID_ECHO: ANALYSIS_MODES.VOID_ECHO,
+  PIXELBRAIN_TRANSVERSE: ARCHIVED_MODES.PIXELBRAIN,
+  VOID_ECHO: ARCHIVED_MODES.VOID_ECHO,
 });
 
 const DEFAULT_MODE = TRUESIGHT_ANALYSIS_MODES.BALANCED;
@@ -65,6 +71,11 @@ const MODE_CONFIGS = Object.freeze({
 
 export function resolveTruesightAnalysisMode(mode) {
   if (typeof mode !== 'string') {
+    return DEFAULT_MODE;
+  }
+
+  // Redirect archived modes to default
+  if (Object.values(ARCHIVED_MODES).includes(mode)) {
     return DEFAULT_MODE;
   }
 

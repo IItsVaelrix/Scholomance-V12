@@ -146,27 +146,6 @@ export default function ToolsSidebar({
           <span className="tool-icon"><AnalyzeIcon /></span>
           <span className="tool-label">Analyze</span>
         </button>
-        <button
-          className={`sidebar-tool-btn ${analysisMode === ANALYSIS_MODES.RHYME ? 'active' : ''}`}
-          onClick={() => onModeChange(ANALYSIS_MODES.RHYME)}
-        >
-          <span className="tool-icon"><RhymeIcon /></span>
-          <span className="tool-label">Rhyme Connections</span>
-        </button>
-        <button
-          className={`sidebar-tool-btn ${analysisMode === ANALYSIS_MODES.PIXELBRAIN ? 'active' : ''}`}
-          onClick={() => onModeChange(ANALYSIS_MODES.PIXELBRAIN)}
-        >
-          <span className="tool-icon"><SparkleIcon /></span>
-          <span className="tool-label">PixelBrain</span>
-        </button>
-        <button
-          className={`sidebar-tool-btn ${analysisMode === ANALYSIS_MODES.VOIDECHO ? 'active' : ''}`}
-          onClick={() => onModeChange(ANALYSIS_MODES.VOIDECHO)}
-        >
-          <span className="tool-icon"><AstrologyIcon /></span>
-          <span className="tool-label">Void Echo</span>
-        </button>
       </div>
 
       {isAnalyzing && (
