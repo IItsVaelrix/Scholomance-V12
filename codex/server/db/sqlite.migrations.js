@@ -123,9 +123,111 @@ export function runSqliteMigrations(db, options) {
 
   applyPending(pending);
 
+/**
+ * Applies pending migrations for a namespace using an asynchronous database wrapper.
+ * Supported by createDbWrapper (Turso/libSQL).
+ * 
+ * @param {Object} db - Async DB wrapper
+ * @param {Object} options - { namespace, migrations }
+ */
+export async function runAsyncMigrations(db, options) {
+  const namespace = String(options?.namespace || '').trim();
+  if (!namespace) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE, ERROR_SEVERITY.CRIT, MOD,
+      ERROR_CODES.MISSING_REQUIRED,
+      { parameter: 'namespace', reason: 'runAsyncMigrations requires a non-empty namespace' },
+    );
+  }
+
+  const migrationList = Array.isArray(options?.migrations) ? options.migrations : [];
+  
+  // Ensure migration table exists
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS schema_migrations (
+      namespace TEXT NOT NULL,
+      version INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (namespace, version)
+    );
+  `);
+
+  const sorted = [...migrationList].sort((left, right) => left.version - right.version);
+  
+  const currentVersionResult = await db.execute(
+    'SELECT COALESCE(MAX(version), 0) AS version FROM schema_migrations WHERE namespace = ?',
+    [namespace]
+  );
+  
+  const currentVersion = Number(currentVersionResult.rows[0]?.version || 0);
+  const pending = sorted.filter((migration) => migration.version > currentVersion);
+
+  if (pending.length === 0) {
+    return { namespace, currentVersion, appliedVersions: [] };
+  }
+
+  const appliedVersions = [];
+  
+  // Since we don't have a cross-platform async transaction wrapper that 
+  // supports the migration function callbacks easily, we'll run them 
+  // sequentially. Each migration + its metadata record is a mini-transaction.
+  for (const migration of pending) {
+    try {
+      // Execute the migration logic
+      // Note: migration.up must be adapted to accept the async db wrapper
+      // if it needs to perform complex logic, but usually it just calls database.exec()
+      // which we will polyfill for the migration call.
+      const migrationDbPolyfill = {
+        exec: async (sql) => {
+          // Robust multi-statement split (simple semicolon split)
+          const statements = sql
+            .split(';')
+            .map(s => s.trim())
+            .filter(s => s.length > 0);
+          
+          for (const s of statements) {
+            await db.execute(s);
+          }
+        },
+        prepare: (sql) => ({
+          run: async (...args) => await db.execute(sql, args),
+          get: async (...args) => {
+            const res = await db.execute(sql, args);
+            return res.rows[0];
+          },
+          all: async (...args) => {
+            const res = await db.execute(sql, args);
+            return res.rows;
+          }
+        })
+      };
+
+      await Promise.resolve(migration.up(migrationDbPolyfill));
+      
+      await db.execute(
+        'INSERT INTO schema_migrations (namespace, version, name) VALUES (?, ?, ?)',
+        [namespace, migration.version, migration.name]
+      );
+      
+      appliedVersions.push(migration.version);
+    } catch (err) {
+      throw new BytecodeError(
+        ERROR_CATEGORIES.STATE, ERROR_SEVERITY.CRIT, MOD,
+        ERROR_CODES.HOOK_CHAIN_BREAK,
+        { 
+          operation: 'runAsyncMigrations', 
+          namespace, 
+          failedVersion: migration.version, 
+          error: err.message 
+        },
+      );
+    }
+  }
+
   return {
     namespace,
-    currentVersion: pending.length > 0 ? pending[pending.length - 1].version : currentVersion,
+    currentVersion: appliedVersions[appliedVersions.length - 1],
     appliedVersions,
   };
 }

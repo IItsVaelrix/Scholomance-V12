@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applySqlitePragmas, runSqliteMigrations } from './db/sqlite.migrations.js';
+import { applySqlitePragmas, runSqliteMigrations, runAsyncMigrations } from './db/sqlite.migrations.js';
 import { createDbWrapper } from './db/persistence.wrapper.js';
 import {
   DEFAULT_WORLD_ENTITIES,
@@ -381,7 +381,15 @@ async function initializeDatabase() {
         type: 'libsql',
         config: { url: TURSO_URL, authToken: TURSO_TOKEN }
       });
-      dbState.currentVersion = USER_MIGRATIONS[USER_MIGRATIONS.length - 1].version;
+      
+      const migrationResult = await runAsyncMigrations(db, {
+        namespace: USER_DB_NAMESPACE,
+        migrations: USER_MIGRATIONS,
+      });
+      dbState = {
+        ...dbState,
+        ...migrationResult,
+      };
     } else {
       mkdirSync(path.dirname(DB_PATH), { recursive: true });
       rawDb = new Database(DB_PATH);

@@ -2,7 +2,12 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applySqlitePragmas, runSqliteMigrations } from '../db/sqlite.migrations.js';
+import {
+    applySqlitePragmas,
+    runSqliteMigrations,
+    runAsyncMigrations
+} from '../db/sqlite.migrations.js';
+
 import { createDbWrapper } from '../db/persistence.wrapper.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -276,12 +281,14 @@ async function initializeDatabase() {
                 config: { url: TURSO_URL, authToken: TURSO_TOKEN }
             });
             
-            // Run migrations against Turso (libSQL client)
-            // Note: runSqliteMigrations currently expects better-sqlite3 instance.
-            // We need a version that supports the async execute() or run them manually.
-            // For Phase 2, we'll assume the user has seeded the schema or we'll add async migration support.
-            console.error('[DB:collab] Turso connected. Note: Ensure migrations are seeded via turso CLI.');
-            dbState.currentVersion = COLLAB_MIGRATIONS[COLLAB_MIGRATIONS.length - 1].version;
+            const migrationResult = await runAsyncMigrations(db, {
+                namespace: COLLAB_DB_NAMESPACE,
+                migrations: COLLAB_MIGRATIONS,
+            });
+            dbState = {
+                ...dbState,
+                ...migrationResult,
+            };
         } else {
             mkdirSync(path.dirname(DB_PATH), { recursive: true });
             rawDb = new Database(DB_PATH);
