@@ -1,16 +1,3 @@
-/**
- * Viewport Bytecode Channel
- * 
- * Centralizes viewport state as bytecode-driven reactive values.
- * All viewport-dependent rendering flows through this single source of truth.
- * 
- * ARCHITECTURE:
- * 1. ResizeObserver watches root container
- * 2. Viewport state encoded as bytecode
- * 3. Dimension Formula Compiler consumes bytecode
- * 4. PixelBrain renders with viewport-aware coordinates
- */
-
 export interface ViewportState {
   width: number;
   height: number;
@@ -18,6 +5,14 @@ export interface ViewportState {
   orientation: 'portrait' | 'landscape' | 'square';
   pixelRatio: number;
 }
+
+export const DEFAULT_VIEWPORT_STATE: ViewportState = {
+  width: 1200,
+  height: 900,
+  deviceClass: 'desktop',
+  orientation: 'landscape',
+  pixelRatio: 1,
+};
 
 export interface ViewportBytecode {
   timestamp: number;
@@ -61,37 +56,35 @@ export function encodeViewportBytecode(viewport: ViewportState): string {
 /**
  * Create viewport bytecode channel with reactive bindings
  */
-export function createViewportChannel(): {
+export function createViewportChannel(initialState: ViewportState = DEFAULT_VIEWPORT_STATE): {
   getState: () => ViewportState;
   getBytecode: () => string;
+  update: (width: number, height: number, pixelRatio?: number) => void;
+  subscribe: (callback: (viewport: ViewportState) => void) => () => void;
   bind: (id: string, callback: (viewport: ViewportState) => void) => () => void;
   observe: (element: HTMLElement) => () => void;
 } {
-  let state: ViewportState = {
-    width: typeof window !== 'undefined' ? window.innerWidth : 1200,
-    height: typeof window !== 'undefined' ? window.innerHeight : 900,
-    deviceClass: 'desktop',
-    orientation: 'landscape',
-    pixelRatio: typeof window !== 'undefined' ? window.devicePixelRatio : 1,
-  };
+  let state = initialState;
   
+  const subscribers = new Set<(viewport: ViewportState) => void>();
   const bindings = new Map<string, (viewport: ViewportState) => void>();
   
-  const updateState = (width: number, height: number) => {
+  const update = (width: number, height: number, pixelRatio?: number) => {
     // Round dimensions to prevent sub-pixel noise loops
     const w = Math.round(width);
     const h = Math.round(height);
-    const pr = window.devicePixelRatio || 1;
+    
+    // Core logic should not pull from window; it should be passed in or guarded
+    const pr = pixelRatio ?? (typeof window !== 'undefined' ? window.devicePixelRatio : 1);
 
     // Redundancy check: STOP if state hasn't actually changed
-    // Use Object.is to prevent NaN identity loops (NaN !== NaN)
     if (Object.is(state.width, w) && 
         Object.is(state.height, h) && 
         Object.is(state.pixelRatio, pr)) {
       return;
     }
 
-    const newState: ViewportState = {
+    state = {
       width: w,
       height: h,
       deviceClass: detectDeviceClass(w),
@@ -99,18 +92,24 @@ export function createViewportChannel(): {
       pixelRatio: pr,
     };
     
-    state = newState;
-    
     // Notify all subscribers
     subscribers.forEach(callback => callback(state));
+    // Notify all named bindings
+    bindings.forEach(callback => callback(state));
   };
   
-  let currentObserver: ResizeObserver | null = null;
-
   return {
     getState: () => state,
     
     getBytecode: () => encodeViewportBytecode(state),
+
+    update,
+
+    subscribe: (callback: (viewport: ViewportState) => void) => {
+      subscribers.add(callback);
+      callback(state);
+      return () => subscribers.delete(callback);
+    },
     
     bind: (id: string, callback: (viewport: ViewportState) => void) => {
       bindings.set(id, callback);
@@ -122,14 +121,16 @@ export function createViewportChannel(): {
     },
     
     observe: (element: HTMLElement) => {
-      // Cleanup previous observer to ensure Single Source of Truth
-      if (currentObserver) {
-        currentObserver.disconnect();
-      }
+      // Multiple observers are now supported by returning independent cleanup functions.
+      // This allows parallel observation of different UI surfaces if needed.
 
       if (typeof ResizeObserver === 'undefined') {
         // Fallback to window resize
-        const onResize = () => updateState(window.innerWidth, window.innerHeight);
+        const onResize = () => {
+          if (typeof window !== 'undefined') {
+            update(window.innerWidth, window.innerHeight, window.devicePixelRatio);
+          }
+        };
         window.addEventListener('resize', onResize);
         return () => window.removeEventListener('resize', onResize);
       }
@@ -137,29 +138,30 @@ export function createViewportChannel(): {
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const { width, height } = entry.contentRect;
-          updateState(width, height);
+          // Capture current pixelRatio at time of resize
+          const pr = typeof window !== 'undefined' ? window.devicePixelRatio : 1;
+          update(width, height, pr);
         }
       });
       
       observer.observe(element);
-      currentObserver = observer;
       
       return () => {
         observer.disconnect();
-        if (currentObserver === observer) currentObserver = null;
       };
     },
   };
 }
 
 /**
- * Viewport-aware dimension compiler integration
- * 
- * Usage:
- * const viewport = createViewportChannel();
- * const unsubscribe = viewport.bind('my-component', (vp) => {
- *   // React to viewport changes
- *   const width = vp.deviceClass === 'mobile' ? '100%' : '50%';
- * });
+ * Viewport-aware dimension compiler integration singleton
  */
-export const ViewportChannel = createViewportChannel();
+export const ViewportChannel = createViewportChannel(
+  typeof window !== 'undefined' ? {
+    width: window.innerWidth,
+    height: window.innerHeight,
+    deviceClass: detectDeviceClass(window.innerWidth),
+    orientation: detectOrientation(window.innerWidth, window.innerHeight),
+    pixelRatio: window.devicePixelRatio,
+  } : DEFAULT_VIEWPORT_STATE
+);

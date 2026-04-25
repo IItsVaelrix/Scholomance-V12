@@ -1,4 +1,5 @@
-import { act, renderHook } from '@testing-library/react';
+/* global global */
+import { renderHook, act } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 describe('usePanelAnalysis feature flags', () => {

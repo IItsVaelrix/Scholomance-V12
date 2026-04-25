@@ -6,6 +6,27 @@
  * @version 1.0.0
  */
 
+// ─── Helper Functions ────────────────────────────────────────────────────────
+
+/**
+ * Clamps a value to the finite range.
+ */
+function toFinite(val: any, fallback = 0): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Performs a guarded division.
+ */
+function safeDivide(n: any, d: any, fallback = 0): number {
+  const num = Number(n);
+  const den = Number(d);
+  if (den === 0 || !Number.isFinite(den)) return fallback;
+  const result = num / den;
+  return Number.isFinite(result) ? result : fallback;
+}
+
 // ─── Error Types ─────────────────────────────────────────────────────────────
 
 export class DimensionCompileError extends Error {

@@ -53,6 +53,7 @@ export function synthesizeVerse(text, options = {}) {
   // 6. Token Identity Mapping (The Coordinates)
   const tokenByIdentity = new Map();
   const tokenByCharStart = new Map();
+  const tokenByNormalizedWord = new Map();
 
   verseIR.tokens.forEach((token, index) => {
     const syntaxToken = syntaxLayer.tokens[index] || {};
@@ -67,6 +68,10 @@ export function synthesizeVerse(text, options = {}) {
 
     tokenByIdentity.set(identityKey, unifiedToken);
     tokenByCharStart.set(token.charStart, unifiedToken);
+    
+    if (!tokenByNormalizedWord.has(token.normalizedWord)) {
+      tokenByNormalizedWord.set(token.normalizedWord, unifiedToken);
+    }
   });
 
   return Object.freeze({
@@ -81,6 +86,7 @@ export function synthesizeVerse(text, options = {}) {
     emotion,
     tokenByIdentity,
     tokenByCharStart,
+    tokenByNormalizedWord,
     totalSyllables: verseIR.metadata.syllableCount || 0,
     isPure: true
   });
@@ -99,6 +105,7 @@ function createEmptyArtifact() {
     emotion: 'Neutral',
     tokenByIdentity: new Map(),
     tokenByCharStart: new Map(),
+    tokenByNormalizedWord: new Map(),
     totalSyllables: 0,
     isPure: true
   });

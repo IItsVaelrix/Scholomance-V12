@@ -296,25 +296,47 @@ const ScrollEditor = forwardRef(({
     setTitle(initialTitle);
   }, [initialTitle]);
 
-  const updateTypography = useCallback(() => {
+  const stableTypographyRef = useRef(null);
+
+  const updateTypography = useCallback((force = false) => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
+
     const styles = window.getComputedStyle(wrapper);
     const width = wrapper.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight);
     const height = wrapper.clientHeight;
+
+    // Only update state if dimensions or critical font styles actually changed, or if forced
+    const current = stableTypographyRef.current;
+    if (!force && current && 
+        current.width === width && 
+        current.height === height && 
+        current.fontSize === styles.fontSize &&
+        current.fontFamily === styles.fontFamily) {
+      return;
+    }
+
+    const topology = computeAdaptiveGridTopology(wrapper, []);
+    stableTypographyRef.current = { 
+      width, 
+      height, 
+      fontSize: styles.fontSize, 
+      fontFamily: styles.fontFamily,
+      topology 
+    };
+
     setContainerWidth(width);
     setContainerHeight(height);
-    
-    const topology = computeAdaptiveGridTopology(wrapper, []);
     setAdaptiveTopology(topology);
   }, []);
 
   useLayoutEffect(() => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
-    
-    updateTypography();
-    
+
+    // Initial measurement
+    updateTypography(true);
+
     let frameId;
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(frameId);
@@ -322,15 +344,14 @@ const ScrollEditor = forwardRef(({
         updateTypography();
       });
     });
-    
+
     observer.observe(wrapper);
-    
+
     return () => {
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
   }, [updateTypography]);
-
   useEffect(() => {
     const sub = ViewportChannel.subscribe(setViewportState);
     return sub;
@@ -360,6 +381,8 @@ const ScrollEditor = forwardRef(({
       lineHeight: `${baseCellHeight}px`,
     };
     const textareaStyles = {
+      paddingLeft: `${adaptiveTopology.originX}px`,
+      paddingTop: `${adaptiveTopology.originY}px`,
       lineHeight: `${baseCellHeight}px`,
     };
     return { overlayStyles, textareaStyles };
@@ -469,11 +492,44 @@ const ScrollEditor = forwardRef(({
     syncScrollPosition(textarea.scrollTop, textarea.scrollLeft, textarea);
   }, [isReadOnlyPlain, syncScrollPosition]);
 
-  const handleOverlayScroll = useCallback(() => {
-    const layer = wordBackgroundLayerRef.current;
-    if (!layer) return;
-    syncScrollPosition(layer.scrollTop, layer.scrollLeft, layer);
-  }, [syncScrollPosition]);
+  const [localMisspellings, setLocalMisspellings] = useState(new Set());
+
+  useEffect(() => {
+    if (!checkSpelling || !isEditable) return;
+    
+    let isCancelled = false;
+    const validate = async () => {
+      const tokens = overlayLines.flatMap(line => line.tokens.filter(t => WORD_TOKEN_REGEX.test(t.token) && !t.isWhitespace));
+      const results = await Promise.all(tokens.map(async (t) => {
+        const isValid = await checkSpelling(t.token.trim());
+        return { charStart: t.localStart, isValid };
+      }));
+      
+      if (!isCancelled) {
+        const invalidSet = new Set(results.filter(r => !r.isValid).map(r => r.charStart));
+        setLocalMisspellings(invalidSet);
+      }
+    };
+    
+    validate();
+    return () => { isCancelled = true; };
+  }, [overlayLines, checkSpelling, isEditable]);
+
+  const [hoveredMisspelling, setHoveredMisspelling] = useState(null);
+  const [spellcheckSuggestions, setSpellcheckSuggestions] = useState([]);
+
+  useEffect(() => {
+    if (!hoveredMisspelling || !getSpellingSuggestions) {
+      setSpellcheckSuggestions([]);
+      return;
+    }
+    
+    let isCancelled = false;
+    getSpellingSuggestions(hoveredMisspelling.word, null, 3).then(suggestions => {
+      if (!isCancelled) setSpellcheckSuggestions(suggestions);
+    });
+    return () => { isCancelled = true; };
+  }, [hoveredMisspelling, getSpellingSuggestions]);
 
   const handleMarkdownScroll = useCallback(() => {
     if (!isReadOnlyPlain) return;
@@ -797,6 +853,7 @@ const ScrollEditor = forwardRef(({
             <div
               ref={markdownRef}
               className="markdown-rendered"
+              style={cursorSync?.textareaStyles}
               aria-label={`Scroll content: ${title || "Untitled"}`}
               onScroll={handleMarkdownScroll}
             >
@@ -898,38 +955,72 @@ const ScrollEditor = forwardRef(({
                           ...(isLineHighlighted ? { backgroundColor: 'rgba(101, 31, 255, 0.13)', borderRadius: '0.5rem' } : {}),
                         };
 
+                        const isMisspelled = localMisspellings.has(charStart);
+
                         return (
-                          <AnimatedSurface
-                            key={localStart}
-                            as="span"
-                            signal={animationSignal}
-                            role="button"
-                            tabIndex={0}
-                            data-char-start={charStart}
-                            className={[
-                              'truesight-word',
-                              'pixel-brain-chip',
-                              shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
-                              decoded?.className || '',
-                              isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
-                            ].filter(Boolean).join(' ')}
-                            style={{
-                              ...wordStyle,
-                              '--chip-delay': `${wordIndex * 30}ms`
-                            }}
-                            onClick={() => {
-                              if (analysis) {
-                                onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
-                              }
-                            }}
-                          >
-                            {token}
-                          </AnimatedSurface>
+                          <span key={localStart} style={{ position: 'relative' }}>
+                            <AnimatedSurface
+                              as="span"
+                              signal={animationSignal}
+                              role="button"
+                              tabIndex={0}
+                              data-char-start={charStart}
+                              className={[
+                                'truesight-word',
+                                'pixel-brain-chip',
+                                shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
+                                decoded?.className || '',
+                                isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
+                                isMisspelled ? 'grimoire-word--misspelled' : '',
+                              ].filter(Boolean).join(' ')}
+                              style={{
+                                ...wordStyle,
+                                '--chip-delay': `${wordIndex * 30}ms`
+                              }}
+                              onClick={() => {
+                                if (analysis) {
+                                  onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                }
+                              }}
+                            >
+                              {token}
+                            </AnimatedSurface>
+                            {isMisspelled && (
+                              <motion.div
+                                className="spellcheck-orb"
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                whileHover={{ scale: 1.2, boxShadow: '0 0 12px var(--ritual-error, #ff4d4d)' }}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${pixelX + (pixelWidth || 0)}px`,
+                                  top: '-4px',
+                                  width: '10px',
+                                  height: '10px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'var(--ritual-error, #ff4d4d)',
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '8px',
+                                  fontWeight: 'bold',
+                                  cursor: 'help',
+                                  zIndex: 10,
+                                  boxShadow: '0 0 8px rgba(255, 77, 77, 0.6)'
+                                }}
+                                onMouseEnter={() => setHoveredMisspelling({ word: token.trim(), charStart, x: pixelX, y: 0 })}
+                                onMouseLeave={() => setHoveredMisspelling(null)}
+                              >
+                                !
+                              </motion.div>
+                            )}
+                          </span>
                         );
                       })}
                     </div>
@@ -1083,7 +1174,52 @@ const ScrollEditor = forwardRef(({
       </div>
 
       <AnimatePresence>
-        {isPredictive && intellisenseSuggestions.length > 0 && (
+        {hoveredMisspelling && spellcheckSuggestions.length > 0 && (
+          <motion.div
+            className="spellcheck-tooltip"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            style={{
+              position: 'fixed',
+              left: hoveredMisspelling.x,
+              top: hoveredMisspelling.y + 20, // This needs adjustment relative to fixed scroll
+              backgroundColor: 'var(--ritual-panel, #1a1a2e)',
+              border: '1px solid var(--ritual-error, #ff4d4d)',
+              padding: '8px',
+              borderRadius: '4px',
+              zIndex: 100,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              fontSize: '12px'
+            }}
+          >
+            <div style={{ color: 'var(--ritual-error, #ff4d4d)', marginBottom: '4px', fontWeight: 'bold' }}>
+              Did you mean?
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {spellcheckSuggestions.map(s => (
+                <button
+                  key={s}
+                  className="btn-tiny"
+                  onClick={() => {
+                    const original = hoveredMisspelling.word;
+                    const replacement = s;
+                    const charStart = hoveredMisspelling.charStart;
+                    const newContent = content.slice(0, charStart) + replacement + content.slice(charStart + original.length);
+                    onContentChange?.(newContent);
+                    setHoveredMisspelling(null);
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {intellisenseSuggestions.length > 0 && (
           <IntelliSense
             suggestions={intellisenseSuggestions}
             selectedIndex={intellisenseIndex}

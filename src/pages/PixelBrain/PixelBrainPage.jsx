@@ -4,10 +4,10 @@
  * Main page component integrating the new UI overhaul
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePredictor } from "../../hooks/usePredictor.js";
-import { usePanelAnalysis } from "../../hooks/usePanelAnalysis.js";
+import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 
 // New components
 import { UploadSection } from "./components/UploadSection.jsx";
@@ -122,15 +122,17 @@ function describeVerseAmplifier(verseAmplifier) {
 }
 
 export default function PixelBrainPage() {
-  const { getCompletions, isReady: isPredictorReady } = usePredictor();
+  const { getCompletions, isReady: isPredictiveReady } = usePredictor();
+  const [verseText, setVerseText] = useState("");
+
   const {
-    analysis: verseAnalysis,
-    scoreData: verseScoreData,
-    rhymeAstrology,
-    analyzeDocument,
-    isAnalyzing: isVerseAnalyzing,
-    error: verseAnalysisError,
-  } = usePanelAnalysis();
+    artifact: synthesis,
+    isSynthesizing: isVerseAnalyzing,
+    verseIR: verseAnalysis,
+    totalSyllables,
+  } = useVerseSynthesis(verseText, {
+    mode: "balanced"
+  });
   
   // State
   const [activeSchool] = useState('VOID');
@@ -145,13 +147,12 @@ export default function PixelBrainPage() {
   const [error, setError] = useState(null);
   const [showTerminal, setShowTerminal] = useState(false);
   const [leftTab, setLeftTab] = useState('upload'); // 'upload' or 'transmute'
-  const [verseText, setVerseText] = useState('');
   const [plsSuggestions, setPlsSuggestions] = useState([]);
   const [pixelCanvas, setPixelCanvas] = useState(DEFAULT_PIXEL_CANVAS);
   
   const canvasRef = useRef(null);
 
-  const bridgedPlsFeatures = verseScoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null;
+  const bridgedPlsFeatures = synthesis?.features || null;
   const verseAmplifier = verseAnalysis?.verseIRAmplifier || null;
   const versePixelBrainPayload = verseAmplifier?.pixelBrain || null;
   const amplifierExplanation = describeVerseAmplifier(verseAmplifier);
@@ -168,51 +169,51 @@ export default function PixelBrainPage() {
     }
   }, [formula]);
 
+  const uploadRequestRef = useRef(0);
+
   // Handle parameter change
   const handleParameterChange = useCallback((key, value) => {
-    setParameters(prev => {
-      const updated = { ...prev, [key]: value };
-      
-      // If we have a formula, update it and regenerate coordinates
-      if (formula) {
-        const formulaKey = PARAM_MAP[key] || key;
-        const updatedFormula = {
-          ...formula,
-          coordinateFormula: {
-            ...formula.coordinateFormula,
-            parameters: {
-              ...formula.coordinateFormula.parameters,
-              [formulaKey]: value
-            }
+    // 1. Update parameters state (for UI sliders)
+    setParameters(prev => ({ ...prev, [key]: value }));
+    
+    // 2. If we have a formula, re-evaluate it with the new value
+    if (formula) {
+      const formulaKey = PARAM_MAP[key] || key;
+      const updatedFormula = {
+        ...formula,
+        coordinateFormula: {
+          ...formula.coordinateFormula,
+          parameters: {
+            ...formula.coordinateFormula.parameters,
+            [formulaKey]: value
           }
-        };
-        
-        // Evaluate formula to get new coordinates
-        const newCoords = evaluateFormulaWithColor(updatedFormula, { width: 160, height: 144 });
-        setCoordinates(newCoords);
-        setFormula(updatedFormula);
-      }
+        }
+      };
       
-      return updated;
-    });
+      // Evaluate formula to get new coordinates
+      const newCoords = evaluateFormulaWithColor(updatedFormula, { width: 160, height: 144 });
+      
+      // These setters are now outside the setParameters updater, preventing React anti-patterns
+      setCoordinates(newCoords);
+      setFormula(updatedFormula);
+    }
   }, [formula]);
 
   // Handle image upload
-  // PRIMARY path: client-side Canvas API analysis (no backend needed).
-  // SECONDARY path: server enhancement attempted silently — never blocks.
   const handleImageUpload = useCallback(async (file) => {
+    const requestId = ++uploadRequestRef.current;
     setStatus('analyzing');
     setError(null);
 
     try {
-      // Step 1: Client-side decode — PNG/JPEG/BMP via Canvas API, always works
       const preview = URL.createObjectURL(file);
+      if (requestId !== uploadRequestRef.current) return;
       setReferenceImage({ file, preview });
 
       let analysis = await analyzeImageClientSide(file);
+      if (requestId !== uploadRequestRef.current) return;
       analysis = { ...analysis, preview };
 
-      // Step 2: Server enhancement — optional, non-fatal
       try {
         const formData = new FormData();
         formData.append('image', file);
@@ -224,34 +225,35 @@ export default function PixelBrainPage() {
         clearTimeout(timeoutId);
         if (response.ok) {
           const responseData = await response.json();
-          // Guard both correct and double-wrapped server response shapes
           const serverAnalysis = responseData.analysis?.colors
             ? responseData.analysis
             : responseData.analysis?.analysis;
-          if (serverAnalysis?.colors) {
+          if (serverAnalysis?.colors && requestId === uploadRequestRef.current) {
             analysis = { ...serverAnalysis, preview };
           }
         }
       } catch { /* server unavailable — client analysis is sufficient */ }
 
+      if (requestId !== uploadRequestRef.current) return;
       setImageAnalysis(analysis);
       setPixelCanvas(DEFAULT_PIXEL_CANVAS);
       setStatus('generating');
 
-      // Step 3: Background edge trace (non-fatal — generatePixelArtFromImage
-      // runs its own internal trace if workerResult.coordinates is empty)
       const workerResult = await processorBridge.execute('pixel.trace', {
         pixelData: analysis.pixelData,
         dimensions: analysis.dimensions,
         threshold: 30,
       });
 
-      // Step 4: Generate pixel art coords + formula
+      if (requestId !== uploadRequestRef.current) return;
+
       const result = await generatePixelArtFromImage(
         { ...analysis, coordinates: workerResult.coordinates },
         { width: 160, height: 144, gridSize: 1 },
         extensions.length > 0 ? extensions[0] : null
       );
+
+      if (requestId !== uploadRequestRef.current) return;
 
       setFormula(result.formula);
       setCoordinates(result.coordinates ?? []);
@@ -260,11 +262,13 @@ export default function PixelBrainPage() {
       setStatus('ready');
 
     } catch (err) {
-      console.error('Image upload failed:', err);
-      setError(err.message || 'Image analysis failed. Please try again.');
-      setStatus('error');
-      setReferenceImage(null);
-      setImageAnalysis(null);
+      if (requestId === uploadRequestRef.current) {
+        console.error('Image upload failed:', err);
+        setError(err.message || 'Image analysis failed. Please try again.');
+        setStatus('error');
+        setReferenceImage(null);
+        setImageAnalysis(null);
+      }
     }
   }, [extensions]);
 
@@ -272,7 +276,6 @@ export default function PixelBrainPage() {
     setCoordinates(result.coordinates);
     setPalettes(result.palettes);
     setPixelCanvas(DEFAULT_PIXEL_CANVAS);
-    // Note: Transmuter returns canvas info, we could update page canvas state here
     setStatus('ready');
   }, []);
 
@@ -298,34 +301,25 @@ export default function PixelBrainPage() {
         link.click();
         URL.revokeObjectURL(url);
       } else {
-        // Render to temporary canvas at requested scale
         const exportCanvas = document.createElement('canvas');
         const scale = preset.scale || 1;
         exportCanvas.width = 160 * scale;
         exportCanvas.height = 144 * scale;
         const ectx = exportCanvas.getContext('2d');
-        
-        // Background (transparent for assets)
         ectx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-        
-        // Draw coordinates
         coordinates.forEach(coord => {
           ectx.fillStyle = coord.color;
           const px = Math.round(coord.x * scale);
           const py = Math.round(coord.y * scale);
           ectx.fillRect(px, py, scale, scale);
         });
-        
-        // Download PNG
         const url = exportCanvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = url;
         link.download = `pixelbrain_${activeSchool.toLowerCase()}_${preset.name}_${Date.now()}.png`;
         link.click();
       }
-      
       setStatus('ready');
-      
     } catch (err) {
       setError(err.message || 'Export failed');
       setStatus('error');
@@ -351,7 +345,7 @@ export default function PixelBrainPage() {
 
   const handleSynthesizeFromVerse = useCallback(() => {
     if (!versePixelBrainPayload) {
-      setError(verseAnalysisError || 'VerseIR amplifier did not emit PixelBrain payload.');
+      setError('VerseIR amplifier did not emit PixelBrain payload.');
       setStatus('error');
       return;
     }
@@ -364,17 +358,13 @@ export default function PixelBrainPage() {
     setPixelCanvas(versePixelBrainPayload.canvas || DEFAULT_PIXEL_CANVAS);
     setStatus('ready');
     setError(null);
-  }, [verseAnalysisError, versePixelBrainPayload]);
-
-  useEffect(() => {
-    analyzeDocument(verseText);
-  }, [analyzeDocument, verseText]);
+  }, [versePixelBrainPayload]);
 
   useEffect(() => {
     let isCancelled = false;
 
     async function loadSuggestions() {
-      if (!isPredictorReady || !verseText.trim()) {
+      if (!isPredictiveReady || !verseText.trim()) {
         if (!isCancelled) setPlsSuggestions([]);
         return;
       }
@@ -394,7 +384,7 @@ export default function PixelBrainPage() {
     return () => {
       isCancelled = true;
     };
-  }, [bridgedPlsFeatures, getCompletions, isPredictorReady, verseAnalysis, verseText]);
+  }, [bridgedPlsFeatures, getCompletions, isPredictiveReady, verseAnalysis, verseText]);
 
   // Render canvas preview — flat 2D only, no Z transforms
   useEffect(() => {
@@ -402,12 +392,8 @@ export default function PixelBrainPage() {
 
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
-
-    // Use detected source dimensions (no arbitrary standard)
     const srcW = imageAnalysis?.dimensions?.width || pixelCanvas?.width || 32;
     const srcH = imageAnalysis?.dimensions?.height || pixelCanvas?.height || 32;
-
-    // Calculate scale to fit canvas while preserving aspect ratio
     const scale = Math.min(canvas.width / srcW, canvas.height / srcH) * 0.85;
     const offsetX = Math.floor((canvas.width - srcW * scale) / 2);
     const offsetY = Math.floor((canvas.height - srcH * scale) / 2);
@@ -419,14 +405,9 @@ export default function PixelBrainPage() {
     if (imageAnalysis?.preview) {
       const img = new Image();
       img.onload = () => {
-        // Draw full sprite at native dimensions (nearest-neighbor, fully colored)
         ctx.drawImage(img, offsetX, offsetY, srcW * scale, srcH * scale);
-
-        // Draw pixel grid overlay
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.lineWidth = Math.max(0.5, scale * 0.1);
-        
-        // Vertical lines
         for (let x = 0; x <= srcW; x++) {
           const px = offsetX + x * scale;
           ctx.beginPath();
@@ -434,8 +415,6 @@ export default function PixelBrainPage() {
           ctx.lineTo(px, offsetY + srcH * scale);
           ctx.stroke();
         }
-        
-        // Horizontal lines
         for (let y = 0; y <= srcH; y++) {
           const py = offsetY + y * scale;
           ctx.beginPath();
@@ -443,8 +422,6 @@ export default function PixelBrainPage() {
           ctx.lineTo(offsetX + srcW * scale, py);
           ctx.stroke();
         }
-
-        // Draw coordinate dots for edge visualization
         if (coordinates.length > 0) {
           coordinates.forEach(coord => {
             const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
@@ -458,7 +435,6 @@ export default function PixelBrainPage() {
       };
       img.src = imageAnalysis.preview;
     } else if (coordinates.length > 0) {
-      // No image, just coordinates (formula-only mode)
       coordinates.forEach(coord => {
         const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
         const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
@@ -555,9 +531,7 @@ export default function PixelBrainPage() {
                       {isVerseAnalyzing ? 'AMPLIFYING_VERSE...' : 'SYNTHESIZE_VERSE_LATTICE'}
                     </button>
                     <span className="telemetry-text pixelbrain-verse-status">
-                      {verseAnalysisError
-                        ? `VERSEIR ERROR: ${verseAnalysisError}`
-                        : amplifierExplanation}
+                      {amplifierExplanation}
                     </span>
                   </div>
                   {plsSuggestions.length > 0 && (

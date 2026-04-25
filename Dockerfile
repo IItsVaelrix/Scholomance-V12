@@ -35,9 +35,13 @@ RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_
     || echo "WARNING: No local dictionary/corpus DBs available. Ensure Turso is configured."
 
 # --- App build ---
+# RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT trims rhyme_edges.sqlite from ~97MB
+# (default 10000 hot words) to ~73MB so the bundled artifact stays under
+# the 100MB target. Less common words still resolve via runtime fallback.
 RUN SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
     SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
     RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology \
+    RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT=7500 \
     npm run build:rhyme-astrology:index || \
     echo "Rhyme astrology build failed — index will be computed at runtime"
 RUN npm run build

@@ -1337,42 +1337,120 @@
   padding: 0.5rem 0.1rem 0.45rem 0.85rem;
 }
 
-.oracle-glyph-column {
+/* ── Word Title — Kinetic Serif ──────────────────────────────────────── */
+/* Word colour adapts to its own terminal-vowel-family school via
+   --word-school-primary (set inline by OracleWordTitle). Falls back to
+   the framing oracle theme so the surface never goes uncoloured. */
+
+.oracle-word-title {
+  --title-color: var(--word-school-primary, var(--oracle-school-color));
   position: relative;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 0.56rem 0.12rem 0.68rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: baseline;
+  column-gap: 0.55rem;
+  padding: 0.5rem 0.12rem 0.68rem;
 }
 
-.oracle-glyph-school {
-  color: color-mix(in srgb, var(--oracle-school-color) 72%, var(--oracle-gold));
+.oracle-word-title-glyph {
+  grid-row: 1;
+  grid-column: 1;
+  align-self: center;
+  color: color-mix(in srgb, var(--title-color) 72%, var(--oracle-gold));
   font-family: var(--font-mono, "JetBrains Mono", monospace);
-  font-size: 0.82rem;
+  font-size: 1.1rem;
   letter-spacing: 0.18em;
+  text-shadow: 0 0 14px color-mix(in srgb, var(--title-color) 38%, transparent);
 }
 
-.oracle-glyph-word {
-  color: rgba(244, 238, 218, 0.96);
+.oracle-word-title-letters {
+  grid-row: 1;
+  grid-column: 2;
+  display: inline-flex;
+  flex-wrap: wrap;
   font-family: var(--font-display, Georgia, serif);
-  font-size: clamp(1.25rem, 4vw, 2.45rem);
+  font-size: clamp(1.55rem, 4.2vw, 2.65rem);
   font-style: italic;
-  letter-spacing: 0.08em;
+  font-weight: 600;
   line-height: 1;
+  color: color-mix(in srgb, var(--title-color) 22%, rgba(244, 238, 218, 0.96));
   text-shadow:
-    0 0 18px color-mix(in srgb, var(--oracle-school-color) 20%, transparent),
-    0 1px 0 rgba(255, 255, 255, 0.12);
+    0 0 20px color-mix(in srgb, var(--title-color) 28%, transparent),
+    0 1px 0 rgba(255, 255, 255, 0.08);
   overflow-wrap: anywhere;
+  letter-spacing: 0.04em;
 }
 
-.oracle-glyph-underline {
-  width: min(9rem, 86%);
+.oracle-word-title-letter {
+  display: inline-block;
+  /* Hand-inked irregularity at rest: each letter inherits a subtle weight
+     and tracking offset derived from its index. Looks alive even cached. */
+  font-weight: calc(560 + (var(--letter-index) * 6));
+  margin-inline-end: calc(0.005em * (var(--letter-total, 1) - var(--letter-index, 0)));
+  transform-origin: 50% 100%;
+}
+
+.oracle-word-title-rule {
+  grid-row: 2;
+  grid-column: 1 / -1;
   height: 2px;
-  margin-top: 0.5rem;
-  background:
-    linear-gradient(90deg, var(--oracle-school-color), var(--oracle-gold), transparent);
-  box-shadow: 0 0 16px var(--oracle-school-glow);
+  margin-top: 0.45rem;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--title-color) 18%,
+    var(--oracle-gold) 52%,
+    var(--title-color) 78%,
+    transparent 100%
+  );
+  box-shadow: 0 0 16px color-mix(in srgb, var(--title-color) 38%, transparent);
+  opacity: 0.78;
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oracle-word-title[data-first-reveal="true"] .oracle-word-title-letter {
+    animation: grim-kinetic-emerge 1400ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+    animation-delay: calc(var(--letter-index) * 60ms);
+  }
+  .oracle-word-title[data-first-reveal="true"] .oracle-word-title-rule {
+    animation: grim-rule-inscribe 900ms ease-out 480ms backwards;
+  }
+  .oracle-word-title[data-first-reveal="true"] .oracle-word-title-glyph {
+    animation: grim-glyph-ignite 700ms ease-out backwards;
+  }
+}
+
+@keyframes grim-kinetic-emerge {
+  0%   {
+    opacity: 0;
+    transform: translateY(0.45em) scaleY(0.88);
+    filter: blur(3px);
+    font-weight: 320;
+    letter-spacing: 0.18em;
+  }
+  55%  {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    filter: blur(0);
+    letter-spacing: 0;
+  }
+}
+
+@keyframes grim-rule-inscribe {
+  from { transform: scaleX(0); opacity: 0; }
+  to   { transform: scaleX(1); opacity: 0.78; }
+}
+
+@keyframes grim-glyph-ignite {
+  from { opacity: 0; text-shadow: 0 0 0 currentColor; transform: scale(0.7); }
+  to   { opacity: 1; text-shadow: 0 0 14px currentColor; transform: scale(1); }
 }
 
 .oracle-capability-metadata {
@@ -1431,40 +1509,159 @@
     0 0 14px rgba(255, 214, 118, 0.05);
 }
 
-.oracle-phoneme-row {
-  display: flex;
+/* ── Articulation Strip — IPA as Motion Theatre ──────────────────────── */
+/* No chip backgrounds: the type IS the surface. Manner-of-articulation
+   is encoded as colour register + motion class. Plosives burst, fricatives
+   shimmer, vowels breathe, nasals pulse, approximants glide. */
+
+.oracle-articulation-strip {
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.22rem;
+  align-items: baseline;
+  gap: 0.2rem 0.55rem;
+  padding: 0.18rem 0;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.05rem;
+  font-style: italic;
   min-width: 0;
 }
 
-.oracle-phoneme-chip {
+.oracle-articulation-phoneme {
+  --phoneme-color: rgba(218, 226, 238, 0.78);
+  --phoneme-glow: 6px;
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.38rem;
-  padding: 0.08rem 0.42rem;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 226, 238, 0.14);
-  color: rgba(222, 230, 238, 0.72);
-  background: rgba(216, 226, 238, 0.045);
-  font-family: var(--font-mono, "JetBrains Mono", monospace);
-  font-size: 0.62rem;
-  letter-spacing: 0.04em;
+  align-items: baseline;
+  padding: 0.04rem 0.06rem;
+  color: var(--phoneme-color);
+  text-shadow: 0 0 var(--phoneme-glow) color-mix(in srgb, var(--phoneme-color) 70%, transparent);
+  line-height: 1.1;
 }
 
-.oracle-phoneme-chip[data-kind="vowel"] {
-  color: color-mix(in srgb, var(--oracle-school-color) 86%, #fff);
-  border-color: color-mix(in srgb, var(--oracle-school-color) 42%, transparent);
-  background: color-mix(in srgb, var(--oracle-school-color) 14%, rgba(0, 0, 0, 0.18));
-  box-shadow: 0 0 14px var(--oracle-school-glow);
+.oracle-articulation-phoneme[data-manner="vowel"] {
+  --phoneme-color: color-mix(in srgb, var(--oracle-school-color) 70%, #f6e9c0);
+  --phoneme-glow: 12px;
+  font-weight: 600;
+}
+.oracle-articulation-phoneme[data-manner="plosive"] {
+  --phoneme-color: hsl(8, 78%, 68%);
+  --phoneme-glow: 4px;
+  font-weight: 700;
+}
+.oracle-articulation-phoneme[data-manner="fricative"] {
+  --phoneme-color: hsl(190, 65%, 70%);
+  --phoneme-glow: 9px;
+  font-style: italic;
+}
+.oracle-articulation-phoneme[data-manner="nasal"] {
+  --phoneme-color: hsl(282, 58%, 74%);
+  --phoneme-glow: 8px;
+}
+.oracle-articulation-phoneme[data-manner="approximant"] {
+  --phoneme-color: hsl(150, 48%, 70%);
+  --phoneme-glow: 6px;
+}
+.oracle-articulation-phoneme[data-manner="affricate"] {
+  --phoneme-color: hsl(22, 70%, 68%);
+  --phoneme-glow: 7px;
+  font-weight: 600;
 }
 
-.oracle-phoneme-empty {
+.oracle-articulation-phoneme-glyph {
+  position: relative;
+  z-index: 1;
+}
+
+.oracle-articulation-phoneme-trace {
+  position: absolute;
+  inset: auto 0 -3px 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.oracle-articulation-empty {
   color: rgba(156, 181, 206, 0.46);
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 0.62rem;
   font-style: italic;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme {
+    animation-delay: calc(var(--phoneme-index) * 80ms);
+    animation-fill-mode: backwards;
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="plosive"] {
+    animation-name: grim-phoneme-burst;
+    animation-duration: 800ms;
+    animation-timing-function: cubic-bezier(0.1, 0.9, 0.2, 1);
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="fricative"] {
+    animation-name: grim-phoneme-shimmer;
+    animation-duration: 1200ms;
+    animation-timing-function: ease-in-out;
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="vowel"] {
+    animation-name: grim-phoneme-breathe;
+    animation-duration: 2400ms;
+    animation-timing-function: ease-in-out;
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="nasal"] {
+    animation-name: grim-phoneme-pulse;
+    animation-duration: 1600ms;
+    animation-timing-function: ease-in-out;
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="approximant"],
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme[data-manner="affricate"] {
+    animation-name: grim-phoneme-glide;
+    animation-duration: 1100ms;
+    animation-timing-function: ease-out;
+  }
+  .oracle-articulation-strip[data-first-reveal="true"] .oracle-articulation-phoneme-trace {
+    animation: grim-trace-inscribe 600ms ease-out forwards;
+    animation-delay: calc(var(--phoneme-index) * 80ms + 220ms);
+  }
+}
+
+@keyframes grim-phoneme-burst {
+  0%   { opacity: 0; transform: scale(0.6); filter: blur(2px); }
+  35%  { opacity: 1; transform: scale(1.18); filter: blur(0) brightness(1.4); }
+  100% { opacity: 1; transform: scale(1);   filter: blur(0) brightness(1); }
+}
+
+@keyframes grim-phoneme-shimmer {
+  0%   { opacity: 0; filter: blur(4px) hue-rotate(0deg); }
+  40%  { opacity: 1; filter: blur(0) hue-rotate(15deg) brightness(1.2); }
+  70%  { filter: hue-rotate(-10deg) brightness(1.1); }
+  100% { opacity: 1; filter: hue-rotate(0deg) brightness(1); }
+}
+
+@keyframes grim-phoneme-breathe {
+  0%   { opacity: 0; transform: scaleY(0.85); text-shadow: 0 0 0 currentColor; }
+  30%  { opacity: 1; }
+  60%  { transform: scaleY(1.05); text-shadow: 0 0 16px currentColor; }
+  100% { opacity: 1; transform: scaleY(1); text-shadow: 0 0 12px currentColor; }
+}
+
+@keyframes grim-phoneme-pulse {
+  0%   { opacity: 0; }
+  25%  { opacity: 0.6; text-shadow: 0 0 4px currentColor; }
+  50%  { opacity: 1; text-shadow: 0 0 14px currentColor; }
+  75%  { opacity: 0.85; text-shadow: 0 0 7px currentColor; }
+  100% { opacity: 1; text-shadow: 0 0 8px currentColor; }
+}
+
+@keyframes grim-phoneme-glide {
+  0%   { opacity: 0; transform: translateX(-0.18em); filter: blur(1.5px); }
+  60%  { opacity: 1; filter: blur(0); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes grim-trace-inscribe {
+  to { opacity: 0.55; transform: scaleX(1); }
 }
 
 .oracle-definition-stack {
@@ -1595,6 +1792,8 @@
 .oracle-resonance-map-line {
   stroke: color-mix(in srgb, var(--oracle-school-color) 30%, rgba(255, 255, 255, 0.18));
   stroke-width: 1.2;
+  stroke-dasharray: 1.6 1.4;
+  opacity: 0.62;
 }
 
 .oracle-resonance-marker {
@@ -1602,6 +1801,35 @@
   stroke: rgba(255, 245, 220, 0.65);
   stroke-width: 0.45;
   filter: drop-shadow(0 0 4px var(--oracle-school-glow));
+  transition: filter 240ms ease-out, r 240ms ease-out;
+}
+
+.oracle-resonance-marker:hover,
+.oracle-resonance-marker:focus-visible {
+  filter: drop-shadow(0 0 9px var(--oracle-school-glow));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .oracle-measured-reality[data-first-reveal="true"] .oracle-resonance-map-line {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: grim-channel-inscribe 900ms ease-out 220ms forwards;
+  }
+  .oracle-measured-reality[data-first-reveal="true"] .oracle-resonance-marker {
+    transform-origin: center;
+    transform-box: fill-box;
+    animation: grim-marker-precipitate 420ms ease-out backwards;
+    animation-delay: calc(var(--marker-index, 0) * 60ms + 1100ms);
+  }
+}
+
+@keyframes grim-channel-inscribe {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes grim-marker-precipitate {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .oracle-position-list {
@@ -3101,7 +3329,8 @@
   line-height: inherit;
   letter-spacing: inherit;
   word-spacing: inherit;
-  padding: var(--editor-content-padding-y) var(--editor-content-padding-x);
+  /* Padding is now driven by bytecode via useCursorSync; static CSS padding removed to prevent double-offsets */
+  padding: 0 !important; 
   font-variant-ligatures: none;
   font-variant-numeric: lining-nums;
   font-kerning: normal;
@@ -4832,4 +5061,19 @@
   .ide-right-panel {
     display: none;
   }
+}
+
+/* --- Spellcheck & Ritual Prediction UI --- */
+.grimoire-word--misspelled {
+  text-decoration: underline wavy var(--ritual-error, #ff4d4d);
+}
+
+.spellcheck-orb {
+  box-shadow: 0 0 8px rgba(255, 77, 77, 0.4);
+  animation: orb-pulse 2s infinite alternate;
+}
+
+@keyframes orb-pulse {
+  from { transform: scale(1); opacity: 0.8; }
+  to { transform: scale(1.15); opacity: 1; box-shadow: 0 0 12px rgba(255, 77, 77, 0.7); }
 }

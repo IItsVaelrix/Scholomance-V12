@@ -12,11 +12,12 @@ import {
   Separator as PanelResizeHandle,
 } from "react-resizable-panels";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "react-router-dom";
 
 import { useTheme } from "../../hooks/useTheme.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { useProgression } from "../../hooks/useProgression.jsx";
-import { usePanelAnalysis } from "../../hooks/usePanelAnalysis.js";
+import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 import { useWordLookup } from "../../hooks/useWordLookup.jsx";
 import { usePredictor } from "../../hooks/usePredictor.js";
 import { getVowelColorsForSchool, getRitualPalette } from "../../data/schoolPalettes.js";
@@ -25,9 +26,10 @@ import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { parseBooleanEnvFlag } from "../../hooks/useCODExPipeline.jsx";
 import { patternColor } from "../../lib/patternColor.js";
 import { getCachedWord, setCachedWord, pruneOldCaches } from "../../lib/platform/wordCache.js";
-import { useAuroraLevel, cycleAuroraLevel, useAtmosphere } from "../../hooks/useAtmosphere.js";
+import { getAuroraLevel, cycleAuroraLevel, useAuroraLevel } from "../../lib/atmosphere/aurora.ts";
 import { useAutoSave } from "../../hooks/useAutoSave.js";
 import { useAdaptivePalette } from "../../hooks/useAdaptivePalette.js";
+import { useAnimationSubmitter } from "../../ui/animation/hooks/useAnimationSubmitter.ts";
 
 import AnalysisPanel from "./AnalysisPanel.jsx";
 import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
@@ -46,6 +48,7 @@ import SearchPanel from "./SearchPanel.jsx";
 import FloatingPanel from "../../components/shared/FloatingPanel.jsx";
 import IDEAmbientCanvas from "./IDEAmbientCanvas.jsx";
 import { ToolbarChannel, TOOLBAR_TOOL, SAVE_STATE } from "../../lib/truesight/compiler/toolbarBytecode";
+import { ViewportChannel } from "../../lib/truesight/compiler/viewportBytecode";
 import "./IDE.css";
 
 const SCHOOL_GLYPHS = {
@@ -70,9 +73,7 @@ const ENABLE_SYNTAX_RHYME_LAYER = parseBooleanEnvFlag(
   false
 );
 
-function clampTooltipPosition(position) {
-  const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 1200;
-  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 900;
+function clampTooltipPosition(position, viewportWidth = 1200, viewportHeight = 900) {
   const minX = Math.min(TOOLTIP_MARGIN, viewportWidth - TOOLTIP_WIDTH - TOOLTIP_MARGIN);
   const minY = Math.min(TOOLTIP_MARGIN, viewportHeight - TOOLTIP_HEIGHT - TOOLTIP_MARGIN);
   const maxX = Math.max(TOOLTIP_MARGIN, viewportWidth - TOOLTIP_WIDTH - TOOLTIP_MARGIN);
@@ -124,6 +125,7 @@ export default function ReadPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [editorTitle, setEditorTitle] = useState("");
+  const editorRef = useRef(null);
   const editorDocumentSerialRef = useRef(0);
   const [editorDocumentIdentity, setEditorDocumentIdentity] = useState("new:0");
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
@@ -133,7 +135,6 @@ export default function ReadPage() {
 
   // Use settings for initial state if available
   const [isTruesight, setIsTruesight] = useState(settings?.truesightEnabled ?? false);
-  const [isPredictive, setIsPredictive] = useState(settings?.predictiveEnabled ?? false);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
   const [_isActivityBarExpanded, _setIsActivityBarExpanded] = useState(settings?.ideLayout?.[0] > 18);
@@ -181,25 +182,43 @@ export default function ReadPage() {
     return [...new Set([...highlightedLines, ...pinnedLines])];
   }, [highlightedLines, pinnedLines]);
   
+  const activeScrollContent = String(activeScroll?.content || "");
+
+  const editorInitialTitle = isEditable
+    ? String(editorTitle || "")
+    : String(activeScroll?.title || editorTitle || "");
+
+  const editorInitialContent = isEditable
+    ? String(editorContent || "")
+    : activeScrollContent;
+
+  const truesightContent = isEditable ? editorContent : activeScrollContent;
+
   const {
-    analysis: deepAnalysis,
-    schemeDetection,
-    meterDetection,
-    genreProfile,
-    scoreData,
-    rhymeAstrology,
-    narrativeAMP,
-    oracle,
-    vowelSummary,
-    isAnalyzing,
-    analyzeDocument,
+    artifact: deepAnalysis,
+    isSynthesizing: isAnalyzing,
+    error: analysisError,
     activeConnections,
     highlightRhymeGroup,
     clearHighlight,
+    verseIR,
+    scheme: schemeDetection,
+    meter: meterDetection,
+    vowelSummary,
     literaryDevices,
     emotion,
-    error: analysisError,
-  } = usePanelAnalysis();
+    totalSyllables,
+    analyzedWords,
+    tokenByIdentity: analyzedWordsByIdentity,
+    tokenByCharStart: analyzedWordsByCharStart,
+  } = useVerseSynthesis(truesightContent);
+
+  // Fallbacks for legacy fields moving to AMP
+  const scoreData = deepAnalysis?.scoreData || null;
+  const rhymeAstrology = deepAnalysis?.rhymeAstrology || null;
+  const narrativeAMP = deepAnalysis?.narrativeAMP || null;
+  const oracle = deepAnalysis?.oracle || null;
+  const genreProfile = deepAnalysis?.genreProfile || null;
 
   const { 
     palette: adaptivePalette, 
@@ -208,25 +227,21 @@ export default function ReadPage() {
     dominantSchool 
   } = useAdaptivePalette(deepAnalysis);
 
-  // Drive atmospheric effects (Aurora, vignetting, global HSL)
-  useAtmosphere({ blendedHsl, dominantSchool });
+  const { submitIntent } = useAnimationSubmitter();
 
-  // Sync toolbar state to bytecode channel
+  // Drive atmospheric effects via Animation AMP
   useEffect(() => {
-    ToolbarChannel.setTool(TOOLBAR_TOOL.TRUESIGHT, isTruesight);
-  }, [isTruesight]);
-  
-  useEffect(() => {
-    ToolbarChannel.setTool(TOOLBAR_TOOL.PREDICTIVE, isPredictive);
-  }, [isPredictive]);
-  
-  useEffect(() => {
-    ToolbarChannel.setTool(TOOLBAR_TOOL.ANALYSIS_MODE, analysisMode);
-  }, [analysisMode]);
-  
-  useEffect(() => {
-    ToolbarChannel.setTool(TOOLBAR_TOOL.SCHEME_DETECTION, !!schemeDetection);
-  }, [schemeDetection]);
+    submitIntent({
+      version: 'v1.0',
+      targetId: 'global:atmosphere',
+      trigger: 'audio',
+      state: { blendedHsl, dominantSchool }
+    });
+  }, [blendedHsl, dominantSchool, submitIntent]);
+
+  // Handle route-based atmosphere (pausing on watch page)
+  const location = useLocation();
+  // AtmosphereSync handles global route-change intents
 
   const handleToggleTruesight = useCallback(() => {
     setIsTruesight((prev) => {
@@ -234,15 +249,6 @@ export default function ReadPage() {
       updateSettings({ truesightEnabled: next });
       ToolbarChannel.setTool(TOOLBAR_TOOL.TRUESIGHT, next);
       setHighlightedLines([]);
-      return next;
-    });
-  }, [updateSettings]);
-
-  const handleTogglePredictive = useCallback(() => {
-    setIsPredictive(prev => {
-      const next = !prev;
-      updateSettings({ predictiveEnabled: next });
-      ToolbarChannel.setTool(TOOLBAR_TOOL.PREDICTIVE, next);
       return next;
     });
   }, [updateSettings]);
@@ -273,70 +279,11 @@ export default function ReadPage() {
     setInfoBeamEnabled((prev) => !prev);
   }, []);
 
-  const activeScrollContent = String(activeScroll?.content || "");
-
-  const editorInitialTitle = isEditable
-    ? String(editorTitle || "")
-    : String(activeScroll?.title || editorTitle || "");
-
-  const editorInitialContent = isEditable
-    ? String(editorContent || "")
-    : activeScrollContent;
-
-  const truesightContent = isEditable ? editorContent : activeScrollContent;
-
-  const analyzedWords = useMemo(() => {
-    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
-    const map = new Map();
-    for (const profile of deepAnalysis.wordAnalyses) {
-      map.set(profile.normalizedWord, profile);
-    }
-    return map;
-  }, [deepAnalysis]);
-
-  const analyzedWordsByCharStart = useMemo(() => {
-    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
-    const map = new Map();
-    for (const profile of deepAnalysis.wordAnalyses) {
-      map.set(Number(profile.charStart), profile);
-    }
-    return map;
-  }, [deepAnalysis]);
-
-  const analyzedWordsByIdentity = useMemo(() => {
-    if (!deepAnalysis || !Array.isArray(deepAnalysis.wordAnalyses)) return new Map();
-    const map = new Map();
-    for (const profile of deepAnalysis.wordAnalyses) {
-      const key = `${profile.lineIndex}:${profile.wordIndex}:${profile.charStart}`;
-      map.set(key, {
-        ...profile,
-        vowelFamily: normalizeVowelFamily(profile?.vowelFamily) || null,
-        rhymeKey: String(profile?.rhymeKey || ""),
-        stressPattern: String(profile?.stressPattern || ""),
-        role: String(profile?.role || ""),
-        lineRole: String(profile?.lineRole || ""),
-        stressRole: String(profile?.stressRole || ""),
-        rhymePolicy: String(profile?.rhymePolicy || ""),
-      });
-    }
-    return map;
-  }, [deepAnalysis]);
-
-  const [committedAnalysis, setCommittedAnalysis] = useState({
-    analyzedWords: new Map(),
-    analyzedWordsByIdentity: new Map(),
-    analyzedWordsByCharStart: new Map(),
-  });
-
-  useEffect(() => {
-    setCommittedAnalysis({ analyzedWords, analyzedWordsByIdentity, analyzedWordsByCharStart });
-  }, [deepAnalysis, analyzedWords, analyzedWordsByIdentity, analyzedWordsByCharStart]);
-
   const overlayConnections = useMemo(() => {
     if (!isTruesight) {
       return [];
     }
-    return Array.isArray(activeConnections) ? activeConnections : [];
+    return activeConnections || [];
   }, [isTruesight, activeConnections]);
 
   const handleInfoBeamClick = useCallback((label) => {
@@ -345,8 +292,8 @@ export default function ReadPage() {
 
   const infoBeamConnections = useMemo(() => {
     if (!infoBeamEnabled || !infoBeamFamily) return [];
-    const all = Array.isArray(deepAnalysis?.allConnections)
-      ? deepAnalysis.allConnections
+    const all = Array.isArray(deepAnalysis?.syntaxLayer?.allConnections)
+      ? deepAnalysis.syntaxLayer.allConnections
       : [];
     return all.filter((c) => c.groupLabel === infoBeamFamily);
   }, [infoBeamEnabled, infoBeamFamily, deepAnalysis]);
@@ -356,10 +303,13 @@ export default function ReadPage() {
     [truesightContent]
   );
 
-  useEffect(() => {
-    if (!truesightContent) return;
-    analyzeDocument(truesightContent);
-  }, [truesightContent, analyzeDocument]);
+  const lineCount = scrollLines.length;
+  const currentLineText = cursorPos.line > 0 ? scrollLines[cursorPos.line - 1] || "" : "";
+
+  const ritualPalette = getRitualPalette(selectedSchool);
+  const activeSchoolLabel = SCHOOLS[selectedSchool]?.name || "Universal";
+  const mobileVisionLabel = isTruesight ? "Truesight active" : "Ink view";
+  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
 
   const issueEditorDocumentIdentity = useCallback((label = "new") => {
     editorDocumentSerialRef.current += 1;
@@ -367,12 +317,10 @@ export default function ReadPage() {
   }, []);
 
   useEffect(() => {
-    const handleResize = () => {
-      setIsNarrowViewport(window.innerWidth <= 960);
-      setIsMobileViewport(window.innerWidth <= 640);
-    };
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    return ViewportChannel.subscribe((vp) => {
+      setIsNarrowViewport(vp.width <= 960);
+      setIsMobileViewport(vp.width <= 640);
+    });
   }, []);
 
   const handleSaveScroll = useCallback(
@@ -500,48 +448,6 @@ export default function ReadPage() {
     ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
   }, []);
 
-  const handleCloseTooltip = useCallback(() => {
-    handleWordActivate(null);
-  }, [handleWordActivate]);
-
-  const handleTooltipDrag = useCallback((pos) => {
-    handleWordActivate({ ...tooltipState, position: pos });
-  }, [handleWordActivate, tooltipState]);
-
-  const handleSuggestionClick = useCallback((suggestedWord) => {
-    if (!tooltipState.token) return;
-    const { word: original, charStart } = tooltipState.token;
-    const replacement = applyMatchCase(original, suggestedWord);
-    const newContent = editorContent.slice(0, charStart) + replacement + editorContent.slice(charStart + original.length);
-    handleEditorContentChange(newContent);
-    handleCloseTooltip();
-    addToast(`Transmuted "${original}" to "${replacement}"`, "success");
-  }, [editorContent, handleEditorContentChange, handleCloseTooltip, tooltipState.token, addToast]);
-
-  const handleSessionNavigate = useCallback((direction) => {
-    const nextIndex = sessionIndex + direction;
-    if (nextIndex >= 0 && nextIndex < sessionWords.length) {
-      const nextWord = sessionWords[nextIndex];
-      setSessionIndex(nextIndex);
-      setLookupOverride(null);
-      resetWordLookup();
-      lookup(nextWord);
-    }
-  }, [sessionIndex, sessionWords, lookup, resetWordLookup]);
-
-  const lineCount = scrollLines.length;
-  const currentLineText = cursorPos.line > 0 ? scrollLines[cursorPos.line - 1] || "" : "";
-  const totalSyllables = useMemo(() => {
-    const counts = deepAnalysis?.lineSyllableCounts;
-    if (!Array.isArray(counts)) return 0;
-    return counts.reduce((sum, c) => sum + (Number(c) || 0), 0);
-  }, [deepAnalysis]);
-
-  const ritualPalette = getRitualPalette(selectedSchool);
-  const activeSchoolLabel = SCHOOLS[selectedSchool]?.name || "Universal";
-  const mobileVisionLabel = isTruesight ? "Truesight active" : "Ink view";
-  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
-
   const [tooltipState, setTooltipState] = useState({
     token: null,
     position: { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN },
@@ -559,7 +465,8 @@ export default function ReadPage() {
     if (!anchorRect) return { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN };
     const rawX = anchorRect.left + TOOLTIP_OFFSET_X;
     const rawY = anchorRect.top + TOOLTIP_OFFSET_Y - TOOLTIP_HEIGHT;
-    return clampTooltipPosition({ x: rawX, y: rawY });
+    const vp = ViewportChannel.getState();
+    return clampTooltipPosition({ x: rawX, y: rawY }, vp.width, vp.height);
   }, []);
 
   const buildTooltipAnalysis = useCallback((activation) => {
@@ -582,6 +489,13 @@ export default function ReadPage() {
   }, []);
 
   const { lookup, data: lookupData, isLoading: isLookupLoading, error: lookupError, reset: resetWordLookup } = useWordLookup();
+
+  useEffect(() => {
+    // Initialize session for Lexicon access
+    import("../../hooks/useAuth.jsx").then(({ getCsrfToken }) => {
+      getCsrfToken().catch(err => console.warn("[ReadPage] Session init failed:", err));
+    });
+  }, []);
 
   const handleWordActivate = useCallback((activation) => {
     if (!activation || !activation.normalizedWord) {
@@ -622,6 +536,37 @@ export default function ReadPage() {
     }
   }, [buildTooltipAnalysis, lookup, resetWordLookup, resolveTooltipPosition]);
 
+  const handleCloseTooltip = useCallback(() => {
+    handleWordActivate(null);
+  }, [handleWordActivate]);
+
+  const handleTooltipDrag = useCallback((pos) => {
+    const vp = ViewportChannel.getState();
+    const clampedPos = clampTooltipPosition(pos, vp.width, vp.height);
+    setTooltipState(prev => ({ ...prev, position: clampedPos }));
+  }, []);
+
+  const handleSuggestionClick = useCallback((suggestedWord) => {
+    if (!tooltipState.token) return;
+    const { word: original, charStart } = tooltipState.token;
+    const replacement = applyMatchCase(original, suggestedWord);
+    const newContent = editorContent.slice(0, charStart) + replacement + editorContent.slice(charStart + original.length);
+    handleEditorContentChange(newContent);
+    handleCloseTooltip();
+    addToast(`Transmuted "${original}" to "${replacement}"`, "success");
+  }, [editorContent, handleEditorContentChange, handleCloseTooltip, tooltipState.token, addToast]);
+
+  const handleSessionNavigate = useCallback((direction) => {
+    const nextIndex = sessionIndex + direction;
+    if (nextIndex >= 0 && nextIndex < sessionWords.length) {
+      const nextWord = sessionWords[nextIndex];
+      setSessionIndex(nextIndex);
+      setLookupOverride(null);
+      resetWordLookup();
+      lookup(nextWord);
+    }
+  }, [sessionIndex, sessionWords, lookup, resetWordLookup]);
+
   const tooltipWordData = useMemo(() => {
     if (!tooltipState.token) return null;
     const baseWordData = {
@@ -650,9 +595,8 @@ export default function ReadPage() {
 
   const { predict, getCompletions, checkSpelling, getSpellingSuggestions, ready: predictorReady } = usePredictor();
   const misspellings = useMemo(() => {
-    if (!isPredictive || !scoreData?.misspellings) return [];
-    return scoreData.misspellings;
-  }, [isPredictive, scoreData]);
+    return scoreData?.misspellings || [];
+  }, [scoreData]);
 
   const applySpellcheckCorrection = useCallback((original, correction) => {
     const replacement = applyMatchCase(original, correction);
@@ -665,19 +609,50 @@ export default function ReadPage() {
 
   const activeVowelColors = useMemo(() => getVowelColorsForSchool(selectedSchool), [selectedSchool]);
   const lexiconSeedWord = useMemo(() => oracleWord || "", [oracleWord]);
-  const resolveLexiconContext = useCallback((word) => {
+
+  const jumpToLexiconOracle = useCallback((word) => {
     setOracleWord(word);
     setSidebarTab("SEARCH");
   }, []);
 
+  const resolveLexiconContext = useCallback((word) => {
+    if (!word || !deepAnalysis) return null;
+    const normalized = word.toUpperCase();
+    const tokens = deepAnalysis.verseIR?.tokens || [];
+    const occurrences = tokens.filter(t => t.normalizedWord === normalized);
+    
+    if (occurrences.length === 0) return null;
+
+    const first = occurrences[0];
+    
+    return {
+      foundInScroll: true,
+      totalOccurrences: occurrences.length,
+      core: {
+        rhymeKey: first.rhymeKey,
+        vowelFamily: first.vowelFamily,
+      },
+      resonanceLinks: occurrences.map(t => ({
+        lineIndex: t.lineIndex,
+        word: t.word,
+        context: scrollLines[t.lineIndex] || ""
+      })),
+      astrology: deepAnalysis.rhymeAstrology?.wordMap?.get(normalized) || null
+    };
+  }, [deepAnalysis, scrollLines]);
+
   const truesightDebugWords = useMemo(() => {
-    if (!deepAnalysis?.wordAnalyses) return [];
-    return deepAnalysis.wordAnalyses.map(w => ({
-      text: w.word,
-      phonemes: w.phonemes || [],
-      vowelFamily: w.vowelFamily
-    }));
-  }, [deepAnalysis]);
+    if (!deepAnalysis?.verseIR?.tokens) return [];
+    return deepAnalysis.verseIR.tokens.map(token => {
+      const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
+      const unified = analyzedWordsByIdentity.get(identityKey) || token;
+      return {
+        text: token.word,
+        phonemes: token.phonemes || [],
+        vowelFamily: unified.vowelFamily
+      };
+    });
+  }, [deepAnalysis, analyzedWordsByIdentity]);
 
   useEffect(() => {
     if (window.requestIdleCallback) {
@@ -733,8 +708,7 @@ export default function ReadPage() {
       isEditable={isEditable}
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
-      isPredictive={isPredictive}
-      onTogglePredictive={handleTogglePredictive}
+      isPredictive={true}
       mirrored={mirrored}
       onToggleMirrored={handleToggleMirrored}
       analysisMode={analysisMode}
@@ -757,7 +731,6 @@ export default function ReadPage() {
     />
   );
 
-  const editorRef = useRef(null);
   const schoolList = getSchoolsByUnlock(progression);
 
   const activeMobilePanel = mobileActiveTab === "EDITOR" ? null :
@@ -766,6 +739,88 @@ export default function ReadPage() {
     mobileActiveTab === "TOOLS" ? <div className="ide-mobile-panel">{toolsBlock}</div> :
     <div className="ide-mobile-panel">{scoreBlock}</div>;
 
+
+  const commonUI = (
+    <>
+      <AnimatePresence>
+        {tooltipState.token && (
+          <WordTooltip
+            key="word-card"
+            wordData={tooltipWordData}
+            analysis={tooltipState.localAnalysis}
+            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
+            error={tooltipState.pinned ? lookupError : null}
+            x={tooltipState.position.x}
+            y={tooltipState.position.y}
+            onDrag={handleTooltipDrag}
+            onClose={handleCloseTooltip}
+            onSuggestionClick={handleSuggestionClick}
+            sessionHistory={sessionWords}
+            sessionIndex={sessionIndex}
+            onSessionNavigate={handleSessionNavigate}
+          />
+        )}
+      </AnimatePresence>
+
+      {misspellings.length > 0 && (
+        <FloatingPanel
+          id="spellcheck-panel"
+          title="Spellcheck"
+          onClose={() => {}} // Always active
+          defaultX={typeof window !== 'undefined' ? window.innerWidth - 300 : 900}
+          defaultY={typeof window !== 'undefined' ? window.innerHeight - 300 : 600}
+          minWidth={220}
+          minHeight={120}
+          maxWidth={400}
+          maxHeight={500}
+          className="spellcheck-panel"
+        >
+          <div className="misspellings-list">
+            {misspellings.map((err, i) => (
+              <div key={i} className="misspelling-item">
+                <button
+                  type="button"
+                  className={`error-word${err.suggestions.length > 0 ? " error-word--interactive" : ""}`}
+                  disabled={err.suggestions.length === 0}
+                  onClick={() => applySpellcheckCorrection(err.word, err.suggestions[0])}
+                  title={
+                    err.suggestions.length > 0
+                      ? `Replace "${err.word}" with "${err.suggestions[0]}"`
+                      : "No suggestions available"
+                  }
+                >
+                  {err.word}
+                </button>
+                <div className="error-suggestions">
+                  {err.suggestions.map((s, j) => (
+                    <button key={j} className="btn-tiny" onClick={() => applySpellcheckCorrection(err.word, s)}>
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </FloatingPanel>
+      )}
+
+      <div className="toast-container">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
+              className={`toast-item toast-item--${toast.type}`}
+            >
+              {toast.message}
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </>
+  );
 
   /* ── MOBILE RENDER ── */
   if (isMobileViewport) {
@@ -808,10 +863,11 @@ export default function ReadPage() {
                 <span className="ide-mobile-meta-label">Power</span>
                 <span className="ide-mobile-meta-value">{scoreData ? scoreData.totalScore : "Unscored"}</span>
               </div>
-              <div className="ide-mobile-meta-chip">
-                <span className="ide-mobile-meta-label">Assist</span>
-                <span className="ide-mobile-meta-value">{isPredictive ? "Predictive on" : "Manual"}</span>
+              <div className="ide-mobile-meta-item">
+                <span className="ide-mobile-meta-label">Vision</span>
+                <span className="ide-mobile-meta-value">Predictive active</span>
               </div>
+
             </div>
           </section>
 
@@ -861,7 +917,7 @@ export default function ReadPage() {
                   isEditable={isEditable}
                   disabled={false}
                   isTruesight={isTruesight}
-                  isPredictive={isPredictive}
+                  isPredictive={true}
                   predict={predict}
                   getCompletions={getCompletions}
                   checkSpelling={checkSpelling}
@@ -870,11 +926,10 @@ export default function ReadPage() {
                   plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
                   onContentChange={handleEditorContentChange}
                   onTitleChange={handleEditorTitleChange}
-                  analyzedWords={committedAnalysis.analyzedWords}
-                  analyzedWordsByIdentity={committedAnalysis.analyzedWordsByIdentity}
-                  analyzedWordsByCharStart={committedAnalysis.analyzedWordsByCharStart}
-                  activeConnections={overlayConnections}
-                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
+                  analyzedWords={analyzedWords}
+                  analyzedWordsByIdentity={analyzedWordsByIdentity}
+                  analyzedWordsByCharStart={analyzedWordsByCharStart}
+                  activeConnections={overlayConnections}                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                   highlightedLines={effectiveHighlightedLines}
                   pinnedLines={pinnedLines}
                   vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
@@ -902,41 +957,7 @@ export default function ReadPage() {
           </div>
         </main>
 
-        <AnimatePresence>
-          {tooltipState.token && (
-            <WordTooltip
-              key="word-card"
-              wordData={tooltipWordData}
-              analysis={tooltipState.localAnalysis}
-              isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-              error={tooltipState.pinned ? lookupError : null}
-              x={tooltipState.position.x}
-              y={tooltipState.position.y}
-              onDrag={handleTooltipDrag}
-              onClose={handleCloseTooltip}
-              onSuggestionClick={handleSuggestionClick}
-              sessionHistory={sessionWords}
-              sessionIndex={sessionIndex}
-              onSessionNavigate={handleSessionNavigate}
-            />
-          )}
-        </AnimatePresence>
-
-        <div className="toast-container">
-          <AnimatePresence>
-            {toasts.map((toast) => (
-              <motion.div
-                key={toast.id}
-                initial={{ opacity: 0, x: 50, scale: 0.9 }}
-                animate={{ opacity: 1, x: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-                className={`toast-item toast-item--${toast.type}`}
-              >
-                {toast.message}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
+        {commonUI}
       </div>
     );
   }
@@ -1063,7 +1084,7 @@ export default function ReadPage() {
                       isEditable={isEditable}
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
-                      isPredictive={isPredictive}
+                      isPredictive={true}
                       onTogglePredictive={handleTogglePredictive}
                       mirrored={mirrored}
                       onToggleMirrored={handleToggleMirrored}
@@ -1135,7 +1156,7 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
-                    isPredictive={isPredictive}
+                    isPredictive={true}
                     predict={predict}
                     getCompletions={getCompletions}
                     checkSpelling={checkSpelling}
@@ -1144,9 +1165,9 @@ export default function ReadPage() {
                     plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
                     onContentChange={handleEditorContentChange}
                     onTitleChange={handleEditorTitleChange}
-                    analyzedWords={committedAnalysis.analyzedWords}
-                    analyzedWordsByIdentity={committedAnalysis.analyzedWordsByIdentity}
-                    analyzedWordsByCharStart={committedAnalysis.analyzedWordsByCharStart}
+                    analyzedWords={analyzedWords}
+                    analyzedWordsByIdentity={analyzedWordsByIdentity}
+                    analyzedWordsByCharStart={analyzedWordsByCharStart}
                     activeConnections={overlayConnections}
                     lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                     highlightedLines={effectiveHighlightedLines}
@@ -1278,15 +1299,15 @@ export default function ReadPage() {
                       </div>
                     )}
 
-                    {isPredictive && misspellings.length > 0 && (
+                    {misspellings.length > 0 && (
                       <div className="right-panel-section">
                         <div className="right-panel-section-header">
                           <span className="right-panel-section-title">Spellcheck</span>
                           <button
                             type="button"
                             className="right-panel-close"
-                            onClick={() => setIsPredictive(false)}
-                            aria-label="Close Spellcheck"
+                            onClick={() => {}} // Always active
+                            aria-label="Spellcheck is active"
                           >×</button>
                         </div>
                         <div className="misspellings-list">
@@ -1322,7 +1343,7 @@ export default function ReadPage() {
                       </div>
                     )}
 
-                    {!showScorePanel && !isAnalysisPanelVisible && !(infoBeamEnabled && infoBeamFamily) && !showOraclePanel && !(isPredictive && misspellings.length > 0) && (
+                    {!showScorePanel && !isAnalysisPanelVisible && !(infoBeamEnabled && infoBeamFamily) && !showOraclePanel && !(misspellings.length > 0) && (
                       <div className="right-panel-empty">
                         <div className="right-panel-empty-icon">⊘</div>
                         <p>Summon the Lexicon Oracle, Rhyme Astrology, or CODEx Metrics to project analysis here</p>
@@ -1458,87 +1479,7 @@ export default function ReadPage() {
         </FloatingPanel>
       )}
 
-      <AnimatePresence>
-        {tooltipState.token && (
-          <WordTooltip
-            key="word-card"
-            wordData={tooltipWordData}
-            analysis={tooltipState.localAnalysis}
-            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-            error={tooltipState.pinned ? lookupError : null}
-            x={tooltipState.position.x}
-            y={tooltipState.position.y}
-            onDrag={handleTooltipDrag}
-            onClose={handleCloseTooltip}
-            onSuggestionClick={handleSuggestionClick}
-            sessionHistory={sessionWords}
-            sessionIndex={sessionIndex}
-            onSessionNavigate={handleSessionNavigate}
-          />
-        )}
-      </AnimatePresence>
-
-      {isNarrowViewport && isPredictive && misspellings.length > 0 && (
-        <FloatingPanel
-          id="spellcheck-panel"
-          title="Spellcheck"
-          onClose={() => setIsPredictive(false)}
-          defaultX={window.innerWidth - 300}
-          defaultY={window.innerHeight - 300}
-          minWidth={220}
-          minHeight={120}
-          maxWidth={400}
-          maxHeight={500}
-          className="spellcheck-panel"
-        >
-          <div className="misspellings-list">
-            {misspellings.map((err, i) => (
-              <div key={i} className="misspelling-item">
-                <button
-                  type="button"
-                  className={`error-word${err.suggestions.length > 0 ? " error-word--interactive" : ""}`}
-                  disabled={err.suggestions.length === 0}
-                  onClick={() => applySpellcheckCorrection(err.word, err.suggestions[0])}
-                  title={
-                    err.suggestions.length > 0
-                      ? `Replace "${err.word}" with "${err.suggestions[0]}"`
-                      : "No suggestions available"
-                  }
-                >
-                  {err.word}
-                </button>
-                <div className="error-suggestions">
-                  {err.suggestions.map((s, j) => (
-                    <button
-                      key={j}
-                      className="btn-tiny"
-                      onClick={() => applySpellcheckCorrection(err.word, s)}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </FloatingPanel>
-      )}
-
-      <div className="toast-container">
-        <AnimatePresence>
-          {toasts.map((toast) => (
-            <motion.div
-              key={toast.id}
-              initial={{ opacity: 0, x: 50, scale: 0.9 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
-              className={`toast-item toast-item--${toast.type}`}
-            >
-              {toast.message}
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
+      {commonUI}
     </div>
   );
 }

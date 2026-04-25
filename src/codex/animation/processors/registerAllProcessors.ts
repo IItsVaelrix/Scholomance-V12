@@ -11,6 +11,7 @@ import { timeVisualProcessors } from './time/timeVisualProcessors.ts';
 import { interactionProcessors } from './input/interactionProcessors.ts';
 import { symmetryMotionProcessor } from './symmetry/symmetryMotionProcessor.ts';
 import { manualOverrideProcessor } from './finalize/manualOverrideProcessor.ts';
+import { atmosphereProcessor } from './reactive/atmosphereProcessor.ts';
 
 /**
  * Register all implemented motion microprocessors
@@ -23,6 +24,7 @@ export function registerAllProcessors(): void {
     ...interactionProcessors,
     symmetryMotionProcessor,
     manualOverrideProcessor,
+    atmosphereProcessor,
   ];
   
   for (const processor of allProcessors) {

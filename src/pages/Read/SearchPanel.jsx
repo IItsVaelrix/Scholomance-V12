@@ -189,6 +189,30 @@ export default function SearchPanel({
     source,
   } = useWordLookup();
 
+  const { checkSpelling, getSpellingSuggestions } = usePredictor();
+  const [searchMisspelling, setSearchMisspelling] = useState(null);
+
+  useEffect(() => {
+    if (mode !== 'WORD' || normalizedQuery.length < 2) {
+      setSearchMisspelling(null);
+      return;
+    }
+
+    let isCancelled = false;
+    checkSpelling(normalizedQuery).then(async (isValid) => {
+      if (!isCancelled && !isValid) {
+        const suggestions = await getSpellingSuggestions(normalizedQuery, null, 1);
+        if (!isCancelled && suggestions.length > 0) {
+          setSearchMisspelling(suggestions[0]);
+        }
+      } else if (!isCancelled) {
+        setSearchMisspelling(null);
+      }
+    });
+
+    return () => { isCancelled = true; };
+  }, [normalizedQuery, mode, checkSpelling, getSpellingSuggestions]);
+
   const normalizedQuery = useMemo(() => normalizeLookupWord(query), [query]);
   const schoolTheme = useMemo(() => getOracleSchoolTheme(selectedSchool), [selectedSchool]);
   const activeEntry = lookupOverride ?? data;
@@ -531,6 +555,28 @@ export default function SearchPanel({
             </button>
           )}
         </form>
+
+        <AnimatePresence>
+          {mode === 'WORD' && searchMisspelling && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="oracle-did-you-mean"
+              style={{ padding: '0 1rem 0.5rem', fontSize: '0.85rem' }}
+            >
+              <span style={{ color: 'var(--text-dim, #888)' }}>Did you mean? </span>
+              <button
+                type="button"
+                className="btn-link"
+                style={{ color: 'var(--ritual-error, #ff4d4d)', textDecoration: 'underline' }}
+                onClick={() => performLookup(searchMisspelling)}
+              >
+                {searchMisspelling}
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Signal strip */}
         <div className="oracle-signal-strip" aria-label="Oracle status">
