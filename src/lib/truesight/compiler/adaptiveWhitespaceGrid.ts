@@ -136,6 +136,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
   };
 
   let globalVisualLineIndex = 0;
+  let absoluteOffset = 0;
 
   for (let rawLineIndex = 0; rawLineIndex < rawLines.length; rawLineIndex++) {
     const lineText = rawLines[rawLineIndex];
@@ -157,8 +158,10 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         rawLineIndex,
         lineText: "", 
         tokens: [], 
-        lineType 
+        lineType,
+        absoluteStart: absoluteOffset
       });
+      absoluteOffset += 1; // +1 for the \n
       continue;
     }
 
@@ -176,7 +179,8 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
           rawLineIndex,
           lineText,
           tokens: currentLineTokens,
-          lineType
+          lineType,
+          absoluteStart: absoluteOffset
         });
         
         currentLineTokens = [];
@@ -188,6 +192,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         token,
         localStart,
         localEnd: localStart + token.length,
+        globalCharStart: absoluteOffset + localStart,
         lineIndex: rawLineIndex,
         visualLineIndex: globalVisualLineIndex,
         wordIndex: isWord ? wordIndexInRawLine++ : null,
@@ -205,9 +210,13 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         rawLineIndex,
         lineText,
         tokens: currentLineTokens,
-        lineType
+        lineType,
+        absoluteStart: absoluteOffset
       });
     }
+
+    // Advance offset by line length plus the newline character
+    absoluteOffset += lineText.length + 1;
   }
 
   return { lines: visualLines, allTokens: visualLines.flatMap(l => l.tokens) };

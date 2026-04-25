@@ -897,16 +897,19 @@ const ScrollEditor = forwardRef(({
                       className={`truesight-line truesight-line--${lineType}${isLineDimmed ? ' truesight-line--dimmed' : ''}${isHighlighted ? ' truesight-line--highlighted' : ''}`}
                       style={{ position: 'relative', height: `${lineHeightPx}px` }}
                     >
-                      {tokens.map(({ token, localStart, localEnd, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {tokens.map(({ token, localStart, localEnd, globalCharStart, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
                         const clean = isWord ? token.trim().toUpperCase() : "";
-                        const charStart = localStart;
+                        
+                        // V12 FIX: Use Global Character Start for stable lookup (Determinism is the Shield)
+                        const charStart = globalCharStart;
                         const charEnd = localEnd;
                         const identityKey = `${lineIndex}:${Number.isInteger(wordIndex) ? wordIndex : -1}:${charStart}`;
+                        
                         const analysis = isWord
                           ? (
-                            analyzedWordsByIdentity.get(identityKey) ||
                             derivedAnalyzedWordsByCharStart.get(charStart) ||
+                            analyzedWordsByIdentity.get(identityKey) ||
                             (allowLegacyWordFallback ? analyzedWords.get(clean) : null)
                           )
                           : null;
@@ -956,7 +959,7 @@ const ScrollEditor = forwardRef(({
                         const color = shouldColor ? (
                           explicitColor
                           || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
+                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
@@ -982,7 +985,7 @@ const ScrollEditor = forwardRef(({
                         const isMisspelled = localMisspellings.has(charStart);
 
                         return (
-                          <span key={localStart} style={{ position: 'relative' }}>
+                          <span key={`word-${charStart}`} style={{ position: 'relative' }}>
                             <AnimatedSurface
                               as="span"
                               signal={animationSignal}
@@ -1094,7 +1097,7 @@ const ScrollEditor = forwardRef(({
                       transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8, restDelta: 0.001 }}
                       style={{ willChange: "transform, opacity", contain: "layout paint style", position: 'absolute', height: `${lineHeightPx}px`, left: '1%', right: '1%' }}
                     >
-                      {lineData.tokens.map(({ token, localStart, localEnd, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {lineData.tokens.map(({ token, localStart, localEnd, globalCharStart, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
                         const commonStyle = {
                           position: 'absolute',
@@ -1106,9 +1109,9 @@ const ScrollEditor = forwardRef(({
                         if (!isWord) {
                           return (
                             <span 
-                              key={localStart} 
+                              key={`vghost-${globalCharStart}`} 
                               style={{ ...commonStyle, color: 'transparent' }}
-                              data-char-start={localStart}
+                              data-char-start={globalCharStart}
                             >
                               {token}
                             </span>
@@ -1116,11 +1119,11 @@ const ScrollEditor = forwardRef(({
                         }
                         
                         const clean = token.trim().toUpperCase();
-                        const charStart = localStart;
+                        const charStart = globalCharStart;
                         const charEnd = localEnd;
                         const identityKey = `${li}:${Number.isInteger(wordIndex) ? wordIndex : -1}:${charStart}`;
-                        const analysis = analyzedWordsByIdentity.get(identityKey)
-                          || derivedAnalyzedWordsByCharStart.get(charStart)
+                        const analysis = derivedAnalyzedWordsByCharStart.get(charStart)
+                          || analyzedWordsByIdentity.get(identityKey)
                           || (allowLegacyWordFallback ? analyzedWords.get(clean) : null);
                         const wordVowelFamily = analysis ? normalizeVowelFamily(analysis?.vowelFamily) : null;
                         const rhymeVowelFamily = analysis
@@ -1145,7 +1148,7 @@ const ScrollEditor = forwardRef(({
                         const color = shouldColor ? (
                           explicitColor
                           || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
+                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
@@ -1159,7 +1162,7 @@ const ScrollEditor = forwardRef(({
 
                         return (
                           <AnimatedSurface
-                            key={charStart}
+                            key={`ghost-word-${charStart}`}
                             as="span"
                             signal={animationSignal}
                             role="button"
@@ -1180,7 +1183,8 @@ const ScrollEditor = forwardRef(({
                               pointerEvents: 'auto', 
                               cursor: 'pointer',
                               // V12 PERFORMANCE: Force GPU composition
-                              willChange: 'transform, opacity'
+                              willChange: 'transform, opacity',
+                              '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
                             }}
                             onClick={() => {
                               if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
