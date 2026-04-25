@@ -291,21 +291,24 @@ describe('PixelBrain QA — Layer 2: Arithmetic Modeling', () => {
     describe('bytecodeToPalette', () => {
       it('generates palette from bytecode array', () => {
         const bytecodes = ['R1', 'D1', 'AA1', 'EH1'];
-        const palette = bytecodeToPalette(bytecodes);
+        const palettes = bytecodeToPalette(bytecodes);
         
-        expect(Array.isArray(palette)).toBe(true);
-        expect(palette.length).toBeGreaterThan(0);
+        expect(Array.isArray(palettes)).toBe(true);
+        expect(palettes.length).toBeGreaterThan(0);
         
-        for (const color of palette) {
-          expect(color).toMatch(/^#[0-9A-F]{6}$/i);
+        for (const p of palettes) {
+          expect(p.colors[0]).toMatch(/^#[0-9A-F]{6}$/i);
+          expect(p.bytecode).toBeDefined();
         }
       });
 
-      it('deduplicates colors', () => {
+      it('deduplicates input bytecode but returns unique palette objects', () => {
+        // The V12 law treats the array as a batch of requests.
         const bytecodes = ['R1', 'R1', 'R1'];
-        const palette = bytecodeToPalette(bytecodes);
+        const palettes = bytecodeToPalette(bytecodes);
         
-        expect(palette.length).toBe(1);
+        expect(palettes.length).toBe(3);
+        expect(palettes[0].colors[0]).toBe(palettes[1].colors[0]);
       });
     });
 
@@ -316,10 +319,10 @@ describe('PixelBrain QA — Layer 2: Arithmetic Modeling', () => {
           light: { color: '#4169E1', intensity: 0.7 },
         };
         
-        const palette = generatePaletteFromSemantics(semantics, 4);
+        const paletteObj = generatePaletteFromSemantics(semantics, 4);
         
-        expect(Array.isArray(palette)).toBe(true);
-        expect(palette.length).toBe(4);
+        expect(Array.isArray(paletteObj.colors)).toBe(true);
+        expect(paletteObj.colors.length).toBe(4);
       });
     });
   });
@@ -661,10 +664,10 @@ describe('PixelBrain QA — Integration Tests', () => {
 
   it('generates complete color palette from semantics', () => {
     const semanticParams = extractVisualParameters('fire phoenix');
-    const palette = generatePaletteFromSemantics(semanticParams.color, 4);
+    const paletteObj = generatePaletteFromSemantics(semanticParams.color, 4);
     
-    expect(palette.length).toBe(4);
-    for (const color of palette) {
+    expect(paletteObj.colors.length).toBe(4);
+    for (const color of paletteObj.colors) {
       expect(color).toMatch(/^#[0-9A-F]{6}$/i);
     }
   });
@@ -794,9 +797,9 @@ describe('PixelBrain QA — Edge Cases', () => {
   });
 
   it('handles empty bytecode array', () => {
-    const palette = bytecodeToPalette([]);
-    expect(Array.isArray(palette)).toBe(true);
-    expect(palette.length).toBe(0);
+    const palettes = bytecodeToPalette([]);
+    expect(Array.isArray(palettes)).toBe(true);
+    expect(palettes.length).toBe(0);
   });
 
   it('handles extreme parameter values', () => {

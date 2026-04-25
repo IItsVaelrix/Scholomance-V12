@@ -97,14 +97,29 @@ export function createBytecodeString({
 }
 
 export function parseBytecodeString(bytecode) {
-  const safeBytecode = String(bytecode || '').trim().toUpperCase();
-  const parts = safeBytecode.split('-');
+  const input = String(bytecode || '').trim().toUpperCase();
+  
+  // ─── V12 FORMALIZATION ─────────────────────────────────────────────────────
+  // If the bytecode is a 'short' string (e.g., 'AA1', 'EH1', 'R1'),
+  // expand it into a formal V12 hyphenated segment.
+  if (input && !input.includes('-') && !input.startsWith('VW')) {
+    const schoolId = input.replace(/[0-9]/g, '');
+    return Object.freeze({
+      version: 'VW',
+      schoolId: schoolId || 'VOID',
+      rarity: 'COMMON',
+      effect: 'INERT',
+      isLegacyShort: true,
+    });
+  }
 
+  const parts = input.split('-');
   return Object.freeze({
     version: parts[0] === 'VW' ? 'VW' : 'VW',
     schoolId: parts[1] || 'VOID',
     rarity: parts[2] || 'COMMON',
     effect: parts[3] || 'INERT',
+    isLegacyShort: false,
   });
 }
 

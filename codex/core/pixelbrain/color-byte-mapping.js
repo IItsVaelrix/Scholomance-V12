@@ -8,11 +8,12 @@ import {
   roundTo,
   PALETTE_CONTRACT,
   pseudoRandom,
+  hashString,
 } from './shared.js';
 
 /**
- * LAYER 2: COLOR-BYTE MAPPING WITH SEMANTIC INTEGRATION
- * Maps bytecode strings to color palettes using semantic parameters from Layer 1
+ * LAYER 2: COLOR-BYTE MAPPING — V12 DETERMINISTIC STANDARD
+ * Maps bytecode strings to color palettes using semantic parameters.
  */
 
 function resolveSchoolColor(schoolId, colorFeatures = {}) {
@@ -46,8 +47,7 @@ function resolveSchoolColor(schoolId, colorFeatures = {}) {
 }
 
 /**
- * Primary pure function for semantic palette generation
- * Replaces generatePaletteFromSemanticParameters and generatePaletteFromSemantics
+ * Primary pure function for semantic palette generation (V12)
  */
 export function generateSemanticPalette(params = {}, paletteSizeOverride) {
   const safeParams = params || {};
@@ -106,13 +106,11 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
 }
 
 /**
- * Legacy aliases for backward compatibility
+ * V12 REFACTOR: Legacy wrappers now consistently return objects.
+ * Residue branch for test-compatibility removed. Tests must align with the law.
  */
 export const generatePaletteFromSemanticParameters = generateSemanticPalette;
-export function generatePaletteFromSemantics(params, size) {
-  const result = generateSemanticPalette(params, size);
-  return typeof size !== 'undefined' ? Array.from(result.colors) : result;
-}
+export const generatePaletteFromSemantics = generateSemanticPalette;
 
 /**
  * Internal color builder with deterministic pseudo-random variation
@@ -124,8 +122,6 @@ function buildSemanticPaletteColors(params) {
   } = params;
   
   const colors = [];
-
-  // Material-specific color adjustments
   const materialMods = {
     metal: { satMod: -0.1, briMod: +0.15, hueShift: 0 },
     stone: { satMod: -0.2, briMod: 0, hueShift: 0 },
@@ -136,8 +132,6 @@ function buildSemanticPaletteColors(params) {
   };
 
   const mod = materialMods[material] || materialMods.stone;
-
-  // Texture-specific variation
   const textureVariation = {
     smooth: 0.05,
     grained: 0.12,
@@ -145,7 +139,6 @@ function buildSemanticPaletteColors(params) {
     fibrous: 0.15,
   }[texture] || 0.1;
 
-  // Contract-driven rarity/effect lifts
   const rarityShift = getRarityShift(rarity);
   const effectLift = getEffectLift(effect);
   
@@ -154,22 +147,17 @@ function buildSemanticPaletteColors(params) {
 
   for (let i = 0; i < paletteSize; i++) {
     const ratio = paletteSize === 1 ? 0 : i / (paletteSize - 1);
-    
-    // Create seed for deterministic "randomness" per index
     const seed = `${hue}-${material}-${texture}-${i}`;
     
-    // Lightness gradient with material mod
     const lightness = Math.max(8, Math.min(92, 
       baseBri - 18 + (ratio * 36) + (mod.briMod * 20)
     ));
     
-    // Saturation with deterministic texture variation
     const satVariation = (pseudoRandom(seed + '-sat') - 0.5) * textureVariation * 20;
     const saturationVal = Math.max(0, Math.min(100,
       baseSat - 10 + (ratio * 12) + mod.satMod * 20 + satVariation
     ));
     
-    // Hue with deterministic variation and rarity shift
     const hueVariation = (pseudoRandom(seed + '-hue') - 0.5) * textureVariation * 30;
     const contractHueShift = ((ratio - 0.5) * rarityShift);
     const hueVal = ((hue + mod.hueShift + hueVariation + contractHueShift) % 360 + 360) % 360;
@@ -205,7 +193,6 @@ function paletteStepCount(rarity, effect, complexity) {
     return PALETTE_CONTRACT.SIZES.RARE;
   }
   
-  // Fallback to complexity-based sizing for common
   if (complexity !== undefined) {
     return Math.max(3, Math.min(6, Math.round(3 + complexity * 3)));
   }
@@ -223,24 +210,19 @@ function getEffectLift(effect) {
   return PALETTE_CONTRACT.LIFT[eff] || PALETTE_CONTRACT.LIFT.INERT;
 }
 
+/**
+ * Maps bytecode to a consistent palette object.
+ * Pure V12 implementation. Array return and manual cleaning purged.
+ */
 export function bytecodeToPalette(bytecode, options = {}) {
+  // If array, return array of PALETTE OBJECTS, not colors. Integrity is sovereign.
   if (Array.isArray(bytecode)) {
-    const uniqueColors = new Set();
-    bytecode.forEach(bc => {
-      const p = bytecodeToPalette(bc, options);
-      const c = p.colors ? p.colors[0] : null;
-      if (c) uniqueColors.add(c);
-    });
-    return Array.from(uniqueColors);
+    return bytecode.map(bc => bytecodeToPalette(bc, options));
   }
 
   const parsed = parseBytecodeString(bytecode);
-  let schoolId = parsed.schoolId;
-  if (schoolId === 'VOID' && bytecode && !String(bytecode).includes('-')) {
-    schoolId = String(bytecode).replace(/[0-9]/g, '').toUpperCase();
-  }
-
-  const baseColor = resolveSchoolColor(schoolId, options?.colorFeatures);
+  const baseColor = resolveSchoolColor(parsed.schoolId, options?.colorFeatures);
+  
   const palette = generateSemanticPalette({
     primaryHue: baseColor.hue,
     saturation: baseColor.saturation,
@@ -253,7 +235,7 @@ export function bytecodeToPalette(bytecode, options = {}) {
   return Object.freeze({
     key: String(bytecode || '').trim().toUpperCase(),
     bytecode: String(bytecode || '').trim().toUpperCase(),
-    schoolId,
+    schoolId: parsed.schoolId,
     rarity: parsed.rarity,
     effect: parsed.effect,
     colors: palette.colors,
@@ -263,7 +245,7 @@ export function bytecodeToPalette(bytecode, options = {}) {
 
 /**
  * Deterministic "SSD" Block-Aligned addressing
- * Resolves Violation 3: maps bytes to blocks/pages before modulo-snapping to colors.
+ * Maps bytes to blocks/pages before modulo-snapping to colors.
  */
 export function getHexForByte(bytecode, byteIndex, options = {}) {
   const palette = bytecodeToPalette(bytecode, options);
@@ -272,16 +254,10 @@ export function getHexForByte(bytecode, byteIndex, options = {}) {
   if (numColors === 0) return '#808080';
 
   const index = Math.max(0, Math.abs(Math.trunc(Number(byteIndex) || 0)));
-  
-  // ─── SSD BLOCK ALIGNMENT ───────────────────────────────────────────────────
-  // Map index to a page to determine block-level affinity, 
-  // then use intra-page offset for final color selection.
   const pageSize = PALETTE_CONTRACT.ADDRESSING.PAGE_SIZE;
   const pageId = Math.floor(index / pageSize);
   const pageOffset = index % pageSize;
   
-  // Deterministic "jitter" based on pageId ensures different pages of the 
-  // same byte stream have shifted color affinities.
   const pageJitter = hashString(`page-${pageId}`) % numColors;
   const paletteIndex = (pageOffset + pageJitter) % numColors;
   
