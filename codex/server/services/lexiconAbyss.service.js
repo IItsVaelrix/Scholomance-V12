@@ -105,7 +105,9 @@ export async function createLexiconAbyssService(options = {}) {
         type: 'libsql',
         config: { url: TURSO_URL, authToken: TURSO_TOKEN }
       });
-      dbState.currentVersion = ABYSS_MIGRATIONS[ABYSS_MIGRATIONS.length - 1].version;
+      dbState.currentVersion = ABYSS_MIGRATIONS.length > 0 
+        ? ABYSS_MIGRATIONS[ABYSS_MIGRATIONS.length - 1].version 
+        : 0;
     } else {
       mkdirSync(path.dirname(dbPath), { recursive: true });
       rawDb = new Database(dbPath);
