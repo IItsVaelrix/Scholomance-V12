@@ -940,8 +940,11 @@ const ScrollEditor = forwardRef(({
                         const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
-                        const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
-                        const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
+                        
+                        // V12 PERFORMANCE: Use precomputed values from Synthesis Kernel
+                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
+                        
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
@@ -949,14 +952,16 @@ const ScrollEditor = forwardRef(({
                         const rhymeColor = isRhymeSurface
                           ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
                           : null;
+                        
                         const color = shouldColor ? (
                           explicitColor
                           || rhymeColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
+                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
                         ) : null;
+
                         const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
@@ -969,6 +974,8 @@ const ScrollEditor = forwardRef(({
                           ...(decoded?.style || {}),
                           pointerEvents: 'auto',
                           cursor: 'pointer',
+                          // V12 PERFORMANCE: Force GPU composition
+                          willChange: 'transform, opacity',
                           ...(isLineHighlighted ? { backgroundColor: 'rgba(101, 31, 255, 0.13)', borderRadius: '0.5rem' } : {}),
                         };
 
@@ -1122,8 +1129,11 @@ const ScrollEditor = forwardRef(({
                         const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
-                        const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
-                        const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
+                        
+                        // V12 PERFORMANCE: Use precomputed values
+                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
+
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
@@ -1131,14 +1141,16 @@ const ScrollEditor = forwardRef(({
                         const rhymeColor = isRhymeSurface
                           ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
                           : null;
+                        
                         const color = shouldColor ? (
                           explicitColor
                           || rhymeColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
+                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
                         ) : null;
+                        
                         const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
@@ -1166,7 +1178,9 @@ const ScrollEditor = forwardRef(({
                               color: color || undefined, 
                               ...(decoded?.style || {}), 
                               pointerEvents: 'auto', 
-                              cursor: 'pointer' 
+                              cursor: 'pointer',
+                              // V12 PERFORMANCE: Force GPU composition
+                              willChange: 'transform, opacity'
                             }}
                             onClick={() => {
                               if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });

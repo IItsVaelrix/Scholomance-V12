@@ -14,6 +14,8 @@ import { compileVerseToIR } from "./compileVerseToIR.js";
 import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
 import { buildVowelSummary, normalizeVowelFamily } from "../../phonology/vowelFamily.js";
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
+import { resolveSonicChroma } from "../../phonology/vowelWheel.js";
+import { decodeBytecode } from "../../../pages/Read/bytecodeRenderer.js";
 
 /**
  * Executes a total linguistic synthesis of the given text.
@@ -59,11 +61,24 @@ export function synthesizeVerse(text, options = {}) {
     const syntaxToken = syntaxLayer.tokens[index] || {};
     const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
     
+    // V12 PERFORMANCE: Pre-calculate expensive phonetic/visual properties
+    const sonicChroma = (token.phonemes?.length > 0) ? resolveSonicChroma(token.phonemes) : null;
+    const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
+    
+    // We pre-decode with defaults; UI can still override if reduced-motion is active,
+    // but having the baseline 'style' and 'color' ready is O(1) in the render loop.
+    const decoded = visualBytecode ? decodeBytecode(visualBytecode) : null;
+
     const unifiedToken = {
       ...token,
       ...syntaxToken,
       hhm: hhm.tokenStateByIdentity.get(identityKey) || null,
       vowelFamily: normalizeVowelFamily(token.primaryStressedVowelFamily),
+      precomputed: {
+        sonicChroma,
+        decoded,
+        hex: sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null
+      }
     };
 
     tokenByIdentity.set(identityKey, unifiedToken);
