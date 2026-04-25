@@ -71,6 +71,11 @@ function resolveTerminalVowelFamily(token) {
     return normalizeVowelFamily(token.vowelFamily[token.vowelFamily.length - 1]);
   }
 
+  const rhymeKeyFamily = resolveRhymeFamilyFromKey(resolveRhymeKey(token));
+  if (rhymeKeyFamily) {
+    return rhymeKeyFamily;
+  }
+
   return null;
 }
 

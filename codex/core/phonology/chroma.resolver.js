@@ -3,7 +3,7 @@
  * Translates ARPAbet phoneme sequences into deterministic HSL chroma signatures.
  */
 
-import { VOWEL_HUE_MAP, getVowelHue } from '../../../src/lib/phonology/vowelWheel.js';
+import { VOWEL_HUE_MAP, getVowelHue } from './vowelWheel.js';
 
 // Coda weight for Saturation
 const CODA_SONORITY_WEIGHT = {

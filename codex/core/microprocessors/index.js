@@ -76,4 +76,10 @@ verseIRMicroprocessors.register('ide.syncState', async (payload, context) => {
   return syncIdeState(payload, context);
 });
 
+// --- Arbiter Microprocessors (Lazy) ---
+verseIRMicroprocessors.register('arbiter.predict', async (payload, context) => {
+  const { predictNextRitualMove } = await import('./arbiter/predictProcessor.ts');
+  return predictNextRitualMove(payload, context);
+});
+
 export { verseIRMicroprocessors };

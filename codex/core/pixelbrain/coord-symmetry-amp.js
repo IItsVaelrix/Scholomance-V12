@@ -15,11 +15,14 @@
  */
 export const CoordSymmetryProcessor = {
   id: 'amp.coord-symmetry',
-  version: '1.0.0',
+  version: '1.0.1',
   stage: 'pre-render',
   accepts: ['coordinates.array', 'lattice', 'symmetry.metadata'],
   emits: ['coordinates.transformed', 'symmetry.bytecode'],
 };
+
+const CANONICAL_DEBUG_FADE = 0.95;
+const RADIAL_CANONICAL_ANGLES = Object.freeze([90, 180, 270]);
 
 /**
  * Input Contract
@@ -173,7 +176,7 @@ export function runCoordSymmetryAmp(input) {
 
   // STEP 3: Handle canonicalize mode (rebuild full symmetric set)
   if (transformMode === 'canonicalize') {
-    transformed = canonicalizeSymmetry(coordinates, symmetry, dimensions, axis, debugMirrorFade);
+    transformed = canonicalizeSymmetry(coordinates, symmetry, axis, debugMirrorFade);
     diagnostics.push(`Canonicalized symmetry (${transformed.length} total coords)`);
   }
 
@@ -297,43 +300,110 @@ function applyEmphasisFade(coord, factor) {
 }
 
 /**
- * Canonicalize symmetry — rebuild full symmetric set from governing side
- * For vertical symmetry, determines which side has more content and mirrors it
+ * Canonicalize symmetry — rebuild full symmetric set from the governing region.
  */
-function canonicalizeSymmetry(coordinates, symmetry, dimensions, axis, debugFade) {
-  const result = [];
-  
-  if (symmetry?.type === 'vertical') {
-    // Split coordinates by axis
-    const leftSide = coordinates.filter(c => c.x < axis.x);
-    const rightSide = coordinates.filter(c => c.x >= axis.x);
-    
-    // Choose governing side (more content)
-    const governingSide = leftSide.length >= rightSide.length ? leftSide : rightSide;
-    const isLeftGoverning = governingSide === leftSide;
-    
-    // Add governing side as originals
-    governingSide.forEach(c => {
-      result.push({ ...c, symmetrySource: 'original' });
+function canonicalizeSymmetry(coordinates, symmetry, axis, debugFade) {
+  switch (symmetry?.type) {
+    case 'vertical':
+      return canonicalizeMirrorPair(
+        coordinates,
+        [
+          coordinates.filter(c => c.x < axis.x),
+          coordinates.filter(c => c.x >= axis.x),
+        ],
+        coord => verticalMirror(coord, axis.x),
+        'vertical-mirror',
+        debugFade
+      );
+
+    case 'horizontal':
+      return canonicalizeMirrorPair(
+        coordinates,
+        [
+          coordinates.filter(c => c.y < axis.y),
+          coordinates.filter(c => c.y >= axis.y),
+        ],
+        coord => horizontalMirror(coord, axis.y),
+        'horizontal-mirror',
+        debugFade
+      );
+
+    case 'radial':
+      return canonicalizeRadial(coordinates, axis, debugFade);
+
+    case 'diagonal':
+      return canonicalizeMirrorPair(
+        coordinates,
+        [
+          coordinates.filter(c => c.x >= c.y),
+          coordinates.filter(c => c.x < c.y),
+        ],
+        diagonalMirror,
+        'diagonal-mirror',
+        debugFade
+      );
+
+    default:
+      return coordinates.map(c => ({ ...c, symmetrySource: 'original' }));
+  }
+}
+
+function canonicalizeMirrorPair(coordinates, groups, transform, symmetrySource, debugFade) {
+  const governingSide = selectGoverningGroup(groups, coordinates);
+  const result = governingSide.map(c => ({ ...c, symmetrySource: 'original' }));
+
+  governingSide.forEach(c => {
+    const mirrored = transform(c);
+    applyEmphasisFade(mirrored, debugFade ? CANONICAL_DEBUG_FADE : 1.0);
+    result.push({
+      ...mirrored,
+      originalX: c.x,
+      originalY: c.y,
+      symmetrySource,
     });
-    
-    // Mirror governing side to fill other side
-    governingSide.forEach(c => {
-      const mirrored = verticalMirror(c, axis.x);
-      applyEmphasisFade(mirrored, debugFade ? 0.95 : 1.0);
+  });
+
+  return result;
+}
+
+function canonicalizeRadial(coordinates, axis, debugFade) {
+  const quadrants = [0, 1, 2, 3].map(quadrant =>
+    coordinates.filter(coord => getRadialQuadrant(coord, axis) === quadrant)
+  );
+  const governingQuadrant = selectGoverningGroup(quadrants, coordinates);
+  const result = governingQuadrant.map(c => ({ ...c, symmetrySource: 'original' }));
+
+  RADIAL_CANONICAL_ANGLES.forEach(angle => {
+    governingQuadrant.forEach(c => {
+      const rotated = radialRotate(c, axis.x, axis.y, angle);
+      applyEmphasisFade(rotated, debugFade ? CANONICAL_DEBUG_FADE : 1.0);
       result.push({
-        ...mirrored,
+        ...rotated,
         originalX: c.x,
         originalY: c.y,
-        symmetrySource: isLeftGoverning ? 'vertical-mirror' : 'vertical-original',
+        symmetrySource: `radial-${angle}`,
       });
     });
-    
-    return result;
-  }
-  
-  // For other symmetry types, use standard overlay approach
-  return coordinates.map(c => ({ ...c, symmetrySource: 'original' }));
+  });
+
+  return result;
+}
+
+function selectGoverningGroup(groups, fallback) {
+  const selected = groups.reduce((winner, group) =>
+    group.length > winner.length ? group : winner
+  , groups[0] || []);
+
+  return selected.length > 0 ? selected : fallback;
+}
+
+function getRadialQuadrant(coord, axis) {
+  const right = coord.x >= axis.x;
+  const bottom = coord.y >= axis.y;
+  if (right && !bottom) return 0;
+  if (right && bottom) return 1;
+  if (!right && bottom) return 2;
+  return 3;
 }
 
 /**

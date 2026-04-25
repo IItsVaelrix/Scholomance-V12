@@ -76,6 +76,12 @@ function validateExtension(extension) {
   });
 }
 
+function compareHookRecords(left, right) {
+  const sequenceDelta = left.sequence - right.sequence;
+  if (sequenceDelta !== 0) return sequenceDelta;
+  return left.extension.id.localeCompare(right.extension.id);
+}
+
 export function createExtensionRegistry(options = {}) {
   const extensions = new Map();
   const hooks = new Map([
@@ -170,7 +176,7 @@ export function createExtensionRegistry(options = {}) {
     const normalizedType = normalizeHookType(type);
     const queue = hooks.get(normalizedType)
       .slice()
-      .sort((left, right) => left.sequence - right.sequence);
+      .sort(compareHookRecords);
 
     return queue.reduce((currentPayload, entry) => {
       const nextPayload = entry.hook.call(entry.extension, currentPayload, Object.freeze({
@@ -205,7 +211,7 @@ export function createExtensionRegistry(options = {}) {
       return Object.freeze(
         hooks.get(normalizedType)
           .slice()
-          .sort((left, right) => left.sequence - right.sequence)
+          .sort(compareHookRecords)
           .map((entry) => Object.freeze({
             extensionId: entry.extension.id,
             type: normalizedType,
