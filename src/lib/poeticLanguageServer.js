@@ -119,7 +119,7 @@ export class PoeticLanguageServer {
     // Phase 1: Generators produce candidate pools
     const [rhymeResults, prefixResults, synonymResults] = await Promise.all([
       rhymeProvider(context, engines),
-      Promise.resolve(prefixProvider(context, engines)),
+      prefixProvider(context, engines),
       this.dictionaryAPI
         ? synonymProvider(context, engines)
         : Promise.resolve([]),

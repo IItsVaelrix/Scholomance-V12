@@ -8,7 +8,7 @@
  */
 
 import { createRequire } from 'node:module';
-import { normalizeVowelFamily } from '../../../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../../../../codex/core/phonology/vowelFamily.js';
 import { VOWEL_FAMILY_TO_SCHOOL, SCHOOLS } from '../../../../src/data/schools.js';
 import { clamp01, roundTo, createAmplifierResult } from '../shared.js';
 import { resolveSonicChroma } from '../../phonology/chroma.resolver.js';

@@ -43,12 +43,12 @@ import ScrollEditor from "./ScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
 import { ANALYSIS_MODES } from "../../lib/truesight/compiler/analysisModes";
 import { TopBar, StatusBar } from "./IDEChrome.jsx";
+
+const USE_SERVER_ANALYSIS = parseBooleanEnvFlag(import.meta.env.VITE_USE_SERVER_PANEL_ANALYSIS, true);
 import ToolsSidebar from "./ToolsSidebar.jsx";
 import SearchPanel from "./SearchPanel.jsx";
 import FloatingPanel from "../../components/shared/FloatingPanel.jsx";
 import IDEAmbientCanvas from "./IDEAmbientCanvas.jsx";
-import { ToolbarChannel, TOOLBAR_TOOL, SAVE_STATE } from "../../lib/truesight/compiler/toolbarBytecode";
-import { ViewportChannel } from "../../lib/truesight/compiler/viewportBytecode";
 import "./IDE.css";
 
 const SCHOOL_GLYPHS = {
@@ -250,7 +250,6 @@ export default function ReadPage() {
     setIsTruesight((prev) => {
       const next = !prev;
       updateSettings({ truesightEnabled: next });
-      ToolbarChannel.setTool(TOOLBAR_TOOL.TRUESIGHT, next);
       setHighlightedLines([]);
       return next;
     });
@@ -268,7 +267,6 @@ export default function ReadPage() {
     setAnalysisMode((prev) => {
       const resolvedMode = prev === nextMode ? ANALYSIS_MODES.NONE : nextMode;
       updateSettings({ analysisMode: resolvedMode });
-      ToolbarChannel.setTool(TOOLBAR_TOOL.ANALYSIS_MODE, resolvedMode);
       return resolvedMode;
     });
     setHighlightedLines([]);
@@ -309,27 +307,19 @@ export default function ReadPage() {
   const lineCount = scrollLines.length;
   const currentLineText = cursorPos.line > 0 ? scrollLines[cursorPos.line - 1] || "" : "";
 
+  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
+
   const ritualPalette = getRitualPalette(selectedSchool);
   const activeSchoolLabel = SCHOOLS[selectedSchool]?.name || "Universal";
   const mobileVisionLabel = isTruesight ? "Truesight active" : "Ink view";
-  const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
-
   const issueEditorDocumentIdentity = useCallback((label = "new") => {
     editorDocumentSerialRef.current += 1;
     setEditorDocumentIdentity(`${label || "new"}:${editorDocumentSerialRef.current}`);
   }, []);
 
-  useEffect(() => {
-    return ViewportChannel.subscribe((vp) => {
-      setIsNarrowViewport(vp.width <= 960);
-      setIsMobileViewport(vp.width <= 640);
-    });
-  }, []);
-
   const handleSaveScroll = useCallback(
     async (title, content) => {
       bumpAutosaveContext();
-      ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.SAVING);
       const isUpdate = Boolean(isEditing && activeScrollId);
       const wasSubmitted = Boolean(activeScroll?.submittedAt);
       const savedScroll = await saveScroll({
@@ -340,7 +330,6 @@ export default function ReadPage() {
         submittedAt: activeScroll?.submittedAt || null,
       });
       if (!savedScroll) {
-        ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
         addToast("Failed to save scroll", "error");
         return;
       }
@@ -367,7 +356,6 @@ export default function ReadPage() {
         addToast(`${actionLabel}!`, "success");
       }
 
-      ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.SAVED);
       setEditorTitle(savedScroll.title);
       setActiveScrollId(savedScroll.id);
       setIsEditing(false);
@@ -443,12 +431,10 @@ export default function ReadPage() {
 
   const handleEditorContentChange = useCallback((newContent) => {
     setEditorContent(newContent);
-    ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
   }, []);
 
   const handleEditorTitleChange = useCallback((newTitle) => {
     setEditorTitle(newTitle);
-    ToolbarChannel.setTool(TOOLBAR_TOOL.SAVE_STATE, SAVE_STATE.DIRTY);
   }, []);
 
   const [tooltipState, setTooltipState] = useState({
@@ -468,7 +454,7 @@ export default function ReadPage() {
     if (!anchorRect) return { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN };
     const rawX = anchorRect.left + TOOLTIP_OFFSET_X;
     const rawY = anchorRect.top + TOOLTIP_OFFSET_Y - TOOLTIP_HEIGHT;
-    const vp = ViewportChannel.getState();
+    const vp = ({ width: window.innerWidth, height: window.innerHeight });
     return clampTooltipPosition({ x: rawX, y: rawY }, vp.width, vp.height);
   }, []);
 
@@ -544,7 +530,7 @@ export default function ReadPage() {
   }, [handleWordActivate]);
 
   const handleTooltipDrag = useCallback((pos) => {
-    const vp = ViewportChannel.getState();
+    const vp = ({ width: window.innerWidth, height: window.innerHeight });
     const clampedPos = clampTooltipPosition(pos, vp.width, vp.height);
     setTooltipState(prev => ({ ...prev, position: clampedPos }));
   }, []);
@@ -1180,6 +1166,7 @@ export default function ReadPage() {
                     syntaxLayer={deepAnalysis?.syntaxSummary}
                     analysisMode={analysisMode}
                     theme={theme}
+                    selectedSchool={selectedSchool}
                     onWordActivate={handleWordActivate}
                     onCursorChange={setCursorPos}
                     mirrored={mirrored}
@@ -1366,6 +1353,7 @@ export default function ReadPage() {
         language="Scroll Language"
         syllableCount={totalSyllables}
         analysisError={analysisError}
+        serverAnalysisActive={USE_SERVER_ANALYSIS}
       />
       
       {/* Floating panel fallback for narrow viewports only */}

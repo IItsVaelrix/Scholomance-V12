@@ -152,35 +152,12 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
         return true;
       }
 
-      // Check syntax suppression
-      const syntaxToken = syntaxLayer?.tokenByCharStart?.get(charStart);
-      if (syntaxToken?.rhymePolicy === "suppress") {
-        return false;
-      }
-
-      // Stop words never get colored in rhyme mode
-      if (isStopWord) {
-        return false;
-      }
-
-      // Family peers: only color if family has no non-stop direct participant
-      const family = normalizeVowelFamily(vowelFamily);
-      const isPeer = family && colorContext.substitutionFamilies.has(family);
-      if (isPeer && colorContext.directNonStopFamilies.has(family)) {
-        return false;
-      }
-
-      // Color if has resonance (glowIntensity > 0) and is a peer
-      if (isPeer && bytecode.glowIntensity > 0) {
-        return true;
-      }
-
       return false;
     }
 
     // Default: color if bytecode has any resonance signal
     return bytecode.glowIntensity > 0 || bytecode.effectClass !== 'INERT';
-  }, [analysisMode, bytecodeByCharStart, colorContext, connectionCount, isAMPMode, syntaxLayer]);
+  }, [analysisMode, bytecodeByCharStart, colorContext, connectionCount, isAMPMode]);
 
   /**
    * Retrieves bytecode and derived color info for a word.

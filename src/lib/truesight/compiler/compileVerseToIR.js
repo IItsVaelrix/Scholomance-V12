@@ -1,9 +1,9 @@
-import { PhonemeEngine } from '../../phonology/phoneme.engine.js';
-import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
+import { PhonemeEngine } from '../../../../codex/core/phonology/phoneme.engine.js';
+import { normalizeVowelFamily } from '../../../../codex/core/phonology/vowelFamily.js';
 import { LINE_TOKEN_REGEX, WORD_REGEX_GLOBAL, WORD_TOKEN_REGEX } from '../../wordTokenization.js';
 import { getTruesightAnalysisModeConfig, resolveTruesightAnalysisMode } from './analysisModes.js';
 
-export const VERSE_IR_VERSION = '1.2.0';
+const VERSE_IR_VERSION = '1.2.0';
 
 const STOP_WORD_LIKE = new Set([
   'a', 'an', 'and', 'as', 'at', 'be', 'but', 'by', 'for', 'from', 'if',
@@ -363,7 +363,7 @@ function finalizeIndexMap(indexMap) {
   return indexMap;
 }
 
-export function splitVerseLines(rawText, options = {}) {
+function splitVerseLines(rawText, options = {}) {
   const source = String(rawText || '');
   const normalizationOptions = resolveNormalizationOptions(options.normalization);
   const offsetTranslator = options.offsetTranslator || createOffsetTranslator(source);
@@ -491,6 +491,7 @@ function buildTokenIR({
       notes: ['The phoneme engine did not expose a provenance trail for this token.'],
     }
   );
+  const rarity = phonemeEngine?.calculateRarity ? phonemeEngine.calculateRarity(normalized, phonemes) : 'COMMON';
 
   return Object.freeze({
     id: globalTokenIndex,
@@ -534,6 +535,7 @@ function buildTokenIR({
     }),
     phoneticDiagnostics,
     analysis: resolvedAnalysis,
+    rarity,
   });
 }
 

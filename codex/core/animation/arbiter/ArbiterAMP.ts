@@ -1,6 +1,8 @@
 import { HHM_STAGE_WEIGHTS } from '../../../../src/lib/models/harkov.model.js';
 import { hashString } from '../../pixelbrain/shared.js';
 import { ARBITER_FINGERPRINTS, getFingerprintChecksum } from './ArbiterChecksums.ts';
+import { PhonemeEngine } from '../../phonology/phoneme.engine.js';
+import { PhoneticSimilarity } from '../../phonology/phoneticSimilarity.js';
 
 /**
  * ArbiterAMP — Ritual Prediction Brain
@@ -70,10 +72,20 @@ export class ArbiterAMP {
     const diagnostics: string[] = [];
     const startTime = Date.now();
 
+    await PhonemeEngine.init();
+
     // 1. Candidate Extraction (From context/trie/spellchecker)
-    // In a real flow, this would call the Trie/Spellcheck microprocessors.
-    // For this implementation, we assume candidates are passed or derived from the context.
-    const rawCandidates = context?.candidates || [];
+    let rawCandidates = context?.candidates || [];
+    const prevWord = context?.prevToken?.normalized?.toLowerCase();
+    
+    // V12 SPELLCHECK HARDENING: If we have a prefix but no strong candidates, 
+    // perform a phonetic search across the high-resonance lexicon.
+    if (prefix && prefix.length > 2 && rawCandidates.length === 0) {
+      const phoneticMatches = this.findPhoneticMatches(prefix, prevWord);
+      rawCandidates = [...rawCandidates, ...phoneticMatches];
+      diagnostics.push(`Phonetic recovery found ${phoneticMatches.length} matches for "${prefix}".`);
+    }
+
     diagnostics.push(`Ingested ${rawCandidates.length} potential candidates.`);
 
     // 2. HMM Traversal & Scoring
@@ -113,14 +125,85 @@ export class ArbiterAMP {
     return Object.freeze(artifact);
   }
 
+  private getGraphemeSimilarity(s1: string, s2: string): number {
+    const n = s1.length;
+    const m = s2.length;
+    if (n === 0 || m === 0) return 0;
+    
+    const matrix = Array.from({ length: n + 1 }, () => new Int32Array(m + 1));
+    for (let i = 0; i <= n; i++) matrix[i][0] = i;
+    for (let j = 0; j <= m; j++) matrix[0][j] = j;
+    
+    const str1 = s1.toLowerCase();
+    const str2 = s2.toLowerCase();
+
+    for (let i = 1; i <= n; i++) {
+      for (let j = 1; j <= m; j++) {
+        const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+      }
+    }
+    
+    const dist = matrix[n][m];
+    const maxLen = Math.max(n, m);
+    return 1 - (dist / maxLen);
+  }
+
+  private findPhoneticMatches(prefix: string, prevWord?: string): any[] {
+    const normalizedPrefix = prefix.toLowerCase();
+    const prefixPhonemes = PhonemeEngine.analyzeWord(normalizedPrefix).phonemes;
+    const candidates: any[] = [];
+    
+    const corpusLexicon = Array.from(PhonemeEngine.CORPUS_DATA?.rankMap.keys() || []).slice(0, 15000);
+    const dictLexicon = (PhonemeEngine as any).getDictionaryWords() || [];
+    const fullLexicon = [...new Set([...corpusLexicon, ...dictLexicon])];
+    
+    const bigramTransitions = prevWord ? PhonemeEngine.CORPUS_DATA?.bigrams[prevWord] || {} : {};
+    
+    for (const word of fullLexicon) {
+      if (Math.abs(word.length - normalizedPrefix.length) > 5) continue;
+      
+      const wordPhonemes = PhonemeEngine.analyzeWord(word).phonemes;
+      const phoneticSim = PhoneticSimilarity.getArraySimilarity(prefixPhonemes, wordPhonemes);
+      const graphemeSim = this.getGraphemeSimilarity(normalizedPrefix, word);
+      
+      // WEIGHTED SCORE: 40% Phonetic, 60% Grapheme (Standard spellcheck balance)
+      const similarity = (phoneticSim * 0.4) + (graphemeSim * 0.6);
+      
+      // SYNTAX SIGNAL: Check ritual sequence
+      const transitionCount = bigramTransitions[word.toLowerCase()] || 0;
+      const syntaxBoost = transitionCount > 0 ? 0.35 : 0;
+      
+      if (similarity + syntaxBoost > 0.42) {
+        candidates.push({
+          word: word.toUpperCase(),
+          baseScore: similarity,
+          syntaxBoost
+        });
+      }
+    }
+    
+    return candidates.sort((a, b) => (b.baseScore + b.syntaxBoost) - (a.baseScore + a.syntaxBoost)).slice(0, 5);
+  }
+
   private scoreCandidate(candidate: any, context: any, oraclePayload: any): RitualPredictionCandidate {
-    const { word, baseScore = 0.5 } = candidate;
+    const { word, baseScore = 0.5, syntaxBoost = 0 } = candidate;
     const weights = HHM_STAGE_WEIGHTS;
 
-    // HMM Transition Probabilities (Mock logic based on PDR intent)
-    const syntaxScore = context.lastRole === 'function' ? 0.8 : 0.4;
-    // V12 FIX: Force dominant phonetic signal to pass threshold
-    const phoneticScore = context.rhymeMatch === word ? 1.0 : 0.1;
+    const normalizedWord = word.toLowerCase();
+    const prevWord = context?.prevToken?.normalized?.toLowerCase();
+    
+    // SYNTAX SIGNAL: Use corpus bigrams for ritual transition probability
+    const bigramTransitions = prevWord ? PhonemeEngine.CORPUS_DATA?.bigrams[prevWord] || {} : {};
+    const transitionCount = bigramTransitions[normalizedWord] || 0;
+    const syntaxScore = transitionCount > 0 ? 0.9 : (context.lastRole === 'function' ? 0.6 : 0.4);
+    
+    // PHONETIC SIGNAL: Enforce phonetic distance as the primary gate for spellchecked words
+    const targetPhonemes = PhonemeEngine.analyzeWord(word).phonemes;
+    const inputPhonemes = context.inputPhonemes || PhonemeEngine.analyzeWord(context.prefix || '').phonemes;
+    const phoneticSimilarity = PhoneticSimilarity.getArraySimilarity(targetPhonemes, inputPhonemes);
+    
+    const phoneticScore = Math.max(phoneticSimilarity, context.rhymeMatch === word ? 1.0 : 0.1);
     
     // Oracle Resonance (Mood Biases)
     let semanticScore = baseScore;
@@ -137,7 +220,7 @@ export class ArbiterAMP {
     ) / (weights.SYNTAX + (weights.PHONEME * 2) + weights.PREDICTOR);
 
     // V12 FIX: Enforce authoritative signal dominance
-    const finalScore = (hhmScore * 0.95) + (baseScore * 0.05);
+    const finalScore = (hhmScore * 0.90) + (baseScore * 0.05) + (syntaxBoost * 0.05);
 
     return {
       word,

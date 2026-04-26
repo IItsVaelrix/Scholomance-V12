@@ -18,7 +18,7 @@ const MOD = MODULE_IDS.SHARED;
 import { createTokenGraphSemanticRepo } from '../../services/token-graph/semantic.repo.js';
 import { createTokenGraphSequenceRepo } from '../../services/token-graph/sequence.repo.js';
 import { coalescedLookup } from './wordLookupCoalescer.js';
-import { PhonemeEngine } from '../../../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../../core/phonology/phoneme.engine.js';
 
 const DEFAULT_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 const DEFAULT_CACHE_PREFIX = 'wordlookup:';
@@ -46,12 +46,12 @@ const MANUAL_LEXICAL_OVERRIDES = Object.freeze({
     antonyms: [],
     rhymes: [],
     slantRhymes: [],
-    ipa: '/WUH-ster-sheer/',
+    pronunciation: '/WUH-ster-sheer/',
     etymology: 'From the English county name Worcestershire.',
-  }),
-});
+    }),
+    });
 
-const suggestionJudiciary = createJudiciaryEngine();
+    const suggestionJudiciary = createJudiciaryEngine();
 const suggestionSemanticRepo = createTokenGraphSemanticRepo();
 
 /**
@@ -261,7 +261,7 @@ function createLexicalSuggestionSemanticRepo(sourceWord, category, suggestions) 
   };
 }
 
-function buildRitualSuggestionScores(sourceWord, category, preparedSuggestions, phonemeEngine) {
+async function buildRitualSuggestionScores(sourceWord, category, preparedSuggestions, phonemeEngine) {
   const normalizedSource = normalizeComparableTerm(sourceWord);
   if (!normalizedSource || !Array.isArray(preparedSuggestions) || preparedSuggestions.length === 0) {
     return new Map();
@@ -292,7 +292,7 @@ function buildRitualSuggestionScores(sourceWord, category, preparedSuggestions, 
       : null,
     resolveSchool: (analysis) => resolvePredictionSchool(phonemeEngine, analysis),
   });
-  const prediction = ritualPredictionEngine.run({
+  const prediction = await ritualPredictionEngine.run({
     prefix: '',
     prevWord: normalizedSource,
     prevLineEndWord: category === 'rhymes' || category === 'slantRhymes'
@@ -313,7 +313,7 @@ function buildRitualSuggestionScores(sourceWord, category, preparedSuggestions, 
   );
 }
 
-function rankSuggestionGroup(sourceWord, values, category, options = {}) {
+async function rankSuggestionGroup(sourceWord, values, category, options = {}) {
   if (!Array.isArray(values) || values.length === 0) return [];
 
   const normalizedSource = normalizeComparableTerm(sourceWord);
@@ -342,7 +342,7 @@ function rankSuggestionGroup(sourceWord, values, category, options = {}) {
       category,
     ),
   }));
-  const ritualScores = buildRitualSuggestionScores(
+  const ritualScores = await buildRitualSuggestionScores(
     normalizedSource,
     category,
     preparedSuggestions,
@@ -395,7 +395,7 @@ function hasLexicalData(entry) {
     (entry?.rhymes?.length || 0) > 0 ||
     (entry?.slantRhymes?.length || 0) > 0 ||
     (entry?.pos?.length || 0) > 0 ||
-    entry?.ipa ||
+    entry?.pronunciation ||
     entry?.etymology ||
     entry?.lore
   );
@@ -418,18 +418,18 @@ function extractDefinitionsFromEntries(entries) {
   return [...new Set(out)].slice(0, MAX_DEFINITION_COUNT);
 }
 
-function constrainLexicalEntry(entry, options = {}) {
+async function constrainLexicalEntry(entry, options = {}) {
   if (!entry) return null;
   entry.definitions = (entry.definitions || []).slice(0, MAX_DEFINITION_COUNT);
-  entry.synonyms = rankSuggestionGroup(entry.word, entry.synonyms || [], 'synonyms', options);
-  entry.antonyms = rankSuggestionGroup(entry.word, entry.antonyms || [], 'antonyms', options);
-  entry.rhymes = rankSuggestionGroup(entry.word, entry.rhymes || [], 'rhymes', options);
-  entry.slantRhymes = rankSuggestionGroup(entry.word, entry.slantRhymes || [], 'slantRhymes', options);
+  entry.synonyms = await rankSuggestionGroup(entry.word, entry.synonyms || [], 'synonyms', options);
+  entry.antonyms = await rankSuggestionGroup(entry.word, entry.antonyms || [], 'antonyms', options);
+  entry.rhymes = await rankSuggestionGroup(entry.word, entry.rhymes || [], 'rhymes', options);
+  entry.slantRhymes = await rankSuggestionGroup(entry.word, entry.slantRhymes || [], 'slantRhymes', options);
   entry.pos = (entry.pos || []).slice(0, MAX_POS_COUNT);
   return entry;
 }
 
-function lookupFromManualOverrides(word) {
+async function lookupFromManualOverrides(word) {
   const normalizedWord = normalizeComparableTerm(word);
   if (!normalizedWord) return null;
   const template = MANUAL_LEXICAL_OVERRIDES[normalizedWord];
@@ -443,11 +443,11 @@ function lookupFromManualOverrides(word) {
   if (Array.isArray(template.antonyms)) entry.antonyms = [...template.antonyms];
   if (Array.isArray(template.rhymes)) entry.rhymes = [...template.rhymes];
   if (Array.isArray(template.slantRhymes)) entry.slantRhymes = [...template.slantRhymes];
-  if (template.ipa) entry.ipa = template.ipa;
+  if (template.pronunciation) entry.pronunciation = template.pronunciation;
   if (template.etymology) entry.etymology = template.etymology;
   entry.raw = { source: 'manual', key: normalizedWord };
 
-  const constrained = constrainLexicalEntry(entry);
+  const constrained = await constrainLexicalEntry(entry);
   return hasLexicalData(constrained) ? constrained : null;
 }
 
@@ -543,7 +543,7 @@ export function createWordLookupService(options = {}) {
           ? data.slantRhymes
           : (Array.isArray(data.nearRhymes) ? data.nearRhymes : []),
       );
-      entry.ipa = toNonEmptyString(firstEntry?.ipa) || undefined;
+      entry.pronunciation = toNonEmptyString(firstEntry?.pronunciation || firstEntry?.ipa) || undefined;
       entry.etymology = toNonEmptyString(firstEntry?.etymology) || undefined;
       entry.lore = data.lore ?? undefined;
       entry.pos = normalizeStringArray(entries.map((candidate) => candidate?.pos));
@@ -557,7 +557,7 @@ export function createWordLookupService(options = {}) {
         };
       }
 
-      const constrained = constrainLexicalEntry(entry, { phonemeEngine });
+      const constrained = await constrainLexicalEntry(entry, { phonemeEngine });
       return hasLexicalData(constrained) ? constrained : null;
     } catch (error) {
       log?.warn?.({ err: error, word }, '[WordLookupService] Scholomance lookup failed, falling back');
@@ -617,7 +617,7 @@ export function createWordLookupService(options = {}) {
           const phonetic = Array.isArray(primary.phonetics)
             ? primary.phonetics.find((candidate) => toNonEmptyString(candidate?.text))
             : null;
-          if (phonetic) entry.ipa = phonetic.text;
+          if (phonetic) entry.pronunciation = phonetic.text;
         }
       }
     } catch {
@@ -696,7 +696,7 @@ export function createWordLookupService(options = {}) {
     }
 
     if (!foundData) return null;
-    const constrained = constrainLexicalEntry(entry, { phonemeEngine });
+    const constrained = await constrainLexicalEntry(entry, { phonemeEngine });
     return hasLexicalData(constrained) ? constrained : null;
   }
 
@@ -706,7 +706,7 @@ export function createWordLookupService(options = {}) {
       return { word: '', data: null, source: 'none' };
     }
 
-    const manualOverride = lookupFromManualOverrides(normalizedWord);
+    const manualOverride = await lookupFromManualOverrides(normalizedWord);
     if (manualOverride) {
       return { word: normalizedWord, data: manualOverride, source: 'manual-override' };
     }

@@ -1,5 +1,5 @@
-import { ARPABET_VOWELS } from '../../../src/lib/phonology/phoneme.constants.js';
-import { normalizeVowelFamily } from '../../../src/lib/phonology/vowelFamily.js';
+import { ARPABET_VOWELS } from '../phonology/phoneme.constants.js';
+import { normalizeVowelFamily } from '../phonology/vowelFamily.js';
 
 const STRESS_DIGIT_REGEX = /([0-2])/;
 

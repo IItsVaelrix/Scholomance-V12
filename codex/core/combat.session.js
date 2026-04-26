@@ -55,7 +55,7 @@ function normalizeStatusEffect(statusEffect) {
   };
 }
 
-function upsertStatusEffect(statusList, statusEffect) {
+export function upsertStatusEffect(statusList, statusEffect) {
   const normalizedStatus = normalizeStatusEffect(statusEffect);
   if (!normalizedStatus) {
     return Array.isArray(statusList) ? statusList : [];
@@ -85,7 +85,7 @@ function upsertStatusEffect(statusList, statusEffect) {
   return entries;
 }
 
-function tickStatusEffects(statusList) {
+export function tickStatusEffects(statusList) {
   if (!Array.isArray(statusList) || statusList.length === 0) {
     return [];
   }
@@ -98,6 +98,16 @@ function tickStatusEffects(statusList) {
       turnsRemaining: Math.max(0, statusEffect.turnsRemaining - 1),
     }))
     .filter((statusEffect) => statusEffect.turnsRemaining > 0);
+}
+
+/**
+ * Calculates the net magnitude of a status effect chain for an entity.
+ */
+export function getStatusMagnitude(entity, chainId) {
+  const effects = Array.isArray(entity?.statusEffects) ? entity.statusEffects : [];
+  return effects
+    .filter((e) => e.chainId === chainId)
+    .reduce((sum, e) => sum + (Number(e.magnitude) || 0), 0);
 }
 
 export function buildSpellHistoryEntry({ text, scoreData, damage, healing, turnNumber }) {

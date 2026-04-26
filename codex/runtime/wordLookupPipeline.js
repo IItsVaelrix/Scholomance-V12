@@ -125,7 +125,7 @@ export function setupWordLookupPipeline(adapters) {
               antonyms: result.antonyms?.length ? result.antonyms : lookupResult.antonyms,
               rhymes: result.rhymes?.length ? result.rhymes : lookupResult.rhymes,
               etymology: result.etymology ?? lookupResult.etymology,
-              ipa: result.ipa ?? lookupResult.ipa,
+              pronunciation: result.pronunciation ?? lookupResult.pronunciation,
             });
             sourceAdapter += `+${adapter.constructor.name}`;
           }

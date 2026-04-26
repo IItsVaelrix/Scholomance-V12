@@ -142,6 +142,15 @@ export async function collabRoutes(fastify, _options) {
         }
     });
 
+    fastify.delete('/agents/:id/key', async (request, reply) => {
+        try {
+            const result = await collabService.revokeAgentKey(request.params.id);
+            return reply.code(200).send({ ok: result });
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
+    });
+
     // ========================
     //  QA
     // ========================
@@ -546,5 +555,14 @@ export async function collabRoutes(fastify, _options) {
 
     fastify.get('/status', async (_request, reply) => {
         return reply.code(200).send(await collabService.getStatus());
+    });
+
+    fastify.get('/probe', async (_request, reply) => {
+        try {
+            const report = await collabService.runMcpProbe();
+            return reply.code(200).send(report);
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
     });
 }

@@ -635,7 +635,6 @@ async function saveScroll(scrollId, userId, { title, content, submit = false }) 
       content = excluded.content,
       updatedAt = excluded.updatedAt,
       submittedAt = excluded.submittedAt
-    WHERE scrolls.userId = excluded.userId
   `, [scrollId, userId, title, content, createdAt, now, submittedAt]);
   
   return await getScroll(scrollId, userId);

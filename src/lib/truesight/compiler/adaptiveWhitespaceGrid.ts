@@ -225,7 +225,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
 /**
  * Calculate adaptive token width in pixels
  */
-export function getAdaptiveTokenWidth(
+function getAdaptiveTokenWidth(
   token: string,
   topology: AdaptiveGridTopology
 ): number {
@@ -239,7 +239,7 @@ export function getAdaptiveTokenWidth(
  * Build adaptive grid coordinates with measured widths
  * Legacy support for direct coordinate compilation
  */
-export function compileAdaptiveGrid(lines: any[], topology: AdaptiveGridTopology, _options: { mirrored?: boolean } = {}) {
+function compileAdaptiveGrid(lines: any[], topology: AdaptiveGridTopology, _options: { mirrored?: boolean } = {}) {
   const coordinates: any[] = [];
   return coordinates; 
 }

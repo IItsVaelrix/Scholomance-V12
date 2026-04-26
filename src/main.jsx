@@ -24,9 +24,11 @@ import {
 // Ambiently preload Phaser to eliminate latency when mounting visualizers
 void import("phaser").catch(() => {});
 
-// Eagerly preload all page chunks so every navigation is instant
-Object.values(PAGE_COMPONENTS).forEach(c => c.preload?.());
+// Eagerly preload all page chunks after a short delay to prioritize initial app render
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+setTimeout(() => {
+  Object.values(PAGE_COMPONENTS).forEach(c => c.preload?.());
+}, 500);
 
 const router = createBrowserRouter([
   {

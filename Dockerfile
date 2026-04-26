@@ -52,11 +52,12 @@ FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV HOST=0.0.0.0
+ENV HOST=::
 ENV PORT=8080
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite
 ENV RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology
+ENV ENABLE_TURBOQUANT=true
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules

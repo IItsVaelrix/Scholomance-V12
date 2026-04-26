@@ -71,12 +71,6 @@ verseIRMicroprocessors.register('amp.coord-symmetry', async (payload, context) =
 });
 
 // --- IDE Microprocessors (Lazy) ---
-verseIRMicroprocessors.register('ide.syncState', async (payload, context) => {
-  const { syncIdeState } = await import('./ide/stateSyncProcessor.js');
-  return syncIdeState(payload, context);
-});
-
-// --- Arbiter Microprocessors (Lazy) ---
 verseIRMicroprocessors.register('arbiter.predict', async (payload, context) => {
   const { predictNextRitualMove } = await import('./arbiter/predictProcessor.ts');
   return predictNextRitualMove(payload, context);

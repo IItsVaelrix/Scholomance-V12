@@ -4,14 +4,12 @@ import { useTheme } from "../../hooks/useTheme.jsx";
 import { useColorCodex } from "../../hooks/useColorCodex.js";
 import IntelliSense from "../../components/IntelliSense.jsx";
 import { computeAdaptiveGridTopology, buildTruesightOverlayLines } from "../../lib/truesight/compiler/adaptiveWhitespaceGrid";
-import { loadCorpusFrequencies } from "../../lib/truesight/compiler/corpusWhitespaceGrid";
-import { ViewportChannel } from "../../lib/truesight/compiler/viewportBytecode";
 import Gutter from "./Gutter.jsx";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { WORD_TOKEN_REGEX } from "../../lib/wordTokenization.js";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import { decodeBytecode } from "./bytecodeRenderer.js";
-import { buildRhymeColorRegistry, resolveTokenColor } from "../../lib/truesight/color/rhymeColorRegistry.js";
+import { resolveResonanceColor, buildResonancePalette } from "../../lib/truesight/color/rhymeColorRegistry.js";
 import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
 import { resolveSonicChroma } from "../../lib/phonology.adapter.js";
@@ -264,8 +262,17 @@ const ScrollEditor = forwardRef(({
   predictorReady = false,
   plsPhoneticFeatures = null,
   theme = null,
+  selectedSchool = "DEFAULT",
 }, ref) => {
   const { theme: activeTheme } = useTheme();
+
+  // REJUVENATION: Deterministic Resonance Palette (Law 8 + 5)
+  // Replaces the discovery-order registry with hash-based harmonic gamut colors.
+  const resonancePalette = useMemo(() => {
+    const profiles = Array.from(analyzedWordsByIdentity.values());
+    return buildResonancePalette(profiles, selectedSchool);
+  }, [analyzedWordsByIdentity, selectedSchool]);
+
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
   const [title, setTitle] = useState(initialTitle);
@@ -361,10 +368,6 @@ const ScrollEditor = forwardRef(({
       cancelAnimationFrame(frameId);
     };
   }, [updateTypography]);
-  useEffect(() => {
-    const sub = ViewportChannel.subscribe(setViewportState);
-    return sub;
-  }, []);
 
   const { overlayLines, allOverlayTokens } = useMemo(() => {
     if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
@@ -459,42 +462,14 @@ const ScrollEditor = forwardRef(({
       
       const currentTop = node.scrollTop ?? 0;
       const currentLeft = node.scrollLeft ?? 0;
-      const deltaTop = Math.abs(currentTop - nextTop);
-      const deltaLeft = Math.abs(currentLeft - nextLeft);
 
-      if (deltaTop > 1) node.scrollTop = nextTop;
-      if (deltaLeft > 1) node.scrollLeft = nextLeft;
-
-      const syncedTop = node.scrollTop ?? 0;
-      const syncedLeft = node.scrollLeft ?? 0;
-      const residualTop = Math.abs(syncedTop - nextTop);
-      const residualLeft = Math.abs(syncedLeft - nextLeft);
-      const residualDelta = Math.max(residualTop, residualLeft);
-
-      if (residualDelta > 1 && !isReadOnlyPlain && !isReadOnlyTruesight) {
-        const error = new BytecodeError(
-          ERROR_CATEGORIES.COORD,
-          ERROR_SEVERITY.WARN,
-          MODULE_IDS.COORD,
-          ERROR_CODES.COORD_OUT_OF_BOUNDS,
-          {
-            operation: 'syncScrollPosition',
-            sourceTop: nextTop,
-            sourceLeft: nextLeft,
-            targetTop: syncedTop,
-            targetLeft: syncedLeft,
-            delta: residualDelta,
-            nodeType: node.className,
-            priorTop: currentTop,
-            priorLeft: currentLeft,
-            reason: 'Peer layer remained out of sync after scroll synchronization'
-          }
-        );
-        console.warn(`[PB-GUARD] Scroll Sync Invariant Violated: ${error.bytecode}`);
-        setBytecodeArtifacts(prev => [...prev.slice(-4), error.bytecode]);
-      }
+      // V12 Adaptive Correction: the overlay layer may have a different scroll height
+      // or padding than the textarea. We must force the sync even if the peer 
+      // reports a different max scroll.
+      node.scrollTop = nextTop;
+      node.scrollLeft = nextLeft;
     }
-  }, [isReadOnlyPlain, isReadOnlyTruesight, onScrollChange]);
+  }, [onScrollChange]);
 
   const handleTextareaScroll = useCallback(() => {
     if (isReadOnlyPlain) return;
@@ -776,8 +751,55 @@ const ScrollEditor = forwardRef(({
     }, onWordActivate);
   }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology]);
 
+  const updateCompletions = useCallback(async (value, pos) => {
+    if (!isPredictive || !getCompletions || !predictorReady) {
+      setIntellisenseSuggestions([]);
+      return;
+    }
+
+    const textBefore = value.substring(0, pos);
+    const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
+    const prefix = lastWordMatch ? lastWordMatch[1] : "";
+    
+    // Only trigger if we have some text or are at a word boundary
+    if (prefix.length === 0 && !textBefore.endsWith(' ')) {
+      setIntellisenseSuggestions([]);
+      return;
+    }
+
+    const lines = textBefore.split("\n");
+    const lineIndex = lines.length - 1;
+    const currentLineText = lines[lineIndex] || "";
+    
+    // Build context for PLS
+    const context = {
+      text: value,
+      cursorOffset: pos,
+      lineIndex,
+      currentLineText,
+      prefix,
+    };
+
+    // Use syntax layer for HHM context
+    const tokenAtCursor = resolveWordTokenAtOffset(pos, syntaxLayer, value);
+    const options = {
+      syntaxContext: tokenAtCursor || null,
+      maxResults: 8,
+    };
+
+    const suggestions = await getCompletions(context, options);
+    setIntellisenseSuggestions(suggestions || []);
+    setIntellisenseIndex(0);
+
+    // Update cursor coordinates for positioning IntelliSense
+    const coords = getCursorCoordsFromTextarea(textareaRef.current, mirrored, adaptiveTopology);
+    setCursorCoords(coords);
+  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, mirrored, adaptiveTopology]);
+
   const handleContentChange = useCallback((event) => {
     const nextValue = event.target.value;
+    const pos = event.target.selectionStart;
+
     if (nextValue.length > MAX_CONTENT_LENGTH) {
       const truncated = nextValue.slice(0, MAX_CONTENT_LENGTH);
       setContent(truncated);
@@ -787,13 +809,18 @@ const ScrollEditor = forwardRef(({
       }
       return;
     }
+
     setContent(nextValue);
     emitCursorChange(event.target);
     setContentForOverlay(nextValue);
+    
     if (onContentChange) {
       onContentChange(nextValue);
     }
-  }, [emitCursorChange, onContentChange]);
+
+    // Trigger completions
+    updateCompletions(nextValue, pos);
+  }, [emitCursorChange, onContentChange, updateCompletions]);
 
   return (
     <motion.div
@@ -952,13 +979,14 @@ const ScrollEditor = forwardRef(({
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
                         const explicitColor = decoded?.color || bytecode?.color || null;
-                        const rhymeColor = isRhymeSurface
-                          ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
+                        
+                        const rhymeColor = (isRhymeSurface && identityKey)
+                          ? resonancePalette.get(identityKey)
                           : null;
                         
                         const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
+                          rhymeColor
+                          || explicitColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
@@ -1059,7 +1087,7 @@ const ScrollEditor = forwardRef(({
           <textarea
             id="scroll-content"
             ref={textareaRef}
-            className={`editor-textarea ${isTruesight ? "truesight-transparent editor-textarea--underlay" : "editor-textarea--foreground"} ${!isEditable && !isTruesight ? "editor-textarea--hidden" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
+            className={`editor-textarea ${isTruesight ? "truesight-transparent editor-textarea--underlay" : "editor-textarea--foreground"} ${!isEditable && !isTruesight ? "editor-textarea--read-only" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
             style={cursorSync?.textareaStyles}
             aria-hidden={isTruesight && !isEditable && !!onWordActivate}
             tabIndex={isTruesight && !isEditable && !!onWordActivate ? -1 : undefined}
@@ -1076,8 +1104,7 @@ const ScrollEditor = forwardRef(({
             spellCheck="false"
             maxLength={MAX_CONTENT_LENGTH}
             aria-required={isEditable}
-            aria-label={`Scroll content: ${title || "Untitled"}`}
-          />
+            aria-label={`Scroll content: ${title || "Untitled"}`}          />
 
           {isTruesight && ghostData && (
             <div className="truesight-ghost-layer" aria-hidden="true">
@@ -1141,13 +1168,14 @@ const ScrollEditor = forwardRef(({
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
                         const explicitColor = decoded?.color || bytecode?.color || null;
-                        const rhymeColor = isRhymeSurface
-                          ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
+                        
+                        const rhymeColor = (isRhymeSurface && identityKey)
+                          ? resonancePalette.get(identityKey)
                           : null;
                         
                         const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
+                          rhymeColor
+                          || explicitColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))

@@ -1,6 +1,10 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { synthesizeVerse } from "../lib/truesight/compiler/VerseSynthesis.js";
 import { verseIRMicroprocessors } from "../../codex/core/microprocessors/index.js";
+import { parseBooleanEnvFlag } from "./useCODExPipeline.jsx";
+import { ScholomanceDictionaryAPI } from "../lib/scholomanceDictionary.api.js";
+
+const USE_SERVER_ANALYSIS = parseBooleanEnvFlag(import.meta.env.VITE_USE_SERVER_PANEL_ANALYSIS, true);
 
 /**
  * useVerseSynthesis — UI Bridge to the VerseSynthesis AMP
@@ -30,8 +34,37 @@ export function useVerseSynthesis(content, options = {}) {
     setIsSynthesizing(true);
     setError(null);
     try {
-      // In V12, we offload this to the VerseSynthesis Microprocessor
-      const result = await verseIRMicroprocessors.execute('nlu.synthesizeVerse', { text, options: { mode, school } });
+      let result;
+
+      if (USE_SERVER_ANALYSIS && ScholomanceDictionaryAPI.isEnabled()) {
+        const response = await ScholomanceDictionaryAPI.analyzePanels(text, { nluMode: 'generate' });
+        if (response?.data) {
+          result = response.data;
+          // Hydrate Maps which are lost during JSON serialization
+          if (result.analysis?.wordAnalyses) {
+            result.tokenByIdentity = new Map();
+            result.tokenByCharStart = new Map();
+            result.tokenByNormalizedWord = new Map();
+
+            result.analysis.wordAnalyses.forEach(profile => {
+              const identity = `${profile.lineIndex}:${profile.wordIndex}:${profile.charStart}`;
+              result.tokenByIdentity.set(identity, profile);
+              result.tokenByCharStart.set(profile.charStart, profile);
+              if (!result.tokenByNormalizedWord.has(profile.normalizedWord)) {
+                result.tokenByNormalizedWord.set(profile.normalizedWord, profile);
+              }
+            });
+          }
+          // Mapping for UI components that expect specific artifact fields
+          result.verseIR = result.analysis?.compiler;
+          result.syntaxLayer = result.analysis;
+        }
+      }
+
+      if (!result) {
+        // In V12, we offload this to the VerseSynthesis Microprocessor
+        result = await verseIRMicroprocessors.execute('nlu.synthesizeVerse', { text, options: { mode, school } });
+      }
       
       if (requestId === requestCount.current) {
         setArtifact(result);

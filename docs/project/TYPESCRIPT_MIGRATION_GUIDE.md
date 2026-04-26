@@ -517,7 +517,7 @@ export interface LexicalEntry {
   rhymes: string[];
   slantRhymes: string[];
   etymology?: string;
-  ipa?: string;
+  pronunciation?: string;
   lore?: Record<string, unknown>;
   raw?: Record<string, unknown>;
 }

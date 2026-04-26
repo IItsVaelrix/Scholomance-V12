@@ -221,6 +221,8 @@ export function buildHiddenHarkovSummary(tokens, options = {}) {
     ? Number(options.stanzaSizeBars)
     : DEFAULT_STANZA_SIZE_BARS;
 
+  const predictedHiddenStates = options?.predictedHiddenStates || new Map();
+
   const orderedTokens = Array.isArray(tokens)
     ? tokens
       .filter((token) => token && typeof token === "object")
@@ -257,9 +259,9 @@ export function buildHiddenHarkovSummary(tokens, options = {}) {
     const stanzaBar = (lineNumber % stanzaSizeBars) + 1;
     const lineWordCount = lineWordCounts.get(lineNumber) || 0;
     const tokenWeight = computeTokenWeight(token, { prevToken, nextToken, lineWordCount });
-    const hiddenState = inferHiddenState(token, { prevToken, nextToken });
-    const stageScores = buildStageScores(token, tokenWeight, stageWeights);
     const tokenIdentity = keyFromToken(token);
+    const hiddenState = predictedHiddenStates.get(tokenIdentity) || inferHiddenState(token, { prevToken, nextToken });
+    const stageScores = buildStageScores(token, tokenWeight, stageWeights);
 
     const tokenState = {
       model: "hidden_harkov_model",

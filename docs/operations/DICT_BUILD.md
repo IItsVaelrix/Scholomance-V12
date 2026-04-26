@@ -69,8 +69,9 @@ For production, use Fastify `/api/lexicon/*` routes and set:
 
 ### Lookup by headword (exact)
 ```sql
-SELECT headword, pos, ipa, senses_json
-FROM entry
+SELECT headword, pos, pronunciation, senses_json
+FROM entry;
+
 WHERE headword_lower = lower('time');
 ```
 

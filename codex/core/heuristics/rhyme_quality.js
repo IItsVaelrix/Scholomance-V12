@@ -8,7 +8,7 @@
  * @returns {import('../schemas').ScoreTrace}
  */
 
-import { DeepRhymeEngine } from '../../../src/lib/deepRhyme.engine.js';
+import { DeepRhymeEngine } from '../rhyme-astrology/deepRhyme.engine.js';
 
 const rhymeEngine = new DeepRhymeEngine();
 

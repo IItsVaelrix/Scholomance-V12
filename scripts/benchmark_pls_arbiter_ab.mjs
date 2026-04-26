@@ -5,7 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { pathToFileURL } from 'node:url';
 
 import { TriePredictor } from '../codex/core/trie.js';
-import { PhonemeEngine } from '../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../codex/core/phonology/phoneme.engine.js';
 import { RhymeIndex } from '../src/lib/pls/rhymeIndex.js';
 import { rhymeProvider } from '../src/lib/pls/providers/rhymeProvider.js';
 import { prefixProvider } from '../src/lib/pls/providers/prefixProvider.js';

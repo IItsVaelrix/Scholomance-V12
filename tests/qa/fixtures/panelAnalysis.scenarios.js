@@ -293,9 +293,9 @@ export const RHYME_ANALYSIS_SCENARIOS = {
   assonance: {
     text: "cat\nmap",
     wordAnalyses: [CAT, MAP],
-    connections: [createConnection(CAT, MAP, { type: "assonance", score: 0.6, syllablesMatched: 1 })],
-    rhymeGroups: [["A", [0, 1]]],
-    schemePattern: "AA",
+    connections: [],
+    rhymeGroups: [],
+    schemePattern: "AB",
   },
   schemeABAB: {
     text: "cat\ndog\nhat\nlog",

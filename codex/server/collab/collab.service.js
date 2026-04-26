@@ -1,6 +1,8 @@
 import crypto from 'crypto';
 import { collabPersistence } from './collab.persistence.js';
 import { cleanAgentSession, runAgentQaScan } from './collab.agent-qa.js';
+import { revokeAgentKey as revokeAuthKey } from './collab.agent-auth.js';
+import { runCollabMcpProbe } from './mcp-probe.js';
 import {
     PIPELINE_DEFINITIONS,
     getRoleForPath,
@@ -580,6 +582,14 @@ export const collabService = {
 
     async runAgentQaScan({ autoResolve = true } = {}) {
         return await runAgentQaScan({ autoResolve });
+    },
+
+    async revokeAgentKey(keyId) {
+        return revokeAuthKey(keyId);
+    },
+
+    async runMcpProbe() {
+        return await runCollabMcpProbe();
     },
 
     async listTasks({ status, agent, priority, limit, offset } = {}) {

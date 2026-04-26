@@ -12,7 +12,7 @@ import { WORD_TOKEN_REGEX } from '../../lib/wordTokenization.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../../data/schools.js';
 import { normalizeVowelFamily } from '../../lib/phonology/vowelFamily.js';
 import { decodeBytecode } from '../Read/bytecodeRenderer.js';
-import { resolveTokenColor, buildRhymeColorRegistry } from '../../lib/truesight/color/rhymeColorRegistry.js';
+import { resolveResonanceColor, buildResonancePalette } from '../../lib/truesight/color/rhymeColorRegistry.js';
 import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
 
 /**
@@ -137,8 +137,9 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
                 const normalized = part.trim().toUpperCase();
                 const token = deepAnalysis?.tokenByNormalizedWord?.get(normalized);
                 const wordVowelFamily = token?.vowelFamily;
-                const schoolId = wordVowelFamily ? VOWEL_FAMILY_TO_SCHOOL[wordVowelFamily] : null;
-                const color = schoolId ? adaptivePalette[wordVowelFamily] : 'inherit';
+                const rhymeKey = token?.rhymeKey || null;
+                const pcaColor = wordVowelFamily ? adaptivePalette[wordVowelFamily] : 'inherit';
+                const color = rhymeKey ? resolveResonanceColor(rhymeKey, school, pcaColor) : pcaColor;
                 return (
                   <span key={i} className="scribe-truesight-word" style={{ color: color === 'inherit' ? undefined : color }}>
                     {part}

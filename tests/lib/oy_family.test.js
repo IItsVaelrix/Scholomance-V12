@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PhonemeEngine } from '../../src/lib/phonology/phoneme.engine';
+import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 
 describe('OY Vowel Family (New Core Family)', () => {
   it('should identify OY family for "oil"', () => {

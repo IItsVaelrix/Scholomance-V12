@@ -5,7 +5,7 @@ import { resolvePlsVerseIRState } from '../verseIRBridge.js';
  * Wraps existing Trie prefix prediction and bigram prediction.
  * Normalizes frequency-based scores to [0, 1].
  */
-export function prefixProvider(context, engines) {
+export async function prefixProvider(context, engines) {
   const { prefix, prevWord } = context;
   const { trie } = engines;
   if (!trie) return [];
@@ -13,7 +13,7 @@ export function prefixProvider(context, engines) {
   const ritualPredictionEngine = engines?.ritualPredictionEngine;
   if (ritualPredictionEngine && typeof ritualPredictionEngine.run === 'function') {
     const verseIRState = context?.verseIRState || resolvePlsVerseIRState(context) || null;
-    const prediction = ritualPredictionEngine.run({
+    const prediction = await ritualPredictionEngine.run({
       prefix,
       prevWord,
       prevLineEndWord: context?.prevLineEndWord || null,

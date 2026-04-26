@@ -261,6 +261,23 @@ const COLLAB_MIGRATIONS = [
             `);
         },
     },
+    {
+        version: 13,
+        name: 'create_codebase_embeddings',
+        up(database) {
+            database.exec(`
+                CREATE TABLE IF NOT EXISTS codebase_embeddings (
+                    id TEXT PRIMARY KEY,
+                    file_path TEXT NOT NULL,
+                    chunk_index INTEGER NOT NULL,
+                    content_preview TEXT,
+                    vector_tq BLOB NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_codebase_file ON codebase_embeddings(file_path);
+            `);
+        },
+    },
 ];
 
 let db; // The wrapper
@@ -1121,6 +1138,29 @@ async function listLedger(status) {
     }));
 }
 
+// --- Codebase Search ---
+
+async function indexCodebaseEntries(entries) {
+    const statements = entries.map(entry => ({
+        sql: `INSERT INTO codebase_embeddings (id, file_path, chunk_index, content_preview, vector_tq)
+              VALUES (?, ?, ?, ?, ?)
+              ON CONFLICT(id) DO UPDATE SET
+                  content_preview = excluded.content_preview,
+                  vector_tq = excluded.vector_tq`,
+        args: [entry.id, entry.file_path, entry.chunk_index, entry.content_preview, entry.vector_tq]
+    }));
+    await db.batch(statements);
+}
+
+async function getAllCodebaseEmbeddings() {
+    const result = await db.execute('SELECT * FROM codebase_embeddings');
+    return result.rows;
+}
+
+async function clearCodebaseIndex() {
+    await db.execute('DELETE FROM codebase_embeddings');
+}
+
 // --- System ---
 
 async function updateLockMcp(file_path, agent_id, { active, stream }) {
@@ -1173,6 +1213,7 @@ const PERSISTENCE_CONTRACT = [
     'ledger.getById', 'ledger.ingest', 'ledger.updateStatus', 'ledger.list',
     'locks.acquire', 'locks.release', 'locks.releaseForAgent',
     'locks.releaseForTask', 'locks.check', 'locks.getAll', 'locks.updateMcp',
+    'codebase.index', 'codebase.getAll', 'codebase.clear',
     'close', 'getStatus',
 ];
 
@@ -1260,6 +1301,11 @@ const collabPersistence = {
         check: checkLock,
         getAll: getAllLocks,
         updateMcp: updateLockMcp,
+    },
+    codebase: {
+        index: indexCodebaseEntries,
+        getAll: getAllCodebaseEmbeddings,
+        clear: clearCodebaseIndex,
     },
     close: closeDatabase,
     getStatus,

@@ -1,11 +1,9 @@
-import { normalizeVowelFamily } from '../../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../phonology/vowelFamily.js';
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../../../src/data/schools.js';
+import { PhonemeEngine } from '../phonology/phoneme.engine.js';
 import { clamp01, createBytecodeString, roundTo } from './shared.js';
 import { extractVisualParameters } from '../semantic/visual-extractor.js';
 import { getDominantMaterial, getDominantTexture } from '../semantic/phonetic-materials.js';
-
-const RARE_PHONEMES = new Set(['TH', 'DH', 'ZH', 'NG', 'OY']);
-const INEXPLICABLE_PHONEMES = new Set(['ZH', 'OY']);
 
 /**
  * LAYER 1 → LAYER 2 BRIDGE
@@ -88,13 +86,9 @@ export function mapVowelFamilyToSchoolId(vowelFamily) {
   return VOWEL_FAMILY_TO_SCHOOL[family] || 'VOID';
 }
 
-export function calculateRarityFromPhonemes(phonemes = []) {
-  const rareCount = countMatchingPhonemes(phonemes, RARE_PHONEMES);
-  const inexplicableCount = countMatchingPhonemes(phonemes, INEXPLICABLE_PHONEMES);
-
-  if (inexplicableCount >= 1 || rareCount >= 2) return 'INEXPLICABLE';
-  if (rareCount >= 1) return 'RARE';
-  return 'COMMON';
+export function calculateRarityFromPhonemes(phonemes = [], word = '') {
+  // Use the mathematical model from PhonemeEngine
+  return PhonemeEngine.calculateRarity(word, phonemes);
 }
 
 export function determineEffectFromToken(token, verseIR) {
@@ -103,7 +97,8 @@ export function determineEffectFromToken(token, verseIR) {
   }
 
   const signal = buildTokenSignal(token, verseIR);
-  const rarity = calculateRarityFromPhonemes(token?.phonemes);
+  // Prefer the pre-calculated rarity from the token object (VerseIR)
+  const rarity = token.rarity || calculateRarityFromPhonemes(token?.phonemes, token?.normalized);
 
   if ((rarity === 'INEXPLICABLE' || signal.anchorWeight >= 0.68) && signal.syllableCount >= 3) {
     return 'TRANSCENDENT';

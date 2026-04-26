@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
+import { PhonemeEngine } from "../codex/core/phonology/phoneme.engine.js";
 
 const DICTIONARY_LIMIT = 20000;
 const SEQUENCE_LIMIT = 50000;
@@ -48,9 +49,12 @@ function sortByFrequencyDescThenLexAsc(a, b) {
   return String(a[0]).localeCompare(String(b[0]));
 }
 
-function buildPayload(frequencyMap, sequenceMap) {
-  const dictionary = [...frequencyMap.entries()]
-    .sort(sortByFrequencyDescThenLexAsc)
+async function buildPayload(frequencyMap, sequenceMap) {
+  console.log("[corpus] building dictionary and phoneme statistics...");
+  const dictionaryEntries = [...frequencyMap.entries()]
+    .sort(sortByFrequencyDescThenLexAsc);
+    
+  const dictionary = dictionaryEntries
     .slice(0, DICTIONARY_LIMIT)
     .map(([word]) => word);
 
@@ -61,18 +65,48 @@ function buildPayload(frequencyMap, sequenceMap) {
       return { prev, next, count };
     })
     .filter((entry) => dictionarySet.has(entry.prev) && dictionarySet.has(entry.next))
-    .sort((a, b) => (
-      b.count - a.count ||
-      a.prev.localeCompare(b.prev) ||
-      a.next.localeCompare(b.next)
-    ))
-    .slice(0, SEQUENCE_LIMIT)
-    .map(({ prev, next, count }) => [prev, next, count]);
+    .sort((a, b) => b.count - a.count)
+    .slice(0, SEQUENCE_LIMIT);
+
+  // Compact bigram map: { prev: { next: count } }
+  const bigrams = {};
+  for (const { prev, next, count } of sequences) {
+    if (!bigrams[prev]) bigrams[prev] = {};
+    bigrams[prev][next] = count;
+  }
+
+  // Phoneme Frequency Calculation
+  console.log("[corpus] initializing PhonemeEngine for statistical analysis...");
+  await PhonemeEngine.init();
+  
+  const phonemeFrequency = new Map();
+  let totalPhonemes = 0;
+  
+  // We analyze the top 10k words for phoneme statistics (representative sample)
+  const sampleSize = Math.min(10000, dictionaryEntries.length);
+  for (let i = 0; i < sampleSize; i++) {
+    const [word, weight] = dictionaryEntries[i];
+    const phonetics = PhonemeEngine.analyzeWord(word);
+    if (phonetics?.phonemes) {
+      for (const p of phonetics.phonemes) {
+        const base = p.replace(/[0-9]/g, "");
+        // Multiply by weight to reflect actual usage in literature
+        mergeCount(phonemeFrequency, base, weight);
+        totalPhonemes += weight;
+      }
+    }
+  }
+  
+  const phonemes = Object.fromEntries(
+    [...phonemeFrequency.entries()].map(([p, count]) => [p, count / totalPhonemes])
+  );
 
   return {
-    version: 2,
+    version: 3,
     dictionary,
-    sequences,
+    bigrams,
+    phonemes,
+    totalTokens: [...frequencyMap.values()].reduce((a, b) => a + b, 0),
   };
 }
 
@@ -123,7 +157,7 @@ async function run() {
     }
   }
 
-  const payload = buildPayload(frequencyMap, sequenceMap);
+  const payload = await buildPayload(frequencyMap, sequenceMap);
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true });
   fs.writeFileSync(outputPath, JSON.stringify(payload));
@@ -131,7 +165,7 @@ async function run() {
   console.log(`[corpus] processed ${sentenceCount} text units`);
   console.log(
     `[corpus] wrote v${payload.version} payload with ` +
-    `${payload.dictionary.length} words and ${payload.sequences.length} weighted sequences to ${outputPath}`
+    `${payload.dictionary.length} words and ${Object.keys(payload.bigrams).length} bigram entries to ${outputPath}`
   );
 }
 
@@ -139,3 +173,4 @@ run().catch((error) => {
   console.error("[corpus] failed:", error);
   process.exitCode = 1;
 });
+

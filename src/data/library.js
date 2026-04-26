@@ -52,17 +52,17 @@ export const LINKS = [
 ];
 
 // Dynamically generate COLORS from SCHOOLS source of truth
-export const COLORS = Object.keys(SCHOOLS).reduce((acc, schoolId) => {
+const COLORS = Object.keys(SCHOOLS).reduce((acc, schoolId) => {
   acc[schoolId] = generateSchoolColor(schoolId);
   return acc;
 }, {});
 
 // Dynamically generate ANGLES from SCHOOLS source of truth
-export const SCHOOL_ANGLES = Object.values(SCHOOLS).reduce((acc, school) => {
+const SCHOOL_ANGLES = Object.values(SCHOOLS).reduce((acc, school) => {
   acc[school.id] = school.angle;
   return acc;
 }, {});
 
-export function schoolToBadgeClass(school) {
+function schoolToBadgeClass(school) {
   return `badge--${String(school || "").toLowerCase()}`;
 }

@@ -813,7 +813,7 @@ export default function SearchPanel({
                     <CapabilityTruth
                       word={headerWord}
                       partOfSpeech={partOfSpeech}
-                      ipa={activeEntry?.ipa || ''}
+                      pronunciation={activeEntry?.pronunciation || ''}
                       echoKey={scrollContext?.core?.rhymeKey || ''}
                       schoolTheme={schoolTheme}
                     />

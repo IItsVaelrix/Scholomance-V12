@@ -383,7 +383,7 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   });
 }
 
-export function buildVerseIrPalette(schoolId = 'DEFAULT') {
+function buildVerseIrPalette(schoolId = 'DEFAULT') {
   const palette = {};
   VERSE_IR_PALETTE_FAMILIES.forEach((family) => {
     palette[family] = resolveVerseIrColor(family, schoolId).hex;
@@ -391,10 +391,10 @@ export function buildVerseIrPalette(schoolId = 'DEFAULT') {
   return Object.freeze(palette);
 }
 
-export function getVerseIrColorProjection(family) {
+function getVerseIrColorProjection(family) {
   const resolvedFamily = resolveProjectionFamily(family);
   if (!resolvedFamily) return null;
   return getPCABasis().projections[resolvedFamily] || null;
 }
 
-export const VERSE_IR_PCA_CHROMA_BASIS = getPCABasis();
+const VERSE_IR_PCA_CHROMA_BASIS = getPCABasis();

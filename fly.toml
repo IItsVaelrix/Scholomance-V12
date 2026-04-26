@@ -6,13 +6,14 @@ primary_region = "ord"
 
 [env]
   NODE_ENV = "production"
-  HOST = "0.0.0.0"
+  HOST = "::"
   PORT = "8080"
   TRUST_PROXY = "true"
   ENABLE_COLLAB_API = "true"
   SCHOLOMANCE_DICT_PATH = "/app/data/scholomance_dict.sqlite"
   SCHOLOMANCE_CORPUS_PATH = "/app/data/scholomance_corpus.sqlite"
   RHYME_ASTROLOGY_OUTPUT_DIR = "/app/data/rhyme-astrology"
+  ENABLE_TURBOQUANT = "true"
 
 [http_service]
   internal_port = 8080

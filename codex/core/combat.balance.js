@@ -1,3 +1,5 @@
+import { ABYSS_MIN_MULTIPLIER, ABYSS_MAX_MULTIPLIER } from './lexicon.abyss.js';
+
 export const COMBAT_SCHOOLS = Object.freeze(['SONIC', 'PSYCHIC', 'VOID', 'ALCHEMY', 'WILL']);
 export const COMBAT_ARENA_SCHOOL = 'SONIC';
 export const MIN_COMBAT_DAMAGE = 5;
@@ -8,7 +10,7 @@ const STRONG_MULTIPLIER = 1.25;
 const WEAK_MULTIPLIER = 0.82;
 const NEUTRAL_MULTIPLIER = 1;
 
-export const SCHOOL_EFFECTIVENESS = Object.freeze({
+const SCHOOL_EFFECTIVENESS = Object.freeze({
   SONIC: Object.freeze({
     SONIC: NEUTRAL_MULTIPLIER,
     PSYCHIC: STRONG_MULTIPLIER,
@@ -97,7 +99,7 @@ export const COMBAT_RARITY_TIERS = Object.freeze([
   }),
 ]);
 
-export const STATUS_TIER_DEFINITIONS = Object.freeze([
+const STATUS_TIER_DEFINITIONS = Object.freeze([
   Object.freeze({ tier: 1, turns: 1, magnitude: 0.05 }),
   Object.freeze({ tier: 2, turns: 2, magnitude: 0.10 }),
   Object.freeze({ tier: 3, turns: 3, magnitude: 0.15 }),
@@ -143,7 +145,9 @@ export function getCounterSchool(targetSchool, fallbackSchool = 'VOID') {
 }
 
 export function getCombatRarityByScore(score) {
-  const normalizedScore = clamp01(score);
+  // Apply Abyssal Gate: extreme results are compressed unless fresh
+  const gatedScore = clampNumber(score, ABYSS_MIN_MULTIPLIER, ABYSS_MAX_MULTIPLIER);
+  const normalizedScore = clamp01(gatedScore);
   let selected = COMBAT_RARITY_TIERS[0];
 
   for (const definition of COMBAT_RARITY_TIERS) {
@@ -215,7 +219,7 @@ function getTraceRawScore(scoreData, heuristic) {
   return Number.isFinite(contribution) ? clamp01(contribution / 20) : 0;
 }
 
-export function computeCombatManaRegen(scoreData, options = {}) {
+function computeCombatManaRegen(scoreData, options = {}) {
   const baseRegen = Number(options.baseRegen) || BASE_MP_REGEN;
   const sonicDensity = clamp01(scoreData?.schoolDensity?.SONIC ?? 0);
   const isSonicSpell = scoreData?.school === 'SONIC' || sonicDensity >= 0.34;
@@ -251,7 +255,7 @@ export function computeVerseEfficiency(totalDamage, turnsTaken) {
   return damage / turns;
 }
 
-export function computeCombatXpAward({
+function computeCombatXpAward({
   victory = true,
   totalPlayerDamage = 0,
   totalPlayerHealing = 0,

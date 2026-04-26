@@ -44,6 +44,7 @@ function mapLexiconNode(row) {
     endingSignature: String(row.ending_signature || ''),
     onsetSignature: String(row.onset_signature || ''),
     frequencyScore: Number(row.frequency_score) || 0,
+    embeddings_tq: row.embeddings_tq || null,
     signature: {
       phonemes,
       vowelSkeleton,
@@ -117,7 +118,8 @@ export function createRhymeAstrologyLexiconRepo(dbPath, options = {}) {
       consonant_skeleton_json,
       ending_signature,
       onset_signature,
-      frequency_score
+      frequency_score,
+      embeddings_tq
     FROM lexicon_node
     WHERE normalized = ?
     LIMIT 1
@@ -135,7 +137,8 @@ export function createRhymeAstrologyLexiconRepo(dbPath, options = {}) {
       consonant_skeleton_json,
       ending_signature,
       onset_signature,
-      frequency_score
+      frequency_score,
+      embeddings_tq
     FROM lexicon_node
     WHERE id = ?
     LIMIT 1
@@ -177,7 +180,8 @@ export function createRhymeAstrologyLexiconRepo(dbPath, options = {}) {
           consonant_skeleton_json,
           ending_signature,
           onset_signature,
-          frequency_score
+          frequency_score,
+          embeddings_tq
         FROM lexicon_node
         WHERE normalized IN (${placeholders})
       `);

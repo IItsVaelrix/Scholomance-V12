@@ -74,6 +74,8 @@ All entries follow this structure:
 | `SCHOL-ENC-BYKE-SEARCH-001` | 2026-04-02 | Whitespace Alignment Bug | `IDE.css`, `ScrollEditor.jsx`, `corpusWhitespaceGrid.ts` |
 | `SCHOL-ENC-BYKE-SEARCH-002` | 2026-04-02 | Font Audit Oracle Architecture (PDR) | `pixelbrain_font_audit_bytecode_pdr.md` |
 | `SCHOL-ENC-BYKE-SEARCH-003` | 2026-04-02 | Sovereign Editor Principle (Foundational) | `SHARED_PREAMBLE.md` |
+| `SCHOL-ENC-BYKE-SEARCH-TURBOQUANT-ASCENSION` | 2026-04-26 | TurboQuant Vector Bridge | `ritual-prediction/run.js`, `turboqa.js`, `verify_turboqa.js` |
+| `SCHOL-ENC-BYKE-SEARCH-DISCONNECTED-LOGIC-FIX-PLAN` | 2026-04-26 | Disconnected Logic Bug-Fix Plan (5 tiers, P0–P5) | PLAN — see entry for full target list |
 
 ---
 

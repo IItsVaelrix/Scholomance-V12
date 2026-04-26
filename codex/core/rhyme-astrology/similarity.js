@@ -1,4 +1,4 @@
-import { normalizeVowelFamily } from '../../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../phonology/vowelFamily.js';
 import { buildPhoneticSignature, stripStress } from './signatures.js';
 import { calculateWeightedRhymeScore, clampUnitInterval } from './scoring.js';
 

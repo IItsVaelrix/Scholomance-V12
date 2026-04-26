@@ -1,0 +1,137 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Animation Preset Determinism > ensures all registered presets have stable, deterministic defaults 1`] = `
+[
+  {
+    "defaults": {
+      "durationMs": 3000,
+      "easing": "ease-in-out",
+      "glow": 0.2,
+      "loop": true,
+      "opacity": 1,
+      "scale": 1.02,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "orb-idle",
+  },
+  {
+    "defaults": {
+      "durationMs": 2500,
+      "easing": "ease-in-out",
+      "glow": 0.15,
+      "loop": true,
+      "opacity": 1,
+      "scale": 1.03,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "glyph-breathe",
+  },
+  {
+    "defaults": {
+      "durationMs": 450,
+      "easing": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "opacity": 0,
+      "scale": 0.98,
+      "translateX": -30,
+      "translateY": 0,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": false,
+    },
+    "name": "ritual-panel-enter",
+  },
+  {
+    "defaults": {
+      "durationMs": 200,
+      "easing": "ease-out",
+      "glow": 0.4,
+      "opacity": 1,
+      "scale": 1.04,
+      "translateY": -4,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "hover-resonance",
+  },
+  {
+    "defaults": {
+      "durationMs": 800,
+      "easing": "ease-in-out",
+      "glow": 0.5,
+      "loop": true,
+      "opacity": 1,
+      "scale": 1.05,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "transmission-pulse",
+  },
+  {
+    "defaults": {
+      "durationMs": 300,
+      "easing": "ease-out",
+      "glow": 0.6,
+      "opacity": 1,
+      "scale": 1.02,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "truesight-highlight",
+  },
+  {
+    "defaults": {
+      "durationMs": 600,
+      "easing": "cubic-bezier(0.43, 0.13, 0.23, 0.96)",
+      "opacity": 0,
+      "rotateDeg": 5,
+      "scale": 1.1,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": false,
+    },
+    "name": "station-select",
+  },
+  {
+    "defaults": {
+      "durationMs": 500,
+      "easing": "cubic-bezier(0.34, 1.56, 0.64, 1)",
+      "glow": 0.3,
+      "opacity": 0,
+      "scale": 0.9,
+      "translateY": 20,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": false,
+    },
+    "name": "modal-summon",
+  },
+  {
+    "defaults": {
+      "durationMs": 400,
+      "easing": "ease-out",
+      "glow": 0.4,
+      "opacity": 0,
+    },
+    "flags": {
+      "gpuAccelerated": true,
+      "interruptible": true,
+    },
+    "name": "console-awaken",
+  },
+]
+`;

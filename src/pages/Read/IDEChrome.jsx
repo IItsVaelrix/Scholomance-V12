@@ -176,7 +176,7 @@ export function TopBar({
 
 // ─── StatusBar ────────────────────────────────────────────────────────────────
 
-export function StatusBar({ line, col, language, syllableCount, analysisError }) {
+export function StatusBar({ line, col, language, syllableCount, analysisError, serverAnalysisActive }) {
   return (
     <div className="ide-statusbar">
       <div className="ide-statusbar-left">
@@ -184,6 +184,11 @@ export function StatusBar({ line, col, language, syllableCount, analysisError })
           <span className="status-ready-dot" aria-hidden="true" />
           {analysisError ? 'Analysis Offline' : 'Ready'}
         </span>
+        {serverAnalysisActive && (
+          <span className="status-item status-item--server">
+            Server Synthesis
+          </span>
+        )}
         {syllableCount !== undefined && (
           <span className="status-item syllable-status">
             Syllables: <span className="syllable-count-value">{syllableCount}</span>

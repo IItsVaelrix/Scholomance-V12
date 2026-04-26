@@ -207,7 +207,7 @@ export function setInCache(key, data, ttl = DEFAULT_TTL) {
  * Deletes an entry from the cache.
  * @param {string} key The cache key to delete.
  */
-export function deleteFromCache(key) {
+function deleteFromCache(key) {
   cache.delete(key);
   removePersistedEntry(key);
 }

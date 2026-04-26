@@ -59,11 +59,12 @@ function normalizeEntry(row) {
     id: row.id,
     headword: row.headword,
     pos: row.pos,
-    ipa: row.ipa,
+    pronunciation: row.pronunciation,
     etymology: row.etymology,
     senses,
     source: row.source,
     sourceUrl: row.source_url,
+    embeddings_tq: row.embeddings_tq,
   };
 }
 
@@ -124,13 +125,13 @@ export function createLexiconAdapter(dbPath, options = {}) {
       
       stmts = {
         lookupEntries: db.prepare(`
-          SELECT id, headword, pos, ipa, etymology, senses_json, source, source_url
+          SELECT id, headword, pos, ipa AS pronunciation, etymology, senses_json, source, source_url, embeddings_tq
           FROM entry
           WHERE headword_lower = ?
           LIMIT ?
         `),
         lookupRhymeFamily: db.prepare(`
-          SELECT rhyme_family, ipa
+          SELECT rhyme_family, ipa AS pronunciation
           FROM rhyme_index
           LEFT JOIN entry ON entry.headword_lower = rhyme_index.word_lower
           WHERE word_lower = ?
@@ -157,7 +158,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
           LIMIT ?
         `),
         searchEntries: db.prepare(`
-          SELECT e.id, e.headword, e.pos, e.ipa, e.etymology, e.senses_json, e.source, e.source_url
+          SELECT e.id, e.headword, e.pos, e.ipa AS pronunciation, e.etymology, e.senses_json, e.source, e.source_url
           FROM entry_fts f
           JOIN entry e ON e.id = f.rowid
           WHERE entry_fts MATCH ?
@@ -218,7 +219,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
     if (!statement) {
       const placeholders = normalized.map(() => '?').join(', ');
       statement = db.prepare(`
-        SELECT word_lower, rhyme_family, ipa
+        SELECT word_lower, rhyme_family, ipa AS pronunciation
         FROM rhyme_index
         LEFT JOIN entry ON entry.headword_lower = rhyme_index.word_lower
         WHERE word_lower IN (${placeholders})
@@ -231,7 +232,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
       if (!row?.word_lower || !row?.rhyme_family) continue;
       out[row.word_lower.toUpperCase()] = {
         family: row.rhyme_family,
-        phonemes: row.ipa ? row.ipa.split(' ') : null,
+        phonemes: row.pronunciation ? row.pronunciation.split(' ') : null,
       };
     }
     return out;

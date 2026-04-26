@@ -26,6 +26,7 @@ import { resolveDesignDecisions } from '../../core/grimdesign/decisionEngine.js'
 const MOD = MODULE_IDS.SHARED;
 import { CollabServiceError, collabService } from './collab.service.js';
 import { collabDiagnostic } from './collab.diagnostic.js';
+import { searchCodebase } from '../services/codebaseSearch.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -560,6 +561,10 @@ export function registerCollabMcpBridge(server, service = collabService) {
     });
 
     registerTool(server, 'collab_diagnostic_scan', {}, () => collabDiagnostic.scan());
+
+    registerTool(server, 'collab_search_codebase', {
+        query: z.string().min(1).describe('The semantic search query for the codebase'),
+    }, ({ query }) => searchCodebase(query));
 
     // ── GrimDesign ──────────────────────────────────────────────────────────────
 

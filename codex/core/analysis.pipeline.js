@@ -1,4 +1,4 @@
-import { PhonemeEngine } from "../../src/lib/phonology/phoneme.engine.js";
+import { PhonemeEngine } from './phonology/phoneme.engine.js';
 import { WORD_REGEX_GLOBAL } from "../../src/lib/wordTokenization.js";
 import { 
   computeSchoolWeights, 
@@ -93,6 +93,7 @@ export function analyzeText(text) {
       const leadingSound = getLeadingSound(phonetics, normalized);
       const isStopWord = STOP_WORDS.has(normalized);
       const isContentWord = !isStopWord && normalized.length >= 3;
+      const rarity = PhonemeEngine.calculateRarity(normalized, phonetics?.phonemes || []);
 
       /** @type {AnalyzedWord} */
       const analyzedWord = {
@@ -108,6 +109,7 @@ export function analyzeText(text) {
         leadingSound,
         isStopWord,
         isContentWord,
+        rarity,
       };
 
       analyzedLine.words.push(analyzedWord);

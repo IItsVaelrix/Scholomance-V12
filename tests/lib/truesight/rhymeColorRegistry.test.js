@@ -1,41 +1,51 @@
 import { describe, expect, it } from "vitest";
 
-import { resolveVerseIrColor } from "../../../src/lib/truesight/color/pcaChroma.js";
 import {
-  buildRhymeColorRegistry,
-  resolveTokenColor,
+  buildResonancePalette,
+  resolveResonanceColor,
 } from "../../../src/lib/truesight/color/rhymeColorRegistry.js";
 
 describe("rhymeColorRegistry", () => {
-  it("derives rhyme-family colors from terminal rhyme identity instead of full-word phonemes", () => {
-    const registry = buildRhymeColorRegistry([
-      {
-        word: "adore",
-        rhymeKey: "AO-R",
-        rhymeTailSignature: "AO-R",
-        phonemes: ["AH0", "D", "AO1", "R"],
-      },
-      {
-        word: "core",
-        rhymeKey: "AO-R",
-        rhymeTailSignature: "AO-R",
-        phonemes: ["K", "AO1", "R"],
-      },
-    ]);
+  it("generates deterministic colors for rhymeKeys within a school gamut", () => {
+    const color1 = resolveResonanceColor("AY-T", "SONIC");
+    const color2 = resolveResonanceColor("AY-T", "SONIC");
+    const color3 = resolveResonanceColor("EY-M", "SONIC");
 
-    expect(registry.get("AO-R")).toBe(resolveVerseIrColor("AO").hex);
+    expect(color1).toBe(color2);
+    expect(color1).not.toBe(color3);
+    
+    // SONIC is purple-ish (#651fff / 258°). 
+    // Gamut variance is +/- 30°.
+    // We expect the result to be a valid hex color.
+    expect(color1).toMatch(/^#[0-9a-f]{6}$/i);
   });
 
-  it("keeps the explicit token color authoritative by default", () => {
-    const registry = new Map([["AO-R", "#6ab2fb"]]);
+  it("produces different colors for the same rhymeKey in different schools", () => {
+    const sonicColor = resolveResonanceColor("AY-T", "SONIC");
+    const psychicColor = resolveResonanceColor("AY-T", "PSYCHIC");
 
-    expect(resolveTokenColor("AO-R", registry, "#ff00ff")).toBe("#ff00ff");
-    expect(resolveTokenColor("EY-M", registry, "#ff00ff")).toBe("#ff00ff");
+    expect(sonicColor).not.toBe(psychicColor);
   });
 
-  it("can still opt into registry-first resolution for legacy rhyme surfaces", () => {
-    const registry = new Map([["AO-R", "#6ab2fb"]]);
+  it("builds a bulk palette for word profiles", () => {
+    const profiles = [
+      { identity: "0:0:0", rhymeKey: "AE-T" },
+      { identity: "0:1:4", rhymeKey: "AE-T" },
+      { identity: "0:2:8", rhymeKey: "IY-P" }
+    ];
+    
+    const palette = buildResonancePalette(profiles, "WILL");
+    
+    expect(palette.size).toBe(3);
+    expect(palette.get("0:0:0")).toBe(palette.get("0:1:4"));
+    expect(palette.get("0:0:0")).not.toBe(palette.get("0:2:8"));
+  });
 
-    expect(resolveTokenColor("AO-R", registry, "#ff00ff", { preferRegistry: true })).toBe("#6ab2fb");
+  it("falls back to PCA color if rhymeKey is missing", () => {
+    const pcaColor = "#123456";
+    const profile = { identity: "0:0:0", rhymeKey: null, visualBytecode: { color: pcaColor } };
+    
+    const palette = buildResonancePalette([profile], "DEFAULT");
+    expect(palette.get("0:0:0")).toBe(pcaColor);
   });
 });

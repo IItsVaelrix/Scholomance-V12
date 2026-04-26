@@ -12,11 +12,11 @@ import { buildSyntaxLayer } from "../../syntax.layer.js";
 import { buildHiddenHarkovSummary } from "../../models/harkov.model.js";
 import { compileVerseToIR } from "./compileVerseToIR.js";
 import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
-import { buildVowelSummary, normalizeVowelFamily } from "../../phonology/vowelFamily.js";
+import { buildVowelSummary, normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../../codex/core/phonology/chroma.resolver.js";
 import { decodeBytecode } from "../../../pages/Read/bytecodeRenderer.js";
-import { buildRhymeColorRegistry, resolveTokenColor } from "../color/rhymeColorRegistry.js";
+import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColorRegistry.js";
 import { resolveVerseIrColor } from "../color/pcaChroma.js";
 
 /**
@@ -101,7 +101,7 @@ export function synthesizeVerse(text, options = {}) {
   });
 
   // 7. Authority Registry Unification
-  const rhymeColorRegistry = buildRhymeColorRegistry(Array.from(tokenByIdentity.values()));
+  const rhymeColorRegistry = buildResonancePalette(Array.from(tokenByIdentity.values()), currentSchool);
 
   return Object.freeze({
     timestamp: Date.now(),

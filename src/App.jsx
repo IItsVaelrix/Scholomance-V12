@@ -11,7 +11,6 @@ import { ScrollsProvider } from "./hooks/useScrolls.jsx";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion.js";
 import { MotionInspector } from "./ui/animation/components/MotionInspector";
 import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
-import { ViewportChannel } from "./lib/truesight/compiler/viewportBytecode";
 
 const fullMotionVariants = {
   initial: { opacity: 0, y: 20 },
@@ -55,13 +54,6 @@ export default function App() {
       main.focus({ preventScroll: true });
     }
   }, [location.pathname]);
-
-  // Root Viewport Observer — establishes the "Single Source of Truth" for PixelBrain
-  useEffect(() => {
-    if (!pageContainerRef.current) return;
-    const unsubscribe = ViewportChannel.observe(pageContainerRef.current);
-    return unsubscribe;
-  }, []);
 
   return (
     <CODExProvider>

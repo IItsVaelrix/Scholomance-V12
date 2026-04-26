@@ -2,6 +2,7 @@ import { useLayoutEffect } from 'react';
 import { motion } from 'framer-motion';
 import { VOWEL_FAMILY_TO_SCHOOL, SCHOOLS } from '../../data/schools.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import { ProceduralWordmark } from './ProceduralWordmark.jsx';
 
 const ARPABET_VOWELS = new Set([
   'AA', 'AE', 'AH', 'AO', 'AW', 'AX', 'AY',
@@ -9,14 +10,14 @@ const ARPABET_VOWELS = new Set([
   'OY', 'UH', 'UW', 'UR',
 ]);
 
-const IPA_VOWELS = /[aeiouɑæʌəɚɝɜɛɪʊɔɒɐøœy]/i;
+const PRONUNCIATION_VOWELS = /[aeiouɑæʌəɚɝɜɛɪʊɔɒɐøœy]/i;
 
-const IPA_PLOSIVES = new Set(['p', 'b', 't', 'd', 'k', 'g', 'ʔ', 'q', 'ɢ', 'ʈ', 'ɖ']);
-const IPA_FRICATIVES = new Set(['f', 'v', 'θ', 'ð', 's', 'z', 'ʃ', 'ʒ', 'h', 'ç', 'ɣ', 'x', 'ʁ', 'ħ', 'ʕ', 'ɸ', 'β', 'ʂ', 'ʐ']);
-const IPA_NASALS = new Set(['m', 'n', 'ŋ', 'ɲ', 'ɳ', 'ɴ', 'ɱ']);
-const IPA_APPROXIMANTS = new Set(['ɹ', 'r', 'l', 'w', 'j', 'ɥ', 'ʍ', 'ɻ', 'ʋ', 'ɰ', 'ʎ', 'ɭ']);
-const IPA_AFFRICATE_HEADS = new Set(['t', 'd']);
-const IPA_AFFRICATE_TAILS = new Set(['ʃ', 'ʒ', 's', 'z']);
+const PRONUNCIATION_PLOSIVES = new Set(['p', 'b', 't', 'd', 'k', 'g', 'ʔ', 'q', 'ɢ', 'ʈ', 'ɖ']);
+const PRONUNCIATION_FRICATIVES = new Set(['f', 'v', 'θ', 'ð', 's', 'z', 'ʃ', 'ʒ', 'h', 'ç', 'ɣ', 'x', 'ʁ', 'ħ', 'ʕ', 'ɸ', 'β', 'ʂ', 'ʐ']);
+const PRONUNCIATION_NASALS = new Set(['m', 'n', 'ŋ', 'ɲ', 'ɳ', 'ɴ', 'ɱ']);
+const PRONUNCIATION_APPROXIMANTS = new Set(['ɹ', 'r', 'l', 'w', 'j', 'ɥ', 'ʍ', 'ɻ', 'ʋ', 'ɰ', 'ʎ', 'ɭ']);
+const PRONUNCIATION_AFFRICATE_HEADS = new Set(['t', 'd']);
+const PRONUNCIATION_AFFRICATE_TAILS = new Set(['ʃ', 'ʒ', 's', 'z']);
 
 // Survives component remount within session — single source of "already revealed".
 // Cleared on full page reload, which matches the user's intent: animation per word, once.
@@ -37,15 +38,15 @@ function getArticulationManner(phoneme) {
   if (raw.length >= 2) {
     const head = raw[0];
     const tail = raw[1];
-    if (IPA_AFFRICATE_HEADS.has(head) && IPA_AFFRICATE_TAILS.has(tail)) return 'affricate';
+    if (PRONUNCIATION_AFFRICATE_HEADS.has(head) && PRONUNCIATION_AFFRICATE_TAILS.has(tail)) return 'affricate';
   }
 
   const probe = Array.from(raw).find((ch) => /\S/.test(ch)) || raw;
-  if (IPA_VOWELS.test(probe) || ARPABET_VOWELS.has(raw.toUpperCase())) return 'vowel';
-  if (IPA_PLOSIVES.has(probe)) return 'plosive';
-  if (IPA_FRICATIVES.has(probe)) return 'fricative';
-  if (IPA_NASALS.has(probe)) return 'nasal';
-  if (IPA_APPROXIMANTS.has(probe)) return 'approximant';
+  if (PRONUNCIATION_VOWELS.test(probe) || ARPABET_VOWELS.has(raw.toUpperCase())) return 'vowel';
+  if (PRONUNCIATION_PLOSIVES.has(probe)) return 'plosive';
+  if (PRONUNCIATION_FRICATIVES.has(probe)) return 'fricative';
+  if (PRONUNCIATION_NASALS.has(probe)) return 'nasal';
+  if (PRONUNCIATION_APPROXIMANTS.has(probe)) return 'approximant';
 
   // ARPAbet fallback for tokens like "CH", "JH", "NG"
   const arp = raw.toUpperCase();
@@ -58,8 +59,8 @@ function getArticulationManner(phoneme) {
   return 'approximant';
 }
 
-// IPA → vowel-family code aligned with VOWEL_FAMILY_TO_SCHOOL keys
-const IPA_TO_VOWEL_FAMILY = {
+// Pronunciation → vowel-family code aligned with VOWEL_FAMILY_TO_SCHOOL keys
+const PRONUNCIATION_TO_VOWEL_FAMILY = {
   a: 'A', ɑ: 'A', ʌ: 'A', ə: 'A', ɐ: 'A',
   æ: 'AE', ɛ: 'AE', e: 'AE',
   i: 'IY', ɪ: 'IY', y: 'IY', ɝ: 'IY', ɜ: 'IY', ɚ: 'IY',
@@ -72,16 +73,16 @@ function deriveWordSchool(phonemes, fallbackWord) {
   for (const phoneme of reversed) {
     const ch = String(phoneme || '').toLowerCase();
     for (const c of ch) {
-      if (IPA_TO_VOWEL_FAMILY[c]) {
-        return VOWEL_FAMILY_TO_SCHOOL[IPA_TO_VOWEL_FAMILY[c]] || 'VOID';
+      if (PRONUNCIATION_TO_VOWEL_FAMILY[c]) {
+        return VOWEL_FAMILY_TO_SCHOOL[PRONUNCIATION_TO_VOWEL_FAMILY[c]] || 'VOID';
       }
     }
   }
   // Word fallback: scan the displayed word's terminal vowel
   const word = String(fallbackWord || '').toLowerCase();
   for (let i = word.length - 1; i >= 0; i -= 1) {
-    if (IPA_TO_VOWEL_FAMILY[word[i]]) {
-      return VOWEL_FAMILY_TO_SCHOOL[IPA_TO_VOWEL_FAMILY[word[i]]] || 'VOID';
+    if (PRONUNCIATION_TO_VOWEL_FAMILY[word[i]]) {
+      return VOWEL_FAMILY_TO_SCHOOL[PRONUNCIATION_TO_VOWEL_FAMILY[word[i]]] || 'VOID';
     }
   }
   return 'VOID';
@@ -131,8 +132,8 @@ function normalizePhonemeToken(token) {
   return String(token || '').replace(/[0-9ˈˌ]/g, '').trim();
 }
 
-function splitPhonemes(ipa, fallbackWord) {
-  const source = String(ipa || '')
+function splitPhonemes(pronunciation, fallbackWord) {
+  const source = String(pronunciation || '')
     .replace(/[()[\]{}]/g, '')
     .replace(/\//g, '')
     .replace(/[ˈˌ]/g, '')
@@ -175,9 +176,9 @@ function zodiacGlyph(sign) {
   return ZODIAC_GLYPHS[normalized] || '✦';
 }
 
-export function OracleWordTitle({ word, ipa, frameGlyph, prefersReducedMotion }) {
+function OracleWordTitle({ word, pronunciation, frameGlyph, prefersReducedMotion }) {
   const displayWord = String(word || 'awaiting query').trim();
-  const phonemes = splitPhonemes(ipa, displayWord);
+  const phonemes = splitPhonemes(pronunciation, displayWord);
   const wordSchool = deriveWordSchool(phonemes, displayWord);
   const schoolColor = SCHOOLS[wordSchool]?.color || null;
   const schoolGlyph = SCHOOLS[wordSchool]?.glyph || frameGlyph || '◉';
@@ -186,7 +187,6 @@ export function OracleWordTitle({ word, ipa, frameGlyph, prefersReducedMotion })
   const animate = isFirstReveal && !prefersReducedMotion;
 
   const inlineStyle = schoolColor ? { '--word-school-primary': schoolColor } : undefined;
-  const letters = Array.from(displayWord);
 
   return (
     <div
@@ -197,25 +197,19 @@ export function OracleWordTitle({ word, ipa, frameGlyph, prefersReducedMotion })
       aria-label={`Oracle resolved: ${displayWord}`}
     >
       <span className="oracle-word-title-glyph" aria-hidden="true">{schoolGlyph}</span>
-      <span className="oracle-word-title-letters">
-        {letters.map((char, index) => (
-          <span
-            key={`${char}-${index}`}
-            className="oracle-word-title-letter"
-            style={{ '--letter-index': index, '--letter-total': letters.length }}
-          >
-            {char}
-          </span>
-        ))}
-      </span>
+      <ProceduralWordmark
+        word={displayWord}
+        animateOnReveal={animate}
+        className="oracle-word-title-wordmark"
+      />
       <span className="oracle-word-title-rule" aria-hidden="true" />
     </div>
   );
 }
 
-export function ArticulationStrip({ ipa, fallbackWord, prefersReducedMotion }) {
-  const phonemes = splitPhonemes(ipa, fallbackWord);
-  const cacheKey = `ipa:${String(fallbackWord || ipa || '').toLowerCase()}`;
+function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }) {
+  const phonemes = splitPhonemes(pronunciation, fallbackWord);
+  const cacheKey = `pronunciation:${String(fallbackWord || pronunciation || '').toLowerCase()}`;
   const isFirstReveal = useFirstReveal(cacheKey);
   const animate = isFirstReveal && !prefersReducedMotion;
 
@@ -250,9 +244,9 @@ export function ArticulationStrip({ ipa, fallbackWord, prefersReducedMotion }) {
 
 // Backwards-named export for any consumer importing the old PhonemeStrip identity.
 // Behaviour is identical to ArticulationStrip; the alias prevents an import break.
-export const PhonemeStrip = ArticulationStrip;
+const PhonemeStrip = ArticulationStrip;
 
-export function CapabilityTruth({ word, partOfSpeech, ipa, echoKey, schoolTheme }) {
+export function CapabilityTruth({ word, partOfSpeech, pronunciation, echoKey, schoolTheme }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const displayWord = String(word || 'awaiting query').trim();
   const resolvedEchoKey = String(echoKey || 'pending').trim();
@@ -261,7 +255,7 @@ export function CapabilityTruth({ word, partOfSpeech, ipa, echoKey, schoolTheme 
     <div className="oracle-capability-sigil">
       <OracleWordTitle
         word={displayWord}
-        ipa={ipa}
+        pronunciation={pronunciation}
         frameGlyph={schoolTheme?.glyph}
         prefersReducedMotion={prefersReducedMotion}
       />
@@ -274,9 +268,9 @@ export function CapabilityTruth({ word, partOfSpeech, ipa, echoKey, schoolTheme 
           </span>
         </div>
         <div className="oracle-capability-row">
-          <span className="oracle-summary-key">ipa</span>
+          <span className="oracle-summary-key">pronunciation</span>
           <ArticulationStrip
-            ipa={ipa}
+            pronunciation={pronunciation}
             fallbackWord={displayWord}
             prefersReducedMotion={prefersReducedMotion}
           />
@@ -410,7 +404,7 @@ export function ResonanceMap({ scrollContext, onJumpToLine, itemMotionProps = {}
   );
 }
 
-export function WaveformIndicator({ tone }) {
+function WaveformIndicator({ tone }) {
   return (
     <svg className="oracle-waveform" viewBox="0 0 28 18" aria-hidden="true" focusable="false">
       <path d={waveformPath(tone)} />

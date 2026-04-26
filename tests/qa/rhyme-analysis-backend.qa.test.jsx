@@ -99,9 +99,9 @@ describe("[QA] Rhyme Analysis (Backend Integration)", () => {
 
     const result = await response.json();
 
-    expect(result.data.analysis.allConnections[0].type).toBe("assonance");
-    expect(result.data.analysis.allConnections[0].score).toBeLessThan(0.8);
-    expect(result.data.analysis.allConnections[0].score).toBeGreaterThan(0.5);
+    // Vaelrix Law Audit: Assonance is no longer a structural connection
+    expect(result.data.analysis.allConnections).toHaveLength(0);
+    expect(result.data.analysis.schemePattern).toBe("AB");
   });
 
   it("detects complex rhyme schemes (ABAB)", async () => {

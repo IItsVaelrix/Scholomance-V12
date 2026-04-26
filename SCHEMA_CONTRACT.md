@@ -224,7 +224,7 @@ interface LexicalEntry {
   rhymes: string[];
   slantRhymes: string[];
   etymology?: string;
-  ipa?: string;
+  pronunciation?: string;
   lore?: Record<string, unknown>;
   raw?: unknown;
 }
@@ -1158,7 +1158,7 @@ interface InspectableEntity {
     headword: string;
     definition: string | null;
     partOfSpeech: string | string[] | null;
-    ipa: string | null;
+    pronunciation: string | null;
     etymology: string | null;
     synonyms: string[];
     antonyms: string[];
