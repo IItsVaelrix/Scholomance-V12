@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import Database from 'better-sqlite3';
-import { PhonemeEngine } from '../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../codex/core/phonology/phoneme.engine.js';
 import {
   buildPhoneticSignature,
   getDominantVowelFamily,

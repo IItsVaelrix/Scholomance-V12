@@ -70,18 +70,18 @@ const RARITY_NAMES = {
 };
 
 const WordTooltip = ({
-  wordData,
-  analysis,
-  isLoading,
-  error,
+  wordData = null,
+  analysis = null,
+  isLoading = false,
+  error = null,
   x,
   y,
   onDrag,
   onClose,
-  onSuggestionClick,
-  sessionHistory,
-  sessionIndex,
-  onSessionNavigate,
+  onSuggestionClick = () => {},
+  sessionHistory = [],
+  sessionIndex = -1,
+  onSessionNavigate = () => {},
 }) => {
   const { theme } = useTheme();
   const vowelPalette  = getVowelColorsForSchool("DEFAULT", theme);
@@ -358,7 +358,7 @@ const WordTooltip = ({
     const rhymes      = Array.isArray(wordData?.rhymes)       ? wordData.rhymes       : [];
     const slantRhymes = Array.isArray(wordData?.slantRhymes)  ? wordData.slantRhymes  : [];
     const rhymeKey    = wordData?.rhymeKey || localCore?.rhymeKey || null;
-    const ipa         = typeof wordData?.ipa === "string" ? wordData.ipa : null;
+    const pronunciation = typeof wordData?.pronunciation === "string" ? wordData.pronunciation : null;
     const partOfSpeech = definition?.partOfSpeech;
 
     const allDefs = definitions.length > 0
@@ -427,8 +427,8 @@ const WordTooltip = ({
                 >
                   <div className="card-inscription-ornament" aria-hidden="true" />
                   <h3 id={titleId} className="card-word-name">{word}</h3>
-                  {ipa && (
-                    <span className="card-ipa" aria-label={`Pronunciation: ${ipa}`}>{ipa}</span>
+                  {pronunciation && (
+                    <span className="card-pronunciation" aria-label={`Pronunciation: ${pronunciation}`}>{pronunciation}</span>
                   )}
                   <div className="card-inscription-ornament" aria-hidden="true" />
                 </header>
@@ -719,7 +719,7 @@ WordTooltip.propTypes = {
     slantRhymes: PropTypes.arrayOf(PropTypes.string),
     rhymeKey: PropTypes.string,
     syllableCount: PropTypes.number,
-    ipa: PropTypes.string,
+    pronunciation: PropTypes.string,
   }),
   analysis: PropTypes.shape({
     core: PropTypes.shape({
@@ -772,17 +772,6 @@ WordTooltip.propTypes = {
   ),
   sessionIndex: PropTypes.number,
   onSessionNavigate: PropTypes.func,
-};
-
-WordTooltip.defaultProps = {
-  wordData: null,
-  analysis: null,
-  isLoading: false,
-  error: null,
-  onSuggestionClick: () => {},
-  sessionHistory: [],
-  sessionIndex: -1,
-  onSessionNavigate: () => {},
 };
 
 export default WordTooltip;

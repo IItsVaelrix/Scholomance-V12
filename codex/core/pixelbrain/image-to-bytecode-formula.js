@@ -45,13 +45,56 @@ export const COLOR_FORMULA_TYPES = Object.freeze({
   BRIGHTNESS_QUANTIZED: 'brightness_quantized',
 });
 
+function createFormulaInputError(reason, context = {}) {
+  return new BytecodeError(
+    ERROR_CATEGORIES.FORMULA,
+    ERROR_SEVERITY.CRIT,
+    MODULE_IDS.IMG_FORMULA,
+    ERROR_CODES.FORMULA_INVALID_SYNTAX,
+    { reason, ...context }
+  );
+}
+
+function normalizeImageAnalysis(imageAnalysis) {
+  if (!imageAnalysis || typeof imageAnalysis !== 'object') {
+    throw createFormulaInputError('imageAnalysis must be an object');
+  }
+
+  const dimensions = imageAnalysis.dimensions || {};
+  const width = Number(dimensions.width);
+  const height = Number(dimensions.height);
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+    throw createFormulaInputError('imageAnalysis.dimensions must contain positive width and height', { dimensions });
+  }
+
+  const { pixelData } = imageAnalysis;
+  if (!pixelData || typeof pixelData.length !== 'number') {
+    throw createFormulaInputError('imageAnalysis.pixelData must be an array-like RGBA buffer');
+  }
+
+  const expectedByteLength = width * height * 4;
+  if (pixelData.length < expectedByteLength) {
+    throw createFormulaInputError('imageAnalysis.pixelData is shorter than dimensions require', {
+      expectedByteLength,
+      actualByteLength: pixelData.length,
+    });
+  }
+
+  return {
+    pixelData,
+    dimensions: { width, height },
+    colors: Array.isArray(imageAnalysis.colors) ? imageAnalysis.colors : [],
+    composition: imageAnalysis.composition || {},
+  };
+}
+
 /**
  * Analyze image and extract bytecode formula
  * @param {Object} imageAnalysis - Image analysis results
  * @returns {Object} Bytecode formula
  */
 export function analyzeImageToFormula(imageAnalysis) {
-  const { pixelData, dimensions, colors, composition } = imageAnalysis;
+  const { pixelData, dimensions, colors, composition } = normalizeImageAnalysis(imageAnalysis);
   const { width, height } = dimensions;
 
   // Extract edge points
@@ -119,17 +162,17 @@ export function extractEdgePoints(pixelData, width, height) {
 
       // Compute gradient magnitude
       const leftIdx = (y * width + (x - 1)) * 4;
-      const _rightIdx = (y * width + (x + 1)) * 4;
+      const rightIdx = (y * width + (x + 1)) * 4;
       const topIdx = ((y - 1) * width + x) * 4;
-      const _bottomIdx = ((y + 1) * width + x) * 4;
+      const bottomIdx = ((y + 1) * width + x) * 4;
 
-      const gx = Math.abs(pixelData[idx] - pixelData[leftIdx]) +
-                 Math.abs(pixelData[idx + 1] - pixelData[leftIdx + 1]) +
-                 Math.abs(pixelData[idx + 2] - pixelData[leftIdx + 2]);
+      const gx = Math.abs(pixelData[rightIdx] - pixelData[leftIdx]) +
+                 Math.abs(pixelData[rightIdx + 1] - pixelData[leftIdx + 1]) +
+                 Math.abs(pixelData[rightIdx + 2] - pixelData[leftIdx + 2]);
 
-      const gy = Math.abs(pixelData[idx] - pixelData[topIdx]) +
-                 Math.abs(pixelData[idx + 1] - pixelData[topIdx + 1]) +
-                 Math.abs(pixelData[idx + 2] - pixelData[topIdx + 2]);
+      const gy = Math.abs(pixelData[bottomIdx] - pixelData[topIdx]) +
+                 Math.abs(pixelData[bottomIdx + 1] - pixelData[topIdx + 1]) +
+                 Math.abs(pixelData[bottomIdx + 2] - pixelData[topIdx + 2]);
 
       const magnitude = Math.sqrt(gx * gx + gy * gy);
 
@@ -153,6 +196,7 @@ export function extractEdgePoints(pixelData, width, height) {
  * Detect dominant pattern type from edge points
  */
 function detectPatternType(edgePoints, composition) {
+  const safeComposition = composition || {};
   if (edgePoints.length === 0) {
     return FORMULA_TYPES.GRID_PROJECTION;
   }
@@ -164,7 +208,7 @@ function detectPatternType(edgePoints, composition) {
   }
 
   // Check for grid-like structure
-  if (composition.edgeDensity > 0.15 && composition.hasSymmetry) {
+  if ((Number(safeComposition.edgeDensity) || 0) > 0.15 && safeComposition.hasSymmetry) {
     return FORMULA_TYPES.GRID_PROJECTION;
   }
 
@@ -483,6 +527,7 @@ function perpendicularDistance(point, lineStart, lineEnd) {
  * Quantize colors to formula
  */
 export function quantizeColorsToFormula(colors, composition) {
+  const safeComposition = composition || {};
   if (!colors || colors.length === 0) {
     return {
       type: COLOR_FORMULA_TYPES.BRIGHTNESS_QUANTIZED,
@@ -502,7 +547,7 @@ export function quantizeColorsToFormula(colors, composition) {
       paletteSize: colorCount,
       ditherPattern: 'none',
     };
-  } else if (composition.contrastNormalized > 0.6) {
+  } else if ((Number(safeComposition.contrastNormalized) || 0) > 0.6) {
     // High contrast = gradient mapped
     return {
       type: COLOR_FORMULA_TYPES.GRADIENT_MAPPED,

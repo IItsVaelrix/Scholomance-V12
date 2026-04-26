@@ -16,7 +16,7 @@ import {
 import { rawScoreToAbyssMultiplier } from './lexicon.abyss.js';
 import { analyzeSpeaking } from './speaking/index.js';
 import { WORD_REGEX_GLOBAL } from '../../src/lib/wordTokenization.js';
-import { normalizeVowelFamily } from '../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from './phonology/vowelFamily.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../../src/data/schools.js';
 
 const STOP_WORDS = new Set([

@@ -5,8 +5,8 @@ import { rhymeQualityHeuristic } from "../codex/core/heuristics/rhyme_quality.js
 import { meterRegularityHeuristic } from "../codex/core/heuristics/meter_regularity.js";
 import { literaryDeviceRichnessHeuristic } from "../codex/core/heuristics/literary_device_richness.js";
 import { vocabularyRichnessHeuristic } from "../codex/core/heuristics/vocabulary_richness.js";
-import { PhonemeEngine } from "../src/lib/phonology/phoneme.engine.js";
-import { DeepRhymeEngine } from "../src/lib/deepRhyme.engine.js";
+import { PhonemeEngine } from "../codex/core/phonology/phoneme.engine.js";
+import { DeepRhymeEngine } from "../codex/core/rhyme-astrology/deepRhyme.engine.js";
 import { analyzeLiteraryDevices } from "../src/lib/literaryDevices.detector.js";
 
 function legacyAnalyzeText(text) {

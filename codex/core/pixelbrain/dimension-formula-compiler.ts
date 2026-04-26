@@ -6,6 +6,27 @@
  * @version 1.0.0
  */
 
+// ─── Helper Functions ────────────────────────────────────────────────────────
+
+/**
+ * Clamps a value to the finite range.
+ */
+function toFinite(val: any, fallback = 0): number {
+  const n = Number(val);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Performs a guarded division.
+ */
+function safeDivide(n: any, d: any, fallback = 0): number {
+  const num = Number(n);
+  const den = Number(d);
+  if (den === 0 || !Number.isFinite(den)) return fallback;
+  const result = num / den;
+  return Number.isFinite(result) ? result : fallback;
+}
+
 // ─── Error Types ─────────────────────────────────────────────────────────────
 
 export class DimensionCompileError extends Error {
@@ -415,6 +436,32 @@ export class DimensionCompiler {
 
   compile(spec: CanonicalDimensionSpec): BytecodeInstruction[] {
     const instructions: BytecodeInstruction[] = [];
+
+    if (spec.kind === 'orientation') {
+      if (!spec.orientation) {
+        throw new DimensionCompileError(`Orientation spec missing branches`, JSON.stringify(spec), DimensionErrorCode.INCOMPLETE_VARIANT);
+      }
+
+      instructions.push(['LOAD_ORIENTATION', REGISTERS.ORIENTATION]);
+      const branchToLandscape: BytecodeInstruction = ['BRANCH_ORIENTATION_LANDSCAPE', 0];
+      instructions.push(branchToLandscape);
+
+      this.compileSpecBody(spec.orientation.portrait, instructions);
+      instructions.push(['END']);
+
+      branchToLandscape[1] = instructions.length;
+      this.compileSpecBody(spec.orientation.landscape, instructions);
+      instructions.push(['END']);
+
+      return instructions;
+    }
+
+    this.compileSpecBody(spec, instructions);
+    instructions.push(['END']);
+    return instructions;
+  }
+
+  private compileSpecBody(spec: CanonicalDimensionSpec, instructions: BytecodeInstruction[]) {
     this.compileNode(spec.widthPolicy, REGISTERS.COMPUTED_WIDTH, instructions);
     instructions.push(['SET_WIDTH', REGISTERS.COMPUTED_WIDTH]);
 
@@ -428,9 +475,6 @@ export class DimensionCompiler {
     if (spec.anchor) instructions.push(['SET_ANCHOR', spec.anchor]);
     if (spec.snapMode) instructions.push(['SET_SNAP', spec.snapMode]);
     if (spec.deviceClass) instructions.push(['SET_DEVICE_CLASS', spec.deviceClass]);
-
-    instructions.push(['END']);
-    return instructions;
   }
 
   private compileNode(node: FormulaNode, targetReg: number, instructions: BytecodeInstruction[]) {
@@ -529,22 +573,25 @@ export class DimensionRuntime {
     // 1. FAST PATH: Check if inputs are identical to last execution
     if (this._lastInstructions === instructions &&
         this._lastContext &&
-        this._lastContext.viewportWidth === context.viewportWidth &&
-        this._lastContext.viewportHeight === context.viewportHeight &&
-        this._lastContext.parentWidth === context.parentWidth &&
-        this._lastContext.parentHeight === context.parentHeight &&
+        Object.is(this._lastContext.viewportWidth, context.viewportWidth) &&
+        Object.is(this._lastContext.viewportHeight, context.viewportHeight) &&
+        Object.is(this._lastContext.parentWidth, context.parentWidth) &&
+        Object.is(this._lastContext.parentHeight, context.parentHeight) &&
         this._lastContext.deviceClass === context.deviceClass &&
         this._lastContext.orientation === context.orientation) {
       return this._lastResult;
     }
 
     const registers = new Float64Array(16);
-    registers[REGISTERS.VIEWPORT_WIDTH] = context.viewportWidth;
-    registers[REGISTERS.VIEWPORT_HEIGHT] = context.viewportHeight;
-    registers[REGISTERS.PARENT_WIDTH] = context.parentWidth;
-    registers[REGISTERS.PARENT_HEIGHT] = context.parentHeight;
-    registers[REGISTERS.DEVICE_CLASS] = context.deviceClass ? ['desktop', 'tablet', 'mobile-android', 'mobile-ios'].indexOf(context.deviceClass) : 0;
-    registers[REGISTERS.ORIENTATION] = context.orientation ? ['portrait', 'landscape', 'square'].indexOf(context.orientation) : 0;
+    registers[REGISTERS.VIEWPORT_WIDTH] = toFinite(context.viewportWidth);
+    registers[REGISTERS.VIEWPORT_HEIGHT] = toFinite(context.viewportHeight);
+    registers[REGISTERS.PARENT_WIDTH] = toFinite(context.parentWidth);
+    registers[REGISTERS.PARENT_HEIGHT] = toFinite(context.parentHeight);
+    const resolvedOrientation = context.orientation || detectOrientation(context.viewportWidth, context.viewportHeight);
+    const deviceClassIndex = context.deviceClass ? ['desktop', 'tablet', 'mobile-android', 'mobile-ios'].indexOf(context.deviceClass) : 0;
+    const orientationIndex = ['portrait', 'landscape', 'square'].indexOf(resolvedOrientation);
+    registers[REGISTERS.DEVICE_CLASS] = deviceClassIndex >= 0 ? deviceClassIndex : 0;
+    registers[REGISTERS.ORIENTATION] = orientationIndex >= 0 ? orientationIndex : 0;
 
     let width = 0;
     let height = 0;
@@ -553,7 +600,8 @@ export class DimensionRuntime {
     let snapMode: SnapMode | undefined;
     let aspectRatio: { numerator: number; denominator: number } | undefined;
 
-    for (const inst of instructions) {
+    for (let ip = 0; ip < instructions.length; ip++) {
+      const inst = instructions[ip];
       const op = inst[0];
       switch (op) {
         case 'LOAD_CONST':
@@ -571,6 +619,22 @@ export class DimensionRuntime {
         case 'LOAD_PARENT_HEIGHT':
           registers[inst[1] as number] = context.parentHeight;
           break;
+        case 'LOAD_DEVICE_CLASS':
+          registers[inst[1] as number] = registers[REGISTERS.DEVICE_CLASS];
+          break;
+        case 'LOAD_ORIENTATION':
+          registers[inst[1] as number] = registers[REGISTERS.ORIENTATION];
+          break;
+        case 'BRANCH_ORIENTATION_PORTRAIT':
+          if (resolvedOrientation === 'portrait' || resolvedOrientation === 'square') {
+            ip = Math.max(-1, Math.min(instructions.length - 1, (inst[1] as number) - 1));
+          }
+          break;
+        case 'BRANCH_ORIENTATION_LANDSCAPE':
+          if (resolvedOrientation === 'landscape') {
+            ip = Math.max(-1, Math.min(instructions.length - 1, (inst[1] as number) - 1));
+          }
+          break;
         case 'MOVE':
           registers[inst[1] as number] = registers[inst[2] as number];
           break;
@@ -584,7 +648,7 @@ export class DimensionRuntime {
           registers[inst[1] as number] = registers[inst[2] as number] * registers[inst[3] as number];
           break;
         case 'DIV':
-          registers[inst[1] as number] = registers[inst[2] as number] / registers[inst[3] as number];
+          registers[inst[1] as number] = safeDivide(registers[inst[2] as number], registers[inst[3] as number]);
           break;
         case 'MIN':
           registers[inst[1] as number] = Math.min(registers[inst[2] as number], registers[inst[3] as number]);
@@ -600,11 +664,11 @@ export class DimensionRuntime {
           break;
         case 'APPLY_VIEWPORT_UNITS': {
           const viewportDim = inst[3] === REGISTERS.VIEWPORT_WIDTH ? context.viewportWidth : context.viewportHeight;
-          registers[inst[1] as number] = (inst[2] as number / 100) * viewportDim;
+          registers[inst[1] as number] = safeDivide(inst[2] as number, 100) * viewportDim;
           break;
         }
         case 'APPLY_PARENT_PERCENT':
-          registers[inst[1] as number] = (inst[2] as number / 100) * context.parentWidth;
+          registers[inst[1] as number] = safeDivide(inst[2] as number, 100) * context.parentWidth;
           break;
         case 'SELECT_NEAREST': {
           const val = registers[inst[2] as number];
@@ -629,10 +693,10 @@ export class DimensionRuntime {
           registers[inst[1] as number] = Math.ceil(registers[inst[2] as number]);
           break;
         case 'SET_WIDTH':
-          width = registers[inst[1] as number];
+          width = toFinite(registers[inst[1] as number]);
           break;
         case 'SET_HEIGHT':
-          height = registers[inst[1] as number];
+          height = toFinite(registers[inst[1] as number]);
           break;
         case 'SET_ASPECT':
           aspectRatio = { numerator: inst[1] as number, denominator: inst[2] as number };
@@ -657,8 +721,8 @@ export class DimensionRuntime {
 
           // 2. REFERENTIAL STABILITY: If values are identical to last run, return the OLD reference
           if (this._lastResult &&
-              this._lastResult.width === result.width &&
-              this._lastResult.height === result.height &&
+              Object.is(this._lastResult.width, result.width) &&
+              Object.is(this._lastResult.height, result.height) &&
               this._lastResult.fitMode === result.fitMode &&
               this._lastResult.anchor === result.anchor &&
               this._lastResult.snapMode === result.snapMode &&

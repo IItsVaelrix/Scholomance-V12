@@ -5,12 +5,12 @@
  * Follows PB-ERR-v1-{CATEGORY}-{SEVERITY}-{MODULE}-{CODE}-{CONTEXT}-{CHECKSUM} format.
  */
 
-import { BytecodeError } from './bytecode-error.js';
+import { BytecodeError, MODULE_IDS as BASE_MODULE_IDS } from './bytecode-error.js';
 
 // ─── Module ID ───────────────────────────────────────────────────────────────
 
 export const MODULE_IDS = {
-  ...MODULE_IDS,
+  ...BASE_MODULE_IDS,
   COORDSYM: 'COORDSYM', // Coordinate Symmetry AMP
 };
 

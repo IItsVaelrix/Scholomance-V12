@@ -640,8 +640,17 @@ export function getCellAtPosition(grid, screenX, screenY) {
  */
 export function floodFill(grid, layer, startX, startY, color) {
   const { cellSize } = grid;
+  if (!Number.isFinite(cellSize) || cellSize <= 0) return;
+
+  const maxCols = Math.ceil((grid.cols ?? grid.width / cellSize) || 0);
+  const maxRows = Math.ceil((grid.rows ?? grid.height / cellSize) || 0);
   const startCol = Math.floor(startX / cellSize);
   const startRow = Math.floor(startY / cellSize);
+
+  const isInBounds = (col, row) =>
+    col >= 0 && row >= 0 && col < maxCols && row < maxRows;
+
+  if (!isInBounds(startCol, startRow)) return;
 
   // Get target color
   const targetCell = getCell(layer, startCol * cellSize, startRow * cellSize);
@@ -653,11 +662,11 @@ export function floodFill(grid, layer, startX, startY, color) {
   const queue = [{ col: startCol, row: startRow }];
   const visited = new Set();
 
-  while (queue.length > 0) {
-    const { col, row } = queue.shift();
+  for (let cursor = 0; cursor < queue.length; cursor++) {
+    const { col, row } = queue[cursor];
     const key = `${col},${row}`;
 
-    if (visited.has(key)) continue;
+    if (!isInBounds(col, row) || visited.has(key)) continue;
     visited.add(key);
 
     const x = col * cellSize;

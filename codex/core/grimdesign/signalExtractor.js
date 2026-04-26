@@ -57,18 +57,18 @@ function computeRarityFromPhonemes(phonemes) {
 
 function computeEffectClass(rarity, syllableCount, hasPrimaryStress) {
   const syls = Number(syllableCount) || 0;
-  if (rarity === 'INEXPLICABLE' && syls >= 3) return 'TRANSCENDENT';
-  if (rarity === 'RARE' && syls >= 2) return 'HARMONIC';
-  if (hasPrimaryStress || rarity === 'RARE' || syls >= 4) return 'RESONANT';
-  if (syls >= 3) return 'RESONANT';
-  return 'INERT';
+  if (rarity === "INEXPLICABLE" && syls >= 3) return "TRANSCENDENT";
+  if (rarity === "RARE" && syls >= 2) return "HARMONIC";
+  if (hasPrimaryStress || rarity === "RARE" || syls >= 4) return "RESONANT";
+  if (syls >= 3) return "RESONANT";
+  return "INERT";
 }
 
 function computeGlowIntensity(effectClass, rarity) {
   switch (effectClass) {
-    case 'TRANSCENDENT': return rarity === 'INEXPLICABLE' ? 0.88 : 0.75;
-    case 'HARMONIC': return 0.60;
-    case 'RESONANT': return 0.38;
+    case "TRANSCENDENT": return rarity === "INEXPLICABLE" ? 0.88 : 0.75;
+    case "HARMONIC": return 0.60;
+    case "RESONANT": return 0.38;
     default: return 0.0;
   }
 }
@@ -92,16 +92,16 @@ function buildProvenance({ dominantSchool, schoolWeights, effectClass, rarity, s
     .sort((a, b) => b[1] - a[1])
     .slice(0, 2)
     .map(([s, w]) => `${s}:${(w * 100).toFixed(0)}%`)
-    .join(', ');
+    .join(", ");
 
   return [
-    `dominantSchool: ${dominantSchool} (schoolWeights: ${topSchools || 'none'})`,
+    `dominantSchool: ${dominantSchool} (schoolWeights: ${topSchools || "none"})`,
     dominantToken
       ? `effectClass: ${effectClass} (from token "${dominantToken}", glowIntensity: ${glowIntensity.toFixed(2)})`
       : `effectClass: ${effectClass} (no anchor token — intent produced no active phonemic signal)`,
     `blendedHsl: hsl(${blendedHsl.h}, ${blendedHsl.s}%, ${blendedHsl.l}%) — via computeBlendedHsl`,
     `syllableDepth: ${syllableDepth} (dominant anchor syllable count)`,
-    `rarity: ${rarity}`,
+    `rarity: ${rarity} (mathematically determined via corpus rank)`,
   ];
 }
 
@@ -125,7 +125,7 @@ export function extractDominantSignal(doc) {
     return { ...DEFAULT_SIGNAL };
   }
 
-  const dominantSchool = doc.dominantSchool || 'VOID';
+  const dominantSchool = doc.dominantSchool || "VOID";
   const blendedHsl = computeBlendedHsl(schoolWeights);
 
   // Scan all content words and find the dominant anchor.
@@ -135,14 +135,13 @@ export function extractDominantSignal(doc) {
   for (const word of doc.allWords) {
     if (!word.isContentWord) continue;
 
-    const phonemes = word.phonetics?.phonemes || [];
     const syllableCount = word.syllableCount || 1;
-    const hasPrimaryStress = /1/.test(String(word.stressPattern || ''));
-    const vowelFamily = word.phonetics?.vowelFamily || '';
+    const hasPrimaryStress = /1/.test(String(word.stressPattern || ""));
+    const vowelFamily = word.phonetics?.vowelFamily || "";
 
-    const rarity = computeRarityFromPhonemes(phonemes);
+    const rarity = word.rarity || "COMMON";
     const effectClass = computeEffectClass(rarity, syllableCount, hasPrimaryStress);
-    if (effectClass === 'INERT') continue;
+    if (effectClass === "INERT") continue;
 
     const score = scoreWord(effectClass, vowelFamily, schoolWeights, syllableCount);
     if (score > bestScore) {
@@ -151,8 +150,9 @@ export function extractDominantSignal(doc) {
     }
   }
 
-  const effectClass = dominantWord?.effectClass || 'INERT';
-  const rarity = dominantWord?.rarity || 'COMMON';
+  const effectClass = dominantWord?.effectClass || "INERT";
+  const rarity = dominantWord?.rarity || "COMMON";
+
   const syllableDepth = dominantWord
     ? Math.max(1, dominantWord.syllableCount)
     : Math.max(1, Math.round(doc.stats?.avgSyllablesPerWord || 1));

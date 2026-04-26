@@ -234,7 +234,7 @@
   padding: 4px 0 2px;
 }
 
-.card-ipa {
+.card-pronunciation {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.72rem;
   color: var(--card-text-muted);

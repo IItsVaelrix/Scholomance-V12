@@ -1,9 +1,12 @@
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../../../data/schools.js';
 import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { mapFormantsToMetrics, getVisemeStyles } from './visemeMapping.js';
-import { VOWEL_HUE_MAP } from '../../phonology/vowelWheel.js';
+import { VOWEL_HUE_MAP, FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
 
 import { resolveSonicChroma } from '../../../../codex/core/phonology/chroma.resolver.js';
+import { hslToHex as coreHslToHex } from '../../../../codex/core/pixelbrain/shared.js';
+
+export const hslToHex = coreHslToHex;
 
 export function resolveSonicColor(phonemes = []) {
   const { h, s, l, bytecode } = resolveSonicChroma(phonemes);
@@ -95,44 +98,14 @@ function round(value, decimals = 6) {
   return Math.round(value * factor) / factor;
 }
 
-export function hslToHex(h, s, l) {
-  const hue = wrapHue(h) / 360;
-  const saturation = clamp(s, 0, 100) / 100;
-  const lightness = clamp(l, 0, 100) / 100;
-
-  if (saturation === 0) {
-    const gray = Math.round(lightness * 255);
-    const hex = gray.toString(16).padStart(2, '0');
-    return `#${hex}${hex}${hex}`;
-  }
-
-  const q = lightness < 0.5
-    ? lightness * (1 + saturation)
-    : lightness + saturation - (lightness * saturation);
-  const p = (2 * lightness) - q;
-
-  const hueToRgb = (t) => {
-    let shifted = t;
-    if (shifted < 0) shifted += 1;
-    if (shifted > 1) shifted -= 1;
-    if (shifted < 1 / 6) return p + ((q - p) * 6 * shifted);
-    if (shifted < 1 / 2) return q;
-    if (shifted < 2 / 3) return p + ((q - p) * (2 / 3 - shifted) * 6);
-    return p;
-  };
-
-  const toHex = (value) => Math.round(clamp(value, 0, 1) * 255).toString(16).padStart(2, '0');
-  return `#${toHex(hueToRgb(hue + (1 / 3)))}${toHex(hueToRgb(hue))}${toHex(hueToRgb(hue - (1 / 3)))}`;
-}
-
 function resolveProjectionFamily(value) {
   const raw = String(value || '').trim().toUpperCase();
   if (!raw) return '';
 
-  const explicit = PCA_FAMILY_ALIASES[raw] || raw;
+  const explicit = FAMILY_IDENTITY[raw] || raw;
   if (PCA_VOWEL_FORMANTS[explicit]) return explicit;
 
-  const normalized = PCA_FAMILY_ALIASES[normalizeVowelFamily(raw)] || normalizeVowelFamily(raw);
+  const normalized = FAMILY_IDENTITY[normalizeVowelFamily(raw)] || normalizeVowelFamily(raw);
   return PCA_VOWEL_FORMANTS[normalized] ? normalized : '';
 }
 
@@ -246,7 +219,13 @@ function buildPcaBasis() {
   });
 }
 
-const PCA_BASIS = buildPcaBasis();
+let _pcaBasis = null;
+function getPCABasis() {
+  if (!_pcaBasis) {
+    _pcaBasis = buildPcaBasis();
+  }
+  return _pcaBasis;
+}
 
 function resolveSchoolKey(schoolId, family) {
   const requested = String(schoolId || '').trim().toUpperCase();
@@ -317,11 +296,13 @@ export function computeBlendedHsl(schoolWeights, schools = SCHOOLS) {
 
 export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const resolvedFamily = resolveProjectionFamily(family);
+  const { forcedHue = null, phase = 0 } = options;
+
   if (!resolvedFamily) {
     return Object.freeze({
       family: '',
       school: null,
-      hex: '#888888',
+      hex: null,
       hsl: Object.freeze({ h: 0, s: 0, l: 53 }),
       projection: null,
     });
@@ -342,17 +323,27 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const deltaRadius = clamp(Math.hypot(deltaPc1, deltaPc2) / 1.6, 0, 1);
 
   // Phasic Modulation (Cyclical Resonance)
-  // phase is 0-1 (e.g. from word index or position)
-  // We use a sine wave to create smooth, repeating alternating patterns
-  const phase = options.phase ?? 0;
   const rad = phase * Math.PI * 2;
   const hMod = Math.sin(rad) * themeConfig.resonanceHue;
   const sMod = Math.cos(rad) * themeConfig.resonanceSat;
   const lMod = Math.sin(rad * 1.5) * themeConfig.resonanceLit;
 
-  const canonicalHue = VOWEL_HUE_MAP[resolvedFamily] ?? 180;
+  const canonicalHue = forcedHue !== null ? forcedHue : VOWEL_HUE_MAP[resolvedFamily];
+  
+  if (canonicalHue === undefined || canonicalHue === null) {
+    // V12 FIX: Return neutral gray fallback for unknown families to avoid 180-degree collision
+    return Object.freeze({
+      family: resolvedFamily,
+      school: schoolKey,
+      hex: null,
+      hsl: { h: 0, s: 0, l: 50 },
+      projection,
+      viseme: mapFormantsToMetrics(PCA_VOWEL_FORMANTS[resolvedFamily]),
+    });
+  }
+
   // Explicit theme inputs should win over the canonical vowel wheel.
-  const hue = usesThemeHue
+  const hue = (usesThemeHue && forcedHue === null)
     ? wrapHue(baseHsl.h + (deltaPc1 * themeConfig.huePc1) - (deltaPc2 * themeConfig.huePc2) + hMod)
     : wrapHue(canonicalHue + (deltaPc1 * 6) - (deltaPc2 * 6) + hMod);
 
@@ -392,7 +383,7 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   });
 }
 
-export function buildVerseIrPalette(schoolId = 'DEFAULT') {
+function buildVerseIrPalette(schoolId = 'DEFAULT') {
   const palette = {};
   VERSE_IR_PALETTE_FAMILIES.forEach((family) => {
     palette[family] = resolveVerseIrColor(family, schoolId).hex;
@@ -400,10 +391,10 @@ export function buildVerseIrPalette(schoolId = 'DEFAULT') {
   return Object.freeze(palette);
 }
 
-export function getVerseIrColorProjection(family) {
+function getVerseIrColorProjection(family) {
   const resolvedFamily = resolveProjectionFamily(family);
   if (!resolvedFamily) return null;
-  return PCA_BASIS.projections[resolvedFamily] || null;
+  return getPCABasis().projections[resolvedFamily] || null;
 }
 
-export const VERSE_IR_PCA_CHROMA_BASIS = PCA_BASIS;
+const VERSE_IR_PCA_CHROMA_BASIS = getPCABasis();

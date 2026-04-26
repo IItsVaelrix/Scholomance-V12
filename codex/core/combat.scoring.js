@@ -202,6 +202,7 @@ export function calculateCombatScore({
     * voiceResonanceMultiplier
     * weaveResonanceMultiplier
     * (profile.rarity?.totalMultiplier ?? 1)
+    * (profile.abyssalResonanceMultiplier ?? 1)
     * supportPenalty;
 
   const damage = Math.max(computeDamageFloor(profile), Math.round(rawDamage));
@@ -260,25 +261,6 @@ export function calculateCombatScore({
     commentary: bridge.collapsed ? "Syntactic Collapse: The Weave has frayed." : (profile.commentary || profile.rarity?.praise || ''),
     loreStats,
   };
-}
-
-export function scoreDataToDamage(scoreData, options = {}) {
-  const damage = Number(scoreData?.damage);
-  if (Number.isFinite(damage)) {
-    return damage;
-  }
-  return calculateCombatScore({
-    text: options.text || scoreData?.scrollText || '',
-    scoreData,
-    arenaSchool: options.arenaSchool,
-    defenderSchool: options.defenderSchool,
-    analyzedDoc: options.analyzedDoc,
-    corpusRanks: options.corpusRanks,
-    fallbackSchool: options.fallbackSchool,
-    speakerId: options.speakerId,
-    speakerType: options.speakerType,
-    speakerProfile: options.speakerProfile,
-  }).damage;
 }
 
 export function normalizeCombatScore(scoreData, options = {}) {

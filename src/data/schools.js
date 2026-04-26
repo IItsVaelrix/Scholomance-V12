@@ -16,6 +16,8 @@ import {
   computeDominantSchool
 } from '../../codex/core/constants/schools.js';
 
+import { hslToHex } from '../../codex/core/pixelbrain/shared.js';
+
 /**
  * Canonical mapping from ARPAbet vowel family to school of magic.
  */
@@ -208,24 +210,6 @@ export function generateSchoolColor(schoolId) {
   
   // Fallback
   return "#888888";
-}
-
-/**
- * Convert HSL to Hex
- * @param {number} h - Hue (0-360)
- * @param {number} s - Saturation (0-100)
- * @param {number} l - Lightness (0-100)
- * @returns {string} Hex color
- */
-function hslToHex(h, s, l) {
-  l /= 100;
-  const a = s * Math.min(l, 1 - l) / 100;
-  const f = n => {
-    const k = (n + h / 30) % 12;
-    const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, '0');
-  };
-  return `#${f(0)}${f(8)}${f(4)}`;
 }
 
 /**

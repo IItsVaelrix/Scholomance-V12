@@ -1,3 +1,4 @@
+import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
 import { createLexiconAbyssService } from './lexiconAbyss.service.js';
 import { createWordLookupService } from './wordLookup.service.js';
 import { createCorpusService } from './corpus.service.js';
@@ -34,7 +35,7 @@ function normalizeWord(value) {
 
 function collectVerseTokens(text) {
   return new Set(
-    (String(text || '').match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g) || [])
+    (String(text || '').match(WORD_REGEX_GLOBAL) || [])
       .map((token) => normalizeWord(token))
       .filter(Boolean)
   );

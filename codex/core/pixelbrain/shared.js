@@ -7,6 +7,40 @@ export const DEFAULT_PIXELBRAIN_CANVAS = Object.freeze({
   gridSize: 1,
 });
 
+/**
+ * PALETTE_CONTRACT — Deterministic thresholds for PixelBrain V12
+ */
+export const PALETTE_CONTRACT = Object.freeze({
+  TIERS: {
+    INEXPLICABLE: 'INEXPLICABLE',
+    RARE: 'RARE',
+    COMMON: 'COMMON',
+    TRANSCENDENT: 'TRANSCENDENT',
+    HARMONIC: 'HARMONIC',
+    RESONANT: 'RESONANT',
+  },
+  SIZES: {
+    INEXPLICABLE: 5,
+    RARE: 4,
+    COMMON: 3,
+  },
+  SHIFTS: {
+    INEXPLICABLE: 18,
+    RARE: 10,
+    COMMON: 6,
+  },
+  LIFT: {
+    TRANSCENDENT: 12,
+    HARMONIC: 7,
+    RESONANT: 4,
+    INERT: 0,
+  },
+  ADDRESSING: {
+    PAGE_SIZE: 8, // 8-byte addressing blocks for SSD alignment
+    BLOCK_SIZE: 64,
+  }
+});
+
 export function clamp01(value) {
   if (Number.isNaN(value)) return 0;
   return Math.max(0, Math.min(1, value));
@@ -36,6 +70,15 @@ export function hashString(value) {
   return hash >>> 0;
 }
 
+/**
+ * Deterministic pseudo-random number generator for mathematical purity
+ */
+export function pseudoRandom(seed) {
+  const h = hashString(seed);
+  // Splitmix64-style state transition
+  return (h % 1000000) / 1000000;
+}
+
 export function normalizeDegrees(value) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return 0;
@@ -54,14 +97,29 @@ export function createBytecodeString({
 }
 
 export function parseBytecodeString(bytecode) {
-  const safeBytecode = String(bytecode || '').trim().toUpperCase();
-  const parts = safeBytecode.split('-');
+  const input = String(bytecode || '').trim().toUpperCase();
+  
+  // ─── V12 FORMALIZATION ─────────────────────────────────────────────────────
+  // If the bytecode is a 'short' string (e.g., 'AA1', 'EH1', 'R1'),
+  // expand it into a formal V12 hyphenated segment.
+  if (input && !input.includes('-') && !input.startsWith('VW')) {
+    const schoolId = input.replace(/[0-9]/g, '');
+    return Object.freeze({
+      version: 'VW',
+      schoolId: schoolId || 'VOID',
+      rarity: 'COMMON',
+      effect: 'INERT',
+      isLegacyShort: true,
+    });
+  }
 
+  const parts = input.split('-');
   return Object.freeze({
-    version: parts[0] === 'VW' ? 'VW' : 'VW',
+    version: parts[0] === 'VW' ? 'VW' : 'UNKNOWN',
     schoolId: parts[1] || 'VOID',
     rarity: parts[2] || 'COMMON',
     effect: parts[3] || 'INERT',
+    isLegacyShort: false,
   });
 }
 

@@ -42,8 +42,7 @@ export {
 export {
   bytecodeToPalette,
   getHexForByte,
-  generatePaletteFromSemantics,
-  generatePaletteFromSemanticParameters,
+  generateSemanticPalette,
 } from './pixelbrain/color-byte-mapping.js';
 
 export {

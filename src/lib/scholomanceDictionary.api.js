@@ -335,5 +335,28 @@ export const ScholomanceDictionaryAPI = {
     const url = buildUrl(`${baseUrl}/search`, { q: query, limit });
     const payload = await requestJson(baseUrl, url);
     return payload.results || [];
+  },
+
+  /**
+   * Fetches unified Read panel analysis (rhyme, score, astrology, narrative) from the backend.
+   * @param {string} text
+   * @param {{ nluMode?: 'direct'|'generate' }} [options]
+   * @returns {Promise<{ source: string, data: any }>}
+   */
+  async analyzePanels(text, { nluMode = 'generate' } = {}) {
+    const baseUrl = resolveBaseUrl();
+    if (!baseUrl || !text) return null;
+
+    // The backend endpoint for panel analysis is /api/analysis/panels (outside /api/lexicon root sometimes)
+    // but based on our routes it is registered on the fastify instance.
+    // If the base URL ends in /api/lexicon, we might need to go up one level or use the root.
+    const apiRoot = baseUrl.replace(/\/lexicon$/, "");
+    const url = `${apiRoot}/analysis/panels`;
+
+    return await requestJson(baseUrl, url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, nluMode })
+    });
   }
 };

@@ -9,7 +9,7 @@
  */
 
 import { on, emit } from './eventBus.js';
-import { getFromCache, setInCache } from './cache.js';
+import { getFromCache, setInCache, hydrateFromStorage } from './cache.js';
 import { isActionAllowed } from './rateLimit.js';
 import { setupWordLookupPipeline, EVENTS as WORD_LOOKUP_EVENTS } from './wordLookupPipeline.js';
 
@@ -81,10 +81,18 @@ function setupCombatSubmitPipeline() {
  * Initializes all the runtime pipelines.
  * @param {Object} [options] - Configuration options.
  * @param {import('../services/adapters/dictionary.adapter.js').DictionaryAdapter[]} [options.dictionaryAdapters] - Adapter chain for word lookups.
- * @returns {{ cleanup: function(): void }} Object with cleanup function.
+ * @returns {Promise<{ cleanup: function(): void }>} Object with cleanup function.
  */
-export function initializePipelines(options = {}) {
+export async function initializePipelines(options = {}) {
   console.log("Initializing CODEx runtime pipelines...");
+
+  // 0. Hydrate cache from persistent storage (IndexedDB)
+  try {
+    const hydratedCount = await hydrateFromStorage();
+    console.log(`  - Cache hydrated: ${hydratedCount} entries restored.`);
+  } catch (err) {
+    console.warn("  - Cache hydration failed:", err.message);
+  }
 
   // Setup word lookup pipeline with provided adapters
   if (options.dictionaryAdapters && options.dictionaryAdapters.length > 0) {

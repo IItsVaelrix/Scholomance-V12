@@ -24,12 +24,12 @@ function buildUniversalVowelPalette() {
 }
 
 /** The authoritative 7-color phonetic rainbow. */
-export const DEFAULT_VOWEL_COLORS = buildUniversalVowelPalette();
+const DEFAULT_VOWEL_COLORS = buildUniversalVowelPalette();
 
 /** 
  * School skins - dark mode only.
  */
-export const SCHOOL_SKINS = Object.freeze(Object.fromEntries(
+const SCHOOL_SKINS = Object.freeze(Object.fromEntries(
   ['DEFAULT', ...Object.keys(SCHOOLS)].map(id => [id, DEFAULT_VOWEL_COLORS])
 ));
 

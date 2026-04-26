@@ -5,7 +5,7 @@ import { createJudiciaryEngine } from '../../codex/core/judiciary.js';
 import { createTokenGraphSemanticRepo } from '../../codex/services/token-graph/semantic.repo.js';
 import { createTokenGraphSequenceRepo } from '../../codex/services/token-graph/sequence.repo.js';
 import { createRitualPredictionEngine } from '../../codex/core/ritual-prediction/run.js';
-import { PhonemeEngine } from '../lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 import { PoeticLanguageServer } from '../lib/poeticLanguageServer.js';
 import { ScholomanceDictionaryAPI } from '../lib/scholomanceDictionary.api.js';
 
@@ -212,7 +212,7 @@ export function usePredictor() {
   const plsRef = useRef(null);
 
   // democracy layer
-  const getDemocraticChoice = useCallback((suggestions) => {
+  const getDemocraticChoice = useCallback((suggestions, syntaxContext = null) => {
     // Convert raw suggestions into vote candidates
     const candidates = suggestions.map((s) => ({
       word: s.token || s,
@@ -221,7 +221,7 @@ export function usePredictor() {
       confidence: s.score ? s.score / 2 : 0.8 // Normalize confidence
     }));
 
-    return judiciary.vote(candidates);
+    return judiciary.vote(candidates, syntaxContext);
   }, [judiciary]);
 
   useEffect(() => {
@@ -331,12 +331,12 @@ export function usePredictor() {
   /**
    * Predicts words starting with prefix OR next word if prefix is empty but context exists.
    */
-  const predictDetailed = useCallback((prefix, contextWord = null, limit = 5, options = {}) => {
+  const predictDetailed = useCallback(async (prefix, contextWord = null, limit = 5, options = {}) => {
     if (!isReady) return [];
     const normalizedPrefix = normalizeCorpusWord(prefix);
     const normalizedContextWord = normalizeCorpusWord(contextWord);
 
-    return ritualPredictionEngine.run({
+    return await ritualPredictionEngine.run({
       prefix: normalizedPrefix,
       prevWord: normalizedContextWord,
       prevLineEndWord: options.prevLineEndWord || null,
@@ -349,11 +349,11 @@ export function usePredictor() {
     });
   }, [isReady, ritualPredictionEngine]);
 
-  const predict = useCallback((prefix, contextWord = null, limit = 5, options = {}) => {
+  const predict = useCallback(async (prefix, contextWord = null, limit = 5, options = {}) => {
     if (!isReady) return [];
     const normalizedPrefix = normalizeCorpusWord(prefix);
     const normalizedContextWord = normalizeCorpusWord(contextWord);
-    const prediction = predictDetailed(normalizedPrefix, normalizedContextWord, limit, options);
+    const prediction = await predictDetailed(normalizedPrefix, normalizedContextWord, limit, options);
 
     if (Array.isArray(prediction?.candidates) && prediction.candidates.length > 0) {
       const filteredCandidates = prediction.candidates.filter((candidate) => (

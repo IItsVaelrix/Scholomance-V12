@@ -86,9 +86,79 @@ function runCommand(command, args, options = {}) {
   });
 }
 
+const PLACEHOLDER_PATTERNS = [
+  /^replace[\s-]/i,
+  /^your[_-]/i,
+  /^changeme$/i,
+  /^secret$/i,
+  /^todo$/i,
+];
+
+const REQUIRED_SECRETS = [
+  { key: 'SESSION_SECRET', minLength: 24 },
+  { key: 'AUDIO_ADMIN_TOKEN', minLength: 24 },
+];
+
+const CONDITIONAL_SECRETS = [
+  { key: 'REDIS_URL', when: () => parseBooleanFlag(process.env.ENABLE_REDIS_SESSIONS, false) },
+  { key: 'SENDGRID_API_KEY', when: () => process.env.MAIL_PROVIDER === 'sendgrid' },
+  { key: 'RESEND_API_KEY', when: () => process.env.MAIL_PROVIDER === 'resend' },
+  { key: 'SMTP_HOST', when: () => process.env.MAIL_PROVIDER === 'smtp' },
+  { key: 'SMTP_USER', when: () => process.env.MAIL_PROVIDER === 'smtp' },
+  { key: 'SMTP_PASS', when: () => process.env.MAIL_PROVIDER === 'smtp' },
+];
+
+function isPlaceholder(value) {
+  return PLACEHOLDER_PATTERNS.some(p => p.test(value.trim()));
+}
+
+function validateSecrets() {
+  if (!IS_PRODUCTION) return;
+
+  const errors = [];
+  const warnings = [];
+
+  for (const { key, minLength } of REQUIRED_SECRETS) {
+    const val = process.env[key];
+    if (!val || val.trim().length === 0) {
+      errors.push(`  ✗ ${key} is not set`);
+    } else if (isPlaceholder(val)) {
+      errors.push(`  ✗ ${key} still has a placeholder value — set a real secret via: fly secrets set ${key}=<value>`);
+    } else if (minLength && val.trim().length < minLength) {
+      errors.push(`  ✗ ${key} is too short (${val.trim().length} chars, need ≥${minLength})`);
+    }
+  }
+
+  for (const { key, when } of CONDITIONAL_SECRETS) {
+    if (!when()) continue;
+    const val = process.env[key];
+    if (!val || val.trim().length === 0) {
+      warnings.push(`  ⚠ ${key} is required for your current config but is not set`);
+    } else if (isPlaceholder(val)) {
+      warnings.push(`  ⚠ ${key} still has a placeholder value`);
+    }
+  }
+
+  if (warnings.length > 0) {
+    console.warn('[RITUAL] Secret warnings:');
+    warnings.forEach(w => console.warn(w));
+  }
+
+  if (errors.length > 0) {
+    console.error('[RITUAL] FATAL: Missing or invalid production secrets:');
+    errors.forEach(e => console.error(e));
+    console.error('[RITUAL] Set secrets with: fly secrets set KEY=value');
+    process.exit(1);
+  }
+
+  console.log('[RITUAL] Secrets validated.');
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const isDetached = args.includes('--detach');
+
+  validateSecrets();
 
   console.log(`[RITUAL] Starting Production Initialization... (detached=${isDetached})`);
 

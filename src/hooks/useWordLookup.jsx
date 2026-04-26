@@ -21,7 +21,10 @@ const ENABLE_LOCAL_WORD_LOOKUP_FALLBACK = parseBooleanEnvFlag(
 async function lookupWordFromServer(word) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
-  const endpoint = buildAuthorityUrl(`/api/word-lookup/${encodeURIComponent(word)}`);
+  
+  // Use buildAuthorityUrl but ensure it doesn't break relative proxies
+  const path = `/api/word-lookup/${encodeURIComponent(word)}`;
+  const endpoint = buildAuthorityUrl(path);
 
   try {
     const response = await fetch(endpoint, {

@@ -15,6 +15,8 @@ import {
 import { getPrimaryPhoneticAnchors, buildActivationAnchorTokens, getAnchorSeedTokens } from './anchors.js';
 import { createRitualPredictionContext } from './context.js';
 import { createRitualPredictionArtifact } from './artifact.js';
+import { rerankCandidates, isTurboQuantEnabled } from './reranker.js';
+import { enforceTurboQAGates } from './turboqa.js';
 
 function clampPositiveInteger(value, fallback) {
   const numeric = Number(value);
@@ -250,7 +252,7 @@ function fallbackEmptyPrediction(context, diagnostics = []) {
   };
 }
 
-export function runRitualPrediction(request = {}, dependencies = {}, options = {}) {
+export async function runRitualPrediction(request = {}, dependencies = {}, options = {}) {
   const context = createRitualPredictionContext(request, options);
   const diagnostics = [];
   const sequenceGraphRepo = dependencies.sequenceGraphRepo || null;
@@ -357,7 +359,17 @@ export function runRitualPrediction(request = {}, dependencies = {}, options = {
 
   const traversed = traverseTokenGraph(graph, activation);
   const scoredCandidates = scoreGraphCandidates(graph, traversed, activation).slice(0, candidateLimit);
-  const candidates = judiciary.rankGraphCandidates(scoredCandidates).slice(0, candidateLimit);
+  const graphRankedCandidates = judiciary.rankGraphCandidates(scoredCandidates);
+
+  // Pass 2: TurboQuant Vector Reranking
+  const candidates = await rerankCandidates(graphRankedCandidates, context, dependencies, options);
+
+  if (isTurboQuantEnabled(options)) {
+    enforceTurboQAGates(graphRankedCandidates, candidates, {
+      topK: Math.min(5, candidateLimit),
+    });
+  }
+
   const winner = candidates[0] || null;
   const artifact = createRitualPredictionArtifact({
     context,
@@ -378,14 +390,14 @@ export function runRitualPrediction(request = {}, dependencies = {}, options = {
 
 export function createRitualPredictionEngine(dependencies = {}, options = {}) {
   return {
-    run(request = {}, runOptions = {}) {
-      return runRitualPrediction(request, dependencies, {
+    async run(request = {}, runOptions = {}) {
+      return await runRitualPrediction(request, dependencies, {
         ...options,
         ...runOptions,
       });
     },
-    predictTokens(request = {}, runOptions = {}) {
-      const result = runRitualPrediction(request, dependencies, {
+    async predictTokens(request = {}, runOptions = {}) {
+      const result = await runRitualPrediction(request, dependencies, {
         ...options,
         ...runOptions,
       });

@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { applySqlitePragmas, runSqliteMigrations } from './db/sqlite.migrations.js';
+import { applySqlitePragmas, runSqliteMigrations, runAsyncMigrations } from './db/sqlite.migrations.js';
 import { createDbWrapper } from './db/persistence.wrapper.js';
 import {
   DEFAULT_WORLD_ENTITIES,
@@ -325,32 +325,51 @@ function normalizeWorldEntityRow(row) {
 }
 
 async function ensureWorldSeedData(database) {
-  for (const room of DEFAULT_WORLD_ROOMS) {
-    await database.execute(`
-      INSERT INTO world_rooms (id, name, description, school, state_json, createdAt, updatedAt)
-      VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      ON CONFLICT(id) DO UPDATE SET
-        name = excluded.name,
-        description = excluded.description,
-        school = excluded.school,
-        state_json = excluded.state_json,
-        updatedAt = datetime('now')
-    `, [room.id, room.name, room.description, room.school || null, JSON.stringify(room.state || {})]);
-  }
+  try {
+    // ─── STEP 1: Check if seeding is already current ──────────────────────────
+    await database.execute(`CREATE TABLE IF NOT EXISTS _world_meta (key TEXT PRIMARY KEY, value TEXT)`);
+    const seedVersionRow = await database.execute(`SELECT value FROM _world_meta WHERE key = 'seed_version'`);
+    const CURRENT_SEED_VERSION = '1.0.0'; // Manually increment when core entities change
+    
+    if (seedVersionRow.rows[0]?.value === CURRENT_SEED_VERSION) {
+      logUserDbInfo(`[DB:user] World seed version ${CURRENT_SEED_VERSION} is current. Skipping seed.`);
+      return;
+    }
 
-  for (const entity of DEFAULT_WORLD_ENTITIES) {
-    await database.execute(`
-      INSERT INTO world_entities (
-        id, kind, lexeme, roomId, ownerUserId, seed, actions_json, state_json, metadata_json,
-        inspect_count, createdAt, updatedAt
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
-      ON CONFLICT(id) DO NOTHING
-    `, [
-      entity.id, entity.kind, entity.lexeme, entity.roomId || null, entity.ownerUserId ?? null, 
-      entity.seed, JSON.stringify(entity.actions || ['inspect']), JSON.stringify(entity.state || {}),
-      JSON.stringify(entity.metadata || {}), Number(entity.inspectCount) || 0
-    ]);
+    logUserDbInfo(`[DB:user] Applying world seed version ${CURRENT_SEED_VERSION}...`);
+
+    for (const room of DEFAULT_WORLD_ROOMS) {
+      await database.execute(`
+        INSERT INTO world_rooms (id, name, description, school, state_json, createdAt, updatedAt)
+        VALUES (?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          description = excluded.description,
+          school = excluded.school,
+          state_json = excluded.state_json,
+          updatedAt = datetime('now')
+      `, [room.id, room.name, room.description, room.school || null, JSON.stringify(room.state || {})]);
+    }
+
+    for (const entity of DEFAULT_WORLD_ENTITIES) {
+      await database.execute(`
+        INSERT INTO world_entities (
+          id, kind, lexeme, roomId, ownerUserId, seed, actions_json, state_json, metadata_json,
+          inspect_count, createdAt, updatedAt
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+        ON CONFLICT(id) DO NOTHING
+      `, [
+        entity.id, entity.kind, entity.lexeme, entity.roomId || null, entity.ownerUserId ?? null, 
+        entity.seed, JSON.stringify(entity.actions || ['inspect']), JSON.stringify(entity.state || {}),
+        JSON.stringify(entity.metadata || {}), Number(entity.inspectCount) || 0
+      ]);
+    }
+
+    await database.execute(`INSERT INTO _world_meta (key, value) VALUES ('seed_version', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`, [CURRENT_SEED_VERSION]);
+    logUserDbInfo(`[DB:user] World seed applied successfully.`);
+  } catch (error) {
+    console.error('[DB:user] Failed to ensure world seed data:', error);
   }
 }
 
@@ -362,7 +381,15 @@ async function initializeDatabase() {
         type: 'libsql',
         config: { url: TURSO_URL, authToken: TURSO_TOKEN }
       });
-      dbState.currentVersion = USER_MIGRATIONS[USER_MIGRATIONS.length - 1].version;
+      
+      const migrationResult = await runAsyncMigrations(db, {
+        namespace: USER_DB_NAMESPACE,
+        migrations: USER_MIGRATIONS,
+      });
+      dbState = {
+        ...dbState,
+        ...migrationResult,
+      };
     } else {
       mkdirSync(path.dirname(DB_PATH), { recursive: true });
       rawDb = new Database(DB_PATH);
@@ -386,7 +413,10 @@ async function initializeDatabase() {
       );
     }
     
-    await ensureWorldSeedData(db);
+    // --- LAZY SEEDING (V12) ---
+    // Background the seeding process so it doesn't block the initial page transition/auth.
+    ensureWorldSeedData(db).catch(err => console.error('[DB:user] Background seeding error:', err));
+
   } catch (error) {
     console.error(`[DB:user] Failed to connect to database at ${TURSO_URL || DB_PATH}.`);
     console.error(error);
@@ -605,7 +635,6 @@ async function saveScroll(scrollId, userId, { title, content, submit = false }) 
       content = excluded.content,
       updatedAt = excluded.updatedAt,
       submittedAt = excluded.submittedAt
-    WHERE scrolls.userId = excluded.userId
   `, [scrollId, userId, title, content, createdAt, now, submittedAt]);
   
   return await getScroll(scrollId, userId);

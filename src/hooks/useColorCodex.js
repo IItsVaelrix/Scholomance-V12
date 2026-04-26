@@ -30,7 +30,22 @@ const STOP_WORDS = new Set([
  */
 export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = null, options = {}) {
   const { analysisMode = 'none' } = options;
-  const isAMPMode = analysisMode === 'pixelbrain_transverse' || analysisMode === 'void_echo';
+  // V12 Consolidation: Archived modes no longer trigger specialized AMP coloring
+  const isAMPMode = false; 
+  const connectionCount = Array.isArray(activeConnections) ? activeConnections.length : 0;
+
+  const analysisByCharStart = useMemo(() => {
+    const map = new Map();
+    if (!Array.isArray(wordAnalyses)) return map;
+
+    for (const analysis of wordAnalyses) {
+      const charStart = Number(analysis?.charStart);
+      if (!Number.isInteger(charStart) || charStart < 0) continue;
+      map.set(charStart, analysis);
+    }
+
+    return map;
+  }, [wordAnalyses]);
 
   // Build charStart -> bytecode lookup from wordAnalyses
   const bytecodeByCharStart = useMemo(() => {
@@ -66,13 +81,27 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
       const register = (wordRef) => {
         if (!wordRef) return;
         const charStart = Number(wordRef?.charStart);
+        const fallbackAnalysis = Number.isInteger(charStart) && charStart >= 0
+          ? analysisByCharStart.get(charStart)
+          : null;
         if (Number.isInteger(charStart) && charStart >= 0) {
           connectedTokenCharStarts.add(charStart);
         }
-        const family = normalizeVowelFamily(wordRef?.vowelFamily);
+        const family = normalizeVowelFamily(
+          wordRef?.terminalVowelFamily
+          || wordRef?.vowelFamily
+          || fallbackAnalysis?.terminalVowelFamily
+          || fallbackAnalysis?.vowelFamily
+        );
         if (family) {
           substitutionFamilies.add(family);
-          const norm = (wordRef?.normalizedWord || wordRef?.word || "").toUpperCase();
+          const norm = (
+            wordRef?.normalizedWord
+            || wordRef?.word
+            || fallbackAnalysis?.normalizedWord
+            || fallbackAnalysis?.word
+            || ""
+          ).toUpperCase();
           if (norm && !STOP_WORDS.has(norm)) {
             directNonStopFamilies.add(family);
           }
@@ -83,7 +112,7 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
     }
 
     return { connectedTokenCharStarts, substitutionFamilies, directNonStopFamilies };
-  }, [activeConnections]);
+  }, [activeConnections, analysisByCharStart]);
 
   /**
    * Determines if a word should be colored based on its bytecode and analysis mode.
@@ -115,34 +144,11 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
     }
 
     // RHYME mode: color based on connection participation
-    const isRhymeMode = analysisMode === 'rhyme' || (analysisMode === 'none' && activeConnections.length > 0);
+    const isRhymeMode = analysisMode === 'rhyme' || (analysisMode === 'none' && connectionCount > 0);
 
     if (isRhymeMode) {
       // Direct connection participants always get colored
       if (colorContext.connectedTokenCharStarts.has(charStart)) {
-        return true;
-      }
-
-      // Check syntax suppression
-      const syntaxToken = syntaxLayer?.tokenByCharStart?.get(charStart);
-      if (syntaxToken?.rhymePolicy === "suppress") {
-        return false;
-      }
-
-      // Stop words never get colored in rhyme mode
-      if (isStopWord) {
-        return false;
-      }
-
-      // Family peers: only color if family has no non-stop direct participant
-      const family = normalizeVowelFamily(vowelFamily);
-      const isPeer = family && colorContext.substitutionFamilies.has(family);
-      if (isPeer && colorContext.directNonStopFamilies.has(family)) {
-        return false;
-      }
-
-      // Color if has resonance (glowIntensity > 0) and is a peer
-      if (isPeer && bytecode.glowIntensity > 0) {
         return true;
       }
 
@@ -151,7 +157,7 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
 
     // Default: color if bytecode has any resonance signal
     return bytecode.glowIntensity > 0 || bytecode.effectClass !== 'INERT';
-  }, [analysisMode, bytecodeByCharStart, colorContext, activeConnections, isAMPMode, syntaxLayer]);
+  }, [analysisMode, bytecodeByCharStart, colorContext, connectionCount, isAMPMode]);
 
   /**
    * Retrieves bytecode and derived color info for a word.

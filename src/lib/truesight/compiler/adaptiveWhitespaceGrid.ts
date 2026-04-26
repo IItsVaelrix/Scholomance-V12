@@ -7,7 +7,7 @@
  * Optimized for high-frequency updates (typing).
  */
 
-import { WORD_TOKEN_REGEX } from '../../wordTokenization';
+import { WORD_TOKEN_REGEX, LINE_TOKEN_REGEX } from '../../wordTokenization';
 
 export interface AdaptiveGridTopology {
   originX: number;
@@ -65,7 +65,8 @@ export function measureTextWidth(
   const wordSpacing = options.wordSpacing ?? 0;
   
   // Cache key based on font properties and text
-  const fontKey = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily} LS${letterSpacing} WS${wordSpacing} @${dpr}`;
+  // V12 FIX: Drop dpr from key as it is not applied to measurement
+  const fontKey = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily} LS${letterSpacing} WS${wordSpacing}`;
   const cacheKey = `${fontKey}::${text}`;
   
   if (widthCache.has(cacheKey)) {
@@ -85,7 +86,14 @@ export function measureTextWidth(
     }
     
     lastFontKey = fontKey;
-    if (widthCache.size > 1000) widthCache.clear();
+    // V12 FIX: Clear entire cache on font change as old measurements are invalid
+    widthCache.clear();
+  }
+
+  // V12 PERFORMANCE: Use LRU-ish eviction instead of clearing entire map for size limit
+  if (widthCache.size > 1000) {
+    const oldestKey = widthCache.keys().next().value;
+    if (oldestKey !== undefined) widthCache.delete(oldestKey);
   }
 
   const metrics = ctx.measureText(text);
@@ -128,6 +136,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
   };
 
   let globalVisualLineIndex = 0;
+  let absoluteOffset = 0;
 
   for (let rawLineIndex = 0; rawLineIndex < rawLines.length; rawLineIndex++) {
     const lineText = rawLines[rawLineIndex];
@@ -140,9 +149,6 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
     if (lineText.startsWith("#")) lineType = "heading";
     else if (lineText.startsWith("- ") || lineText.startsWith("* ")) lineType = "list-item";
 
-    // Use canonical regex for matching - atomic word tokens, explicit whitespace segments, and punctuation
-    const LINE_TOKEN_REGEX = /[A-Za-z]+(?:['-][A-Za-z]+)*|\s+|[^A-Za-z'\s]+/g;
-
     const matches = [...lineText.matchAll(LINE_TOKEN_REGEX)];
     
     if (matches.length === 0) {
@@ -152,8 +158,10 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         rawLineIndex,
         lineText: "", 
         tokens: [], 
-        lineType 
+        lineType,
+        absoluteStart: absoluteOffset
       });
+      absoluteOffset += 1; // +1 for the \n
       continue;
     }
 
@@ -171,7 +179,8 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
           rawLineIndex,
           lineText,
           tokens: currentLineTokens,
-          lineType
+          lineType,
+          absoluteStart: absoluteOffset
         });
         
         currentLineTokens = [];
@@ -183,6 +192,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         token,
         localStart,
         localEnd: localStart + token.length,
+        globalCharStart: absoluteOffset + localStart,
         lineIndex: rawLineIndex,
         visualLineIndex: globalVisualLineIndex,
         wordIndex: isWord ? wordIndexInRawLine++ : null,
@@ -200,9 +210,13 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
         rawLineIndex,
         lineText,
         tokens: currentLineTokens,
-        lineType
+        lineType,
+        absoluteStart: absoluteOffset
       });
     }
+
+    // Advance offset by line length plus the newline character
+    absoluteOffset += lineText.length + 1;
   }
 
   return { lines: visualLines, allTokens: visualLines.flatMap(l => l.tokens) };
@@ -211,7 +225,7 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
 /**
  * Calculate adaptive token width in pixels
  */
-export function getAdaptiveTokenWidth(
+function getAdaptiveTokenWidth(
   token: string,
   topology: AdaptiveGridTopology
 ): number {
@@ -225,7 +239,7 @@ export function getAdaptiveTokenWidth(
  * Build adaptive grid coordinates with measured widths
  * Legacy support for direct coordinate compilation
  */
-export function compileAdaptiveGrid(lines: any[], topology: AdaptiveGridTopology, _options: { mirrored?: boolean } = {}) {
+function compileAdaptiveGrid(lines: any[], topology: AdaptiveGridTopology, _options: { mirrored?: boolean } = {}) {
   const coordinates: any[] = [];
   return coordinates; 
 }
@@ -241,9 +255,11 @@ export function computeAdaptiveGridTopology(
   const lineHeight = parseFloat(styles.lineHeight) || fontSize * 1.9; // Law 1.9
   const paddingLeft = parseFloat(styles.paddingLeft) || 0;
   const paddingTop = parseFloat(styles.paddingTop) || 0;
+  const paddingRight = parseFloat(styles.paddingRight) || 0;
   const letterSpacing = parseFloat(styles.letterSpacing) || 0;
   const wordSpacing = parseFloat(styles.wordSpacing) || 0;
-  
+  const clientWidth = Number.isFinite(element.clientWidth) ? element.clientWidth : 0;
+
   return {
     originX: paddingLeft,
     originY: paddingTop,
@@ -251,7 +267,7 @@ export function computeAdaptiveGridTopology(
     baseCellHeight: lineHeight,
     adaptiveScale: 1.0,
     totalCols: 80,
-    totalWidth: element.clientWidth - parseFloat(styles.paddingLeft) - parseFloat(styles.paddingRight),
+    totalWidth: Math.max(0, clientWidth - paddingLeft - paddingRight),
     fontFamily: styles.fontFamily,
     fontSize: styles.fontSize,
     fontStyle: styles.fontStyle,

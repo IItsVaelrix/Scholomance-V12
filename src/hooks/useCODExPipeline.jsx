@@ -76,7 +76,7 @@ export function CODExProvider({ children }) {
       console.log(`[CODEx] Local dictionary adapter unavailable at ${localDictionaryUrl || '/api/lexicon'}, falling back to external adapters`);
     }
 
-    // 2. Free Dictionary API (definitions, synonyms, antonyms, IPA)
+    // 2. Free Dictionary API (definitions, synonyms, antonyms, pronunciation)
     adapters.push(createFreeDictionaryAdapter());
     console.log('[CODEx] Free Dictionary adapter added for definitions');
 
@@ -85,9 +85,13 @@ export function CODExProvider({ children }) {
     console.log('[CODEx] Datamuse adapter added for rhymes/fallback');
 
     // Initialize pipelines
-    const result = initializePipelines({ dictionaryAdapters: adapters });
-    cleanupRef.current = result.cleanup;
-    setIsInitialized(true);
+    const setupPipelines = async () => {
+      const result = await initializePipelines({ dictionaryAdapters: adapters });
+      cleanupRef.current = result.cleanup;
+      setIsInitialized(true);
+    };
+
+    setupPipelines();
 
     return () => {
       if (cleanupRef.current) {

@@ -11,7 +11,7 @@ import {
   MODULE_IDS,
   ERROR_CODES,
 } from '../../core/pixelbrain/bytecode-error.js';
-import { PhonemeEngine } from '../../../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../../core/phonology/phoneme.engine.js';
 import { scoreNodeSimilarity } from '../../core/rhyme-astrology/similarity.js';
 import { buildPhoneticSignature } from '../../core/rhyme-astrology/signatures.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../../core/constants/schools.js';

@@ -30,11 +30,12 @@ export class DimensionProcessor implements MotionProcessor {
     const viewport = ViewportChannel.getState();
 
     // Context resolution: state.intent.state overrides viewport truth if provided (manual override)
+    // Fix: Default to 0 for parent dimensions if not provided, to avoid "spatial overflow" (hierarchy flattening)
     const context = {
       viewportWidth: (state.intent.state?.viewportWidth as number) || viewport.width,
       viewportHeight: (state.intent.state?.viewportHeight as number) || viewport.height,
-      parentWidth: (state.intent.state?.parentWidth as number) || viewport.width, // Defaults to viewport if no parent specified
-      parentHeight: (state.intent.state?.parentHeight as number) || viewport.height,
+      parentWidth: (state.intent.state?.parentWidth as number) || 0,
+      parentHeight: (state.intent.state?.parentHeight as number) || 0,
       deviceClass: viewport.deviceClass,
       orientation: viewport.orientation,
       pixelRatio: viewport.pixelRatio,
@@ -49,7 +50,11 @@ export class DimensionProcessor implements MotionProcessor {
       state.diagnostics.push(`LAYOUT_RESOLVED: ${result.width}x${result.height} [${viewport.deviceClass}/${viewport.orientation}]`);
       state.trace.push({ processorId: this.id, changed: ['width', 'height'] });
     } catch (err) {
+      // Fix: Avoid orphaned state by ensuring width/height are NOT partially applied if resolution fails
+      delete state.values.width;
+      delete state.values.height;
       state.diagnostics.push(`LAYOUT_ERROR: ${(err as Error).message}`);
+      state.trace.push({ processorId: this.id, changed: [] }); // Explicitly log that this processor ran but changed nothing (failed)
     }
 
     return state;

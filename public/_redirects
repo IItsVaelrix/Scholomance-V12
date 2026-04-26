@@ -1,2 +1,2 @@
-/api/*  https://scholomance-v12.fly.dev/api/:splat  302
-/health/*  https://scholomance-v12.fly.dev/health/:splat  302
+/api/*  https://scholomance-v12.fly.dev/api/:splat  200
+/health/*  https://scholomance-v12.fly.dev/health/:splat  200

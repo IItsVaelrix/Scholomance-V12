@@ -1213,7 +1213,7 @@ Each agent has a context file that inherits this law and specifies domain jurisd
 | `ScrollEditor` | Component | `ScrollEditor.jsx` | Main text input surface with Truesight overlay |
 | `IDE` | Component | `IDE.css` | Three-column layout container |
 | `AnalysisPanel` | Component | `src/pages/Read/AnalysisPanel.jsx` | Side panel displaying phonetic, rhythmic, and linguistic breakdown of the scroll |
-| `usePanelAnalysis` | Hook | `src/hooks/usePanelAnalysis.js` | Returns analysis results (rhyme, meter, phonemes) |
+| `useVerseSynthesis` | Hook | `src/hooks/useVerseSynthesis.js` | Returns unified linguistic artifacts (rhyme, meter, phonemes) |
 | `useScrolls` | Hook | `src/hooks/useScrolls.jsx` | Manages scroll state, autosave |
 | `useWordLookup()` | Hook | `src/hooks/useWordLookup.jsx` | Interface for querying the Abyss lexicon and rhyme dictionary |
 | `bytecodeRenderer` | Service | `src/pages/Read/bytecodeRenderer.js` | Renders bytecode-encoded visual effects directly onto the scroll surface |
@@ -1422,9 +1422,8 @@ Intent → Normalize → Processors → Fuse → Output → Adapter (CSS/Phaser/
 | `useSonicAnalysis()` | `{ rhythm, intensity, profile }` | `src/hooks/useSonicAnalysis.ts` | Real-time sonic profile from audio state |
 | `useColorCodex()` | `{ palette, variables }` | `src/hooks/useColorCodex.js` | School-specific color palettes, CSS var resolver |
 | `usePredictor()` | `{ predict, ready, loading }` | `src/hooks/usePredictor.js` | AI heuristic engine for input anticipation |
-| `usePanelAnalysis()` | `{ analysis, schemeDetection, meterDetection, scoreData, rhymeAstrology, vowelSummary, analyzeDocument }` | `src/hooks/usePanelAnalysis.js` | Rhyme, meter, phonemes, heuristics, vowel analysis |
+| `useVerseSynthesis()` | `{ artifact, isSynthesizing, verseIR, scheme, meter, vowelSummary }` | `src/hooks/useVerseSynthesis.js` | Rhyme, meter, phonemes, heuristics, vowel analysis |
 | `useWordLookup()` | `{ lookup, data, isLoading, error, reset }` | `src/hooks/useWordLookup.jsx` | Query Abyss lexicon, rhyme dictionary |
-| `useScoring()` | `{ scores, loading, error }` | `src/hooks/useScoring.js` | Combat scores from backend |
 | `useCombatEngine()` | `{ state, turn, battleLog, playerDoctrines, opponentDoctrines }` | `src/hooks/useCombatEngine.js` | Combat state machine |
 | `useCODExPipeline()` | `{ queueStatus, isProcessing, results }` | `src/hooks/useCODExPipeline.jsx` | Backend analysis queue status |
 | `usePrefersReducedMotion()` | `boolean` | `src/hooks/usePrefersReducedMotion.js` | Respects user's motion preferences |

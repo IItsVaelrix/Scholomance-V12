@@ -339,7 +339,7 @@ export function buildInspectableEntity({ entity, room, lexicalData } = {}) {
       headword: lexicalData?.entry?.headword || titleCase(entity?.lexeme || ''),
       definition: definitionText,
       partOfSpeech: lexicalData?.definition?.partOfSpeech || lexicalData?.entry?.pos || null,
-      ipa: lexicalData?.entry?.ipa || null,
+      pronunciation: lexicalData?.entry?.pronunciation || null,
       etymology: lexicalData?.entry?.etymology || null,
       synonyms: Array.isArray(lexicalData?.synonyms) ? lexicalData.synonyms : [],
       antonyms: Array.isArray(lexicalData?.antonyms) ? lexicalData.antonyms : [],

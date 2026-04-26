@@ -3,7 +3,7 @@ import { buildPhoneticSignature } from '../../core/rhyme-astrology/signatures.js
 import { clampUnitInterval } from '../../core/rhyme-astrology/scoring.js';
 import { scoreNodeSimilarity } from '../../core/rhyme-astrology/similarity.js';
 import { compileVerseToIR } from '../../../src/lib/truesight/compiler/compileVerseToIR.js';
-import { normalizeVowelFamily } from '../../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../../core/phonology/vowelFamily.js';
 import {
   assembleConstellations,
   buildQueryCacheKey,
@@ -198,7 +198,7 @@ function extractSignatureVowelFamily(signature) {
 }
 
 /**
- * @param {import('../../../src/lib/phonology/phoneme.engine.js').PhonemeEngine} phonemeEngine
+ * @param {import('../../core/phonology/phoneme.engine.js').PhonemeEngine} phonemeEngine
  * @param {string} token
  */
 function buildTransientNode(phonemeEngine, token) {

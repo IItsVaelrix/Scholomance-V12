@@ -31,7 +31,7 @@ import { userPersistence } from './user.persistence.js';
 import { collabPersistence } from './collab/collab.persistence.js';
 import { collabRoutes } from './collab/collab.routes.js';
 import { collabMcpHttpRoutes } from './collab/mcp-http.routes.js';
-import { startAgentQaSweep } from './collab/collab.agent-qa.js';
+import { startAgentQaSweep, stopAgentQaSweep } from './collab/collab.agent-qa.js';
 import { wordLookupRoutes } from './routes/wordLookup.routes.js';
 import { panelAnalysisRoutes } from './routes/panelAnalysis.routes.js';
 import { grimdesignRoutes } from './routes/grimdesign.routes.js';
@@ -41,8 +41,9 @@ import { authRoutes } from './routes/auth.routes.js';
 import { worldRoutes } from './routes/world.routes.js';
 import { isApiRoutePath, isStaticAssetPath, stripQueryFromUrl } from './notFound.utils.js';
 import { createOpsMetrics } from './observability.metrics.js';
-import { PhonemeEngine } from '../../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../core/phonology/phoneme.engine.js';
 import { authorizeAudioRequest, buildAudioUnauthorizedPayload } from './audioAuth.js';
+import { createImmunityService } from './services/immunity.service.js';
 import {
   BytecodeError,
   ERROR_CATEGORIES,
@@ -163,6 +164,8 @@ function getSessionSecret() {
     }
     return secret;
 }
+
+import { createImmunityService } from './services/immunity.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1075,6 +1078,11 @@ async function closeRedisConnection() {
 
 function closePersistenceConnections() {
     try {
+        stopAgentQaSweep();
+    } catch (error) {
+        fastify.log.warn({ err: error }, '[COLLAB] Agent QA sweep stop failed.');
+    }
+    try {
         mailQueueWorker.stop();
     } catch (error) {
         fastify.log.warn({ err: error }, '[MAILER] Queue worker stop failed.');
@@ -1149,6 +1157,12 @@ export const start = async () => {
             await redisClient.connect();
         }
         await PhonemeEngine.init();
+        
+        const immunityService = await createImmunityService({ log: fastify.log, db: userPersistence.db });
+        fastify.get('/api/immunity/status', async () => {
+            return await immunityService.getStatus();
+        });
+
         if (!IS_TEST_RUNTIME) {
             mailQueueWorker.start();
             

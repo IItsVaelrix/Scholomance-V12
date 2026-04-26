@@ -4,14 +4,15 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
+import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
 import { analyzeText } from '../../core/analysis.pipeline.js';
 import { createDefaultScoringEngine } from '../../core/scoring.defaults.js';
 import { buildPlsPhoneticFeatures } from '../../core/rhyme-astrology/scoring.js';
-import { PhonemeEngine } from '../../../src/lib/phonology/phoneme.engine.js';
-import { DeepRhymeEngine } from '../../../src/lib/deepRhyme.engine.js';
+import { PhonemeEngine } from '../../core/phonology/phoneme.engine.js';
+import { DeepRhymeEngine } from '../../core/rhyme-astrology/deepRhyme.engine.js';
 import { detectScheme, analyzeMeter } from '../../../src/lib/rhymeScheme.detector.js';
 import { analyzeLiteraryDevices, detectEmotionDetailed } from '../../../src/lib/literaryDevices.detector.js';
-import { normalizeVowelFamily } from '../../../src/lib/phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../../core/phonology/vowelFamily.js';
 import { buildSyntaxLayer } from '../../../src/lib/syntax.layer.js';
 import { buildHiddenHarkovSummary } from '../../../src/lib/models/harkov.model.js';
 import { LiteraryClassifier } from '../../../src/lib/literaryClassifier.js';
@@ -810,7 +811,7 @@ export async function createPanelAnalysisService(options = {}) {
     const nluMode = options?.nluMode || 'generate';
 
     try {
-      const uniqueWords = [...new Set(text.match(/[A-Za-z]+(?:['-][A-Za-z]+)*/g) || [])];
+      const uniqueWords = [...new Set(text.match(WORD_REGEX_GLOBAL) || [])];
       if (typeof PhonemeEngine.primeAuthorityBatch === 'function') {
         void PhonemeEngine.primeAuthorityBatch(uniqueWords);
       } else {
@@ -835,7 +836,7 @@ export async function createPanelAnalysisService(options = {}) {
       }), {
         gutenbergPriors: gutenbergEmotionPriors,
         pixelBrainEnabled: true,
-        nluMode, // Use the passed nluMode instead of hardcoded value
+        nluMode,
         routing: { topK: 4 },
         wordNetEnabled: true,
       });

@@ -31,7 +31,7 @@ New table `phonetics` linked to `entry`.
 ```sql
 CREATE TABLE phonetics (
     entry_id INTEGER PRIMARY KEY,
-    ipa_clean TEXT,            -- Standardized IPA
+    pronunciation_clean TEXT,   -- Standardized pronunciation
     arpabet TEXT,             -- CMU-style phonemes (AH0 B S IH1 D IY0 AH0 N)
     syllable_count INTEGER,
     stress_pattern TEXT,      -- e.g., "01020"
@@ -47,7 +47,7 @@ CREATE TABLE phonetics (
 3.  **Pre-calc**: Compute syllable counts and rhyme keys for every entry at build time.
 
 ### 2.3 AI Task "Agent-Linguist"
-*   **Prompt**: "Write a Python module `scripts/lib/phonetics.py` that takes a word/IPA and outputs the `phonetics` row data using `eng_to_ipa` or `g2p_en` libraries."
+*   **Prompt**: "Write a Python module `scripts/lib/phonetics.py` that takes a word/pronunciation and outputs the `phonetics` row data using `eng_to_ipa` or `g2p_en` libraries."
 
 ---
 
@@ -146,4 +146,4 @@ CREATE TABLE mud_entities (
 
 To expedite **Phase 1**, run the following command to task the AI with upgrading the build script:
 
-> "Activate Phase 1 of ARCH_DICTIONARY_MUD: Add the `phonetics` table to `build_scholomance_dict.py` and integrate a basic IPA conversion step."
+> "Activate Phase 1 of ARCH_DICTIONARY_MUD: Add the `phonetics` table to `build_scholomance_dict.py` and integrate a basic pronunciation conversion step."

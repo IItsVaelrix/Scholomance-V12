@@ -173,6 +173,30 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     };
   }, [authReady, isAuthenticated]);
 
+  const refreshProgression = useCallback(async (isSilent = true) => {
+    if (!isAuthenticated) return;
+    if (!isSilent) setIsLoading(true);
+    try {
+      const response = await fetch(getApiUrl('/api/progression'), { credentials: "include" });
+      if (response.ok) {
+        canPersistRef.current = true;
+        const data = await response.json();
+        const parsed = ProgressionPayloadSchema.safeParse(data);
+        if (parsed.success) {
+          const serverData = { ...parsed.data };
+          if (!serverData.unlockedSchools?.length) {
+            serverData.unlockedSchools = defaultProgression.unlockedSchools;
+          }
+          setProgression((prev) => ({ ...prev, ...serverData }));
+        }
+      }
+    } catch (error) {
+      console.error("Manual progression refresh failed:", error);
+    } finally {
+      if (!isSilent) setIsLoading(false);
+    }
+  }, [isAuthenticated]);
+
   // Persist changes to the server
   useEffect(() => {
     // Don't save the initial default state before loading from server
@@ -348,6 +372,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     resetProgression,
     checkUnlocked,
     getNextUnlock,
+    refreshProgression,
     levelInfo: currentLevelInfo,
     availableSchools: progression.unlockedSchools,
     totalSchools: Object.keys(SCHOOLS).length,
@@ -359,6 +384,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     resetProgression,
     checkUnlocked,
     getNextUnlock,
+    refreshProgression,
     currentLevelInfo
   ]);
 
@@ -427,3 +453,4 @@ export function onXPEvent(event, callback) {
     if (idx > -1) listeners.splice(idx, 1);
   };
 }
+

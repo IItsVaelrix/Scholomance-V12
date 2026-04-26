@@ -35,7 +35,14 @@ RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_
     || echo "WARNING: No local dictionary/corpus DBs available. Ensure Turso is configured."
 
 # --- App build ---
-RUN npm run build:rhyme-astrology:index -- --output /app/data/rhyme-astrology || \
+# RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT trims rhyme_edges.sqlite from ~97MB
+# (default 10000 hot words) to ~73MB so the bundled artifact stays under
+# the 100MB target. Less common words still resolve via runtime fallback.
+RUN SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
+    SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
+    RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology \
+    RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT=7500 \
+    npm run build:rhyme-astrology:index || \
     echo "Rhyme astrology build failed — index will be computed at runtime"
 RUN npm run build
 RUN npm prune --omit=dev
@@ -45,25 +52,28 @@ FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV HOST=0.0.0.0
-ENV PORT=3000
+ENV HOST=::
+ENV PORT=8080
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite
+ENV RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology
+ENV ENABLE_TURBOQUANT=true
 
 COPY --from=build /app/package.json /app/package-lock.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/codex ./codex
+COPY --from=build /app/src/lib ./src/lib
+COPY --from=build /app/src/data ./src/data
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/src ./src
 COPY --from=build /app/public ./public
-COPY --from=build /app/scripts ./scripts
-COPY --from=build /app/docs ./docs
+COPY --from=build /app/scripts/ritual-init.js ./scripts/ritual-init.js
 COPY --from=build /app/mailer.adapter.js ./mailer.adapter.js
 COPY --from=build /app/verseir_palette_payload.json ./verseir_palette_payload.json
 
 # Copy pre-built dictionary and corpus (seed data — copied to persistent disk on first boot)
 COPY --from=build /app/data/scholomance_dict.sqlite /app/data/scholomance_dict.sqlite
 COPY --from=build /app/data/scholomance_corpus.sqlite /app/data/scholomance_corpus.sqlite
+COPY --from=build /app/data/rhyme-astrology ./data/rhyme-astrology
 
 EXPOSE 8080
 

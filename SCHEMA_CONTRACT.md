@@ -224,7 +224,7 @@ interface LexicalEntry {
   rhymes: string[];
   slantRhymes: string[];
   etymology?: string;
-  ipa?: string;
+  pronunciation?: string;
   lore?: Record<string, unknown>;
   raw?: unknown;
 }
@@ -472,6 +472,30 @@ interface RitualPredictionArtifact {
   candidates: RitualPredictionCandidateSummary[];
   diagnostics: RitualPredictionDiagnostic[];
   pixelbrainProjection: PredictionPixelBrainProjection;
+}
+
+interface EntropyOracleRequest {
+  filePath: string;
+  proposedChange: string;
+  contextBlocks: string[];
+}
+
+interface EntropyOracleNode {
+  type: string;
+  identifier: string;
+  complexityScore: number;
+  inboundEdges: number;
+  outboundEdges: number;
+}
+
+interface EntropyOracleVolatilityReport {
+  timestamp: number;
+  filePath: string;
+  volatilityScore: number;
+  thresholdExceeded: boolean;
+  criticalRisks: string[];
+  nodesAffected: EntropyOracleNode[];
+  actionRecommendation: "PROCEED" | "REFACTOR" | "REJECT";
 }
 
 // Reserved export family for future persisted/shared ritual prediction artifacts.
@@ -1134,7 +1158,7 @@ interface InspectableEntity {
     headword: string;
     definition: string | null;
     partOfSpeech: string | string[] | null;
-    ipa: string | null;
+    pronunciation: string | null;
     etymology: string | null;
     synonyms: string[];
     antonyms: string[];

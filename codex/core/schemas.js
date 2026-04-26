@@ -125,7 +125,7 @@
  * @property {string[]} rhymes - An array of rhyming words.
  * @property {string[]} slantRhymes - An array of slant rhyming words.
  * @property {string} [etymology] - The word's origin.
- * @property {string} [ipa] - The IPA pronunciation.
+ * @property {string} [pronunciation] - The pronunciation.
  * @property {Object} [lore] - MUD-specific lore data.
  * @property {Object} [raw] - Raw response from the data source (for debugging).
  */
@@ -146,7 +146,7 @@ export function createEmptyLexicalEntry(word) {
     rhymes: [],
     slantRhymes: [],
     etymology: undefined,
-    ipa: undefined,
+    pronunciation: undefined,
     lore: undefined,
     raw: undefined,
   };
@@ -169,7 +169,7 @@ export function mergeLexicalEntries(base, overlay) {
     rhymes: overlay.rhymes?.length ? overlay.rhymes : base.rhymes,
     slantRhymes: overlay.slantRhymes?.length ? overlay.slantRhymes : base.slantRhymes,
     etymology: overlay.etymology ?? base.etymology,
-    ipa: overlay.ipa ?? base.ipa,
+    pronunciation: overlay.pronunciation ?? base.pronunciation,
     lore: overlay.lore ?? base.lore,
     raw: overlay.raw ?? base.raw,
   };

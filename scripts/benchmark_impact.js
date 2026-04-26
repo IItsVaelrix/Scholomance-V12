@@ -1,5 +1,5 @@
 
-import { PhonemeEngine } from '../src/lib/phonology/phoneme.engine.js';
+import { PhonemeEngine } from '../codex/core/phonology/phoneme.engine.js';
 
 const TEST_SET = [
     "copious", "formation", "dope", "creation", "allure", "gargoyle", "pure", 

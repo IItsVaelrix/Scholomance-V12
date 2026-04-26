@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePanelAnalysis } from '../../hooks/usePanelAnalysis.js';
+import { useVerseSynthesis } from '../../hooks/useVerseSynthesis.js';
 import { usePredictor } from '../../hooks/usePredictor.js';
 import { useWordLookup } from '../../hooks/useWordLookup.jsx';
 import { useTheme } from '../../hooks/useTheme.jsx';
@@ -12,8 +12,8 @@ import { WORD_TOKEN_REGEX } from '../../lib/wordTokenization.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../../data/schools.js';
 import { normalizeVowelFamily } from '../../lib/phonology/vowelFamily.js';
 import { decodeBytecode } from '../Read/bytecodeRenderer.js';
-import { resolveTokenColor, buildRhymeColorRegistry } from '../../lib/truesight/color/rhymeColorRegistry.js';
-import { resolveSonicChroma } from '../../lib/phonology/vowelWheel.js';
+import { resolveResonanceColor, buildResonancePalette } from '../../lib/truesight/color/rhymeColorRegistry.js';
+import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
 
 /**
  * OracleScribe.jsx
@@ -35,11 +35,11 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   const { theme } = useTheme();
   
   const {
-    analysis: deepAnalysis,
-    analyzeDocument,
-    scoreData,
-    isAnalyzing
-  } = usePanelAnalysis();
+    artifact: deepAnalysis,
+    isSynthesizing: isAnalyzing
+  } = useVerseSynthesis(text);
+
+  const scoreData = deepAnalysis?.scoreData;
 
   const { palette: adaptivePalette } = useAdaptivePalette(deepAnalysis);
   const { predict, predictorReady } = usePredictor();
@@ -47,12 +47,6 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   // Conceptual Integrity (Phase 5)
   const integrity = useMemo(() => getSyntacticIntegrity(weave), [weave]);
   const canCast = text.trim().length > 0 && weave.trim().length > 0 && !isDisabled;
-
-  useEffect(() => {
-    if (text.trim()) {
-      analyzeDocument(text);
-    }
-  }, [text, analyzeDocument]);
 
   const handleTextChange = (e) => {
     const val = e.target.value;
@@ -141,10 +135,11 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
                 const isWord = WORD_TOKEN_REGEX.test(part);
                 if (!isWord) return <span key={i}>{part}</span>;
                 const normalized = part.trim().toUpperCase();
-                const analysis = deepAnalysis?.wordAnalyses?.find(w => w.normalizedWord === normalized);
-                const wordVowelFamily = analysis ? normalizeVowelFamily(analysis.vowelFamily) : null;
-                const schoolId = wordVowelFamily ? VOWEL_FAMILY_TO_SCHOOL[wordVowelFamily] : null;
-                const color = schoolId ? adaptivePalette[wordVowelFamily] : 'inherit';
+                const token = deepAnalysis?.tokenByNormalizedWord?.get(normalized);
+                const wordVowelFamily = token?.vowelFamily;
+                const rhymeKey = token?.rhymeKey || null;
+                const pcaColor = wordVowelFamily ? adaptivePalette[wordVowelFamily] : 'inherit';
+                const color = rhymeKey ? resolveResonanceColor(rhymeKey, school, pcaColor) : pcaColor;
                 return (
                   <span key={i} className="scribe-truesight-word" style={{ color: color === 'inherit' ? undefined : color }}>
                     {part}

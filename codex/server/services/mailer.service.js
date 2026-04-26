@@ -224,7 +224,7 @@ export class MailerService {
   }
 
   async deliverQueuedBatch(limit = 10) {
-    const claimed = userPersistence.mail.claimDue(limit);
+    const claimed = await userPersistence.mail.claimDue(limit);
     const results = [];
 
     for (const email of claimed) {

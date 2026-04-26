@@ -13,6 +13,8 @@ import {
 } from './image-to-bytecode-formula.js';
 import { getRotationAtTime } from './gear-glide-amp.js';
 
+const MAX_FRACTAL_ITERATIONS = 6;
+
 /**
  * Evaluate formula and generate coordinates
  * @param {Object} formula - Bytecode formula
@@ -21,6 +23,10 @@ import { getRotationAtTime } from './gear-glide-amp.js';
  * @returns {Array} Coordinate objects
  */
 export function evaluateFormula(formula, canvasSize, time = 0) {
+  if (!formula || !canvasSize) {
+    return [];
+  }
+
   const { coordinateFormula, template } = formula;
 
   if (!coordinateFormula) {
@@ -247,13 +253,18 @@ export function evaluateEdgeTrace(formula, canvasSize, _time = 0) {
  */
 export function evaluateFractalIteration(formula, canvasSize, time = 0) {
   const {
-    iterations = 4,
+    iterations: requestedIterations = 4,
     baseShape = 'triangle',
     scale = 1,
     cx = canvasSize.width / 2,
     cy = canvasSize.height / 2,
   } = formula;
 
+  const numericIterations = Number(requestedIterations);
+  const iterations = Math.min(
+    MAX_FRACTAL_ITERATIONS,
+    Math.max(0, Number.isFinite(numericIterations) ? Math.floor(numericIterations) : 4)
+  );
   const coordinates = [];
 
   function generateFractal(x, y, size, depth) {
@@ -262,7 +273,7 @@ export function evaluateFractalIteration(formula, canvasSize, time = 0) {
         x: roundTo(x, 1),
         y: roundTo(y, 1),
         z: depth,
-        emphasis: clamp01(1 - depth / iterations),
+        emphasis: iterations === 0 ? 1 : clamp01(1 - depth / iterations),
         source: 'fractal',
         depth,
       });
@@ -282,7 +293,7 @@ export function evaluateFractalIteration(formula, canvasSize, time = 0) {
       generateFractal(x - newSize / 2, y + newSize / 2, newSize, newDepth);
       generateFractal(x + newSize / 2, y + newSize / 2, newSize, newDepth);
     } else if (baseShape === 'circle') {
-      const angle = (time * 0.001 + depth) * Math.PI / iterations;
+      const angle = (time * 0.001 + depth) * Math.PI / Math.max(1, iterations);
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI * 2 + angle;
         generateFractal(x + Math.cos(a) * newSize / 2, y + Math.sin(a) * newSize / 2, newSize, newDepth);
@@ -355,7 +366,7 @@ export function applyTemplateConstraints(coordinates, template, canvasSize) {
  */
 export function evaluateFormulaWithColor(formula, canvasSize, time = 0) {
   const coordinates = evaluateFormula(formula, canvasSize, time);
-  const { colorFormula } = formula;
+  const { colorFormula } = formula || {};
   if (!colorFormula) return coordinates.map(c => ({ ...c, color: '#808080' }));
 
   switch (colorFormula.type) {
@@ -386,10 +397,13 @@ function mapCoordinatesToGradient(coordinates, colorFormula) {
 }
 
 function mapCoordinatesToBrightness(coordinates, colorFormula) {
-  const { brightnessLevels = 4 } = colorFormula;
+  const rawLevels = Number(colorFormula.brightnessLevels);
+  const brightnessLevels = Math.max(1, Math.floor(Number.isFinite(rawLevels) ? rawLevels : 4));
+  const maxLevel = brightnessLevels - 1;
   return coordinates.map(coord => {
-    const level = Math.floor(coord.emphasis * brightnessLevels);
-    return { ...coord, color: `hsl(0, 0%, ${20 + (level / (brightnessLevels - 1)) * 80}%)`, brightnessLevel: level };
+    const level = Math.min(maxLevel, Math.floor(clamp01(coord.emphasis) * brightnessLevels));
+    const lightness = maxLevel === 0 ? 100 : 20 + (level / maxLevel) * 80;
+    return { ...coord, color: `hsl(0, 0%, ${lightness}%)`, brightnessLevel: level };
   });
 }
 

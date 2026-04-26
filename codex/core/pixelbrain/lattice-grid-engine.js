@@ -16,6 +16,7 @@
  * The grid is a spatial execution model.
  */
 
+import { safeDivide, toFinite } from '../../../src/lib/math/safe.js';
 import { processorBridge } from '../../../src/lib/processor-bridge.js';
 import { generateSymmetryOverlay } from './symmetry-amp.js';
 
@@ -27,6 +28,7 @@ const LATTICE_CONSTANTS = {
   ORIGIN_Y: 0,
   MIN_CELL_SIZE: 1,
   MAX_CELL_SIZE: 64,
+  MAX_CANVAS_DIM: 16384, // GPU limit for most modern browsers
   COMMON_CELL_SIZES: [1, 2, 4, 8, 16, 32, 64],
 };
 
@@ -184,7 +186,8 @@ function detectOptimalCellSize(pixelData, width, height) {
   }
 
   // Default: use smallest dimension / 16 as heuristic
-  return Math.max(1, Math.min(width, height) / 16);
+  const heuristicSize = toFinite(Math.min(width, height) / 16);
+  return Math.max(LATTICE_CONSTANTS.MIN_CELL_SIZE, heuristicSize);
 }
 
 /**
@@ -297,13 +300,13 @@ export function renderLattice(canvas, lattice, zoom = 4) {
   const { cols, rows, cellSize, cells } = lattice;
 
   // Extract constants
-  const { ORIGIN_X, ORIGIN_Y } = LATTICE_CONSTANTS;
+  const { ORIGIN_X, ORIGIN_Y, MAX_CANVAS_DIM } = LATTICE_CONSTANTS;
   const TILE_W = cellSize;
   const TILE_H = cellSize;
 
-  // CRITICAL: Force integer display dimensions
-  const displayWidth = Math.floor((cols * TILE_W * zoom) + ORIGIN_X);
-  const displayHeight = Math.floor((rows * TILE_H * zoom) + ORIGIN_Y);
+  // CRITICAL: Force integer display dimensions and clamp to GPU limits
+  const displayWidth = Math.min(MAX_CANVAS_DIM, toFinite(Math.floor((cols * TILE_W * zoom) + ORIGIN_X)));
+  const displayHeight = Math.min(MAX_CANVAS_DIM, toFinite(Math.floor((rows * TILE_H * zoom) + ORIGIN_Y)));
   
   // Set canvas backing resolution to match display (no CSS scaling)
   canvas.width = displayWidth;
@@ -320,9 +323,9 @@ export function renderLattice(canvas, lattice, zoom = 4) {
 
   // Draw cells as integer blocks (no scaling artifacts)
   cells.forEach((cell) => {
-    const x = Math.floor(ORIGIN_X + (cell.col * TILE_W * zoom));
-    const y = Math.floor(ORIGIN_Y + (cell.row * TILE_H * zoom));
-    const size = Math.floor(TILE_W * zoom);
+    const x = toFinite(Math.floor(ORIGIN_X + (cell.col * TILE_W * zoom)));
+    const y = toFinite(Math.floor(ORIGIN_Y + (cell.row * TILE_H * zoom)));
+    const size = toFinite(Math.floor(TILE_W * zoom));
 
     ctx.fillStyle = cell.color;
     ctx.fillRect(x, y, size, size);
@@ -330,7 +333,7 @@ export function renderLattice(canvas, lattice, zoom = 4) {
     // Emphasis glow (only for high-emphasis cells)
     if (cell.emphasis > 0.7) {
       ctx.shadowColor = cell.color;
-      ctx.shadowBlur = 8 * cell.emphasis;
+      ctx.shadowBlur = toFinite(8 * cell.emphasis);
       ctx.fillRect(x, y, size, size);
       ctx.shadowBlur = 0;
     }
@@ -342,7 +345,7 @@ export function renderLattice(canvas, lattice, zoom = 4) {
 
   // Vertical grid lines (1px wide, integer positions)
   for (let n = 0; n <= cols; n++) {
-    const x = Math.floor(ORIGIN_X + (n * TILE_W * zoom));
+    const x = toFinite(Math.floor(ORIGIN_X + (n * TILE_W * zoom)));
     ctx.fillRect(x, ORIGIN_Y, 1, displayHeight);
   }
 
@@ -358,17 +361,17 @@ export function renderLattice(canvas, lattice, zoom = 4) {
     overlay.forEach(cmd => {
       if (cmd.type === 'line') {
         ctx.strokeStyle = cmd.color;
-        ctx.lineWidth = cmd.lineWidth;
+        ctx.lineWidth = toFinite(cmd.lineWidth);
         ctx.setLineDash(cmd.dash || []);
         ctx.beginPath();
-        ctx.moveTo(cmd.x1, cmd.y1);
-        ctx.lineTo(cmd.x2, cmd.y2);
+        ctx.moveTo(toFinite(cmd.x1), toFinite(cmd.y1));
+        ctx.lineTo(toFinite(cmd.x2), toFinite(cmd.y2));
         ctx.stroke();
         ctx.setLineDash([]);
       } else if (cmd.type === 'circle') {
         ctx.fillStyle = cmd.color;
         ctx.beginPath();
-        ctx.arc(cmd.x, cmd.y, cmd.radius, 0, Math.PI * 2);
+        ctx.arc(toFinite(cmd.x), toFinite(cmd.y), toFinite(cmd.radius), 0, Math.PI * 2);
         ctx.fill();
       }
     });
@@ -378,10 +381,10 @@ export function renderLattice(canvas, lattice, zoom = 4) {
   console.log('[Lattice Render]', {
     cols, rows, cellSize, zoom,
     displayWidth, displayHeight,
-    scaleX: displayWidth / (cols * cellSize),
-    scaleY: displayHeight / (rows * cellSize),
-    isIntegerScale: Number.isInteger(displayWidth / (cols * cellSize)) && 
-                    Number.isInteger(displayHeight / (rows * cellSize)),
+    scaleX: safeDivide(displayWidth, (cols * cellSize)),
+    scaleY: safeDivide(displayHeight, (rows * cellSize)),
+    isIntegerScale: Number.isInteger(safeDivide(displayWidth, (cols * cellSize))) && 
+                    Number.isInteger(safeDivide(displayHeight, (rows * cellSize))),
     symmetry: lattice.symmetry?.type || 'none',
   });
 }

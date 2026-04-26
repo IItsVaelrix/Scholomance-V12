@@ -3,27 +3,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef, useTransition } from "react";
 import { LINKS } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { useScrolls } from "../../hooks/useScrolls.jsx";
+import { useProgression } from "../../hooks/useProgression.jsx";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import { preloadRoute } from "../../lib/routes.js";
 
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics.js";
 
+// ... (rest of the helper functions remain the same)
 function normalizeAdminList(rawValue) {
   return String(rawValue || "")
     .split(",")
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
 }
-
 function isAdminUser(user) {
   if (!user) return false;
   if (user.isAdmin === true) return true;
   if (String(user.role || "").toLowerCase() === "admin") return true;
-
   const adminAllowlist = normalizeAdminList(import.meta.env.VITE_ADMIN_USERNAMES || "admin");
   const username = String(user.username || "").toLowerCase();
   const email = String(user.email || "").toLowerCase();
-
   return adminAllowlist.includes(username) || adminAllowlist.includes(email);
 }
 
@@ -49,9 +49,21 @@ export default function Navigation() {
   const [navigatingPath, setNavigatingPath] = useState(null);
   const navTimeoutRef = useRef(null);
   const { user } = useAuth();
+  const { refreshScrolls } = useScrolls();
+  const { refreshProgression } = useProgression(); // We might need to add this to useProgression
   const prefersReducedMotion = usePrefersReducedMotion();
   const canAccessCollab = true;
   const navLinks = LINKS.filter((link) => link.id !== "collab" || canAccessCollab);
+
+  const handlePrefetch = useCallback((path) => {
+    preloadRoute(path);
+    if (path === "/read") {
+      refreshScrolls();
+    }
+    if (path === "/nexus" || path === "/profile") {
+      if (typeof refreshProgression === 'function') refreshProgression();
+    }
+  }, [refreshScrolls, refreshProgression]);
 
   const allLinks = [
     ...navLinks,
@@ -75,13 +87,11 @@ export default function Navigation() {
     });
   }, [navigate, location.pathname]);
 
-  // Reset navigating state when location changes
+  // ... (rest of the handlers and effects remain the same)
   useEffect(() => {
     setNavigatingPath(null);
     setIsMenuOpen(false);
   }, [location.pathname]);
-
-  // Lock body scroll when menu is open
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -90,20 +100,15 @@ export default function Navigation() {
     }
     return () => { document.body.style.overflow = ""; };
   }, [isMenuOpen]);
-
-  // Cleanup timeout on unmount
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    return () => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); };
+    const timeoutId = navTimeoutRef.current;
+    return () => { if (timeoutId) clearTimeout(timeoutId); };
   }, []);
-
   const handleToggle = useCallback(() => {
     triggerHapticPulse(UI_HAPTICS.MEDIUM);
     setIsMenuOpen((prev) => !prev);
     setNavigatingPath(null);
   }, []);
-
-  // Magical nav: select link → glow animation → navigate quickly
   const handleMobileNavClick = useCallback((e, linkPath) => {
     e.preventDefault();
     triggerHapticPulse(UI_HAPTICS.TICK);
@@ -144,7 +149,7 @@ export default function Navigation() {
                   className={({ isActive }) =>
                     `nav-link${isActive ? " active" : ""}${isPending && navigatingPath === l.path ? " is-navigating" : ""}`
                   }
-                  onMouseEnter={() => preloadRoute(l.path)}
+                  onMouseEnter={() => handlePrefetch(l.path)}
                   onClick={(e) => {
                     e.preventDefault();
                     handleNav(l.path);
@@ -182,7 +187,7 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* Mobile fullscreen overlay — outside nav to avoid backdrop-filter containing block */}
+      {/* Mobile fullscreen overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -231,7 +236,7 @@ export default function Navigation() {
                       <NavLink
                         to={l.path}
                         onClick={(e) => handleMobileNavClick(e, l.path)}
-                        onTouchStart={() => preloadRoute(l.path)}
+                        onTouchStart={() => handlePrefetch(l.path)}
                         className={`nav-mobile-link${isActive ? " active" : ""}${isSelected ? " nav-mobile-link--selected" : ""}`}
                       >
                         <span className="nav-mobile-link-copy">

@@ -43,12 +43,12 @@ function capRhymeRepeats(connections, maxRepeats = MAX_REPEATS_PER_RHYME_PAIR) {
  * Repeated pair entries are capped to 2 occurrences per type/subtype.
  */
 export default function RhymeDiagramPanel({
-  connections,
-  lineCount: _lineCount,
-  visible,
-  onConnectionClick,
-  onPairSelect,
-  highlightedLines,
+  connections = [],
+  lineCount: _lineCount = 0,
+  visible = true,
+  onConnectionClick = null,
+  onPairSelect = null,
+  highlightedLines = [],
 }) {
   const { theme } = useTheme();
   const isLight = theme === "light";
@@ -286,13 +286,4 @@ RhymeDiagramPanel.propTypes = {
   onConnectionClick: PropTypes.func,
   onPairSelect: PropTypes.func,
   highlightedLines: PropTypes.arrayOf(PropTypes.number),
-};
-
-RhymeDiagramPanel.defaultProps = {
-  connections: [],
-  lineCount: 0,
-  visible: true,
-  onConnectionClick: null,
-  onPairSelect: null,
-  highlightedLines: [],
 };

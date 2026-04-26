@@ -1,154 +1,80 @@
-import { hslToHex, resolveVerseIrColor } from './pcaChroma.js';
-import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
+import { SCHOOLS } from '../../../data/schools.js';
+import { hslToHex } from './pcaChroma.js';
 
-export const REGISTRY_SATURATION = 72;
-export const REGISTRY_LIGHTNESS = 62;
-export const GOLDEN_ANGLE_DEG = 137.508;
+/**
+ * MANDATORY RHYME COLOR REGISTRY (VAELRIX LAW 8 + 5)
+ * 
+ * Deterministic mapping of rhymeKeys to visual resonance colors.
+ * Clamps hues within the active School's harmonic gamut to prevent "rainbow-sludge".
+ * 
+ * Rejuvenation Specs:
+ * - Deterministic: Same rhymeKey + same School = Same color (always).
+ * - Harmonic: Hue variance limited to +/- 30 degrees of school anchor.
+ * - Inky: Saturation and Lightness optimized for dark parchment (Lore 11).
+ */
 
-function resolveRhymeKey(token) {
-  if (!token || typeof token !== 'object') {
-    return null;
+const GOLDEN_ANGLE_DEG = 137.508;
+const GAMUT_VARIANCE = 30; // degrees
+const REGISTRY_SATURATION = 68; // %
+const REGISTRY_LIGHTNESS = 64; // %
+
+/**
+ * Hashes a string to a deterministic integer.
+ * @param {string} str 
+ * @returns {number}
+ */
+function hashString(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0; // Convert to 32bit integer
   }
-
-  if (typeof token.rhymeKey === 'string' && token.rhymeKey) {
-    return token.rhymeKey;
-  }
-
-  if (typeof token.analysis?.rhymeKey === 'string' && token.analysis.rhymeKey) {
-    return token.analysis.rhymeKey;
-  }
-
-  if (typeof token.rhymeTailSignature === 'string' && token.rhymeTailSignature) {
-    return token.rhymeTailSignature;
-  }
-
-  return null;
+  return Math.abs(hash);
 }
 
-function resolveEffectClass(token) {
-  if (!token || typeof token !== 'object') {
-    return null;
-  }
+/**
+ * Resolves a deterministic, harmonic color for a given rhyme resonance.
+ * 
+ * @param {string} rhymeKey - The phonemic identity (e.g. "AY1 T")
+ * @param {string} schoolId - The active school (SONIC, PSYCHIC, etc.)
+ * @param {string|null} fallbackColor - PCA-derived color for non-rhymes
+ * @returns {string} Hex color
+ */
+export function resolveResonanceColor(rhymeKey, schoolId = 'DEFAULT', fallbackColor = null) {
+  if (!rhymeKey) return fallbackColor;
 
-  if (typeof token.effectClass === 'string' && token.effectClass) {
-    return token.effectClass;
-  }
+  const school = SCHOOLS[schoolId.toUpperCase()] || SCHOOLS.DEFAULT;
+  const anchorHue = school.colorHsl?.h ?? 174; // Default to Psychic teal if missing
 
-  if (typeof token.visualBytecode?.effectClass === 'string' && token.visualBytecode.effectClass) {
-    return token.visualBytecode.effectClass;
-  }
+  // Deterministic seed for this specific sound
+  const seed = hashString(rhymeKey);
+  
+  // Map seed to a hue shift within the school's permitted gamut
+  // We use the golden angle logic but localized to the gamut wedge
+  const hueShift = (seed * GOLDEN_ANGLE_DEG) % (GAMUT_VARIANCE * 2);
+  const finalHue = (anchorHue - GAMUT_VARIANCE + hueShift + 360) % 360;
 
-  if (typeof token.trueVisionBytecode?.effectClass === 'string' && token.trueVisionBytecode.effectClass) {
-    return token.trueVisionBytecode.effectClass;
-  }
+  // Merlin Rejuvenation: "Inky" palette hardening
+  // Primary rhymes get higher saturation, background frequencies are more muted
+  const saturation = REGISTRY_SATURATION;
+  const lightness = REGISTRY_LIGHTNESS;
 
-  return null;
+  return hslToHex(finalHue, saturation, lightness);
 }
 
-function resolveRhymeFamilyFromKey(rhymeKey) {
-  if (typeof rhymeKey !== 'string' || !rhymeKey) {
-    return null;
-  }
-
-  return normalizeVowelFamily(rhymeKey.split('-')[0] || null);
-}
-
-function resolveTerminalVowelFamily(token) {
-  if (!token || typeof token !== 'object') {
-    return null;
-  }
-
-  const directCandidates = [
-    token.terminalVowelFamily,
-    token.analysis?.terminalVowelFamily,
-    token.compilerRef?.terminalVowelFamily,
-  ];
-
-  for (const candidate of directCandidates) {
-    const normalized = normalizeVowelFamily(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  const rhymeFamily = resolveRhymeFamilyFromKey(resolveRhymeKey(token));
-  if (rhymeFamily) {
-    return rhymeFamily;
-  }
-
-  if (Array.isArray(token.vowelFamily) && token.vowelFamily.length > 0) {
-    const normalized = normalizeVowelFamily(token.vowelFamily[token.vowelFamily.length - 1]);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  const fallbackCandidates = [
-    token.vowelFamily,
-    token.analysis?.vowelFamily,
-    token.primaryStressedVowelFamily,
-    token.analysis?.primaryStressedVowelFamily,
-    token.compilerRef?.primaryStressedVowelFamily,
-  ];
-
-  for (const candidate of fallbackCandidates) {
-    const normalized = normalizeVowelFamily(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  return null;
-}
-
-export function buildRhymeColorRegistry(tokens) {
-  const registry = new Map();
-  let slotIndex = 0;
-
-  for (const token of Array.isArray(tokens) ? tokens : []) {
-    const rhymeKey = resolveRhymeKey(token);
-    if (!rhymeKey || resolveEffectClass(token) === 'INERT' || registry.has(rhymeKey)) {
-      continue;
-    }
-
-    const terminalVowelFamily = resolveTerminalVowelFamily(token);
-    const familyColor = terminalVowelFamily ? resolveVerseIrColor(terminalVowelFamily) : null;
-    let hex;
-    if (familyColor?.family) {
-      // Registry colors represent rhyme-tail identity, not the first vowel encountered in the word.
-      // This keeps multisyllabic rhymes like "core" / "adore" in the same family color.
-      hex = familyColor.hex;
-    } else {
-      // Fallback: golden angle for tokens where no vowel family data is available.
-      const hue = (slotIndex * GOLDEN_ANGLE_DEG) % 360;
-      hex = hslToHex(hue, REGISTRY_SATURATION, REGISTRY_LIGHTNESS);
-    }
-
-    registry.set(rhymeKey, hex);
-    slotIndex += 1;
-  }
-
-  return registry;
-}
-
-function normalizeExplicitColor(color) {
-  if (!color || color === '#888888' || color === '#888' || color === 'rgb(136, 136, 136)') {
-    return null;
-  }
-  return color;
-}
-
-export function resolveTokenColor(rhymeKey, registry, pcaColor, options = {}) {
-  const explicitColor = normalizeExplicitColor(pcaColor);
-  const preferRegistry = Boolean(options.preferRegistry);
-
-  if (!preferRegistry && explicitColor) {
-    return explicitColor;
-  }
-
-  if (typeof rhymeKey === 'string' && rhymeKey && registry instanceof Map && registry.has(rhymeKey)) {
-    return registry.get(rhymeKey) || explicitColor || null;
-  }
-
-  return explicitColor || null;
+/**
+ * Bulk resolves colors for a set of word analyses.
+ * @param {Array} profiles 
+ * @param {string} schoolId 
+ * @returns {Map<string, string>} wordIdentity -> hexColor
+ */
+export function buildResonancePalette(profiles, schoolId = 'DEFAULT') {
+  const palette = new Map();
+  profiles.forEach(p => {
+    if (!p) return;
+    const identity = p.identity || `${p.lineIndex}:${p.wordIndex}:${p.charStart}`;
+    palette.set(identity, resolveResonanceColor(p.rhymeKey, schoolId, p.visualBytecode?.color));
+  });
+  return palette;
 }

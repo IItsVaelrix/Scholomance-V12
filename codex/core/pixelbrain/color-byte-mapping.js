@@ -1,16 +1,28 @@
 import { SCHOOLS } from '../../../src/data/schools.js';
+import { resolveSonicChroma } from '../phonology/chroma.resolver.js';
 import {
   clamp01,
   createByteMap,
   hslToHex,
   parseBytecodeString,
   roundTo,
+  PALETTE_CONTRACT,
+  pseudoRandom,
+  hashString,
 } from './shared.js';
 
 /**
- * LAYER 2: COLOR-BYTE MAPPING WITH SEMANTIC INTEGRATION
- * Maps bytecode strings to color palettes using semantic parameters from Layer 1
+ * LAYER 2: COLOR-BYTE MAPPING — V12 DETERMINISTIC STANDARD
+ * Maps bytecode strings to color palettes using semantic parameters.
  */
+
+function firstFiniteNumber(...values) {
+  for (const value of values) {
+    const numberValue = Number(value);
+    if (Number.isFinite(numberValue)) return numberValue;
+  }
+  return undefined;
+}
 
 function resolveSchoolColor(schoolId, colorFeatures = {}) {
   const safeSchoolId = String(schoolId || 'VOID').trim().toUpperCase();
@@ -18,15 +30,12 @@ function resolveSchoolColor(schoolId, colorFeatures = {}) {
     colorHsl: { h: 0, s: 0, l: 50 },
   };
 
-  // For phoneme-based bytecodes (AA1, EH1) that aren't schools, generate unique hue
+  // ─── UNIFIED PHONETIC ANCHOR (V12) ─────────────────────────────────────────
   let baseHue = Number(school?.colorHsl?.h) || 0;
   if (safeSchoolId !== 'VOID' && !SCHOOLS[safeSchoolId]) {
-    // Generate deterministic hue from string
-    let hash = 0;
-    for (let i = 0; i < safeSchoolId.length; i++) {
-      hash = safeSchoolId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    baseHue = Math.abs(hash % 360);
+    // V12 FIX: Use deterministic stable hue for unknown school IDs (Law of Entropy)
+    // Avoids the hardcoded 180 fallback of the legacy phonetic call.
+    baseHue = hashString(safeSchoolId) % 360;
   }
 
   return Object.freeze({
@@ -47,20 +56,16 @@ function resolveSchoolColor(schoolId, colorFeatures = {}) {
 }
 
 /**
- * Generate palette from semantic parameters (Layer 1 → Layer 2 bridge)
- * @param {Object} semanticParams - SemanticParameters from visual-extractor
- * @returns {Object} Color palette with metadata
+ * Primary pure function for semantic palette generation (V12)
  */
-export function generatePaletteFromSemanticParameters(semanticParams) {
-  const safeParams = semanticParams || {};
-  const colorProps = safeParams.color || {};
-  const surfaceProps = safeParams.surface || {};
-  const lightProps = safeParams.light || {};
+export function generateSemanticPalette(params = {}, paletteSizeOverride) {
+  const safeParams = params || {};
+  const { color = {}, surface = {}, light = {}, form = {} } = safeParams;
 
-  // Base hue from color properties or light color
-  let baseHue = Number(colorProps.primaryHue) || 0;
-  if (lightProps.color) {
-    const hex = String(lightProps.color).replace('#', '');
+  // 1. Resolve Hue (Semantic or Light color)
+  let baseHue = firstFiniteNumber(color.primaryHue, safeParams.primaryHue, 0);
+  if (light.color) {
+    const hex = String(light.color).replace('#', '');
     if (/^[0-9A-F]{6}$/i.test(hex)) {
       const r = parseInt(hex.slice(0, 2), 16) / 255;
       const g = parseInt(hex.slice(2, 4), 16) / 255;
@@ -69,48 +74,60 @@ export function generatePaletteFromSemanticParameters(semanticParams) {
     }
   }
 
-  // Saturation modified by surface reflectivity
-  const baseSaturation = clamp01(
-    Number(colorProps.saturation) || 0.5 + (surfaceProps.reflectivity || 0) * 0.3
-  );
+  // 2. Resolve Saturation & Brightness
+  const reflectivity = firstFiniteNumber(surface.reflectivity, 0);
+  const lightIntensity = firstFiniteNumber(light.intensity, 0.5);
+  const saturation = clamp01(firstFiniteNumber(
+    color.saturation,
+    safeParams.saturation,
+    0.5 + reflectivity * 0.3
+  ));
+  const brightness = clamp01(firstFiniteNumber(
+    color.brightness,
+    safeParams.brightness,
+    0.5 * lightIntensity + 0.25
+  ));
 
-  // Brightness modified by light intensity
-  const baseBrightness = clamp01(
-    Number(colorProps.brightness) || 0.5 * (lightProps.intensity || 0.5) + 0.25
-  );
+  // 3. Resolve Size via Contract
+  const paletteSize = paletteSizeOverride !== undefined 
+    ? Number(paletteSizeOverride) 
+    : paletteStepCount(safeParams.rarity, safeParams.effect, form.complexity);
 
-  // Palette size from complexity
-  const baseSize = Math.round(3 + (safeParams.form?.complexity || 0.5) * 3);
-  const paletteSize = Math.max(3, Math.min(6, baseSize));
-
+  // 4. Build Colors (Deterministic variation)
   const colors = buildSemanticPaletteColors({
     hue: baseHue,
-    saturation: baseSaturation,
-    brightness: baseBrightness,
+    saturation,
+    brightness,
     paletteSize,
-    material: surfaceProps.material,
-    texture: surfaceProps.texture,
+    rarity: safeParams.rarity,
+    effect: safeParams.effect,
+    material: surface.material,
+    texture: surface.texture,
   });
 
   return Object.freeze({
     primaryHue: roundTo(baseHue, 2),
-    saturation: roundTo(baseSaturation),
-    brightness: roundTo(baseBrightness),
+    saturation: roundTo(saturation),
+    brightness: roundTo(brightness),
     paletteSize,
     colors,
-    material: surfaceProps.material || 'stone',
-    texture: surfaceProps.texture || 'grained',
+    material: surface.material || 'stone',
+    texture: surface.texture || 'grained',
+    rarity: safeParams.rarity || PALETTE_CONTRACT.TIERS.COMMON,
+    effect: safeParams.effect || 'INERT',
   });
 }
 
 /**
- * Build palette colors based on semantic properties
+ * Internal color builder with deterministic pseudo-random variation
  */
 function buildSemanticPaletteColors(params) {
-  const { hue, saturation, brightness, paletteSize, material, texture } = params;
+  const { 
+    hue, saturation, brightness, paletteSize, 
+    material, texture, rarity, effect 
+  } = params;
+  
   const colors = [];
-
-  // Material-specific color adjustments
   const materialMods = {
     metal: { satMod: -0.1, briMod: +0.15, hueShift: 0 },
     stone: { satMod: -0.2, briMod: 0, hueShift: 0 },
@@ -121,8 +138,6 @@ function buildSemanticPaletteColors(params) {
   };
 
   const mod = materialMods[material] || materialMods.stone;
-
-  // Texture-specific variation
   const textureVariation = {
     smooth: 0.05,
     grained: 0.12,
@@ -130,23 +145,28 @@ function buildSemanticPaletteColors(params) {
     fibrous: 0.15,
   }[texture] || 0.1;
 
+  const rarityShift = getRarityShift(rarity);
+  const effectLift = getEffectLift(effect);
+  
+  const baseSat = Math.max(0, Math.min(100, (saturation * 100) + effectLift));
+  const baseBri = Math.max(18, Math.min(76, (brightness * 100) + effectLift));
+
   for (let i = 0; i < paletteSize; i++) {
     const ratio = paletteSize === 1 ? 0 : i / (paletteSize - 1);
+    const seed = `${hue}-${material}-${texture}-${i}`;
     
-    // Lightness gradient
-    const lightness = Math.max(15, Math.min(85, 
-      (brightness * 100) - 25 + (ratio * 50) + (mod.briMod * 20)
+    const lightness = Math.max(8, Math.min(92, 
+      baseBri - 18 + (ratio * 36) + (mod.briMod * 20)
     ));
     
-    // Saturation with texture variation
-    const satVariation = (Math.random() - 0.5) * textureVariation * 20;
-    const saturationVal = Math.max(10, Math.min(90,
-      (saturation * 100) + mod.satMod * 20 + satVariation
+    const satVariation = (pseudoRandom(seed + '-sat') - 0.5) * textureVariation * 20;
+    const saturationVal = Math.max(0, Math.min(100,
+      baseSat - 10 + (ratio * 12) + mod.satMod * 20 + satVariation
     ));
     
-    // Hue with slight variation per color
-    const hueVariation = (Math.random() - 0.5) * textureVariation * 30;
-    const hueVal = ((hue + mod.hueShift + hueVariation) % 360 + 360) % 360;
+    const hueVariation = (pseudoRandom(seed + '-hue') - 0.5) * textureVariation * 30;
+    const contractHueShift = ((ratio - 0.5) * rarityShift);
+    const hueVal = ((hue + mod.hueShift + hueVariation + contractHueShift) % 360 + 360) % 360;
 
     colors.push(hslToHex(hueVal, saturationVal, lightness));
   }
@@ -154,138 +174,74 @@ function buildSemanticPaletteColors(params) {
   return Object.freeze(colors);
 }
 
-/**
- * Convert RGB to hue (0-360)
- */
 function rgbToHue(r, g, b) {
   const max = Math.max(r, g, b);
   const min = Math.min(r, g, b);
   const d = max - min;
-
   if (d === 0) return 0;
-
   let h;
   switch (max) {
     case r: h = ((g - b) / d) * 60; break;
     case g: h = ((b - r) / d + 2) * 60; break;
     case b: h = ((r - g) / d + 4) * 60; break;
   }
-
   return ((h % 360) + 360) % 360;
 }
 
-function paletteStepCount(rarity, effect, requestedSize) {
-  const explicit = Number(requestedSize);
-  if (Number.isInteger(explicit) && explicit >= 2) {
-    return Math.min(6, explicit);
+function paletteStepCount(rarity, effect, complexity) {
+  const tier = String(rarity || '').trim().toUpperCase();
+  const eff = String(effect || '').trim().toUpperCase();
+  
+  if (tier === PALETTE_CONTRACT.TIERS.INEXPLICABLE || eff === PALETTE_CONTRACT.TIERS.TRANSCENDENT) {
+    return PALETTE_CONTRACT.SIZES.INEXPLICABLE;
   }
-  if (String(rarity || '').trim().toUpperCase() === 'INEXPLICABLE') return 5;
-  if (String(effect || '').trim().toUpperCase() === 'TRANSCENDENT') return 5;
-  if (String(rarity || '').trim().toUpperCase() === 'RARE') return 4;
-  if (String(effect || '').trim().toUpperCase() === 'HARMONIC') return 4;
-  return 3;
-}
-
-function buildPaletteColors({
-  hue,
-  saturation,
-  brightness,
-  paletteSize,
-  rarity,
-  effect,
-} = {}) {
-  const safePaletteSize = paletteStepCount(rarity, effect, paletteSize);
-  const rarityShift = String(rarity || '').trim().toUpperCase() === 'INEXPLICABLE'
-    ? 18
-    : String(rarity || '').trim().toUpperCase() === 'RARE'
-      ? 10
-      : 6;
-  const effectLift = String(effect || '').trim().toUpperCase() === 'TRANSCENDENT'
-    ? 12
-    : String(effect || '').trim().toUpperCase() === 'HARMONIC'
-      ? 7
-      : String(effect || '').trim().toUpperCase() === 'RESONANT'
-        ? 4
-        : 0;
-  const baseSaturation = Math.max(0, Math.min(100, (saturation * 100) + effectLift));
-  const baseBrightness = Math.max(18, Math.min(76, (brightness * 100) + effectLift));
-
-  return Object.freeze(
-    Array.from({ length: safePaletteSize }, (_, index) => {
-      const ratio = safePaletteSize === 1 ? 0 : index / (safePaletteSize - 1);
-      const lightness = Math.max(8, Math.min(92, baseBrightness - 18 + (ratio * 36)));
-      const saturationShift = baseSaturation - 10 + (ratio * 12);
-      const hueShift = hue + ((ratio - 0.5) * rarityShift);
-      return hslToHex(hueShift, saturationShift, lightness);
-    })
-  );
-}
-
-export function generatePaletteFromSemantics(params = {}, paletteSizeOverride) {
-  const hue = Number(params?.primaryHue) || 0;
-  const saturation = clamp01(Number(params?.saturation) || 0.5);
-  const brightness = clamp01(Number(params?.brightness) || 0.5);
-  const paletteSize = paletteSizeOverride !== undefined 
-    ? Number(paletteSizeOverride) 
-    : paletteStepCount(params?.rarity, params?.effect, params?.paletteSize);
-    
-  const colors = buildPaletteColors({
-    hue,
-    saturation,
-    brightness,
-    paletteSize,
-    rarity: params?.rarity,
-    effect: params?.effect,
-  });
-
-  // For compatibility with tests expecting an array directly
-  if (paletteSizeOverride !== undefined) {
-    return Array.from(colors);
+  if (tier === PALETTE_CONTRACT.TIERS.RARE || eff === PALETTE_CONTRACT.TIERS.HARMONIC) {
+    return PALETTE_CONTRACT.SIZES.RARE;
   }
-
-  return Object.freeze({
-    primaryHue: roundTo(hue, 2),
-    saturation: roundTo(saturation),
-    brightness: roundTo(brightness),
-    paletteSize,
-    colors,
-  });
+  
+  if (complexity !== undefined) {
+    return Math.max(3, Math.min(6, Math.round(3 + complexity * 3)));
+  }
+  
+  return PALETTE_CONTRACT.SIZES.COMMON;
 }
 
+function getRarityShift(rarity) {
+  const tier = String(rarity || '').trim().toUpperCase();
+  return PALETTE_CONTRACT.SHIFTS[tier] || PALETTE_CONTRACT.SHIFTS.COMMON;
+}
+
+function getEffectLift(effect) {
+  const eff = String(effect || '').trim().toUpperCase();
+  return PALETTE_CONTRACT.LIFT[eff] || PALETTE_CONTRACT.LIFT.INERT;
+}
+
+/**
+ * Maps bytecode to a consistent palette object.
+ * Pure V12 implementation. Array return and manual cleaning purged.
+ */
 export function bytecodeToPalette(bytecode, options = {}) {
-  // Handle array of bytecodes for tests (returns primary color per unique bytecode)
+  // If array, return array of PALETTE OBJECTS, not colors. Integrity is sovereign.
   if (Array.isArray(bytecode)) {
-    const uniqueColors = new Set();
-    bytecode.forEach(bc => {
-      const palette = bytecodeToPalette(bc, options);
-      const color = Array.isArray(palette) ? palette[0] : (palette.colors ? palette.colors[0] : null);
-      if (color) uniqueColors.add(color);
-    });
-    return Array.from(uniqueColors);
+    return bytecode.map(bc => bytecodeToPalette(bc, options));
   }
 
   const parsed = parseBytecodeString(bytecode);
+  const baseColor = resolveSchoolColor(parsed.schoolId, options?.colorFeatures);
   
-  // Handle short phoneme bytecodes
-  let schoolId = parsed.schoolId;
-  if (schoolId === 'VOID' && bytecode && !String(bytecode).includes('-')) {
-    schoolId = String(bytecode).replace(/[0-9]/g, '').toUpperCase();
-  }
-
-  const baseColor = resolveSchoolColor(schoolId, options?.colorFeatures);
-  const palette = generatePaletteFromSemantics({
+  const palette = generateSemanticPalette({
     primaryHue: baseColor.hue,
     saturation: baseColor.saturation,
     brightness: baseColor.brightness,
-    paletteSize: options?.colorFeatures?.paletteSize,
     rarity: parsed.rarity,
     effect: parsed.effect,
-  });
+    form: { complexity: options?.colorFeatures?.complexity }
+  }, options?.colorFeatures?.paletteSize);
 
   return Object.freeze({
     key: String(bytecode || '').trim().toUpperCase(),
     bytecode: String(bytecode || '').trim().toUpperCase(),
-    schoolId: schoolId,
+    schoolId: parsed.schoolId,
     rarity: parsed.rarity,
     effect: parsed.effect,
     colors: palette.colors,
@@ -293,8 +249,23 @@ export function bytecodeToPalette(bytecode, options = {}) {
   });
 }
 
+/**
+ * Deterministic "SSD" Block-Aligned addressing
+ * Maps bytes to blocks/pages before modulo-snapping to colors.
+ */
 export function getHexForByte(bytecode, byteIndex, options = {}) {
   const palette = bytecodeToPalette(bytecode, options);
-  const paletteIndex = Math.max(0, Math.abs(Math.trunc(Number(byteIndex) || 0))) % Math.max(1, palette.colors.length);
-  return palette.byteMap[String(paletteIndex)] || palette.colors[0] || '#808080';
+  const colors = palette.colors;
+  const numColors = colors.length;
+  if (numColors === 0) return '#808080';
+
+  const index = Math.max(0, Math.abs(Math.trunc(Number(byteIndex) || 0)));
+  const pageSize = PALETTE_CONTRACT.ADDRESSING.PAGE_SIZE;
+  const pageId = Math.floor(index / pageSize);
+  const pageOffset = index % pageSize;
+  
+  const pageJitter = hashString(`page-${pageId}`) % numColors;
+  const paletteIndex = (pageOffset + pageJitter) % numColors;
+  
+  return colors[paletteIndex] || colors[0];
 }

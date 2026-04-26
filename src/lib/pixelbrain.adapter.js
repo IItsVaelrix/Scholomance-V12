@@ -11,11 +11,11 @@ import { processorBridge } from './processor-bridge.js';
 import { 
   generatePixelArtFromImage as codexGeneratePixelArtFromImage,
   transcribeFullPixelData as codexTranscribeFullPixelData
-} from '../../codex/core/pixelbrain/image-to-pixel-art';
+} from '../../codex/core/pixelbrain/image-to-pixel-art.js';
 
 import { 
   evaluateFormulaWithColor as codexEvaluateFormulaWithColor 
-} from '../../codex/core/pixelbrain/formula-to-coordinates';
+} from '../../codex/core/pixelbrain/formula-to-coordinates.js';
 
 import { 
   parseErrorForAI as codexParseErrorForAI,

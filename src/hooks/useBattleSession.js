@@ -18,7 +18,18 @@ import {
 import { analyzeText } from '../../codex/core/analysis.pipeline.js';
 import { createCombatScoringEngine } from '../../codex/core/scoring.defaults.js';
 import { normalizeCombatScore } from '../../codex/core/combat.scoring.js';
+import {
+  OPPONENT_MAX_HP,
+  PLAYER_MAX_HP,
+  PLAYER_MAX_MP,
+  splitCombatLines,
+  upsertStatusEffect as mergeStatusEffects,
+  tickStatusEffects,
+  getStatusMagnitude,
+} from '../../codex/core/combat.session.js';
 import { scoreCombatScroll } from '../lib/combatApi.js';
+
+import { useProgression } from './useProgression.jsx';
 
 const PLAYER_ID = 'player';
 const OPPONENT_ID = 'opponent';
@@ -92,78 +103,6 @@ function seedBattlefieldEffects(grid, battleSeed, occupied = new Set()) {
   });
 }
 
-function normalizeStatusEffect(statusEffect) {
-  if (!statusEffect || typeof statusEffect !== 'object') return null;
-
-  const turns = Math.max(
-    1,
-    Number(statusEffect.turnsRemaining ?? statusEffect.turns) || 1
-  );
-  const tier = Math.max(1, Number(statusEffect.tier) || 1);
-
-  return {
-    ...statusEffect,
-    tier,
-    turns: Math.max(1, Number(statusEffect.turns) || turns),
-    turnsRemaining: turns,
-    magnitude: Math.max(0, Number(statusEffect.magnitude) || 0),
-  };
-}
-
-function mergeStatusEffects(statusList, statusEffect) {
-  const normalized = normalizeStatusEffect(statusEffect);
-  if (!normalized) return Array.isArray(statusList) ? statusList : [];
-
-  const next = Array.isArray(statusList) ? [...statusList] : [];
-  const existingIndex = next.findIndex((entry) => (
-    entry?.chainId === normalized.chainId
-    && entry?.disposition === normalized.disposition
-    && entry?.school === normalized.school
-  ));
-
-  if (existingIndex < 0) {
-    next.push(normalized);
-    return next;
-  }
-
-  const existing = normalizeStatusEffect(next[existingIndex]) || normalized;
-  next[existingIndex] = {
-    ...existing,
-    ...normalized,
-    tier: Math.max(existing.tier, normalized.tier),
-    turns: Math.max(existing.turns, normalized.turns),
-    turnsRemaining: Math.max(existing.turnsRemaining, normalized.turnsRemaining),
-    magnitude: Math.max(existing.magnitude, normalized.magnitude),
-  };
-  return next;
-}
-
-function tickStatusEffects(statusList) {
-  if (!Array.isArray(statusList) || statusList.length === 0) return [];
-
-  return statusList
-    .map((statusEffect) => normalizeStatusEffect(statusEffect))
-    .filter(Boolean)
-    .map((statusEffect) => ({
-      ...statusEffect,
-      turnsRemaining: Math.max(0, statusEffect.turnsRemaining - 1),
-    }))
-    .filter((statusEffect) => statusEffect.turnsRemaining > 0);
-}
-
-function getStatusMagnitude(entity, chainId) {
-  if (!entity?.statusEffects) return 0;
-  return entity.statusEffects
-    .filter((effect) => effect?.chainId === chainId)
-    .reduce((sum, effect) => sum + (Number(effect?.magnitude) || 0), 0);
-}
-
-function splitCombatLines(text) {
-  return String(text || '')
-    .split(/\n+/g)
-    .map((line) => line.trim())
-    .filter(Boolean);
-}
 
 function buildScoreBadges({
   school,
@@ -406,17 +345,10 @@ async function resolvePlayerCombatProfile({
 
 function applyDamageEntry(entity, entry) {
   if (!entry) return entity;
-
-  if (entry.amount < 0) {
-    return {
-      ...entity,
-      hp: clampBetween(entity.hp - entry.amount, 0, entity.maxHp),
-    };
-  }
-
+  const maxHp = entity.id === PLAYER_ID ? PLAYER_MAX_HP : OPPONENT_MAX_HP;
   return {
     ...entity,
-    hp: clampBetween(entity.hp - entry.amount, 0, entity.maxHp),
+    hp: clampBetween(entity.hp - entry.amount, 0, maxHp),
   };
 }
 
@@ -426,6 +358,7 @@ export function useBattleSession() {
   const [turnTimeRemaining, setTurnTimeRemaining] = useState(TURN_TIME_SECONDS);
   const timerRef = useRef(null);
   const scoringEngineRef = useRef(null);
+  const { recordWordUse } = useProgression();
 
   if (!scoringEngineRef.current) {
     scoringEngineRef.current = createCombatScoringEngine();
@@ -813,6 +746,15 @@ export function useBattleSession() {
         let updated = applyDamageEntry(entity, damageEntry);
 
         if (entity.id === PLAYER_ID) {
+          // Record word use for player progression
+          if (Array.isArray(turnResult.tokens)) {
+            turnResult.tokens.forEach(token => {
+              if (token && typeof token === 'string') {
+                recordWordUse(token, scoreSummary);
+              }
+            });
+          }
+
           updated = {
             ...updated,
             mp: clampBetween(updated.mp - CAST_MP_COST, 0, updated.maxMp),
@@ -848,7 +790,7 @@ export function useBattleSession() {
     } finally {
       setIsResolving(false);
     }
-  }, [battleState, handOffTurnToOpponent]);
+  }, [battleState, handOffTurnToOpponent, recordWordUse]);
 
   const resolveOpponentTurn = useCallback(async () => {
     if (!battleState || battleState.activeEntityId !== OPPONENT_ID || isResolving) return;

@@ -3,7 +3,7 @@
  * Translates ARPAbet phoneme sequences into deterministic HSL chroma signatures.
  */
 
-import { getVowelHue } from '../../../src/lib/phonology/vowelWheel.js';
+import { VOWEL_HUE_MAP, getVowelHue } from './vowelWheel.js';
 
 // Coda weight for Saturation
 const CODA_SONORITY_WEIGHT = {
@@ -22,7 +22,9 @@ const CODA_SONORITY_WEIGHT = {
  */
 export function resolveSonicChroma(phonemes = []) {
   if (!phonemes || phonemes.length === 0) {
-    return { h: 0, s: 0, l: 50, bytecode: 'PB-CHROMA-0000' };
+    // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
+    // Layout: H(000) S(00) L(50) NUC(__)
+    return { h: 0, s: 0, l: 50, bytecode: 'PB-CHROMA-0000050__' };
   }
 
   let nucleus = null;
@@ -33,7 +35,9 @@ export function resolveSonicChroma(phonemes = []) {
   for (let i = 0; i < phonemes.length; i++) {
     const p = phonemes[i];
     const base = p.replace(/[0-2]/g, '').toUpperCase();
-    if (getVowelHue(base) !== 180 || base === 'AA') { // 180 is the default/fallback
+    
+    // Fix 180° Hue Collision: Check existence in Map instead of comparing Hue return
+    if (base in VOWEL_HUE_MAP) {
       nucleus = base;
       stress = p.match(/[0-2]/) ? parseInt(p.match(/[0-2]/)[0]) : 1;
       nucleusIndex = i;
@@ -42,7 +46,9 @@ export function resolveSonicChroma(phonemes = []) {
   }
 
   if (!nucleus) {
-    return { h: 180, s: 0, l: 40, bytecode: 'PB-CHROMA-NULL' };
+    // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
+    // Layout: H(180) S(00) L(40) NUC(__)
+    return { h: 180, s: 0, l: 40, bytecode: 'PB-CHROMA-b40028__' };
   }
 
   // 2. Resolve Hue (H) from Nucleus
@@ -52,7 +58,8 @@ export function resolveSonicChroma(phonemes = []) {
   const coda = phonemes.slice(nucleusIndex + 1);
   let codaWeight = 0;
   coda.forEach(p => {
-    const base = p.replace(/[0-2]/g, '');
+    // Fix Coda Case-Sensitivity Asymmetry: Ensure uppercase for weight lookup
+    const base = p.replace(/[0-2]/g, '').toUpperCase();
     codaWeight += (CODA_SONORITY_WEIGHT[base] || 0);
   });
 
@@ -66,10 +73,11 @@ export function resolveSonicChroma(phonemes = []) {
   if (stress === 0) l = 45;
 
   // 5. Generate Bytecode Artifact (PB-CHROMA-v1)
-  // Encoded as: H(3 chars) S(2 chars) L(2 chars) nucleus(2 chars)
-  const hueHex = h.toString(16).padStart(3, '0');
-  const satHex = s.toString(16).padStart(2, '0');
-  const litHex = l.toString(16).padStart(2, '0');
+  // Encoded as: H(3 chars) S(2 chars) l(2 chars) nucleus(2 chars)
+  // Fix Hex-Encoding Brittleness: Explicit Math.floor to ensure integer hex
+  const hueHex = Math.floor(h).toString(16).padStart(3, '0');
+  const satHex = Math.floor(s).toString(16).padStart(2, '0');
+  const litHex = Math.floor(l).toString(16).padStart(2, '0');
   const bytecode = `PB-CHROMA-${hueHex}${satHex}${litHex}${nucleus}`;
 
   return { h, s, l, bytecode };

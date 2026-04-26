@@ -7,7 +7,7 @@
  * 
  * BYTECODE ERROR SCHEMA:
  * ┌─────────────────────────────────────────────────────────────────────────┐
- * │ PB-ERR-v1-{CATEGORY}-{SEVERITY}-{MODULE}-{CODE}-{CHECKSUM}              │
+ * │ PB-ERR-v1-{CATEGORY}-{SEVERITY}-{MODULE}-{CODE}-{CONTEXT}-{CHECKSUM}    │
  * └─────────────────────────────────────────────────────────────────────────┘
  * 
  * COMPONENTS:
@@ -16,17 +16,49 @@
  *   - CATEGORY: Error domain (TYPE|VALUE|RANGE|STATE|HOOK|EXT|COORD|COLOR|NOISE|RENDER)
  *   - SEVERITY: Impact level (FATAL|CRIT|WARN|INFO)
  *   - MODULE: Source module identifier
- *   - CODE: Hex-encoded error code with embedded metadata
+ *   - CODE: 4-digit hex string (e.g., '0105'). 
+ *     Note: Standard convention is [Bytecode: '0105'] <-> [JSON/Data: 0x0105].
+ *   - CONTEXT: Base64-encoded JSON with detailed metadata
  *   - CHECKSUM: FNV-1a hash for integrity verification
  * 
  * AI PARSING NOTES:
  *   - All fields are uppercase, dash-separated
- *   - CODE field contains base64-encoded JSON with detailed context
+ *   - CONTEXT field contains base64-encoded JSON with detailed context
  *   - CHECKSUM validates message integrity (prevents hallucination)
  *   - Deterministic: same error always produces same bytecode
  */
 
 import { hashString } from './shared.js';
+
+function bytesToBinary(bytes) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return binary;
+}
+
+function encodeBase64Utf8(value) {
+  const bufferCtor = globalThis.Buffer;
+  if (typeof bufferCtor?.from === 'function') {
+    return bufferCtor.from(value, 'utf8').toString('base64');
+  }
+  return btoa(bytesToBinary(new TextEncoder().encode(value)));
+}
+
+function decodeBase64Utf8(value) {
+  const bufferCtor = globalThis.Buffer;
+  if (typeof bufferCtor?.from === 'function') {
+    return bufferCtor.from(value, 'base64').toString('utf8');
+  }
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index++) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+  return new TextDecoder().decode(bytes);
+}
 
 // ─── Error Categories ────────────────────────────────────────────────────────
 
@@ -77,6 +109,7 @@ export const MODULE_IDS = Object.freeze({
   COMBAT: 'COMBAT',
   UI_STASIS: 'UISTAS',
   ARTIFACT: 'ARTIFA',
+  TURBO_QUANT: 'QUANT',
 });
 
 // ─── Error Codes (per category) ──────────────────────────────────────────────
@@ -92,6 +125,7 @@ export const ERROR_CODES = Object.freeze({
   INVALID_FORMAT: 0x0102,
   MISSING_REQUIRED: 0x0103,
   INVALID_VALUE: 0x0104,  // Generic invalid value error
+  QUANT_PRECISION_LOSS: 0x0105,
   
   // RANGE errors
   OUT_OF_BOUNDS: 0x0201,
@@ -148,6 +182,7 @@ export const ERROR_CODES = Object.freeze({
   METER_DEGRADATION: 0x0C03,
   SYLLABLE_OVERFLOW: 0x0C04,
   VOWEL_FAMILY_MISMATCH: 0x0C05,
+  LEGALITY_VIOLATION: 0x0C06,
 
   // COMBAT errors (0x0D00–0x0DFF) — Arena failures
   FORCE_DISSIPATION: 0x0D01,
@@ -242,7 +277,7 @@ export function encodeBytecodeError(category, severity, moduleId, errorCode, con
   
   // Encode context as base64 JSON
   const contextJSON = JSON.stringify(context);
-  const contextB64 = btoa(unescape(encodeURIComponent(contextJSON)));
+  const contextB64 = encodeBase64Utf8(contextJSON);
   
   // Build bytecode string (without checksum)
   const codeHex = errorCode.toString(16).toUpperCase().padStart(4, '0');
@@ -297,7 +332,7 @@ export function decodeBytecodeError(bytecode) {
     // Decode context
     let context = {};
     try {
-      const contextJSON = decodeURIComponent(escape(atob(contextB64)));
+      const contextJSON = decodeBase64Utf8(contextB64);
       context = JSON.parse(contextJSON);
     } catch (e) {
       context = { parseError: 'CONTEXT_DECODE_FAILED' };
@@ -305,6 +340,7 @@ export function decodeBytecodeError(bytecode) {
     
     return {
       valid: true,
+      bytecode,
       version,
       category,
       severity,
@@ -380,6 +416,11 @@ export function getRecoveryHintsForError(category, errorCode, context = {}) {
       hints.suggestions.push('Check enum membership with Set.has()');
       hints.suggestions.push('Validate required fields before processing');
       hints.constraints.push('Values must be from allowed set');
+      if (errorCode === ERROR_CODES.QUANT_PRECISION_LOSS) {
+        hints.suggestions.push('Verify TurboQuant recall overlap with full-precision baseline');
+        hints.constraints.push('Recall@5 overlap must be >= 0.85');
+        hints.invariants.push('overlapScore >= threshold');
+      }
       if (context.allowedValues) {
         hints.invariants.push(`${JSON.stringify(context.allowedValues)}.includes(value) === true`);
         hints.solution_bytecode = encodeSolution('MATCH_ENUM', { allowed: context.allowedValues });
@@ -494,6 +535,11 @@ export function getRecoveryHintsForError(category, errorCode, context = {}) {
       hints.suggestions.push('Validate phoneme density and vessel capacity');
       hints.suggestions.push('Check rhyme-law alignment');
       hints.constraints.push('Structural integrity must be >= threshold');
+      if (errorCode === ERROR_CODES.LEGALITY_VIOLATION) {
+        hints.suggestions.push('Ensure reranker respects Syntax HMM/Judiciary legality flags');
+        hints.constraints.push('Reranked top-5 must contain zero illegal candidates');
+        hints.invariants.push('illegalCandidates.length === 0');
+      }
       if (context.maxDensity) {
         hints.invariants.push(`phonemeDensity <= ${context.maxDensity}`);
         hints.solution_bytecode = encodeSolution('PHONEME_DILUTION', { targetDensity: context.maxDensity });

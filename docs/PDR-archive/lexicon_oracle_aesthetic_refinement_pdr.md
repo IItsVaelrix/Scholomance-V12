@@ -99,10 +99,10 @@ When the user presses Enter or clicks "resolve":
 ### 6.2 Data Visualization — Section by Section
 
 #### Section 01: Capability Truth (Summary)
-**Current:** 4-cell grid with word/class/ipa/echo key
+**Current:** 4-cell grid with word/class/pronunciation/echo key
 **Proposed:**
 - Word displayed as a **large glyph** with school-colored underline
-- IPA rendered as **phoneme chips** — each phoneme is a colored button (vowel = school color, consonant = silver)
+- **pronunciation** rendered as **phoneme chips** — each phoneme is a colored button (vowel = school color, consonant = silver)
 - Echo key displayed as a **rune badge** with subtle glow
 - Class displayed as a **textured label** (noun = solid, verb = dashed, adj = dotted border)
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { PhonemeEngine } from '../../src/lib/phonology/phoneme.engine';
+import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 
 describe('Alphabet Phonetic Mapping', () => {
   it('should identify EY family for standalone "A"', () => {

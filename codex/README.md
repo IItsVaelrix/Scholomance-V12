@@ -92,7 +92,7 @@ interface LexicalEntry {
   antonyms: string[];
   rhymes: string[];
   etymology?: string;
-  ipa?: string;
+  pronunciation?: string;
   lore?: object;             // MUD-specific data
   raw?: object;              // Original API response
 }

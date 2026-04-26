@@ -1,16 +1,5 @@
 import PropTypes from 'prop-types';
-
-/**
- * Analysis mode options for Truesight.
- */
-export const ANALYSIS_MODES = {
-  NONE: 'none',
-  RHYME: 'rhyme',
-  ANALYZE: 'analyze',
-  ASTROLOGY: 'astrology',
-  PIXELBRAIN: 'pixelbrain_transverse',
-  VOIDECHO: 'void_echo',
-};
+import { ANALYSIS_MODES } from '../../lib/truesight/compiler/analysisModes';
 
 /**
  * Truesight mode control panel.
@@ -64,49 +53,18 @@ export default function TruesightControls({
         Astrology
       </button>
 
-      {isTruesight && (
-        <div className="truesight-mode-selector animate-fadeIn" role="group" aria-label="Analysis mode">
-          <button
-            type="button"
-            className={`mode-btn ${analysisMode === ANALYSIS_MODES.RHYME ? 'mode-btn--active' : ''}`}
-            onClick={() => onModeChange(ANALYSIS_MODES.RHYME)}
-            aria-pressed={analysisMode === ANALYSIS_MODES.RHYME}
-            title="Focus on rhyme connections"
-          >
-            Rhymes
-          </button>
-          <button
-            type="button"
-            className={`mode-btn mode-btn--analyze ${analysisMode === ANALYSIS_MODES.ANALYZE ? 'mode-btn--active' : ''}`}
-            onClick={() => onModeChange(ANALYSIS_MODES.ANALYZE)}
-            aria-pressed={analysisMode === ANALYSIS_MODES.ANALYZE}
-            title="Poetic and structural analysis"
-          >
-            <span className="mode-btn-analyze-glyph" aria-hidden="true">
-              &#x2736;
-            </span>
-            <span>Analyze</span>
-          </button>
-          <button
-            type="button"
-            className={`mode-btn ${analysisMode === ANALYSIS_MODES.PIXELBRAIN ? 'mode-btn--active' : ''}`}
-            onClick={() => onModeChange(ANALYSIS_MODES.PIXELBRAIN)}
-            aria-pressed={analysisMode === ANALYSIS_MODES.PIXELBRAIN}
-            title="Render authoritative PixelBrain transverse color output"
-          >
-            PixelBrain
-          </button>
-          <button
-            type="button"
-            className={`mode-btn ${analysisMode === ANALYSIS_MODES.VOIDECHO ? 'mode-btn--active' : ''}`}
-            onClick={() => onModeChange(ANALYSIS_MODES.VOIDECHO)}
-            aria-pressed={analysisMode === ANALYSIS_MODES.VOIDECHO}
-            title="Render Void Echo fallback coloration"
-          >
-            Void Echo
-          </button>
-        </div>
-      )}
+      <button
+        type="button"
+        className={`toolbar-btn toolbar-btn--analyze ${analysisMode === ANALYSIS_MODES.ANALYZE ? 'toolbar-btn--active' : ''}`}
+        onClick={() => onModeChange(ANALYSIS_MODES.ANALYZE)}
+        disabled={disabled}
+        aria-pressed={analysisMode === ANALYSIS_MODES.ANALYZE}
+        title="Poetic and structural analysis"
+      >
+        <span aria-hidden="true">&#x2697;</span>
+        Analyze
+      </button>
+
       {isAnalyzing && (
         <span className="analyzing-indicator" aria-live="polite">
           Analyzing...

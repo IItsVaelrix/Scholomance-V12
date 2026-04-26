@@ -26,10 +26,10 @@ const TIE_BREAK_DELTA = 0.05;
 const MAX_LEGACY_TOTAL = 1.35;
 
 const DEFAULT_LAYERS = {
-  SYNTAX: { weight: 0.35, name: 'Syntax Analyzer' },
-  PREDICTOR: { weight: 0.30, name: 'Predictor' },
   PHONEME: { weight: 0.40, name: 'Phoneme Engine' },
-  SPELLCHECK: { weight: 0.10, name: 'Spellchecker' },
+  SPELLCHECK: { weight: 0.25, name: 'Spellchecker' },
+  PREDICTOR: { weight: 0.20, name: 'Predictor' },
+  SYNTAX: { weight: 0.15, name: 'Syntax Analyzer' },
 };
 
 const DEFAULT_CONSENSUS_THRESHOLD = 0.65;

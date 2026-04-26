@@ -3,19 +3,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../hooks/useTheme.jsx";
 import { useColorCodex } from "../../hooks/useColorCodex.js";
 import IntelliSense from "../../components/IntelliSense.jsx";
-import { computeGridTopology } from "../../lib/truesight/compiler/truesightGrid";
 import { computeAdaptiveGridTopology, buildTruesightOverlayLines } from "../../lib/truesight/compiler/adaptiveWhitespaceGrid";
-import { loadCorpusFrequencies } from "../../lib/truesight/compiler/corpusWhitespaceGrid";
-import { ViewportChannel } from "../../lib/truesight/compiler/viewportBytecode";
 import Gutter from "./Gutter.jsx";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { WORD_TOKEN_REGEX } from "../../lib/wordTokenization.js";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import { decodeBytecode } from "./bytecodeRenderer.js";
-import { buildRhymeColorRegistry, resolveTokenColor } from "../../lib/truesight/color/rhymeColorRegistry.js";
+import { resolveResonanceColor, buildResonancePalette } from "../../lib/truesight/color/rhymeColorRegistry.js";
 import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
-import { resolveSonicChroma } from "../../lib/phonology/vowelWheel.js";
+import { resolveSonicChroma } from "../../lib/phonology.adapter.js";
 import { BytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, ERROR_CODES, MODULE_IDS } from "../../lib/pixelbrain.adapter.js";
 import AnimatedSurface from "../../components/AnimatedSurface";
 
@@ -214,434 +211,198 @@ function getCursorCoordsFromTextarea(textarea, mirrored = false, topology = null
   const rect = textarea.getBoundingClientRect();
   const pos = textarea.selectionStart;
   const text = textarea.value.substring(0, pos);
-  const lines = text.split('\n');
-  const lineNum = lines.length - 1;
-  const currentLineText = lines[lineNum];
+  const lines = text.split("\n");
+  const lineCount = lines.length;
+  const currentLineText = lines[lineCount - 1];
 
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
-  const textWidth = ctx.measureText(currentLineText).width;
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  context.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  const textWidth = context.measureText(currentLineText).width;
 
   let x = paddingLeft + textWidth;
+  let y = paddingTop + (lineCount - 1) * lineHeight;
 
-  // Apply mirroring if enabled
   if (mirrored && topology) {
-    // For a single point (the caret), we use the point mirror formula: x' = (totalWidth - x)
-    // We base it on the topology content width
-    x = topology.totalWidth - x;
+    const axisX = (topology.totalWidth - 1) / 2;
+    x = (2 * axisX) - x;
   }
 
-  return {
-    x: rect.left + x,
-    y: rect.top + paddingTop + (lineNum * lineHeight) + (lineHeight * 0.8) - textarea.scrollTop,
-  };
+  return { x, y };
 }
 
-const ScrollEditor = forwardRef(function ScrollEditor({
-  documentIdentity = "new:0",
-  initialTitle = "",
-  initialContent = "",
-  onSave,
-  onCancel,
-  isEditable = true,
-  disabled = false,
+const ScrollEditor = forwardRef(({
+  content: initialContent = "",
+  title: initialTitle = "",
+  isEditable = false,
   isTruesight = false,
   isPredictive = false,
+  disabled = false,
   onContentChange,
   onTitleChange,
-  analyzedWords = new Map(),
-  analyzedWordsByIdentity = new Map(),
-  analyzedWordsByCharStart = new Map(),
-  activeConnections = [],
-  lineSyllableCounts = [],
-  highlightedLines = [],
-  pinnedLines = null,
-  syntaxLayer = null,
-  analysisMode = 'none',
-  onWordActivate,
+  onSave,
+  onCancel,
   onCursorChange,
+  onWordActivate,
   onScrollChange,
-  predict,
-  getCompletions,
-  checkSpelling,
-  getSpellingSuggestions,
-  predictorReady,
-  plsPhoneticFeatures,
-  mirrored = false,
-  vowelColors = {},
+  analyzedDocument = null,
+  analyzedWords = new Map(),
+  analyzedWordsByCharStart = new Map(),
+  analyzedWordsByIdentity = new Map(),
+  analysisMode = "none",
+  activeConnections = [],
+  highlightedLines = [],
+  pinnedLines = [],
+  vowelColors = null,
   vowelColorResolver = null,
-}, ref) {
-  const [title, setTitle] = useState(initialTitle);
+  predict = null,
+  getCompletions = null,
+  checkSpelling = null,
+  getSpellingSuggestions = null,
+  predictorReady = false,
+  plsPhoneticFeatures = null,
+  theme = null,
+  selectedSchool = "DEFAULT",
+}, ref) => {
+  const { theme: activeTheme } = useTheme();
+
+  // REJUVENATION: Deterministic Resonance Palette (Law 8 + 5)
+  // Replaces the discovery-order registry with hash-based harmonic gamut colors.
+  const resonancePalette = useMemo(() => {
+    const profiles = Array.from(analyzedWordsByIdentity.values());
+    return buildResonancePalette(profiles, selectedSchool);
+  }, [analyzedWordsByIdentity, selectedSchool]);
+
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
+  const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
-  const [lineHeightPx, setLineHeightPx] = useState(DEFAULT_LINE_HEIGHT);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(0);
   const [intellisenseSuggestions, setIntellisenseSuggestions] = useState([]);
-  const scrollTopRef = useRef(0);
-  const [ghostData, setGhostData] = useState(null);   // { sortedLines, initialYMap }
-  const [isGhostPinned, setIsGhostPinned] = useState(false);
   const [intellisenseIndex, setIntellisenseIndex] = useState(0);
+  const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
+  const [viewportState, setViewportState] = useState(null);
+  const [adaptiveTopology, setAdaptiveTopology] = useState(null);
+  const [isGhostPinned, setIsGhostPinned] = useState(false);
+  const [ghostData, setGhostData] = useState(null);
+  const [bytecodeArtifacts, setBytecodeArtifacts] = useState([]);
+
+  const wrapperRef = useRef(null);
   const textareaRef = useRef(null);
   const wordBackgroundLayerRef = useRef(null);
   const markdownRef = useRef(null);
-  const bootPayloadRef = useRef({
-    title: String(initialTitle || ""),
-    content: String(initialContent || ""),
-  });
-  const isReadOnlyTruesight = isTruesight && !isEditable;
-  const isReadOnlyPlain = !isTruesight && !isEditable;
+  const scrollTopRef = useRef(0);
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const reducedMotion = prefersReducedMotion;
 
-  bootPayloadRef.current = {
-    title: String(initialTitle || ""),
-    content: String(initialContent || ""),
-  };
-
-  // Bytecode-driven viewport integration
-  const [viewportState, setViewportState] = useState(() => ViewportChannel.getState());
-  
-  // Subscribe to viewport bytecode channel
-  useEffect(() => {
-    const unsubscribe = ViewportChannel.bind('scroll-editor', (vp) => {
-      setViewportState(vp);
-    });
-    
-    return unsubscribe;
-  }, []);
-  
-  // Load corpus for CEAG (Corpus-Enhanced Adaptive Grid)
-  useEffect(() => {
-    loadCorpusFrequencies().then(freq => {
-      if (freq.size > 0) {
-        console.log(`[ScrollEditor] CEAG loaded ${freq.size} corpus words`);
-      }
-    });
-  }, []);
-  
-  // Bytecode-driven cursor alignment
-  // Adaptive grid topology that updates on resize/CSS variable changes
-  const wrapperRef = useRef(null);
-
-  // --- Accessibility Fix: Blur hidden textarea ---
-  useEffect(() => {
-    if (isReadOnlyTruesight && !!onWordActivate) {
-      if (document.activeElement === textareaRef.current) {
-        textareaRef.current.blur();
-      }
-    }
-  }, [isReadOnlyTruesight, onWordActivate]);
-
-  const [computedTypography, setComputedTypography] = useState(null);
-  const [gridTopology, setGridTopology] = useState(null);
-  const [adaptiveTopology, setAdaptiveTopology] = useState(null);
-  const [, setBytecodeArtifacts] = useState([]);
+  const isReadOnlyPlain = !isEditable && !isTruesight;
+  const isReadOnlyTruesight = !isEditable && isTruesight;
 
   useLayoutEffect(() => {
-    const { title: nextTitle, content: nextContent } = bootPayloadRef.current;
+    setContent(initialContent);
+    setContentForOverlay(initialContent);
+  }, [initialContent]);
 
-    setTitle(nextTitle);
-    setContent(nextContent);
-    setContentForOverlay(nextContent);
-    setIsSaving(false);
-    setScrollTop(0);
-    scrollTopRef.current = 0;
-    setCursorCoords({ x: 0, y: 0 });
-    setIntellisenseSuggestions([]);
-    setIntellisenseIndex(0);
-    setGhostData(null);
-    setIsGhostPinned(false);
-    cachedEditorStyles = null;
+  useLayoutEffect(() => {
+    setTitle(initialTitle);
+  }, [initialTitle]);
 
-    for (const node of [textareaRef.current, wordBackgroundLayerRef.current, markdownRef.current]) {
-      if (!node) continue;
-      node.scrollTop = 0;
-      node.scrollLeft = 0;
-    }
-  }, [documentIdentity]);
+  const stableTypographyRef = useRef(null);
 
-  // --- Bytecode Guard: Style Invariant Verification ---
-  const verifyTypographyInvariant = useCallback((textareaStyles, overlayStyles) => {
-    const criticalFields = ['fontFamily', 'fontSize', 'lineHeight', 'paddingLeft', 'paddingTop'];
-    for (const field of criticalFields) {
-      if (textareaStyles[field] !== overlayStyles[field]) {
-        const error = new BytecodeError(
-          ERROR_CATEGORIES.TYPE,
-          ERROR_SEVERITY.CRIT,
-          MODULE_IDS.SHARED,
-          ERROR_CODES.TYPE_MISMATCH,
-          {
-            field,
-            expected: textareaStyles[field],
-            actual: overlayStyles[field],
-            component: 'ScrollEditor',
-            reason: 'Typography mismatch between substrate and overlay'
-          }
-        );
-        console.error(`[PB-GUARD] Typography Invariant Violated: ${error.bytecode}`);
-        setBytecodeArtifacts(prev => [...prev.slice(-4), error.bytecode]);
-        return false;
-      }
-    }
-    return true;
-  }, []);
-
-  // --- Bytecode Guard: Overlay Geometry Invariant ---
-  // Verifies that the Truesight overlay and the textarea share the exact bounding rect.
-  // A mismatch means pixel-perfect word hit-testing is broken.
-  useEffect(() => {
-    if (!isTruesight) return;
-    const overlay = wordBackgroundLayerRef.current;
-    const textarea = textareaRef.current;
-    if (!overlay || !textarea) return;
-
-    const overlayRect = overlay.getBoundingClientRect();
-    const textareaRect = textarea.getBoundingClientRect();
-    const TOLERANCE = 1; // 1px — sub-pixel rounding is acceptable
-
-    const dTop  = Math.abs(overlayRect.top    - textareaRect.top);
-    const dLeft = Math.abs(overlayRect.left   - textareaRect.left);
-    const dW    = Math.abs(overlayRect.width  - textareaRect.width);
-    const dH    = Math.abs(overlayRect.height - textareaRect.height);
-
-    if (dTop > TOLERANCE || dLeft > TOLERANCE || dW > TOLERANCE || dH > TOLERANCE) {
-      const geoError = new BytecodeError(
-        ERROR_CATEGORIES.COORD,
-        ERROR_SEVERITY.CRIT,
-        MODULE_IDS.SHARED,
-        ERROR_CODES.COORD_OUT_OF_BOUNDS,
-        {
-          reason: 'Truesight overlay geometry diverges from substrate textarea — pixel-perfect word hit-testing is compromised',
-          delta: { top: dTop.toFixed(2), left: dLeft.toFixed(2), width: dW.toFixed(2), height: dH.toFixed(2) },
-          overlay:  { top: overlayRect.top.toFixed(1), left: overlayRect.left.toFixed(1), w: overlayRect.width.toFixed(1),  h: overlayRect.height.toFixed(1) },
-          textarea: { top: textareaRect.top.toFixed(1), left: textareaRect.left.toFixed(1), w: textareaRect.width.toFixed(1), h: textareaRect.height.toFixed(1) },
-          component: 'ScrollEditor'
-        }
-      );
-      console.error(`[PB-GUARD] Overlay Geometry Invariant Violated: ${geoError.bytecode}`);
-      setBytecodeArtifacts(prev => [...prev.slice(-4), geoError.bytecode]);
-    }
-  }, [isTruesight, computedTypography]);
-
-  // Compute typography from the active surface and geometry from the wrapper.
-  // Plain read-only mode, editable mode, and TrueSight all render through
-  // different substrates, so the style source must follow the active surface.
-  const updateTypography = useCallback(() => {
+  const updateTypography = useCallback((force = false) => {
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    const start = performance.now();
+    const styles = window.getComputedStyle(wrapper);
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
+    const clientWidth = Number.isFinite(wrapper.clientWidth) ? wrapper.clientWidth : 0;
+    const width = Math.max(0, clientWidth - paddingLeft - paddingRight);
+    const height = wrapper.clientHeight;
 
-    if (import.meta.env.MODE === 'test') {
-      console.log(`[ScrollEditor] updateTypography: ${wrapper.clientWidth}x${wrapper.clientHeight}, content: ${content?.length}`);
-    }
-
-    const styleSource =
-      (isReadOnlyPlain ? markdownRef.current : null) ||
-      (isTruesight ? wordBackgroundLayerRef.current : null) ||
-      textareaRef.current ||
-      wrapper;
-    const styles = window.getComputedStyle(styleSource);
-    const topology = computeGridTopology(wrapper);
-
-    // Collect sample tokens from content for adaptive measurement
-    const sampleTokens = content?.split(/\s+/).slice(0, 10) || [];
-    const adaptiveTopo = computeAdaptiveGridTopology(wrapper, sampleTokens);
-
-    setComputedTypography({
-      fontFamily: styles.fontFamily,
-      fontSize: styles.fontSize,
-      lineHeight: styles.lineHeight,
-      letterSpacing: styles.letterSpacing,
-      wordSpacing: styles.wordSpacing,
-      paddingTop: styles.paddingTop,
-      paddingRight: styles.paddingRight,
-      paddingBottom: styles.paddingBottom,
-      paddingLeft: styles.paddingLeft,
-      fontStyle: styles.fontStyle,
-      fontWeight: styles.fontWeight,
-    });
-
-    if (topology) {
-      setGridTopology(topology);
-    }
-
-    if (adaptiveTopo) {
-      setAdaptiveTopology(adaptiveTopo);
-      if (adaptiveTopo.baseCellHeight) {
-        setLineHeightPx(adaptiveTopo.baseCellHeight);
-      }
-    }
-
-    const duration = performance.now() - start;
-    // Typography measurement is a synchronous layout read that legitimately exceeds
-    // one frame on large documents. Only emit UI_STASIS for durations that represent
-    // an actionable freeze (>100ms), not routine recalculation.
-    if (duration > 100) {
-      const stasisErr = new BytecodeError(
-        ERROR_CATEGORIES.UI_STASIS,
-        ERROR_SEVERITY.WARN,
-        'UISTAS',
-        0x0E01,
-        {
-          operation: 'updateTypography',
-          actualDuration: duration,
-          timeoutMs: 100,
-          contentLength: content?.length || 0
-        }
-      );
-      console.warn(`[PB-GUARD] UI Stasis Detected: ${stasisErr.bytecode}`);
-    }
-  }, [content, isReadOnlyPlain, isTruesight]);
-  
-  // Initial capture + adaptive updates via ResizeObserver
-  useLayoutEffect(() => {
-    const wrapper = wrapperRef.current;
-    if (!wrapper) return;
-    
-    // Initial computation
-    updateTypography();
-    
-    // Adaptive: watch for CSS variable changes via ResizeObserver
-    const observer = new ResizeObserver(() => {
-      updateTypography();
-    });
-    
-    observer.observe(wrapper);
-    
-    return () => {
-      observer.disconnect();
-    };
-  }, [updateTypography]);
-  
-  const cursorSync = useMemo(() => {
-    if (!computedTypography || !gridTopology) return null;
-    
-    const textareaStyles = {
-      fontFamily: computedTypography.fontFamily,
-      fontSize: computedTypography.fontSize,
-      lineHeight: computedTypography.lineHeight,
-      letterSpacing: computedTypography.letterSpacing,
-      wordSpacing: computedTypography.wordSpacing,
-      paddingTop: computedTypography.paddingTop,
-      paddingRight: computedTypography.paddingRight,
-      paddingBottom: computedTypography.paddingBottom,
-      paddingLeft: computedTypography.paddingLeft,
-      tabSize: 2,
-      MozTabSize: 2,
-      boxSizing: 'border-box',
-      WebkitTextFillColor: 'currentColor',
-      resize: 'none',
-      overflow: 'auto',
-    };
-
-    const overlayStyles = {
-      fontFamily: computedTypography.fontFamily,
-      fontSize: computedTypography.fontSize,
-      lineHeight: computedTypography.lineHeight,
-      letterSpacing: computedTypography.letterSpacing,
-      wordSpacing: computedTypography.wordSpacing,
-      paddingTop: computedTypography.paddingTop,
-      paddingRight: computedTypography.paddingRight,
-      paddingBottom: computedTypography.paddingBottom,
-      paddingLeft: computedTypography.paddingLeft,
-      tabSize: 2,
-      MozTabSize: 2,
-      boxSizing: 'border-box',
-      overflow: 'hidden',
-      pointerEvents: 'none',
-    };
-
-    // --- Bytecode Guard: Final Typography Validation ---
-    verifyTypographyInvariant(textareaStyles, overlayStyles);
-
-    return {
-      textareaStyles,
-      overlayStyles,
-      gridTopology,
-    };
-  }, [computedTypography, gridTopology, verifyTypographyInvariant]);
-
-  useEffect(() => {
-    let resizeTimer;
-    const handleResize = () => { 
-      cachedEditorStyles = null;
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        updateTypography();
-      }, 100);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      clearTimeout(resizeTimer);
-    };
-  }, [updateTypography]);
-
-  const reducedMotion = usePrefersReducedMotion();
-  const { theme: activeTheme } = useTheme();
-
-  // Trigger ritual prediction when typing (debounced)
-  useEffect(() => {
-    if (!isEditable || !isPredictive || !predict || !predictorReady || !content) {
-      setIntellisenseSuggestions(prev => (prev.length === 0 ? prev : []));
+    // Only update state if dimensions or critical font styles actually changed, or if forced
+    const current = stableTypographyRef.current;
+    if (!force && current && 
+        current.width === width && 
+        current.height === height && 
+        current.fontSize === styles.fontSize &&
+        current.fontFamily === styles.fontFamily) {
       return;
     }
 
-    const textarea = textareaRef.current;
-    if (!textarea) return;
+    const topology = computeAdaptiveGridTopology(wrapper, []);
+    stableTypographyRef.current = { 
+      width, 
+      height, 
+      fontSize: styles.fontSize, 
+      fontFamily: styles.fontFamily,
+      topology 
+    };
 
-    const timeoutId = setTimeout(async () => {
-      const pos = textarea.selectionStart;
-      const textBefore = content.substring(0, pos);
-      const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
-      const prefix = lastWordMatch ? lastWordMatch[1] : '';
-      
-      // Look back for the previous word to provide bigram context
-      const prevText = textBefore.substring(0, textBefore.length - prefix.length).trim();
-      const prevWordMatch = prevText.match(/([a-zA-Z']+)$/);
-      const prevWord = prevWordMatch ? prevWordMatch[1] : null;
+    setContainerWidth(width);
+    setContainerHeight(height);
+    setAdaptiveTopology(topology);
+  }, []);
 
-      try {
-        const lineWords = textBefore.split('\n').pop().split(/\s+/).filter(Boolean);
-        const verseIRState = resolvePlsVerseIRState({
-          prevLineEndWord: prevWord, // Simplified heuristic for prev line end
-          currentLineWords: lineWords,
-          plsPhoneticFeatures,
-        });
+  useLayoutEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
-        const suggestions = await predict(prefix, prevWord, 6, {
-          syntaxContext: syntaxLayer,
-          currentLineWords: lineWords,
-          verseIRState,
-        });
-        
-        if (Array.isArray(suggestions)) {
-          const coords = getCursorCoordsFromTextarea(textarea, mirrored, adaptiveTopology);
-          setCursorCoords(coords);
-          setIntellisenseSuggestions(suggestions.map(s => ({ token: s })));
-          setIntellisenseIndex(0);
-        }
-      } catch (err) {
-        console.error('[ScrollEditor] Prediction failed:', err);
-      }
-    }, 180);
+    // Initial measurement
+    updateTypography(true);
 
-    return () => clearTimeout(timeoutId);
-  }, [content, isEditable, isPredictive, predict, predictorReady, syntaxLayer, plsPhoneticFeatures, adaptiveTopology, mirrored]);
+    let frameId;
+    const observer = new ResizeObserver(() => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        updateTypography();
+      });
+    });
 
-  const containerWidth = useMemo(() => {
-    if (adaptiveTopology && adaptiveTopology.totalWidth > 0) {
-      return adaptiveTopology.totalWidth;
+    observer.observe(wrapper);
+
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [updateTypography]);
+
+  const { overlayLines, allOverlayTokens } = useMemo(() => {
+    if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
+      return { overlayLines: [], allOverlayTokens: [] };
     }
-    return 800;
+    const result = buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology);
+    return { overlayLines: result.lines, allOverlayTokens: result.allTokens };
+  }, [contentForOverlay, containerWidth, adaptiveTopology]);
+
+  const lineSyllableCounts = useMemo(() => {
+    if (analyzedDocument?.lineSyllableCounts) return analyzedDocument.lineSyllableCounts;
+    return overlayLines.map(() => 0);
+  }, [analyzedDocument, overlayLines]);
+
+  const syntaxLayer = useMemo(() => analyzedDocument?.syntaxSummary || null, [analyzedDocument]);
+
+  const mirrored = false;
+
+  const cursorSync = useMemo(() => {
+    if (!adaptiveTopology) return null;
+    const { baseCellHeight } = adaptiveTopology;
+    const overlayStyles = {
+      paddingLeft: `${adaptiveTopology.originX}px`,
+      paddingTop: `${adaptiveTopology.originY}px`,
+      lineHeight: `${baseCellHeight}px`,
+    };
+    const textareaStyles = {
+      paddingLeft: `${adaptiveTopology.originX}px`,
+      paddingTop: `${adaptiveTopology.originY}px`,
+      lineHeight: `${baseCellHeight}px`,
+    };
+    return { overlayStyles, textareaStyles };
   }, [adaptiveTopology]);
 
-  const { lines: overlayLines, allTokens: allOverlayTokens } = useMemo(
-    () => adaptiveTopology ? buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology) : { lines: [], allTokens: [] },
-    [contentForOverlay, containerWidth, adaptiveTopology]
-  );
+  const lineHeightPx = adaptiveTopology?.baseCellHeight || DEFAULT_LINE_HEIGHT;
 
   const derivedAnalyzedWordsByCharStart = useMemo(() => {
     const map = new Map();
@@ -666,8 +427,8 @@ const ScrollEditor = forwardRef(function ScrollEditor({
   }, [highlightedLines]);
 
   const rhymeColorRegistry = useMemo(
-    () => buildRhymeColorRegistry(Array.from(analyzedWordsByIdentity.values())),
-    [analyzedWordsByIdentity]
+    () => analyzedDocument?.rhymeColorRegistry || new Map(),
+    [analyzedDocument]
   );
 
   const { shouldColorWord } = useColorCodex(
@@ -701,44 +462,14 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       
       const currentTop = node.scrollTop ?? 0;
       const currentLeft = node.scrollLeft ?? 0;
-      const deltaTop = Math.abs(currentTop - nextTop);
-      const deltaLeft = Math.abs(currentLeft - nextLeft);
 
-      if (deltaTop > 1) node.scrollTop = nextTop;
-      if (deltaLeft > 1) node.scrollLeft = nextLeft;
-
-      const syncedTop = node.scrollTop ?? 0;
-      const syncedLeft = node.scrollLeft ?? 0;
-      const residualTop = Math.abs(syncedTop - nextTop);
-      const residualLeft = Math.abs(syncedLeft - nextLeft);
-      const residualDelta = Math.max(residualTop, residualLeft);
-
-      // --- Bytecode Guard: Sync Invariant ---
-      // Only warn when a peer remains misaligned after synchronization is applied.
-      if (residualDelta > 1 && !isReadOnlyPlain && !isReadOnlyTruesight) {
-        const error = new BytecodeError(
-          ERROR_CATEGORIES.COORD,
-          ERROR_SEVERITY.WARN,
-          MODULE_IDS.COORD,
-          ERROR_CODES.COORD_OUT_OF_BOUNDS,
-          {
-            operation: 'syncScrollPosition',
-            sourceTop: nextTop,
-            sourceLeft: nextLeft,
-            targetTop: syncedTop,
-            targetLeft: syncedLeft,
-            delta: residualDelta,
-            nodeType: node.className,
-            priorTop: currentTop,
-            priorLeft: currentLeft,
-            reason: 'Peer layer remained out of sync after scroll synchronization'
-          }
-        );
-        console.warn(`[PB-GUARD] Scroll Sync Invariant Violated: ${error.bytecode}`);
-        setBytecodeArtifacts(prev => [...prev.slice(-4), error.bytecode]);
-      }
+      // V12 Adaptive Correction: the overlay layer may have a different scroll height
+      // or padding than the textarea. We must force the sync even if the peer 
+      // reports a different max scroll.
+      node.scrollTop = nextTop;
+      node.scrollLeft = nextLeft;
     }
-  }, [isReadOnlyPlain, isReadOnlyTruesight, onScrollChange]);
+  }, [onScrollChange]);
 
   const handleTextareaScroll = useCallback(() => {
     if (isReadOnlyPlain) return;
@@ -752,6 +483,45 @@ const ScrollEditor = forwardRef(function ScrollEditor({
     if (!layer) return;
     syncScrollPosition(layer.scrollTop, layer.scrollLeft, layer);
   }, [syncScrollPosition]);
+
+  const [localMisspellings, setLocalMisspellings] = useState(new Set());
+
+  useEffect(() => {
+    if (!checkSpelling || !isEditable) return;
+    
+    let isCancelled = false;
+    const validate = async () => {
+      const tokens = overlayLines.flatMap(line => line.tokens.filter(t => WORD_TOKEN_REGEX.test(t.token) && !t.isWhitespace));
+      const results = await Promise.all(tokens.map(async (t) => {
+        const isValid = await checkSpelling(t.token.trim());
+        return { charStart: t.localStart, isValid };
+      }));
+      
+      if (!isCancelled) {
+        const invalidSet = new Set(results.filter(r => !r.isValid).map(r => r.charStart));
+        setLocalMisspellings(invalidSet);
+      }
+    };
+    
+    validate();
+    return () => { isCancelled = true; };
+  }, [overlayLines, checkSpelling, isEditable]);
+
+  const [hoveredMisspelling, setHoveredMisspelling] = useState(null);
+  const [spellcheckSuggestions, setSpellcheckSuggestions] = useState([]);
+
+  useEffect(() => {
+    if (!hoveredMisspelling || !getSpellingSuggestions) {
+      setSpellcheckSuggestions([]);
+      return;
+    }
+    
+    let isCancelled = false;
+    getSpellingSuggestions(hoveredMisspelling.word, null, 3).then(suggestions => {
+      if (!isCancelled) setSpellcheckSuggestions(suggestions);
+    });
+    return () => { isCancelled = true; };
+  }, [hoveredMisspelling, getSpellingSuggestions]);
 
   const handleMarkdownScroll = useCallback(() => {
     if (!isReadOnlyPlain) return;
@@ -927,12 +697,44 @@ const ScrollEditor = forwardRef(function ScrollEditor({
   const handleTextareaClick = useCallback((event) => {
     const textarea = event.currentTarget;
     emitCursorChange(textarea);
+    
+    // Sync scroll if overlay is active
+    handleTextareaScroll(event);
+
     if (!onWordActivate || textarea.selectionStart !== textarea.selectionEnd) return;
-    const tokenEntry = resolveWordTokenAtOffset(textarea.selectionStart, syntaxLayer, content);
-    const wordPayload = buildWordPayloadFromToken(tokenEntry);
-    if (!wordPayload) return;
+    
+    const cursorOffset = textarea.selectionStart;
+    const tokenEntry = resolveWordTokenAtOffset(cursorOffset, syntaxLayer, content);
+    if (!tokenEntry || !tokenEntry.token) return;
+
+    const clean = tokenEntry.token.trim().toUpperCase();
+    const identityKey = `${tokenEntry.lineNumber}:${tokenEntry.wordIndex}:${tokenEntry.charStart}`;
+    
+    const analysis = analyzedWordsByIdentity.get(identityKey) || 
+                     derivedAnalyzedWordsByCharStart.get(tokenEntry.charStart) || 
+                     (allowLegacyWordFallback ? analyzedWords.get(clean) : null);
+
+    const wordPayload = {
+      ...buildWordPayloadFromToken(tokenEntry),
+      analysis
+    };
+    
+    if (!wordPayload.word) return;
+
     const caretCoords = getCursorCoordsFromTextarea(textarea, mirrored, adaptiveTopology);
     const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || DEFAULT_LINE_HEIGHT;
+
+    // ─── UNIFIED WORD ACTIVATION (V12 DIVORCE) ─────────────────────────────
+    // Directly signaling the activator to bypass Truesight-only listeners.
+    onWordActivate?.({
+      ...wordPayload,
+      trigger: 'textarea_tap',
+      charStart: tokenEntry.charStart,
+      charEnd: tokenEntry.charEnd,
+      lineIndex: tokenEntry.lineNumber,
+      wordIndex: tokenEntry.wordIndex
+    });
+
     emitWordActivation("pin", wordPayload, {
       anchorRect: {
         left: caretCoords.x,
@@ -947,10 +749,57 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       detail: event.detail,
       source: "pointer",
     }, onWordActivate);
-  }, [content, emitCursorChange, mirrored, onWordActivate, adaptiveTopology, syntaxLayer]);
+  }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology]);
+
+  const updateCompletions = useCallback(async (value, pos) => {
+    if (!isPredictive || !getCompletions || !predictorReady) {
+      setIntellisenseSuggestions([]);
+      return;
+    }
+
+    const textBefore = value.substring(0, pos);
+    const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
+    const prefix = lastWordMatch ? lastWordMatch[1] : "";
+    
+    // Only trigger if we have some text or are at a word boundary
+    if (prefix.length === 0 && !textBefore.endsWith(' ')) {
+      setIntellisenseSuggestions([]);
+      return;
+    }
+
+    const lines = textBefore.split("\n");
+    const lineIndex = lines.length - 1;
+    const currentLineText = lines[lineIndex] || "";
+    
+    // Build context for PLS
+    const context = {
+      text: value,
+      cursorOffset: pos,
+      lineIndex,
+      currentLineText,
+      prefix,
+    };
+
+    // Use syntax layer for HHM context
+    const tokenAtCursor = resolveWordTokenAtOffset(pos, syntaxLayer, value);
+    const options = {
+      syntaxContext: tokenAtCursor || null,
+      maxResults: 8,
+    };
+
+    const suggestions = await getCompletions(context, options);
+    setIntellisenseSuggestions(suggestions || []);
+    setIntellisenseIndex(0);
+
+    // Update cursor coordinates for positioning IntelliSense
+    const coords = getCursorCoordsFromTextarea(textareaRef.current, mirrored, adaptiveTopology);
+    setCursorCoords(coords);
+  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, mirrored, adaptiveTopology]);
 
   const handleContentChange = useCallback((event) => {
     const nextValue = event.target.value;
+    const pos = event.target.selectionStart;
+
     if (nextValue.length > MAX_CONTENT_LENGTH) {
       const truncated = nextValue.slice(0, MAX_CONTENT_LENGTH);
       setContent(truncated);
@@ -960,15 +809,18 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       }
       return;
     }
+
     setContent(nextValue);
     emitCursorChange(event.target);
     setContentForOverlay(nextValue);
+    
     if (onContentChange) {
       onContentChange(nextValue);
     }
-  }, [emitCursorChange, onContentChange]);
 
-  const containerHeight = viewportState?.height || 800;
+    // Trigger completions
+    updateCompletions(nextValue, pos);
+  }, [emitCursorChange, onContentChange, updateCompletions]);
 
   return (
     <motion.div
@@ -1045,6 +897,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
             <div
               ref={markdownRef}
               className="markdown-rendered"
+              style={cursorSync?.textareaStyles}
               aria-label={`Scroll content: ${title || "Untitled"}`}
               onScroll={handleMarkdownScroll}
             >
@@ -1071,16 +924,19 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                       className={`truesight-line truesight-line--${lineType}${isLineDimmed ? ' truesight-line--dimmed' : ''}${isHighlighted ? ' truesight-line--highlighted' : ''}`}
                       style={{ position: 'relative', height: `${lineHeightPx}px` }}
                     >
-                      {tokens.map(({ token, localStart, localEnd, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {tokens.map(({ token, localStart, localEnd, globalCharStart, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
                         const clean = isWord ? token.trim().toUpperCase() : "";
-                        const charStart = localStart;
+                        
+                        // V12 FIX: Use Global Character Start for stable lookup (Determinism is the Shield)
+                        const charStart = globalCharStart;
                         const charEnd = localEnd;
                         const identityKey = `${lineIndex}:${Number.isInteger(wordIndex) ? wordIndex : -1}:${charStart}`;
+                        
                         const analysis = isWord
                           ? (
-                            analyzedWordsByIdentity.get(identityKey) ||
                             derivedAnalyzedWordsByCharStart.get(charStart) ||
+                            analyzedWordsByIdentity.get(identityKey) ||
                             (allowLegacyWordFallback ? analyzedWords.get(clean) : null)
                           )
                           : null;
@@ -1096,8 +952,6 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         };
 
                         if (!isWord) {
-                          // Render whitespace/punctuation to maintain perfect layout sync.
-                          // We use currentColor (or inherit) so they are visible in Truesight.
                           return (
                             <span 
                               key={localStart} 
@@ -1116,26 +970,29 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
-                        const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
                         
-                        // GrimDesign-aligned: phase=0 keeps color deterministic per vowel nucleus.
-                        // Same vowel family → same hue, regardless of word position in the document.
-                        const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
+                        // V12 PERFORMANCE: Use precomputed values from Synthesis Kernel
+                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
+                        
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
                         const explicitColor = decoded?.color || bytecode?.color || null;
-                        const rhymeColor = isRhymeSurface
-                          ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
+                        
+                        const rhymeColor = (isRhymeSurface && identityKey)
+                          ? resonancePalette.get(identityKey)
                           : null;
+                        
                         const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
+                          rhymeColor
+                          || explicitColor
+                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
+                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
                         ) : null;
+
                         const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
@@ -1148,41 +1005,77 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                           ...(decoded?.style || {}),
                           pointerEvents: 'auto',
                           cursor: 'pointer',
+                          // V12 PERFORMANCE: Force GPU composition
+                          willChange: 'transform, opacity',
                           ...(isLineHighlighted ? { backgroundColor: 'rgba(101, 31, 255, 0.13)', borderRadius: '0.5rem' } : {}),
                         };
 
+                        const isMisspelled = localMisspellings.has(charStart);
+
                         return (
-                          <AnimatedSurface
-                            key={localStart}
-                            as="span"
-                            signal={animationSignal}
-                            role="button"
-                            tabIndex={0}
-                            data-char-start={charStart}
-                            className={[
-                              'truesight-word',
-                              'pixel-brain-chip',
-                              shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
-                              decoded?.className || '',
-                              isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
-                            ].filter(Boolean).join(' ')}
-                            style={{
-                              ...wordStyle,
-                              '--chip-delay': `${wordIndex * 30}ms`
-                            }}
-                            onClick={() => {
-                              if (analysis) {
-                                onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
-                              }
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
-                              }
-                            }}
-                          >
-                            {token}
-                          </AnimatedSurface>
+                          <span key={`word-${charStart}`} style={{ position: 'relative' }}>
+                            <AnimatedSurface
+                              as="span"
+                              signal={animationSignal}
+                              role="button"
+                              tabIndex={0}
+                              data-char-start={charStart}
+                              className={[
+                                'truesight-word',
+                                'pixel-brain-chip',
+                                shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
+                                decoded?.className || '',
+                                isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
+                                isMisspelled ? 'grimoire-word--misspelled' : '',
+                              ].filter(Boolean).join(' ')}
+                              style={{
+                                ...wordStyle,
+                                '--chip-delay': `${wordIndex * 30}ms`
+                              }}
+                              onClick={() => {
+                                if (analysis) {
+                                  onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                }
+                              }}
+                            >
+                              {token}
+                            </AnimatedSurface>
+                            {isMisspelled && (
+                              <motion.div
+                                className="spellcheck-orb"
+                                initial={{ scale: 0, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                whileHover={{ scale: 1.2, boxShadow: '0 0 12px var(--ritual-error, #ff4d4d)' }}
+                                style={{
+                                  position: 'absolute',
+                                  left: `${pixelX + (pixelWidth || 0)}px`,
+                                  top: '-4px',
+                                  width: '10px',
+                                  height: '10px',
+                                  borderRadius: '50%',
+                                  backgroundColor: 'var(--ritual-error, #ff4d4d)',
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '8px',
+                                  fontWeight: 'bold',
+                                  cursor: 'help',
+                                  zIndex: 10,
+                                  boxShadow: '0 0 8px rgba(255, 77, 77, 0.6)'
+                                }}
+                                onMouseEnter={() => setHoveredMisspelling({ word: token.trim(), charStart, x: pixelX, y: 0 })}
+                                onMouseLeave={() => setHoveredMisspelling(null)}
+                              >
+                                !
+                              </motion.div>
+                            )}
+                          </span>
                         );
                       })}
                     </div>
@@ -1194,7 +1087,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
           <textarea
             id="scroll-content"
             ref={textareaRef}
-            className={`editor-textarea ${isTruesight ? "truesight-transparent editor-textarea--underlay" : "editor-textarea--foreground"} ${!isEditable && !isTruesight ? "editor-textarea--hidden" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
+            className={`editor-textarea ${isTruesight ? "truesight-transparent editor-textarea--underlay" : "editor-textarea--foreground"} ${!isEditable && !isTruesight ? "editor-textarea--read-only" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
             style={cursorSync?.textareaStyles}
             aria-hidden={isTruesight && !isEditable && !!onWordActivate}
             tabIndex={isTruesight && !isEditable && !!onWordActivate ? -1 : undefined}
@@ -1211,8 +1104,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
             spellCheck="false"
             maxLength={MAX_CONTENT_LENGTH}
             aria-required={isEditable}
-            aria-label={`Scroll content: ${title || "Untitled"}`}
-          />
+            aria-label={`Scroll content: ${title || "Untitled"}`}          />
 
           {isTruesight && ghostData && (
             <div className="truesight-ghost-layer" aria-hidden="true">
@@ -1232,9 +1124,8 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                       transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8, restDelta: 0.001 }}
                       style={{ willChange: "transform, opacity", contain: "layout paint style", position: 'absolute', height: `${lineHeightPx}px`, left: '1%', right: '1%' }}
                     >
-                      {lineData.tokens.map(({ token, localStart, localEnd, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {lineData.tokens.map(({ token, localStart, localEnd, globalCharStart, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
-                        
                         const commonStyle = {
                           position: 'absolute',
                           left: `${tokenX}px`,
@@ -1245,9 +1136,9 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         if (!isWord) {
                           return (
                             <span 
-                              key={localStart} 
+                              key={`vghost-${globalCharStart}`} 
                               style={{ ...commonStyle, color: 'transparent' }}
-                              data-char-start={localStart}
+                              data-char-start={globalCharStart}
                             >
                               {token}
                             </span>
@@ -1255,11 +1146,11 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         }
                         
                         const clean = token.trim().toUpperCase();
-                        const charStart = localStart;
+                        const charStart = globalCharStart;
                         const charEnd = localEnd;
                         const identityKey = `${li}:${Number.isInteger(wordIndex) ? wordIndex : -1}:${charStart}`;
-                        const analysis = analyzedWordsByIdentity.get(identityKey)
-                          || derivedAnalyzedWordsByCharStart.get(charStart)
+                        const analysis = derivedAnalyzedWordsByCharStart.get(charStart)
+                          || analyzedWordsByIdentity.get(identityKey)
                           || (allowLegacyWordFallback ? analyzedWords.get(clean) : null);
                         const wordVowelFamily = analysis ? normalizeVowelFamily(analysis?.vowelFamily) : null;
                         const rhymeVowelFamily = analysis
@@ -1268,26 +1159,29 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                         const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
-                        const decoded = bytecode && shouldColor ? decodeBytecode(bytecode, { reducedMotion, theme: activeTheme }) : null;
                         
-                        // GrimDesign-aligned: phase=0 keeps color deterministic per vowel nucleus.
-                        // Same vowel family → same hue, regardless of word position in the document.
-                        const sonicChroma = (analysis?.phonemes?.length > 0) ? resolveSonicChroma(analysis.phonemes) : null;
+                        // V12 PERFORMANCE: Use precomputed values
+                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
+
                         const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
                         const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
                         const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
                         const explicitColor = decoded?.color || bytecode?.color || null;
-                        const rhymeColor = isRhymeSurface
-                          ? resolveTokenColor(rhymeIdentity, rhymeColorRegistry, null)
+                        
+                        const rhymeColor = (isRhymeSurface && identityKey)
+                          ? resonancePalette.get(identityKey)
                           : null;
+                        
                         const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, 0) : null)
+                          rhymeColor
+                          || explicitColor
+                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
+                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
                           || null
                         ) : null;
+                        
                         const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
@@ -1296,7 +1190,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
 
                         return (
                           <AnimatedSurface
-                            key={charStart}
+                            key={`ghost-word-${charStart}`}
                             as="span"
                             signal={animationSignal}
                             role="button"
@@ -1315,7 +1209,10 @@ const ScrollEditor = forwardRef(function ScrollEditor({
                               color: color || undefined, 
                               ...(decoded?.style || {}), 
                               pointerEvents: 'auto', 
-                              cursor: 'pointer' 
+                              cursor: 'pointer',
+                              // V12 PERFORMANCE: Force GPU composition
+                              willChange: 'transform, opacity',
+                              '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
                             }}
                             onClick={() => {
                               if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
@@ -1340,7 +1237,52 @@ const ScrollEditor = forwardRef(function ScrollEditor({
       </div>
 
       <AnimatePresence>
-        {isPredictive && intellisenseSuggestions.length > 0 && (
+        {hoveredMisspelling && spellcheckSuggestions.length > 0 && (
+          <motion.div
+            className="spellcheck-tooltip"
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            style={{
+              position: 'fixed',
+              left: hoveredMisspelling.x,
+              top: hoveredMisspelling.y + 20, // This needs adjustment relative to fixed scroll
+              backgroundColor: 'var(--ritual-panel, #1a1a2e)',
+              border: '1px solid var(--ritual-error, #ff4d4d)',
+              padding: '8px',
+              borderRadius: '4px',
+              zIndex: 100,
+              boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+              fontSize: '12px'
+            }}
+          >
+            <div style={{ color: 'var(--ritual-error, #ff4d4d)', marginBottom: '4px', fontWeight: 'bold' }}>
+              Did you mean?
+            </div>
+            <div style={{ display: 'flex', gap: '4px' }}>
+              {spellcheckSuggestions.map(s => (
+                <button
+                  key={s}
+                  className="btn-tiny"
+                  onClick={() => {
+                    const original = hoveredMisspelling.word;
+                    const replacement = s;
+                    const charStart = hoveredMisspelling.charStart;
+                    const newContent = content.slice(0, charStart) + replacement + content.slice(charStart + original.length);
+                    onContentChange?.(newContent);
+                    setHoveredMisspelling(null);
+                  }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {intellisenseSuggestions.length > 0 && (
           <IntelliSense
             suggestions={intellisenseSuggestions}
             selectedIndex={intellisenseIndex}
@@ -1355,5 +1297,7 @@ const ScrollEditor = forwardRef(function ScrollEditor({
     </motion.div>
   );
 });
+
+ScrollEditor.displayName = "ScrollEditor";
 
 export default ScrollEditor;
