@@ -44,8 +44,8 @@ function hashString(str) {
 export function resolveResonanceColor(rhymeKey, schoolId = 'DEFAULT', fallbackColor = null) {
   if (!rhymeKey) return fallbackColor;
 
-  const school = SCHOOLS[schoolId.toUpperCase()] || SCHOOLS.DEFAULT;
-  const anchorHue = school.colorHsl?.h ?? 174; // Default to Psychic teal if missing
+  const school = SCHOOLS[schoolId.toUpperCase()] || SCHOOLS.DEFAULT || SCHOOLS.VOID;
+  const anchorHue = school?.colorHsl?.h ?? 174; // Default to Psychic teal if missing
 
   // Deterministic seed for this specific sound
   const seed = hashString(rhymeKey);

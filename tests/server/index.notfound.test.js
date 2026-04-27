@@ -155,7 +155,7 @@ describe('[Server] index route integration', () => {
 
     const mod = await import('../../codex/server/index.js?test=index-route-integration');
     fastify = mod.fastify;
-    userPersistence = (await import('../../codex/server/persistence.adapter.js')).persistence;
+    userPersistence = (await import('../../codex/server/user.persistence.js')).persistence;
     await fastify.ready();
   });
 
@@ -171,7 +171,7 @@ describe('[Server] index route integration', () => {
       await fastify.close();
     }
     try {
-      const userPersistence = await import('../../codex/server/persistence.adapter.js');
+      const userPersistence = await import('../../codex/server/user.persistence.js');
       userPersistence.persistence?.close?.();
     } catch {
       // Best-effort cleanup

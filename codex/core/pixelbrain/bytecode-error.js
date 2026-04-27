@@ -704,12 +704,14 @@ export function parseErrorForAI(error) {
       valid: false,
       error: 'NULL_INPUT',
       message: 'No error provided',
+      bytecode: null,
     };
   }
   
-  // Handle BytecodeError
+  // Handle BytecodeError object
   if (error instanceof BytecodeError) {
     return {
+      valid: true,
       ...error.toJSON(),
       recoveryHints: error.getRecoveryHints(),
     };
@@ -718,42 +720,55 @@ export function parseErrorForAI(error) {
   // Handle bytecode string
   if (typeof error === 'string' && error.startsWith('PB-ERR-')) {
     const decoded = decodeBytecodeError(error);
-    if (decoded.valid) {
+    if (decoded && decoded.valid) {
       return {
         ...decoded,
         recoveryHints: getRecoveryHintsForError(decoded.category, decoded.errorCode, decoded.context),
       };
     }
-    return decoded;
+    return decoded || { valid: false, error: 'INVALID_BYTECODE', message: 'Failed to decode bytecode string', bytecode: error };
   }
   
-  // Handle standard Error
+  // Handle standard Error - Wrap it in a generic BytecodeError to fulfill the bytecode mandate
   if (error instanceof Error) {
+    const genericError = new BytecodeError(
+      ERROR_CATEGORIES.STATE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.CORE,
+      ERROR_CODES.INVARIANT_VIOLATION,
+      {
+        originalName: error.name,
+        originalMessage: error.message,
+        stack: error.stack,
+      }
+    );
+    
     return {
       valid: false,
       error: 'STANDARD_ERROR',
       type: error.name,
       message: error.message,
-      stack: error.stack,
-      aiMetadata: {
-        parseable: false,
-        schemaVersion: null,
-        deterministic: false,
-        checksumVerified: false,
-      },
+      bytecode: genericError.bytecode,
+      recoveryHints: genericError.getRecoveryHints(),
+      aiMetadata: genericError.aiMetadata,
     };
   }
   
-  // Unknown error type
+  // Unknown error type - also wrap in bytecode
+  const unknownError = new BytecodeError(
+    ERROR_CATEGORIES.VALUE,
+    ERROR_SEVERITY.WARN,
+    MODULE_IDS.SHARED,
+    ERROR_CODES.VALUE_INVALID,
+    { rawInput: String(error) }
+  );
+
   return {
     valid: false,
     error: 'UNKNOWN_TYPE',
     message: String(error),
-    aiMetadata: {
-      parseable: false,
-      schemaVersion: null,
-      deterministic: false,
-      checksumVerified: false,
-    },
+    bytecode: unknownError.bytecode,
+    recoveryHints: unknownError.getRecoveryHints(),
+    aiMetadata: unknownError.aiMetadata,
   };
 }

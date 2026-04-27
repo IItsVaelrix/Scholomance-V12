@@ -26,7 +26,7 @@ import { resolveDesignDecisions } from '../../core/grimdesign/decisionEngine.js'
 const MOD = MODULE_IDS.SHARED;
 import { CollabServiceError, collabService } from './collab.service.js';
 import { collabDiagnostic } from './collab.diagnostic.js';
-import { searchCodebase } from '../services/codebaseSearch.service.js';
+import { searchCodebase, forensicSearch } from '../services/codebaseSearch.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -565,6 +565,18 @@ export function registerCollabMcpBridge(server, service = collabService) {
     registerTool(server, 'collab_search_codebase', {
         query: z.string().min(1).describe('The semantic search query for the codebase'),
     }, ({ query }) => searchCodebase(query));
+
+    registerTool(server, 'collab_forensic_search', {
+        query: z.string().min(1).describe('The literal string or regex pattern to find'),
+        isRegex: z.boolean().default(false).describe('Whether the query is a regular expression'),
+        caseSensitive: z.boolean().default(false).describe('Whether the search should be case-sensitive'),
+        includePattern: z.string().optional().describe('Glob pattern for files to include (e.g. "*.js")'),
+        excludePattern: z.string().optional().describe('Glob pattern for files to exclude'),
+        limit: z.number().default(20).describe('Maximum number of matches to return'),
+    }, ({ query, ...options }) => {
+        console.error(`[MCP] Executing Forensic Search: "${query}"`);
+        return forensicSearch(query, options);
+    });
 
     // ── GrimDesign ──────────────────────────────────────────────────────────────
 

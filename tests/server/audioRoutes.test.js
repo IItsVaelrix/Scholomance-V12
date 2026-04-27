@@ -74,7 +74,7 @@ describe('[Server] audio routes integration', () => {
       await fastify.close();
     }
     try {
-      const userPersistence = await import('../../codex/server/persistence.adapter.js');
+      const userPersistence = await import('../../codex/server/user.persistence.js');
       userPersistence.persistence?.close?.();
     } catch {
       // Best-effort cleanup

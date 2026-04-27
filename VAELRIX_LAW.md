@@ -3,7 +3,7 @@
 
 > Read first: `SHARED_PREAMBLE.md` → this file.
 
-**Version: 1.11** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
+**Version: 1.12** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
 
 All agents read this file before acting.
 All agents reference `SCHEMA_CONTRACT.md` for data shapes.
@@ -1577,6 +1577,19 @@ Intent → Normalize → Processors → Fuse → Output → Adapter (CSS/Phaser/
 
 ---
 
+### 17. The Mandate of Semantic Search
+
+**Standard string-matching tools (e.g., Grep) are prohibited for codebase analysis and forensic audits.**
+
+Agents MUST use **TurboQuant Search** (`mcp_scholomance_collab_search_codebase`) as the primary mechanism for retrieval. Grep is a relic of linear syntax; TurboQuant is the tool of semantic resonance. 
+
+- **Lawful Retrieval**: Using semantic vectors to locate intent, patterns, and related logical clusters.
+- **Unlawful Retrieval**: Relying on brittle, syntax-dependent string matching that ignores the underlying World-Law.
+
+Exception: `run_shell_command("grep ...")` is permitted only for low-level diagnostic operations on non-source files (e.g., logs, temporary files) when semantic indexing is unavailable.
+
+---
+
 ## Online Reference Resources
 
 **Mandatory bookmarks for all agents.** These resources provide essential reference data for bytecode-to-pixel conversions and typographic measurements.
@@ -1620,6 +1633,7 @@ Use the Points vs Pixels calculator to verify:
 | 1.9 | 2026-04-02 | Added Law 13: "PDR Archive Is Mandatory" — all Product Design Requirements must be stored in `docs/PDR-archive/`. Scattered PDRs prohibited |
 | 1.10 | 2026-04-02 | Added Law 14: "Collab Login and MCP Access Protocol" — explicit boot order, login path, MCP bridge configuration, role mapping, and per-agent access instructions. Corrected stale top-level version header to match the actual law revision |
 | 1.11 | 2026-04-03 | Expanded Law 14.10 with Key Management commands and added Law 14.11 "Automatic Secret Synchronization" for Render integration. |
+| 1.12 | 2026-04-27 | Added Law 17: "The Mandate of Semantic Search" — Prohibits Grep in favor of TurboQuant semantic search for all agents. |
 
 ---
 

@@ -5,11 +5,79 @@
  * Uses TurboQuant for "INSTANT" similarity search without large context.
  */
 
+import { execSync } from 'node:child_process';
 import { collabPersistence } from '../collab/collab.persistence.js';
 import { estimateInnerProduct, quantizeVectorJS } from '../../core/quantization/turboquant.js';
 
 const SEED = 1337; // Must match indexer seed
 const SEARCH_LIMIT = 10;
+
+/**
+ * Perform a deep, literal string or regex search using ripgrep.
+ * Law 17 Exception: Allowed for low-level diagnostics and precise forensic audits.
+ */
+export async function forensicSearch(query, options = {}) {
+  const start = performance.now();
+  const { 
+    isRegex = false, 
+    caseSensitive = false,
+    includePattern = '',
+    excludePattern = '',
+    limit = 20
+  } = options;
+
+  try {
+    let command = `rg --json --max-count ${limit}`;
+    if (!caseSensitive) command += ' -i';
+    if (!isRegex) command += ' -F';
+    if (includePattern) command += ` -g "${includePattern}"`;
+    if (excludePattern) command += ` -g "!${excludePattern}"`;
+    
+    // Sanitize query for shell
+    const escapedQuery = query.replace(/"/g, '\\"');
+    command += ` "${escapedQuery}" .`;
+
+    const output = execSync(command, { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 });
+    const lines = output.split('\n').filter(Boolean);
+    
+    const results = lines.map(line => {
+      const parsed = JSON.parse(line);
+      if (parsed.type !== 'match') return null;
+      
+      const data = parsed.data;
+      return {
+        file_path: data.path.text,
+        line_number: data.line_number,
+        preview: data.lines.text.trim(),
+        submatches: data.submatches
+      };
+    }).filter(Boolean);
+
+    return {
+      query,
+      results,
+      metadata: {
+        duration_ms: performance.now() - start,
+        engine: 'ripgrep-forensic',
+        options
+      }
+    };
+  } catch (error) {
+    // rg returns 1 if no matches found
+    if (error.status === 1) {
+      return {
+        query,
+        results: [],
+        metadata: {
+          duration_ms: performance.now() - start,
+          engine: 'ripgrep-forensic',
+          options
+        }
+      };
+    }
+    throw error;
+  }
+}
 
 /**
  * Generate a semantic vector for a search query.

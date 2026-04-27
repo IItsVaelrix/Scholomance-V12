@@ -600,6 +600,17 @@ function buildRhymeAstrologyClusterSummary(anchors, maxClusters) {
 
 export async function createPanelAnalysisService(options = {}) {
   const log = options.log ?? console;
+  
+  // Ensure PhonemeEngine is initialized as it is used by various components in this service
+  const phonemeEngine = options.phonemeEngine || PhonemeEngine;
+  if (typeof phonemeEngine.init === 'function') {
+    try {
+      await phonemeEngine.init();
+    } catch (error) {
+      log?.error?.({ err: error }, '[PanelAnalysisService] Failed to initialize PhonemeEngine');
+    }
+  }
+
   const enableSyntaxRhymeLayer = options.enableSyntaxRhymeLayer ?? parseBooleanFlag(
     process.env.ENABLE_SYNTAX_RHYME_LAYER,
     false

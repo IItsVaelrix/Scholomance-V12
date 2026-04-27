@@ -140,6 +140,7 @@ function createPhoneticDiagnostics({
 export const PhonemeEngine = {
   DICT_V2: null,
   RULES_V2: null,
+  CORPUS_DATA: null,
   WORD_CACHE: new Map(),
   WORD_DIAGNOSTICS_CACHE: new Map(),
   AUTHORITY_CACHE: new Map(),
@@ -162,7 +163,7 @@ export const PhonemeEngine = {
     this._initPromise = (async () => {
       this.clearCache();
       try {
-        let dictRaw, rulesRaw;
+        let dictRaw, rulesRaw, corpusRaw;
 
         const isServer = typeof window === "undefined" && typeof self === "undefined";
 
@@ -172,24 +173,39 @@ export const PhonemeEngine = {
           const path = await import("node:path");
           const publicPath = path.join(globalThis.process.cwd(), "public");
 
-          const [dBuffer, rBuffer] = await Promise.all([
+          const [dBuffer, rBuffer, cBuffer] = await Promise.all([
             readFile(path.join(publicPath, "phoneme_dictionary_v2.json"), "utf8"),
             readFile(path.join(publicPath, "rhyme_matching_rules_v2.json"), "utf8"),
+            readFile(path.join(publicPath, "corpus.json"), "utf8"),
           ]);
           dictRaw = JSON.parse(dBuffer);
           rulesRaw = JSON.parse(rBuffer);
+          corpusRaw = JSON.parse(cBuffer);
         } else {
           // Browser-side (Main thread or Web Worker): Use fetch
-          const [d, r] = await Promise.all([
+          const [d, r, c] = await Promise.all([
             fetch("/phoneme_dictionary_v2.json").then((res) => res.json()),
             fetch("/rhyme_matching_rules_v2.json").then((res) => res.json()),
+            fetch("/corpus.json").then((res) => res.json()),
           ]);
           dictRaw = d;
           rulesRaw = r;
+          corpusRaw = c;
         }
 
         this.DICT_V2 = dictRaw;
         this.RULES_V2 = rulesRaw;
+        this.CORPUS_DATA = corpusRaw;
+        
+        // Enhance CORPUS_DATA with a rankMap for O(1) lookups
+        if (this.CORPUS_DATA?.dictionary) {
+            const rankMap = new Map();
+            this.CORPUS_DATA.dictionary.forEach((word, index) => {
+                rankMap.set(word.toLowerCase(), index);
+            });
+            this.CORPUS_DATA.rankMap = rankMap;
+        }
+
         await CmuPhonemeEngine.init();
         return this.DICT_V2?.vowel_families?.length || 8;
         } catch (err) {
@@ -204,8 +220,48 @@ export const PhonemeEngine = {
   },
 
   async ensureInitialized() {
-    if (this.DICT_V2 && this.RULES_V2) return;
+    if (this.DICT_V2 && this.RULES_V2 && this.CORPUS_DATA) return;
     await this.init();
+  },
+
+  /**
+   * Calculates the rarity of a word based on corpus frequency and phonemic complexity.
+   * 
+   * @param {string} word - Normalized word
+   * @param {string[]} phonemes - Phoneme array
+   * @returns {'COMMON' | 'RARE' | 'INEXPLICABLE'} Rarity tier
+   */
+  calculateRarity(word, phonemes = []) {
+    const normalized = String(word || "").toLowerCase();
+    
+    // 1. Direct Frequency Check (Corpus rank)
+    const rank = this.CORPUS_DATA?.rankMap?.get(normalized);
+    
+    // Top 3000 words are definitely COMMON
+    if (rank !== undefined && rank <= 3000) return 'COMMON';
+    
+    // 2. Phonemic Surprise (Inverse Probability)
+    let surprise = 0;
+    if (phonemes.length > 0 && this.CORPUS_DATA?.phonemes) {
+        for (const p of phonemes) {
+            const base = p.replace(/[0-9]/g, "");
+            const prob = this.CORPUS_DATA.phonemes[base] || 0.001;
+            surprise += -Math.log2(prob);
+        }
+    }
+    
+    // 3. Heuristic Integration
+    const avgSurprise = phonemes.length > 0 ? surprise / phonemes.length : 10;
+    
+    if (rank === undefined || rank > 15000) {
+        // Words not in top 15k or totally unknown
+        if (avgSurprise > 4.8 || phonemes.length >= 10) return 'INEXPLICABLE';
+        return 'RARE';
+    }
+    
+    if (rank > 8000 || avgSurprise > 4.2) return 'RARE';
+    
+    return 'COMMON';
   },
 
   /**
