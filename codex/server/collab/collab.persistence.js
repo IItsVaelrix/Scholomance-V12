@@ -1251,7 +1251,8 @@ async function createMessage({ sender_id, target_id, glyph, text, bytecode, meta
     ]);
 
     // Fetch and return the newly created message
-    const msg = await db.execute('SELECT * FROM collab_messages WHERE id = ?', [result.lastInsertRowid]);
+    // Use SQLite's last_insert_rowid() function — works on both better-sqlite3 and Turso/libsql
+    const msg = await db.execute('SELECT * FROM collab_messages WHERE id = last_insert_rowid()');
     const row = msg.rows[0];
     const { is_telepathic, ...rest } = row;
     return {

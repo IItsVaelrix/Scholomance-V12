@@ -229,6 +229,26 @@ async function runReaperCycle(events) {
     }
 }
 
+const PIPELINE_SLA_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+async function runPipelineReaper(events) {
+    const now = Date.now();
+    const allPipelines = await collabPersistence.pipelines.getAll({ status: 'running' });
+    for (const pipeline of allPipelines) {
+        const updatedAt = new Date(pipeline.updated_at + 'Z').getTime();
+        if (now - updatedAt > PIPELINE_SLA_MS) {
+            await collabPersistence.pipelines.fail(pipeline.id, 'Pipeline SLA exceeded (2h timeout)');
+            await logActivity({
+                action: 'pipeline_reaped',
+                target_type: 'pipeline',
+                target_id: pipeline.id,
+                details: { reason: 'sla_exceeded', sla_ms: PIPELINE_SLA_MS }
+            });
+            events.emit('pipeline_failed', { pipeline_id: pipeline.id, reason: 'sla_exceeded' });
+        }
+    }
+}
+
 function ensureOwnership({ filePaths, agent, override = false, hint }) {
     if (override || filePaths.length === 0) {
         return;
@@ -513,7 +533,11 @@ export const collabService = {
         // Boot-time sweep: any pending alerts whose SLA elapsed during downtime
         // should expire on the same tick the system comes back up.
         await runReaperCycle(this.events);
-        this._reaperInterval = setInterval(() => runReaperCycle(this.events), 5000);
+        await runPipelineReaper(this.events);
+        this._reaperInterval = setInterval(() => {
+            runReaperCycle(this.events);
+            runPipelineReaper(this.events);
+        }, 5000);
         console.error('[CollabService] Alert system ignited.');
     },
 
