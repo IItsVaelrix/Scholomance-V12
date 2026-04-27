@@ -118,6 +118,9 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
   });
 }
 
+// Alias for V11 compatibility
+export const generatePaletteFromSemantics = generateSemanticPalette;
+
 /**
  * Internal color builder with deterministic pseudo-random variation
  */

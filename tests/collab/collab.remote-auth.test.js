@@ -27,7 +27,7 @@ beforeAll(async () => {
     collabPersistence = persistenceMod.collabPersistence;
 
     // Register canonical test agents
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'test-remote-agent',
         name: 'Test Remote Agent',
         role: 'backend',
@@ -65,7 +65,7 @@ describe('Phase 3: Remote Agent End-to-End', () => {
             for (const agentId of canonicalAgents) {
                 // Register agent if not exists
                 try {
-                    collabPersistence.agents.register({
+                    await collabPersistence.agents.register({
                         id: agentId,
                         name: agentId.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
                         role: agentId.includes('qa') ? 'qa' : agentId.includes('ui') ? 'ui' : 'backend',
@@ -107,7 +107,7 @@ describe('Phase 3: Remote Agent End-to-End', () => {
             const filePath = `src/pages/Collab/${uniqueId('remote-lock')}.jsx`;
 
             // Acquire lock
-            const lockResult = collabService.acquireLock({
+            const lockResult = await collabService.acquireLock({
                 file_path: filePath,
                 agent_id: 'test-remote-agent',
                 ttl_minutes: 30,
@@ -116,19 +116,19 @@ describe('Phase 3: Remote Agent End-to-End', () => {
             expect(lockResult).toBeDefined();
 
             // Verify lock
-            const lock = collabService.checkLock(filePath);
+            const lock = await collabService.checkLock(filePath);
             expect(lock).toBeDefined();
             expect(lock.locked_by).toBe('test-remote-agent');
 
             // Release lock
-            const releaseResult = collabService.releaseLock({
+            const releaseResult = await collabService.releaseLock({
                 file_path: filePath,
                 agent_id: 'test-remote-agent',
             });
             expect(releaseResult).toBeDefined();
 
             // Verify lock released
-            const releasedLock = collabService.checkLock(filePath);
+            const releasedLock = await collabService.checkLock(filePath);
             expect(releasedLock).toBeNull();
         });
 

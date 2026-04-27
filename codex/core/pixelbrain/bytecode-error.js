@@ -92,6 +92,7 @@ export const ERROR_SEVERITY = Object.freeze({
 // ─── Module Identifiers ──────────────────────────────────────────────────────
 
 export const MODULE_IDS = Object.freeze({
+  CORE: 'CORE',
   EXT_REGISTRY: 'EXTREG',
   EXT: 'EXTREG',  // Alias for EXT_REGISTRY
   IMG_SEMANTIC: 'IMGSEM',
@@ -110,6 +111,7 @@ export const MODULE_IDS = Object.freeze({
   UI_STASIS: 'UISTAS',
   ARTIFACT: 'ARTIFA',
   TURBO_QUANT: 'QUANT',
+  IMMUNITY: 'IMMUNE',
 });
 
 // ─── Error Codes (per category) ──────────────────────────────────────────────
@@ -136,6 +138,7 @@ export const ERROR_CODES = Object.freeze({
   INVALID_STATE: 0x0301,
   LIFECYCLE_VIOLATION: 0x0302,
   RACE_CONDITION: 0x0303,
+  INVARIANT_VIOLATION: 0x0304,
   
   // HOOK errors
   HOOK_NOT_FN: 0x0401,
@@ -199,6 +202,19 @@ export const ERROR_CODES = Object.freeze({
   RAF_LOOP_ORPHAN: 0x0E06,
   INTERVAL_TIMER_LEAK: 0x0E07,
   TRANSITION_INTERRUPT: 0x0E08,
+
+  // IMMUNITY errors (0x0F00–0x0FFF) — Immune system inflammatory responses
+  IMMUNE_INNATE_BLOCK: 0x0F01,           // Layer 1 pattern violation
+  IMMUNE_ADAPTIVE_BLOCK: 0x0F02,         // Layer 2 pathogen vector match
+  IMMUNE_FORBIDDEN_IMPORT: 0x0F03,       // UI -> codex layering violation (LING-0F03)
+  IMMUNE_DUPLICATE_PATH: 0x0F04,         // Shadow path collision (LING-0F04)
+  IMMUNE_KNOWN_VIOLATION_LITERAL: 0x0F05,// Purged symbol resurrection (LING-0F05)
+  IMMUNE_OVERRIDE_MISSING: 0x0F06,       // L3 override required but not provided
+  IMMUNE_OVERRIDE_AUTHORITY_INVALID: 0x0F07, // Authority not on curated list
+  IMMUNE_PROTOCOL_BLOCK: 0x0F08,         // Layer 3 cross-file async protocol drift
+
+  // MISC / Generic
+  VALUE_INVALID: 0xF001,
 });
 
 // ─── Bytecode Error Class ────────────────────────────────────────────────────
@@ -750,7 +766,7 @@ export function parseErrorForAI(error) {
       message: error.message,
       bytecode: genericError.bytecode,
       recoveryHints: genericError.getRecoveryHints(),
-      aiMetadata: genericError.aiMetadata,
+      aiMetadata: { ...genericError.aiMetadata, parseable: false },
     };
   }
   

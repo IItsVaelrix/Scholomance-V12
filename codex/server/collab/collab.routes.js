@@ -1,5 +1,5 @@
 import { CollabServiceError, collabService } from './collab.service.js';
-import { collabAgentKeyAuth } from './collab.agent-auth.js';
+import { collabAgentKeyAuth, requireCollabAuth } from './collab.agent-auth.js';
 import {
     RegisterAgentSchema,
     HeartbeatSchema,
@@ -45,6 +45,55 @@ function sendServiceError(reply, error) {
 export async function collabRoutes(fastify, _options) {
     // Agent key auth pre-handler: tries Bearer token auth, falls through to session auth.
     fastify.addHook('preHandler', collabAgentKeyAuth);
+
+    const messageClients = new Set();
+    const alertClients = new Set();
+
+    // Listen for messages emitted from the service layer (Unified Broadcast)
+    const onMessageSent = (message) => {
+        const eventData = `data: ${JSON.stringify(message)}\n\n`;
+        for (const client of messageClients) {
+            try {
+                client.reply.raw.write(eventData);
+            } catch (err) {
+                // Client likely disconnected, Set cleanup happens on 'close' hook
+            }
+        }
+    };
+    collabService.events.on('message_sent', onMessageSent);
+
+    // Listen for alert events emitted from the service layer
+    const onAlertIssued = (event) => {
+        const eventData = `event: alert_issued\ndata: ${JSON.stringify(event)}\n\n`;
+        for (const client of alertClients) {
+            try { client.reply.raw.write(eventData); } catch { continue; }
+        }
+    };
+    const onAlertAcknowledged = (event) => {
+        const eventData = `event: alert_acknowledged\ndata: ${JSON.stringify(event)}\n\n`;
+        for (const client of alertClients) {
+            try { client.reply.raw.write(eventData); } catch { continue; }
+        }
+    };
+    const onAlertExpired = (event) => {
+        const eventData = `event: alert_expired\ndata: ${JSON.stringify(event)}\n\n`;
+        for (const client of alertClients) {
+            try { client.reply.raw.write(eventData); } catch { continue; }
+        }
+    };
+
+    collabService.events.on('alert_issued', onAlertIssued);
+    collabService.events.on('alert_acknowledged', onAlertAcknowledged);
+    collabService.events.on('alert_expired', onAlertExpired);
+
+    // Ensure we unregister on plugin close to prevent memory leaks/zombies
+    fastify.addHook('onClose', (_instance, done) => {
+        collabService.events.off('message_sent', onMessageSent);
+        collabService.events.off('alert_issued', onAlertIssued);
+        collabService.events.off('alert_acknowledged', onAlertAcknowledged);
+        collabService.events.off('alert_expired', onAlertExpired);
+        done();
+    });
 
     /**
      * Liveness probe (Phase 2 hardening)
@@ -240,6 +289,19 @@ export async function collabRoutes(fastify, _options) {
                 id: request.params.id,
                 actor_agent_id: request.headers['x-agent-id'] || null,
             });
+            return reply.code(200).send(result);
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
+    });
+
+    fastify.post('/tasks/archive-all', {
+        config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+    }, async (request, reply) => {
+        try {
+            const result = await collabService.archiveAllTasks(
+                request.headers['x-agent-id'] || null
+            );
             return reply.code(200).send(result);
         } catch (error) {
             return sendServiceError(reply, error);
@@ -500,6 +562,137 @@ export async function collabRoutes(fastify, _options) {
     });
 
     // ========================
+    //  MESSAGING (Cognitive Bus)
+    // ========================
+
+    fastify.get('/messages', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        const { ListMessagesQuerySchema } = await import('./collab.schemas.js');
+        const parsedQuery = parseZod(ListMessagesQuerySchema, request.query);
+        if (!parsedQuery.ok) return reply.code(400).send({ error: 'Validation failed', details: parsedQuery.errors });
+
+        const messages = await collabService.listMessages(parsedQuery.data, parsedQuery.data);
+        return reply.code(200).send(messages);
+    });
+
+    fastify.delete('/messages/:id', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        const { id } = request.params;
+        const authenticatedId = request.agentContext?.id || request.session?.user?.id;
+        
+        try {
+            const result = await collabService.deleteMessage(id, authenticatedId);
+            return reply.code(200).send(result);
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
+    });
+
+    /**
+     * Realtime Thought-Thread Stream (SSE)
+     * Success Criterion: Agents hearing each other without page reload.
+     */
+    fastify.get('/messages/stream', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        reply.raw.setHeader('Content-Type', 'text/event-stream');
+        reply.raw.setHeader('Cache-Control', 'no-cache');
+        reply.raw.setHeader('Connection', 'keep-alive');
+        reply.raw.setHeader('X-Accel-Buffering', 'no'); 
+
+        const client = {
+            id: request.agentContext?.id || request.session?.user?.id || 'anonymous',
+            reply
+        };
+        messageClients.add(client);
+
+        request.raw.on('close', () => {
+            messageClients.delete(client);
+        });
+
+        // Send initial keep-alive
+        reply.raw.write(':ok\n\n');
+    });
+
+    fastify.post('/messages', {
+        config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        const { AgentMessageSchema } = await import('./collab.schemas.js');
+        const parsed = parseZod(AgentMessageSchema, request.body);
+        if (!parsed.ok) return reply.code(400).send({ error: 'Validation failed', details: parsed.errors });
+
+        try {
+            const authenticatedId = request.agentContext?.id || request.session?.user?.id;
+            const message = await collabService.sendMessage(parsed.data, authenticatedId);
+
+            return reply.code(201).send(message);
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
+    });
+
+    // ========================
+    //  ALERTS
+    // ========================
+
+    fastify.get('/alerts', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        const { ListAlertsQuerySchema } = await import('./collab.schemas.js');
+        const parsedQuery = parseZod(ListAlertsQuerySchema, request.query);
+        if (!parsedQuery.ok) return reply.code(400).send({ error: 'Validation failed', details: parsedQuery.errors });
+
+        const alerts = await collabService.listAlerts(parsedQuery.data, parsedQuery.data);
+        return reply.code(200).send(alerts);
+    });
+
+    fastify.post('/alerts/:id/respond', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        const { id } = request.params;
+        const { AlertResponseSchema } = await import('./collab.schemas.js');
+        const parsed = parseZod(AlertResponseSchema, request.body);
+        if (!parsed.ok) return reply.code(400).send({ error: 'Validation failed', details: parsed.errors });
+
+        const authenticatedId = request.agentContext?.id || request.session?.user?.id;
+        
+        try {
+            const result = await collabService.respondToAlert(id, authenticatedId, parsed.data);
+            return reply.code(200).send(result);
+        } catch (error) {
+            return sendServiceError(reply, error);
+        }
+    });
+
+    /**
+     * Realtime Alert Stream (SSE)
+     */
+    fastify.get('/alerts/stream', {
+        preHandler: [requireCollabAuth]
+    }, async (request, reply) => {
+        reply.raw.setHeader('Content-Type', 'text/event-stream');
+        reply.raw.setHeader('Cache-Control', 'no-cache');
+        reply.raw.setHeader('Connection', 'keep-alive');
+        reply.raw.setHeader('X-Accel-Buffering', 'no'); 
+
+        const client = {
+            id: request.agentContext?.id || request.session?.user?.id || 'anonymous',
+            reply
+        };
+        alertClients.add(client);
+
+        request.raw.on('close', () => {
+            alertClients.delete(client);
+        });
+
+        // Send initial keep-alive
+        reply.raw.write(':ok\n\n');
+    });
+
+    // ========================
     //  MEMORIES
     // ========================
 
@@ -564,5 +757,28 @@ export async function collabRoutes(fastify, _options) {
         } catch (error) {
             return sendServiceError(reply, error);
         }
+    });
+
+    // ========================
+    //  CODEBASE EXPLORER
+    // ========================
+
+    fastify.get('/codebase/files', async (_request, reply) => {
+        const files = await collabService.listCodebaseFiles();
+        return reply.code(200).send(files);
+    });
+
+    fastify.get('/codebase/search', async (request, reply) => {
+        const { q } = request.query;
+        if (!q) return reply.code(400).send({ error: 'Query parameter "q" required' });
+        const results = await collabService.searchHybrid(q);
+        return reply.code(200).send(results);
+    });
+
+    fastify.get('/codebase/neighbors', async (request, reply) => {
+        const { path } = request.query;
+        if (!path) return reply.code(400).send({ error: 'Query parameter "path" required' });
+        const results = await collabService.getFileNeighbors(path);
+        return reply.code(200).send(results);
     });
 }

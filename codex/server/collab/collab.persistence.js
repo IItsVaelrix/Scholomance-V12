@@ -278,6 +278,61 @@ const COLLAB_MIGRATIONS = [
             `);
         },
     },
+    {
+        version: 14,
+        name: 'create_collab_messages',
+        up(database) {
+            database.exec(`
+                CREATE TABLE IF NOT EXISTS collab_messages (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sender_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL DEFAULT 'all',
+                    glyph TEXT DEFAULT '✦',
+                    text TEXT NOT NULL,
+                    bytecode TEXT,
+                    is_telepathic INTEGER DEFAULT 0,
+                    metadata TEXT DEFAULT '{}',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+                CREATE INDEX IF NOT EXISTS idx_messages_sender ON collab_messages(sender_id);
+                CREATE INDEX IF NOT EXISTS idx_messages_target ON collab_messages(target_id);
+                CREATE INDEX IF NOT EXISTS idx_messages_created ON collab_messages(created_at);
+            `);
+        },
+    },
+    {
+        version: 15,
+        name: 'create_collab_alerts',
+        up(database) {
+            database.exec(`
+                CREATE TABLE IF NOT EXISTS collab_alerts (
+                    id TEXT PRIMARY KEY,
+                    message_id INTEGER NOT NULL,
+                    recipient_id TEXT NOT NULL,
+                    sender_id TEXT NOT NULL,
+                    target_id TEXT NOT NULL,
+                    identity_packet TEXT NOT NULL,
+                    issued_at INTEGER NOT NULL,
+                    expires_at INTEGER NOT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    delivered_via TEXT,
+                    FOREIGN KEY (message_id) REFERENCES collab_messages(id)
+                );
+                CREATE TABLE IF NOT EXISTS collab_alert_responses (
+                    alert_id TEXT NOT NULL,
+                    agent_id TEXT NOT NULL,
+                    responded_at INTEGER NOT NULL,
+                    latency_ms INTEGER NOT NULL,
+                    payload TEXT DEFAULT '{}',
+                    PRIMARY KEY (alert_id, agent_id),
+                    FOREIGN KEY (alert_id) REFERENCES collab_alerts(id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_alerts_recipient_status ON collab_alerts(recipient_id, status);
+                CREATE INDEX IF NOT EXISTS idx_alerts_expires ON collab_alerts(expires_at);
+                CREATE INDEX IF NOT EXISTS idx_alerts_message ON collab_alerts(message_id);
+            `);
+        },
+    },
 ];
 
 let db; // The wrapper
@@ -630,6 +685,15 @@ async function assignTaskWithLocks(taskId, agentId, filePaths = [], ttlMinutes =
 
     await db.batch(statements);
     return { conflict: false, task: await getTask(taskId) };
+}
+
+async function archiveAllTasks() {
+    const result = await db.execute(`
+        UPDATE collab_tasks
+        SET status = 'archived', updated_at = datetime('now')
+        WHERE status != 'archived'
+    `);
+    return result.rowsAffected;
 }
 
 async function deleteTask(id) {
@@ -1157,11 +1221,167 @@ async function getAllCodebaseEmbeddings() {
     return result.rows;
 }
 
+async function getEmbeddingsByPath(filePath) {
+    const result = await db.execute('SELECT * FROM codebase_embeddings WHERE file_path = ?', [filePath]);
+    return result.rows;
+}
+
+async function getAllCodebasePaths() {
+    const result = await db.execute('SELECT DISTINCT file_path FROM codebase_embeddings ORDER BY file_path ASC');
+    return result.rows.map(r => r.file_path);
+}
+
 async function clearCodebaseIndex() {
     await db.execute('DELETE FROM codebase_embeddings');
 }
 
-// --- System ---
+// --- Messaging ---
+
+async function createMessage({ sender_id, target_id, glyph, text, bytecode, metadata }) {
+    const result = await db.execute(`
+        INSERT INTO collab_messages (sender_id, target_id, glyph, text, bytecode, metadata)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `, [
+        sender_id,
+        target_id || 'all',
+        glyph || '✦',
+        text,
+        bytecode || null,
+        JSON.stringify(metadata || {})
+    ]);
+
+    // Fetch and return the newly created message
+    const msg = await db.execute('SELECT * FROM collab_messages WHERE id = ?', [result.lastInsertRowid]);
+    const row = msg.rows[0];
+    const { is_telepathic, ...rest } = row;
+    return {
+        ...rest,
+        metadata: JSON.parse(row.metadata)
+    };
+}
+
+async function getAllMessages(filters = {}, pagination = {}) {
+    const safeLimit = Math.max(1, Number(pagination.limit) || 50);
+    const safeOffset = Math.max(0, Number(pagination.offset) || 0);
+
+    let query = 'SELECT * FROM collab_messages WHERE 1=1';
+    const params = [];
+
+    if (filters.sender) {
+        query += ' AND sender_id = ?';
+        params.push(filters.sender);
+    }
+    if (filters.target) {
+        query += ' AND target_id = ?';
+        params.push(filters.target);
+    }
+    if (filters.since) {
+        query += ' AND created_at > ?';
+        params.push(filters.since);
+    }
+
+    query += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
+    params.push(safeLimit, safeOffset);
+
+    const result = await db.execute(query, params);
+    return result.rows.map(row => {
+        const { is_telepathic, ...rest } = row;
+        return {
+            ...rest,
+            metadata: JSON.parse(row.metadata)
+        };
+    });
+}
+async function deleteMessage(id) {
+    const result = await db.execute('DELETE FROM collab_messages WHERE id = ?', [id]);
+    return result.rowsAffected > 0;
+}
+
+// --- Alerts ---
+
+async function createAlert({ id, message_id, recipient_id, sender_id, target_id, identity_packet, issued_at, expires_at }) {
+    await db.execute(`
+        INSERT INTO collab_alerts (id, message_id, recipient_id, sender_id, target_id, identity_packet, issued_at, expires_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `, [id, message_id, recipient_id, sender_id, target_id, JSON.stringify(identity_packet), issued_at, expires_at]);
+    
+    return await getAlertById(id);
+}
+
+async function getAlertById(id) {
+    const result = await db.execute('SELECT * FROM collab_alerts WHERE id = ?', [id]);
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+        ...row,
+        identity_packet: JSON.parse(row.identity_packet)
+    };
+}
+
+async function getPendingAlerts(agentId) {
+    const result = await db.execute('SELECT * FROM collab_alerts WHERE recipient_id = ? AND status = \'pending\'', [agentId]);
+    return result.rows.map(row => ({
+        ...row,
+        identity_packet: JSON.parse(row.identity_packet)
+    }));
+}
+
+async function getAllAlerts(filters = {}) {
+    let query = 'SELECT * FROM collab_alerts WHERE 1=1';
+    const params = [];
+    if (filters.agent_id) {
+        query += ' AND recipient_id = ?';
+        params.push(filters.agent_id);
+    }
+    if (filters.status) {
+        query += ' AND status = ?';
+        params.push(filters.status);
+    }
+    query += ' ORDER BY issued_at DESC LIMIT 100';
+    const result = await db.execute(query, params);
+    return result.rows.map(row => ({
+        ...row,
+        identity_packet: JSON.parse(row.identity_packet)
+    }));
+}
+
+async function updateAlertStatus(id, status, deliveredVia = null) {
+    const query = deliveredVia 
+        ? 'UPDATE collab_alerts SET status = ?, delivered_via = ? WHERE id = ?'
+        : 'UPDATE collab_alerts SET status = ? WHERE id = ?';
+    const params = deliveredVia ? [status, deliveredVia, id] : [status, id];
+    const result = await db.execute(query, params);
+    return result.rowsAffected > 0;
+}
+
+async function markExpiredAlerts(now) {
+    const result = await db.execute('UPDATE collab_alerts SET status = \'expired\' WHERE status = \'pending\' AND expires_at <= ?', [now]);
+    return result.rowsAffected;
+}
+
+async function createAlertResponse({ alert_id, agent_id, responded_at, latency_ms, payload }) {
+    await db.execute(`
+        INSERT INTO collab_alert_responses (alert_id, agent_id, responded_at, latency_ms, payload)
+        VALUES (?, ?, ?, ?, ?)
+    `, [alert_id, agent_id, responded_at, latency_ms, JSON.stringify(payload || {})]);
+    
+    return await getAlertResponse(alert_id, agent_id);
+}
+
+async function getAlertResponse(alertId, agentId) {
+    const result = await db.execute('SELECT * FROM collab_alert_responses WHERE alert_id = ? AND agent_id = ?', [alertId, agentId]);
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+        ...row,
+        payload: JSON.parse(row.payload)
+    };
+}
+
+
+    // --- Codebase Search ---
+
+
 
 async function updateLockMcp(file_path, agent_id, { active, stream }) {
     const result = await db.execute(`
@@ -1200,7 +1420,7 @@ const PERSISTENCE_CONTRACT = [
     'agents.register', 'agents.heartbeat', 'agents.offline', 'agents.getAll', 'agents.getAllRaw', 'agents.getById',
     'agents.unassignTasks', 'agents.delete',
     'tasks.create', 'tasks.getAll', 'tasks.getById', 'tasks.getCounts', 'tasks.update',
-    'tasks.assignWithLocks', 'tasks.delete',
+    'tasks.assignWithLocks', 'tasks.delete', 'tasks.archiveAll',
     'bug_reports.create', 'bug_reports.getAll', 'bug_reports.getById',
     'bug_reports.update', 'bug_reports.delete',
     'pipelines.create', 'pipelines.getAll', 'pipelines.getById',
@@ -1213,7 +1433,11 @@ const PERSISTENCE_CONTRACT = [
     'ledger.getById', 'ledger.ingest', 'ledger.updateStatus', 'ledger.list',
     'locks.acquire', 'locks.release', 'locks.releaseForAgent',
     'locks.releaseForTask', 'locks.check', 'locks.getAll', 'locks.updateMcp',
-    'codebase.index', 'codebase.getAll', 'codebase.clear',
+    'messages.create', 'messages.getAll', 'messages.delete',
+    'alerts.create', 'alerts.getById', 'alerts.getPending', 'alerts.getAll', 'alerts.updateStatus', 'alerts.markExpired',
+    'alert_responses.create', 'alert_responses.getForAlert',
+    'codebase.index', 'codebase.getAll', 'codebase.getByPath', 'codebase.getAllPaths', 'codebase.clear',
+
     'close', 'getStatus',
 ];
 
@@ -1251,6 +1475,7 @@ const collabPersistence = {
         update: updateTask,
         assignWithLocks: assignTaskWithLocks,
         delete: deleteTask,
+        archiveAll: archiveAllTasks,
     },
     bug_reports: {
         create: createBugReport,
@@ -1302,9 +1527,28 @@ const collabPersistence = {
         getAll: getAllLocks,
         updateMcp: updateLockMcp,
     },
+    messages: {
+        create: createMessage,
+        getAll: getAllMessages,
+        delete: deleteMessage,
+    },
+    alerts: {
+        create: createAlert,
+        getById: getAlertById,
+        getPending: getPendingAlerts,
+        getAll: getAllAlerts,
+        updateStatus: updateAlertStatus,
+        markExpired: markExpiredAlerts,
+    },
+    alert_responses: {
+        create: createAlertResponse,
+        getForAlert: getAlertResponse,
+    },
     codebase: {
         index: indexCodebaseEntries,
         getAll: getAllCodebaseEmbeddings,
+        getByPath: getEmbeddingsByPath,
+        getAllPaths: getAllCodebasePaths,
         clear: clearCodebaseIndex,
     },
     close: closeDatabase,

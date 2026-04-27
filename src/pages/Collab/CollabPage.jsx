@@ -25,6 +25,7 @@ import PipelineView from './PipelineView.jsx';
 import ActivityFeed from './ActivityFeed.jsx';
 import BugDetailDrawer from './BugDetailDrawer.jsx';
 import BugCreateModal from './BugCreateModal.jsx';
+import ArchiveOfDominance from './ArchiveOfDominance.jsx';
 
 // PAC-OPS BUG CABINET components
 import { BugPageCabinetShell } from './components/Cabinet/BugPageCabinetShell.jsx';
@@ -260,6 +261,8 @@ export default function CollabPage() {
     const [error, setError] = useState(null);
     const [lastRefresh, setLastRefresh] = useState(null);
     const [nowMs, setNowMs] = useState(() => Date.now());
+    const [localAgentId, setLocalAgentId] = useState(() => localStorage.getItem('collab:local-agent-id'));
+    const [isArchiveMode, setIsArchiveMode] = useState(false);
 
     // Real-time activity state
     const [newActivityCount, setNewActivityCount] = useState(0);
@@ -298,11 +301,29 @@ export default function CollabPage() {
 
     // Tab switching event listener
     useEffect(() => {
-        const handler = (e) => {
+        const tabHandler = (e) => {
             if (e.detail) setActiveTab(e.detail);
         };
-        window.addEventListener('collab:switch-tab', handler);
-        return () => window.removeEventListener('collab:switch-tab', handler);
+        const regHandler = (e) => {
+            if (e.detail?.id) {
+                setLocalAgentId(e.detail.id);
+                localStorage.setItem('collab:local-agent-id', e.detail.id);
+            }
+        };
+        const loginHandler = (e) => {
+            if (e.detail?.id) {
+                setLocalAgentId(e.detail.id);
+                localStorage.setItem('collab:local-agent-id', e.detail.id);
+            }
+        };
+        window.addEventListener('collab:switch-tab', tabHandler);
+        window.addEventListener('collab:agent-registered', regHandler);
+        window.addEventListener('collab:agent-logged-in', loginHandler);
+        return () => {
+            window.removeEventListener('collab:switch-tab', tabHandler);
+            window.removeEventListener('collab:agent-registered', regHandler);
+            window.removeEventListener('collab:agent-logged-in', loginHandler);
+        };
     }, []);
 
     // Refresh all data
@@ -495,6 +516,31 @@ export default function CollabPage() {
             setStatus('error');
         }
     }, [newTaskTitle, newTaskPriority, refresh]);
+
+    const handleArchiveAll = useCallback(async () => {
+        if (!confirm('This ritual will archive all active tasks on the board. History will be preserved, but the board will be cleared. Proceed?')) {
+            return;
+        }
+
+        setStatus('processing');
+        try {
+            await fetchCollabJson('/collab/tasks/archive-all', { method: 'POST' });
+            refresh();
+        } catch (err) {
+            setError(err?.message || 'Archive ritual failed');
+            setStatus('error');
+        }
+    }, [refresh]);
+
+    const toggleArchiveMode = useCallback((active) => {
+        if (document.startViewTransition) {
+            document.startViewTransition(() => {
+                setIsArchiveMode(active);
+            });
+        } else {
+            setIsArchiveMode(active);
+        }
+    }, []);
 
     // Handle task click (open drawer)
     const handleTaskClick = useCallback((task) => {
@@ -963,7 +1009,10 @@ export default function CollabPage() {
             case 'messaging':
                 return (
                     <div className="viewport-content viewport-content--messaging">
-                        <AgentMessaging agents={agents} currentAgentId={user?.username || null} />
+                        <AgentMessaging 
+                            agents={agents} 
+                            currentAgentId={localAgentId || user?.username || null} 
+                        />
                     </div>
                 );
 
@@ -971,6 +1020,10 @@ export default function CollabPage() {
                 return null;
         }
     };
+
+    if (isArchiveMode) {
+        return <ArchiveOfDominance onExit={() => toggleArchiveMode(false)} />;
+    }
 
     return (
         <div className="collab-page">
@@ -1042,6 +1095,12 @@ export default function CollabPage() {
                                     onClick={() => setShowCreateTask(!showCreateTask)}
                                 >
                                     {showCreateTask ? 'CANCEL' : '+ NEW TASK'}
+                                </button>
+                                <button
+                                    className="quick-action-btn quick-action-btn--secondary"
+                                    onClick={handleArchiveAll}
+                                >
+                                    ARCHIVE BOARD
                                 </button>
                             </div>
                         )}
@@ -1235,6 +1294,18 @@ export default function CollabPage() {
                     </div>
                 </motion.aside>
             </div>
+
+            {/* Filing Cabinet Entry Point */}
+            <button
+                type="button"
+                className="filing-cabinet-trigger"
+                onClick={() => toggleArchiveMode(true)}
+                title="Archive of Dominance"
+                aria-label="Open Archive of Dominance"
+            >
+                <div className="cabinet-glow"></div>
+                <span className="cabinet-icon">🗄️</span>
+            </button>
 
             {/* Task Detail Drawer */}
             <TaskDetailDrawer

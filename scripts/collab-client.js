@@ -18,8 +18,8 @@
 
 import fs from 'fs';
 
-const BASE_URL = process.env.COLLAB_URL || 'http://localhost:3000/collab';
-const API_BASE = process.env.API_BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.COLLAB_URL || 'http://localhost:8080/collab';
+const API_BASE = process.env.API_BASE_URL || 'http://localhost:8080';
 const COOKIE_FILE = process.env.COLLAB_COOKIE_FILE || '/tmp/scholomance_cookie.txt';
 
 // Cookie jar for session management (Node.js fetch doesn't handle cookies automatically)

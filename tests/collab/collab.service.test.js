@@ -28,19 +28,19 @@ beforeAll(async () => {
     CollabServiceError = serviceMod.CollabServiceError;
     collabPersistence = persistenceMod.collabPersistence;
 
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'agent-ui',
         name: 'UI Agent',
         role: 'ui',
         capabilities: ['jsx', 'css'],
     });
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'agent-backend',
         name: 'Backend Agent',
         role: 'backend',
         capabilities: ['node', 'fastify'],
     });
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'agent-qa',
         name: 'QA Agent',
         role: 'qa',
@@ -68,17 +68,17 @@ afterAll(() => {
 });
 
 describe('collab service hardening', () => {
-    it('rejects direct lock acquisition for unknown agents', () => {
-        expect(() => {
+    it('rejects direct lock acquisition for unknown agents', async () => {
+        await expect(
             collabService.acquireLock({
                 file_path: 'src/pages/Read/Unknown.jsx',
                 agent_id: 'ghost-agent',
                 ttl_minutes: 30,
-            });
-        }).toThrowError(CollabServiceError);
+            })
+        ).rejects.toThrowError(CollabServiceError);
 
         try {
-            collabService.acquireLock({
+            await collabService.acquireLock({
                 file_path: 'src/pages/Read/Unknown.jsx',
                 agent_id: 'ghost-agent',
                 ttl_minutes: 30,
@@ -89,9 +89,9 @@ describe('collab service hardening', () => {
         }
     });
 
-    it('rejects direct lock acquisition outside ownership boundaries', () => {
+    it('rejects direct lock acquisition outside ownership boundaries', async () => {
         try {
-            collabService.acquireLock({
+            await collabService.acquireLock({
                 file_path: 'codex/server/index.js',
                 agent_id: 'agent-ui',
                 ttl_minutes: 30,
@@ -105,9 +105,9 @@ describe('collab service hardening', () => {
         }
     });
 
-    it('auto-assigns pipeline stage tasks through lock-aware assignment', () => {
+    it('auto-assigns pipeline stage tasks through lock-aware assignment', async () => {
         const filePath = `src/pages/Collab/${uniqueId('pipeline-ui')}.jsx`;
-        const triggerTask = collabService.createTask({
+        const triggerTask = await collabService.createTask({
             title: 'Trigger UI pipeline',
             description: 'Establish file context for the UI pipeline',
             priority: 2,
@@ -116,7 +116,7 @@ describe('collab service hardening', () => {
             created_by: 'human',
         });
 
-        const result = collabService.createPipeline({
+        const result = await collabService.createPipeline({
             pipeline_type: 'ui_feature',
             trigger_task_id: triggerTask.id,
             actor_agent_id: 'agent-ui',
@@ -127,22 +127,22 @@ describe('collab service hardening', () => {
         expect(result.stage_task.status).toBe('assigned');
         expect(result.auto_assignment.assigned).toBe(true);
 
-        const lock = collabService.checkLock(filePath);
+        const lock = await collabService.checkLock(filePath);
         expect(lock?.locked_by).toBe('agent-ui');
         expect(lock?.task_id).toBe(result.stage_task.id);
     });
 
-    it('does not represent pipeline tasks as assigned when lock acquisition conflicts', () => {
+    it('does not represent pipeline tasks as assigned when lock acquisition conflicts', async () => {
         const filePath = `src/pages/Collab/${uniqueId('pipeline-conflict')}.jsx`;
 
-        collabService.acquireLock({
+        await collabService.acquireLock({
             file_path: filePath,
             agent_id: 'agent-backend',
             ttl_minutes: 30,
             override: true,
         });
 
-        const triggerTask = collabService.createTask({
+        const triggerTask = await collabService.createTask({
             title: 'Trigger conflicting UI pipeline',
             priority: 2,
             file_paths: [filePath],
@@ -150,7 +150,7 @@ describe('collab service hardening', () => {
             created_by: 'human',
         });
 
-        const result = collabService.createPipeline({
+        const result = await collabService.createPipeline({
             pipeline_type: 'ui_feature',
             trigger_task_id: triggerTask.id,
             actor_agent_id: 'agent-ui',
@@ -161,39 +161,39 @@ describe('collab service hardening', () => {
         expect(result.stage_task.assigned_agent).toBeNull();
         expect(result.stage_task.status).toBe('backlog');
 
-        const lock = collabService.checkLock(filePath);
+        const lock = await collabService.checkLock(filePath);
         expect(lock?.locked_by).toBe('agent-backend');
     });
 
-    it('keeps completed pipelines stable under repeated advance and fail calls', () => {
-        const created = collabService.createPipeline({
+    it('keeps completed pipelines stable under repeated advance and fail calls', async () => {
+        const created = await collabService.createPipeline({
             pipeline_type: 'bug_fix',
             actor_agent_id: 'agent-qa',
         });
 
         const pipelineId = created.pipeline.id;
 
-        const first = collabService.advancePipeline({
+        const first = await collabService.advancePipeline({
             id: pipelineId,
             actor_agent_id: 'agent-qa',
             result: { diagnose: true },
         });
-        const second = collabService.advancePipeline({
+        const second = await collabService.advancePipeline({
             id: pipelineId,
             actor_agent_id: 'agent-backend',
             result: { fix: true },
         });
-        const third = collabService.advancePipeline({
+        const third = await collabService.advancePipeline({
             id: pipelineId,
             actor_agent_id: 'agent-qa',
             result: { verify: true },
         });
-        const repeatedAdvance = collabService.advancePipeline({
+        const repeatedAdvance = await collabService.advancePipeline({
             id: pipelineId,
             actor_agent_id: 'agent-qa',
             result: { ignored: true },
         });
-        const repeatedFail = collabService.failPipeline({
+        const repeatedFail = await collabService.failPipeline({
             id: pipelineId,
             actor_agent_id: 'agent-qa',
             reason: 'too late',
@@ -209,9 +209,9 @@ describe('collab service hardening', () => {
         expect(repeatedFail.pipeline.status).toBe('completed');
     });
 
-    it('re-registers an existing agent after cleaning its active task session', () => {
+    it('re-registers an existing agent after cleaning its active task session', async () => {
         const filePath = `src/pages/Collab/${uniqueId('reregister')}.jsx`;
-        const task = collabService.createTask({
+        const task = await collabService.createTask({
             title: 'Re-register cleanup task',
             priority: 2,
             file_paths: [filePath],
@@ -219,19 +219,19 @@ describe('collab service hardening', () => {
             created_by: 'human',
         });
 
-        const assignment = collabPersistence.tasks.assignWithLocks(task.id, 'agent-ui', [filePath], 30);
+        const assignment = await collabPersistence.tasks.assignWithLocks(task.id, 'agent-ui', [filePath], 30);
         expect(assignment.conflict).toBe(false);
-        expect(collabPersistence.tasks.getById(task.id).assigned_agent).toBe('agent-ui');
+        expect((await collabPersistence.tasks.getById(task.id)).assigned_agent).toBe('agent-ui');
 
-        const agent = collabService.registerAgent({
+        const agent = await collabService.registerAgent({
             id: 'agent-ui',
             name: 'UI Agent Reconnected',
             role: 'ui',
             capabilities: ['jsx', 'css', 'motion'],
         });
 
-        const cleanedTask = collabPersistence.tasks.getById(task.id);
-        const lock = collabPersistence.locks.check(filePath);
+        const cleanedTask = await collabPersistence.tasks.getById(task.id);
+        const lock = await collabPersistence.locks.check(filePath);
 
         expect(agent.name).toBe('UI Agent Reconnected');
         expect(cleanedTask.assigned_agent).toBeNull();
@@ -239,9 +239,9 @@ describe('collab service hardening', () => {
         expect(lock).toBeNull();
     });
 
-    it('reports live task and pipeline counts from getStatus', () => {
+    it('reports live task and pipeline counts from getStatus', async () => {
         const filePath = `src/pages/Collab/${uniqueId('status')}.jsx`;
-        const task = collabService.createTask({
+        const task = await collabService.createTask({
             title: 'Status count task',
             priority: 2,
             file_paths: [filePath],
@@ -249,15 +249,15 @@ describe('collab service hardening', () => {
             created_by: 'human',
         });
 
-        const assignment = collabPersistence.tasks.assignWithLocks(task.id, 'agent-backend', [filePath], 30);
+        const assignment = await collabPersistence.tasks.assignWithLocks(task.id, 'agent-backend', [filePath], 30);
         expect(assignment.conflict).toBe(false);
 
-        const pipeline = collabService.createPipeline({
+        const pipeline = await collabService.createPipeline({
             pipeline_type: 'bug_fix',
             actor_agent_id: 'agent-qa',
         });
 
-        const status = collabService.getStatus();
+        const status = await collabService.getStatus();
         expect(status.total_agents).toBeGreaterThanOrEqual(3);
         expect(status.total_tasks).toBeGreaterThanOrEqual(1);
         expect(status.active_tasks).toBeGreaterThanOrEqual(1);
@@ -265,9 +265,9 @@ describe('collab service hardening', () => {
         expect(pipeline.pipeline.status).toBe('running');
     });
 
-    it('disconnects an agent by releasing locks, unassigning tasks, and marking it offline', () => {
+    it('disconnects an agent by releasing locks, unassigning tasks, and marking it offline', async () => {
         const filePath = `src/pages/Collab/${uniqueId('disconnect')}.jsx`;
-        const task = collabService.createTask({
+        const task = await collabService.createTask({
             title: 'Disconnect cleanup task',
             priority: 2,
             file_paths: [filePath],
@@ -275,13 +275,13 @@ describe('collab service hardening', () => {
             created_by: 'human',
         });
 
-        const assignment = collabPersistence.tasks.assignWithLocks(task.id, 'agent-backend', [filePath], 30);
+        const assignment = await collabPersistence.tasks.assignWithLocks(task.id, 'agent-backend', [filePath], 30);
         expect(assignment.conflict).toBe(false);
 
-        const result = collabService.disconnectAgent('agent-backend');
-        const agent = collabPersistence.agents.getById('agent-backend');
-        const cleanedTask = collabPersistence.tasks.getById(task.id);
-        const lock = collabPersistence.locks.check(filePath);
+        const result = await collabService.disconnectAgent('agent-backend');
+        const agent = await collabPersistence.agents.getById('agent-backend');
+        const cleanedTask = await collabPersistence.tasks.getById(task.id);
+        const lock = await collabPersistence.locks.check(filePath);
 
         expect(result.ok).toBe(true);
         expect(result.tasks_unassigned).toBeGreaterThanOrEqual(1);
@@ -290,7 +290,7 @@ describe('collab service hardening', () => {
         expect(cleanedTask.status).toBe('backlog');
         expect(lock).toBeNull();
 
-        const restored = collabService.registerAgent({
+        const restored = await collabService.registerAgent({
             id: 'agent-backend',
             name: 'Backend Agent',
             role: 'backend',

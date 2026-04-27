@@ -5,13 +5,14 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback, useEffect } from 'react';
 import { LoadingIcon, CheckIcon, ErrorIcon } from "../../components/Icons.jsx";
-import { getCsrfToken, clearCsrfToken } from "../../hooks/useAuth.jsx";
+import { useAuth, getCsrfToken, clearCsrfToken } from "../../hooks/useAuth.jsx";
 import { isBytecode } from "../../lib/bytecode-error.adapter.js";
 
 const SOURCE_TYPES = ['human', 'runtime', 'qa', 'pipeline', 'agent'];
 const SEVERITIES = ['INFO', 'WARN', 'CRIT', 'FATAL'];
 
 export default function BugCreateModal({ isOpen, onClose, onSuccess }) {
+    const { csrfToken, getCsrfToken, clearCsrfToken } = useAuth();
     const [formData, setFormData] = useState({
         title: '',
         summary: '',
@@ -89,7 +90,8 @@ export default function BugCreateModal({ isOpen, onClose, onSuccess }) {
         setError(null);
 
         try {
-            const token = await getCsrfToken();
+            const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+            const token = await tokenPromise;
             const payload = {
                 ...formData,
                 repro_steps: formData.repro_steps.split('\n').filter(Boolean),

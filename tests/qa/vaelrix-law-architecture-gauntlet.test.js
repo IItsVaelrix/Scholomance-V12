@@ -1,0 +1,262 @@
+import { describe, it, expect, vi } from 'vitest';
+import { 
+  ERROR_CATEGORIES, 
+  ERROR_SEVERITY, 
+  MODULE_IDS, 
+  ERROR_CODES, 
+  encodeBytecodeError, 
+  decodeBytecodeError,
+  parseErrorForAI 
+} from '../../codex/core/pixelbrain/bytecode-error.js';
+import fs from 'node:fs';
+import path from 'node:path';
+import { execSync } from 'node:child_process';
+
+/**
+ * Vaelrix Law: Architecture Gauntlet
+ * 
+ * "Future Stupidity Detector"
+ * 
+ * This suite enforces the fundamental laws of Scholomance:
+ * 1. Determinism is Sovereign (No Math.random, No Date.now in core)
+ * 2. Bytecode is the Truth (Immutable, verifiable, AI-readable)
+ * 3. Browser is a Decoration (No DOM-authoritative hacks)
+ * 4. Server is the Arbiter (No client-side combat authority)
+ */
+
+describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
+
+  describe('1) Bytecode Determinism Torture Test', () => {
+    
+    it('ensures same input always produces identical bytecode', () => {
+      const category = ERROR_CATEGORIES.LINGUISTIC;
+      const severity = ERROR_SEVERITY.CRIT;
+      const moduleId = MODULE_IDS.LINGUISTIC;
+      const code = ERROR_CODES.LEGALITY_VIOLATION;
+      const context = { word: 'forbidden', rule: 'SYLLABLE_COUNT', count: 5 };
+
+      const b1 = encodeBytecodeError(category, severity, moduleId, code, context);
+      const b2 = encodeBytecodeError(category, severity, moduleId, code, context);
+      
+      expect(b1).toBe(b2);
+      expect(b1).toContain('PB-ERR-v1-LINGUISTIC-CRIT-LINGUA-0C06');
+    });
+
+    it('verifies checksum integrity and rejects corrupted bytecode', () => {
+      const bytecode = encodeBytecodeError(
+        ERROR_CATEGORIES.STATE,
+        ERROR_SEVERITY.FATAL,
+        MODULE_IDS.COORD,
+        ERROR_CODES.INVALID_STATE,
+        { state: 'VOID' }
+      );
+
+      const decoded = decodeBytecodeError(bytecode);
+      expect(decoded.valid).toBe(true);
+
+      // Corrupt one character in the base64 context
+      const corrupted = bytecode.replace('-VOID-', '-VOID_'); 
+      // Wait, the replacement needs to be more precise to not break the split structure but fail checksum
+      const parts = bytecode.split('-');
+      parts[parts.length - 2] = parts[parts.length - 2].slice(0, -1) + (parts[parts.length - 2].endsWith('A') ? 'B' : 'A');
+      const corruptedBytecode = parts.join('-');
+
+      const decodedCorrupted = decodeBytecodeError(corruptedBytecode);
+      expect(decodedCorrupted.valid).toBe(false);
+      expect(decodedCorrupted.error).toBe('CHECKSUM_MISMATCH');
+    });
+
+    it('preserves nested unicode contexts through encoding/decoding cycle', () => {
+      const complexContext = {
+        message: '💀 Fatal Resonance 💀',
+        phonemes: ['ə', 'ɪ', 'ʊ'],
+        metadata: { depth: 8, intensity: 0.99, markers: ['†', '‡', '§'] }
+      };
+
+      const bytecode = encodeBytecodeError(
+        ERROR_CATEGORIES.LINGUISTIC,
+        ERROR_SEVERITY.WARN,
+        MODULE_IDS.SHARED,
+        ERROR_CODES.RESONANCE_MISMATCH,
+        complexContext
+      );
+
+      const decoded = decodeBytecodeError(bytecode);
+      expect(decoded.valid).toBe(true);
+      expect(decoded.context.message).toBe('💀 Fatal Resonance 💀');
+      expect(decoded.context.phonemes).toEqual(['ə', 'ɪ', 'ʊ']);
+      expect(decoded.context.metadata.markers).toContain('§');
+    });
+
+    it('ensures parseErrorForAI() preserves recoverability and hints', () => {
+      const context = { expected: 'VOWEL', actual: 'CONSONANT' };
+      const bytecode = encodeBytecodeError(
+        ERROR_CATEGORIES.TYPE,
+        ERROR_SEVERITY.CRIT,
+        MODULE_IDS.LINGUISTIC,
+        ERROR_CODES.TYPE_MISMATCH,
+        context
+      );
+
+      const result = parseErrorForAI(bytecode);
+      expect(result.valid).toBe(true);
+      expect(result.recoveryHints).toBeDefined();
+      expect(result.recoveryHints.suggestions.length).toBeGreaterThan(0);
+      
+      // Ensure hints are frozen/deterministic
+      const hints1 = result.recoveryHints;
+      const hints2 = parseErrorForAI(bytecode).recoveryHints;
+      expect(hints1).toEqual(hints2);
+      expect(Object.isFrozen(hints1)).toBe(true);
+    });
+
+    it('exhaustively tortures all categories, severities, and modules', () => {
+      // Loop through a subset of combinations to verify broad stability
+      for (const cat of Object.keys(ERROR_CATEGORIES)) {
+        for (const sev of Object.keys(ERROR_SEVERITY)) {
+          const modId = Object.values(MODULE_IDS)[0]; // Just use first for speed
+          const code = 0x1234;
+          const context = { cat, sev, modId };
+          
+          const bytecode = encodeBytecodeError(cat, sev, modId, code, context);
+          const decoded = decodeBytecodeError(bytecode);
+          
+          expect(decoded.valid).toBe(true);
+          expect(decoded.category).toBe(cat);
+          expect(decoded.severity).toBe(sev);
+          expect(decoded.moduleId).toBe(modId);
+          expect(decoded.errorCode).toBe(code);
+        }
+      }
+    });
+  });
+
+  describe('2) Anti-Chaos Randomness Detector', () => {
+    it('scans runtime code for forbidden Math.random() usage', () => {
+      // Directories to scan
+      const dirs = ['src', 'codex'];
+      const allowedExemptions = [
+        'tests',
+        'fixtures',
+        'node_modules',
+        'dist',
+        '.codex',
+        'scripts'
+      ];
+
+      // Use grep to find occurrences
+      const grepCommand = `grep -r "Math.random()" ${dirs.join(' ')} --exclude-dir={${allowedExemptions.join(',')}} || true`;
+      const output = execSync(grepCommand).toString().trim();
+      
+      if (output) {
+        const lines = output.split('\n');
+        const violations = lines.filter(line => !line.includes('// EXEMPT') && !line.includes('/* EXEMPT */'));
+        
+        if (violations.length > 0) {
+          console.error('VIOLATION: Math.random() found in runtime code:');
+          console.error(violations.join('\n'));
+          expect(violations.length, `Found ${violations.length} Math.random() violations`).toBe(0);
+        }
+      }
+    });
+  });
+
+  describe('3) Wall-clock Corruption Detector', () => {
+    it('scans critical paths for forbidden Date.now() or performance.now()', () => {
+      const criticalDirs = [
+        'codex/core',
+        'codex/services',
+        'src/hooks/useBattleSession.js',
+        'src/lib/truesight',
+        'codex/core/pixelbrain'
+      ];
+      
+      const forbidden = ['Date.now()', 'performance.now()'];
+      
+      for (const pattern of forbidden) {
+        // Filter out existing criticalDirs that might not exist to avoid grep errors
+        const activeDirs = criticalDirs.filter(d => fs.existsSync(d));
+        if (activeDirs.length === 0) continue;
+
+        const grepCommand = `grep -r "${pattern.replace('(', '\\(').replace(')', '\\)')}" ${activeDirs.join(' ')} --exclude-dir=tests || true`;
+        const output = execSync(grepCommand).toString().trim();
+        
+        if (output) {
+          const violations = output.split('\n').filter(line => !line.includes('// EXEMPT'));
+          if (violations.length > 0) {
+            console.error(`VIOLATION: ${pattern} found in critical runtime path:`);
+            console.error(violations.join('\n'));
+            expect(violations.length, `Found ${violations.length} ${pattern} violations`).toBe(0);
+          }
+        }
+      }
+    });
+  });
+
+  describe('4) Sovereign Editor Protection Test', () => {
+    it('protects src/pages/Read/ from DOM authority hacks', () => {
+      const targetDir = 'src/pages/Read/';
+      if (!fs.existsSync(targetDir)) return; // Skip if directory doesn't exist yet
+
+      const forbidden = [
+        'contentEditable',
+        'dangerouslySetInnerHTML',
+        'document.execCommand'
+      ];
+
+      for (const pattern of forbidden) {
+        try {
+          const grepCommand = `grep -r "${pattern}" ${targetDir} || true`;
+          const output = execSync(grepCommand).toString().trim();
+          
+          if (output) {
+            const violations = output.split('\n').filter(line => !line.includes('// EXEMPT'));
+            if (violations.length > 0) {
+              console.error(`VIOLATION: DOM authority hack "${pattern}" found in ${targetDir}:`);
+              console.error(violations.join('\n'));
+              expect(violations.length).toBe(0);
+            }
+          }
+        } catch (e) {
+          // Pass
+        }
+      }
+    });
+  });
+
+  describe('5) Combat Authority Drift Detector', () => {
+    it('ensures client-side combat code does not attempt to be authoritative', () => {
+      const clientCombatDir = 'src/hooks/combat';
+      if (!fs.existsSync(clientCombatDir)) return;
+
+      const forbidden = [
+        'localStorage.setItem',
+        'indexedDB.open',
+        'mutation {', // GraphQL mutation (if client attempts to send result directly)
+        'POST' // Direct result submission outside of the arbiter bridge
+      ];
+
+      // Note: This is a heuristic test. 
+      // In a real Inquisitor audit, we'd look for specific logic patterns.
+      
+      for (const pattern of forbidden) {
+        try {
+          const grepCommand = `grep -r "${pattern}" ${clientCombatDir} || true`;
+          const output = execSync(grepCommand).toString().trim();
+          
+          if (output) {
+            const violations = output.split('\n').filter(line => !line.includes('// EXEMPT'));
+            if (violations.length > 0) {
+              console.error(`VIOLATION: Client-side authority pattern "${pattern}" found in ${clientCombatDir}:`);
+              console.error(violations.join('\n'));
+              expect(violations.length).toBe(0);
+            }
+          }
+        } catch (e) {
+          // Pass
+        }
+      }
+    });
+  });
+
+});

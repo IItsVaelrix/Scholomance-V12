@@ -77,7 +77,9 @@ function startAtmosphereLoop() {
   
   const tick = () => {
     const level = service.getSignalLevel() || 0;
-    document.documentElement.style.setProperty("--active-signal-level", level.toFixed(3));
+    if (typeof document !== 'undefined') {
+      document.documentElement.style.setProperty("--active-signal-level", level.toFixed(3));
+    }
     rafId = requestAnimationFrame(tick);
   };
 

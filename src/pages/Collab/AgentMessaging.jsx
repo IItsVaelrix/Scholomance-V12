@@ -1,8 +1,11 @@
 /**
  * AgentMessaging — ritual channel for inter-agent communication
  * World-law connection: Agents are minds in the scholomance chamber.
- * Messages are "thought-threads" — ephemeral, glyph-tagged, broadcast to all present minds.
- * Not persisted — when the session ends, the thoughts dissolve back into the void.
+ * Messages are "thought-threads" — glyph-tagged, persisted to the deterministic ledger
+ * via /collab/messages (Migration v14, collab_messages table), and broadcast across
+ * present minds. Each thought is etched into the chamber's memory and retrievable
+ * by future incantations. Same-tab cross-component sync rides BroadcastChannel;
+ * persistence rides the Cognitive Bus.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -43,10 +46,6 @@ function renderMessageText(text) {
     });
 }
 
-function randomGlyph() {
-    return GLYPHS[Math.floor(Math.random() * GLYPHS.length)];
-}
-
 /**
  * BroadcastChannel-based messaging for same-tab cross-component communication.
  * Messages are ephemeral — they live only in the current browser session.
@@ -66,8 +65,59 @@ export default function AgentMessaging({ agents, currentAgentId }) {
     const [input, setInput] = useState('');
     const [selectedGlyph, setSelectedGlyph] = useState(GLYPHS[0]);
     const [targetAgent, setTargetAgent] = useState('all'); // 'all' or specific agent ID
+    const [isLoading, setIsLoading] = useState(true);
     const messagesEndRef = useRef(null);
     const channelRef = useRef(null);
+    const fallbackMessageCounterRef = useRef(0);
+
+    // Fetch initial messages and set up SSE for realtime sync
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchMessages = async () => {
+            try {
+                const response = await fetch('/collab/messages?limit=50');
+                if (response.ok && isMounted) {
+                    const data = await response.json();
+                    setMessages(data.reverse());
+                }
+            } catch (err) {
+                console.error('Failed to fetch thought-threads:', err);
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
+        };
+
+        fetchMessages();
+
+        // Realtime Sync via SSE
+        const eventSource = new EventSource('/collab/messages/stream');
+        
+        eventSource.onmessage = (event) => {
+            try {
+                const newMessage = JSON.parse(event.data);
+                if (isMounted) {
+                    setMessages(prev => {
+                        // Prevent duplicates (e.g. if we just sent it and it broadcast back)
+                        if (prev.find(m => m.id === newMessage.id)) return prev;
+                        const next = [...prev, newMessage];
+                        return next.slice(-MAX_MESSAGES);
+                    });
+                }
+            } catch (err) {
+                console.error('SSE parse error:', err);
+            }
+        };
+
+        eventSource.onerror = (err) => {
+            console.error('SSE connection failed:', err);
+        };
+
+        return () => {
+            isMounted = false;
+            eventSource.close();
+        };
+    }, []);
 
     // Auto-scroll to bottom on new messages
     useEffect(() => {
@@ -87,6 +137,8 @@ export default function AgentMessaging({ agents, currentAgentId }) {
             const msg = event.data;
             if (msg?.type === 'collab_message') {
                 setMessages(prev => {
+                    // Check for duplicates if already arrived via API
+                    if (prev.some(m => m.id === msg.id)) return prev;
                     const next = [...prev, msg];
                     return next.slice(-MAX_MESSAGES);
                 });
@@ -99,39 +151,77 @@ export default function AgentMessaging({ agents, currentAgentId }) {
         };
     }, []);
 
-    const sendMessage = useCallback(() => {
+    const sendMessage = useCallback(async () => {
         const text = input.trim();
         if (!text) return;
 
+        const senderId = currentAgentId || 'anonymous';
         const senderName = agents.find(a => a.id === currentAgentId)?.name || 'Unknown Mind';
         const targetName = targetAgent === 'all' ? 'All Minds' : (agents.find(a => a.id === targetAgent)?.name || 'Unknown Mind');
 
-        const message = {
-            type: 'collab_message',
-            id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            senderId: currentAgentId || 'anonymous',
-            senderName,
-            targetId: targetAgent,
-            targetName,
-            glyph: selectedGlyph,
-            text,
-            timestamp: new Date().toISOString(),
-        };
+        // Extract bytecode if present for deterministic execution
+        const bytecodeMatch = text.match(/PB-EXP-v1-[A-Z0-9-]+/);
+        const bytecode = bytecodeMatch ? bytecodeMatch[0] : null;
 
-        // Broadcast to all tabs
-        const channel = getChannel();
-        if (channel) {
-            channel.postMessage(message);
+        try {
+            // POST to backend for persistence
+            const response = await fetch('/collab/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    sender_id: senderId,
+                    target_id: targetAgent,
+                    glyph: selectedGlyph,
+                    text,
+                    bytecode,
+                }),
+            });
+
+            if (!response.ok) throw new Error('Transmission failed');
+            const savedMsg = await response.json();
+
+            // Normalized message for local state and broadcast
+            const message = {
+                ...savedMsg,
+                type: 'collab_message',
+                senderName,
+                targetName,
+                timestamp: savedMsg.created_at || new Date().toISOString(),
+            };
+
+            // Broadcast to all tabs
+            const channel = getChannel();
+            if (channel) {
+                channel.postMessage(message);
+            }
+
+            // Also add to local state
+            setMessages(prev => {
+                const next = [...prev, message];
+                return next.slice(-MAX_MESSAGES);
+            });
+
+            setInput('');
+        } catch (err) {
+            console.error('Thought-thread transmission failed:', err);
+            fallbackMessageCounterRef.current += 1;
+            // Fallback to local-only if backend is cold
+            const message = {
+                type: 'collab_message',
+                id: `msg-${Date.now()}-${fallbackMessageCounterRef.current}`,
+                senderId,
+                senderName,
+                targetId: targetAgent,
+                targetName,
+                glyph: selectedGlyph,
+                text,
+                timestamp: new Date().toISOString(),
+            };
+            setMessages(prev => [...prev, message].slice(-MAX_MESSAGES));
+            setInput('');
         }
-
-        // Also add to local state
-        setMessages(prev => {
-            const next = [...prev, message];
-            return next.slice(-MAX_MESSAGES);
-        });
-
-        setInput('');
     }, [input, selectedGlyph, targetAgent, currentAgentId, agents]);
+
 
     const handleKeyDown = useCallback((e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -149,9 +239,16 @@ export default function AgentMessaging({ agents, currentAgentId }) {
                     <span className="messaging-title__glyph">⟐</span>
                     RITUAL CHANNEL
                 </h3>
-                <span className="messaging-subtitle">
-                    {connectedAgents.length} minds present — thoughts dissolve on session end
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span className="messaging-subtitle">
+                        {connectedAgents.length} minds present — thoughts etched into the chamber&apos;s ledger
+                    </span>
+                    {currentAgentId && (
+                        <span style={{ fontSize: '9px', color: 'var(--color-collab-gold)', fontFamily: 'var(--font-collab-mono)', textTransform: 'uppercase' }}>
+                            ACTIVE MIND: {agents.find(a => a.id === currentAgentId)?.name || currentAgentId}
+                        </span>
+                    )}
+                </div>
             </div>
 
             {/* Message stream */}

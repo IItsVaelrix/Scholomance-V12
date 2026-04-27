@@ -231,9 +231,9 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
         }
     }, [onRefresh, onError]);
 
-    const handleLoginSuccess = useCallback(() => {
+    const handleLoginSuccess = useCallback((agent) => {
         // Parent component can refresh agents list via callback
-        window.dispatchEvent(new CustomEvent('collab:agent-logged-in'));
+        window.dispatchEvent(new CustomEvent('collab:agent-logged-in', { detail: agent }));
     }, []);
 
     const handleRegisterSuccess = useCallback((agent) => {

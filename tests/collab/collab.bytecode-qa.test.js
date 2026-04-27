@@ -54,7 +54,7 @@ beforeAll(async () => {
     collabService = serviceMod.collabService;
     collabPersistence = persistenceMod.collabPersistence;
 
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'qa-agent',
         name: 'QA Agent',
         role: 'qa',
@@ -132,7 +132,7 @@ describe('Bytecode Error Format — Collab Domain', () => {
             createdBy: 'qa-runner',
         });
 
-        const stored = collabPersistence.agent_keys.getById(result.keyId);
+        const stored = await collabPersistence.agent_keys.getById(result.keyId);
         assertType(stored, 'object', {
             testName: 'stored key is object',
             testFile: 'collab.bytecode-qa.test.js',
@@ -311,8 +311,8 @@ describe('Security Properties — Bytecode Assertions', () => {
         const key1 = await generateAgentKey({ agentId: 'qa-agent', createdBy: 'qa-runner' });
         const key2 = await generateAgentKey({ agentId: 'qa-agent', createdBy: 'qa-runner' });
 
-        const stored1 = collabPersistence.agent_keys.getById(key1.keyId);
-        const stored2 = collabPersistence.agent_keys.getById(key2.keyId);
+        const stored1 = await collabPersistence.agent_keys.getById(key1.keyId);
+        const stored2 = await collabPersistence.agent_keys.getById(key2.keyId);
 
         assertTrue(stored1.key_hash !== stored2.key_hash, {
             testName: 'unique bcrypt hashes per generation',
@@ -352,7 +352,7 @@ describe('Security Properties — Bytecode Assertions', () => {
 describe('Collab Workflow — Bytecode Assertions', () => {
     it('full remote agent workflow: register → heartbeat → task → lock → complete', async () => {
         // Heartbeat
-        const heartbeat = collabService.heartbeatAgent({
+        const heartbeat = await collabService.heartbeatAgent({
             id: 'qa-agent',
             status: 'online',
             current_task_id: null,
@@ -364,7 +364,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Create task
-        const task = collabService.createTask({
+        const task = await collabService.createTask({
             title: 'Bytecode QA test task',
             description: 'Testing full remote agent workflow',
             priority: 2,
@@ -399,7 +399,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
 
         // Acquire lock
         const filePath = task.file_paths[0];
-        const lockResult = collabService.acquireLock({
+        const lockResult = await collabService.acquireLock({
             file_path: filePath,
             agent_id: 'qa-agent',
             ttl_minutes: 30,
@@ -412,7 +412,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Verify lock
-        const lock = collabService.checkLock(filePath);
+        const lock = await collabService.checkLock(filePath);
         assertType(lock, 'object', {
             testName: 'lock exists',
             testFile: 'collab.bytecode-qa.test.js',
@@ -426,7 +426,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Release lock
-        const releaseResult = collabService.releaseLock({
+        const releaseResult = await collabService.releaseLock({
             file_path: filePath,
             agent_id: 'qa-agent',
         });
@@ -437,7 +437,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Verify lock released
-        const releasedLock = collabService.checkLock(filePath);
+        const releasedLock = await collabService.checkLock(filePath);
         assertEqual(releasedLock, null, {
             testName: 'lock no longer exists',
             testFile: 'collab.bytecode-qa.test.js',
@@ -445,7 +445,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Complete task
-        const completedTask = collabService.updateTask({
+        const completedTask = await collabService.updateTask({
             id: task.id,
             updates: { status: 'done' },
             actor_agent_id: 'qa-agent',
@@ -461,7 +461,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         const filePath = `src/pages/Collab/${uniqueId('pipeline-qa')}.jsx`;
 
         // Create trigger task
-        const triggerTask = collabService.createTask({
+        const triggerTask = await collabService.createTask({
             title: 'Pipeline QA trigger',
             priority: 2,
             file_paths: [filePath],
@@ -482,7 +482,7 @@ describe('Collab Workflow — Bytecode Assertions', () => {
         });
 
         // Create pipeline
-        const result = collabService.createPipeline({
+        const result = await collabService.createPipeline({
             pipeline_type: 'ui_feature',
             trigger_task_id: triggerTask.id,
             actor_agent_id: 'qa-agent',

@@ -6,6 +6,7 @@
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth.jsx';
 import './BugBoard.css';
 
 // Severity → ghost color + Pac-Man ghost name (diagnostic triage roster)
@@ -124,6 +125,7 @@ function MazeRow({ bug, index, onClick }) {
 }
 
 export default function BugBoard({ bugs, onBugClick, onReportClick }) {
+    const { csrfToken, getCsrfToken, clearCsrfToken } = useAuth();
     const handleImportQa = async () => {
         const payload = prompt('Paste QA Result JSON (single or array):');
         if (!payload) return;

@@ -17,7 +17,7 @@ const DEFAULT_SETTINGS = {
 };
 
 export function useUserSettings() {
-  const { user } = useAuth();
+  const { user, csrfToken, getCsrfToken, clearCsrfToken } = useAuth();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [isLoading, setIsLoading] = useState(true);
   const lastFetchedUserRef = useRef(null);
@@ -67,8 +67,8 @@ export function useUserSettings() {
       // If logged in, persist to backend
       if (user) {
         // We don't await here to keep the UI snappy, but we do trigger the fetch
-        getCsrfToken()
-          .then((token) => {
+        const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+        tokenPromise.then((token) => {
             return fetch(getSettingsEndpoint(), {
               method: 'POST',
               headers: {
@@ -87,7 +87,7 @@ export function useUserSettings() {
       
       return merged;
     });
-  }, [user]);
+  }, [clearCsrfToken, csrfToken, getCsrfToken, user]);
 
   return {
     settings,

@@ -2,11 +2,11 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { z } from "zod";
-import { getCsrfToken, clearCsrfToken } from "./useAuth.jsx";
+import { useAuth, getCsrfToken, clearCsrfToken } from "./useAuth.jsx";
 import { SCHOOLS, getSchoolsByUnlock } from "../data/schools";
 import { getLevelFromXp, getLevelProgress, getTierForLevel } from "../lib/progressionUtils";
 import { buildAuthorityUrl } from "../lib/apiUrl.js";
-import { MASTERY_LEVELS } from "../../codex/core/nexus.registry";
+import { MASTERY_LEVELS } from "../lib/nexusRegistry.js";
 
 const ProgressionContext = createContext(null);
 
@@ -68,6 +68,7 @@ function debounce(func, wait) {
  * @param {{children: import("react").ReactNode}} props
  */
 export function ProgressionProvider({ children, authReady = true, isAuthenticated = true }) {
+  const { user, csrfToken, getCsrfToken, clearCsrfToken } = useAuth();
   const [progression, setProgression] = useState(defaultProgression);
   const [isLoading, setIsLoading] = useState(true);
   const canPersistRef = useRef(false);
@@ -78,8 +79,9 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       return;
     }
     try {
-      const csrfToken = await getCsrfToken();
-      if (!csrfToken) {
+      const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+      const token = await tokenPromise;
+      if (!token) {
         throw new Error("Missing CSRF token");
       }
       const response = await fetch(getApiUrl('/api/progression'), {
@@ -87,7 +89,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          [CSRF_HEADER]: csrfToken,
+          [CSRF_HEADER]: token,
         },
         body: JSON.stringify({
           xp: newProgression.xp,
@@ -171,7 +173,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     return () => {
       cancelled = true;
     };
-  }, [authReady, isAuthenticated]);
+  }, [authReady, clearCsrfToken, isAuthenticated]);
 
   const refreshProgression = useCallback(async (isSilent = true) => {
     if (!isAuthenticated) return;
@@ -264,15 +266,16 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       return;
     }
     try {
-      const csrfToken = await getCsrfToken();
-      if (!csrfToken) {
+      const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+      const token = await tokenPromise;
+      if (!token) {
         throw new Error("Missing CSRF token");
       }
       const response = await fetch(getApiUrl('/api/progression'), {
         method: 'DELETE',
         credentials: 'include',
         headers: {
-          [CSRF_HEADER]: csrfToken,
+          [CSRF_HEADER]: token,
         },
       });
       if (response.status === 403) {
@@ -294,7 +297,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     } catch (error) {
       console.error("Error resetting progression:", error);
     }
-  }, []);
+  }, [clearCsrfToken, csrfToken, getCsrfToken]);
 
   const checkUnlocked = useCallback((schoolId) => {
     return progression.unlockedSchools.includes(schoolId);
@@ -453,4 +456,3 @@ export function onXPEvent(event, callback) {
     if (idx > -1) listeners.splice(idx, 1);
   };
 }
-

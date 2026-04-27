@@ -86,25 +86,25 @@ describe('collab MCP bridge parity', () => {
 
         expect(Array.from(fakeServer.tools.keys())).toEqual(
             expect.arrayContaining([
-                'collab_agent_register',
-                'collab_agent_heartbeat',
-                'collab_task_create',
-                'collab_task_assign',
-                'collab_task_update',
-                'collab_lock_acquire',
-                'collab_lock_release',
-                'collab_pipeline_create',
-                'collab_pipeline_advance',
-                'collab_pipeline_fail',
-                'collab_status_get',
-                'collab_task_get',
-                'collab_task_delete',
-                'collab_pipeline_get',
-                'collab_fs_list',
-                'collab_fs_read',
-                'collab_execute_verification',
-                'collab_memory_set',
-                'collab_memory_get',
+                'mcp_scholomance_collab_agent_register',
+                'mcp_scholomance_collab_agent_heartbeat',
+                'mcp_scholomance_collab_task_create',
+                'mcp_scholomance_collab_task_assign',
+                'mcp_scholomance_collab_task_update',
+                'mcp_scholomance_collab_lock_acquire',
+                'mcp_scholomance_collab_lock_release',
+                'mcp_scholomance_collab_pipeline_create',
+                'mcp_scholomance_collab_pipeline_advance',
+                'mcp_scholomance_collab_pipeline_fail',
+                'mcp_scholomance_collab_status_get',
+                'mcp_scholomance_collab_task_get',
+                'mcp_scholomance_collab_task_delete',
+                'mcp_scholomance_collab_pipeline_get',
+                'mcp_scholomance_collab_fs_list',
+                'mcp_scholomance_collab_fs_read',
+                'mcp_scholomance_collab_execute_verification',
+                'mcp_scholomance_collab_memory_set',
+                'mcp_scholomance_collab_memory_get',
             ]),
         );
     });
@@ -115,7 +115,7 @@ describe('collab MCP bridge parity', () => {
         expect(statusPayload.contents[0].uri).toBe('collab://status');
         expect(JSON.parse(statusPayload.contents[0].text)).toEqual({ total_agents: 1, running_pipelines: 1 });
 
-        const advanceTool = fakeServer.tools.get('collab_pipeline_advance');
+        const advanceTool = fakeServer.tools.get('mcp_scholomance_collab_pipeline_advance');
         const toolPayload = await advanceTool.handler({
             id: 'pipe-created',
             agent_id: 'agent-ui',
@@ -125,7 +125,7 @@ describe('collab MCP bridge parity', () => {
         expect(toolPayload.isError).toBeUndefined();
         const parsed = JSON.parse(toolPayload.content[0].text);
         expect(parsed.ok).toBe(true);
-        expect(parsed.tool).toBe('collab_pipeline_advance');
+        expect(parsed.tool).toBe('mcp_scholomance_collab_pipeline_advance');
         expect(parsed.result.pipeline.id).toBe('pipe-created');
     });
 
@@ -133,11 +133,11 @@ describe('collab MCP bridge parity', () => {
         service.setMemory = vi.fn((params) => ({ ...params, updated_at: 'now' }));
         service.getMemory = vi.fn((params) => ({ ...params, value: 'remembered', updated_at: 'now' }));
 
-        const setTool = fakeServer.tools.get('collab_memory_set');
+        const setTool = fakeServer.tools.get('mcp_scholomance_collab_memory_set');
         const setPayload = await setTool.handler({ key: 'test', value: 'foo' });
         expect(JSON.parse(setPayload.content[0].text).ok).toBe(true);
 
-        const getTool = fakeServer.tools.get('collab_memory_get');
+        const getTool = fakeServer.tools.get('mcp_scholomance_collab_memory_get');
         const getPayload = await getTool.handler({ key: 'test' });
         const getResult = JSON.parse(getPayload.content[0].text);
         expect(getResult.ok).toBe(true);
@@ -151,7 +151,7 @@ describe('collab MCP bridge parity', () => {
             });
         });
 
-        const releaseTool = fakeServer.tools.get('collab_lock_release');
+        const releaseTool = fakeServer.tools.get('mcp_scholomance_collab_lock_release');
         const toolPayload = await releaseTool.handler({
             file_path: 'src/pages/Test.jsx',
             agent_id: 'agent-ui',

@@ -74,7 +74,14 @@ export const getCsrfToken = async (forceRefresh = false) => {
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [csrfToken, setCsrfTokenState] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const refreshCsrf = useCallback(async () => {
+    const token = await getCsrfToken(true);
+    setCsrfTokenState(token);
+    return token;
+  }, []);
 
   const checkMe = useCallback(async (options = {}) => {
     const force = Boolean(options?.force);
@@ -215,7 +222,17 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout, checkMe }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      isLoading, 
+      login, 
+      register, 
+      logout, 
+      checkMe, 
+      csrfToken, 
+      getCsrfToken, 
+      clearCsrfToken 
+    }}>
       {children}
     </AuthContext.Provider>
   );

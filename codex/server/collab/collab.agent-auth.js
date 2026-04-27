@@ -31,7 +31,7 @@ import { collabPersistence } from './collab.persistence.js';
 export async function validateAgentKey(rawKey) {
     if (!rawKey || typeof rawKey !== 'string') return null;
 
-    const keys = collabPersistence.agent_keys.getAll();
+    const keys = await collabPersistence.agent_keys.getAll();
     const now = new Date();
 
     for (const keyRecord of keys) {
@@ -49,7 +49,7 @@ export async function validateAgentKey(rawKey) {
             const match = await bcrypt.compare(rawKey, keyRecord.key_hash);
             if (match) {
                 // Resolve agent identity
-                const agent = collabPersistence.agents.getById(keyRecord.agent_id);
+                const agent = await collabPersistence.agents.getById(keyRecord.agent_id);
                 if (agent) {
                     return {
                         id: agent.id,
@@ -90,7 +90,7 @@ export async function generateAgentKey({ agentId, createdBy, expiresInDays = 0 }
         ? new Date(Date.now() + expiresInDays * 86400000).toISOString()
         : null;
 
-    collabPersistence.agent_keys.create({
+    await collabPersistence.agent_keys.create({
         id: keyId,
         agentId,
         keyHash,
@@ -106,8 +106,8 @@ export async function generateAgentKey({ agentId, createdBy, expiresInDays = 0 }
  * @param {string} keyId
  * @returns {boolean}
  */
-export function revokeAgentKey(keyId) {
-    return collabPersistence.agent_keys.revoke(keyId);
+export async function revokeAgentKey(keyId) {
+    return await collabPersistence.agent_keys.revoke(keyId);
 }
 
 /**
@@ -120,7 +120,7 @@ export function revokeAgentKey(keyId) {
  */
 export async function rotateAgentKey({ agentId, createdBy, expiresInDays = 0 }) {
     // Revoke all existing keys for this agent
-    collabPersistence.agent_keys.revokeAll(agentId);
+    await collabPersistence.agent_keys.revokeAll(agentId);
     // Generate new key
     return generateAgentKey({ agentId, createdBy, expiresInDays });
 }
@@ -149,4 +149,28 @@ export async function collabAgentKeyAuth(request, reply) {
     // Set agent identity for downstream handlers
     request.headers['x-agent-id'] = agent.id;
     request.agentContext = agent;
+}
+
+/**
+ * Guard that requires either a valid user session or a valid agent key.
+ */
+export async function requireCollabAuth(request, reply) {
+    // 1. Check for agent context (from collabAgentKeyAuth)
+    if (request.agentContext?.id) {
+        return;
+    }
+
+    // 2. Check for user session (standard auth)
+    const user = request.session?.user;
+    if (user?.id) {
+        // In development, we allow even the bypass user to access collab
+        // to ensure the browser UI can participate in the thought-thread.
+        return;
+    }
+
+    // 3. Fallback: Unauthorized
+    return reply.status(401).send({
+        error: 'Unauthorized',
+        message: 'Authentication required: session or agent key missing.',
+    });
 }

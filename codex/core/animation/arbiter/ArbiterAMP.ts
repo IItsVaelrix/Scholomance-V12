@@ -199,11 +199,11 @@ export class ArbiterAMP {
     const syntaxScore = transitionCount > 0 ? 0.9 : (context.lastRole === 'function' ? 0.6 : 0.4);
     
     // PHONETIC SIGNAL: Enforce phonetic distance as the primary gate for spellchecked words
-    const targetPhonemes = PhonemeEngine.analyzeWord(word).phonemes;
-    const inputPhonemes = context.inputPhonemes || PhonemeEngine.analyzeWord(context.prefix || '').phonemes;
+    const targetPhonemes = PhonemeEngine.analyzeWord(word)?.phonemes || [];
+    const inputPhonemes = context.inputPhonemes || PhonemeEngine.analyzeWord(context.prefix || '')?.phonemes || [];
     const phoneticSimilarity = PhoneticSimilarity.getArraySimilarity(targetPhonemes, inputPhonemes);
     
-    const phoneticScore = Math.max(phoneticSimilarity, context.rhymeMatch === word ? 1.0 : 0.1);
+    const phoneticScore = Math.max(phoneticSimilarity, (context.rhymeMatch && context.rhymeMatch.toLowerCase() === normalizedWord) ? 1.0 : 0.1);
     
     // Oracle Resonance (Mood Biases)
     let semanticScore = baseScore;

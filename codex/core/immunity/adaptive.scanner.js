@@ -7,6 +7,7 @@
 import { similarity, quantizeVectorJS } from '../quantization/turboquant.js';
 import { generatePhonosemanticVector } from '../semantic/vector.utils.js';
 import { PATHOGEN_REGISTRY } from './pathogenRegistry.js';
+import { encodeBytecodeError, ERROR_CATEGORIES, ERROR_CODES, ERROR_SEVERITY, MODULE_IDS } from '../pixelbrain/bytecode-error.js';
 
 const CHUNK_SIZE = 500; // Characters per semantic atom
 const SEED = 42;
@@ -47,11 +48,27 @@ export async function scanAdaptive(content) {
     }
     
     if (maxScore >= pathogen.threshold) {
+      const bytecode = encodeBytecodeError(
+        ERROR_CATEGORIES.VALUE,
+        ERROR_SEVERITY.CRIT,
+        MODULE_IDS.IMMUNITY,
+        ERROR_CODES.IMMUNE_ADAPTIVE_BLOCK,
+        {
+          layer: 'adaptive',
+          pathogenId: pathogen.id,
+          pathogenName: pathogen.name,
+          score: maxScore,
+          threshold: pathogen.threshold,
+          encyclopediaEntry: pathogen.encyclopediaEntry,
+        },
+      );
       violations.push({
         pathogenId: pathogen.id,
         name: pathogen.name,
         score: maxScore,
-        entry: pathogen.encyclopediaEntry
+        entry: pathogen.encyclopediaEntry,
+        bytecode,
+        threshold: pathogen.threshold,
       });
     }
   }

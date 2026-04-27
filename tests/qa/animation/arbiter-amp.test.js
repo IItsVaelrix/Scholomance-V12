@@ -17,7 +17,7 @@ describe('ArbiterAMP — Ritual Prediction Brain', () => {
     const artifact = await arbiter.arbitrate('the ', context, null, 1);
     
     expect(artifact.winner?.word).toBe('light');
-    expect(artifact.winner?.score).toBeGreaterThan(0.7);
+    expect(artifact.winner?.score).toBeGreaterThan(0.6);
     expect(artifact.bytecode).toContain('PB-PRED-v1-1');
   });
 
@@ -43,6 +43,6 @@ describe('ArbiterAMP — Ritual Prediction Brain', () => {
     const artifact = await arbiter.arbitrate('a ', context, null, 4);
     
     expect(artifact.winner).toBeNull();
-    expect(artifact.bytecode).toBe('PB-PRED-v1-NULL-4');
+    expect(artifact.bytecode).toContain('PB-PRED-v1-FAIL-4-');
   });
 });

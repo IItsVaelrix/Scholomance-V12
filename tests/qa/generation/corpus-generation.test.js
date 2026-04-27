@@ -438,7 +438,7 @@ describe('Corpus Generation QA', () => {
       const versionMatch = scriptContent.match(/version:\s*(\d+)/);
 
       expect(versionMatch).toBeTruthy();
-      expect(parseInt(versionMatch[1], 10)).toBe(2);
+      expect(parseInt(versionMatch[1], 10)).toBe(3);
     });
 
     it('should include version in payload', () => {

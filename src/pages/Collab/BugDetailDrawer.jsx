@@ -5,7 +5,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CloseIcon, ZapIcon, CheckIcon, ErrorIcon, LoadingIcon } from "../../components/Icons.jsx";
-import { getCsrfToken, clearCsrfToken } from "../../hooks/useAuth.jsx";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import BugSeverityChips from './BugSeverityChips.jsx';
 import BugBytecodePanel from './BugBytecodePanel.jsx';
 
@@ -28,13 +28,15 @@ const SECTIONS = [
 ];
 
 export default function BugDetailDrawer({ bug, isOpen, onClose, onUpdate, onRefresh }) {
+    const { csrfToken, getCsrfToken, clearCsrfToken } = useAuth();
     const [activeSection, setActiveSection] = useState('summary');
     const [isProcessing, setIsSubmitting] = useState(false);
 
     const handleStatusChange = async (newStatus) => {
         setIsSubmitting(true);
         try {
-            const token = await getCsrfToken();
+            const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+            const token = await tokenPromise;
             const response = await fetch(`/collab/bugs/${bug.id}`, {
                 method: 'PATCH',
                 headers: { 
@@ -56,7 +58,8 @@ export default function BugDetailDrawer({ bug, isOpen, onClose, onUpdate, onRefr
     const handleCreateTask = async () => {
         setIsSubmitting(true);
         try {
-            const token = await getCsrfToken();
+            const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
+            const token = await tokenPromise;
             const response = await fetch(`/collab/bugs/${bug.id}/create-task`, {
                 method: 'POST',
                 headers: { 'x-csrf-token': token }

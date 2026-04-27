@@ -6,8 +6,13 @@
  */
 
 import { execSync } from 'node:child_process';
+import { createRequire } from 'module';
 import { collabPersistence } from '../collab/collab.persistence.js';
 import { estimateInnerProduct, quantizeVectorJS } from '../../core/quantization/turboquant.js';
+
+const require = createRequire(import.meta.url);
+const { CMUDict } = require('cmudict');
+const dict = new CMUDict();
 
 const SEED = 1337; // Must match indexer seed
 const SEARCH_LIMIT = 10;
@@ -116,25 +121,10 @@ export async function searchCodebase(query) {
     const { data: qData, norm: qNorm } = quantizeVectorJS(qVec, SEED);
     
     // 2. Load all embeddings from persistence
-    // Performance: In a large production system, we'd use a spatial index or keep this in memory.
-    // For our current 30k chunks, a full scan in Node is still "Instant" (<50ms).
     const index = await collabPersistence.codebase.getAll();
     
     // 3. Compare similarity
-    const results = index.map(entry => {
-        const tqBlob = entry.vector_tq;
-        // Persistence returns Buffer. We need Uint8Array.
-        const vData = new Uint8Array(tqBlob);
-        
-        const score = estimateInnerProduct(qData, vData, qNorm, 1.0); // We didn't store norms separately in this schema, so we assume normalized
-        
-        return {
-            file_path: entry.file_path,
-            chunk_index: entry.chunk_index,
-            preview: entry.content_preview,
-            score
-        };
-    });
+    const results = scoreEmbeddings(index, qData, qNorm);
 
     // 4. Sort and return top candidates
     const topResults = results
@@ -152,4 +142,135 @@ export async function searchCodebase(query) {
             engine: 'TurboQuant-v1'
         }
     };
+}
+
+function scoreEmbeddings(index, qData, qNorm) {
+    return index.map(entry => {
+        const tqBlob = entry.vector_tq;
+        const vData = new Uint8Array(tqBlob);
+        const score = estimateInnerProduct(qData, vData, qNorm, 1.0);
+        
+        return {
+            file_path: entry.file_path,
+            chunk_index: entry.chunk_index,
+            preview: entry.content_preview,
+            score
+        };
+    });
+}
+
+/**
+ * Returns a list of all files that have been indexed.
+ */
+export async function listIndexedFiles() {
+    return await collabPersistence.codebase.getAllPaths();
+}
+
+/**
+ * Find semantic and phonetic neighbors for a specific file.
+ */
+export async function getFileNeighbors(filePath) {
+    const start = performance.now();
+    
+    // 1. Get embeddings for this file
+    const fileEmbeddings = await collabPersistence.codebase.getByPath(filePath);
+    if (fileEmbeddings.length === 0) {
+        return { error: 'File not indexed', filePath };
+    }
+
+    // 2. Get all other embeddings
+    const allEmbeddings = await collabPersistence.codebase.getAll();
+    const otherEmbeddings = allEmbeddings.filter(e => e.file_path !== filePath);
+
+    // 3. For each chunk of our file, find best neighbors in others
+    const representative = fileEmbeddings[0];
+    const qData = new Uint8Array(representative.vector_tq);
+    const qNorm = 1.0; 
+
+    const semanticResults = scoreEmbeddings(otherEmbeddings, qData, qNorm)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5);
+
+    // 4. Phonetic Neighbors
+    const fileName = filePath.split('/').pop().replace(/\..*$/, '');
+    const phoneticResults = await findPhoneticMatches(fileName);
+
+    // 5. Linked Docs
+    const linkedDocs = await findLinkedDocs(filePath);
+
+    return {
+        filePath,
+        semantic: semanticResults,
+        phonetic: phoneticResults.slice(0, 5),
+        linkedDocs,
+        metadata: {
+            duration_ms: performance.now() - start
+        }
+    };
+}
+
+/**
+ * Hybrid search combining Literal, Semantic, and Phonetic.
+ */
+export async function searchHybrid(query) {
+    const start = performance.now();
+
+    const [literal, semantic, phonetic] = await Promise.all([
+        forensicSearch(query, { limit: 10 }),
+        searchCodebase(query),
+        findPhoneticMatches(query)
+    ]);
+
+    const linkedDocs = await findLinkedDocs(query);
+
+    return {
+        query,
+        literal: literal.results,
+        semantic: semantic.results,
+        phonetic: phonetic.slice(0, 10),
+        linkedDocs,
+        metadata: {
+            duration_ms: performance.now() - start
+        }
+    };
+}
+
+async function findPhoneticMatches(query) {
+    const queryPhonemes = dict.get(query.toLowerCase());
+    if (!queryPhonemes) return [];
+
+    const allPaths = await collabPersistence.codebase.getAllPaths();
+    const matches = [];
+
+    for (const path of allPaths) {
+        const name = path.split('/').pop().replace(/\..*$/, '').toLowerCase();
+        const namePhonemes = dict.get(name);
+        if (namePhonemes) {
+            const querySet = new Set(queryPhonemes.split(' '));
+            const nameSet = new Set(namePhonemes.split(' '));
+            let overlap = 0;
+            for (const p of querySet) {
+                if (nameSet.has(p)) overlap++;
+            }
+            if (overlap > 0) {
+                matches.push({ file_path: path, score: overlap / Math.max(querySet.size, nameSet.size) });
+            }
+        }
+    }
+
+    return matches.sort((a, b) => b.score - a.score);
+}
+
+async function findLinkedDocs(context) {
+    // Search for PDRs, Verdicts, etc. in docs/ that match the context string
+    try {
+        const docs = await forensicSearch(context, { includePattern: 'docs/**', limit: 5 });
+        return docs.results.map(r => ({
+            file_path: r.file_path,
+            title: r.file_path.split('/').pop(),
+            preview: r.preview
+        }));
+    } catch (e) {
+        return [];
+    }
 }

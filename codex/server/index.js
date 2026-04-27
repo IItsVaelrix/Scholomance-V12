@@ -44,6 +44,7 @@ import { createOpsMetrics } from './observability.metrics.js';
 import { PhonemeEngine } from '../core/phonology/phoneme.engine.js';
 import { authorizeAudioRequest, buildAudioUnauthorizedPayload } from './audioAuth.js';
 import { createImmunityService } from './services/immunity.service.js';
+import { collabService } from './collab/collab.service.js';
 import {
   BytecodeError,
   ERROR_CATEGORIES,
@@ -164,8 +165,6 @@ function getSessionSecret() {
     }
     return secret;
 }
-
-import { createImmunityService } from './services/immunity.service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -501,7 +500,7 @@ const sessionOptions = {
     maxAge: 4 * 60 * 60 * 1000, // 4 hours
     path: '/',
   },
-  saveUninitialized: false,
+  saveUninitialized: true,
   rolling: true,
 };
 
@@ -1138,6 +1137,7 @@ export async function gracefulShutdown(signal = 'manual', { exitCode = 0, exitPr
             fastify.log.error({ err: error }, '[LIFECYCLE] Fastify close failed.');
         }
 
+        await collabService.close();
         await closeRedisConnection();
         closePersistenceConnections();
         clearTimeout(timeoutId);
@@ -1157,6 +1157,7 @@ export const start = async () => {
             await redisClient.connect();
         }
         await PhonemeEngine.init();
+        await collabService.bootstrap();
         
         const immunityService = await createImmunityService({ log: fastify.log, db: userPersistence.db });
         fastify.get('/api/immunity/status', async () => {

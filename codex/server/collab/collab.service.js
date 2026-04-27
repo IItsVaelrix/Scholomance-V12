@@ -1,8 +1,17 @@
 import crypto from 'crypto';
+import { EventEmitter } from 'node:events';
 import { collabPersistence } from './collab.persistence.js';
-import { cleanAgentSession, runAgentQaScan } from './collab.agent-qa.js';
+import { cleanAgentSession, runAgentQaScan as runAgentQaScanInternal } from './collab.agent-qa.js';
 import { revokeAgentKey as revokeAuthKey } from './collab.agent-auth.js';
 import { runCollabMcpProbe } from './mcp-probe.js';
+import { createImmunityService } from '../services/immunity.service.js';
+import {
+    searchCodebase,
+    forensicSearch,
+    listIndexedFiles as listFilesInternal,
+    searchHybrid as searchHybridInternal,
+    getFileNeighbors as getNeighborsInternal,
+} from '../services/codebaseSearch.service.js';
 import {
     PIPELINE_DEFINITIONS,
     getRoleForPath,
@@ -35,6 +44,8 @@ function createError(code, message, statusCode, details = {}) {
 }
 
 const DISCONNECTED_AGENT_RETENTION_MS = 30 * 60 * 1000;
+const HEARTBEAT_FRESHNESS_WINDOW_MS = 90_000;
+const SLA_DURATION_MS = 30_000;
 
 function parseAgentLastSeen(value) {
     const raw = String(value || '').trim();
@@ -86,6 +97,136 @@ async function getPipelineOrThrow(pipelineId) {
         throw createError('PIPELINE_NOT_FOUND', 'Pipeline not found', 404, { pipeline_id: pipelineId });
     }
     return pipeline;
+}
+
+/**
+ * Alert Dispatcher - Pushes Cognitive Bus alerts to live agents
+ */
+class AlertDispatcher {
+    constructor(service) {
+        this.service = service;
+        this.events = service.events;
+        this._handler = (msg) => this.dispatch(msg);
+        this.events.on('message_sent', this._handler);
+    }
+
+    destroy() {
+        if (this._handler) {
+            this.events.off('message_sent', this._handler);
+            this._handler = null;
+        }
+    }
+
+    async dispatch(message) {
+        const { id: message_id, sender_id, target_id } = message;
+        const now = Date.now();
+        const expires_at = now + SLA_DURATION_MS;
+
+        // 1. Resolve live recipients
+        const allAgents = await collabPersistence.agents.getAll();
+        const liveAgents = allAgents.filter(a => 
+            a.id !== sender_id && 
+            ['online', 'busy'].includes(a.status) &&
+            (parseAgentLastSeen(a.last_seen) || 0) >= now - HEARTBEAT_FRESHNESS_WINDOW_MS
+        );
+
+        let recipients = [];
+        if (target_id === 'all') {
+            recipients = liveAgents;
+        } else {
+            const target = liveAgents.find(a => a.id === target_id);
+            if (target) recipients = [target];
+        }
+
+        if (recipients.length === 0) {
+            await logActivity({
+                action: 'alert_skipped_no_live_recipients',
+                target_type: 'message',
+                target_id: String(message_id),
+                details: { target_id }
+            });
+            return;
+        }
+
+        const sender = allAgents.find(a => a.id === sender_id);
+
+        // 2. Dispatch to each recipient
+        for (const recipient of recipients) {
+            const alertId = `alr_${uuid()}`;
+            const identityPacket = {
+                alert_id: alertId,
+                issued_at: now,
+                expires_at,
+                sla_ms: SLA_DURATION_MS,
+                recipient: {
+                    id: recipient.id,
+                    name: recipient.name,
+                    role: recipient.role,
+                    capabilities: Array.isArray(recipient.capabilities) ? recipient.capabilities : []
+                },
+                sender: {
+                    id: sender.id,
+                    name: sender.name,
+                    role: sender.role
+                },
+                message: {
+                    id: message_id,
+                    target_id: message.target_id,
+                    glyph: message.glyph,
+                    text: message.text,
+                    bytecode: message.bytecode,
+                    created_at: message.created_at
+                },
+                respond_via: {
+                    tool: 'collab_alert_respond',
+                    endpoint: `POST /collab/alerts/${alertId}/respond`
+                }
+            };
+
+            await collabPersistence.alerts.create({
+                id: alertId,
+                message_id,
+                recipient_id: recipient.id,
+                sender_id,
+                target_id: message.target_id,
+                identity_packet: identityPacket,
+                issued_at: now,
+                expires_at
+            });
+
+            await logActivity({
+                agent_id: null,
+                action: 'alert_issued',
+                target_type: 'agent',
+                target_id: recipient.id,
+                details: { message_id, alert_id: alertId }
+            });
+
+            this.events.emit('alert_issued', { alert_id: alertId, recipient_id: recipient.id });
+        }
+    }
+}
+
+async function runReaperCycle(events) {
+    const now = Date.now();
+    // Fetch pending that are past expiry
+    const allAlerts = await collabPersistence.alerts.getAll();
+    const toExpire = allAlerts.filter(a => a.status === 'pending' && a.expires_at <= now);
+
+    for (const alert of toExpire) {
+        await collabPersistence.alerts.updateStatus(alert.id, 'expired');
+        await logActivity({
+            action: 'alert_expired',
+            target_type: 'agent',
+            target_id: alert.recipient_id,
+            details: { 
+                alert_id: alert.id, 
+                message_id: alert.message_id,
+                latency_budget_breached_ms: now - alert.expires_at 
+            }
+        });
+        events.emit('alert_expired', alert);
+    }
 }
 
 function ensureOwnership({ filePaths, agent, override = false, hint }) {
@@ -357,6 +498,44 @@ function parseBytecode(bytecode) {
 }
 
 export const collabService = {
+    events: new EventEmitter(),
+    _immunityService: null,
+    _alertDispatcher: null,
+    _reaperInterval: null,
+
+    /**
+     * Bootstraps the alert system. Idempotent — safe to call repeatedly
+     * (tests share the singleton service across suites).
+     */
+    async bootstrap() {
+        if (this._alertDispatcher) return;
+        this._alertDispatcher = new AlertDispatcher(this);
+        // Boot-time sweep: any pending alerts whose SLA elapsed during downtime
+        // should expire on the same tick the system comes back up.
+        await runReaperCycle(this.events);
+        this._reaperInterval = setInterval(() => runReaperCycle(this.events), 5000);
+        console.error('[CollabService] Alert system ignited.');
+    },
+
+    /**
+     * Graceful teardown. Symmetric with bootstrap so a re-bootstrap leaves
+     * exactly one message_sent listener and one reaper interval.
+     */
+    async close() {
+        if (this._reaperInterval) {
+            clearInterval(this._reaperInterval);
+            this._reaperInterval = null;
+        }
+        if (this._alertDispatcher) {
+            this._alertDispatcher.destroy();
+            this._alertDispatcher = null;
+        }
+    },
+
+    async _runReaper() {
+        return await runReaperCycle(this.events);
+    },
+
     // ... existing agents, tasks methods ...
     async listBugReports(filters = {}, pagination = {}) {
         return await collabPersistence.bug_reports.getAll(filters, pagination);
@@ -364,6 +543,69 @@ export const collabService = {
 
     async getBugReport(id) {
         return await getBugReportOrThrow(id);
+    },
+
+    async listAlerts(filters = {}, pagination = {}) {
+        return await collabPersistence.alerts.getAll(filters, pagination);
+    },
+
+    async pullAlerts(agentId) {
+        const alerts = await collabPersistence.alerts.getPending(agentId);
+        for (const alert of alerts) {
+            await collabPersistence.alerts.updateStatus(alert.id, 'pending', 'pull');
+        }
+        return alerts;
+    },
+
+    async respondToAlert(alertId, agentId, { payload } = {}) {
+        const alert = await collabPersistence.alerts.getById(alertId);
+        if (!alert) {
+            throw createError('ALERT_NOT_FOUND', 'Alert not found', 404, { alert_id: alertId });
+        }
+
+        if (alert.recipient_id !== agentId) {
+            throw createError('AUTH_SENDER_MISMATCH', 'Only the recipient can respond to this alert', 403, {
+                recipient_id: alert.recipient_id,
+                claimed_id: agentId
+            });
+        }
+
+        if (alert.status === 'expired') {
+            throw createError('ALERT_EXPIRED', 'Alert has expired (30s SLA exceeded)', 410, {
+                alert_id: alertId,
+                issued_at: alert.issued_at,
+                expires_at: alert.expires_at
+            });
+        }
+
+        // Idempotency check
+        const existingResponse = await collabPersistence.alert_responses.getForAlert(alertId, agentId);
+        if (existingResponse) {
+            return { already_acknowledged: true, response: existingResponse };
+        }
+
+        const now = Date.now();
+        const response = await collabPersistence.alert_responses.create({
+            alert_id: alertId,
+            agent_id: agentId,
+            responded_at: now,
+            latency_ms: now - alert.issued_at,
+            payload: payload || {}
+        });
+
+        await collabPersistence.alerts.updateStatus(alertId, 'acknowledged');
+
+        await logActivity({
+            agent_id: agentId,
+            action: 'alert_acknowledged',
+            target_type: 'alert',
+            target_id: alertId,
+            details: { latency_ms: response.latency_ms }
+        });
+
+        this.events.emit('alert_acknowledged', { alert, response });
+
+        return response;
     },
 
     async createBugReport(input) {
@@ -519,7 +761,7 @@ export const collabService = {
 
         // Run duplicate QA scan asynchronously — don't block registration
         setImmediate(async () => {
-            try { await runAgentQaScan({ autoResolve: true }); } catch { /* ignore */ }
+            try { await runAgentQaScanInternal({ autoResolve: true }); } catch { /* ignore */ }
         });
 
         return agent;
@@ -538,7 +780,17 @@ export const collabService = {
         if (!agent) {
             throw createError('AGENT_NOT_FOUND', 'Agent not found', 404, { agent_id: id });
         }
-        return agent;
+
+        // Fetch and deliver pending alerts (Heartbeat piggyback)
+        const alerts = await collabPersistence.alerts.getPending(id);
+        for (const alert of alerts) {
+            await collabPersistence.alerts.updateStatus(alert.id, 'pending', 'heartbeat');
+        }
+
+        return {
+            ...agent,
+            pending_alerts: alerts.map(a => a.identity_packet)
+        };
     },
 
     async disconnectAgent(id) {
@@ -581,7 +833,7 @@ export const collabService = {
     },
 
     async runAgentQaScan({ autoResolve = true } = {}) {
-        return await runAgentQaScan({ autoResolve });
+        return await runAgentQaScanInternal({ autoResolve });
     },
 
     async revokeAgentKey(keyId) {
@@ -687,6 +939,20 @@ export const collabService = {
         });
 
         return { ok: true };
+    },
+
+    async archiveAllTasks(actor_agent_id = null) {
+        const archivedCount = await collabPersistence.tasks.archiveAll();
+        
+        await logActivity({
+            agent_id: actor_agent_id,
+            action: 'tasks_archived_all',
+            target_type: 'task',
+            target_id: 'all',
+            details: { count: archivedCount },
+        });
+
+        return { ok: true, count: archivedCount };
     },
 
     async assignTask(params) {
@@ -958,6 +1224,97 @@ export const collabService = {
         return { ok: true, deleted };
     },
 
+    async sendMessage(input, authenticatedAgentId = null) {
+        const { sender_id, target_id, glyph, text, bytecode, metadata } = input;
+        
+        // SECURITY: Verify that the authenticated entity matches the sender_id
+        // Fail-closed: require authenticatedAgentId to exist and match sender_id.
+        if (!authenticatedAgentId || authenticatedAgentId !== sender_id) {
+            throw createError('AUTH_SENDER_MISMATCH', 'Authentication required and must match sender_id', 403, {
+                authenticated_id: authenticatedAgentId,
+                claimed_id: sender_id
+            });
+        }
+
+        // Verify sender exists
+        await getAgentOrThrow(sender_id);
+        
+        // If target is not 'all', verify target exists
+        if (target_id && target_id !== 'all') {
+            await getAgentOrThrow(target_id);
+        }
+
+        const message = await collabPersistence.messages.create({
+            sender_id,
+            target_id: target_id || 'all',
+            glyph: glyph || '✦',
+            text,
+            bytecode: bytecode || null,
+            metadata: metadata || {},
+        });
+
+        // Fetch display names for the UI contract
+        const sender = await collabPersistence.agents.getById(sender_id);
+        const target = target_id && target_id !== 'all' 
+            ? await collabPersistence.agents.getById(target_id) 
+            : null;
+
+        const normalizedMessage = {
+            ...message,
+            senderId: message.sender_id,
+            targetId: message.target_id,
+            senderName: sender?.name || sender_id || 'Unknown Mind',
+            targetName: target_id === 'all' ? 'All Minds' : (target?.name || target_id || 'Unknown Mind'),
+            timestamp: message.created_at,
+        };
+
+        // Log the thought-thread
+        await logActivity({
+            agent_id: sender_id,
+            action: 'message_sent',
+            target_type: 'agent',
+            target_id: target_id || 'all',
+            details: { 
+                glyph: message.glyph,
+                has_bytecode: !!bytecode,
+            },
+        });
+
+        // Emit for real-time subscribers (e.g. SSE bridge)
+        this.events.emit('message_sent', normalizedMessage);
+
+        return normalizedMessage;
+    },
+
+    async listMessages(filters = {}, pagination = {}) {
+        const messages = await collabPersistence.messages.getAll(filters, pagination);
+        const agents = await collabPersistence.agents.getAll();
+        const agentMap = new Map(agents.map(a => [a.id, a.name]));
+
+        return messages.map(msg => ({
+            ...msg,
+            senderId: msg.sender_id,
+            targetId: msg.target_id,
+            senderName: agentMap.get(msg.sender_id) || msg.sender_id || 'Unknown Mind',
+            targetName: msg.target_id === 'all' ? 'All Minds' : (agentMap.get(msg.target_id) || msg.target_id || 'Unknown Mind'),
+            timestamp: msg.created_at,
+        }));
+    },
+
+    async deleteMessage(id, actorAgentId = null) {
+        const success = await collabPersistence.messages.delete(id);
+        if (success) {
+            await logActivity({
+                agent_id: actorAgentId,
+                action: 'message_deleted',
+                target_type: 'message',
+                target_id: String(id),
+                details: { purged: true },
+            });
+        }
+        return { ok: success };
+    },
+
     async getStatus() {
         const agents = await collabPersistence.agents.getAll();
         const taskCounts = await collabPersistence.tasks.getCounts();
@@ -978,5 +1335,33 @@ export const collabService = {
                 throughput: activeMcpLocks.reduce((sum, l) => sum + (l.mcp_stream?.throughput || 0), 0)
             }
         };
+    },
+
+    async listCodebaseFiles() {
+        return await listFilesInternal();
+    },
+
+    async searchHybrid(query) {
+        // PATHOGEN_MARKER: RECURSIVE_SHADOW
+        // Guard against infinite recursion between service method and service import.
+        return await searchHybridInternal(query);
+    },
+
+    async getFileNeighbors(filePath) {
+        return await getNeighborsInternal(filePath);
+    },
+
+    async scanFileImmunity(content, filePath) {
+        if (!this._immunityService) {
+            this._immunityService = await createImmunityService({ log: console });
+        }
+        return await this._immunityService.scanFile(content, filePath);
+    },
+
+    async getImmunityStatus() {
+        if (!this._immunityService) {
+            this._immunityService = await createImmunityService({ log: console });
+        }
+        return await this._immunityService.getStatus();
     },
 };

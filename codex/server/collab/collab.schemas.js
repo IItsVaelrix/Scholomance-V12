@@ -116,7 +116,7 @@ export const LockCheckQuerySchema = z.object({
 // --- Bug Report Schemas ---
 
 export const BugStatus = z.enum([
-    'new', 'triaged', 'assigned', 'in_progress', 'fixed', 'verified', 'closed', 'duplicate',
+    'new', 'triaged', 'assigned', 'in_progress', 'fixed', 'verified', 'closed', 'duplicate', 'archived',
 ]);
 
 export const BugSeverity = z.enum(['INFO', 'WARN', 'CRIT', 'FATAL']);
@@ -194,4 +194,63 @@ export const SetMemorySchema = z.object({
 export const GetMemorySchema = z.object({
     agent_id: z.string().min(1).optional().default('').describe('Agent ID for specific memory, or empty string for global'),
     key: z.string().min(1).max(128).describe('Key to retrieve'),
+});
+
+// --- Messaging Schemas (Cognitive Bus) ---
+
+export const AgentMessageSchema = z.object({
+    sender_id: z.string().min(1).max(64),
+    target_id: z.string().min(1).max(64).default('all'),
+    glyph: z.string().max(8).optional().default('✦'),
+    text: z.string().max(4096),
+    bytecode: z.string().max(16384).optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
+});
+
+export const ListMessagesQuerySchema = PaginationQuerySchema.extend({
+    sender: z.string().min(1).max(64).optional(),
+    target: z.string().min(1).max(64).optional(),
+    since: z.string().optional(),
+});
+
+
+// --- Alert Schemas ---
+
+export const IdentityPacketSchema = z.object({
+    alert_id: z.string(),
+    issued_at: z.number(),
+    expires_at: z.number(),
+    sla_ms: z.number(),
+    recipient: z.object({
+        id: z.string(),
+        name: z.string(),
+        role: AgentRole,
+        capabilities: z.array(z.string()),
+    }),
+    sender: z.object({
+        id: z.string(),
+        name: z.string(),
+        role: AgentRole,
+    }),
+    message: z.object({
+        id: z.number(),
+        target_id: z.string(),
+        glyph: z.string(),
+        text: z.string(),
+        bytecode: z.string().nullable(),
+        created_at: z.string(),
+    }),
+    respond_via: z.object({
+        tool: z.string(),
+        endpoint: z.string(),
+    }),
+});
+
+export const AlertResponseSchema = z.object({
+    payload: z.any().optional().default({}),
+});
+
+export const ListAlertsQuerySchema = PaginationQuerySchema.extend({
+    agent_id: z.string().optional(),
+    status: z.enum(['pending', 'acknowledged', 'expired']).optional(),
 });

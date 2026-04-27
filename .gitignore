@@ -114,3 +114,4 @@ english-wordnet-2025.xml.gz
 # PB-SANI output artifacts (generated, not committed)
 scripts/pb-sani/output/
 
+.aider*

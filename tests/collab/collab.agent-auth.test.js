@@ -28,7 +28,7 @@ beforeAll(async () => {
     collabPersistence = persistenceMod.collabPersistence;
 
     // Register test agents
-    collabService.registerAgent({
+    await collabService.registerAgent({
         id: 'agent-remote',
         name: 'Remote Agent',
         role: 'backend',
@@ -71,7 +71,7 @@ describe('Agent Key Authentication', () => {
                 createdBy: 'angel',
             });
 
-            const storedKey = collabPersistence.agent_keys.getById(result.keyId);
+            const storedKey = await collabPersistence.agent_keys.getById(result.keyId);
             expect(storedKey).toBeDefined();
             expect(storedKey.key_hash).toBeDefined();
             expect(storedKey.key_hash).not.toBe(result.plaintextKey);
@@ -87,7 +87,7 @@ describe('Agent Key Authentication', () => {
                 expiresInDays: 30,
             });
 
-            const storedKey = collabPersistence.agent_keys.getById(result.keyId);
+            const storedKey = await collabPersistence.agent_keys.getById(result.keyId);
             expect(storedKey.expires_at).toBeDefined();
             expect(new Date(storedKey.expires_at)).toBeInstanceOf(Date);
         });
@@ -143,7 +143,7 @@ describe('Agent Key Authentication', () => {
             });
 
             // Revoke the key
-            const revoked = revokeAgentKey(result.keyId);
+            const revoked = await revokeAgentKey(result.keyId);
             expect(revoked).toBe(true);
 
             // Validate should reject
@@ -162,7 +162,7 @@ describe('Agent Key Authentication', () => {
             });
 
             // Manually expire the key using persistence API
-            collabPersistence.agent_keys.expire(result.keyId);
+            await collabPersistence.agent_keys.expire(result.keyId);
 
             const agent = await validateAgentKey(result.plaintextKey);
             expect(agent).toBeNull();
@@ -219,8 +219,8 @@ describe('Agent Key Authentication', () => {
             const key1 = await generateAgentKey({ agentId: 'agent-remote', createdBy: 'angel' });
             const key2 = await generateAgentKey({ agentId: 'agent-remote', createdBy: 'angel' });
 
-            const stored1 = collabPersistence.agent_keys.getById(key1.keyId);
-            const stored2 = collabPersistence.agent_keys.getById(key2.keyId);
+            const stored1 = await collabPersistence.agent_keys.getById(key1.keyId);
+            const stored2 = await collabPersistence.agent_keys.getById(key2.keyId);
 
             // Each key should have a unique hash (bcrypt uses random salts)
             expect(stored1.key_hash).not.toBe(stored2.key_hash);

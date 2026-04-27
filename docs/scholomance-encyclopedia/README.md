@@ -76,6 +76,8 @@ All entries follow this structure:
 | `SCHOL-ENC-BYKE-SEARCH-003` | 2026-04-02 | Sovereign Editor Principle (Foundational) | `SHARED_PREAMBLE.md` |
 | `SCHOL-ENC-BYKE-SEARCH-TURBOQUANT-ASCENSION` | 2026-04-26 | TurboQuant Vector Bridge | `ritual-prediction/run.js`, `turboqa.js`, `verify_turboqa.js` |
 | `SCHOL-ENC-BYKE-SEARCH-DISCONNECTED-LOGIC-FIX-PLAN` | 2026-04-26 | Disconnected Logic Bug-Fix Plan (5 tiers, P0–P5) | PLAN — see entry for full target list |
+| `SCHOL-ENC-BYKE-SEARCH-PDR-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (PDR) | `cognitive_bus_pdr.md` |
+| `SCHOL-ENC-BYKE-SEARCH-ARCH-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (Architecture) | `ARCH-2026-04-27-COGNITIVE-BUS.md` |
 
 ---
 
@@ -89,6 +91,16 @@ Use the bytecode search code to find entries:
 - **By keyword:** Search entry titles for topic keywords
 
 ---
+
+## Sub-Collections
+
+The encyclopedia is the canonical home for the full architectural lifecycle. Each sub-collection covers a different phase:
+
+- **`PDR-archive/`** — Product Design Requirements. Pre-implementation architectural specifications. Per Law 13.
+- **`post-implementation-reports/`** — Post-Implementation Reports (PIRs). What actually shipped vs. what the PDR intended. Per Law 15.
+- **`Scholomance-Verdicts/`** — Structured product reviews of ratified canon. Seven-metric Scoring Sigil (0–10 anchored), Verdict Grade (S–F), Validated Praise, Architectural Concerns, Law Violations, Admonishment of the Arbiter, Recursive Bug Elimination notes, and four mandatory Remediation Tiers (Immediate / 30 Day / 90 Day / Long Term). See `Scholomance-Verdicts/README.md` for the format spec.
+
+**Lifecycle flow:** PDR (intent) → implementation → PIR (reality) → Verdict (judgment).
 
 ## Related Documents
 

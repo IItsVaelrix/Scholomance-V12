@@ -8,6 +8,7 @@
 
 import { scanInnate } from '../../codex/core/immunity/innate.scanner.js';
 import { scanAdaptive } from '../../codex/core/immunity/adaptive.scanner.js';
+import { decodeBytecodeError, ERROR_CODES, MODULE_IDS } from '../../codex/core/pixelbrain/bytecode-error.js';
 
 async function runTest(name, ritual) {
   console.log(`🧪 [TEST] ${name}`);
@@ -48,6 +49,55 @@ async function main() {
     const violations = scanInnate(content, 'src/components/DeepPanel.jsx');
     const hasForbiddenImport = violations.some(v => v.ruleId === 'LING-0F03');
     if (!hasForbiddenImport) throw new Error('Failed to catch illegal UI -> Codex import.');
+  });
+
+  await runTest('Innate: Bytecode is real (decodable, not smuggled)', () => {
+    const content = "const x = Math.random();";
+    const [violation] = scanInnate(content, 'src/lib/core-math.js');
+    if (!violation || !violation.bytecode) throw new Error('No bytecode emitted.');
+    const decoded = decodeBytecodeError(violation.bytecode);
+    if (!decoded || decoded.valid !== true) {
+      throw new Error('Bytecode failed decode/checksum verification.');
+    }
+    if (decoded.moduleId !== MODULE_IDS.IMMUNITY) {
+      throw new Error(`Expected moduleId=IMMUNE, got ${decoded.moduleId}.`);
+    }
+    if (decoded.errorCode !== ERROR_CODES.QUANT_PRECISION_LOSS) {
+      throw new Error(`Expected QUANT_PRECISION_LOSS code, got 0x${decoded.errorCode.toString(16)}.`);
+    }
+  });
+
+  await runTest('Innate: LING-0F04 catches shadow path import', () => {
+    const content = "import { encodeMotionBytecode } from 'src/codex/animation/bytecode-bridge/index.ts';";
+    const violations = scanInnate(content, 'src/codex/animation/runtime.ts');
+    const hit = violations.find(v => v.ruleId === 'LING-0F04');
+    if (!hit) throw new Error('LING-0F04 missed bytecode-bridge shadow import.');
+    if (hit.errorCode !== ERROR_CODES.IMMUNE_DUPLICATE_PATH) {
+      throw new Error(`Wrong error code on LING-0F04: 0x${hit.errorCode.toString(16)}`);
+    }
+    if (!hit.context.canonical || !hit.context.shadowPath) {
+      throw new Error('LING-0F04 context missing canonical/shadow metadata.');
+    }
+  });
+
+  await runTest('Innate: LING-0F04 catches resurrected shadow file', () => {
+    const content = "export function legacyShadow() { return null; }";
+    const violations = scanInnate(content, 'src/codex/animation/bytecode-bridge/index.ts');
+    const hit = violations.find(v => v.ruleId === 'LING-0F04');
+    if (!hit) throw new Error('LING-0F04 missed file-resurrection trigger.');
+    if (hit.context.trigger !== 'file-resurrection') {
+      throw new Error(`Expected trigger=file-resurrection, got ${hit.context.trigger}`);
+    }
+  });
+
+  await runTest('Innate: STATE-0305 reconciled to STATE category', () => {
+    const content = "saveUninitialized: false,";
+    const violations = scanInnate(content, 'codex/server/index.js');
+    const hit = violations.find(v => v.ruleId === 'STATE-0305');
+    if (!hit) throw new Error('STATE-0305 missed.');
+    if (hit.category !== 'STATE') {
+      throw new Error(`Expected category=STATE, got ${hit.category}.`);
+    }
   });
 
   // --- LAYER 2: ADAPTIVE (SEMANTIC) TESTS ---
@@ -95,6 +145,33 @@ async function main() {
     }
   });
 
+  await runTest('Innate: QUANT-0102 catches unseeded clock in hot path', () => {
+    const content = "const timestamp = Date.now();";
+    const violations = scanInnate(content, 'codex/server/services/combatScoring.service.js');
+    const hit = violations.find(v => v.ruleId === 'QUANT-0102');
+    if (!hit) throw new Error('QUANT-0102 missed Date.now() in hot path.');
+    if (hit.severity !== 'WARN') throw new Error('QUANT-0102 should be WARN severity.');
+  });
+
+  await runTest('Innate: LING-0F05 catches known-violation literals', () => {
+    const content = "function sync() { return legacyRhymeTree.flush(); }";
+    const violations = scanInnate(content, 'src/lib/bridge.js');
+    const hit = violations.find(v => v.ruleId === 'LING-0F05');
+    if (!hit) throw new Error('LING-0F05 missed legacyRhymeTree literal.');
+    if (hit.context.symbol !== 'legacyRhymeTree') throw new Error('LING-0F05 context missing symbol name.');
+  });
+
+  await runTest('Innate: QUANT-0102 exempt in tests', () => {
+    const content = "const t = performance.now();";
+    const violations = scanInnate(content, 'tests/performance/load.test.js');
+    const hit = violations.find(v => v.ruleId === 'QUANT-0102');
+    if (hit) throw new Error('QUANT-0102 should be exempt in test files.');
+  });
+
+  console.log('\n--- 🛡️ IMMUNITY STASIS SUMMARY ---');
+  console.log('INNATE BARRIER:  STABLE');
+  console.log('ADAPTIVE LAYER:  RESONATING');
+  console.log('STASIS STATUS:   LOCKED\n');
   console.log('🏁 STRESS GAUNTLET COMPLETE.');
 }
 

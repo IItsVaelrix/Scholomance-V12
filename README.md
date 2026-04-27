@@ -70,7 +70,7 @@ cp .env.example .env        # or Copy-Item .env.example .env on PowerShell
 npm run dev:full             # starts backend + Vite frontend
 ```
 
-Open `http://localhost:5173`. Vite proxies `/api`, `/auth`, `/collab`, and `/audio` to `localhost:3000`.
+Open `http://localhost:5173`. Vite proxies `/api`, `/auth`, `/collab`, and `/audio` to `localhost:8080`.
 
 ### Production
 
@@ -87,7 +87,7 @@ npm start                    # runs ritual-init.js then Fastify server
 |---|---|---|---|
 | `SESSION_SECRET` | Production | generated in dev | Session signing secret (32+ chars). |
 | `NODE_ENV` | No | `development` | Runtime mode. |
-| `PORT` | No | `3000` | Fastify port. |
+| `PORT` | No | `8080` | Fastify port. |
 | `HOST` | No | `0.0.0.0` | Fastify bind host. |
 | `TRUST_PROXY` | No | `false` | Fastify `trustProxy` setting. |
 | `REDIS_URL` | Production | `redis://localhost:6379` | Redis connection for sessions. |
@@ -165,7 +165,7 @@ npm start                    # runs ritual-init.js then Fastify server
 
 ```bash
 docker build -t scholomance .
-docker run --rm -p 3000:3000 \
+docker run --rm -p 8080:8080 \
   -e NODE_ENV=production \
   -e SESSION_SECRET="<32+ chars>" \
   -e AUDIO_ADMIN_TOKEN="<token>" \
