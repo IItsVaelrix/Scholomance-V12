@@ -17,7 +17,7 @@ If this document or any root-level agent doc conflicts with anything under `ARCH
 These rules cannot be overridden by any agent-specific instruction.
 
 ### 1. No Hierarchy Between Agents
-No model outranks another. Domain boundaries are the law. Claude does not defer to Gemini. Gemini does not defer to Blackbox. Blackbox does not defer to Claude. Each agent is sovereign within its domain and has zero authority outside it.
+No model outranks another. Domain boundaries are the law. Claude does not defer to Gemini. Gemini does not defer to Codex. Codex does not defer to Claude. Each agent is sovereign within its domain and has zero authority outside it.
 
 ### 2. Conflict Escalation Is Mandatory
 If your work collides with another agent's domain, **STOP**. Write an `ESCALATION:` block (see format below) and deliver it to Angel. Do not resolve it yourself. Do not assume. Do not compromise without authorization.
@@ -32,7 +32,7 @@ Client previews decorative data. Server resolves, scores, and persists. Never ma
 Scoring, phoneme, and combat logic has zero DOM, zero GSAP, zero audio imports. Ever. If a logic function touches the render layer, it is in the wrong layer. Escalate before proceeding.
 
 ### 6. Determinism Is Non-Negotiable
-Same input → same output. No hidden randomness in scoring pipelines. No timestamp-seeded variation in heuristics. No environment-dependent scores. Blackbox enforces this with the determinism battery on every scoring change.
+Same input → same output. No hidden randomness in scoring pipelines. No timestamp-seeded variation in heuristics. No environment-dependent scores. Gemini enforces this with the determinism battery on every scoring change.
 
 ### 7. Security Before Features
 No new input surface ships without allow-list validation per `ARCH_CONTRACT_SECURITY.md`. No exceptions. No "we'll add validation later." Security review gates the PR, not the milestone.
@@ -715,9 +715,8 @@ Until schema support expands, agents whose domain does not map perfectly must ch
 | Agent | Domain | Collab role | Canonical capabilities |
 |-------|--------|-------------|------------------------|
 | Claude | UI, visuals, accessibility | `ui` | `jsx,css,framer-motion,a11y` |
-| Codex | engine, backend, schemas, runtime | `backend` | `node,fastify,schemas,mcp` |
-| Gemini | mechanics, balance, formal rules | `backend` | `mechanics,balance,specs,systems` |
-| Blackbox | testing, QA, CI | `qa` | `vitest,playwright,ci,debugging` |
+| Codex | schemas, layer law, engine architecture | `backend` | `schemas,architecture,layer-law,mcp` |
+| Gemini | backend coding, debugging, tests, CI | `backend` | `node,fastify,vitest,playwright,ci,debugging` |
 | Arbiter | verdicts, architecture review | `backend` | `architecture,review,verdicts` |
 | Nexus | interactive debugging, repro traces | `backend` | `debugging,tracing,repro` |
 | Unity | documentation synthesis, navigation | `backend` | `docs,synthesis,navigation` |
@@ -733,13 +732,10 @@ Role choice grants access to the collab plane. It does **not** authorize edits o
 node scripts/connect-collab.js connect --agent-id claude-ui --name "Claude UI" --role ui --capabilities jsx,css,framer-motion,a11y
 
 # Codex
-node scripts/connect-collab.js connect --agent-id codex-backend --name "Codex Backend" --role backend --capabilities node,fastify,schemas,mcp
+node scripts/connect-collab.js connect --agent-id codex-architect --name "Codex Architect" --role backend --capabilities schemas,architecture,layer-law,mcp
 
 # Gemini
-node scripts/connect-collab.js connect --agent-id gemini-backend --name "Gemini Mechanics" --role backend --capabilities mechanics,balance,specs,systems
-
-# Blackbox
-node scripts/connect-collab.js connect --agent-id blackbox-qa --name "Blackbox QA" --role qa --capabilities vitest,playwright,ci,debugging
+node scripts/connect-collab.js connect --agent-id gemini-backend --name "Gemini Backend" --role backend --capabilities node,fastify,vitest,playwright,ci,debugging
 
 # Arbiter
 node scripts/connect-collab.js connect --agent-id arbiter-backend --name "Arbiter" --role backend --capabilities architecture,review,verdicts
@@ -1121,16 +1117,15 @@ An escalation is not a failure. It is the correct behavior when the law is ambig
 | Domain | Owner | Hard Boundary |
 |--------|-------|---------------|
 | UI surface, components, CSS, animations | Claude | `src/pages/`, `src/components/`, `*.css` |
-| World-law, balance, mechanic specifications | Gemini | Mechanic specs and canonical rule definitions |
-| CODEx engine, backend, schemas, logic hooks, data implementation | Codex | `codex/`, `codex/server/`, `src/lib/`, `src/hooks/` (logic), `src/data/`, `scripts/` |
-| Tests, CI, debug reports, visual baselines | Blackbox | `tests/`, `.github/workflows/` |
+| Backend coding, debugging, tests, CI, encyclopedia | Gemini | `codex/server/`, `codex/runtime/`, `codex/services/`, `codex/core/` (impls), `tests/`, `.github/workflows/`, `docs/scholomance-encyclopedia/` |
+| Schemas, layer law, engine architecture | Codex | `SCHEMA_CONTRACT.md`, `codex/` (architecture + schemas), `src/lib/` (contracts), `src/hooks/` (logic contracts), `src/data/`, `scripts/` |
 | Law, arbitration, final decisions | Angel (repository owner/user) | This document |
 
 Shared boundaries that require explicit coordination before any agent acts:
-- Combat result rendering (Claude renders, Codex defines shape)
-- School theme generation (Claude consumes output, Codex runs script)
-- `src/data/` tuning (Gemini specifies values, Codex implements and publishes the resulting schema/data contract)
-- Visual regression baselines (Claude owns UI, Blackbox owns the tests)
+- Combat result rendering (Claude renders, Codex defines shape, Gemini implements)
+- School theme generation (Claude consumes output, Codex defines the schema, Gemini runs/maintains the script)
+- `src/data/` tuning (Codex publishes the schema/data contract; Gemini implements and tunes values)
+- Visual regression baselines (Claude captures the baselines, Gemini gates the diff in CI)
 
 ---
 
@@ -1141,9 +1136,8 @@ Each agent has a context file that inherits this law and specifies domain jurisd
 | Agent | Context File |
 |-------|-------------|
 | Claude (UI) | `CLAUDE.md` |
-| Codex (Runtime / backend / schemas) | `CODEX.md` |
-| Gemini (Mechanics) | `GEMINI.md` |
-| Blackbox (Testing) | `BLACKBOX.md` |
+| Codex (Schemas / Architecture) | `CODEX.md` |
+| Gemini (Backend Coder & Debugger) | `GEMINI.md` |
 | All agents (schemas) | `SCHEMA_CONTRACT.md` |
 
 ---

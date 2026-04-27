@@ -19,6 +19,65 @@ export const ARPABET_CONSONANTS = new Set([
 ]);
 
 /**
+ * STUDY1 CANONICAL PHONOLOGICAL FEATURE MATRIX (Table 1)
+ * Used for feature-based alignment, sonority derivation, and TurboQuant vectorization.
+ * 
+ * Vowel Subtypes:
+ * - height: 0=low, 1=mid, 2=high
+ * - place: 0=front, 1=central, 2=back
+ * - contour: 0=rising, 1=flat, 2=falling
+ * - length: 0=short, 1=long
+ * 
+ * Consonant Subtypes:
+ * - manner: 0=stop, 1=nasal, 2=fricative, 3=glide, 4=affricate
+ * - place: 0=front, 1=center, 2=back
+ */
+export const PHONOLOGICAL_FEATURES_V1 = Object.freeze({
+  // Vowels
+  'AA': { height: 0, contour: 1, place: 2, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'AE': { height: 0, contour: 1, place: 1, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'AH': { height: 1, contour: 1, place: 1, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'AO': { height: 1, contour: 1, place: 2, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'AW': { height: 0, contour: 2, place: 1, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'AY': { height: 0, contour: 0, place: 1, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'EH': { height: 1, contour: 1, place: 0, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'ER': { height: 1, contour: 1, place: 0, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'EY': { height: 1, contour: 1, place: 1, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'IH': { height: 1, contour: 0, place: 0, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'IY': { height: 2, contour: 1, place: 0, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'OW': { height: 1, contour: 0, place: 2, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'OY': { height: 1, contour: 2, place: 2, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'UH': { height: 2, contour: 1, place: 2, length: 0, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+  'UW': { height: 2, contour: 1, place: 2, length: 1, voicing: 1, nasality: 0, manner: 0, affrication: 0, sibilance: 0, cPlace: 1 },
+
+  // Consonants
+  'B':  { nasality: 0, manner: 0, voicing: 1, affrication: 0, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'CH': { nasality: 0, manner: 4, voicing: 0, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'D':  { nasality: 0, manner: 0, voicing: 1, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'DH': { nasality: 0, manner: 2, voicing: 0, affrication: 1, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'F':  { nasality: 0, manner: 2, voicing: 0, affrication: 1, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'G':  { nasality: 0, manner: 0, voicing: 1, affrication: 0, sibilance: 0, place: 2, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'HH': { nasality: 0, manner: 2, voicing: 0, affrication: 1, sibilance: 0, place: 2, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'JH': { nasality: 0, manner: 4, voicing: 1, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'K':  { nasality: 0, manner: 0, voicing: 0, affrication: 0, sibilance: 0, place: 2, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'L':  { nasality: 0, manner: 3, voicing: 1, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'M':  { nasality: 1, manner: 1, voicing: 1, affrication: 0, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'N':  { nasality: 1, manner: 1, voicing: 1, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'NG': { nasality: 1, manner: 1, voicing: 1, affrication: 0, sibilance: 0, place: 2, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'P':  { nasality: 0, manner: 0, voicing: 0, affrication: 0, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'R':  { nasality: 0, manner: 3, voicing: 1, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'S':  { nasality: 0, manner: 2, voicing: 0, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'SH': { nasality: 0, manner: 2, voicing: 0, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'T':  { nasality: 0, manner: 0, voicing: 0, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'TH': { nasality: 0, manner: 2, voicing: 1, affrication: 1, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'V':  { nasality: 0, manner: 2, voicing: 1, affrication: 1, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'W':  { nasality: 0, manner: 3, voicing: 1, affrication: 0, sibilance: 0, place: 0, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'Y':  { nasality: 0, manner: 3, voicing: 1, affrication: 0, sibilance: 0, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'Z':  { nasality: 0, manner: 2, voicing: 1, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+  'ZH': { nasality: 0, manner: 2, voicing: 1, affrication: 1, sibilance: 1, place: 1, height: 1, contour: 1, vPlace: 1, length: 0 },
+});
+
+/**
  * Sonority levels for the Sonority Sequencing Principle (SSP).
  * Higher value = More sonorous.
  */

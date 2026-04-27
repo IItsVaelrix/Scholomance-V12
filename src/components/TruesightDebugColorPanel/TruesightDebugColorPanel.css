@@ -163,6 +163,82 @@
   font-style: italic;
 }
 
+/* ── PHONEMEGRAM ── Study1-derived color accuracy diagnostic */
+
+.truesight-debug-panel__phonemegram {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  border-top: var(--grim-border);
+  background: hsla(102, 82%, 55%, 0.04);
+  flex-shrink: 0;
+}
+
+.truesight-debug-panel__phonemegram-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.truesight-debug-panel__phonemegram-title {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--grim-color-muted);
+}
+
+.truesight-debug-panel__pearson {
+  margin-left: auto;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  padding: 1px 6px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+
+.truesight-debug-panel__pearson[data-quality="good"] { color: hsl(140, 70%, 60%); }
+.truesight-debug-panel__pearson[data-quality="ok"]   { color: hsl(50,  85%, 60%); }
+.truesight-debug-panel__pearson[data-quality="poor"] { color: hsl(0,   75%, 62%); }
+
+.truesight-debug-panel__family-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.truesight-debug-panel__family-cell {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  background: hsla(0, 0%, 100%, 0.02);
+  border: 1px solid hsla(102, 82%, 55%, 0.12);
+  border-radius: 2px;
+  cursor: help;
+}
+
+.truesight-debug-panel__family-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid hsla(0, 0%, 0%, 0.4);
+}
+
+.truesight-debug-panel__family-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.04em;
+  color: var(--grim-color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── FOOTER ── */
 
 .truesight-debug-panel__footer {

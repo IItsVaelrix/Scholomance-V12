@@ -7,6 +7,7 @@
 
 import { resolveSonicChroma as codexResolveSonicChroma } from '../../codex/core/phonology/chroma.resolver.js';
 import { getVowelHue as codexGetVowelHue, VOWEL_HUE_MAP, FAMILY_IDENTITY } from '../../codex/core/phonology/vowelWheel.js';
+import { PhoneticSimilarity as codexPhoneticSimilarity } from '../../codex/core/phonology/phoneticSimilarity.js';
 
 /**
  * Resolves a ChromaSignature from a phoneme sequence.
@@ -22,6 +23,13 @@ export function resolveSonicChroma(phonemes) {
  */
 export function getVowelHue(vowel) {
   return codexGetVowelHue(vowel);
+}
+
+/**
+ * Vowel-vowel acoustic similarity (used by color phonemegram diagnostic).
+ */
+export function getVowelSimilarity(a, b) {
+  return codexPhoneticSimilarity.getVowelSimilarity(a, b);
 }
 
 export {

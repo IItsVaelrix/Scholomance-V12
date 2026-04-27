@@ -79,9 +79,9 @@ tests/visual/       — Visual regression baselines
 - `src/lib/` — pure analysis engines belong to Codex
 - `src/hooks/` logic hooks (`useProgression`, `useScrolls`, `usePhonemeEngine`) — Codex owns the logic
 - `src/data/` — static data definitions (Gemini/Codex)
-- `tests/` (except `tests/visual/`) — Blackbox writes tests
-- Game mechanic values, scoring weights, balance decisions — Gemini's territory
-- `scripts/` — build scripts (Gemini/Codex)
+- `tests/` (except `tests/visual/`) — Gemini writes tests
+- `codex/server/`, `codex/runtime/`, `codex/services/` — Gemini implements within Codex's schemas
+- `scripts/` — build scripts (Codex defines, Gemini implements)
 
 ### Shared Boundary — Always Flag Before Acting
 
@@ -185,18 +185,17 @@ REGRESSION RETEST: [specific visual baseline files affected]
 
 | Agent | Domain | Writes To |
 |-------|--------|-----------|
-| **Claude** | Visuals, UI, a11y | `src/pages/`, `src/components/`, `*.css`, `tests/visual/` |
-| **Gemini** | Game mechanics, balance, world-law specs | Mechanic specs and canonical rule definitions |
-| **Codex** | CODEx engine, backend, schemas, data implementation | `codex/`, `codex/server/`, `src/lib/`, `src/hooks/` (logic), `src/data/`, `scripts/` |
-| **Blackbox** | Testing, QA, CI, debug reports | `tests/`, `.github/workflows/` |
+| **Claude** | Visuals, UI, a11y | `src/pages/`, `src/components/`, `*.css`, `tests/visual/` (baselines) |
+| **Gemini** | Backend coding, debugging, tests, CI | `codex/server/`, `codex/runtime/`, `codex/services/`, `codex/core/` (impls), `tests/`, `.github/workflows/`, `docs/scholomance-encyclopedia/` |
+| **Codex** | Schemas, layer law, engine architecture | `SCHEMA_CONTRACT.md`, `codex/` (architecture + schemas), `src/lib/` (contracts), `src/hooks/` (logic contracts), `src/data/`, `scripts/` |
 | **Arbiter** | Advisory opinions, verdict reports | `opencode.md` only — reads everything, writes verdicts |
 | **Nexus** | Interactive debugging (Cursor sessions) | Debug narratives, NEXUS DATA reports |
 | **Unity** | Documentation synthesis, session coordination, cross-agent navigation | `UNITY.md`, `AGENTS.md`, `docs/team/`, `docs/navigation/`, `session-logs/` |
 | **Angel** | Final authority, repository owner | All files — ultimate arbitration |
 
-**Clarification**: Gemini defines mechanics and balance intent. Codex formalizes schemas, runtime contracts, backend behavior, and implementation-facing data shapes. Claude consumes them in UI. Blackbox tests everything. Arbiter judges soundness. Nexus debugs interactively. Unity weaves understanding across all domains. Angel decides.
+**Clarification**: Codex defines schemas, layer laws, and engine architecture. Gemini implements within them, writes the tests, fixes the bugs, and gates merges on coverage. Claude consumes the results in UI. Arbiter judges soundness. Nexus debugs interactively. Unity weaves understanding across all domains. Angel decides.
 
-**Handoff**: Gemini → Codex → Claude → Blackbox is the core pipeline. Arbiter/Nexus/Unity support all layers. Escalations flow to Angel.
+**Handoff**: Codex (specify) → Gemini (implement + test) → Claude (surface) is the core pipeline. Arbiter/Nexus/Unity support all layers. Escalations flow to Angel.
 
 ---
 
@@ -306,28 +305,6 @@ Merge into the existing JSON:
 ```json
 {
   "mcpServers": {
-    "scholomance-collab": {
-      "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/node",
-      "args": [
-        "--env-file=/home/deck/Downloads/scholomance-V11/.env",
-        "/home/deck/Downloads/scholomance-V11/codex/server/collab/mcp-bridge.js"
-      ],
-      "cwd": "/home/deck/Downloads/scholomance-V11"
-    }
-  }
-}
-```
-
----
-
-### Blackbox — `.blackboxcli/settings.json` (project-local)
-
-Merge `scholomance-collab` alongside the existing `remote-code` entry:
-
-```json
-{
-  "mcpServers": {
-    "remote-code": { },
     "scholomance-collab": {
       "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/node",
       "args": [

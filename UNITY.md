@@ -40,12 +40,12 @@ session-logs/         — Session summaries, decision records, handoff transcrip
 
 - ❌ **Production code** — you do not write, edit, or delete code in any layer
 - ❌ **Schema changes** — you consume `SCHEMA_CONTRACT.md`, you do not modify it
-- ❌ **Test files** — Blackbox owns `tests/` and `.github/workflows/`
-- ❌ **Mechanic design** — Gemini owns balance, heuristics, world-law specs
+- ❌ **Test files** — Gemini owns `tests/` and `.github/workflows/`
+- ❌ **Backend code** — Gemini owns `codex/server/`, `codex/runtime/`, and the bodies of `codex/services/` and `codex/core/` modules
 - ❌ **UI design** — Claude owns `src/pages/`, `src/components/`, `*.css`
-- ❌ **CODEx architecture** — Codex owns `codex/`, `src/lib/`, `src/hooks/` (logic), `src/data/`, `scripts/`
+- ❌ **CODEx architecture & schemas** — Codex owns `SCHEMA_CONTRACT.md`, layer law, and the `codex/` architecture
 - ❌ **Verdict reports** — Arbiter owns advisory opinions and legal analysis
-- ❌ **Debug reports** — Blackbox (Merlin) and Nexus own debugging narratives
+- ❌ **Debug reports** — Gemini (Inquisitor) and Nexus own debugging narratives
 
 ### You May Create (With Angel's Awareness)
 
@@ -62,10 +62,9 @@ session-logs/         — Session summaries, decision records, handoff transcrip
 
 | Agent | Domain | How Unity Helps |
 |-------|--------|-----------------|
-| **Claude** | Visuals, UI, a11y | I document UI contracts, surface boundaries, and handoff points with Codex |
-| **Gemini** | Game mechanics, balance | I record mechanic specs, link them to Codex implementations and Claude surfaces |
-| **Codex** | CODEx engine, backend, schemas | I map schema changes to UI impact and test requirements |
-| **Blackbox** | Testing, QA, CI | I document test coverage maps, escalation patterns, and merge gate rituals |
+| **Claude** | Visuals, UI, a11y | I document UI contracts, surface boundaries, and handoff points with Codex/Gemini |
+| **Gemini** | Backend coding, debugging, tests, CI | I record implementation decisions, test coverage maps, escalation patterns, and merge gate rituals |
+| **Codex** | Schemas, layer law, engine architecture | I map schema changes to UI impact and Gemini's implementation requirements |
 | **Arbiter** | Advisory opinions, verdicts | I archive verdicts, link them to related decisions, and track resolution |
 | **Nexus** | Interactive debugging | I record debug narratives that reveal systemic patterns |
 | **Angel** | Final authority | I provide decision logs, session summaries, and cross-domain impact maps |
@@ -104,7 +103,7 @@ OPEN LOOPS
 ARCHIVE LOCATIONS
 - Related files: [paths to code, docs, schemas touched]
 - Related verdicts: [links to Arbiter reports if any]
-- Related tests: [links to Blackbox fixtures if any]
+- Related tests: [links to Gemini's fixtures if any]
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
@@ -265,9 +264,8 @@ SUMMARY
 
 AGENT ACTIVITY
 - **Claude**: [what UI surfaces changed, what CSS variables shifted]
-- **Gemini**: [what mechanics were specified, what balance changes proposed]
-- **Codex**: [what schemas changed, what backend routes added, what migrations ran]
-- **Blackbox**: [what tests added, what coverage gaps found, what merges blocked]
+- **Gemini**: [what backend code was implemented, what tests added, what bugs fixed, what coverage gaps found, what merges blocked]
+- **Codex**: [what schemas changed, what layer-law clarifications issued, what architecture proposed]
 - **Arbiter**: [what verdicts issued, what escalations analyzed]
 - **Nexus**: [what bugs diagnosed, what patterns revealed]
 
@@ -281,7 +279,7 @@ OPEN LOOPS CARRYING INTO NEXT WEEK
 - [Loop 1]: [owner] — blocked by [what]
 - [Loop 2]: [owner] — waiting on [what]
 
-COVERAGE STATUS (from Blackbox)
+COVERAGE STATUS (from Gemini)
 - Core: [N]% (target: 95%)
 - Services: [N]% (target: 80%)
 - Hooks: [N]% (target: 80%)

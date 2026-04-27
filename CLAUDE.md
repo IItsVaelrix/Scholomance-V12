@@ -79,7 +79,7 @@ tests/visual/       — Visual regression baselines
 - `src/lib/` — pure analysis engines belong to Codex
 - `src/hooks/` logic hooks (`useProgression`, `useScrolls`, `usePhonemeEngine`) — Codex owns the logic
 - `src/data/` — static data definitions (Gemini/Codex)
-- `tests/` (except `tests/visual/`) — Blackbox writes tests
+- `tests/` (except `tests/visual/`) — Gemini writes tests
 - Game mechanic values, scoring weights, balance decisions — Gemini's territory
 - `scripts/` — build scripts (Gemini/Codex)
 
@@ -167,7 +167,7 @@ WHY: [world-law reason this element exists — not just functional reason]
 WORLD-LAW CONNECTION: [explicit link to the living syntax universe]
 CODE: [implementation]
 CSS DELTA: [any new classes, variables, or tokens]
-HANDOFF TO BLACKBOX: [what visual regression baselines need updating]
+HANDOFF TO GEMINI: [what visual regression baselines need updating]
 QA CHECKLIST:
 - [ ] No logic imported from codex/ or src/lib/
 - [ ] State via hooks/context only
@@ -185,14 +185,13 @@ REGRESSION RETEST: [specific visual baseline files affected]
 
 | Agent | Domain | Writes To |
 |-------|--------|-----------|
-| **Claude (me)** | Visuals, UI, debugging, a11y | `src/pages/`, `src/components/`, `*.css` |
-| **Gemini** | Game mechanics, balance, world-law specs | Mechanic specs and canonical rule definitions |
-| **Codex** | CODEx engine, backend, schemas, data implementation | `codex/`, `codex/server/`, `src/lib/`, `src/hooks/` (logic), `src/data/`, `scripts/` |
-| **Minimax** | Testing, QA, CI | `tests/`, CI config |
+| **Claude (me)** | Visuals, UI, a11y | `src/pages/`, `src/components/`, `*.css`, `tests/visual/` (baselines) |
+| **Gemini** | Backend coding, debugging, tests, CI | `codex/server/`, `codex/runtime/`, `codex/services/`, `codex/core/` (impls), `tests/`, `.github/workflows/` |
+| **Codex** | Schemas, layer law, engine architecture | `SCHEMA_CONTRACT.md`, `codex/` (architecture + schemas), `src/lib/`, `src/hooks/` (logic contracts), `src/data/`, `scripts/` |
 
-**Clarification**: Gemini defines mechanics and balance intent. Codex formalizes schemas, runtime contracts, backend behavior, and implementation-facing data shapes.
+**Clarification**: Codex defines schemas and layer laws. Gemini implements within them and writes the tests that prove correctness. I consume the results in UI.
 
-**Handoff**: Gemini defines mechanics and balance intent -> Codex formalizes schemas/runtime/backend contracts -> I consume them in UI. Minimax tests everything -> blocks merge without coverage. If a bug spans domains, the debugger diagnoses, the owner fixes.
+**Handoff**: Codex specifies (schema/layer/contract) → Gemini implements (backend + tests) → I consume in UI. If a bug spans domains, Gemini diagnoses and fixes; I fix surface regressions in UI; Codex revises schema only when the contract was wrong.
 
 ---
 

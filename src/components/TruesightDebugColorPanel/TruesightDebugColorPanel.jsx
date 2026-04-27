@@ -1,7 +1,33 @@
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
+import { resolveVerseIrColor } from '../../lib/truesight/color/pcaChroma.js';
+import { deltaE } from '../../lib/truesight/color/oklch.js';
+import { getVowelSimilarity } from '../../lib/phonology.adapter.js';
 import './TruesightDebugColorPanel.css';
+
+const PHONEMEGRAM_FAMILIES = [
+  'IY', 'IH', 'EY', 'EH', 'AE',
+  'AA', 'AH', 'AO', 'OW', 'UH',
+  'UW', 'ER', 'AY', 'AW', 'OY',
+];
+
+function pearson(xs, ys) {
+  const n = xs.length;
+  if (!n) return 0;
+  const mx = xs.reduce((a, b) => a + b, 0) / n;
+  const my = ys.reduce((a, b) => a + b, 0) / n;
+  let num = 0, dx2 = 0, dy2 = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = xs[i] - mx;
+    const dy = ys[i] - my;
+    num += dx * dy;
+    dx2 += dx * dx;
+    dy2 += dy * dy;
+  }
+  const denom = Math.sqrt(dx2 * dy2);
+  return denom > 0 ? num / denom : 0;
+}
 
 /**
  * TruesightDebugColorPanel
@@ -14,7 +40,7 @@ import './TruesightDebugColorPanel.css';
  * from committedAnalysis.analyzedWords Map at the ReadPage call site.
  * activeSchool: string | null — the currently selected school ID.
  */
-export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = null }) {
+export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = null, showPhonemegram = false }) {
   const reducedMotion = usePrefersReducedMotion();
 
   const schoolGroups = useMemo(() => {
@@ -26,6 +52,36 @@ export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = nu
     }
     return groups;
   }, [analyzedWords]);
+
+  const phonemegram = useMemo(() => {
+    if (!showPhonemegram) return null;
+    const schoolKey = activeSchool || 'SONIC';
+    const families = PHONEMEGRAM_FAMILIES.map((family) => {
+      const result = resolveVerseIrColor(family, schoolKey);
+      return { family, hex: result.hex, oklch: result.oklch, projection: result.projection };
+    });
+
+    const colors = Object.fromEntries(families.map((f) => [f.family, f.oklch]));
+    const xs = [], ys = [];
+    let maxDE = 0;
+    const pairs = [];
+    for (let i = 0; i < PHONEMEGRAM_FAMILIES.length; i++) {
+      for (let j = i + 1; j < PHONEMEGRAM_FAMILIES.length; j++) {
+        const a = PHONEMEGRAM_FAMILIES[i];
+        const b = PHONEMEGRAM_FAMILIES[j];
+        const sim = getVowelSimilarity(a, b);
+        const dE = deltaE(colors[a], colors[b]);
+        pairs.push({ sim, dE });
+        if (dE > maxDE) maxDE = dE;
+      }
+    }
+    for (const { sim, dE } of pairs) {
+      xs.push(sim);
+      ys.push(maxDE > 0 ? 1 - (dE / maxDE) : 0);
+    }
+    const r = pearson(xs, ys);
+    return { families, pearsonR: r, schoolKey };
+  }, [showPhonemegram, activeSchool]);
 
   const totalWords = analyzedWords.length;
 
@@ -91,6 +147,42 @@ export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = nu
           </p>
         )}
       </div>
+
+      {/* PHONEMEGRAM — Study1 §Phonemegram applied to color */}
+      {phonemegram && (
+        <section
+          className="truesight-debug-panel__phonemegram"
+          aria-label="Color Phonemegram"
+        >
+          <header className="truesight-debug-panel__phonemegram-header">
+            <span className="truesight-debug-panel__glyph" aria-hidden="true">⟁</span>
+            <h3 className="truesight-debug-panel__phonemegram-title">Phonemegram</h3>
+            <span
+              className="truesight-debug-panel__pearson"
+              data-quality={phonemegram.pearsonR > 0.5 ? 'good' : phonemegram.pearsonR > 0.3 ? 'ok' : 'poor'}
+              aria-label={`Pearson correlation r = ${phonemegram.pearsonR.toFixed(3)}`}
+            >
+              r = {phonemegram.pearsonR.toFixed(3)}
+            </span>
+          </header>
+          <ul className="truesight-debug-panel__family-grid">
+            {phonemegram.families.map(({ family, hex, oklch, projection }) => (
+              <li
+                key={family}
+                className="truesight-debug-panel__family-cell"
+                title={`${family} — OKLCh(${oklch.l.toFixed(2)}, ${oklch.c.toFixed(2)}, ${oklch.h.toFixed(0)}°) — PC1=${projection?.pc1?.toFixed(2) ?? '?'}, PC2=${projection?.pc2?.toFixed(2) ?? '?'}`}
+              >
+                <span
+                  className="truesight-debug-panel__family-swatch"
+                  style={{ background: hex }}
+                  aria-hidden="true"
+                />
+                <span className="truesight-debug-panel__family-label">{family}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* FOOTER / META ROW */}
       <footer className="truesight-debug-panel__footer">

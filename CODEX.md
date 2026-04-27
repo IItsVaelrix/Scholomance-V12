@@ -23,7 +23,8 @@ CODEx is not a monolith. You enforce its four-layer architecture with religious 
 - `src/components/` - Claude's UI territory
 - `src/index.css` and all `.css` files - Claude's surface
 - `src/hooks/` that are UI hooks (`useAtmosphere`, `useAmbientPlayer`, `usePrefersReducedMotion`) - Claude's
-- `tests/` - Blackbox writes tests. You may request them. You do not write them.
+- `tests/` - Gemini writes tests and owns the implementation against your schemas. You may request specific coverage. You do not write tests yourself.
+- `codex/server/`, `codex/runtime/`, and most module bodies in `codex/services/` and `codex/core/` - Gemini implements within the layer laws you set. You write the schemas and import contracts; Gemini writes the function bodies. Schema changes still flow through you.
 
 **SHARED BOUNDARY (always flag before acting):**
 - `src/hooks/` - determine if a hook is logic (yours) or UI (Claude's) before touching it. Logic hook = no DOM, no animation. UI hook = anything touching display state.
@@ -59,7 +60,7 @@ When you change a schema, you must:
 - Update `SCHEMA_CONTRACT.md` with version bump
 - Write a `SCHEMA CHANGE NOTICE` block
 - Notify Claude if any UI-consumed field changed
-- Notify Blackbox to update test fixtures
+- Notify Gemini to update test fixtures and re-implement against the new contract
 
 **SCHEMA CHANGE NOTICE:**
 - Schema: `[name]`
@@ -67,7 +68,7 @@ When you change a schema, you must:
 - Changed fields: `[what changed]`
 - Breaking: `[yes/no]`
 - Claude impact: `[what UI surfaces are affected, if any]`
-- Blackbox impact: `[what test fixtures need updating]`
+- Gemini impact: `[what test fixtures need updating, what implementation must follow]`
 
 ## CODEx Invariants
 You must never violate these:
@@ -87,7 +88,7 @@ VIOLATION CHECK: [confirm no import rule violations]
 CODE: [the implementation]
 SCHEMA DELTA: [any schema additions/changes - update SCHEMA_CONTRACT.md]
 HANDOFF TO CLAUDE: [event bus event name + payload shape, if UI needs this]
-HANDOFF TO BLACKBOX: [what tests are needed, what the happy path + edge cases are]
+HANDOFF TO GEMINI: [what implementation + tests are needed, what the happy path + edge cases are]
 QA CHECKLIST:
 - [ ] Layer import rules respected
 - [ ] Function is pure (core layer only)

@@ -1,7 +1,8 @@
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../../../data/schools.js';
 import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { mapFormantsToMetrics, getVisemeStyles } from './visemeMapping.js';
-import { VOWEL_HUE_MAP, FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
+import { FAMILY_IDENTITY } from '../../../../codex/core/phonology/vowelWheel.js';
+import { oklchToHex } from './oklch.js';
 
 import { resolveSonicChroma } from '../../../../codex/core/phonology/chroma.resolver.js';
 import { hslToHex as coreHslToHex } from '../../../../codex/core/pixelbrain/shared.js';
@@ -66,24 +67,6 @@ const SCHOOL_COLOR_ANCHORS = Object.freeze({
 });
 
 const DEFAULT_SCHOOL_HSL = Object.freeze({ h: 174, s: 68, l: 52 });
-const THEME_SCALARS = Object.freeze({
-  huePc1: 22,        
-  huePc2: 14,        
-  saturationRadius: 20,
-  saturationPc1: 8,
-  saturationPc2Dampen: 2, // Reduced dampening for vibrancy
-  lightnessPc1: 10,
-  lightnessPc2: 20,
-  lightnessOffset: 2,
-  minSaturation: 40,      // Increased floor
-  maxSaturation: 95,
-  minLightness: 35,       // Increased floor
-  maxLightness: 88,
-  // Phasic Resonance Modulation (Rhythmic Alternation)
-  resonanceHue: 10,       
-  resonanceSat: 15,       // Increased for more dynamic saturation
-  resonanceLit: 6,        
-});
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
@@ -248,13 +231,6 @@ function resolveBaseHsl(schoolKey, options = {}) {
   return DEFAULT_SCHOOL_HSL;
 }
 
-function hasExplicitBaseHsl(options = {}) {
-  const baseHsl = options?.baseHsl;
-  return Number.isFinite(baseHsl?.h)
-    && Number.isFinite(baseHsl?.s)
-    && Number.isFinite(baseHsl?.l);
-}
-
 /**
  * Computes a weighted average HSL base from school weights.
  * Uses circular averaging for the hue component to handle 0/360 wrap.
@@ -294,16 +270,29 @@ export function computeBlendedHsl(schoolWeights, schools = SCHOOLS) {
   };
 }
 
+/**
+ * Resolves the perceptually-validated color for a phoneme family.
+ *
+ * Pipeline (PhD-worthy color):
+ *   1. Project phoneme into PCA space derived from F1/F2 formants.
+ *   2. Anchor on the school's color (or family's natural school) — atan2(pc2, pc1)
+ *      gives the angle in PCA space; the delta from the anchor family's angle
+ *      becomes the hue offset from the school's hue.
+ *   3. Lightness ← PC1 (open/close axis). Open vowels lighter, close vowels darker.
+ *   4. Chroma ← projection radius. Edge vowels saturated, central (schwa) muted.
+ *   5. Phase modulates lightness ±5% for resonance ticking.
+ *   6. Final emit in OKLCh (perceptually uniform) → sRGB hex for CSS.
+ */
 export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const resolvedFamily = resolveProjectionFamily(family);
-  const { forcedHue = null, phase = 0 } = options;
+  const { phase = 0 } = options;
 
   if (!resolvedFamily) {
     return Object.freeze({
       family: '',
       school: null,
       hex: null,
-      hsl: Object.freeze({ h: 0, s: 0, l: 53 }),
+      oklch: Object.freeze({ l: 0.5, c: 0, h: 0 }),
       projection: null,
     });
   }
@@ -311,69 +300,33 @@ export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const projection = getVerseIrColorProjection(resolvedFamily);
   const schoolKey = resolveSchoolKey(schoolId, resolvedFamily);
   const baseHsl = resolveBaseHsl(schoolKey, options);
-  const requestedSchoolId = String(schoolId || '').trim().toUpperCase();
-  const usesThemeHue = hasExplicitBaseHsl(options)
-    || (requestedSchoolId !== '' && requestedSchoolId !== 'DEFAULT' && Boolean(SCHOOLS[requestedSchoolId]));
   const anchorFamily = SCHOOL_COLOR_ANCHORS[schoolKey] || resolvedFamily;
   const anchorProjection = getVerseIrColorProjection(anchorFamily) || projection;
-  const themeConfig = THEME_SCALARS;
 
-  const deltaPc1 = projection.pc1 - anchorProjection.pc1;
-  const deltaPc2 = projection.pc2 - anchorProjection.pc2;
-  const deltaRadius = clamp(Math.hypot(deltaPc1, deltaPc2) / 1.6, 0, 1);
+  // 1. Hue: school anchor + PCA angular delta (front/back rotation in vowel space).
+  const baseAngle = Math.atan2(projection.pc2, projection.pc1) * (180 / Math.PI);
+  const anchorAngle = Math.atan2(anchorProjection.pc2, anchorProjection.pc1) * (180 / Math.PI);
+  const hue = wrapHue(baseHsl.h + (baseAngle - anchorAngle));
 
-  // Phasic Modulation (Cyclical Resonance)
-  const rad = phase * Math.PI * 2;
-  const hMod = Math.sin(rad) * themeConfig.resonanceHue;
-  const sMod = Math.cos(rad) * themeConfig.resonanceSat;
-  const lMod = Math.sin(rad * 1.5) * themeConfig.resonanceLit;
+  // 2. Lightness: PC1 (open/close) maps to ±20% around school baseline (0..1 OKLCh L).
+  // School baseHsl.l is in 0..100 — scale to OKLCh L space.
+  const lAnchor = clamp(baseHsl.l / 100, 0.3, 0.85);
+  const lBase = lAnchor + (projection.pc1 * 0.18);
+  const lightness = clamp(lBase + (Math.sin(phase * Math.PI * 2) * 0.05), 0.25, 0.92);
 
-  const canonicalHue = forcedHue !== null ? forcedHue : VOWEL_HUE_MAP[resolvedFamily];
-  
-  if (canonicalHue === undefined || canonicalHue === null) {
-    // V12 FIX: Return neutral gray fallback for unknown families to avoid 180-degree collision
-    return Object.freeze({
-      family: resolvedFamily,
-      school: schoolKey,
-      hex: null,
-      hsl: { h: 0, s: 0, l: 50 },
-      projection,
-      viseme: mapFormantsToMetrics(PCA_VOWEL_FORMANTS[resolvedFamily]),
-    });
-  }
-
-  // Explicit theme inputs should win over the canonical vowel wheel.
-  const hue = (usesThemeHue && forcedHue === null)
-    ? wrapHue(baseHsl.h + (deltaPc1 * themeConfig.huePc1) - (deltaPc2 * themeConfig.huePc2) + hMod)
-    : wrapHue(canonicalHue + (deltaPc1 * 6) - (deltaPc2 * 6) + hMod);
-
-  const saturation = clamp(
-    baseHsl.s
-      + (deltaRadius * themeConfig.saturationRadius)
-      + (deltaPc1 * themeConfig.saturationPc1)
-      - (Math.abs(deltaPc2) * themeConfig.saturationPc2Dampen)
-      + sMod,
-    themeConfig.minSaturation,
-    themeConfig.maxSaturation
-  );
-  const lightness = clamp(
-    baseHsl.l
-      + themeConfig.lightnessOffset
-      + (deltaPc1 * themeConfig.lightnessPc1)
-      - (deltaPc2 * themeConfig.lightnessPc2)
-      + lMod,
-    themeConfig.minLightness,
-    themeConfig.maxLightness
-  );
+  // 3. Chroma: radius from PCA centroid → distance from "schwa-like" center.
+  // School baseHsl.s drives the floor; PCA radius adds eccentricity.
+  const cBase = 0.08 + (baseHsl.s / 100) * 0.12;
+  const chroma = clamp(cBase + (projection.radius * 0.10), 0.04, 0.32);
 
   return Object.freeze({
     family: resolvedFamily,
     school: schoolKey,
-    hex: hslToHex(hue, saturation, lightness),
-    hsl: Object.freeze({
-      h: round(hue, 3),
-      s: round(saturation, 3),
+    hex: oklchToHex(lightness, chroma, hue),
+    oklch: Object.freeze({
       l: round(lightness, 3),
+      c: round(chroma, 3),
+      h: round(hue, 3),
     }),
     projection,
     viseme: getVisemeStyles(

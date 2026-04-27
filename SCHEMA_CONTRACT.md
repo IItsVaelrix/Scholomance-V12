@@ -7,7 +7,7 @@
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
-> Notify Blackbox for fixture and regression-test changes.
+> Notify Gemini for fixture, regression-test, and backend implementation changes.
 
 ---
 
@@ -18,7 +18,7 @@
 - Changed fields: added `RitualPrediction*` runtime and artifact contracts, including canonical context, candidate, diagnostic, artifact, and PixelBrain projection shapes used by the shared ritual prediction engine; reserved `PB-PRED-v1` as the export bytecode family for future persisted/shared artifacts
 - Breaking: no
 - Claude impact: editor and diagnostic consumers can rely on one shared ritual prediction artifact shape if they choose to surface backend or local prediction traces
-- Blackbox impact: predictor, PLS, and backend parity batteries can assert the shared ritual prediction result and artifact contract without inferring fields from individual callers
+- Gemini impact: predictor, PLS, and backend parity batteries can assert the shared ritual prediction result and artifact contract without inferring fields from individual callers
 
 ## SCHEMA CHANGE NOTICE
 
@@ -27,7 +27,7 @@
 - Changed fields: added `WordAnalysis`; documented `WordAnalysis.rhymeKey: string | null` as a required Truesight field and formalized optional bytecode passthrough on the normalized analysis object
 - Breaking: no
 - Claude impact: `ReadPage` / `ScrollEditor` may rely on `analysis.rhymeKey` being present as `string | null` when building verse-scoped rhyme color registries
-- Blackbox impact: panel-analysis fixtures and Truesight overlay assertions can treat missing `rhymeKey` as a contract violation instead of an optional field
+- Gemini impact: panel-analysis fixtures and Truesight overlay assertions can treat missing `rhymeKey` as a contract violation instead of an optional field
 
 ## SCHEMA CHANGE NOTICE
 
@@ -36,7 +36,7 @@
 - Changed fields: added `TaskAssignmentPreflightConflict` and `TaskAssignmentPreflightResponse`; documented `GET /collab/tasks/:id/preflight`
 - Breaking: no
 - Claude impact: Collab assignment UI can rely on a real backend preflight response instead of fallback optimistic copy
-- Blackbox impact: collab route, service, and UI fixtures can assert clean assignment, ownership-override, and lock-conflict preflight states
+- Gemini impact: collab route, service, and UI fixtures can assert clean assignment, ownership-override, and lock-conflict preflight states
 
 ## SCHEMA CHANGE NOTICE
 
@@ -45,7 +45,7 @@
 - Changed fields: Added `Z_BASE`, `Z_ABOVE`, `Z_OVERLAY`, `Z_SYSTEM` semantic constants.
 - Breaking: Yes (Prohibits hardcoded z-indexes per Law 10)
 - Claude impact: All components using hardcoded z-indexes must migrate to these semantic tiers.
-- Blackbox impact: Visual regression tests should validate that components remain in their assigned tiers.
+- Gemini impact: Visual regression tests should validate that components remain in their assigned tiers.
 
 ## SCHEMA CHANGE NOTICE
 
@@ -54,7 +54,7 @@
 - Changed fields: added `PixelBrainPalette`, `PixelBrainCoordinate`, and `PixelBrainPayload`; `VerseIRAmplifierPayload` may now optionally expose `pixelBrain`
 - Breaking: no
 - Claude impact: Read analysis surfaces may optionally consume `analysis.verseIRAmplifier.pixelBrain` for future pixel overlays, but no existing UI consumer is required to change
-- Blackbox impact: panel-analysis fixtures and VerseIR amplifier serialization snapshots can include the new optional `pixelBrain` payload
+- Gemini impact: panel-analysis fixtures and VerseIR amplifier serialization snapshots can include the new optional `pixelBrain` payload
 
 ## SCHEMA CHANGE NOTICE
 
@@ -63,7 +63,7 @@
 - Changed fields: added `NarrativeAMPBeat`, `NarrativeAMPRevision`, `NarrativeAMPResonance`, and `NarrativeAMPPayload`; `/api/analysis/panels` may now include `narrativeAMP`; `oracle` is retained as a compatibility alias during migration
 - Breaking: no
 - Claude impact: Read analysis surfaces should prefer `narrativeAMP` and may fall back to `oracle` while older consumers are still migrating
-- Blackbox impact: panel-analysis fixtures can include the new optional payload while continuing to accept the legacy oracle alias
+- Gemini impact: panel-analysis fixtures can include the new optional payload while continuing to accept the legacy oracle alias
 
 ## SCHEMA CHANGE NOTICE
 
@@ -72,7 +72,7 @@
 - Changed fields: `VerseTokenIR` now optionally exposes `visualBytecode` and `trueVisionBytecode`; `VerseIRAmplifierResult` may carry plugin `payload`; `VerseIRAmplifierPayload` and `VerseIR` can now optionally expose `trueVision`
 - Breaking: no
 - Claude impact: Read/editor surfaces can keep using `visualBytecode` and may optionally consume `trueVisionBytecode` / `trueVision` for deeper Truesight overlays later
-- Blackbox impact: VerseIR fixtures, panel-analysis fixtures, and serialization snapshots can include the new optional bytecode and TrueVision payloads
+- Gemini impact: VerseIR fixtures, panel-analysis fixtures, and serialization snapshots can include the new optional bytecode and TrueVision payloads
 
 ## SCHEMA CHANGE NOTICE
 
@@ -81,7 +81,7 @@
 - Changed fields: `Scroll` now exposes optional `submittedAt`; scroll persistence can distinguish autosaved drafts from first-time submitted scrolls
 - Breaking: no
 - Claude impact: Read/editor surfaces can keep autosaving drafts while reserving one-time submission behaviors such as XP awards for explicit saves
-- Blackbox impact: scroll fixtures and persistence assertions can include `submittedAt` for draft-vs-submitted coverage
+- Gemini impact: scroll fixtures and persistence assertions can include `submittedAt` for draft-vs-submitted coverage
 
 ---
 
@@ -92,7 +92,7 @@
 - Changed fields: `VerseLineIR`, `VerseTokenIR`, and `SyllableWindowIR` now expose parallel grapheme offsets; `VerseIR` adds `surfaceSpans`; VerseIR metadata now records applied window limits, offset semantics, grapheme support, and normalization policy; `VerseTokenIR` may expose `phoneticDiagnostics`; compiler descriptors may optionally surface the applied limits and grapheme metadata
 - Breaking: no
 - Claude impact: Analysis surfaces can keep using code-unit offsets, but may opt into the new grapheme offsets and `surfaceSpans` table for more exact hover/selection overlays
-- Blackbox impact: VerseIR fixtures, compiler snapshots, and rhyme-astrology compiler payload assertions can include the new optional metadata and surface span structures
+- Gemini impact: VerseIR fixtures, compiler snapshots, and rhyme-astrology compiler payload assertions can include the new optional metadata and surface span structures
 
 ---
 
@@ -103,7 +103,7 @@
 - Changed fields: added `OracleInsight`, `OracleSuggestion`, and `OraclePayload`; `/api/analysis/panels` response may include `oracle: OraclePayload | null`
 - Breaking: no
 - Claude impact: Analysis surfaces should render the new `oracle` commentary and suggestions when present
-- Blackbox impact: panel-analysis fixtures can assert the new optional `oracle` payload
+- Gemini impact: panel-analysis fixtures can assert the new optional `oracle` payload
 
 ---
 
@@ -114,7 +114,7 @@
 - Changed fields: added `VerseIRAmplifierArchetype`, `VerseIRAmplifierMatch`, `VerseIRAmplifierResult`, and `VerseIRAmplifierPayload`; `VerseIR` can now optionally expose `semanticDepth`, `archetypeResonance`, `elementMatches`, and `verseIRAmplifier`; `/api/analysis/panels` may include `analysis.verseIRAmplifier`
 - Breaking: no
 - Claude impact: Read analysis surfaces may render the optional Synapse Slot payload when present, but existing consumers remain valid without changes
-- Blackbox impact: panel-analysis fixtures can assert the new optional payload and combat scoring fixtures may observe the new `verseir_amplifier` trace when combat services attach VerseIR amplifier context
+- Gemini impact: panel-analysis fixtures can assert the new optional payload and combat scoring fixtures may observe the new `verseir_amplifier` trace when combat services attach VerseIR amplifier context
 
 ---
 
@@ -1657,12 +1657,12 @@ Notes:
 
 | If you are delivering... | Deliver to... | Format |
 |--------------------------|---------------|--------|
-| A new mechanic spec | Codex (to implement) + Claude (if UI surface needed) | `MECHANIC SPEC` block |
+| A new mechanic spec | Codex (to schema) + Gemini (to implement) + Claude (if UI surface needed) | `MECHANIC SPEC` block |
 | A new schema or contract change | All agents | `SCHEMA CHANGE NOTICE` block |
-| A new runtime event | Claude (consumer) + Blackbox (fixtures/tests) | Event name + payload shape |
-| A failing test | Owning agent (Gemini / Codex / Claude) | `MERLIN DATA REPORT` |
+| A new runtime event | Claude (consumer) + Gemini (fixtures/tests/impl) | Event name + payload shape |
+| A failing test | Gemini (to fix) — escalate to Codex if schema-rooted, Claude if UI-rooted | `INQUISITOR REPORT` |
 | A domain conflict | Angel | `ESCALATION` block |
-| A visual regression | Claude | `WEAVE REPORT` entry |
+| A visual regression | Claude (to fix) + Gemini (to gate) | `WEAVE REPORT` entry |
 
 ---
 
@@ -1680,7 +1680,7 @@ Breaking: [yes / no]
 
 Consumers affected:
 - Claude: [yes/no - which component/hook reads this field]
-- Blackbox: [yes/no - which fixtures/tests use this field]
+- Gemini: [yes/no - which fixtures/tests/backend modules use this field]
 
 Migration:
 [what each affected agent needs to do]

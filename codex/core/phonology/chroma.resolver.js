@@ -3,17 +3,29 @@
  * Translates ARPAbet phoneme sequences into deterministic HSL chroma signatures.
  */
 
-import { VOWEL_HUE_MAP, getVowelHue } from './vowelWheel.js';
+import { getVowelHue } from './vowelWheel.js';
 
-// Coda weight for Saturation
-const CODA_SONORITY_WEIGHT = {
-  'P': 5, 'T': 5, 'K': 5,  // Plosives - Sharp, saturated
-  'B': 4, 'D': 4, 'G': 4,
-  'F': 3, 'S': 3, 'TH': 3, // Fricatives - Less saturated
-  'V': 2, 'Z': 2, 'DH': 2,
-  'M': 1, 'N': 1, 'NG': 1, // Nasals - Soft, muted
-  'L': 1, 'R': 1,          // Liquids
-};
+import { ARPABET_VOWELS, PHONOLOGICAL_FEATURES_V1 } from './phoneme.constants.js';
+
+/**
+ * Derives sonority/chroma weight from phonological features.
+ * Sibilants peak chroma, nasals/liquids dampen, voiced > voiceless.
+ */
+function getFeatureChromaWeight(phoneme) {
+  const base = phoneme.replace(/[0-9]/g, '').toUpperCase();
+  const f = PHONOLOGICAL_FEATURES_V1[base];
+  if (!f) return 0;
+
+  let weight = 0;
+  // Manner: Stops (0) / Affricates (4) > Fricatives (2) > Glides (3) > Nasals (1)
+  const mannerWeights = [5, 1, 3, 2, 4];
+  weight += mannerWeights[f.manner] || 0;
+  
+  if (f.voicing) weight += 2;
+  if (f.sibilance) weight += 3;
+  
+  return weight;
+}
 
 /**
  * Resolves a ChromaSignature from a phoneme sequence.
@@ -22,8 +34,6 @@ const CODA_SONORITY_WEIGHT = {
  */
 export function resolveSonicChroma(phonemes = []) {
   if (!phonemes || phonemes.length === 0) {
-    // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
-    // Layout: H(000) S(00) L(50) NUC(__)
     return { h: 0, s: 0, l: 50, bytecode: 'PB-CHROMA-0000050__' };
   }
 
@@ -31,13 +41,10 @@ export function resolveSonicChroma(phonemes = []) {
   let stress = 1;
   let nucleusIndex = -1;
 
-  // 1. Identify Nucleus (Stressed Vowel)
   for (let i = 0; i < phonemes.length; i++) {
     const p = phonemes[i];
     const base = p.replace(/[0-2]/g, '').toUpperCase();
-    
-    // Fix 180° Hue Collision: Check existence in Map instead of comparing Hue return
-    if (base in VOWEL_HUE_MAP) {
+    if (ARPABET_VOWELS.has(base)) {
       nucleus = base;
       stress = p.match(/[0-2]/) ? parseInt(p.match(/[0-2]/)[0]) : 1;
       nucleusIndex = i;
@@ -46,35 +53,29 @@ export function resolveSonicChroma(phonemes = []) {
   }
 
   if (!nucleus) {
-    // Protocol Fixed-Width Enforcement: PB-CHROMA- + 9 symbols
-    // Layout: H(180) S(00) L(40) NUC(__)
     return { h: 180, s: 0, l: 40, bytecode: 'PB-CHROMA-b40028__' };
   }
 
-  // 2. Resolve Hue (H) from Nucleus
+  // 1. Resolve Base Vowel Color (H/C/L) from PCA/OKLCh
+  // For the resolver, we use a simplified version of the logic to avoid circular deps
   const h = getVowelHue(nucleus);
 
-  // 3. Resolve Saturation (S) from Coda (Consonants after Nucleus)
+  // 2. Resolve Saturation (S) from Coda Features
   const coda = phonemes.slice(nucleusIndex + 1);
-  let codaWeight = 0;
+  let totalCodaWeight = 0;
   coda.forEach(p => {
-    // Fix Coda Case-Sensitivity Asymmetry: Ensure uppercase for weight lookup
-    const base = p.replace(/[0-2]/g, '').toUpperCase();
-    codaWeight += (CODA_SONORITY_WEIGHT[base] || 0);
+    totalCodaWeight += getFeatureChromaWeight(p);
   });
 
-  // Base saturation 65%, plus weight up to 35%
-  const s = Math.min(100, 65 + (codaWeight * 6));
+  // Base saturation 60%, plus feature-derived weight up to 40%
+  const s = Math.min(100, 60 + (totalCodaWeight * 4));
 
-  // 4. Resolve Lightness (L) from Stress
-  // Stress 1 = 60%, Stress 2 = 50%, Stress 0 = 40%
-  let l = 50;
+  // 3. Resolve Lightness (L) from Stress
+  // Per Study1: Stress modulates ±5%
+  let l = 55;
   if (stress === 1) l = 60;
-  if (stress === 0) l = 45;
+  if (stress === 0) l = 50;
 
-  // 5. Generate Bytecode Artifact (PB-CHROMA-v1)
-  // Encoded as: H(3 chars) S(2 chars) l(2 chars) nucleus(2 chars)
-  // Fix Hex-Encoding Brittleness: Explicit Math.floor to ensure integer hex
   const hueHex = Math.floor(h).toString(16).padStart(3, '0');
   const satHex = Math.floor(s).toString(16).padStart(2, '0');
   const litHex = Math.floor(l).toString(16).padStart(2, '0');
