@@ -57,5 +57,22 @@ export const PATHOGEN_REGISTRY = [
     encyclopediaEntry: 'BUG-2026-04-27-ASYNC-PROTOCOL-DRIFT',
     vector_id: 'STRUCTURAL-LAYER-3-PROTOCOL-V1',
     layer: 'protocol'
+  },
+  {
+    // Per-keystroke synchronous side effects on the textarea onChange path.
+    // Symptoms: input lag, jank during burst typing, layout thrash.
+    // Signatures: getCursorCoordsFromTextarea / getBoundingClientRect /
+    // synchronous DOM measurement inside an onChange handler; fire-and-forget
+    // async calls without debounce or request-id guard; setState cascades
+    // unbatched across an await boundary in the keystroke critical path.
+    // Cure: defer via setTimeout (debounce) or RAF; gate stale responses
+    // with a monotonic request-id ref; keep work off the synchronous handler.
+    // First containment: SISP-FIX-v1-INPUT-LAG-001 (ScrollEditor.jsx
+    // updateCompletions debounce + request-id guard, 2026-05-08).
+    id: 'pathogen.keystroke-critical-path',
+    name: 'Keystroke Critical Path Contamination (Per-Stroke Sync Work)',
+    threshold: 0.85,
+    encyclopediaEntry: 'BUG-2026-05-08-INPUT-LAG-COMPLETIONS',
+    vector_id: 'TQ-SIGNATURE-KEYSTROKE-CRITICAL-PATH-V1'
   }
 ];

@@ -78,6 +78,7 @@ All entries follow this structure:
 | `SCHOL-ENC-BYKE-SEARCH-DISCONNECTED-LOGIC-FIX-PLAN` | 2026-04-26 | Disconnected Logic Bug-Fix Plan (5 tiers, P0–P5) | PLAN — see entry for full target list |
 | `SCHOL-ENC-BYKE-SEARCH-PDR-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (PDR) | `cognitive_bus_pdr.md` |
 | `SCHOL-ENC-BYKE-SEARCH-ARCH-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (Architecture) | `ARCH-2026-04-27-COGNITIVE-BUS.md` |
+| `SCHOL-ENC-BYKE-SEARCH-TURBOQUANT-MANUAL` | 2026-05-08 | TurboQuant Service Manual | `TURBOQUANT-SERVICE-MANUAL.md` |
 
 ---
 

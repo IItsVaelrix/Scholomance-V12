@@ -649,41 +649,54 @@ async function updateTask(id, updates) {
 }
 
 async function assignTaskWithLocks(taskId, agentId, filePaths = [], ttlMinutes = 30) {
-    // Note: Cross-provider transactions are complex. 
-    // Turso client.batch() provides atomic execution.
-    await expireStaleLocks();
+    // FIX: Atomically claim locks using ON CONFLICT with WHERE to prevent race-condition
+    // lock-stealing. Only acquires/renews if caller already owns the lock or lock is empty.
+    // Pre-check eliminated — relies on conditional upsert instead.
 
-    for (const filePath of filePaths) {
-        const lock = await checkLock(filePath);
-        if (lock && lock.locked_by !== agentId) {
-            return {
-                conflict: true,
-                file: filePath,
-                locked_by: lock.locked_by,
-                task_id: lock.task_id,
-            };
-        }
+    if (filePaths.length === 0) {
+        const result = await db.execute(`
+            UPDATE collab_tasks 
+            SET assigned_agent = ?, status = 'assigned', updated_at = datetime('now')
+            WHERE id = ?
+        `, [agentId, taskId]);
+        return { conflict: false, task: await getTask(taskId) };
     }
 
-    const statements = filePaths.map(filePath => ({
+    // Atomically upsert all locks — only succeeds if no conflict or caller already owns
+    const lockStatements = filePaths.map(filePath => ({
         sql: `INSERT INTO collab_file_locks (file_path, locked_by, task_id, locked_at, expires_at)
               VALUES (?, ?, ?, datetime('now'), datetime('now', '+' || ? || ' minutes'))
               ON CONFLICT(file_path) DO UPDATE SET
                   locked_by = excluded.locked_by,
                   task_id = excluded.task_id,
                   locked_at = excluded.locked_at,
-                  expires_at = excluded.expires_at`,
+                  expires_at = excluded.expires_at
+              WHERE locked_by = excluded.locked_by OR locked_by IS NULL`,
         args: [filePath, agentId, taskId, ttlMinutes]
     }));
 
-    statements.push({
-        sql: `UPDATE collab_tasks
-              SET assigned_agent = ?, status = 'assigned', updated_at = datetime('now')
-              WHERE id = ?`,
-        args: [agentId, taskId]
-    });
+    const results = await db.batch(lockStatements);
 
-    await db.batch(statements);
+    // Detect conflict: if any lock statement affected 0 rows, another agent owns it
+    const conflictIdx = results.findIndex(r => r.rowsAffected === 0);
+    if (conflictIdx !== -1) {
+        const conflictFile = filePaths[conflictIdx];
+        const existing = await checkLock(conflictFile);
+        return {
+            conflict: true,
+            file: conflictFile,
+            locked_by: existing?.locked_by || 'unknown',
+            task_id: existing?.task_id || null,
+        };
+    }
+
+    // All locks claimed — update task assignment
+    await db.execute(`
+        UPDATE collab_tasks 
+        SET assigned_agent = ?, status = 'assigned', updated_at = datetime('now')
+        WHERE id = ?
+    `, [agentId, taskId]);
+
     return { conflict: false, task: await getTask(taskId) };
 }
 
@@ -715,11 +728,11 @@ function parseTaskRow(row) {
 
 async function acquireLock({ file_path, agent_id, task_id, ttl_minutes }) {
     await expireStaleLocks();
-    const existing = await checkLock(file_path);
-    if (existing && existing.locked_by !== agent_id) {
-        return { conflict: true, locked_by: existing.locked_by, task_id: existing.task_id };
-    }
-    await db.execute(`
+
+    // FIX: Use atomic ON CONFLICT with WHERE clause to prevent silent lock-stealing.
+    // Only acquires/renews lock if: no existing lock OR caller already owns it.
+    // SQLite 3.35+ supports WHERE in ON CONFLICT DO UPDATE.
+    const result = await db.execute(`
         INSERT INTO collab_file_locks (file_path, locked_by, task_id, locked_at, expires_at)
         VALUES (?, ?, ?, datetime('now'), datetime('now', '+' || ? || ' minutes'))
         ON CONFLICT(file_path) DO UPDATE SET
@@ -727,7 +740,18 @@ async function acquireLock({ file_path, agent_id, task_id, ttl_minutes }) {
             task_id = excluded.task_id,
             locked_at = excluded.locked_at,
             expires_at = excluded.expires_at
+        WHERE locked_by = excluded.locked_by OR locked_by IS NULL
     `, [file_path, agent_id, task_id || null, ttl_minutes]);
+
+    if (result.rowsAffected === 0) {
+        const existing = await checkLock(file_path);
+        return { 
+            conflict: true, 
+            locked_by: existing?.locked_by || 'unknown', 
+            task_id: existing?.task_id || null 
+        };
+    }
+
     return { conflict: false, file_path, locked_by: agent_id };
 }
 
@@ -1238,9 +1262,13 @@ async function clearCodebaseIndex() {
 // --- Messaging ---
 
 async function createMessage({ sender_id, target_id, glyph, text, bytecode, metadata }) {
+    // FIX: Use RETURNING * instead of last_insert_rowid() for async-driver safety.
+    // Works on SQLite 3.35+, better-sqlite3, and Turso/libSQL.
+    // Eliminates race condition where concurrent inserts could return wrong row.
     const result = await db.execute(`
         INSERT INTO collab_messages (sender_id, target_id, glyph, text, bytecode, metadata)
         VALUES (?, ?, ?, ?, ?, ?)
+        RETURNING *
     `, [
         sender_id,
         target_id || 'all',
@@ -1250,10 +1278,11 @@ async function createMessage({ sender_id, target_id, glyph, text, bytecode, meta
         JSON.stringify(metadata || {})
     ]);
 
-    // Fetch and return the newly created message
-    // Use SQLite's last_insert_rowid() function — works on both better-sqlite3 and Turso/libsql
-    const msg = await db.execute('SELECT * FROM collab_messages WHERE id = last_insert_rowid()');
-    const row = msg.rows[0];
+    if (result.rows.length === 0) {
+        throw new Error('Message insert failed: no row returned');
+    }
+
+    const row = result.rows[0];
     const { is_telepathic, ...rest } = row;
     return {
         ...rest,
@@ -1554,6 +1583,7 @@ const collabPersistence = {
     },
     close: closeDatabase,
     getStatus,
+    db, // Expose db for atomic batch operations in service layer
 };
 
 // Final export with contract verification

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { EventEmitter } from 'node:events';
 import { collabPersistence } from './collab.persistence.js';
+const { db } = collabPersistence;
 import { cleanAgentSession, runAgentQaScan as runAgentQaScanInternal } from './collab.agent-qa.js';
 import { revokeAgentKey as revokeAuthKey } from './collab.agent-auth.js';
 import { runCollabMcpProbe } from './mcp-probe.js';
@@ -896,28 +897,52 @@ export const collabService = {
             });
         }
 
-        const task = await collabPersistence.tasks.create({
-            id: uuid(),
-            file_paths: [],
-            depends_on: [],
-            ...rest,
-            notes: initialNotes,
-        });
+        // FIX: Atomic task creation — wrap task + activity log in single batch transaction.
+        const taskId = uuid();
+        const now = new Date().toISOString();
 
-        await logActivity({
-            agent_id: input.created_by,
-            action: 'task_created',
-            target_type: 'task',
-            target_id: task.id,
-            details: { title: task.title },
-        });
+        await db.batch([
+            {
+                sql: `INSERT INTO collab_tasks (id, title, description, status, priority, created_by, assigned_agent, file_paths, depends_on, result, notes, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [
+                    taskId,
+                    rest.title || '',
+                    rest.description || '',
+                    rest.status || 'backlog',
+                    rest.priority ?? 1,
+                    rest.created_by || null,
+                    rest.assigned_agent || null,
+                    JSON.stringify([]),
+                    JSON.stringify([]),
+                    null,
+                    JSON.stringify(initialNotes),
+                    now,
+                    now,
+                ]
+            },
+            {
+                sql: `INSERT INTO collab_activity (agent_id, action, target_type, target_id, details, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+                args: [
+                    input.created_by || 'human',
+                    'task_created',
+                    'task',
+                    taskId,
+                    JSON.stringify({ title: rest.title }),
+                    now,
+                ]
+            }
+        ]);
 
-        return task;
+        return await getTaskOrThrow(taskId);
     },
 
     async updateTask({ id, actor_agent_id = null, ...updates }) {
         const existingTask = await getTaskOrThrow(id);
+        const now = new Date().toISOString();
 
+        // Handle note append
         if (updates.note) {
             const newNote = {
                 agent_id: actor_agent_id,
@@ -929,38 +954,60 @@ export const collabService = {
             delete updates.note;
         }
 
-        const task = await collabPersistence.tasks.update(id, updates);
+        // FIX: Atomic task update — build update fields and batch all operations.
+        const fields = [];
+        const params = [];
+
+        if (updates.title !== undefined) { fields.push('title = ?'); params.push(updates.title); }
+        if (updates.description !== undefined) { fields.push('description = ?'); params.push(updates.description); }
+        if (updates.status !== undefined) { fields.push('status = ?'); params.push(updates.status); }
+        if (updates.priority !== undefined) { fields.push('priority = ?'); params.push(updates.priority); }
+        if (updates.assigned_agent !== undefined) { fields.push('assigned_agent = ?'); params.push(updates.assigned_agent); }
+        if (updates.file_paths !== undefined) { fields.push('file_paths = ?'); params.push(JSON.stringify(updates.file_paths)); }
+        if (updates.depends_on !== undefined) { fields.push('depends_on = ?'); params.push(JSON.stringify(updates.depends_on)); }
+        if (updates.result !== undefined) { fields.push('result = ?'); params.push(updates.result ? JSON.stringify(updates.result) : null); }
+        if (updates.notes !== undefined) { fields.push('notes = ?'); params.push(JSON.stringify(updates.notes)); }
+
+        if (fields.length === 0) return existingTask;
+
+        fields.push('updated_at = ?');
+        params.push(now);
+        params.push(id);
+
+        const statements = [];
+
+        // Task update
+        statements.push({ sql: `UPDATE collab_tasks SET ${fields.join(', ')} WHERE id = ?`, args: params });
+
+        // Lock release if marking done
         if (updates.status === 'done') {
-            await collabPersistence.locks.releaseForTask(id);
+            statements.push({ sql: `DELETE FROM collab_file_locks WHERE task_id = ?`, args: [id] });
         }
 
+        // Activity log
         const activityDetails = { ...updates };
         delete activityDetails.notes;
-
-        await logActivity({
-            agent_id: actor_agent_id,
-            action: 'task_updated',
-            target_type: 'task',
-            target_id: id,
-            details: activityDetails,
+        statements.push({
+            sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            args: [uuid(), actor_agent_id || 'human', 'task_updated', 'task', id, JSON.stringify(activityDetails), now]
         });
 
-        return task;
+        await db.batch(statements);
+        return await getTaskOrThrow(id);
     },
 
+    // FIX: Atomic task deletion — lock release + task delete + activity log in batch.
     async deleteTask({ id, actor_agent_id = null }) {
         await getTaskOrThrow(id);
+        const now = new Date().toISOString();
 
-        await collabPersistence.locks.releaseForTask(id);
-        await collabPersistence.tasks.delete(id);
-
-        await logActivity({
-            agent_id: actor_agent_id,
-            action: 'task_deleted',
-            target_type: 'task',
-            target_id: id,
-            details: {},
-        });
+        await db.batch([
+            { sql: `DELETE FROM collab_file_locks WHERE task_id = ?`, args: [id] },
+            { sql: `DELETE FROM collab_tasks WHERE id = ?`, args: [id] },
+            { sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`, args: [uuid(), actor_agent_id || 'human', 'task_deleted', 'task', id, '{}', now] }
+        ]);
 
         return { ok: true };
     },
@@ -1067,13 +1114,9 @@ export const collabService = {
             });
         }
 
+        // FIX: Atomic pipeline creation — wrap all operations in batch.
         const pipelineId = uuid();
-        const pipeline = await collabPersistence.pipelines.create({
-            id: pipelineId,
-            pipeline_type,
-            stages: definition.stages,
-            trigger_task_id,
-        });
+        const now = new Date().toISOString();
 
         const triggerTask = trigger_task_id
             ? await collabPersistence.tasks.getById(trigger_task_id)
@@ -1092,18 +1135,31 @@ export const collabService = {
             filePaths: stageTask.file_paths,
         });
 
-        await logActivity({
-            agent_id: actor_agent_id,
-            action: 'pipeline_started',
-            target_type: 'pipeline',
-            target_id: pipelineId,
-            details: {
-                type: pipeline_type,
-                name: definition.name,
-                stage_task_id: stageTask.id,
-                auto_assignment: autoAssignment,
-            },
+        const pipeline = await collabPersistence.pipelines.create({
+            id: pipelineId,
+            pipeline_type,
+            stages: definition.stages,
+            trigger_task_id,
         });
+
+        // Batch pipeline create + activity log
+        await db.batch([
+            {
+                sql: `INSERT INTO collab_pipelines (id, pipeline_type, stages, trigger_task_id, current_stage_index, status, created_at, updated_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                args: [pipelineId, pipeline_type, JSON.stringify(definition.stages), trigger_task_id || null, 0, 'running', now, now]
+            },
+            {
+                sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                args: [uuid(), actor_agent_id || 'human', 'pipeline_started', 'pipeline', pipelineId, JSON.stringify({
+                    type: pipeline_type,
+                    name: definition.name,
+                    stage_task_id: autoAssignment.task?.id ?? stageTask.id,
+                    auto_assignment: autoAssignment,
+                }), now]
+            }
+        ]);
 
         return {
             pipeline,
@@ -1268,6 +1324,8 @@ export const collabService = {
             await getAgentOrThrow(target_id);
         }
 
+        // FIX: Atomic message send — message + activity log in single batch.
+        const now = new Date().toISOString();
         const message = await collabPersistence.messages.create({
             sender_id,
             target_id: target_id || 'all',
@@ -1292,17 +1350,17 @@ export const collabService = {
             timestamp: message.created_at,
         };
 
-        // Log the thought-thread
-        await logActivity({
-            agent_id: sender_id,
-            action: 'message_sent',
-            target_type: 'agent',
-            target_id: target_id || 'all',
-            details: { 
-                glyph: message.glyph,
-                has_bytecode: !!bytecode,
-            },
-        });
+        // Batch message + activity log
+        await db.batch([
+            {
+                sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                args: [uuid(), sender_id, 'message_sent', 'agent', target_id || 'all', JSON.stringify({
+                    glyph: message.glyph,
+                    has_bytecode: !!bytecode,
+                }), now]
+            }
+        ]);
 
         // Emit for real-time subscribers (e.g. SSE bridge)
         this.events.emit('message_sent', normalizedMessage);

@@ -59,6 +59,17 @@ verseIRMicroprocessors.register('pixel.transmute', async (payload, context) => {
   return transmuteAIArt(payload, context);
 });
 
+// --- Animation Microprocessors (Lazy) ---
+verseIRMicroprocessors.register('pixel.compileAnimation', async (payload, context) => {
+  const { compileAnimation } = await import('./pixel/AnimationProcessor.js');
+  return compileAnimation(payload, context);
+});
+
+verseIRMicroprocessors.register('pixel.calculateRotation', async (payload, context) => {
+  const { calculateRotation } = await import('./pixel/AnimationProcessor.js');
+  return calculateRotation(payload, context);
+});
+
 // --- Symmetry AMP Microprocessors ---
 verseIRMicroprocessors.register('amp.symmetry', async (payload, context) => {
   const { runSymmetryAmpProcessor } = await import('../pixelbrain/symmetry-amp.js');

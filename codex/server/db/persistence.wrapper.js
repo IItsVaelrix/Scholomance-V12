@@ -27,6 +27,20 @@ export function createDbWrapper(options) {
             async batch(statements) {
                 return await client.batch(statements);
             },
+            async transaction(callback) {
+                // libsql batch is atomic by default when not in read-only mode
+                // Use execute with BEGIN/COMMIT wrappers for explicit transaction
+                const results = [];
+                await client.execute({ sql: 'BEGIN' });
+                try {
+                    results.push(await callback(client));
+                    await client.execute({ sql: 'COMMIT' });
+                    return results;
+                } catch (err) {
+                    await client.execute({ sql: 'ROLLBACK' });
+                    throw err;
+                }
+            },
             async close() {
                 await client.close();
             }
@@ -64,6 +78,14 @@ export function createDbWrapper(options) {
                     }
                 });
                 transaction(statements);
+                return results;
+            },
+            async transaction(callback) {
+                const results = [];
+                const tx = db.transaction(() => {
+                    results.push(callback(db));
+                });
+                tx();
                 return results;
             },
             async close() {

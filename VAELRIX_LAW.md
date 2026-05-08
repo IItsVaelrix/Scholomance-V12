@@ -1,7 +1,7 @@
 # VAELRIX_LAW.md
 ## The Source of Truth
 
-> Read first: `SHARED_PREAMBLE.md` → this file.
+> Read first: `SHARED_PREAMBLE.md` → this file. ARCH-PRIORITY: docs/skills loaded every new read of @VAELRIX_LAW
 
 **Version: 1.13** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
 

@@ -41,7 +41,7 @@
   border-bottom: 1px solid var(--ritual-border, hsla(43, 48%, 48%, 0.22));
   background: var(--ritual-abyss, rgba(9, 9, 22, 0.95));
   backdrop-filter: blur(12px);
-  z-index: 100;
+  z-index: var(--z-system);
 }
 
 .ide-topbar-left {
@@ -130,7 +130,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2, 0.5rem);
-  z-index: var(--z-system, 1000);
+  z-index: var(--z-system);
   pointer-events: none;
 }
 
@@ -223,7 +223,7 @@
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: var(--text-2xs);
   color: var(--read-text-muted);
-  z-index: 100;
+  z-index: var(--z-system);
 }
 
 .ide-statusbar-left {
@@ -443,7 +443,7 @@
   background: hsla(43, 48%, 48%, 0.1);
   transition: background 0.2s, box-shadow 0.2s;
   position: relative;
-  z-index: 10;
+  z-index: var(--z-above);
   cursor: col-resize;
 }
 
@@ -456,7 +456,7 @@
   left: -8px;
   right: -8px;
   cursor: col-resize;
-  z-index: 11;
+  z-index: var(--z-above);
 }
 
 .sidebar-resize-handle:hover,
@@ -3575,13 +3575,13 @@
   position: relative;
   display: inline;
   margin: 0;
-  padding: 0 var(--vb-viseme-padding-x, 0);
-  border-radius: var(--vb-viseme-radius, 0.2em);
+  padding: 0 !important;
+  border-radius: var(--radius-sm, 0.25rem);
   background: none;
   font: inherit;
   font-weight: var(--vb-viseme-weight, inherit);
   line-height: inherit;
-  letter-spacing: var(--vb-viseme-tracking, inherit);
+  letter-spacing: normal !important;
   word-spacing: inherit;
   cursor: text;
   user-select: text;

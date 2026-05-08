@@ -32,6 +32,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   const [tooltipState, setTooltipState] = useState({ visible: false, token: null, position: { x: 0, y: 0 } });
 
   const textareaRef = useRef(null);
+  const predictRequestRef = useRef(0);
   const { theme } = useTheme();
   
   const {
@@ -91,11 +92,13 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   useEffect(() => {
     if (!isFocused || !predictorReady || !text) return;
     const timeoutId = setTimeout(async () => {
+      const requestId = ++predictRequestRef.current;
       const pos = textareaRef.current.selectionStart;
       const textBefore = text.substring(0, pos);
       const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
       const prefix = lastWordMatch ? lastWordMatch[1] : '';
       const suggestions = await predict(prefix, null, 5);
+      if (requestId !== predictRequestRef.current) return;
       if (Array.isArray(suggestions)) {
         setIntellisenseSuggestions(suggestions.map(s => ({ token: s })));
       }

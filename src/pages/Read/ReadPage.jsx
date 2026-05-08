@@ -121,7 +121,7 @@ export default function ReadPage() {
   const auroraLevel = useAuroraLevel();
   const { scrolls, saveScroll, deleteScroll, getScrollById, activeScrollId, setActiveScrollId } = useScrolls();
   const { addXP, progression } = useProgression();
-  const [isEditable, setIsEditable] = useState(false);
+  const [isEditable, setIsEditable] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [editorTitle, setEditorTitle] = useState("");
@@ -373,7 +373,7 @@ export default function ReadPage() {
     setEditorContent(String(scroll.content || ""));
     issueEditorDocumentIdentity(id);
     setIsEditing(false);
-    setIsEditable(false);
+    setIsEditable(true);
     setHighlightedLines([]);
   }, [bumpAutosaveContext, getScrollById, issueEditorDocumentIdentity, setActiveScrollId]);
 
@@ -1104,7 +1104,7 @@ export default function ReadPage() {
                         />
                       </div>
                     )}
-                    {isTruesight && (
+                    {analysisMode === ANALYSIS_MODES.VOWEL && (
                       <div className="sidebar-sub-panel">
                         <VowelFamilyPanel
                           visible={true}

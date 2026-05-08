@@ -10,7 +10,7 @@ function getSettingsEndpoint() {
 
 const DEFAULT_SETTINGS = {
   theme: 'dark',
-  truesightEnabled: true,
+  truesightEnabled: false,
   reducedMotion: false,
   fontSize: 'medium',
   compactMode: false,

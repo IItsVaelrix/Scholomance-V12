@@ -1,11 +1,13 @@
 # Dead Code Report
 
-Generated at: 2026-04-26T19:38:28.849Z
+Generated at: 2026-05-08T11:51:34.017Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
+- [ ] src/codex/animation/bytecode-bridge/qa/blueprintQA.ts
 - [ ] src/components/ArchiveEventRingPulse.jsx
+- [ ] src/lib/css/schoolStyles.js
 - [ ] src/lib/math/quantization/index.js
 - [ ] src/lib/math/quantization/turboquant.adapter.js
 - [ ] src/lib/math/quantization/turboquant.js
@@ -27,36 +29,91 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/types/lib/phonological.ts
 - [ ] src/types/lib/pls.ts
 - [ ] src/types/lib/rhyme.ts
+- [ ] src/ui/animation/adapters/motionToFramerProps.ts
+- [ ] src/ui/animation/hooks/useAnimationIntent.ts
+- [ ] src/ui/animation/hooks/useCursorSync.ts
+- [ ] src/ui/animation/hooks/useResolvedMotion.ts
 - [ ] src/workers/microprocessor.worker.js
 - [ ] codex/core/animation/contracts/motion-contract.ts
 - [ ] codex/core/animation/processors/dimension-processor.ts
-- [ ] codex/core/pixelbrain/color-byte-mapping.js
+- [ ] codex/core/phonology/phonemeAlignment.js
 - [ ] codex/core/pixelbrain/coord-symmetry-errors.js
-- [ ] codex/core/pixelbrain/coordinate-mapping.js
 - [ ] codex/core/pixelbrain/dimension-formula-compiler.ts
-- [ ] codex/core/pixelbrain/extension-registry.js
 - [ ] codex/core/pixelbrain/extensions/physics-extensions.js
 - [ ] codex/core/pixelbrain/extensions/style-extensions.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
-- [ ] codex/core/pixelbrain/procedural-noise.js
-- [ ] codex/core/pixelbrain/token-to-bytecode.js
 - [ ] codex/core/pixelbrain-phase3.js
-- [ ] codex/core/token-graph/judiciary.js
-- [ ] codex/core/tokenizer.js
-- [ ] codex/server/collab/mcp-probe.js
 - [ ] codex/server/services/imageAnalysis.service.js
+- [ ] codex/server/services/rhyme-astrology/indexRepo.js
+- [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
 
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
 
 - [ ] `initAnimationAmp` in `src/codex/animation/amp/runAnimationAmp.ts`
-- [ ] `getActiveAnimation` in `src/codex/animation/amp/runAnimationAmp.ts`
 - [ ] `clearActiveAnimation` in `src/codex/animation/amp/runAnimationAmp.ts`
 - [ ] `shutdownAnimationAmp` in `src/codex/animation/amp/runAnimationAmp.ts`
 - [ ] `MotionBytecodeInstruction` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
 - [ ] `decodeMotionBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
 - [ ] `hashMotionBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
 - [ ] `prettyPrintBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
+- [ ] `BackendAdapterCapabilities` in `src/codex/animation/bytecode-bridge/adapters/backendAdapters.ts`
+- [ ] `AdapterApplyOptions` in `src/codex/animation/bytecode-bridge/adapters/backendAdapters.ts`
+- [ ] `TargetSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `EasingSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `EnvelopeSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `ScalarTransformSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `TransformSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `SymmetrySpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `GridSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `AnchorSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `CompositingSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `BackendHintsSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `ConstraintSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `QASpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `MetadataSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `AnimationPresetV1Schema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `DiagnosticEntrySchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `KeyframeSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `CSSMotionPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `PhaserMotionPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `CoordinateSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `PixelBrainFormulaPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `BytecodeInstructionSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `MotionBytecodeArtifactSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `CompiledAnimationOutputSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `BlueprintParseResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `BlueprintValidateResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `BlueprintCompileResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `isAnimationBlueprint` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `isCompiledAnimationOutput` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
+- [ ] `TargetSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `EasingSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `ScalarTransformSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `EnvelopeMap` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `AnchorSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `CompositingSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `BackendHints` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `ConstraintSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `QASpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `MetadataSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `KeyframeSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `CoordinateSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
+- [ ] `BridgeExecuteOptions` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `BridgeExecuteResult` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `parseAndValidate` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `compileToTargets` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `getAdapterCapabilities` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `adapterSupports` in `src/codex/animation/bytecode-bridge/index.ts`
+- [ ] `AssertionResult` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `QAReport` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `expectBlueprintInvariant` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `expectEnvelopeBound` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `expectDeterministicCompile` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `generateQAReport` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `createBlueprintFixture` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `assertBackendParity` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
+- [ ] `BlueprintQA` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
 - [ ] `AnimationTriggerSchema` in `src/codex/animation/contracts/animation.schemas.ts`
 - [ ] `AnimationRendererSchema` in `src/codex/animation/contracts/animation.schemas.ts`
 - [ ] `ProcessorStageSchema` in `src/codex/animation/contracts/animation.schemas.ts`
@@ -70,7 +127,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `AnimationPresetSchema` in `src/codex/animation/contracts/animation.schemas.ts`
 - [ ] `isAnimationIntent` in `src/codex/animation/contracts/animation.schemas.ts`
 - [ ] `isMotionOutput` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `validateAnimationPreset` in `src/codex/animation/contracts/animation.schemas.ts`
 - [ ] `AnimationRenderer` in `src/codex/animation/contracts/animation.types.ts`
 - [ ] `ProcessorStage` in `src/codex/animation/contracts/animation.types.ts`
 - [ ] `TraceEntry` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
@@ -117,7 +173,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BookIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsRightIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsLeftIcon` in `src/components/Icons.jsx`
-- [ ] `schoolToBadgeClass` in `src/data/library.js`
 - [ ] `XP_SOURCES` in `src/data/progression_constants.js`
 - [ ] `RHYME_SUBTYPES` in `src/data/rhymeScheme.patterns.js`
 - [ ] `getSchoolById` in `src/data/schools.js`
@@ -143,6 +198,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `emitBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `emitStasisBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `configureZodForCsp` in `src/lib/config/zod.config.js`
+- [ ] `generateLockedSchoolStyles` in `src/lib/css/schoolStyles.js`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
 - [ ] `GENRES` in `src/lib/literaryClassifier.js`
 - [ ] `LITERARY_DEVICES` in `src/lib/literaryDevices.detector.js`
@@ -162,10 +218,14 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
 - [ ] `isComplexScheme` in `src/lib/rhymeScheme.detector.js`
 - [ ] `SyntaxAnalyzer` in `src/lib/syntax.layer.js`
+- [ ] `classifySyntaxToken` in `src/lib/syntax.layer.js`
+- [ ] `oklchToRgb` in `src/lib/truesight/color/oklch.js`
 - [ ] `AdaptiveGridTopology` in `src/lib/truesight/compiler/adaptiveWhitespaceGrid.ts`
 - [ ] `measureTextWidth` in `src/lib/truesight/compiler/adaptiveWhitespaceGrid.ts`
-- [ ] `ARCHIVED_MODES` in `src/lib/truesight/compiler/analysisModes.js`
+- [ ] `COMPILER_DEPTHS` in `src/lib/truesight/compiler/analysisModes.js`
+- [ ] `resolveCompilerDepth` in `src/lib/truesight/compiler/analysisModes.js`
 - [ ] `TRUESIGHT_ANALYSIS_MODES` in `src/lib/truesight/compiler/analysisModes.js`
+- [ ] `ARCHIVED_MODES` in `src/lib/truesight/compiler/analysisModes.js`
 - [ ] `WORD_PATTERN` in `src/lib/wordTokenization.js`
 - [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
 - [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
@@ -201,6 +261,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `RhymeSubtype` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGate` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGatingStats` in `src/types/lib/rhyme.ts`
+- [ ] `FramerMotionProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
+- [ ] `motionToFramerProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
+- [ ] `CursorSyncBlueprint` in `src/ui/animation/hooks/useCursorSync.ts`
+- [ ] `CursorSyncOutput` in `src/ui/animation/hooks/useCursorSync.ts`
+- [ ] `compileCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
+- [ ] `useCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
+- [ ] `useResolvedMotion` in `src/ui/animation/hooks/useResolvedMotion.ts`
 - [ ] `RitualPredictionCandidate` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `PredictionPixelBrainProjection` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `ArbiterOptions` in `codex/core/animation/arbiter/ArbiterAMP.ts`
@@ -210,25 +277,50 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DimensionProcessor` in `codex/core/animation/processors/dimension-processor.ts`
 - [ ] `BASE_MP_REGEN` in `codex/core/combat.balance.js`
 - [ ] `COMBAT_RARITY_TIERS` in `codex/core/combat.balance.js`
-- [ ] `getFailureCastModifier` in `codex/core/combat.balance.js`
 - [ ] `computeVerseEfficiency` in `codex/core/combat.balance.js`
 - [ ] `getCombatTotalScore` in `codex/core/combat.scoring.js`
 - [ ] `getCombatTraces` in `codex/core/combat.scoring.js`
 - [ ] `calculateCombatScore` in `codex/core/combat.scoring.js`
+- [ ] `COMBAT_STATES` in `codex/core/combat.session.js`
+- [ ] `MP_COST_PER_CAST` in `codex/core/combat.session.js`
+- [ ] `createInitialCombatStats` in `codex/core/combat.session.js`
+- [ ] `buildSpellHistoryEntry` in `codex/core/combat.session.js`
+- [ ] `updateCombatStats` in `codex/core/combat.session.js`
+- [ ] `createInitialCombatState` in `codex/core/combat.session.js`
+- [ ] `setCombatState` in `codex/core/combat.session.js`
+- [ ] `applyPlayerCastPreview` in `codex/core/combat.session.js`
+- [ ] `applyResolvedPlayerCast` in `codex/core/combat.session.js`
+- [ ] `restoreFailedPlayerCast` in `codex/core/combat.session.js`
+- [ ] `startOpponentCast` in `codex/core/combat.session.js`
+- [ ] `completeOpponentTurn` in `codex/core/combat.session.js`
+- [ ] `markCombatVictory` in `codex/core/combat.session.js`
+- [ ] `markCombatDefeat` in `codex/core/combat.session.js`
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
 - [ ] `TEMPLATE_VOCAB` in `codex/core/commentary/phrase-bank.js`
 - [ ] `MODEL_CORPUS` in `codex/core/commentary/phrase-bank.js`
+- [ ] `abyssalResonanceHeuristic` in `codex/core/heuristics/abyssal_resonance.js`
+- [ ] `verseIRAmplifierHeuristic` in `codex/core/heuristics/verseir_amplifier.js`
+- [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `REPAIR_RECOMMENDATIONS` in `codex/core/immunity/repair.recommendations.js`
+- [ ] `JudiciaryEngine` in `codex/core/judiciary.js`
+- [ ] `normalizeAbyssWord` in `codex/core/lexicon.abyss.js`
+- [ ] `createMicroprocessorFactory` in `codex/core/microprocessors/factory.js`
+- [ ] `getUnlockedSynergies` in `codex/core/nexus.registry.js`
 - [ ] `DOCTRINES` in `codex/core/opponent.engine.js`
+- [ ] `PhoneticMatcher` in `codex/core/phonetic_matcher.js`
 - [ ] `ARPABET_CONSONANTS` in `codex/core/phonology/phoneme.constants.js`
+- [ ] `alignPhonemes` in `codex/core/phonology/phonemeAlignment.js`
 - [ ] `PHONOLOGICAL_PROCESS_RULES` in `codex/core/phonology/phonologicalProcesses.js`
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
 - [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/anti-alias-control.js`
 - [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/anti-alias-control.js`
-- [ ] `getRecoveryHintsForError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createTypeMismatchError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
+- [ ] `generatePaletteFromSemantics` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
 - [ ] `COORDSYM_ERROR_CODES` in `codex/core/pixelbrain/coord-symmetry-errors.js`
 - [ ] `COORDSYM_ERROR_METADATA` in `codex/core/pixelbrain/coord-symmetry-errors.js`
@@ -246,7 +338,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DeviceClass` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `Orientation` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `RuntimeBindings` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
-- [ ] `BytecodeInstruction` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `REGISTERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `UNIT_MULTIPLIERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `detectDeviceClass` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
@@ -312,19 +403,39 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DEFAULT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `COMBAT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `getCombatScoringHeuristics` in `codex/core/scoring.defaults.js`
-- [ ] `INTENTS` in `codex/core/semantics.registry.js`
-- [ ] `arbitrateGraphCandidates` in `codex/core/token-graph/judiciary.js`
+- [ ] `MOOD_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `MATERIAL_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `STYLE_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `EFFECT_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `COMPOSITION_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `COLOR_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `entitiesToMathConstraints` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `constraintsToPixelBrainParams` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `getSymbolLibrary` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `cadenceClosureWeight` in `codex/core/speaking/prosody.js`
+- [ ] `parseWeave` in `codex/core/spellweave.engine.js`
 - [ ] `createTokenizer` in `codex/core/tokenizer.js`
+- [ ] `parseNaturalLanguagePrompt` in `codex/core/verseir-amplifier/plugins/naturalLanguageAmp.js`
+- [ ] `DEFAULT_VERSEIR_AMPLIFIER_WEIGHT` in `codex/core/verseir-amplifier/shared.js`
+- [ ] `resolveAmplifierDomains` in `codex/core/verseir-amplifier/shared.js`
+- [ ] `estimateTierAmplifierRoute` in `codex/core/verseir-amplifier/shared.js`
+- [ ] `WORLD_ENTITY_KINDS` in `codex/core/world.entity.js`
+- [ ] `normalizeWorldEntityKind` in `codex/core/world.entity.js`
+- [ ] `inferWorldTags` in `codex/core/world.entity.js`
+- [ ] `inferWorldSchool` in `codex/core/world.entity.js`
+- [ ] `inferMudEntityType` in `codex/core/world.entity.js`
+- [ ] `inferMudRarity` in `codex/core/world.entity.js`
+- [ ] `buildWorldEntitySummary` in `codex/core/world.entity.js`
 - [ ] `clearAllListeners` in `codex/runtime/eventBus.js`
 - [ ] `WORD_LOOKUP_EVENTS` in `codex/runtime/pipeline.js`
 - [ ] `resetRateLimit` in `codex/runtime/rateLimit.js`
+- [ ] `requestWordLookup` in `codex/runtime/wordLookupPipeline.js`
+- [ ] `clearWordLookupCache` in `codex/runtime/wordLookupPipeline.js`
 - [ ] `getWordLookupCacheTTL` in `codex/runtime/wordLookupPipeline.js`
 - [ ] `getWordLookupRateLimit` in `codex/runtime/wordLookupPipeline.js`
 - [ ] `AUDIO_ADMIN_HEADER` in `codex/server/audioAuth.js`
 - [ ] `readHeaderAsString` in `codex/server/audioAuth.js`
 - [ ] `secureTokenEquals` in `codex/server/audioAuth.js`
-- [ ] `revokeAgentKey` in `codex/server/collab/collab.agent-auth.js`
-- [ ] `stopAgentQaSweep` in `codex/server/collab/collab.agent-qa.js`
 - [ ] `OWNERSHIP_MAP` in `codex/server/collab/collab.pipelines.js`
 - [ ] `isPathAllowedForRole` in `codex/server/collab/collab.pipelines.js`
 - [ ] `MAX_PAGE_LIMIT` in `codex/server/collab/collab.schemas.js`
@@ -333,6 +444,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BugStatus` in `codex/server/collab/collab.schemas.js`
 - [ ] `BugSeverity` in `codex/server/collab/collab.schemas.js`
 - [ ] `BugSourceType` in `codex/server/collab/collab.schemas.js`
+- [ ] `IdentityPacketSchema` in `codex/server/collab/collab.schemas.js`
 - [ ] `registerCollabMcpBridge` in `codex/server/collab/mcp-bridge.js`
 - [ ] `getCanonicalBridgeLaunchSpec` in `codex/server/collab/mcp-probe.js`
 - [ ] `classifyProbeFailure` in `codex/server/collab/mcp-probe.js`

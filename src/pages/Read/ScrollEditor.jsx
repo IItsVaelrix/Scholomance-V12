@@ -275,6 +275,15 @@ const ScrollEditor = forwardRef(({
 
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef(null);
+  const completionsTimeoutRef = useRef(null);
+  const completionsRequestRef = useRef(0);
+
+  const syncOverlayToContent = useCallback((newContent) => {
+    setContentForOverlay(newContent);
+    isTypingRef.current = false;
+  }, []);
   const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
@@ -757,10 +766,12 @@ const ScrollEditor = forwardRef(({
       return;
     }
 
+    const requestId = ++completionsRequestRef.current;
+
     const textBefore = value.substring(0, pos);
     const lastWordMatch = textBefore.match(/([a-zA-Z']+)$/);
     const prefix = lastWordMatch ? lastWordMatch[1] : "";
-    
+
     // Only trigger if we have some text or are at a word boundary
     if (prefix.length === 0 && !textBefore.endsWith(' ')) {
       setIntellisenseSuggestions([]);
@@ -770,7 +781,7 @@ const ScrollEditor = forwardRef(({
     const lines = textBefore.split("\n");
     const lineIndex = lines.length - 1;
     const currentLineText = lines[lineIndex] || "";
-    
+
     // Build context for PLS
     const context = {
       text: value,
@@ -788,6 +799,7 @@ const ScrollEditor = forwardRef(({
     };
 
     const suggestions = await getCompletions(context, options);
+    if (requestId !== completionsRequestRef.current) return;
     setIntellisenseSuggestions(suggestions || []);
     setIntellisenseIndex(0);
 
@@ -803,7 +815,7 @@ const ScrollEditor = forwardRef(({
     if (nextValue.length > MAX_CONTENT_LENGTH) {
       const truncated = nextValue.slice(0, MAX_CONTENT_LENGTH);
       setContent(truncated);
-      setContentForOverlay(truncated);
+      if (!isTruesight) setContentForOverlay(truncated);
       if (onContentChange) {
         onContentChange(truncated);
       }
@@ -812,15 +824,33 @@ const ScrollEditor = forwardRef(({
 
     setContent(nextValue);
     emitCursorChange(event.target);
-    setContentForOverlay(nextValue);
+    
+    // TYPING FREEZE: If Truesight is active, we delay the overlay update 
+    // to prevent DOM re-mounting and caret drift during rapid input.
+    if (isTruesight) {
+      isTypingRef.current = true;
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => {
+        syncOverlayToContent(nextValue);
+      }, 400);
+    } else {
+      setContentForOverlay(nextValue);
+    }
     
     if (onContentChange) {
       onContentChange(nextValue);
     }
 
-    // Trigger completions
-    updateCompletions(nextValue, pos);
-  }, [emitCursorChange, onContentChange, updateCompletions]);
+    // COMPLETIONS DEBOUNCE: Defer IntelliSense compute (regex walk + syntax-layer
+    // lookup + async getCompletions + layout-forcing cursor measurement) off the
+    // keystroke critical path. 120ms is below user-perceptible threshold and
+    // strictly less than the 400ms typing-freeze, so the two timers do not
+    // contend. See SISP-FIX-v1-INPUT-LAG-001.
+    if (completionsTimeoutRef.current) clearTimeout(completionsTimeoutRef.current);
+    completionsTimeoutRef.current = setTimeout(() => {
+      updateCompletions(nextValue, pos);
+    }, 120);
+  }, [emitCursorChange, onContentChange, updateCompletions, isTruesight, syncOverlayToContent]);
 
   return (
     <motion.div
