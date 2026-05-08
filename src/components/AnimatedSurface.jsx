@@ -19,7 +19,8 @@ import { useAnimationSpec } from '../hooks/useAnimationSpec';
  * @param {string} [props.as] - HTML tag to render (defaults to 'div')
  */
 export const AnimatedSurface = React.forwardRef(function AnimatedSurface({ 
-  signal, 
+  signal,
+  motion, 
   className = '', 
   children, 
   as: Component = 'div',
@@ -28,27 +29,27 @@ export const AnimatedSurface = React.forwardRef(function AnimatedSurface({
 }, ref) {
   const spec = useAnimationSpec(signal);
 
-  if (!spec) {
-    return (
-      <Component ref={ref} className={className} style={style} {...props}>
-        {children}
-      </Component>
-    );
-  }
+  // V12 PERFORMANCE: Support direct motion output from AMP
+  const effectiveStyle = {
+    ...spec?.cssVars,
+    ...(motion?.cssVariables || {}),
+    ...style,
+  };
 
   const combinedClass = [
     className,
-    spec.animClass,
-    ...(spec.overlays.map(o => o.class)),
-    spec.emergent?.type === 'burst' ? 'burst-active' : null,
+    spec?.animClass,
+    ...(spec?.overlays?.map(o => o.class) || []),
+    spec?.emergent?.type === 'burst' ? 'burst-active' : null,
+    motion?.ok ? 'amp-active' : null,
   ].filter(Boolean).join(' ');
 
   return (
       <Component
       ref={ref}
       className={combinedClass}
-      style={{ ...spec.cssVars, ...style }}
-      aria-live={spec.emergent ? 'polite' : undefined}
+      style={effectiveStyle}
+      aria-live={spec?.emergent ? 'polite' : undefined}
       {...props}
     >
       {children}

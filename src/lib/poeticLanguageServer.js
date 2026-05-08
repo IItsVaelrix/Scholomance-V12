@@ -23,6 +23,7 @@ import { rankCandidates, DEFAULT_WEIGHTS } from './pls/ranker.js';
 import { createTokenGraphSemanticRepo } from '../../codex/services/token-graph/semantic.repo.js';
 import { createTokenGraphSequenceRepo } from '../../codex/services/token-graph/sequence.repo.js';
 import { createRitualPredictionEngine } from '../../codex/core/ritual-prediction/run.js';
+import { processorBridge } from './processor-bridge.js';
 
 function resolvePredictionSchool(phonemeEngine, analysis) {
   const vowelFamily = Array.isArray(analysis?.vowelFamily)
@@ -86,8 +87,15 @@ export class PoeticLanguageServer {
    * Call once after corpus is loaded.
    * @param {string[]} wordList
    */
-  buildIndex(wordList) {
-    this.rhymeIndex.build(wordList, this.phonemeEngine);
+  async buildIndex(wordList) {
+    // V12 PERFORMANCE: Offload to Microprocessor Factory for "Instant" page load
+    try {
+      const serializedIndex = await processorBridge.execute('pls.index', { wordList });
+      this.rhymeIndex.hydrate(serializedIndex);
+    } catch (err) {
+      console.warn('[PLS] Background indexing failed, falling back to main thread:', err);
+      this.rhymeIndex.build(wordList, this.phonemeEngine);
+    }
     this.ready = true;
   }
 

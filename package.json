@@ -43,7 +43,13 @@
     "mcp:collab": "node --env-file=.env codex/server/collab/mcp-bridge.js",
     "mcp:probe": "node --env-file=.env scripts/debug-mcp-bridge.js",
     "start:collab-daemon": "node scripts/collab-daemon.js",
-    "sync:render-secrets": "node scripts/sync-render-secrets.js"
+    "sync:render-secrets": "node scripts/sync-render-secrets.js",
+    "immune:scan": "node scripts/immunity-pre-commit.js --staged",
+    "immune:scan:all": "node scripts/immunity-pre-commit.js --all",
+    "immune:scan:json": "node scripts/immunity-pre-commit.js --staged --json",
+    "immune:stasis": "node tests/qa/immunity.stasis.test.js",
+    "immune:stasis:glyph": "node tests/qa/immunity.glyph-stasis.test.js",
+    "immune:stasis:all": "node tests/qa/immunity.stasis.test.js && node tests/qa/immunity.glyph-stasis.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",

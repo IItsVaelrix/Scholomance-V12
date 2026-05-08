@@ -19,6 +19,30 @@ import { readFileSync } from 'node:fs';
 import { encodeBytecodeError, ERROR_CATEGORIES, ERROR_CODES, ERROR_SEVERITY, MODULE_IDS } from '../pixelbrain/bytecode-error.js';
 
 /**
+ * Externalized allow-list patterns for protocol scanner.
+ * These patterns intentionally allow unresolved Promise calls in specific contexts.
+ * 
+ * Each entry:
+ *   - pattern: RegExp string tested against the line after the call expression
+ *   - reason: Human-readable explanation for the allowance
+ */
+export const PROTOCOL_ALLOW_LIST = Object.freeze([
+  {
+    pattern: '\\)\\s*\\.\\s*rejects',
+    reason: 'Jest/Vitest async assertion: expect(promise).rejects expects unresolved Promise',
+  },
+  {
+    pattern: '\\)\\s*\\.\\s*resolves',
+    reason: 'Jest/Vitest async assertion: expect(promise).resolves expects unresolved Promise',
+  },
+  {
+    pattern: '\\)\\s*\\.\\s*to\\.\\w+\\(',
+    reason: 'Jest/Vitest matcher chaining: expect(promise).toBeX() expects unresolved Promise',
+  },
+  // Add new patterns here with descriptive reason fields
+]);
+
+/**
  * Harvest async function names from a list of implementation modules.
  *
  * Catches three async declaration shapes:
@@ -106,10 +130,16 @@ export function scanProtocol(content, filePath, options = {}) {
             const cleaned = before.replace(/\/\*[\s\S]*?\*\//g, '');
             // Match `await` at the end of the cleaned prefix.
             if (/\bawait\s+$/.test(cleaned)) continue;
-            // Also tolerate `expect(<call>).rejects` patterns that intentionally
-            // pass the unresolved Promise into an async assertion.
+            // Check against externalized allow-list patterns
             const after = line.slice(m.index);
-            if (/\)\s*\.\s*rejects/.test(after)) continue;
+            const isAllowed = PROTOCOL_ALLOW_LIST.some(({ pattern }) => {
+              try {
+                return new RegExp(pattern).test(after);
+              } catch {
+                return false;
+              }
+            });
+            if (isAllowed) continue;
 
             const context = {
                 layer: 'protocol',

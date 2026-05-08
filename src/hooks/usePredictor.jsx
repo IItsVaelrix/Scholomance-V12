@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import { TriePredictor } from '../../codex/core/trie.js';
 import { Spellchecker } from '../../codex/core/spellchecker.js';
 import { createJudiciaryEngine } from '../../codex/core/judiciary.js';
@@ -12,6 +12,8 @@ import { ScholomanceDictionaryAPI } from '../lib/scholomanceDictionary.api.js';
 const MIN_CORPUS_WORD_LENGTH = 2;
 const VALIDATION_BATCH_MAX_SIZE = 500;
 const VALIDATION_BATCH_WINDOW_MS = 12;
+
+const PredictorContext = createContext(null);
 
 function normalizeCorpusWord(value) {
   const token = String(value || '').trim().toLowerCase();
@@ -80,7 +82,6 @@ function normalizeCorpusPayload(rawPayload) {
       addSequence(normalizedEntry.prev, normalizedEntry.next, normalizedEntry.weight);
     });
   } else if (Array.isArray(rawPayload)) {
-    // Legacy compatibility: when corpus.json is still a flat array, infer adjacent bigrams.
     for (let i = 0; i < rawPayload.length - 1; i++) {
       const prev = normalizeCorpusWord(rawPayload[i]);
       const next = normalizeCorpusWord(rawPayload[i + 1]);
@@ -190,11 +191,7 @@ function createBatchedDictionaryValidator(dictionaryAPI, {
   return { validateWord, cancel };
 }
 
-/**
- * Enhanced Hook for managing robust predictive text, spellchecking,
- * and the Poetic Language Server (PLS).
- */
-export function usePredictor() {
+export function PredictorProvider({ children }) {
   const [model] = useState(() => new TriePredictor());
   const [spellchecker] = useState(() => new Spellchecker());
   const [judiciary] = useState(() => createJudiciaryEngine());
@@ -210,27 +207,17 @@ export function usePredictor() {
   const [isReady, setIsReady] = useState(false);
   const [isDictionaryConnected, setIsDictionaryConnected] = useState(false);
   const plsRef = useRef(null);
-
-  // democracy layer
-  const getDemocraticChoice = useCallback((suggestions, syntaxContext = null) => {
-    // Convert raw suggestions into vote candidates
-    const candidates = suggestions.map((s) => ({
-      word: s.token || s,
-      layer: s.reason === 'phonetic' ? 'PHONEME'
-        : s.reason === 'edit' ? 'SPELLCHECK' : 'PREDICTOR',
-      confidence: s.score ? s.score / 2 : 0.8 // Normalize confidence
-    }));
-
-    return judiciary.vote(candidates, syntaxContext);
-  }, [judiciary]);
+  const loadAttemptedRef = useRef(false);
 
   useEffect(() => {
+    if (loadAttemptedRef.current) return;
+    loadAttemptedRef.current = true;
+
     let isDisposed = false;
     let cancelBatchValidator = null;
 
     async function loadCorpus() {
       try {
-        // Skip fetch if we're in a test environment without a proper URL structure
         if (typeof window === 'undefined' || !window.location || !window.location.origin) return;
 
         const response = await fetch('/corpus.json');
@@ -247,24 +234,42 @@ export function usePredictor() {
           return;
         }
 
-        // 1. Train Trie and Spellchecker (Vocabulary)
-        for (const word of words) {
-          model.insert(word);
-        }
-        spellchecker.init(words);
+        // V12 PERFORMANCE: Chunked training to prevent main-thread stasis (LCP optimization)
+        const yieldToMain = () => new Promise((resolve) => {
+          if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(() => resolve(), { timeout: 50 });
+          } else {
+            setTimeout(resolve, 0);
+          }
+        });
 
-        // 2. Train Bigrams (Natural Sequences)
-        for (const { prev, next, weight } of sequences) {
-          model.insert(prev, next, weight);
-          spellchecker.rememberSequence(prev, next, weight);
+        // 1. Train Trie and Spellchecker (Vocabulary) - Chunked
+        const VOCAB_BATCH_SIZE = 2000;
+        for (let i = 0; i < words.length; i += VOCAB_BATCH_SIZE) {
+          const chunk = words.slice(i, i + VOCAB_BATCH_SIZE);
+          for (const word of chunk) {
+            model.insert(word);
+          }
+          if (!isDisposed) spellchecker.init(chunk, i === 0);
+          await yieldToMain();
+          if (isDisposed) return;
         }
 
-        // Initialize PLS with the PhonemeEngine
+        // 2. Train Bigrams (Natural Sequences) - Chunked
+        const SEQ_BATCH_SIZE = 1500;
+        for (let i = 0; i < sequences.length; i += SEQ_BATCH_SIZE) {
+          const chunk = sequences.slice(i, i + SEQ_BATCH_SIZE);
+          for (const { prev, next, weight } of chunk) {
+            model.insert(prev, next, weight);
+            spellchecker.rememberSequence(prev, next, weight);
+          }
+          await yieldToMain();
+          if (isDisposed) return;
+        }
+
         await PhonemeEngine.ensureInitialized();
 
-        // Pre-fetch authority data for the top corpus words to ensure high quality initial suggestions
         const uniqueWords = [...new Set(words)];
-        // Limit to top 500 to avoid massive initial requests
         const authoritySample = uniqueWords.slice(0, 500);
         await PhonemeEngine.ensureAuthorityBatch(authoritySample);
 
@@ -275,12 +280,8 @@ export function usePredictor() {
             dictionaryAPI = ScholomanceDictionaryAPI;
             if (!isDisposed) setIsDictionaryConnected(true);
           } else {
-            const baseUrl = ScholomanceDictionaryAPI.getBaseUrl();
-            console.warn(`[Predictor] Scholomance Dictionary API unreachable at ${baseUrl} - running in offline mode.`);
             if (!isDisposed) setIsDictionaryConnected(false);
           }
-        } else if (!isDisposed) {
-          setIsDictionaryConnected(false);
         }
 
         const batchedValidator = (dictionaryAPI && typeof dictionaryAPI.validateBatch === 'function')
@@ -311,7 +312,7 @@ export function usePredictor() {
           spellchecker,
           dictionaryAPI,
         });
-        pls.buildIndex(words);
+        await pls.buildIndex(words);
         plsRef.current = pls;
 
         if (!isDisposed) setIsReady(true);
@@ -328,9 +329,16 @@ export function usePredictor() {
     };
   }, [model, spellchecker]);
 
-  /**
-   * Predicts words starting with prefix OR next word if prefix is empty but context exists.
-   */
+  const getDemocraticChoice = useCallback((suggestions, syntaxContext = null) => {
+    const candidates = suggestions.map((s) => ({
+      word: s.token || s,
+      layer: s.reason === 'phonetic' ? 'PHONEME'
+        : s.reason === 'edit' ? 'SPELLCHECK' : 'PREDICTOR',
+      confidence: s.score ? s.score / 2 : 0.8
+    }));
+    return judiciary.vote(candidates, syntaxContext);
+  }, [judiciary]);
+
   const predictDetailed = useCallback(async (prefix, contextWord = null, limit = 5, options = {}) => {
     if (!isReady) return [];
     const normalizedPrefix = normalizeCorpusWord(prefix);
@@ -364,29 +372,16 @@ export function usePredictor() {
       }
     }
 
-    if (normalizedPrefix) {
-      return model.predict(normalizedPrefix, limit);
-    }
-    if (normalizedContextWord) {
-      return model.predictNext(normalizedContextWord, limit);
-    }
+    if (normalizedPrefix) return model.predict(normalizedPrefix, limit);
+    if (normalizedContextWord) return model.predictNext(normalizedContextWord, limit);
     return [];
   }, [isReady, model, predictDetailed]);
 
-  /**
-   * PLS-powered completions with rhyme, meter, color, and ghost-line support.
-   * @param {import('../lib/poeticLanguageServer.js').PLSContext} context
-   * @param {object} [options]
-   * @returns {Promise<import('../lib/poeticLanguageServer.js').ScoredCandidate[]>}
-   */
   const getCompletions = useCallback(async (context, options) => {
     if (!isReady || !plsRef.current) return [];
     return plsRef.current.getCompletions(context, options);
   }, [isReady]);
 
-  /**
-   * Spellcheck a word
-   */
   const checkSpelling = useCallback(async (word) => {
     if (!isReady) return true;
     return spellchecker.checkAsync(word);
@@ -397,14 +392,28 @@ export function usePredictor() {
     return spellchecker.suggestAsync(word, limit, prevWord);
   }, [isReady, spellchecker]);
 
-  return {
+  const value = {
     predict,
     getCompletions,
     checkSpelling,
     getSpellingSuggestions,
     getDemocraticChoice,
     predictDetailed,
-    isReady,
+    ready: isReady,
     isDictionaryConnected,
   };
+
+  return (
+    <PredictorContext.Provider value={value}>
+      {children}
+    </PredictorContext.Provider>
+  );
+}
+
+export function usePredictor() {
+  const context = useContext(PredictorContext);
+  if (!context) {
+    throw new Error('usePredictor must be used within a PredictorProvider');
+  }
+  return context;
 }

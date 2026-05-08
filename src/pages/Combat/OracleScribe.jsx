@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVerseSynthesis } from '../../hooks/useVerseSynthesis.js';
-import { usePredictor } from '../../hooks/usePredictor.js';
+import { usePredictor } from '../../hooks/usePredictor.jsx';
 import { useWordLookup } from '../../hooks/useWordLookup.jsx';
 import { useTheme } from '../../hooks/useTheme.jsx';
 import { useAdaptivePalette } from '../../hooks/useAdaptivePalette.js';

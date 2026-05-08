@@ -6,7 +6,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { usePredictor } from "../../hooks/usePredictor.js";
+import { usePredictor } from "../../hooks/usePredictor.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 
 // New components

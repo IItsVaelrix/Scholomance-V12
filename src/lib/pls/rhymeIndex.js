@@ -55,6 +55,18 @@ export class RhymeIndex {
   }
 
   /**
+   * Hydrate the index from serialized data (usually from a worker).
+   * @param {Object} data - { rhymeKeyMap, vowelFamilyMap, allEntries, built }
+   */
+  hydrate(data) {
+    if (!data) return;
+    this.rhymeKeyMap = new Map(Object.entries(data.rhymeKeyMap || {}));
+    this.vowelFamilyMap = new Map(Object.entries(data.vowelFamilyMap || {}));
+    this.allEntries = data.allEntries || [];
+    this.built = data.built ?? true;
+  }
+
+  /**
    * Get all words sharing the same rhyme key.
    * @param {string} rhymeKey
    * @returns {{ token: string, vowelFamily: string, syllableCount: number, frequency: number }[]}

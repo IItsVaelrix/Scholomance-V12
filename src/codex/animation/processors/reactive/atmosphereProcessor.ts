@@ -28,8 +28,10 @@ const lastBlendedHsl: any = null;
 
 function applyAtmosphereVariables(overrides: any = {}) {
   const service = getAmbientPlayerService();
-  const ambientState = service.getState();
-  const auroraLevel = getAuroraLevel();
+  if (!service) return; // Guard for non-browser environments if service isn't available
+
+  const ambientState = service.getState?.() || { schoolId: null };
+  const auroraLevel = typeof getAuroraLevel === 'function' ? getAuroraLevel() : 0;
   
   // Priority: Overridden Dominant School > Detected School (Sonic Energy) > Active ambient station > Active song > Last selected ambient > Default
   const activeSchoolId = overrides.dominantSchool
@@ -41,7 +43,9 @@ function applyAtmosphereVariables(overrides: any = {}) {
   const school = SCHOOLS[activeSchoolId];
   if (!school) return;
   
-  const root = document.documentElement;
+  // LAW 15: Processors must be environment-agnostic.
+  // We calculate the values, but only apply to document if it exists.
+  const root = typeof document !== 'undefined' ? document.documentElement : null;
   
   // Use overridden blended HSL if provided, otherwise use school default
   const h = overrides.blendedHsl ? overrides.blendedHsl.h : school.colorHsl.h;
@@ -56,24 +60,27 @@ function applyAtmosphereVariables(overrides: any = {}) {
   const lightness = isActive ? Math.min(90, baseL + 5) : baseL;
   const glowAlpha = isActive ? 0.6 : 0.35;
 
-  root.style.setProperty("--active-school-color", generateSchoolColor(school.id));
-  root.style.setProperty("--active-school-h", String(h));
-  root.style.setProperty("--active-school-s", `${saturation}%`);
-  root.style.setProperty("--active-school-l", `${lightness}%`);
-  root.style.setProperty("--active-school-glow", `hsla(${h}, ${saturation}%, ${lightness}%, ${glowAlpha})`);
-  root.style.setProperty("--active-aurora-intensity", String(atmo.auroraIntensity * AURORA_FACTORS[auroraLevel]));
-  root.style.setProperty("--active-saturation", `${atmo.saturation}%`);
-  root.style.setProperty("--active-vignette-strength", String(atmo.vignetteStrength));
-  root.style.setProperty("--active-scanline-opacity", String(atmo.scanlineOpacity));
+  if (root) {
+    root.style.setProperty("--active-school-color", generateSchoolColor(school.id));
+    root.style.setProperty("--active-school-h", String(h));
+    root.style.setProperty("--active-school-s", `${saturation}%`);
+    root.style.setProperty("--active-school-l", `${lightness}%`);
+    root.style.setProperty("--active-school-glow", `hsla(${h}, ${saturation}%, ${lightness}%, ${glowAlpha})`);
+    root.style.setProperty("--active-aurora-intensity", String(atmo.auroraIntensity * AURORA_FACTORS[auroraLevel]));
+    root.style.setProperty("--active-saturation", `${atmo.saturation}%`);
+    root.style.setProperty("--active-vignette-strength", String(atmo.vignetteStrength));
+    root.style.setProperty("--active-scanline-opacity", String(atmo.scanlineOpacity));
+  }
   
   lastAppliedSchoolId = activeSchoolId;
 }
 
 function startAtmosphereLoop() {
-  if (typeof window === 'undefined') return;
+  if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined') return;
   if (rafId) return;
 
   const service = getAmbientPlayerService();
+  if (!service) return;
   
   const tick = () => {
     const level = service.getSignalLevel() || 0;
@@ -90,6 +97,7 @@ function initialize() {
   if (isInitialized || typeof window === 'undefined') return;
 
   const service = getAmbientPlayerService();
+  if (!service) return;
   
   // 1. Subscribe to Ambient Player Service
   service.subscribe((state: any) => {
@@ -101,17 +109,21 @@ function initialize() {
       currentAmbientState = { schoolId: state.schoolId, isActive };
       applyAtmosphereVariables();
       
-      document.documentElement.style.setProperty(
-        "--is-music-active",
-        isActive ? "1" : "0"
-      );
+      if (typeof document !== 'undefined') {
+        document.documentElement.style.setProperty(
+          "--is-music-active",
+          isActive ? "1" : "0"
+        );
+      }
     }
   });
 
   // 2. Subscribe to Aurora Level
-  subscribeToAuroraLevel(() => {
-    applyAtmosphereVariables();
-  });
+  if (typeof subscribeToAuroraLevel === 'function') {
+    subscribeToAuroraLevel(() => {
+      applyAtmosphereVariables();
+    });
+  }
 
   // 3. Start RAF Loop for signal modulation
   startAtmosphereLoop();

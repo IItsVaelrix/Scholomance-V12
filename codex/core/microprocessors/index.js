@@ -33,6 +33,11 @@ verseIRMicroprocessors.register('nlu.synthesizeVerse', async (payload, context) 
   return runSynthesis(payload, context);
 });
 
+verseIRMicroprocessors.register('pls.index', async (payload, context) => {
+  const { buildPlsIndex } = await import('./nlu/plsIndexProcessor.js');
+  return buildPlsIndex(payload);
+});
+
 // --- Pixel Microprocessors (Lazy) ---
 verseIRMicroprocessors.register('pixel.decode', async (payload, context) => {
   const { decodeBitStream } = await import('./pixel/BitStreamProcessor.js');
@@ -68,6 +73,11 @@ verseIRMicroprocessors.register('pixel.compileAnimation', async (payload, contex
 verseIRMicroprocessors.register('pixel.calculateRotation', async (payload, context) => {
   const { calculateRotation } = await import('./pixel/AnimationProcessor.js');
   return calculateRotation(payload, context);
+});
+
+verseIRMicroprocessors.register('amp.run', async (payload, context) => {
+  const { runAmpProcessor } = await import('./pixel/AmpRunProcessor.ts');
+  return runAmpProcessor(payload);
 });
 
 // --- Symmetry AMP Microprocessors ---

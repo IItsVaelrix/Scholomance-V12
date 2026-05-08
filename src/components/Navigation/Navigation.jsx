@@ -43,7 +43,6 @@ const MOBILE_ROUTE_COPY = {
 export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [isPending, startTransition] = useTransition();
   const activeSection = location.pathname.replace("/", "") || "watch";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navigatingPath, setNavigatingPath] = useState(null);
@@ -82,9 +81,7 @@ export default function Navigation() {
     }
     
     setNavigatingPath(path);
-    startTransition(() => {
-      navigate(path);
-    });
+    navigate(path);
   }, [navigate, location.pathname]);
 
   // ... (rest of the handlers and effects remain the same)
@@ -147,7 +144,7 @@ export default function Navigation() {
                 <NavLink
                   to={l.path}
                   className={({ isActive }) =>
-                    `nav-link${isActive ? " active" : ""}${isPending && navigatingPath === l.path ? " is-navigating" : ""}`
+                    `nav-link${isActive ? " active" : ""}${navigatingPath === l.path ? " is-navigating" : ""}`
                   }
                   onMouseEnter={() => handlePrefetch(l.path)}
                   onClick={(e) => {

@@ -312,7 +312,26 @@ const ScrollEditor = forwardRef(({
   useLayoutEffect(() => {
     setContent(initialContent);
     setContentForOverlay(initialContent);
+    isTypingRef.current = false;
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
   }, [initialContent]);
+
+  useEffect(() => {
+    // FORCE SYNC: When transitioning from editable to read-only (e.g. after SAVE),
+    // we must immediately flush the overlay to ensure the final saved state
+    // is bit-perfectly reflected in the analytical artifacts.
+    if (!isEditable) {
+      setContentForOverlay(content);
+      isTypingRef.current = false;
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+        typingTimeoutRef.current = null;
+      }
+    }
+  }, [isEditable, content]);
 
   useLayoutEffect(() => {
     setTitle(initialTitle);

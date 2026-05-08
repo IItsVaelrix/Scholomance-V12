@@ -257,9 +257,17 @@ export function getAmpStatus(): {
   };
 }
 
-// ─── Auto-initialization ────────────────────────────────────────────────────
+// Auto-initialization ────────────────────────────────────────────────────
 
 // Auto-init in dev mode for convenience
 if (import.meta.env?.DEV) {
-  initAnimationAmp({ debug: true });
+  initAnimationAmp({ 
+    debug: true, 
+    bytecodeEnabled: true, 
+    maxProcessors: 16, 
+    processorTimeoutMs: 50, 
+    performanceMonitoring: true,
+    frameBudgetMs: 8,
+    symmetryIntegration: true
+  });
 }

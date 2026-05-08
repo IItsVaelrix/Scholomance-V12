@@ -8,6 +8,7 @@ import { CODExProvider } from "./hooks/useCODExPipeline.jsx";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { ProgressionProvider } from "./hooks/useProgression.jsx";
 import { ScrollsProvider } from "./hooks/useScrolls.jsx";
+import { PredictorProvider } from "./hooks/usePredictor.jsx";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion.js";
 import { MotionInspector } from "./ui/animation/components/MotionInspector";
 import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
@@ -57,47 +58,49 @@ export default function App() {
 
   return (
     <CODExProvider>
-      <AuthProvider>
-        <AuthScopedProviders>
-          <SongProvider>
-            <AtmosphereSync />
-            <div className="aurora-background" aria-hidden="true" />
-            <div className="vignette" aria-hidden="true" />
-            <div className="scanlines" aria-hidden="true" />
-            
-            {/* Animation AMP Debug Tooling (Phase 4) */}
-            {import.meta.env.DEV && (
-              <>
-                <MotionInspector />
-                <MotionDebugBadge />
-              </>
-            )}
+      <PredictorProvider>
+        <AuthProvider>
+          <AuthScopedProviders>
+            <SongProvider>
+              <AtmosphereSync />
+              <div className="aurora-background" aria-hidden="true" />
+              <div className="vignette" aria-hidden="true" />
+              <div className="scanlines" aria-hidden="true" />
+              
+              {/* Animation AMP Debug Tooling (Phase 4) */}
+              {import.meta.env.DEV && (
+                <>
+                  <MotionInspector />
+                  <MotionDebugBadge />
+                </>
+              )}
 
-            <div className="page-container" ref={pageContainerRef}>
-              <a href="#main-content" className="skip-link">
-                Skip to main content
-              </a>
-              <Navigation />
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.main
-                  key={location.pathname}
-                  id="main-content"
-                  className="page-content"
-                  variants={pageVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
-                >
-                  <Suspense fallback={null}>
-                    <Outlet />
-                  </Suspense>
-                </motion.main>
-              </AnimatePresence>
-            </div>
-          </SongProvider>
-        </AuthScopedProviders>
-      </AuthProvider>
+              <div className="page-container" ref={pageContainerRef}>
+                <a href="#main-content" className="skip-link">
+                  Skip to main content
+                </a>
+                <Navigation />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.main
+                    key={location.pathname}
+                    id="main-content"
+                    className="page-content"
+                    variants={pageVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+                  >
+                    <Suspense fallback={null}>
+                      <Outlet />
+                    </Suspense>
+                  </motion.main>
+                </AnimatePresence>
+              </div>
+            </SongProvider>
+          </AuthScopedProviders>
+        </AuthProvider>
+      </PredictorProvider>
     </CODExProvider>
   );
 }

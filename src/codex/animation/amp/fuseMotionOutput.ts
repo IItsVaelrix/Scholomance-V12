@@ -71,6 +71,7 @@ export function fuseMotionOutput(
     '--anim-glow': `${outputValues.glow ?? 0}`,
     '--anim-origin-x': `${outputValues.originX * 100}%`,
     '--anim-origin-y': `${outputValues.originY * 100}%`,
+    '--anim-will-change': output.performance.gpuAccelerated ? 'transform, opacity' : 'auto',
   };
   
   // Generate Framer Motion transition config

@@ -1,21 +1,68 @@
 /**
  * LAYER 2 — ADAPTIVE SCANNER (The Leukocytes)
  * 
- * Vector-similarity to known pathogens.
+ * Vector-similarity to known pathogens with AI Glyph steganographic encoding.
+ * 
+ * Uses pre-computed signatures from pathogenRegistry.js for deterministic,
+ * fast comparison. Signatures carry glyph clusters for AI-instantaneous
+ * identification per SISP-GLYPH-v1.
+ * 
+ * Verification per VAELRIX_LAW §6 (Determinism):
+ *   - Same input → same output (100x pass required)
+ *   - No timestamp, Math.random(), or environment entropy
  */
 
 import { similarity, quantizeVectorJS } from '../quantization/turboquant.js';
 import { generatePhonosemanticVector } from '../semantic/vector.utils.js';
 import { PATHOGEN_REGISTRY } from './pathogenRegistry.js';
+import { decodeGlyphs, verifyDeterminism } from './ai-glyphs.js';
 import { encodeBytecodeError, ERROR_CATEGORIES, ERROR_CODES, ERROR_SEVERITY, MODULE_IDS } from '../pixelbrain/bytecode-error.js';
 
 const CHUNK_SIZE = 500; // Characters per semantic atom
 const SEED = 42;
 
 /**
+ * Determinism verification constants.
+ * Run 100 iterations of identical input; all outputs must match.
+ */
+const DETERMINISM_ITERATIONS = 100;
+
+/**
+ * Convert serialized signature array back to Uint8Array for comparison.
+ */
+function deserializeSignature(serialized) {
+  if (!serialized || !serialized.data) return null;
+  return {
+    data: new Uint8Array(serialized.data),
+    norm: serialized.norm,
+  };
+}
+
+/**
+ * Generate content signature with optional glyph augmentation.
+ * 
+ * @param {string} content - Raw content to scan
+ * @param {string} [augmentGlyphs] - Optional glyph cluster to augment seed
+ * @returns {{ data: Uint8Array, norm: number }}
+ */
+function generateContentSignature(content, augmentGlyphs) {
+  let seed = SEED;
+  
+  // If glyphs provided, derive additional entropy from them
+  if (augmentGlyphs) {
+    const { seed: glyphSeed } = decodeGlyphs(augmentGlyphs);
+    seed ^= glyphSeed;
+  }
+  
+  const vec = generatePhonosemanticVector(content);
+  return quantizeVectorJS(vec, seed);
+}
+
+/**
  * Scans content for semantic matches against known pathogens.
+ * 
  * @param {string} content
- * @returns {Promise<Array<{ pathogenId: string, score: number, entry: string }>>}
+ * @returns {Promise<Array<{ pathogenId: string, score: number, entry: string, glyphs: string }>>}
  */
 export async function scanAdaptive(content) {
   if (!content || content.length < 50) return [];
@@ -28,26 +75,31 @@ export async function scanAdaptive(content) {
   
   const violations = [];
   
-  // 2. Generate signatures for chunks
-  const chunkSignatures = chunks.map(chunk => {
-    const vec = generatePhonosemanticVector(chunk);
-    return quantizeVectorJS(vec, SEED);
+  // 2. Generate signatures for content chunks
+  const contentSigs = chunks.map(chunk => {
+    return generateContentSignature(chunk);
   });
   
-  // 3. Compare against pathogen registry
+  // 3. Compare against pathogen registry using pre-computed glyph signatures
   for (const pathogen of PATHOGEN_REGISTRY) {
-    // Note: In a real implementation, pathogen.vector would be pre-quantized.
-    // For this evolution, we generate it on the fly from the known bad pattern.
-    const pathogenVec = generatePhonosemanticVector(pathogen.name); // Placeholder for signature
-    const pathogenSig = quantizeVectorJS(pathogenVec, SEED);
+    // Skip Layer 3 protocol pathogens (handled structurally elsewhere)
+    if (pathogen.layer === 'protocol' || !pathogen.signature) {
+      continue;
+    }
+    
+    const pathogenSig = deserializeSignature(pathogen.signature);
+    if (!pathogenSig) continue;
     
     let maxScore = 0;
-    for (const sig of chunkSignatures) {
+    for (const sig of contentSigs) {
+      // Compare using similarity function
       const score = similarity(sig, pathogenSig);
       if (score > maxScore) maxScore = score;
     }
     
     if (maxScore >= pathogen.threshold) {
+      const glyphs = pathogen.glyphs || '◎';
+      
       const bytecode = encodeBytecodeError(
         ERROR_CATEGORIES.VALUE,
         ERROR_SEVERITY.CRIT,
@@ -60,6 +112,8 @@ export async function scanAdaptive(content) {
           score: maxScore,
           threshold: pathogen.threshold,
           encyclopediaEntry: pathogen.encyclopediaEntry,
+          vectorId: pathogen.vector_id,
+          glyphs, // AI-instantaneous identifier
         },
       );
       violations.push({
@@ -69,9 +123,37 @@ export async function scanAdaptive(content) {
         entry: pathogen.encyclopediaEntry,
         bytecode,
         threshold: pathogen.threshold,
+        glyphs,
       });
     }
   }
   
   return violations;
+}
+
+/**
+ * Verify determinism of adaptive scanning.
+ * Exported for stasis test verification.
+ * 
+ * @param {string} testContent - Fixed test content
+ * @returns {{ deterministic: boolean, drift: number }}
+ */
+export function verifyAdaptiveDeterminism(testContent = 'const x = Math.random();') {
+  const results = [];
+  
+  for (let i = 0; i < DETERMINISM_ITERATIONS; i++) {
+    // Synchronous scan simulation for determinism test
+    const vec = generatePhonosemanticVector(testContent);
+    const sig = quantizeVectorJS(vec, SEED);
+    results.push(Array.from(sig.data).join(','));
+  }
+  
+  const first = results[0];
+  const allMatch = results.every(r => r === first);
+  
+  return {
+    deterministic: allMatch,
+    iterations: DETERMINISM_ITERATIONS,
+    drift: new Set(results).size - 1,
+  };
 }

@@ -19,7 +19,7 @@ import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { useProgression } from "../../hooks/useProgression.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 import { useWordLookup } from "../../hooks/useWordLookup.jsx";
-import { usePredictor } from "../../hooks/usePredictor.js";
+import { usePredictor } from "../../hooks/usePredictor.jsx";
 import { getVowelColorsForSchool, getRitualPalette } from "../../data/schoolPalettes.js";
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL, getSchoolsByUnlock } from "../../data/schools.js";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
@@ -192,7 +192,7 @@ export default function ReadPage() {
     ? String(editorContent || "")
     : activeScrollContent;
 
-  const truesightContent = isEditable ? editorContent : activeScrollContent;
+  const truesightContent = (isEditable || isEditing) ? editorContent : activeScrollContent;
 
   const {
     artifact: deepAnalysis,

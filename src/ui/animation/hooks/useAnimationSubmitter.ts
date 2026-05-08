@@ -7,7 +7,7 @@
 
 import { useCallback } from 'react';
 import { AnimationIntent, ResolvedMotionOutput } from '../../../codex/animation/contracts/animation.types.ts';
-import { runAnimationAmp } from '../../../codex/animation/amp/runAnimationAmp.ts';
+import { processorBridge } from '../../../lib/processor-bridge.js';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion.js';
 
 /**
@@ -28,7 +28,9 @@ export function useAnimationSubmitter() {
       }
     };
 
-    return await runAnimationAmp(augmentedIntent);
+    // V12 PERFORMANCE: Offload to Microprocessor Factory via Bridge
+    const result = await processorBridge.execute('amp.run', augmentedIntent);
+    return result as ResolvedMotionOutput;
   }, [prefersReducedMotion]);
 
   return { submitIntent };

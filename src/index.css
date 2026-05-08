@@ -69,6 +69,13 @@ motion-li {
   will-change: opacity, transform;
 }
 
+/* V12 PERFORMANCE: AMP-driven GPU promotion */
+.pixel-brain-chip,
+.truesight-word,
+.grimoire-word {
+  will-change: var(--anim-will-change, auto);
+}
+
 /* Reduced motion — disable will-change to free GPU memory */
 @media (prefers-reduced-motion: reduce) {
   motion-div,
