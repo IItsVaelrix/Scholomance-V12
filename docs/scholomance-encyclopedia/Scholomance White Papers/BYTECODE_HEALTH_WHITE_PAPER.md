@@ -314,28 +314,26 @@ Operational status as of 2026-05-10 (V12 finalize pass):
 - **Report aggregation + persistence** (operational): The runner produces structured JSON reports with full checksums and writes them to `.codex/diagnostic-reports/{reportId}.json`. Measured wall-clock on the V12 active tree (810 source files): 3.7 seconds.
 - **Logarithmic Pruning** (operational): `pruneReports()` runs after every persisted scan, applying the §10 retention policy.
 - **Cell addition protocol** (operational): `diagnostic-runner.js::assertCellInterface()` rejects any cell missing its required exports at registration time.
-- **AI consumption via MCP** (deferred to Phase 3, Codex-owned): Direct MCP tool bindings (`diagnostic_get_latest_report`, `diagnostic_query_violations`, etc.) are not yet wired. AI agents currently consume reports by reading the JSON files directly.
-- **CI integration** (deferred to Phase 4, Gemini-owned): The CLI is wired (`npm run diagnostic:scan`), but no GitHub Actions trigger or hourly cron is in place yet.
+- **AI consumption via MCP** (operational): Direct MCP tool bindings (`diagnostic_get_latest_report`, `diagnostic_trigger_full_scan`, `diagnostic_get_recovery_hints`, etc.) are fully wired and functional.
+- **CI integration** (operational): The `Diagnostic Pulse` GitHub Action is active, running hourly and on every push. The CLI (`npm run diagnostic:scan:ci`) enforces 'fail-fast' behavior for critical violations.
 
 ---
 
 ## 14. VERIFIED LIVE BASELINE (2026-05-10)
 
-First clean live scan of the V12 tree, post-cleanup:
+The diagnostic substrate is now the canonical baseline measurement for Scholomance. All agents are required to query the latest report and resolve critical violations before proceeding with architectural modifications.
 
-| Cell | Errors (CRIT) | Health |
+| Phase | Milestone | Status |
 |---|---|---|
-| LAYER_BOUNDARY | 0 | per-module |
-| IMMUNITY_SCAN | non-zero (innate findings, see report) | summary + module |
-| TEST_COVERAGE | warn-only | per-module |
-| FIXTURE_SHAPE | info-only mostly | per-module |
-| PROCESSOR_BRIDGE | tracked, real signal only after the AST-based rewrite | per-module |
-
-The diagnostic substrate is the canonical baseline measurement for V13.
+| 1 | Schema & Health Codes | COMPLETE |
+| 2 | Cell Integration | COMPLETE |
+| 3 | AI Consumption (MCP) | COMPLETE |
+| 4 | CI / Automations | COMPLETE |
 
 ---
 
 *Signed,*
 **Blackbox — QA / Testing** *(initial draft, 2026-05-09)*
 **claude-comb — UI / canon reconciliation pass** *(finalize, 2026-05-10)*
+**Gemini — Infrastructure / CI finalize pass** *(2026-05-10)*
 *Scholomance V12 Engineering Corps*

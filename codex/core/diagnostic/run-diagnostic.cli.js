@@ -174,6 +174,16 @@ async function main() {
 
   const elapsed = ((Date.now() - startedAt) / 1000).toFixed(2); // EXEMPT — elapsed-time display only
   console.error(`[diagnostic] done in ${elapsed}s`);
+
+  // Phase 4: CI Integration — fail if critical violations exist
+  if (args.trigger === 'ci' || args.trigger === 'github-actions') {
+    const critical = report.summary.criticalViolations || 0;
+    if (critical > 0) {
+      console.error(`[diagnostic:ci] FAILURE: ${critical} critical violations detected.`);
+      process.exit(1);
+    }
+    console.error('[diagnostic:ci] PASS: No critical violations detected.');
+  }
 }
 
 // Run if invoked directly

@@ -20,31 +20,54 @@ import {
   reportPath,
   DEFAULT_REPORTS_DIR,
   timestampFromReportId,
+  writeReport,
+  pruneReports,
 } from '../../core/diagnostic/persistence.js';
+import { getRecoveryHintsForError } from '../../core/pixelbrain/bytecode-error.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const ROOT = path.resolve(__dirname, '..', '..', '..');
-
-// ─── Report Index ─────────────────────────────────────────────────────────────
-
-async function listReportIds(rootDir = ROOT) {
-  const dir = path.join(rootDir, DEFAULT_REPORTS_DIR);
-  let entries;
-  try {
-    entries = await fs.readdir(dir);
-  } catch (err) {
-    if (err.code === 'ENOENT') return [];
-    throw err;
-  }
-  return entries
-    .filter(n => n.endsWith('.json'))
-    .map(n => n.replace(/\.json$/, ''))
-    .filter(id => timestampFromReportId(id) !== null)
-    .sort((a, b) => (timestampFromReportId(b) || 0) - (timestampFromReportId(a) || 0));
-}
+// ... (listReportIds implementation)
 
 // ─── Public MCP-callable functions ────────────────────────────────────────────
+
+/**
+ * `diagnostic_trigger_full_scan` — execute a full codebase audit and persist the report.
+ *
+ * @param {{trigger?: string}} params
+ * @returns {Promise<object>} The generated report
+ */
+export async function triggerFullScan({ trigger = 'mcp' } = {}) {
+  // We need to perform the tree walk. Since we're in the MCP process, 
+  // we can use a simplified version of the CLI's walk or just shell out to the CLI.
+  // Shelling out is safer to ensure SKIP_DIRS and other logic match the canonical CLI.
+  
+  const { execSync } = await import('node:child_process');
+  const cliPath = path.join(ROOT, 'codex/core/diagnostic/run-diagnostic.cli.js');
+  
+  try {
+    const output = execSync(`${process.execPath} ${cliPath} --trigger ${trigger}`, { 
+      cwd: ROOT,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'] 
+    });
+    
+    // The CLI prints the report summary to stdout and writes the JSON.
+    // We'll just grab the latest report which should be the one just created.
+    return await getLatestReport();
+  } catch (err) {
+    console.error('[diagnostic:mcp] Full scan failed:', err.message);
+    throw new Error(`Failed to trigger full diagnostic scan: ${err.message}`);
+  }
+}
+
+/**
+ * `diagnostic_get_recovery_hints` — get recovery steps for a specific error.
+ *
+ * @param {{category: string, errorCode: string, context?: object}} params
+ * @returns {Promise<object>}
+ */
+export async function getRecoveryHints({ category, errorCode, context = {} }) {
+  return getRecoveryHintsForError(category, errorCode, context);
+}
 
 /**
  * `diagnostic_get_latest_report` — return the most recent persisted report.

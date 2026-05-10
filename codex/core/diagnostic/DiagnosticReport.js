@@ -101,7 +101,11 @@ function getHintsForError(error) {
     'IMMUNE_FORBIDDEN_IMPORT': 'repair.forbidden-import.bridge-via-lib',
     'IMMUNE_DUPLICATE_PATH': 'repair.duplicate-path.canon',
     'IMMUNE_KNOWN_VIOLATION_LITERAL': 'repair.known-violation.cleansing',
-    'IMMUNE_OVERRIDE_VELOCITY': 'repair.unknown', // No specific repair yet
+    'IMMUNE_MATH_RANDOM': 'repair.math-random.seeded',
+    'IMMUNE_UNSEEDED_CLOCK': 'repair.unseeded-clock.pipeline-context',
+    'IMMUNE_PHONEME_RELATIVE': 'repair.phoneme.relative-bridge',
+    'IMMUNE_INFRA_PORT': 'repair.infra.port-alignment',
+    'IMMUNE_OVERRIDE_VELOCITY': 'repair.unknown', 
     'TEST_MISSING': 'repair.unknown',
     'TEST_FIXTURE_ANTIPATTERN': 'repair.unknown',
     'IMMUNE_PROTOCOL_BLOCK': 'repair.unknown',

@@ -33,6 +33,8 @@ import {
   queryHealth as diagnosticQueryHealth,
   runCells as diagnosticRunCells,
   summary as diagnosticSummary,
+  getRecoveryHints as diagnosticGetRecoveryHints,
+  triggerFullScan as diagnosticTriggerFullScan,
 } from './diagnostic.mcp.js';
 import { 
     searchCodebase, 
@@ -644,6 +646,26 @@ export function registerCollabMcpBridge(server, service = collabService) {
             trigger: z.string().optional().describe('Trigger label (default: "mcp")'),
         },
         (params) => diagnosticRunCells(params),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_get_recovery_hints',
+        {
+            category: z.string().describe('Error category (e.g. TYPE, LINGUISTIC)'),
+            errorCode: z.string().describe('4-digit hex error code (e.g. 0105)'),
+            context: z.record(z.string(), z.unknown()).optional().describe('Additional error context'),
+        },
+        (params) => diagnosticGetRecoveryHints(params),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_trigger_full_scan',
+        {
+            trigger: z.string().optional().default('mcp').describe('Trigger source identifier'),
+        },
+        (params) => diagnosticTriggerFullScan(params),
     );
 
     registerTool(
