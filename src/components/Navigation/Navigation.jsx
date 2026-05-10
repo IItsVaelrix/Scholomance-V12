@@ -1,7 +1,7 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef, useTransition } from "react";
-import { LINKS } from "../../data/library";
+import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { useProgression } from "../../hooks/useProgression.jsx";
@@ -11,13 +11,13 @@ import { preloadRoute } from "../../lib/routes.js";
 
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics.js";
 
-// ... (rest of the helper functions remain the same)
 function normalizeAdminList(rawValue) {
   return String(rawValue || "")
     .split(",")
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
 }
+
 export function isAdminUser(user) {
   if (!user) return false;
   if (user.isAdmin === true) return true;
@@ -54,19 +54,13 @@ export default function Navigation() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const { theme, toggleTheme } = useTheme();
 
-  const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+  const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
   const isInternalAdmin = isAdminUser(user);
-
-  const internalModules = [
-    { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
-    { id: "career", path: "/career", label: "Career" },
-    { id: "collab", path: "/collab", label: "Collab" },
-  ];
 
   const navLinks = [
     ...LINKS,
     // Add internal modules if not in PROD, OR if user is admin in PROD
-    ...(!IS_PROD || isInternalAdmin ? internalModules : []),
+    ...(!IS_PROD || isInternalAdmin ? INTERNAL_MODULES : []),
   ];
 
   const handlePrefetch = useCallback((path) => {

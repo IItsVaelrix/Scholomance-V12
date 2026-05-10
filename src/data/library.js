@@ -44,6 +44,12 @@ export const LINKS = [
   { id: "nexus",  path: "/nexus",  label: "Nexus" },
 ];
 
+export const INTERNAL_MODULES = [
+  { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
+  { id: "career", path: "/career", label: "Career" },
+  { id: "collab", path: "/collab", label: "Collab" },
+];
+
 // Dynamically generate COLORS from SCHOOLS source of truth
 const COLORS = Object.keys(SCHOOLS).reduce((acc, schoolId) => {
   acc[schoolId] = generateSchoolColor(schoolId);

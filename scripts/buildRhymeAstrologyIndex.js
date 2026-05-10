@@ -222,7 +222,8 @@ function createLexiconSchema(db) {
       frequency_score REAL NOT NULL,
       frequency_count INTEGER NOT NULL,
       source TEXT NOT NULL,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      embeddings_tq BLOB
     );
 
     CREATE INDEX IF NOT EXISTS idx_lexicon_node_normalized ON lexicon_node(normalized);
