@@ -24,11 +24,16 @@ import {
 // Ambiently preload Phaser to eliminate latency when mounting visualizers
 void import("phaser").catch(() => {});
 
-// Eagerly preload all page chunks after a short delay to prioritize initial app render
+// Eagerly preload page chunks with staggering to avoid CPU/Network congestion
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
 setTimeout(() => {
-  Object.values(PAGE_COMPONENTS).forEach(c => c.preload?.());
-}, 500);
+  const components = Object.values(PAGE_COMPONENTS);
+  components.forEach((c, i) => {
+    setTimeout(() => c.preload?.(), i * 200);
+  });
+}, 1500);
+
+import { AdminRoute } from "./components/AdminRoute.jsx";
 
 const router = createBrowserRouter([
   {
@@ -44,11 +49,9 @@ const router = createBrowserRouter([
       { path: "profile", element: <ProfilePage /> },
       { path: "combat", element: <CombatPage /> },
       { path: "nexus", element: <NexusPage /> },
-      ...(IS_PROD ? [] : [
-        { path: "collab", element: <CollabPage /> },
-        { path: "pixelbrain", element: <PixelBrainPage /> },
-        { path: "career", element: <CareerPage /> },
-      ]),
+      { path: "collab", element: <AdminRoute><CollabPage /></AdminRoute> },
+      { path: "pixelbrain", element: <AdminRoute><PixelBrainPage /></AdminRoute> },
+      { path: "career", element: <AdminRoute><CareerPage /></AdminRoute> },
     ],
   },
 ]);

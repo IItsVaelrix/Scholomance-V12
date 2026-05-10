@@ -1,4 +1,5 @@
 import { lazyWithRetry } from "./lazyWithRetry.js";
+import { isAdminUser } from "../components/Navigation/Navigation.jsx";
 
 export const WatchPage = lazyWithRetry(() => import("../pages/Watch/WatchPage.jsx"), "watch-page");
 export const ListenPage = lazyWithRetry(() => import("../pages/Listen/ListenPage"), "listen-page");
@@ -12,6 +13,7 @@ export const PixelBrainPage = lazyWithRetry(() => import("../pages/PixelBrain/Pi
 export const CareerPage = lazyWithRetry(() => import("../pages/Career/CareerPage"), "career-page");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career"];
 
 const ALL_COMPONENTS = {
   "/watch": WatchPage,
@@ -26,14 +28,27 @@ const ALL_COMPONENTS = {
   "/career": CareerPage,
 };
 
-export const PAGE_COMPONENTS = Object.fromEntries(
-  Object.entries(ALL_COMPONENTS).filter(([path]) => {
-    if (IS_PROD) {
-      return !["/collab", "/pixelbrain", "/career"].includes(path);
-    }
-    return true;
-  })
-);
+/**
+ * PAGE_COMPONENTS is now a function that accepts the current user to resolve 
+ * available routes dynamically based on environment and role.
+ */
+export function getAvailablePageComponents(user) {
+  const isInternalAdmin = isAdminUser(user);
+  
+  return Object.fromEntries(
+    Object.entries(ALL_COMPONENTS).filter(([path]) => {
+      if (IS_PROD) {
+        if (INTERNAL_MODULES.includes(path)) {
+          return isInternalAdmin;
+        }
+      }
+      return true;
+    })
+  );
+}
+
+// Backward compatibility for static usages (defaults to non-admin view)
+export const PAGE_COMPONENTS = getAvailablePageComponents(null);
 
 /**
  * Trigger pre-fetching of a page chunk.

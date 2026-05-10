@@ -3483,3 +3483,19 @@
   --active-school-color: var(--accent, #2ddbde);
   transition: --active-school-color 1.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+.chamber-heading {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.875rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--battle-text-dim, #90a4ae);
+  opacity: 0.6;
+  z-index: 10;
+  pointer-events: none;
+  white-space: nowrap;
+}

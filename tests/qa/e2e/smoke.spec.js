@@ -36,7 +36,6 @@ test.describe("Scholomance shell and scribe rite", () => {
     const uniqueTitle = `Smoke Scroll ${Date.now()}`;
 
     await page.goto("/read");
-    await page.getByRole("button", { name: "Begin New Scroll" }).click();
 
     await page.getByLabel("Scroll Title").fill(uniqueTitle);
     await page.locator("#scroll-content").fill("Echo ember");
@@ -44,11 +43,14 @@ test.describe("Scholomance shell and scribe rite", () => {
 
     await expect(page.locator(".scroll-list")).toContainText(uniqueTitle);
 
-    const overlay = page.locator(".truesight-overlay");
+    const overlay = page.locator(".word-background-layer");
     await expect(overlay).toBeVisible();
 
+    await page.waitForTimeout(1200);
+
     await overlay.getByRole("button", { name: "Echo" }).click();
-    const tooltip = page.getByRole("dialog", { name: /echo/i });
+    const tooltip = page.locator(".word-tooltip-container");
+    await expect(tooltip).toBeVisible({ timeout: 8000 });
     await expect(tooltip).toContainText("A reflected sound preserved by the chamber.");
     await expect(tooltip).toContainText("reverb");
 

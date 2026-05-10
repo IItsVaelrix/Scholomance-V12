@@ -1,36 +1,41 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Storage } from '../lib/platform/storage';
 
 const ThemeContext = createContext(null);
 
-/**
- * ThemeProvider — manages application theme state.
- * Scholomance V11 is strictly Dark Mode per Vaelrix Law.
- */
+function getInitialTheme() {
+  try {
+    const stored = Storage.getItem('scholomance-theme');
+    if (stored === 'light' || stored === 'dark') return stored;
+  } catch {
+    // Ignore storage errors and fallback to default
+  }
+  return 'dark';
+}
+
 export function ThemeProvider({ children }) {
-  const [theme] = useState('dark');
+  const [theme, setTheme] = useState(getInitialTheme);
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    Storage.setItem('scholomance-theme', 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+    Storage.setItem('scholomance-theme', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
 }
 
-/**
- * useTheme — access current theme.
- */
 export function useTheme() {
   const context = useContext(ThemeContext);
-  // V11 is strictly dark mode — return safe default when used outside ThemeProvider
-  // (e.g. in isolated component tests or lazy-loaded subtrees).
   if (!context) {
-    return { theme: 'dark' };
+    return { theme: 'dark', toggleTheme: () => {} };
   }
   return context;
 }

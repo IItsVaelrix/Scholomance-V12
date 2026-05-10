@@ -244,6 +244,7 @@ export default function ListenPage() {
 
             {/* Center: The Core 3D Console */}
             <main className="hud-center">
+              <h1 className="chamber-heading">Scholomance Signal Chamber</h1>
               <div className={`core-mount ${isPlaying ? 'is-playing' : ''}`}>
                 <SignalChamberConsole 
                   overrideSchoolId={activeStation.id} 

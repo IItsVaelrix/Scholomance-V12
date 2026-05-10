@@ -1,4 +1,4 @@
-import { createMailerService } from './codex/server/services/mailer.service.js';
+import { createMailerService } from '../codex/server/services/mailer.service.js';
 import pkg from 'fastify';
 const { fastify } = pkg;
 

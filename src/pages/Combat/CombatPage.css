@@ -981,3 +981,72 @@
     50%       { opacity: 1.0; }
   }
 }
+
+.bridge-score-overlay,
+.bridge-victory-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 2, 10, 0.92);
+}
+
+.bridge-score-panel,
+.bridge-victory-dialog {
+  background: var(--battle-bg-panel);
+  border: 1px solid var(--gold);
+  padding: 2rem;
+  max-width: 480px;
+  width: 90%;
+  text-align: center;
+}
+
+.bridge-score-panel h2,
+.bridge-victory-dialog h2 {
+  color: var(--gold);
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  letter-spacing: 0.15em;
+}
+
+.bridge-score-content {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.bridge-score-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bridge-score-label {
+  font-size: 0.75rem;
+  color: var(--battle-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.bridge-score-value {
+  font-size: 2rem;
+  color: var(--gold);
+}
+
+.battle-log {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-left: 3px solid var(--gold);
+  font-style: italic;
+  color: var(--battle-text-dim);
+  text-align: left;
+}
+
+.bridge-score-panel .btn,
+.bridge-victory-dialog .btn {
+  margin-top: 1rem;
+}

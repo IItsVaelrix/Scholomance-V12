@@ -95,21 +95,23 @@ const PLACEHOLDER_PATTERNS = [
 ];
 
 const REQUIRED_SECRETS = [
-  { key: 'SESSION_SECRET', minLength: 24 },
+  { key: 'SESSION_SECRET', minLength: 32 },
   { key: 'AUDIO_ADMIN_TOKEN', minLength: 24 },
+  { key: 'DATABASE_URL', when: () => process.env.USE_TURSO === 'true' },
 ];
 
 const CONDITIONAL_SECRETS = [
   { key: 'REDIS_URL', when: () => parseBooleanFlag(process.env.ENABLE_REDIS_SESSIONS, false) },
   { key: 'SENDGRID_API_KEY', when: () => process.env.MAIL_PROVIDER === 'sendgrid' },
   { key: 'RESEND_API_KEY', when: () => process.env.MAIL_PROVIDER === 'resend' },
-  { key: 'SMTP_HOST', when: () => process.env.MAIL_PROVIDER === 'smtp' },
+  { key: 'SMTP_HOST', when: () => process.env.MAIL_PROVIDER === 'smtp' || process.env.MAIL_PROVIDER === 'postfix' },
   { key: 'SMTP_USER', when: () => process.env.MAIL_PROVIDER === 'smtp' },
   { key: 'SMTP_PASS', when: () => process.env.MAIL_PROVIDER === 'smtp' },
+  { key: 'VITE_ADMIN_USERNAMES', when: () => IS_PRODUCTION },
 ];
 
 function isPlaceholder(value) {
-  return PLACEHOLDER_PATTERNS.some(p => p.test(value.trim()));
+  return PLACEHOLDER_PATTERNS.some(p => p.test(String(value || '').trim()));
 }
 
 function validateSecrets() {
@@ -118,7 +120,8 @@ function validateSecrets() {
   const errors = [];
   const warnings = [];
 
-  for (const { key, minLength } of REQUIRED_SECRETS) {
+  for (const { key, minLength, when } of REQUIRED_SECRETS) {
+    if (when && !when()) continue;
     const val = process.env[key];
     if (!val || val.trim().length === 0) {
       errors.push(`  ✗ ${key} is not set`);
@@ -130,13 +133,23 @@ function validateSecrets() {
   }
 
   for (const { key, when } of CONDITIONAL_SECRETS) {
-    if (!when()) continue;
+    if (when && !when()) continue;
     const val = process.env[key];
     if (!val || val.trim().length === 0) {
-      warnings.push(`  ⚠ ${key} is required for your current config but is not set`);
+      // In production, missing MAIL_PROVIDER config is a FATAL if it's supposed to be on
+      if (key.includes('API_KEY') || key.includes('SMTP_')) {
+         errors.push(`  ✗ ${key} is required when MAIL_PROVIDER is '${process.env.MAIL_PROVIDER}'`);
+      } else {
+         warnings.push(`  ⚠ ${key} is recommended for production but is not set`);
+      }
     } else if (isPlaceholder(val)) {
-      warnings.push(`  ⚠ ${key} still has a placeholder value`);
+      errors.push(`  ✗ ${key} still has a placeholder value`);
     }
+  }
+
+  // Ensure internal module gating has a source of truth for admins
+  if (!process.env.VITE_ADMIN_USERNAMES && IS_PRODUCTION) {
+    warnings.push(`  ⚠ VITE_ADMIN_USERNAMES is not set. Internal modules (PixelBrain, Collab) will be inaccessible to ALL users in production.`);
   }
 
   if (warnings.length > 0) {

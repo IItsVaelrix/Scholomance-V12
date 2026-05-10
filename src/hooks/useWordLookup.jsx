@@ -22,9 +22,13 @@ async function lookupWordFromServer(word) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
   
-  // Use buildAuthorityUrl but ensure it doesn't break relative proxies
   const path = `/api/word-lookup/${encodeURIComponent(word)}`;
-  const endpoint = buildAuthorityUrl(path);
+  let endpoint = buildAuthorityUrl(path);
+  
+  // Ensure we have an absolute URL for fetch if it's a relative-looking path
+  if (endpoint.startsWith('/') && typeof window !== 'undefined') {
+    endpoint = `${window.location.origin}${endpoint}`;
+  }
 
   try {
     const response = await fetch(endpoint, {
@@ -34,10 +38,13 @@ async function lookupWordFromServer(word) {
     });
 
     if (response.status === 404) {
-      return { data: null, source: 'not-found', error: 'Word not found' };
+      return { data: null, source: 'server', error: 'Word not found in the archive' };
+    }
+    if (response.status === 401 || response.status === 403) {
+      return { data: null, source: 'server', error: 'Lexicon access denied' };
     }
     if (!response.ok) {
-      throw new Error(`Lookup request failed (${response.status})`);
+      throw new Error(`Oracle connection fault (${response.status})`);
     }
 
     const payload = await response.json();
@@ -48,7 +55,10 @@ async function lookupWordFromServer(word) {
     };
   } catch (error) {
     if (error?.name === 'AbortError') {
-      throw new Error('Lookup timed out');
+      throw new Error('Oracle response timed out');
+    }
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Lexicon Oracle is disconnected (Network Error)');
     }
     throw error;
   } finally {

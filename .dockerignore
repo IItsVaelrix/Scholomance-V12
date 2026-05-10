@@ -11,8 +11,7 @@ test-results
 npm-debug.log*
 coverage
 dict_data
-# DBs are needed at build time; excluded from git but present locally
-#*.sqlite
+*.sqlite
 *.png
 *.bmp
 nul

@@ -130,7 +130,11 @@ function createUnavailableError() {
 }
 
 function buildUrl(base, params) {
-  const url = new URL(base, typeof window !== "undefined" ? window.location.origin : "http://localhost");
+  let absoluteBase = base;
+  if (base.startsWith('/') && typeof window !== 'undefined') {
+    absoluteBase = `${window.location.origin}${base}`;
+  }
+  const url = new URL(absoluteBase, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== "") {
       url.searchParams.set(key, String(value));
@@ -147,6 +151,11 @@ async function fetchJson(url, options = {}) {
     const res = await fetch(url, { ...options, signal: controller.signal });
     if (!res.ok) throw new ScholomanceHttpError(res.status);
     return await res.json();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Dictionary Oracle timed out');
+    }
+    throw err;
   } finally {
     clearTimeout(timeout);
   }

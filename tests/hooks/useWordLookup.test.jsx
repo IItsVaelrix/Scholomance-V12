@@ -41,7 +41,7 @@ describe('useWordLookup hook', () => {
     });
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
-    expect(global.fetch).toHaveBeenCalledWith('/api/word-lookup/arcana', expect.objectContaining({
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/word-lookup/arcana'), expect.objectContaining({
       method: 'GET',
       credentials: 'include',
     }));

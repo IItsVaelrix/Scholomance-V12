@@ -12,6 +12,7 @@ import ScholarStatusPanel from './components/ScholarStatusPanel.jsx';
 import TileInspector from './components/TileInspector.jsx';
 import BottomCommandBand from './components/BottomCommandBand.jsx';
 import { getCrossPattern } from './state/combatPreviewUtils.js';
+import { combatBridge } from './combatBridge.js';
 import './CombatPage.css';
 
 export default function CombatPage() {
@@ -20,6 +21,8 @@ export default function CombatPage() {
   const [showEnemyDetails, setShowEnemyDetails] = useState(false);
   const [arenaReady, setArenaReady] = useState(false);
   const [isLogCollapsed, setIsLogCollapsed] = useState(false);
+  const [bridgeState, setBridgeState] = useState('PLAYER_TURN');
+  const [scoreResult, setScoreResult] = useState(null);
 
   const {
     battleState,
@@ -149,6 +152,46 @@ export default function CombatPage() {
     startBattle('void_wraith_01');
   }, [startBattle]);
 
+  useEffect(() => {
+    const offStateUpdate = combatBridge.on('state:update', (payload) => {
+      if (payload.state) setBridgeState(payload.state);
+    });
+    const offActionInscribe = combatBridge.on('action:inscribe', () => {
+      setBridgeState('CASTING');
+    });
+    const offAnimDone = combatBridge.on('anim:player:done', () => {
+      setBridgeState('SCORE_REVEAL');
+    });
+    return () => {
+      offStateUpdate();
+      offActionInscribe();
+      offAnimDone();
+    };
+  }, []);
+
+  const handleCastBridge = useCallback(async (text, weave) => {
+    try {
+      const resp = await fetch('/api/combat/score', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, weave }),
+      });
+      const data = await resp.json();
+      setScoreResult(data);
+      setBridgeState('SPELL_FLYING');
+    } catch {
+      setBridgeState('PLAYER_TURN');
+    }
+  }, []);
+
+  const handleCastWrapper = useCallback((text, weave) => {
+    if (bridgeState === 'CASTING') {
+      handleCastBridge(text, weave);
+    } else {
+      handleCast(text, weave);
+    }
+  }, [bridgeState, handleCast, handleCastBridge]);
+
   if (!battleState) {
     return <div className="battle-page-loading">The Arena Stirs...</div>;
   }
@@ -169,10 +212,11 @@ export default function CombatPage() {
 
   return (
     <CombatUIStateProvider value={uiStateValue}>
-      <div
-        className={`battle-page-root${isPlaying ? ' is-animating' : ''}`}
-        data-combat-mode={mode}
-      >
+        <div
+          className={`battle-page-root${isPlaying ? ' is-animating' : ''}${bridgeState !== 'PLAYER_TURN' ? ' bridge-active' : ''}`}
+          data-combat-mode={mode}
+          data-state={bridgeState}
+        >
         <div className="battle-immersive-mode">
           <BattleChrome
             school={arenaSchool}
@@ -187,8 +231,8 @@ export default function CombatPage() {
           <main className="battle-main-layout">
             <aside className="battle-column-left">
               <OracleScribe
-                onSubmit={handleCast}
-                isDisabled={!isPlayerTurn || isResolving || isPlaying}
+                onSubmit={handleCastWrapper}
+                isDisabled={bridgeState === 'CASTING' ? false : (!isPlayerTurn || isResolving || isPlaying)}
                 school={arenaSchool}
               />
             </aside>
@@ -263,6 +307,47 @@ export default function CombatPage() {
             [`] LOG
           </div>
         </div>
+
+        {bridgeState === 'SCORE_REVEAL' && scoreResult && (
+          <div className="bridge-score-overlay">
+            <div className="bridge-score-panel" role="region" aria-label="Spell score breakdown">
+              <h2>VERSE AFTERMATH</h2>
+              <div className="bridge-score-content">
+                <div className="bridge-score-stat">
+                  <span className="bridge-score-label">TOTAL DAMAGE</span>
+                  <span className="bridge-score-value">{scoreResult.damage}</span>
+                </div>
+                <div className="bridge-score-stat">
+                  <span className="bridge-score-label">SCORE</span>
+                  <span className="bridge-score-value">{scoreResult.totalScore}</span>
+                </div>
+              </div>
+              <div className="battle-log">{scoreResult.commentary}</div>
+              <button type="button" className="btn btn-primary" onClick={() => setBridgeState('VICTORY')}>
+                Claim victory
+              </button>
+            </div>
+          </div>
+        )}
+
+        {bridgeState === 'VICTORY' && (
+          <div className="bridge-victory-overlay">
+            <div className="bridge-victory-dialog" role="dialog" aria-label="Victory">
+              <h2>THE RITE IS COMPLETE</h2>
+              <p>Your verse has triumphed in the arena.</p>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  setBridgeState('PLAYER_TURN');
+                  setScoreResult(null);
+                }}
+              >
+                Begin a new combat rite
+              </button>
+            </div>
+          </div>
+        )}
 
         <EnemyDetailsModal
           isOpen={showEnemyDetails}

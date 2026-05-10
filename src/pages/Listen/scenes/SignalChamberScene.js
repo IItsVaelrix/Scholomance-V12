@@ -350,7 +350,7 @@ export class SignalChamberScene extends Phaser.Scene {
     this._consGlow.clear(); 
     const gA = consoleGlow * ta * (0.9 + flicker * 0.1);
     this._consGlow.setAlpha(consoleOpacity);
-    this._consGlow.lineStyle(22, col, gA * 0.4).strokeRoundedRect(CONSOLE.x * this._sx - (CONSOLE.w * this._sx)/2, CONSOLE.y * this._sy - (CONSOLE.h * this._sy)/2, CONSOLE.w * this._sx, CONSOLE.h * this._sx, CONSOLE.cr * this._sx);
+    this._consGlow.lineStyle(22, col, gA * 0.4).strokeRoundedRect(CONSOLE.x * this._sx - (CONSOLE.w * this._sx)/2, CONSOLE.y * this._sy - (CONSOLE.h * this._sy)/2, CONSOLE.w * this._sx, CONSOLE.h * this._sy, CONSOLE.cr * this._sx);
     
     // Gauges: simple time-damped pursuit (Pseudo-simulation, but time-aware)
     // We update cur values to prev for redraw check

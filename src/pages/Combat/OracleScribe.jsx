@@ -110,7 +110,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
     <div className={`oracle-scribe battle-panel ${isFocused ? 'is-focused' : ''}`}>
       <div className="scribe-header">
         <div className="scribe-label">ORACLE SCRIBE — {school} AFFINITY</div>
-        <div className={`scribe-integrity status-${integrity.status?.toLowerCase()}`}>
+        <div className={`scribe-integrity status-${integrity.status?.toLowerCase()}`} aria-label="Syntactic integrity">
           {integrity.label || 'AWAITING CONCEPT'}
         </div>
       </div>
@@ -126,6 +126,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
             onKeyDown={handleKeyDown}
             disabled={isDisabled}
             placeholder="e.g. Strike the shadow with force..."
+            aria-label="Weave input"
           />
         </div>
 
@@ -160,6 +161,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
               onBlur={() => setIsFocused(false)}
               disabled={isDisabled}
               placeholder="Inscribe the living phonemes..."
+              aria-label="Verse input"
             />
           </div>
         </div>
@@ -175,7 +177,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
           </div>
         </div>
         <button className="scribe-cast-btn" onClick={handleSubmit} disabled={!canCast}>
-          {isAnalyzing ? 'ANALYZING...' : 'CAST'}
+          {isAnalyzing ? 'ANALYZING...' : 'Cast this spell'}
         </button>
       </div>
 

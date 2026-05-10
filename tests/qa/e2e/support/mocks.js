@@ -268,6 +268,16 @@ export async function installGuestSessionMocks(page) {
 
 export async function installReadPageMocks(page) {
   await installGuestSessionMocks(page);
+  await page.goto('/');
+  await page.evaluate(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('scholomance.user.settings.v1') || '{}');
+      stored.truesightEnabled = true;
+      localStorage.setItem('scholomance.user.settings.v1', JSON.stringify(stored));
+    } catch {
+      // Ignore localStorage errors during mock installation
+    }
+  });
 
   await page.route("**/api/analysis/panels", (route) => {
     const payload = route.request().postDataJSON?.() ?? {};

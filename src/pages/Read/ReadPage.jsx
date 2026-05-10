@@ -134,7 +134,18 @@ export default function ReadPage() {
   const [infoBeamFamily, setInfoBeamFamily] = useState(null);
 
   // Use settings for initial state if available
-  const [isTruesight, setIsTruesight] = useState(settings?.truesightEnabled ?? false);
+  const [isTruesight, setIsTruesight] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scholomance.user.settings.v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.truesightEnabled === 'boolean') return parsed.truesightEnabled;
+      }
+    } catch {
+      // Use settings fallback if localStorage fails
+    }
+    return settings?.truesightEnabled ?? false;
+  });
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
   const [_isActivityBarExpanded, _setIsActivityBarExpanded] = useState(settings?.ideLayout?.[0] > 18);

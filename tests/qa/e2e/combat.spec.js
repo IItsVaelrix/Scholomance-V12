@@ -9,7 +9,7 @@ test.describe("Combat rite", () => {
 
   test("casts a spell, reveals the authoritative breakdown, and resets after victory", async ({ page }) => {
     await page.goto("/combat");
-    const combatPage = page.locator(".combat-page");
+    const combatPage = page.locator(".battle-page-root");
 
     await emitCombatBridgeEvent(page, "state:update", {
       state: "PLAYER_TURN",

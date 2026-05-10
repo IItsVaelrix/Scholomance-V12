@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { useProgression } from "../../hooks/useProgression.jsx";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
+import { useTheme } from "../../hooks/useTheme.jsx";
 import { preloadRoute } from "../../lib/routes.js";
 
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics.js";
@@ -17,7 +18,7 @@ function normalizeAdminList(rawValue) {
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
 }
-function isAdminUser(user) {
+export function isAdminUser(user) {
   if (!user) return false;
   if (user.isAdmin === true) return true;
   if (String(user.role || "").toLowerCase() === "admin") return true;
@@ -49,10 +50,22 @@ export default function Navigation() {
   const navTimeoutRef = useRef(null);
   const { user } = useAuth();
   const { refreshScrolls } = useScrolls();
-  const { refreshProgression } = useProgression(); // We might need to add this to useProgression
+  const { refreshProgression } = useProgression(); 
   const prefersReducedMotion = usePrefersReducedMotion();
-  const canAccessCollab = isAdminUser(user);
-  const navLinks = LINKS.filter((link) => link.id !== "collab" || canAccessCollab);
+  const { theme, toggleTheme } = useTheme();
+
+  const isInternalAdmin = isAdminUser(user);
+  const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+
+  const navLinks = [
+    ...LINKS,
+    // Add internal modules back in PROD if user is admin
+    ...(IS_PROD && isInternalAdmin ? [
+      { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
+      { id: "career", path: "/career", label: "Career" },
+      { id: "collab", path: "/collab", label: "Collab" },
+    ] : []),
+  ];
 
   const handlePrefetch = useCallback((path) => {
     preloadRoute(path);
@@ -166,6 +179,16 @@ export default function Navigation() {
             ))}
           </div>
           <div className="nav-controls">
+            {/* Theme toggle */}
+            <button
+              className="theme-toggle-btn"
+              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+              onClick={toggleTheme}
+              type="button"
+            >
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
+
             {/* Mobile menu button */}
             <button
               className="nav-toggle"

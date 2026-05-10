@@ -44,11 +44,12 @@ export const LINKS = [
   { id: "read",   path: "/read",   label: "Scribe" },
   { id: "combat", path: "/combat", label: "Combat" },
   { id: "nexus",  path: "/nexus",  label: "Nexus" },
-  ...(IS_PROD ? [] : [
+  // These internal modules are hidden from production by default
+  ...(!IS_PROD ? [
     { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
     { id: "career", path: "/career", label: "Career" },
     { id: "collab", path: "/collab", label: "Collab" },
-  ]),
+  ] : []),
 ];
 
 // Dynamically generate COLORS from SCHOOLS source of truth

@@ -52,7 +52,7 @@ export default defineConfig({
   },
   projects: runFullMatrix ? fullMatrixProjects : defaultProjects,
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${visualPort} --strictPort`,
+    command: `npx vite --host 127.0.0.1 --port ${visualPort} --strictPort`,
     url: baseURL,
     reuseExistingServer: !isCI,
     timeout: 120 * 1000,
