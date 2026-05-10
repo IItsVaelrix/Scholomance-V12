@@ -5,7 +5,7 @@
  * Ensures UI files don't violate architectural boundaries.
  */
 
-import { processorBridge } from './processor-bridge.js';
+import { processorBridge, hslToHex } from './engine.adapter.js';
 
 // --- Coordinate & Formula Logic ---
 import { 
@@ -77,6 +77,7 @@ import { roundTo as codexRoundTo } from '../../codex/core/pixelbrain/shared.js';
 export const FORMULA_TYPES = codexFORMULA_TYPES;
 export const GRID_TYPES = codexGRID_TYPES;
 
+export { processorBridge };
 export const BytecodeError = codexBytecodeError;
 export const ERROR_CATEGORIES = codexERROR_CATEGORIES;
 export const ERROR_SEVERITY = codexERROR_SEVERITY;

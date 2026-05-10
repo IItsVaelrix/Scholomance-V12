@@ -27,7 +27,7 @@ import { Pattern } from '../codex/core/immunity/clerical-raid.core.js';
 import { AGENT_INDEX } from '../codex/core/immunity/clerical-raid.schema.js';
 import { agentHookQuery } from '../codex/core/immunity/clerical-raid.agents.js';
 import {
-  merlinAutoTrainPipeline,
+  autoTrainFromMerlinReport,
   clusterPatternsBySimilarity,
   deprecateStalePatterns,
   findNearDuplicatePatterns,
@@ -148,7 +148,7 @@ async function cmdAgentQuery(raid, agentKey, reportPath) {
 async function cmdMerlinIngest(raid, reportPath, train) {
   const abs = path.isAbsolute(reportPath) ? reportPath : path.join(process.cwd(), reportPath);
   const json = JSON.parse(await fs.readFile(abs, 'utf8'));
-  const payload = merlinAutoTrainPipeline(raid, json, { train });
+  const payload = autoTrainFromMerlinReport(raid, json, { train });
   const preview = extractVectorFromMerlinReport(json);
   console.log(
     JSON.stringify(

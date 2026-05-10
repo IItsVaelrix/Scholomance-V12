@@ -4,6 +4,19 @@ import AgentStatus from '../../../src/pages/Collab/AgentStatus';
 import AgentLoginModal from '../../../src/pages/Collab/AgentLoginModal';
 import React from 'react';
 
+vi.mock("../../../src/hooks/useAuth.jsx", () => ({
+  AuthProvider: ({ children }) => children,
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    checkMe: vi.fn(),
+    getCsrfToken: vi.fn(),
+  }),
+}));
+
 // Mock Framer Motion to avoid animation issues in tests
 vi.mock('framer-motion', () => ({
     motion: {

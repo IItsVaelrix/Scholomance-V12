@@ -17,7 +17,7 @@
  */
 
 import { safeDivide, toFinite } from '../shared/math/safe.js';
-import { processorBridge } from '../shared/processor-bridge.js';
+import { verseIRMicroprocessors } from '../microprocessors/index.js';
 import { generateSymmetryOverlay } from './symmetry-amp.js';
 
 /**
@@ -59,7 +59,7 @@ export async function generateLatticeGrid(imageAnalysis) {
   const assetId = `upload_${contentHash}`;
 
   // ── STEP 1: DETECT SYMMETRY via Microprocessor ─────────────────────────────
-  const symmetryResult = await processorBridge.execute('amp.symmetry', {
+  const symmetryResult = await verseIRMicroprocessors.execute('amp.symmetry', {
     assetId,
     sourceType: 'image',
     pixelData,
@@ -128,7 +128,7 @@ export async function generateLatticeGrid(imageAnalysis) {
 
   // ── STEP 6: APPLY COORDINATE SYMMETRY via Microprocessor ───────────────────
   if (symmetry && symmetry.significant && symmetry.type !== 'none') {
-    const coordSymmetryResult = await processorBridge.execute('amp.coord-symmetry', {
+    const coordSymmetryResult = await verseIRMicroprocessors.execute('amp.coord-symmetry', {
       assetId,
       coordinates: Array.from(lattice.cells.values()).map(c => ({
         x: c.col * cellSize,

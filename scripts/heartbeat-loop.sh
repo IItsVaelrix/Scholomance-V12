@@ -14,6 +14,13 @@ echo "Duration: $DURATION_HOURS hours ($ITERATIONS cycles)"
 for ((i=1; i<=ITERATIONS; i++))
 do
     AGENT_ID=$AGENT_ID node scripts/collab-client.js heartbeat --status online > /dev/null 2>&1
+    
+    # Bible Synthesis Ritual (every 10 cycles = 5 mins)
+    if (( i % 10 == 0 )); then
+        echo "[ritual] performing bible synthesis..."
+        npm run bible:synthesis > /dev/null 2>&1
+    fi
+
     # Pulse every 30 seconds
     sleep $INTERVAL
 done

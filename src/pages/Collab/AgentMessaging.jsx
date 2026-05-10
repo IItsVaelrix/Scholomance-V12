@@ -10,6 +10,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 const GLYPHS = ['✦', '◈', '⬡', '◎', '⟐', '⧫', '✧', '◉'];
 const MAX_MESSAGES = 50;
@@ -61,6 +62,7 @@ function getChannel() {
 }
 
 export default function AgentMessaging({ agents, currentAgentId }) {
+    const { getCsrfToken } = useAuth();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [selectedGlyph, setSelectedGlyph] = useState(GLYPHS[0]);
@@ -164,10 +166,12 @@ export default function AgentMessaging({ agents, currentAgentId }) {
         const bytecode = bytecodeMatch ? bytecodeMatch[0] : null;
 
         try {
-            // POST to backend for persistence
+            // POST to backend for persistence (authority hook auto-injects CSRF)
             const response = await fetch('/collab/messages', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                },
                 body: JSON.stringify({
                     sender_id: senderId,
                     target_id: targetAgent,

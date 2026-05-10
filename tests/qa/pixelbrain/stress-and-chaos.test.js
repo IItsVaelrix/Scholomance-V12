@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { verseIRMicroprocessors } from '../../../codex/core/microprocessors/index.js';
-import { processorBridge } from '../../../src/lib/processor-bridge.js';
+
 
 /**
  * PixelBrain — Stress & Chaos Suite
@@ -147,7 +147,7 @@ describe('PixelBrain — Stress & Chaos Suite', () => {
 
     it('handles bridge local execution fallback', async () => {
       // In Node environment, bridge fallback
-      const result = await processorBridge.execute('nlu.classifyIntent', { tokens: ['test'] });
+      const result = await verseIRMicroprocessors.execute('nlu.classifyIntent', { tokens: ['test'] });
       expect(result.intent).toBeDefined();
     }, 30000);
   });

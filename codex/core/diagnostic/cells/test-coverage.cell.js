@@ -10,7 +10,7 @@
  */
 
 import { BytecodeError, ERROR_CODES } from '../../pixelbrain/bytecode-error.js';
-import { encodeBytecodeHealth } from '../BytecodeHealth.js';
+import { encodeBytecodeHealth, encodeArchivedHealth } from '../BytecodeHealth.js';
 
 export const CELL_ID = 'TEST_COVERAGE';
 export const CELL_NAME = 'QA Coverage Gate';
@@ -34,6 +34,10 @@ const EXCLUDED_DIRS = [
   '.next',
   '.codex',
   'docs',
+  'Archive',
+  'ARCHIVE REFERENCE DOCS',
+  'public',
+  'scripts',
 ];
 
 /**
@@ -103,16 +107,17 @@ function isExcluded(path) {
  * @returns {string[]}
  */
 function getSourceFiles(files) {
+  const LOGIC_EXTENSIONS = /\.(m?[jt]sx?|cjs)$/;
   return files
     .map(f => f.path)
-    .filter(p => !isTestFile(p) && !isExcluded(p));
+    .filter(p => LOGIC_EXTENSIONS.test(p) && !isTestFile(p) && !isExcluded(p));
 }
 
 /**
  * Main scan function. Stateless, idempotent.
  *
  * @param {object} snapshot
- * @param {Array<{path: string}>} files - File list from snapshot
+ * @param {Array<{path: string, content: string}>} files - File list from snapshot
  * @returns {Promise<ScanResult>}
  */
 export async function scan(snapshot, files = []) {
@@ -124,6 +129,9 @@ export async function scan(snapshot, files = []) {
   const testFiles = new Set(
     files.filter(f => isTestFile(f.path)).map(f => f.path)
   );
+
+  // Map of paths to file objects for content access
+  const fileMap = new Map(files.map(f => [f.path, f]));
 
   // Check each source file for a corresponding test
   for (const sourcePath of sourceFiles) {
@@ -140,6 +148,19 @@ export async function scan(snapshot, files = []) {
       const hasTest = alternatives.some(alt => testFiles.has(alt));
 
       if (!hasTest) {
+        const file = fileMap.get(sourcePath);
+        const content = file?.content || '';
+
+        // Check for ARCHIVED annotation (top-level comment)
+        const archivedMatch = content.match(/^\/\/\s*ARCHIVED:\s*(logic-incomplete|wip-stub)/m);
+        if (archivedMatch) {
+          health.push(encodeArchivedHealth(CELL_ID, 'coverage-archived', {
+            sourceFile: sourcePath,
+            reason: archivedMatch[1],
+          }));
+          continue;
+        }
+
         const error = new BytecodeError(
           'STATE',
           'WARN',

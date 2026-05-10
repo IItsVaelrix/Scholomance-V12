@@ -2,7 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { z } from "zod";
-import { useAuth, getCsrfToken, clearCsrfToken } from "./useAuth.jsx";
+import { useAuth } from "./useAuth.jsx";
+import { emitNetworkBytecodeError } from "../lib/bytecode-error.adapter.js";
 import { SCHOOLS, getSchoolsByUnlock } from "../data/schools";
 import { getLevelFromXp, getLevelProgress, getTierForLevel } from "../lib/progressionUtils";
 import { buildAuthorityUrl } from "../lib/apiUrl.js";
@@ -13,7 +14,7 @@ const ProgressionContext = createContext(null);
 const defaultProgression = {
   xp: 0,
   unlockedSchools: ["SONIC"],
-  lastUpdated: Date.now(),
+  lastUpdated: 0,
   achievements: [],
   discoveryHistory: [],
   nexus: {
@@ -78,13 +79,14 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     if (!canPersistRef.current) {
       return;
     }
+    const path = '/api/progression';
     try {
       const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
       const token = await tokenPromise;
       if (!token) {
         throw new Error("Missing CSRF token");
       }
-      const response = await fetch(getApiUrl('/api/progression'), {
+      const response = await fetch(getApiUrl(path), {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -102,8 +104,11 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       if (response.status === 401 || response.status === 403) {
         canPersistRef.current = false;
       }
+      if (!response.ok) {
+        console.error("Failed to save progression:", emitNetworkBytecodeError(path, response.status));
+      }
     } catch (error) {
-      console.error("Failed to save progression:", error);
+      console.error("Error saving progression:", emitNetworkBytecodeError(path, 0, { error: error.message }));
     }
   }, 1000)).current;
 
@@ -128,8 +133,9 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
     let cancelled = false;
     const fetchProgression = async () => {
       setIsLoading(true);
+      const path = '/api/progression';
       try {
-        const response = await fetch(getApiUrl('/api/progression'), { credentials: 'include' });
+        const response = await fetch(getApiUrl(path), { credentials: 'include' });
         if (cancelled) return;
         if (response.ok) {
           canPersistRef.current = true;
@@ -151,18 +157,19 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
           }));
         } else if (response.status === 401 || response.status === 403) {
           canPersistRef.current = false;
+          let progressionTimestamp = 0;
           setProgression({
             ...defaultProgression,
-            lastUpdated: Date.now(),
+            lastUpdated: progressionTimestamp++,
           });
         } else {
           canPersistRef.current = false;
-          console.error("Failed to fetch progression:", response.status, response.statusText);
+          console.error("Failed to fetch progression:", emitNetworkBytecodeError(path, response.status));
         }
       } catch (error) {
         if (cancelled) return;
         canPersistRef.current = false;
-        console.error("Error fetching progression:", error);
+        console.error("Error fetching progression:", emitNetworkBytecodeError(path, 0, { error: error.message }));
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -178,8 +185,9 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
   const refreshProgression = useCallback(async (isSilent = true) => {
     if (!isAuthenticated) return;
     if (!isSilent) setIsLoading(true);
+    const path = '/api/progression';
     try {
-      const response = await fetch(getApiUrl('/api/progression'), { credentials: "include" });
+      const response = await fetch(getApiUrl(path), { credentials: "include" });
       if (response.ok) {
         canPersistRef.current = true;
         const data = await response.json();
@@ -191,9 +199,11 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
           }
           setProgression((prev) => ({ ...prev, ...serverData }));
         }
+      } else {
+        console.error("Refresh failed:", emitNetworkBytecodeError(path, response.status));
       }
     } catch (error) {
-      console.error("Manual progression refresh failed:", error);
+      console.error("Manual progression refresh failed:", emitNetworkBytecodeError(path, 0, { error: error.message }));
     } finally {
       if (!isSilent) setIsLoading(false);
     }
@@ -208,6 +218,9 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
   }, [progression, isLoading, debouncedSave]);
 
   const addXP = useCallback((amount, source = "general", uniqueId = null) => {
+    let levelUpData = null;
+    let schoolUnlockedData = [];
+
     setProgression(prev => {
       if (uniqueId && prev.discoveryHistory.includes(uniqueId)) {
         return prev;
@@ -230,12 +243,12 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       const newAchievements = [...prev.achievements];
       
       if (newLevel > prevLevel) {
-        emitXPEvent("level-up", { level: newLevel, tier: getTierForLevel(newLevel) });
+        levelUpData = { level: newLevel, tier: getTierForLevel(newLevel) };
       }
 
       newlyUnlocked.forEach(school => {
         newAchievements.push(`school-unlocked-${school.id.toLowerCase()}`);
-        emitXPEvent("school-unlocked", { school });
+        schoolUnlockedData.push({ school });
       });
 
       return {
@@ -248,6 +261,12 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       };
     });
 
+    if (levelUpData) {
+      emitXPEvent("level-up", levelUpData);
+    }
+    schoolUnlockedData.forEach(data => {
+      emitXPEvent("school-unlocked", data);
+    });
     if (amount > 0) {
       emitXPEvent("xp-gained", { amount, source });
     }
@@ -258,20 +277,27 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       ...defaultProgression,
       lastUpdated: Date.now(),
     };
+    
+    // 1. Temporarily disable persistence to prevent debouncedSave from firing
+    canPersistRef.current = false;
+    
     setProgression(prev => ({
       ...prev,
       ...optimisticReset,
     }));
-    if (!canPersistRef.current) {
+
+    if (!isAuthenticated) {
       return;
     }
+
+    const path = '/api/progression';
     try {
       const tokenPromise = csrfToken ? Promise.resolve(csrfToken) : getCsrfToken();
       const token = await tokenPromise;
       if (!token) {
         throw new Error("Missing CSRF token");
       }
-      const response = await fetch(getApiUrl('/api/progression'), {
+      const response = await fetch(getApiUrl(path), {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -287,17 +313,19 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
         if (!parsed.success) {
           throw new Error("Invalid progression payload");
         }
+        // 2. Re-enable persistence after successful server reset
+        canPersistRef.current = true;
         setProgression(prev => ({
           ...prev,
           ...parsed.data,
         }));
       } else {
-        console.error("Failed to reset progression:", response.statusText);
+        console.error("Failed to reset progression:", emitNetworkBytecodeError(path, response.status));
       }
     } catch (error) {
-      console.error("Error resetting progression:", error);
+      console.error("Error resetting progression:", emitNetworkBytecodeError(path, 0, { error: error.message }));
     }
-  }, [clearCsrfToken, csrfToken, getCsrfToken]);
+  }, [csrfToken, getCsrfToken, clearCsrfToken, isAuthenticated]);
 
   const checkUnlocked = useCallback((schoolId) => {
     return progression.unlockedSchools.includes(schoolId);
@@ -319,6 +347,8 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
   const currentLevelInfo = useMemo(() => getLevelProgress(progression.xp), [progression.xp]);
 
   const recordWordUse = useCallback((word, profile) => {
+    let wordDiscoveredData = null;
+
     setProgression(prev => {
       const upperWord = word.toUpperCase();
       const currentNexus = prev.nexus || { discoveredWords: {}, activeSynergies: [] };
@@ -351,7 +381,7 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
       const newAchievements = [...prev.achievements];
       if (currentWordMastery.stats.count === 0) {
         newAchievements.push(`word-discovered-${upperWord.toLowerCase()}`);
-        emitXPEvent("word-discovered", { word: upperWord });
+        wordDiscoveredData = { word: upperWord };
       }
 
       return {
@@ -366,6 +396,10 @@ export function ProgressionProvider({ children, authReady = true, isAuthenticate
         }
       };
     });
+
+    if (wordDiscoveredData) {
+      emitXPEvent("word-discovered", wordDiscoveredData);
+    }
   }, []);
 
   const value = useMemo(() => ({

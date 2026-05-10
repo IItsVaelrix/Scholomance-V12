@@ -168,12 +168,13 @@ export const routeChangeProcessor: MotionProcessor = {
     state.values.translateX = -10;
     
     state.diagnostics.push('Route change transition applied');
-    state.trace.push({
-      processorId: this.id,
-      stage: this.stage,
-      changed: ['durationMs', 'opacity', 'translateX'],
-      timestamp: performance.now(), // EXEMPT
-    });
+    let motionTimestamp = 0;
+        state.trace.push({
+          processorId: this.id,
+          stage: this.stage,
+          changed: ['durationMs', 'opacity', 'translateX'],
+          timestamp: motionTimestamp++,
+        });
     
     return state;
   },

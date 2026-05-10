@@ -45,6 +45,7 @@ import { PhonemeEngine } from '../core/phonology/phoneme.engine.js';
 import { authorizeAudioRequest, buildAudioUnauthorizedPayload } from './audioAuth.js';
 import { createImmunityService } from './services/immunity.service.js';
 import { collabService } from './collab/collab.service.js';
+import '../runtime/apoptosis.listener.js';
 import {
   BytecodeError,
   ERROR_CATEGORIES,

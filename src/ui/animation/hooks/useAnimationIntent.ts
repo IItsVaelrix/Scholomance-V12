@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { processorBridge } from '../../../lib/processor-bridge.js';
+import { processorBridge } from '../../../lib/engine.adapter.js';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion.js';
 import type { AnimationIntent, ResolvedMotionOutput } from '../../../types/animation';
 

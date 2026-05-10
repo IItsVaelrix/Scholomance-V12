@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-05-10T11:44:43.232Z
+Generated at: 2026-05-10T17:00:43.374Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -15,6 +15,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/math/safe.js
 - [ ] src/lib/microprocessor.worker-client.js
 - [ ] src/lib/phoneticHacking.engine.js
+- [ ] src/lib/processor-bridge.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
 - [ ] src/lib/syntax/hmmPass.js
@@ -47,6 +48,9 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/workers/microprocessor.worker.js
 - [ ] codex/core/diagnostic/index.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
+- [ ] codex/core/immunity/clerical-raid.substrate.js
+- [ ] codex/core/immunity/memory-infusion.engine.js
+- [ ] codex/core/immunity/protein-probe.engine.js
 - [ ] codex/core/phonology/phonemeAlignment.js
 - [ ] codex/core/pixelbrain/coord-symmetry-errors.js
 - [ ] codex/core/pixelbrain/extensions/physics-extensions.js
@@ -55,7 +59,6 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/pixelbrain-phase3.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
 - [ ] codex/core/shared/workers/microprocessor.worker.js
-- [ ] codex/runtime/apoptosis.listener.js
 - [ ] codex/server/services/imageAnalysis.service.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
@@ -90,7 +93,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`
-- [ ] `buildPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
 - [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
 - [ ] `getXpForLevel` in `src/lib/progressionUtils.js`
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
@@ -266,6 +268,10 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `extractMemoryAntigens` in `codex/core/immunity/memory-infusion.engine.js`
+- [ ] `validatePrivacy` in `codex/core/immunity/memory-infusion.engine.js`
+- [ ] `vectorizeHypothesis` in `codex/core/immunity/protein-probe.engine.js`
+- [ ] `scanSubstrate` in `codex/core/immunity/protein-probe.engine.js`
 - [ ] `PROTOCOL_ALLOW_LIST` in `codex/core/immunity/protocol.scanner.js`
 - [ ] `REPAIR_RECOMMENDATIONS` in `codex/core/immunity/repair.recommendations.js`
 - [ ] `JudiciaryEngine` in `codex/core/judiciary.js`
@@ -377,10 +383,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `constraintsToPixelBrainParams` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `getSymbolLibrary` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `LITERARY_DEVICES` in `codex/core/shared/literaryDevices.detector.js`
-- [ ] `getMusicProvider` in `codex/core/shared/musicEmbeds.js`
-- [ ] `getSunoEmbedUrl` in `codex/core/shared/musicEmbeds.js`
-- [ ] `getSunoSongId` in `codex/core/shared/musicEmbeds.js`
-- [ ] `getSunoAudioUrl` in `codex/core/shared/musicEmbeds.js`
 - [ ] `isComplexScheme` in `codex/core/shared/rhymeScheme.detector.js`
 - [ ] `SyntaxAnalyzer` in `codex/core/shared/syntax.layer.js`
 - [ ] `AdaptiveGridTopology` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
@@ -411,6 +413,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `initializeAmpPipeline` in `codex/runtime/amp.pipeline.js`
 - [ ] `cleanupAmpPipeline` in `codex/runtime/amp.pipeline.js`
 - [ ] `initApoptosisListener` in `codex/runtime/apoptosis.listener.js`
+- [ ] `cachePredictionArtifact` in `codex/runtime/cache.js`
+- [ ] `getPredictionArtifact` in `codex/runtime/cache.js`
 - [ ] `deleteFromCache` in `codex/runtime/cache.js`
 - [ ] `clearAllListeners` in `codex/runtime/eventBus.js`
 - [ ] `WORD_LOOKUP_EVENTS` in `codex/runtime/pipeline.js`

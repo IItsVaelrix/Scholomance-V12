@@ -21,7 +21,7 @@
 
 import { scanInnate } from '../../immunity/innate.scanner.js';
 import { scanAdaptive } from '../../immunity/adaptive.scanner.js';
-import { encodeBytecodeHealth } from '../BytecodeHealth.js';
+import { encodeBytecodeHealth, encodeArchivedHealth } from '../BytecodeHealth.js';
 import { BytecodeError, ERROR_CODES } from '../../pixelbrain/bytecode-error.js';
 
 export const CELL_ID = 'IMMUNITY_SCAN';
@@ -139,7 +139,21 @@ export async function scan(_snapshot, files = []) {
   // Layer 1: Innate pattern scan
   for (const { content, path } of files) {
     const innateErrors = scanFileInnate(content, path);
-    errors.push(...innateErrors);
+    
+    for (const err of innateErrors) {
+      const ruleId = err.context.ruleId;
+      // Check for ARCHIVED annotation for this specific rule (top-level comment)
+      const archivedRegex = new RegExp(`^\\/\\/\\s*ARCHIVED:\\s*${ruleId}`, 'm');
+      if (archivedRegex.test(content)) {
+        health.push(encodeArchivedHealth(CELL_ID, `innate-archived-${ruleId}`, {
+          path,
+          ruleId,
+          reason: 'logic-incomplete',
+        }));
+      } else {
+        errors.push(err);
+      }
+    }
   }
 
   // Override velocity check (Layer 1 extension)

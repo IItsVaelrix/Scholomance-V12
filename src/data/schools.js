@@ -14,10 +14,9 @@ import {
   computeSchoolWeights,
   computeSchoolWeightsFromHints,
   computeDominantSchool,
-  generateSchoolColor as coreGenerateSchoolColor
-} from '../../codex/core/constants/schools.js';
-
-import { hslToHex } from '../../codex/core/pixelbrain/shared.js';
+  generateSchoolColor as coreGenerateSchoolColor,
+  hslToHex
+} from '../lib/engine.adapter.js';
 
 /**
  * Canonical mapping from ARPAbet vowel family to school of magic.

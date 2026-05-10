@@ -23,10 +23,15 @@ export const MagicNamePlate: React.FC<MagicNamePlateProps> = ({ name, color }) =
 
       let iteration = 0;
       const interval = setInterval(() => {
+        let seed = 5;
+        const seededRandom = () => {
+          const x = Math.sin(seed++) * 10000;
+          return x - Math.floor(x);
+        };
         setDisplayText(() => 
           name.split("").map((char, index) => {
             if (index < iteration) return name[index];
-            return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]; // IMMUNE_ALLOW: math-random // EXEMPT
+            return GLYPHS[Math.floor(seededRandom() * GLYPHS.length)];
           }).join("")
         );
 

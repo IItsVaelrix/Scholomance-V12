@@ -19,7 +19,7 @@ function escapeHtml(value) {
 }
 
 function normalizeBaseUrl(baseUrl) {
-  const fallback = 'http://localhost:3000';
+  const fallback = 'http://localhost:8080';
   const resolved = String(baseUrl || '').trim() || fallback;
   return resolved.replace(/\/+$/, '');
 }

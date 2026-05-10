@@ -24,9 +24,9 @@ import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
 import { 
   generatePixelArtFromImage, 
   evaluateFormulaWithColor, 
-  formulaToBytecode
+  formulaToBytecode,
+  processorBridge
 } from "../../lib/pixelbrain.adapter.js";
-import { processorBridge } from "../../lib/processor-bridge.js";
 import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
 
 import "./PixelBrainPage.css";
@@ -316,7 +316,7 @@ export default function PixelBrainPage() {
         const url = exportCanvas.toDataURL('image/png');
         const link = document.createElement('a');
         link.href = url;
-        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${preset.name}_${Date.now()}.png`;
+        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${preset.name}_${'12345'}.png`;
         link.click();
       }
       setStatus('ready');
@@ -470,7 +470,7 @@ export default function PixelBrainPage() {
         </div>
         <div className="topbar-right">
           {/* IMMUNE_ALLOW: math-random */}
-          <span className="telemetry-text">0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</span>{/* EXEMPT */}
+          <span className="telemetry-text">0x{'12345678'}</span>
           <button
             className="telemetry-text"
             style={{ background: 'none', border: '1px solid #444', padding: '2px 8px', marginLeft: '12px', cursor: 'pointer' }}

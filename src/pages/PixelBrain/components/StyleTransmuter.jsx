@@ -6,7 +6,7 @@
 
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { processorBridge } from '../../../lib/processor-bridge.js';
+import { processorBridge } from '../../../lib/engine.adapter.js';
 import { SCHOOLS } from '../../../data/schools.js';
 
 export function StyleTransmuter({ referenceFile, onTransmute, isProcessing }) {

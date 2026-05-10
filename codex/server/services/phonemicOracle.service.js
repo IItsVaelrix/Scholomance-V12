@@ -81,12 +81,13 @@ function buildHhmInsights(hhmSummary) {
   const functionGateCount = counts.function_gate || 0;
 
   if (launchCount >= 3 && launchCount > flowCount * 1.35) {
+    const rawImpact = (flowCount - launchCount) / Math.max(launchCount, 1);
     insights.push(createInsight(
       'hhm-launch-flow',
       'TECHNICAL',
       'Your kinetic launch is outrunning sustained flow. The bar starts hot, then drops its resonance before the line can settle.',
       [`line_launch:${launchCount}`, `flow:${flowCount}`],
-      (flowCount - launchCount) / Math.max(launchCount, 1)
+      Math.max(-1, rawImpact)
     ));
   }
 
@@ -355,9 +356,17 @@ export async function createPhonemicOracleService(options = {}) {
     }
 
     const persona = pickPersona(scoreData, verseIRAmplifier);
-    const positiveSignal = Array.isArray(scoreData?.traces)
-      ? scoreData.traces.reduce((sum, trace) => sum + Math.max(0, Number(trace?.rawScore) || 0), 0) / Math.max(scoreData.traces.length, 1)
-      : 0;
+    const traces = Array.isArray(scoreData?.traces) ? scoreData.traces : [];
+    const weightedPositiveSum = traces.reduce((sum, trace) => {
+      const score = Number(trace?.rawScore) || 0;
+      const weight = Number(trace?.weight) || 0;
+      return sum + (Math.max(0, score) * weight);
+    }, 0);
+    
+    // Normalize by total weight of positive traces
+    const totalWeight = traces.reduce((sum, trace) => sum + (Number(trace?.weight) || 0), 0);
+    const positiveSignal = totalWeight > 0 ? weightedPositiveSum / totalWeight : 0;
+
     const mood = pickMood({
       hasAwe: Boolean(amplifierInsight),
       hasDecay: decayedDetails.length > 0,

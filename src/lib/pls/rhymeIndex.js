@@ -1,1 +1,1 @@
-export { RhymeIndex } from '../../../codex/core/shared/rhymeIndex.js';
+export { RhymeIndex } from '../engine.adapter.js';

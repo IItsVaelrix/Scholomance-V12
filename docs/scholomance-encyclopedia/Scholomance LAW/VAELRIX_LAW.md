@@ -565,7 +565,24 @@ Choose one.
 > One final paragraph describing the true state of the implementation, without spin.
 ```
 
-### 16. Collab Login and MCP Access Protocol
+### 16. The Law of Antigen Regeneration
+
+**Every agent MUST transition documented private "scars" into public antigens.**
+
+When a bug is fixed and recorded in the private `memory/` folder, the agent responsible for the fix is obligated to prepare that finding for **Memory Cell Infusion**.
+
+#### 16.1 The Infusion Ritual
+1.  **Tag the Finding**: Use the `# INFUSION_ALLOW` tag in the memory file to mark the logic as safe for public extraction.
+2.  **Describe the Signature**: Provide a concise summary of the "symptoms" and the "cure."
+3.  **Trigger Infusion**: Execute `npm run memory:infuse` to vectorize the scar and inject it into the `clerical-raid` substrate.
+
+#### 16.2 Prohibition of Silent Recurrence
+No agent may ignore a documented fix in memory when encountering a regression. If the "genes light up" (semantic resonance detected), the agent must immediately halt work and seal the fracture using the documented cure.
+
+**Why This Exists:**
+Private memory is the agent's individual experience. Antigen Regeneration is the system's collective immunity. By sharing our scars, we ensure that the Scholomance never suffers the same wound twice.
+
+### 17. Collab Login and MCP Access Protocol
 
 **Any agent participating in coordinated work must use the collab control plane through approved login and MCP access paths.**
 

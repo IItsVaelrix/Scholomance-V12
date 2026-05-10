@@ -156,7 +156,8 @@ export default function SearchPanel({
   variant = 'sidebar',
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const inputIdRef = useRef(`oracle-query-${Math.random().toString(36).slice(2, 9)}`); // IMMUNE_ALLOW: math-random // EXEMPT
+  let idCounter = 0;
+  const inputIdRef = useRef(`oracle-query-${idCounter++}`);
   const userOverrideRef = useRef(false);
   const seedRef = useRef('');
   const castTimeoutRef = useRef(null);

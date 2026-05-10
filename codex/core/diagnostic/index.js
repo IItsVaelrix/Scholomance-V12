@@ -12,9 +12,11 @@ export {
   BytecodeHealth,
   encodeBytecodeHealth,
   encodeModuleHealth,
+  encodeArchivedHealth,
   checksumHealth,
   verifyHealthDeterminism,
   HEALTH_CODES,
+  ARCHIVED_CODES,
   HEALTH_SEVERITY,
   CELL_IDS as HEALTH_CELL_IDS,
 } from './BytecodeHealth.js';

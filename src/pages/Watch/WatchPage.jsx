@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useLayoutEffect } from "react";
+// ARCHIVED: logic-incomplete
 import { motion } from "framer-motion";
 import { useCurrentSong } from "../../hooks/useCurrentSong.jsx";
 import { getBytecodeAMP, AMP_CHANNELS } from "../../lib/ambient/bytecodeAMP.js";

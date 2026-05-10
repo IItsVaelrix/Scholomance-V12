@@ -39,7 +39,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './tests/setup.js',
     include: ['tests/**/*.{test,spec}.{js,jsx,ts,tsx}', '*.{test,spec}.{js,jsx,ts,tsx}'],
-    exclude: ['**/tests/visual/**', '**/node_modules/**', 'tests/qa/e2e/**', 'tests/qa/immunity.*.test.js', 'tests/core/rhyme_pipeline.test.js', 'debug_*.test.js', 'phoneme.accuracy.test.js'],
+    exclude: ['**/tests/visual/**', '**/node_modules/**', 'tests/qa/e2e/**', 'tests/qa/immunity.*.test.js', 'debug_*.test.js', 'phoneme.accuracy.test.js'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

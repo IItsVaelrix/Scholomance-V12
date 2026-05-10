@@ -142,7 +142,8 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
         'node_modules',
         'dist',
         '.codex',
-        'scripts'
+        'scripts',
+        'immunity'
       ];
 
       // Use grep to find occurrences

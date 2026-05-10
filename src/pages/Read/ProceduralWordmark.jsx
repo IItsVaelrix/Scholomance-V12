@@ -13,10 +13,11 @@ const ProceduralGlyph = memo(function ProceduralGlyph({
   index,
   total,
   animate,
+  seed
 }) {
   const lookup = char.toLowerCase();
   const strokes = GLYPH_ATLAS[lookup] || FALLBACK_STROKES;
-  const titleId = useId();
+  const titleId = `procedural-glyph-${seed}-${index}`;
 
   return (
     <svg

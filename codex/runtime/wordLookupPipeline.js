@@ -168,9 +168,10 @@ export function setupWordLookupPipeline(adapters) {
  * @param {number} [options.timeout=10000] - Timeout in milliseconds.
  * @returns {Promise<import('../core/schemas').LexicalEntry>}
  */
+let requestCounter = 0;
 export function requestWordLookup(word, options = {}) {
   const timeout = options.timeout || 10000;
-  const requestId = `req_${crypto.randomUUID()}`;
+  const requestId = `req_${requestCounter++}`;
 
   return new Promise((resolve, reject) => {
     let timeoutId = null;

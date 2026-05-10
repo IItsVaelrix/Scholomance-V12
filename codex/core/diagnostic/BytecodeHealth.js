@@ -69,6 +69,7 @@ export const HEALTH_CODES = Object.freeze({
 export const HEALTH_SEVERITY = Object.freeze({
   PASS: 'pass',
   INFO: 'info',
+  ARCHIVED: 'archived',
 });
 
 const HEALTH_VERSION = 'v1';
@@ -82,6 +83,21 @@ export const CELL_IDS = Object.freeze({
   TEST_COVERAGE: 'TEST_COVERAGE',
   FIXTURE_SHAPE: 'FIXTURE_SHAPE',
   PROCESSOR_BRIDGE: 'PROCESSOR_BRIDGE',
+});
+
+// ─── Archived ────────────────────────────────────────────────────────────────
+
+/**
+ * ARCHIVED — Logic in stasis.
+ *
+ * For work that is known to be incomplete, stubs, or deprecated logic
+ * that should not be flagged as a diagnostic failure. This prevents the
+ * system from being "too ravenous" for errors in unfinished sections.
+ */
+export const ARCHIVED_CODES = Object.freeze({
+  LOGIC_INCOMPLETE: 'PB-OK-v1-LOGIC-INCOMPLETE',
+  WIP_STUB: 'PB-OK-v1-WIP-STUB',
+  DEPRECATED_STASIS: 'PB-OK-v1-DEPRECATED-STASIS',
 });
 
 // ─── Checksum ─────────────────────────────────────────────────────────────────
@@ -200,6 +216,23 @@ export function encodeModuleHealth(moduleId, cellId, checkId, context = {}) {
     cellId,
     checkId,
     moduleId,
+    context,
+  });
+}
+
+/**
+ * Create a health signal for logic that is known to be incomplete or archived.
+ *
+ * @param {string} cellId - Cell ID
+ * @param {string} checkId - Check that is archived
+ * @param {object} [context={}] - Additional context
+ * @returns {BytecodeHealth}
+ */
+export function encodeArchivedHealth(cellId, checkId, context = {}) {
+  return new BytecodeHealth({
+    code: ARCHIVED_CODES.LOGIC_INCOMPLETE,
+    cellId,
+    checkId,
     context,
   });
 }

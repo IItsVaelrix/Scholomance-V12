@@ -1,1 +1,1 @@
-export { processorBridge } from '../../codex/core/shared/processor-bridge.js';
+export { processorBridge } from './engine.adapter.js';

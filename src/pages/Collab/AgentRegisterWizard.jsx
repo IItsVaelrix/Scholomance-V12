@@ -12,6 +12,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useAuth } from '../../hooks/useAuth.jsx';
 
 import './AgentRegisterWizard.css';
 
@@ -313,6 +314,7 @@ const INITIAL_DATA = {
 };
 
 export default function AgentRegisterWizard({ isOpen, onClose, onSuccess }) {
+    const { getCsrfToken } = useAuth();
     const [step, setStep] = useState('role'); // role | identity | framework | caps | confirm | summoning | success
     const [data, setData] = useState(INITIAL_DATA);
     const [identityError, setIdentityError] = useState(null);
@@ -366,9 +368,13 @@ export default function AgentRegisterWizard({ isOpen, onClose, onSuccess }) {
         setStep('summoning');
 
         try {
-            const res = await fetch('/collab/agents/register', {
+            const token = await getCsrfToken();
+            const res = await fetch('/api/collab/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token
+                },
                 body: JSON.stringify({
                     id: data.agentId.trim(),
                     name: data.name.trim(),
@@ -385,9 +391,13 @@ export default function AgentRegisterWizard({ isOpen, onClose, onSuccess }) {
 
             const agent = await res.json();
 
+            // Reuse token from registration call (same request context)
             await fetch(`/collab/agents/${data.agentId.trim()}/heartbeat`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'x-csrf-token': token
+                },
                 body: JSON.stringify({ status: 'online', current_task_id: null }),
             });
 
@@ -400,7 +410,7 @@ export default function AgentRegisterWizard({ isOpen, onClose, onSuccess }) {
             setSubmitError(err.message || 'An unexpected error occurred');
             setStep('confirm');
         }
-    }, [data, onSuccess, onClose]);
+    }, [data, onSuccess, onClose, getCsrfToken]);
 
     const handleBackdropClick = useCallback((e) => {
         if (e.target === e.currentTarget && step !== 'summoning') {

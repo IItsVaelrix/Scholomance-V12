@@ -55,7 +55,10 @@
     "immune:stasis:all": "node tests/qa/immunity.stasis.test.js && node tests/qa/immunity.glyph-stasis.test.js",
     "diagnostic:scan": "node codex/core/diagnostic/run-diagnostic.cli.js",
     "diagnostic:scan:ci": "node codex/core/diagnostic/run-diagnostic.cli.js --trigger ci",
+    "bible:synthesis": "node scripts/bible-synthesis.js",
+    "memory:infuse": "node scripts/memory-cell-infusion.js",
     "cleri": "node scripts/cleri-raid.js",
+    "cleri:probe": "node scripts/cleri-probe.js",
     "polish": "node scripts/production-polish.js full",
     "polish:quick": "node scripts/production-polish.js quick",
     "polish:ci": "node scripts/production-polish.js full --ci"

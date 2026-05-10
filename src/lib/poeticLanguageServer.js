@@ -20,11 +20,13 @@ import { validityProvider } from './pls/providers/validityProvider.js';
 import { democracyProvider } from './pls/providers/democracyProvider.js';
 import { predictabilityProvider } from './pls/providers/predictabilityProvider.js';
 import { rankCandidates, DEFAULT_WEIGHTS } from './pls/ranker.js';
-import { createTokenGraphSemanticRepo } from '../../codex/services/token-graph/semantic.repo.js';
-import { createTokenGraphSequenceRepo } from '../../codex/services/token-graph/sequence.repo.js';
-import { createRitualPredictionEngine } from '../../codex/core/ritual-prediction/run.js';
-import { processorBridge } from './processor-bridge.js';
-import { PhonemeEngine as CanonicalPhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
+import { 
+  createTokenGraphSemanticRepo, 
+  createTokenGraphSequenceRepo, 
+  createRitualPredictionEngine, 
+  processorBridge, 
+  PhonemeEngine as CanonicalPhonemeEngine 
+} from './engine.adapter.js';
 
 function resolvePredictionSchool(phonemeEngine, analysis) {
   const vowelFamily = Array.isArray(analysis?.vowelFamily)

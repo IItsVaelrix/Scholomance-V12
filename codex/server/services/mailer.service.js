@@ -187,7 +187,7 @@ export class MailerService {
     const providerConfig = options.providerConfig || createProviderAdapter(this.logger);
     this.provider = providerConfig.provider;
     this.adapter = providerConfig.adapter;
-    this.appBaseUrl = String(options.appBaseUrl || process.env.APP_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:3000').trim();
+    this.appBaseUrl = String(options.appBaseUrl || process.env.APP_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8080').trim();
     this.appName = String(options.appName || process.env.APP_NAME || 'Scholomance').trim();
   }
 

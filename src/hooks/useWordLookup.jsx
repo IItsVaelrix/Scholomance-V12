@@ -138,7 +138,7 @@ export function useWordLookup() {
     }
 
     requestIdCounterRef.current += 1;
-    const requestId = `lookup_${requestIdCounterRef.current}_${Date.now()}`;
+    const requestId = `lookup_${requestIdCounterRef.current}_${requestIdCounterRef.current}`;
     activeRequestIdRef.current = requestId;
     setIsLoading(true);
     setError(null);

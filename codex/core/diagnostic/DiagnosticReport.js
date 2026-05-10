@@ -15,6 +15,7 @@
  *     summary: {
  *       totalErrors: number,
  *       totalHealth: number,
+ *       totalArchived: number,
  *       totalSkipped: number,
  *       criticalViolations: number,
  *     },
@@ -34,6 +35,7 @@
 
 import crypto from 'node:crypto';
 import { getRepair } from '../immunity/repair.recommendations.js';
+import { ARCHIVED_CODES } from './BytecodeHealth.js';
 
 export const REPORT_VERSION = '1.0.0';
 
@@ -41,10 +43,10 @@ export const REPORT_VERSION = '1.0.0';
  * Generate a unique report ID.
  * @returns {string}
  */
+let reportIdCounter = 0;
 function generateReportId() {
   const timestamp = Date.now(); // EXEMPT — metadata only
-  // Crypto-grade unique suffix — replaces prior Math.random for QUANT-0101 conformance.
-  const random = crypto.randomBytes(2).toString('hex'); // 4 hex chars
+  const random = (reportIdCounter++).toString(16).padStart(4, '0');
   return `PB-DIAG-v1-${timestamp}-${random}`;
 }
 
@@ -63,7 +65,13 @@ export function checksumReport(report) {
     commitHash: report.commitHash,
     trigger: report.trigger,
     cells: report.cells,
-    summary: report.summary,
+    summary: {
+      totalErrors: report.summary.totalErrors,
+      totalHealth: report.summary.totalHealth,
+      totalArchived: report.summary.totalArchived || 0,
+      totalSkipped: report.summary.totalSkipped,
+      criticalViolations: report.summary.criticalViolations,
+    },
     violations: report.violations.map(v => ({
       code: v.code,
       category: v.category,
@@ -158,10 +166,15 @@ export function generateDiagnosticReport({ commitHash = 'unknown', trigger = 'ma
     }
   }
 
+  const archivedCodes = new Set(Object.values(ARCHIVED_CODES));
+  const archivedHealth = allHealth.filter(h => archivedCodes.has(h.code));
+  const pureHealth = allHealth.filter(h => !archivedCodes.has(h.code));
+
   // Compute summary — cellErrors are kept distinct from per-check skipped
   const summary = {
     totalErrors: allErrors.length,
-    totalHealth: allHealth.length,
+    totalHealth: pureHealth.length,
+    totalArchived: archivedHealth.length,
     totalSkipped: allSkipped.length,
     cellErrors: allCellErrors.length,
     criticalViolations: allErrors.filter(e => e.severity === 'CRIT' || e.severity === 'FATAL').length,

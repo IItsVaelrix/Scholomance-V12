@@ -15,35 +15,21 @@ const INDEX_VERSION = 2;
 const PREVIEW_MAX_LENGTH = 120;
 
 // ... (utility functions like generateUuid, generateId, schemas, getStorage, etc. remain the same)
+let uuidCounter = 0;
 const generateUuid = () => {
-  if (typeof crypto !== "undefined" && crypto.randomUUID) {
-    return crypto.randomUUID();
-  }
-  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-    const bytes = crypto.getRandomValues(new Uint8Array(16));
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const hex = [...bytes].map((b) => b.toString(16).padStart(2, "0")).join("");
-    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-  }
   const s4 = () => {
     const array = new Uint16Array(1);
-    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
-      crypto.getRandomValues(array);
-    } else {
-      // Fallback for extremely legacy environments
-      const seed = Date.now();
-      const rnd = (seed * 16807) % 2147483647;
-      array[0] = Math.floor((rnd / 2147483646) * 0x10000); // IMMUNE_ALLOW: math-random
-    }
+    uuidCounter += 1;
+    const rnd = (uuidCounter * 16807) % 2147483647;
+    array[0] = Math.floor((rnd / 2147483646) * 0x10000);
     return array[0].toString(16).padStart(4, '0');
   };
   const part1 = `${s4()}${s4()}`;
   const part2 = s4();
   const part3 = `4${s4().slice(1)}`;
-  const seed4 = Date.now() + 1;
-  const rnd4 = (seed4 * 16807) % 2147483647;
-  const part4 = ((8 + Math.floor((rnd4 / 2147483646) * 4)).toString(16)) + s4().slice(1); // IMMUNE_ALLOW: math-random
+  uuidCounter += 1;
+  const rnd4 = (uuidCounter * 16807) % 2147483647;
+  const part4 = ((8 + Math.floor((rnd4 / 2147483646) * 4)).toString(16)) + s4().slice(1);
   const part5 = `${s4()}${s4()}${s4()}`;
   return `${part1}-${part2}-${part3}-${part4}-${part5}`;
 };

@@ -1,4 +1,4 @@
-import { processorBridge } from '../../core/shared/processor-bridge.js';
+import { verseIRMicroprocessors } from '../../core/microprocessors/index.js';
 import {
   BytecodeError,
   ERROR_CATEGORIES,
@@ -35,7 +35,7 @@ export async function analyzeReferenceImage(buffer, mimetype) {
 
     // 1. Decode bitstream using unified bridge (Async by default)
     const decodeStart = Date.now();
-    const { pixelData, dimensions } = await processorBridge.execute('pixel.decode', { buffer, mimetype });
+    const { pixelData, dimensions } = await verseIRMicroprocessors.execute('pixel.decode', { buffer, mimetype });
     console.log('[ImageAnalysis] Decoded in', Date.now() - decodeStart, 'ms:', dimensions);
 
     // Validate decode result
@@ -54,7 +54,7 @@ export async function analyzeReferenceImage(buffer, mimetype) {
     };
 
     const resampleStart = Date.now();
-    const { pixelData: substrate, dimensions: workingDims } = await processorBridge.execute('pixel.resample', {
+    const { pixelData: substrate, dimensions: workingDims } = await verseIRMicroprocessors.execute('pixel.resample', {
       pixelData,
       dimensions,
       targetSize

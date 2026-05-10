@@ -16,6 +16,11 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md`](./PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md) | READY FOR GEMINI PHASE 0 KICKOFF. | Unclassified | Unclassified |
 | [`PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md`](./PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md) | READY (blocked on Gemini Phase 2 acceptance). | Unclassified | Unclassified |
 | [`PDR-2026-05-08-IDE-PHASE-4-SURFACE-POLISH.md`](./PDR-2026-05-08-IDE-PHASE-4-SURFACE-POLISH.md) | READY (blocked on Phase 3 acceptance). | Unclassified | Unclassified |
+| [`PDR-2026-05-10-ANTIGEN-REGENERATION.md`](./PDR-2026-05-10-ANTIGEN-REGENERATION.md) | Draft | Architectural \| Immune System \| AI Safety | High |
+| [`PDR-2026-05-10-ENGINE-ADAPTER.md`](./PDR-2026-05-10-ENGINE-ADAPTER.md) | Draft | Architectural \| Preventative \| Security | Critical |
+| [`PDR-2026-05-10-PROACTIVE-ANTIGEN-PROBE.md`](./PDR-2026-05-10-PROACTIVE-ANTIGEN-PROBE.md) | Draft | Architectural \| Immune System \| AI Safety | High |
+| [`PDR-2026-05-10-BYTECODE-DIAGNOSTIC-REPORTING.md`](./PDR-2026-05-10-BYTECODE-DIAGNOSTIC-REPORTING.md) | In Progress | Architectural \| QA Infrastructure \| AI Observability | High |
+| [`PDR-2026-05-10-DIAGNOSTIC-ARCHIVED-HEALTH.md`](./PDR-2026-05-10-DIAGNOSTIC-ARCHIVED-HEALTH.md) | Implemented | Architectural \| QA Infrastructure \| AI Safety | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |

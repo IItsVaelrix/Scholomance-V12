@@ -453,7 +453,8 @@ export const SEED_PATTERNS = [
     ['PAT-047', 'Immune Scanner False Positive', ['validation', 'coverage'], ['codex/core/immunity'], ['IMMUNE'], AGENT_INDEX.BLACKBOX, 'Blackbox: Allow-list annotation or path exemption.', 1.0],
     ['PAT-048', 'TurboQuant WASM Fallback', ['performance', 'type error'], ['codex/core/quantization'], ['wasm'], AGENT_INDEX.CODEX, 'Codex: Ensure JS kernel parity tests pass.', 1.0],
     ['PAT-049', 'Lattice Grid Coordinate Overflow', ['range', 'render'], ['codex/core/pixelbrain'], ['coordinate'], AGENT_INDEX.CODEX, 'Codex: Clamp lattice coords; assert SCHEMA_CONTRACT.', 1.0],
-    ['PAT-050', 'Truesight Semantic Ambiguity', ['schema', 'render mismatch'], ['src/pages/Read'], ['truesight'], AGENT_INDEX.CLAUDE, 'Claude: Disambiguate rhymeKey vs near-rhyme in overlay.', 1.0]
+    ['PAT-050', 'Truesight Semantic Ambiguity', ['schema', 'render mismatch'], ['src/pages/Read'], ['truesight'], AGENT_INDEX.CLAUDE, 'Claude: Disambiguate rhymeKey vs near-rhyme in overlay.', 1.0],
+    ['PAT-051', 'AI Hallucination: Legacy Path Reintroduction', ['import failure', 'circular', 'LING'], ['codex/core', 'scripts'], ['No such file', 'cannot find module'], AGENT_INDEX.BLACKBOX, 'Blackbox: Agent used Archive/Prototypes as a base for new logic. Re-route to codex/core/rhyme-astrology or relevant canonical layer.', 1.0]
   ].map(row => new Pattern(row[0], row[1], row[2], row[3], row[4], row[5], row[6], row[7]))
 ];
 

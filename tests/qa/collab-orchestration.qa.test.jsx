@@ -3,6 +3,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
 
+vi.mock("../../src/hooks/useAuth.jsx", () => ({
+  AuthProvider: ({ children }) => children,
+  useAuth: () => ({
+    user: null,
+    isLoading: false,
+    login: vi.fn(),
+    register: vi.fn(),
+    logout: vi.fn(),
+    checkMe: vi.fn(),
+    getCsrfToken: vi.fn(),
+  }),
+}));
+
 // Mock EventSource
 if (typeof global.EventSource === 'undefined') {
   global.EventSource = class {

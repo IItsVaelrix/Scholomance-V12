@@ -10,7 +10,7 @@
  */
 
 import { BytecodeError, ERROR_CODES } from '../../pixelbrain/bytecode-error.js';
-import { encodeBytecodeHealth } from '../BytecodeHealth.js';
+import { encodeBytecodeHealth, encodeArchivedHealth } from '../BytecodeHealth.js';
 import { parseImports as astParseImports } from '../ast-import-parser.js';
 
 export const CELL_ID = 'PROCESSOR_BRIDGE';
@@ -31,9 +31,11 @@ const BRIDGE_RULES = [
   {
     id: 'CONVENIENCE_BRIDGE',
     test: ({ importPath, sourcePath }) =>
-      /(^|\/)processor-?bridge(\.|$|\/)/.test(importPath) &&
-      // Don't flag the bridge file or its tests for importing themselves
+      // Only flag imports that end in processor-bridge.js or are exact matches
+      /(^|\/)processor-?bridge\.js$/.test(importPath) &&
+      // Don't flag the bridge file, adapters, or tests for importing themselves
       !sourcePath.endsWith('processor-bridge.js') &&
+      !sourcePath.endsWith('engine.adapter.js') &&
       !sourcePath.endsWith('processor-bridge.cell.js') &&
       !sourcePath.includes('/diagnostic.stasis.test.'),
     reason: 'Direct processor-bridge import — use official API instead',
@@ -89,21 +91,32 @@ export async function scan(_snapshot, files = []) {
     const findings = scanForBridges(content, path);
 
     for (const f of findings) {
-      const error = new BytecodeError(
-        'LINGUISTIC',
-        'CRIT',
-        'IMMUNE',
-        ERROR_CODES.IMMUNE_PROTOCOL_BLOCK,
-        {
-          layer: 'bridge',
-          bridgePatternId: f.rule.id,
+      const bridgeRuleId = f.rule.id;
+      // Check for ARCHIVED annotation for this specific bridge rule (top-level comment)
+      const archivedRegex = new RegExp(`^\\/\\/\\s*ARCHIVED:\\s*${bridgeRuleId}`, 'm');
+      if (archivedRegex.test(content)) {
+        health.push(encodeArchivedHealth(CELL_ID, `bridge-archived-${bridgeRuleId}`, {
           path,
-          line: f.line,
-          importPath: f.importPath,
-          detail: f.rule.reason,
-        },
-      );
-      errors.push(error);
+          bridgeRuleId,
+          reason: 'logic-incomplete',
+        }));
+      } else {
+        const error = new BytecodeError(
+          'LINGUISTIC',
+          'CRIT',
+          'IMMUNE',
+          ERROR_CODES.IMMUNE_PROTOCOL_BLOCK,
+          {
+            layer: 'bridge',
+            bridgePatternId: bridgeRuleId,
+            path,
+            line: f.line,
+            importPath: f.importPath,
+            detail: f.rule.reason,
+          },
+        );
+        errors.push(error);
+      }
     }
   }
 

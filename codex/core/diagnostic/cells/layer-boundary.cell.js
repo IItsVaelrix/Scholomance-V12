@@ -17,7 +17,7 @@
  */
 
 import { BytecodeError, ERROR_CODES } from '../../pixelbrain/bytecode-error.js';
-import { encodeBytecodeHealth } from '../BytecodeHealth.js';
+import { encodeBytecodeHealth, encodeArchivedHealth } from '../BytecodeHealth.js';
 import { parseImports as astParseImports } from '../ast-import-parser.js';
 
 export const CELL_ID = 'LAYER_BOUNDARY';
@@ -129,14 +129,25 @@ export async function scan(_snapshot, files = []) {
 
     // Emit errors
     for (const v of violations) {
-      const error = new BytecodeError(
-        'LINGUISTIC',
-        'CRIT',
-        'IMMUNE',
-        ERROR_CODES.IMMUNE_FORBIDDEN_IMPORT,
-        v.context,
-      );
-      errors.push(error);
+      const ruleId = v.rule.id;
+      // Check for ARCHIVED annotation for this specific rule (top-level comment)
+      const archivedRegex = new RegExp(`^\\/\\/\\s*ARCHIVED:\\s*${ruleId}`, 'm');
+      if (archivedRegex.test(content)) {
+        health.push(encodeArchivedHealth(CELL_ID, `layer-archived-${ruleId}`, {
+          path,
+          ruleId,
+          reason: 'logic-incomplete',
+        }));
+      } else {
+        const error = new BytecodeError(
+          'LINGUISTIC',
+          'CRIT',
+          'IMMUNE',
+          ERROR_CODES.IMMUNE_FORBIDDEN_IMPORT,
+          v.context,
+        );
+        errors.push(error);
+      }
     }
   }
 

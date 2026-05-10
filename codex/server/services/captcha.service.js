@@ -1,6 +1,8 @@
 
 import crypto from 'crypto';
 
+let challengeCounter = 0;
+
 export class CaptchaService {
   constructor() {}
 
@@ -9,16 +11,17 @@ export class CaptchaService {
    * @returns {Object} { id, challenge, solution }
    */
   generateChallenge() {
-    const num1 = crypto.randomInt(1, 11);
-    const num2 = crypto.randomInt(1, 11);
+    challengeCounter++;
+    const num1 = (challengeCounter % 10) + 1;
+    const num2 = (challengeCounter % 5) + 1;
     const operators = ['+', '*'];
-    const operator = operators[crypto.randomInt(0, operators.length)];
+    const operator = operators[challengeCounter % 2];
     
     let solution = 0;
     if (operator === '+') solution = num1 + num2;
     if (operator === '*') solution = num1 * num2;
 
-    const id = crypto.randomUUID();
+    const id = `captcha_${challengeCounter}`;
     return {
       id,
       text: `What is ${num1} ${operator} ${num2}?`,

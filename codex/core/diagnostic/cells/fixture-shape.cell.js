@@ -14,7 +14,7 @@
  */
 
 import { BytecodeError, ERROR_CODES } from '../../pixelbrain/bytecode-error.js';
-import { encodeBytecodeHealth } from '../BytecodeHealth.js';
+import { encodeBytecodeHealth, encodeArchivedHealth } from '../BytecodeHealth.js';
 
 export const CELL_ID = 'FIXTURE_SHAPE';
 export const CELL_NAME = 'Test Fixture Quality';
@@ -114,21 +114,32 @@ export async function scan(_snapshot, files = []) {
     const findings = scanForAntipatterns(content, path);
 
     for (const f of findings) {
-      const error = new BytecodeError(
-        'STATE',
-        f.antipattern.severity === 'warn' ? 'WARN' : 'INFO',
-        'IMMUNE',
-        ERROR_CODES.TEST_FIXTURE_ANTIPATTERN,
-        {
-          layer: 'fixture',
-          antipatternId: f.antipattern.id,
+      const antipatternId = f.antipattern.id;
+      // Check for ARCHIVED annotation for this specific antipattern (top-level comment)
+      const archivedRegex = new RegExp(`^\\/\\/\\s*ARCHIVED:\\s*${antipatternId}`, 'm');
+      if (archivedRegex.test(content)) {
+        health.push(encodeArchivedHealth(CELL_ID, `fixture-archived-${antipatternId}`, {
           path,
-          line: f.line,
-          detail: f.antipattern.reason,
-          severity: f.antipattern.severity,
-        },
-      );
-      errors.push(error);
+          antipatternId,
+          reason: 'logic-incomplete',
+        }));
+      } else {
+        const error = new BytecodeError(
+          'STATE',
+          f.antipattern.severity === 'warn' ? 'WARN' : 'INFO',
+          'IMMUNE',
+          ERROR_CODES.TEST_FIXTURE_ANTIPATTERN,
+          {
+            layer: 'fixture',
+            antipatternId,
+            path,
+            line: f.line,
+            detail: f.antipattern.reason,
+            severity: f.antipattern.severity,
+          },
+        );
+        errors.push(error);
+      }
     }
   }
 

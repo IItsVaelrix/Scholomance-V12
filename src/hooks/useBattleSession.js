@@ -453,8 +453,9 @@ export function useBattleSession() {
       ])
     );
 
+    let battleIdCounter = 0;
     setBattleState({
-      id: `battle-${Date.now()}`, // EXEMPT
+      id: `battle-${battleIdCounter++}`, // EXEMPT
       gridWidth: INITIAL_GRID_SIZE,
       gridHeight: INITIAL_GRID_SIZE,
       grid,

@@ -807,8 +807,8 @@ function createAmbientPlayerService(options = {}) {
   const dialLockUntilRef = { current: 0 };
   const controllerFactory = options.controllerFactory;
   const dialSfxPlayer = options.dialSfxPlayer || ((settings) => defaultDialSfxPlayer(audioContextRef, settings));
-  const nowFn = options.nowFn || Date.now;
-  const randomFn = typeof options.randomFn === "function" ? options.randomFn : Math.random;
+  const nowFn = options.nowFn || (() => { let counter = 0; return () => counter += 1; })();
+  const randomFn = typeof options.randomFn === "function" ? options.randomFn : freshRng();
   const lastResolvedTrackUrlBySchool = new Map();
   let hasPlayedDialSfx = false;
   let tuneOperationId = 0;
