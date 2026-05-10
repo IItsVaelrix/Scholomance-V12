@@ -95,7 +95,8 @@ const ContextSchema = z.object({
 
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 5000);
+  const timeoutMs = options.timeoutMs || 5000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(url, { ...options, signal: controller.signal });
     if (!res.ok) throw new BytecodeError(
@@ -104,56 +105,59 @@ async function fetchJson(url, options = {}) {
       { reason: 'Corpus API error', httpStatus: res.status, url },
     );
     return await res.json();
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new Error('Corpus Oracle timed out');
+    }
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Corpus Oracle is disconnected (Network Error)');
+    }
+    throw error;
   } finally { clearTimeout(timeout); }
+}
+
+function buildUrl(path, params = {}) {
+  const baseUrl = resolveBaseUrl();
+  let absoluteBase = baseUrl;
+  
+  // If it's a relative path, prefix with window origin
+  if (baseUrl.startsWith('/') && typeof window !== 'undefined') {
+    absoluteBase = `${window.location.origin}${baseUrl}`;
+  }
+
+  const url = new URL(`${absoluteBase}${path}`, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  return url.toString();
 }
 
 export const ScholomanceCorpusAPI = {
   isEnabled() { return Boolean(resolveBaseUrl()); },
   getBaseUrl() { return resolveBaseUrl(); },
 
-  /**
-   * Search the massive literary corpus for sentences matching a query.
-   */
   async search(query, limit = 20) {
-    const baseUrl = resolveBaseUrl();
-    if (!baseUrl || !query) return [];
-
-    const url = new URL(`${baseUrl}/search`, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-    url.searchParams.set('q', query);
-    url.searchParams.set('limit', String(limit));
-    
-    const payload = await fetchJson(url.toString());
+    if (!query) return [];
+    const url = buildUrl('/search', { q: query, limit });
+    const payload = await fetchJson(url);
     const parsed = SearchSchema.safeParse(payload);
     return parsed.success ? parsed.data.results : [];
   },
 
-  /**
-   * Find phonemically similar words via the semantic endpoint (S2).
-   */
   async semantic(word, limit = 8) {
-    const baseUrl = resolveBaseUrl();
-    if (!baseUrl || !word) return [];
-
-    const url = new URL(`${baseUrl}/semantic`, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-    url.searchParams.set('word', word);
-    url.searchParams.set('limit', String(limit));
-
-    const payload = await fetchJson(url.toString());
+    if (!word) return [];
+    const url = buildUrl('/semantic', { word, limit });
+    const payload = await fetchJson(url);
     const parsed = SemanticSchema.safeParse(payload);
     return parsed.success ? parsed.data.results : [];
   },
 
-  /**
-   * Get the surrounding context (sentences) for a specific corpus entry.
-   */
   async getContext(id, windowSize = 2) {
-    const baseUrl = resolveBaseUrl();
-    if (!baseUrl || !id) return [];
-
-    const url = new URL(`${baseUrl}/context/${id}`, typeof window !== "undefined" ? window.location.origin : "http://localhost");
-    url.searchParams.set('window', String(windowSize));
-    
-    const payload = await fetchJson(url.toString());
+    if (!id) return [];
+    const url = buildUrl(`/context/${id}`, { window: windowSize });
+    const payload = await fetchJson(url);
     const parsed = ContextSchema.safeParse(payload);
     return parsed.success ? parsed.data.results : [];
   }

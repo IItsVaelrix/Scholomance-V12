@@ -106,7 +106,8 @@ def init_db(db_path: str, overwrite: bool) -> sqlite3.Connection:
             etymology TEXT,
             senses_json TEXT NOT NULL,
             source TEXT NOT NULL,
-            source_url TEXT
+            source_url TEXT,
+            embeddings_tq BLOB
         );
 
         CREATE INDEX IF NOT EXISTS idx_entry_headword_lower ON entry(headword_lower);

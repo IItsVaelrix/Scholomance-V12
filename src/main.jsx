@@ -25,10 +25,15 @@ import {
 void import("phaser").catch(() => {});
 
 // Eagerly preload page chunks with staggering to avoid CPU/Network congestion
-const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
+const INTERNAL_PATHS = ["/collab", "/pixelbrain", "/career"];
+
 setTimeout(() => {
-  const components = Object.values(PAGE_COMPONENTS);
-  components.forEach((c, i) => {
+  const components = Object.entries(PAGE_COMPONENTS);
+  components.forEach(([path, c], i) => {
+    // In production, don't even trigger preloads for internal paths
+    if (IS_PROD && INTERNAL_PATHS.includes(path)) return;
+    
     setTimeout(() => c.preload?.(), i * 200);
   });
 }, 1500);

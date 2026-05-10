@@ -2,7 +2,7 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { isAdminUser } from "../components/Navigation/Navigation.jsx";
 
-const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
 
 /**
  * AdminRoute Guard

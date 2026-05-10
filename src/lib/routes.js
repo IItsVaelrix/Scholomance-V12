@@ -33,22 +33,30 @@ const ALL_COMPONENTS = {
  * available routes dynamically based on environment and role.
  */
 export function getAvailablePageComponents(user) {
+  const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
   const isInternalAdmin = isAdminUser(user);
   
   return Object.fromEntries(
     Object.entries(ALL_COMPONENTS).filter(([path]) => {
-      if (IS_PROD) {
-        if (INTERNAL_MODULES.includes(path)) {
-          return isInternalAdmin;
-        }
+      // Internal modules are gated in production for non-admins
+      if (IS_PROD && INTERNAL_MODULES.includes(path)) {
+        return isInternalAdmin;
       }
       return true;
     })
   );
 }
 
-// Backward compatibility for static usages (defaults to non-admin view)
-export const PAGE_COMPONENTS = getAvailablePageComponents(null);
+// Backward compatibility for static usages (defaults to all-access if not in PROD)
+const IS_PROD_STATIC = typeof import.meta !== "undefined" && import.meta.env.PROD;
+export const PAGE_COMPONENTS = Object.fromEntries(
+  Object.entries(ALL_COMPONENTS).filter(([path]) => {
+    if (IS_PROD_STATIC && INTERNAL_MODULES.includes(path)) {
+      return false; // Default to hidden in production static view
+    }
+    return true;
+  })
+);
 
 /**
  * Trigger pre-fetching of a page chunk.

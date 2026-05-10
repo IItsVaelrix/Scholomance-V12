@@ -15,26 +15,45 @@ import { quantizeVectorJS } from '../src/lib/math/quantization/turboquant.js';
 import { generatePhonosemanticVector } from '../codex/core/semantic/vector.utils.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DB_PATHS = [
-    path.resolve(__dirname, '../data/rhyme-astrology/rhyme_lexicon.sqlite'),
-    path.resolve(__dirname, '../dict_data/rhyme-astrology/rhyme_lexicon.sqlite'),
+const DB_CONFIGS = [
+    {
+        path: path.resolve(__dirname, '../data/rhyme-astrology/rhyme_lexicon.sqlite'),
+        table: 'lexicon_node',
+        textColumn: 'normalized'
+    },
+    {
+        path: path.resolve(__dirname, '../dict_data/rhyme-astrology/rhyme_lexicon.sqlite'),
+        table: 'lexicon_node',
+        textColumn: 'normalized'
+    },
+    {
+        path: path.resolve(__dirname, '../data/scholomance_dict.sqlite'),
+        table: 'entry',
+        textColumn: 'headword_lower'
+    },
+    {
+        path: path.resolve(__dirname, '../scholomance_dict.sqlite'),
+        table: 'entry',
+        textColumn: 'headword_lower'
+    }
 ];
 const SEED = 42;
 const TARGET_DIM = 256; // Must be power of 2
 
-async function processDb(dbPath) {
+async function processDb(config) {
+    const { path: dbPath, table, textColumn } = config;
     if (!fs.existsSync(dbPath)) {
         console.log(`[RITUAL] Substrate not found at ${dbPath}, skipping.`);
         return;
     }
     
-    console.log(`[RITUAL] Opening Rhyme Lexicon: ${dbPath}`);
+    console.log(`[RITUAL] Opening Database: ${dbPath}`);
     const db = new Database(dbPath);
 
     // 1. Add column if missing
     try {
-        db.exec('ALTER TABLE lexicon_node ADD COLUMN embeddings_tq BLOB');
-        console.log('[RITUAL] Added column: lexicon_node.embeddings_tq');
+        db.exec(`ALTER TABLE ${table} ADD COLUMN embeddings_tq BLOB`);
+        console.log(`[RITUAL] Added column: ${table}.embeddings_tq`);
     } catch (e) {
         if (e.message.includes('duplicate column name')) {
             console.log('[RITUAL] Column embeddings_tq already exists.');
@@ -44,16 +63,19 @@ async function processDb(dbPath) {
     }
 
     // 2. Fetch all entries
-    const entries = db.prepare('SELECT id, normalized FROM lexicon_node').all();
-    console.log(`[RITUAL] Generating Phonosemantic Embeddings for ${entries.length} nodes...`);
+    const entries = db.prepare(`SELECT id, ${textColumn} FROM ${table}`).all();
+    console.log(`[RITUAL] Generating Phonosemantic Embeddings for ${entries.length} nodes in ${table}...`);
 
-    const updateStmt = db.prepare('UPDATE lexicon_node SET embeddings_tq = ? WHERE id = ?');
+    const updateStmt = db.prepare(`UPDATE ${table} SET embeddings_tq = ? WHERE id = ?`);
 
     // 3. Batch process
     const transaction = db.transaction((rows) => {
         let count = 0;
         for (const row of rows) {
-            const vector = generatePhonosemanticVector(row.normalized, TARGET_DIM);
+            const textValue = row[textColumn];
+            if (!textValue) continue;
+            
+            const vector = generatePhonosemanticVector(textValue, TARGET_DIM);
             const { data, norm } = quantizeVectorJS(vector, SEED);
 
             // Pack: [4-byte norm][data...]
@@ -74,8 +96,8 @@ async function processDb(dbPath) {
 }
 
 async function main() {
-    for (const dbPath of DB_PATHS) {
-        await processDb(dbPath);
+    for (const config of DB_CONFIGS) {
+        await processDb(config);
     }
 }
 

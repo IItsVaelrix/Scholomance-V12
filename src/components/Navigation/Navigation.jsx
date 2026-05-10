@@ -54,17 +54,19 @@ export default function Navigation() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const { theme, toggleTheme } = useTheme();
 
-  const isInternalAdmin = isAdminUser(user);
   const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+  const isInternalAdmin = isAdminUser(user);
+
+  const internalModules = [
+    { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
+    { id: "career", path: "/career", label: "Career" },
+    { id: "collab", path: "/collab", label: "Collab" },
+  ];
 
   const navLinks = [
     ...LINKS,
-    // Add internal modules back in PROD if user is admin
-    ...(IS_PROD && isInternalAdmin ? [
-      { id: "pixelbrain", path: "/pixelbrain", label: "PixelBrain" },
-      { id: "career", path: "/career", label: "Career" },
-      { id: "collab", path: "/collab", label: "Collab" },
-    ] : []),
+    // Add internal modules if not in PROD, OR if user is admin in PROD
+    ...(!IS_PROD || isInternalAdmin ? internalModules : []),
   ];
 
   const handlePrefetch = useCallback((path) => {
