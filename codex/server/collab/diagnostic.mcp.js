@@ -25,7 +25,27 @@ import {
 } from '../../core/diagnostic/persistence.js';
 import { getRecoveryHintsForError } from '../../core/pixelbrain/bytecode-error.js';
 
-// ... (listReportIds implementation)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const ROOT = path.resolve(__dirname, '..', '..', '..');
+
+// ─── Report Index ─────────────────────────────────────────────────────────────
+
+async function listReportIds(rootDir = ROOT) {
+  const dir = path.join(rootDir, DEFAULT_REPORTS_DIR);
+  let entries;
+  try {
+    entries = await fs.readdir(dir);
+  } catch (err) {
+    if (err.code === 'ENOENT') return [];
+    throw err;
+  }
+  return entries
+    .filter(n => n.endsWith('.json'))
+    .map(n => n.replace(/\.json$/, ''))
+    .filter(id => timestampFromReportId(id) !== null)
+    .sort((a, b) => (timestampFromReportId(b) || 0) - (timestampFromReportId(a) || 0));
+}
 
 // ─── Public MCP-callable functions ────────────────────────────────────────────
 

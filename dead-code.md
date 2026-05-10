@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-05-10T10:11:55.183Z
+Generated at: 2026-05-10T11:44:43.232Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -94,6 +94,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
 - [ ] `getXpForLevel` in `src/lib/progressionUtils.js`
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
+- [ ] `getAvailablePageComponents` in `src/lib/routes.js`
 - [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
 - [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `keyToCoord` in `src/pages/Combat/state/combatBoardUtils.js`

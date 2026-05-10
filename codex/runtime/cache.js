@@ -10,6 +10,9 @@ const cache = new Map();
 const DEFAULT_TTL = 24 * 60 * 60 * 1000; // 24 hours (persistent across sessions)
 const MAX_CACHE_SIZE = 1000;
 
+// Phase 4: Ritual Prediction Artifact Cache Support
+const PREDICTION_ARTIFACT_NAMESPACE = 'PB-PRED-v1:';
+
 // --- IndexedDB Persistence Layer ---
 
 const DB_NAME = "scholomance-cache-v2";
@@ -201,6 +204,25 @@ export function setInCache(key, data, ttl = DEFAULT_TTL) {
   };
   cache.set(key, entry);
   persistEntry(key, entry);
+}
+
+/**
+ * Persists a compiled RitualPredictionArtifact to the cache.
+ * This satisfies Phase 4 of the Prediction Enhancement PDR.
+ * @param {string} requestHash 
+ * @param {object} artifact 
+ */
+export function cachePredictionArtifact(requestHash, artifact) {
+  setInCache(`${PREDICTION_ARTIFACT_NAMESPACE}${requestHash}`, artifact, DEFAULT_TTL);
+}
+
+/**
+ * Retrieves a cached RitualPredictionArtifact.
+ * @param {string} requestHash 
+ * @returns {object|null}
+ */
+export function getPredictionArtifact(requestHash) {
+  return getFromCache(`${PREDICTION_ARTIFACT_NAMESPACE}${requestHash}`);
 }
 
 /**

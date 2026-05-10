@@ -3,6 +3,7 @@ import {
   normalizeGraphToken,
   normalizeSchoolId,
 } from '../token-graph/types.js';
+import { compileVerseToIR } from '../shared/truesight/compiler/compileVerseToIR.js';
 
 function clampPositiveInteger(value, fallback) {
   const numeric = Number(value);
@@ -89,10 +90,23 @@ function deriveLineEndToken(request, verseIRState) {
 }
 
 export function createRitualPredictionContext(request = {}, options = {}) {
-  const verseIRState = request.verseIRState && typeof request.verseIRState === 'object'
+  // Phase 2: VerseIR-first context binding
+  // Allow passing raw text to be compiled if VerseIR is not provided.
+  // Note: buildPlsVerseIRBridge is a conceptual bridge for language server environments;
+  // here we ensure the core IR is always available as the authoritative substrate.
+  let verseIRState = request.verseIRState && typeof request.verseIRState === 'object'
     ? request.verseIRState
     : null;
-  const currentLineWords = normalizeTokenList(request.currentLineWords);
+
+  if (!verseIRState && typeof request.rawVerseText === 'string') {
+    verseIRState = compileVerseToIR(request.rawVerseText, { 
+      phonemeEngine: options.phonemeEngine 
+    });
+  }
+
+  const currentLineWords = normalizeTokenList(
+    request.currentLineWords || verseIRState?.currentLine?.tokens?.map(t => t.word) || []
+  );
 
   return {
     prefix: normalizeGraphToken(request.prefix),
