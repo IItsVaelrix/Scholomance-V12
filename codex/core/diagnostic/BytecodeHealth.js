@@ -83,6 +83,9 @@ export const CELL_IDS = Object.freeze({
   TEST_COVERAGE: 'TEST_COVERAGE',
   FIXTURE_SHAPE: 'FIXTURE_SHAPE',
   PROCESSOR_BRIDGE: 'PROCESSOR_BRIDGE',
+  CONNECTION_HEALTH: 'CONNECTION_HEALTH',
+  LIFECYCLE: 'LIFECYCLE',
+  DB_HEALTH: 'DB_HEALTH',
 });
 
 // ─── Archived ────────────────────────────────────────────────────────────────

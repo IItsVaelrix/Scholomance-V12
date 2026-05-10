@@ -53,6 +53,12 @@ import {
   MODULE_IDS,
   ERROR_CODES,
 } from '../core/pixelbrain/bytecode-error.js';
+import {
+  BytecodeHealth,
+  HEALTH_CODES,
+  encodeModuleHealth,
+  encodeBytecodeHealth,
+} from '../core/diagnostic/BytecodeHealth.js';
 
 const BYTECODE_MOD = MODULE_IDS.SHARED;
 import { createLexiconAdapter } from './adapters/lexicon.sqlite.adapter.js';
@@ -1077,6 +1083,7 @@ async function closeRedisConnection() {
 }
 
 function closePersistenceConnections() {
+    const shutdownHealth = [];
     try {
         stopAgentQaSweep();
     } catch (error) {
@@ -1089,28 +1096,46 @@ function closePersistenceConnections() {
     }
     try {
         userPersistence.close();
+        shutdownHealth.push(encodeBytecodeHealth('LIFECYCLE', 'USER_DB_CLOSED', { module: 'user' }));
     } catch (error) {
         fastify.log.warn({ err: error }, '[DB:user] Failed to close cleanly.');
     }
     try {
         collabPersistence.close();
+        shutdownHealth.push(encodeBytecodeHealth('LIFECYCLE', 'COLLAB_DB_CLOSED', { module: 'collab' }));
     } catch (error) {
         fastify.log.warn({ err: error }, '[DB:collab] Failed to close cleanly.');
     }
     try {
         lexiconAdapter.close?.();
+        shutdownHealth.push(encodeModuleHealth('lexicon', 'LIFECYCLE', 'LEXICON_DB_CLOSED', {
+            reconnects: lexiconAdapter.__unsafe?.reconnectCount,
+        }));
     } catch (error) {
         fastify.log.warn({ err: error }, '[DB:lexicon] Failed to close cleanly.');
     }
     try {
         corpusAdapter.close?.();
+        shutdownHealth.push(encodeModuleHealth('corpus', 'LIFECYCLE', 'CORPUS_DB_CLOSED', {
+            reconnects: corpusAdapter.__unsafe?.reconnectCount,
+        }));
     } catch (error) {
         fastify.log.warn({ err: error }, '[DB:corpus] Failed to close cleanly.');
     }
     try {
         corpusService.close?.();
+        shutdownHealth.push(encodeModuleHealth('corpus-service', 'LIFECYCLE', 'CORPUS_SERVICE_CLOSED', {
+            reconnects: corpusService.__unsafe?.reconnectCount,
+        }));
     } catch (error) {
         fastify.log.warn({ err: error }, '[Service:corpus] Failed to close cleanly.');
+    }
+
+    if (shutdownHealth.length > 0) {
+        fastify.log.info({
+            healthSignals: shutdownHealth.map(h => ({ bytecode: h.bytecode, checksum: h.checksum })),
+            count: shutdownHealth.length,
+        }, '[LIFECYCLE] Shutdown health signals emitted.');
     }
 }
 

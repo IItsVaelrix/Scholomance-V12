@@ -115,3 +115,4 @@ english-wordnet-2025.xml.gz
 scripts/pb-sani/output/
 
 .aider*
+diagnostic_report.json

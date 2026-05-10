@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import path from 'path';
 import { resolveDatabasePath } from '../utils/pathResolution.js';
+import { BytecodeHealth, HEALTH_CODES, encodeModuleHealth } from '../../core/diagnostic/BytecodeHealth.js';
 
 const DEFAULT_LOOKUP_LIMIT = 5;
 const DEFAULT_SEARCH_LIMIT = 20;
@@ -114,18 +115,51 @@ export function createLexiconAdapter(dbPath, options = {}) {
 
   let db = null;
   let stmts = null;
+  let reconnectCount = 0;
+  let healthLog = [];
   const familyBatchStmtCache = new Map();
   const validateBatchStmtCache = new Map();
+
+  function emitHealth(checkId, context = {}) {
+    const h = encodeModuleHealth(resolvedPath, 'CONNECTION_HEALTH', checkId, context);
+    healthLog.push(h);
+    logger.info?.({ bytecode: h.bytecode, checksum: h.checksum }, `[LexiconAdapter] ${checkId}`);
+    return h;
+  }
+
+  /** Close stale handle before replacement — prevents recursive handle leak */
+  function closeStale() {
+    if (!db) return false;
+    try {
+      if (db.open) db.close();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function tryConnect() {
     if (db && db.open) return true;
     if (!resolvedPath || !existsSync(resolvedPath)) return false;
+
+    // If db exists but is not open, close the stale handle first
+    if (db) {
+      reconnectCount++;
+      const hadStale = closeStale();
+      emitHealth('RECONNECT', {
+        reconnectCount,
+        hadStaleHandle: hadStale,
+        prevDbExists: true,
+      });
+    }
 
     try {
       db = new Database(resolvedPath, { readonly: true, fileMustExist: true });
       db.pragma('query_only = ON');
       db.pragma('busy_timeout = 5000');
       
+      emitHealth('CONNECTED', { reconnectCount });
+
       stmts = {
         lookupEntries: db.prepare(`
           SELECT id, headword, pos, ipa AS pronunciation, etymology, senses_json, source, source_url, embeddings_tq
@@ -326,6 +360,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
 
   function close() {
     if (db && db.open) {
+      emitHealth('CLOSED', { reconnectCount });
       db.close();
     }
   }
@@ -344,6 +379,8 @@ export function createLexiconAdapter(dbPath, options = {}) {
     __unsafe: {
       get connected() { return !!(db && db.open); },
       get dbPath() { return resolvedPath; },
+      get reconnectCount() { return reconnectCount; },
+      get healthLog() { return healthLog; },
     },
   };
 }

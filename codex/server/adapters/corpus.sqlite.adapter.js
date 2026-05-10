@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import path from 'path';
 import { resolveDatabasePath } from '../utils/pathResolution.js';
+import { BytecodeHealth, HEALTH_CODES, encodeModuleHealth } from '../../core/diagnostic/BytecodeHealth.js';
 
 /**
  * Adapter for the Scholomance Super Corpus SQLite database.
@@ -16,15 +17,48 @@ export function createCorpusAdapter(dbPath, options = {}) {
 
   let db = null;
   let stmts = null;
+  let reconnectCount = 0;
+  let healthLog = [];
+
+  function emitHealth(checkId, context = {}) {
+    const h = encodeModuleHealth(resolvedPath, 'CONNECTION_HEALTH', checkId, context);
+    healthLog.push(h);
+    logger.info?.({ bytecode: h.bytecode }, `[CorpusAdapter] ${checkId}`);
+    return h;
+  }
+
+  /** Close stale handle before replacement — prevents recursive handle leak */
+  function closeStale() {
+    if (!db) return false;
+    try {
+      if (db.open) db.close();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function tryConnect() {
     if (db && db.open) return true;
     if (!resolvedPath || !existsSync(resolvedPath)) return false;
 
+    // If db exists but is not open, close the stale handle first
+    if (db) {
+      reconnectCount++;
+      const hadStale = closeStale();
+      emitHealth('RECONNECT', {
+        reconnectCount,
+        hadStaleHandle: hadStale,
+        prevDbExists: true,
+      });
+    }
+
     try {
       db = new Database(resolvedPath, { readonly: true, fileMustExist: true });
       db.pragma('query_only = ON');
       db.pragma('busy_timeout = 5000');
+
+      emitHealth('CONNECTED', { reconnectCount });
 
       // Prepared Statements — enriched with FTS5 snippet and BM25
       // Uses bind parameters for marker chars to avoid null-byte SQL parse errors
@@ -185,7 +219,10 @@ export function createCorpusAdapter(dbPath, options = {}) {
   }
 
   function close() {
-    if (db && db.open) db.close();
+    if (db && db.open) {
+      emitHealth('CLOSED', { reconnectCount });
+      db.close();
+    }
   }
 
   return {
@@ -194,7 +231,9 @@ export function createCorpusAdapter(dbPath, options = {}) {
     close,
     __unsafe: {
       get connected() { return !!(db && db.open); },
-      get dbPath() { return resolvedPath; }
+      get dbPath() { return resolvedPath; },
+      get reconnectCount() { return reconnectCount; },
+      get healthLog() { return healthLog; },
     }
   };
 }

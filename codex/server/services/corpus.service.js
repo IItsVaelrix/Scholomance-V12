@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import Database from 'better-sqlite3';
 
 import { resolveDatabasePath } from '../utils/pathResolution.js';
+import { encodeModuleHealth } from '../../core/diagnostic/BytecodeHealth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,13 +18,45 @@ export function createCorpusService(options = {}) {
   const log = options.log || console;
   
   let db = null;
+  let reconnectCount = 0;
+  let healthLog = [];
+
+  function emitHealth(checkId, context = {}) {
+    const h = encodeModuleHealth(targetPath, 'CONNECTION_HEALTH', checkId, context);
+    healthLog.push(h);
+    log.info?.({ bytecode: h.bytecode }, `[CorpusService] ${checkId}`);
+    return h;
+  }
+
+  /** Close stale handle before replacement — prevents recursive handle leak */
+  function closeStale() {
+    if (!db) return false;
+    try {
+      if (db.open) db.close();
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   function tryConnect() {
     if (db && db.open) return true;
     if (!targetPath || !existsSync(targetPath)) return false;
 
+    // If db exists but is not open, close the stale handle first
+    if (db) {
+      reconnectCount++;
+      const hadStale = closeStale();
+      emitHealth('RECONNECT', {
+        reconnectCount,
+        hadStaleHandle: hadStale,
+        prevDbExists: true,
+      });
+    }
+
     try {
       db = new Database(targetPath, { readonly: true });
+      emitHealth('CONNECTED', { reconnectCount });
       log.info?.(`[CorpusService] Connected to ${targetPath}`);
       return true;
     } catch (error) {
@@ -156,7 +189,15 @@ export function createCorpusService(options = {}) {
     searchSentences,
     findLiteraryExamples,
     close: () => {
-      if (db && db.open) db.close();
+      if (db && db.open) {
+        emitHealth('CLOSED', { reconnectCount });
+        db.close();
+      }
+    },
+    __unsafe: {
+      get connected() { return !!(db && db.open); },
+      get reconnectCount() { return reconnectCount; },
+      get healthLog() { return healthLog; },
     },
   };
 }
