@@ -7,6 +7,8 @@
 
 import { execSync } from 'node:child_process';
 import { createRequire } from 'module';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
 import { collabPersistence } from '../collab/collab.persistence.js';
 import { estimateInnerProduct, quantizeVectorJS } from '../../core/quantization/turboquant.js';
 
@@ -16,6 +18,79 @@ const dict = new CMUDict();
 
 const SEED = 1337; // Must match indexer seed
 const SEARCH_LIMIT = 10;
+
+const IGNORED_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.cache', 'coverage']);
+
+function* walkFiles(dir, rootDir = dir) {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    if (IGNORED_DIRS.has(entry.name)) continue;
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      yield* walkFiles(fullPath, rootDir);
+    } else {
+      yield fullPath;
+    }
+  }
+}
+
+function matchLine(line, query, isRegex, caseSensitive) {
+  if (isRegex) {
+    try {
+      const flags = caseSensitive ? '' : 'i';
+      return new RegExp(query, flags).test(line);
+    } catch {
+      return false;
+    }
+  }
+  if (caseSensitive) return line.includes(query);
+  return line.toLowerCase().includes(query.toLowerCase());
+}
+
+function matchPattern(filePath, pattern) {
+  if (!pattern) return true;
+  const parts = pattern.split('/');
+  return parts.every(p => filePath.includes(p));
+}
+
+function forensicFallback(query, options = {}) {
+  const {
+    isRegex = false,
+    caseSensitive = false,
+    includePattern = '',
+    excludePattern = '',
+    limit = 20
+  } = options;
+
+  const results = [];
+  const root = resolve('.');
+  const projectRoot = resolve(root);
+
+  for (const filePath of walkFiles(projectRoot)) {
+    if (includePattern && !matchPattern(filePath, includePattern)) continue;
+    if (excludePattern && matchPattern(filePath, excludePattern)) continue;
+
+    try {
+      const content = readFileSync(filePath, 'utf-8');
+      const lines = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (matchLine(lines[i], query, isRegex, caseSensitive)) {
+          results.push({
+            file_path: relative(projectRoot, filePath),
+            line_number: i + 1,
+            preview: lines[i].trim()
+          });
+          if (results.length >= limit) break;
+        }
+      }
+    } catch {
+      // skip binary/unreadable
+    }
+    if (results.length >= limit) break;
+  }
+
+  return results;
+}
 
 /**
  * Perform a deep, literal string or regex search using ripgrep.
@@ -38,7 +113,6 @@ export async function forensicSearch(query, options = {}) {
     if (includePattern) command += ` -g "${includePattern}"`;
     if (excludePattern) command += ` -g "!${excludePattern}"`;
     
-    // Sanitize query for shell
     const escapedQuery = query.replace(/"/g, '\\"');
     command += ` "${escapedQuery}" .`;
 
@@ -80,7 +154,17 @@ export async function forensicSearch(query, options = {}) {
         }
       };
     }
-    throw error;
+    // rg not available — use Node.js fallback
+    const results = forensicFallback(query, options);
+    return {
+      query,
+      results,
+      metadata: {
+        duration_ms: performance.now() - start,
+        engine: 'node-fallback',
+        options
+      }
+    };
   }
 }
 
