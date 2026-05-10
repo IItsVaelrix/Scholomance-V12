@@ -44,6 +44,10 @@ RUN SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
     RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT=7500 \
     npm run build:rhyme-astrology:index || \
     echo "Rhyme astrology build failed — index will be computed at runtime"
+
+# Inject TurboQuant embeddings into the rhyme lexicon
+RUN node scripts/build_vector_artifacts.js || echo "Vector artifact injection failed — embeddings_tq will be added at runtime"
+
 RUN npm run build
 RUN npm prune --omit=dev
 
