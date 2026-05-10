@@ -10,7 +10,7 @@
  * @see AI_Architecture_V2.md section 5.2
  */
 
-import { VOWEL_FAMILY_TO_SCHOOL } from '../../src/data/schools.js';
+import { VOWEL_FAMILY_TO_SCHOOL } from './constants/schools.js';
 
 /**
  * Maps a vowel family from a phoneme analysis to a School of Magic.

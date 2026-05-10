@@ -212,6 +212,11 @@ export const ERROR_CODES = Object.freeze({
   IMMUNE_OVERRIDE_MISSING: 0x0F06,       // L3 override required but not provided
   IMMUNE_OVERRIDE_AUTHORITY_INVALID: 0x0F07, // Authority not on curated list
   IMMUNE_PROTOCOL_BLOCK: 0x0F08,         // Layer 3 cross-file async protocol drift
+  IMMUNE_CELL_WALL_VIOLATION: 0x0F09,    // Internal domain boundary breach
+  IMMUNE_APOPTOSIS_SIGNAL: 0x0F0A,       // Domain self-destruct / self-signal
+  IMMUNE_OVERRIDE_VELOCITY: 0x0F0B,      // Threshold of IMMUNE_ALLOW annotations exceeded in single file
+  TEST_MISSING: 0x0F10,                  // Module has no corresponding test file
+  TEST_FIXTURE_ANTIPATTERN: 0x0F11,       // Test fixture antipattern detected
 
   // MISC / Generic
   VALUE_INVALID: 0xF001,
@@ -230,7 +235,7 @@ export class BytecodeError extends Error {
     this.moduleId = moduleId;
     this.errorCode = errorCode;
     this.context = context;
-    this.timestamp = Date.now();
+    this.timestamp = Date.now(); // EXEMPT
     
     // AI-parsable metadata
     this.aiMetadata = {

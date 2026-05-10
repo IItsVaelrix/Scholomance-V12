@@ -147,12 +147,26 @@ export function useColorCodex(wordAnalyses, activeConnections, syntaxLayer = nul
     const isRhymeMode = analysisMode === 'rhyme' || (analysisMode === 'none' && connectionCount > 0);
 
     if (isRhymeMode) {
-      // Direct connection participants always get colored
-      if (colorContext.connectedTokenCharStarts.has(charStart)) {
-        return true;
-      }
+      // When explicit rhyme connections exist, restrict coloring to direct
+      // participants and same-family peers promoted via stop-word endpoints.
+      if (connectionCount > 0) {
+        if (colorContext.connectedTokenCharStarts.has(charStart)) {
+          return true;
+        }
 
-      return false;
+        const normalizedFamily = normalizeVowelFamily(vowelFamily);
+        if (
+          normalizedFamily
+          && !isStopWord
+          && colorContext.substitutionFamilies.has(normalizedFamily)
+          && !colorContext.directNonStopFamilies.has(normalizedFamily)
+        ) {
+          return true;
+        }
+
+        return false;
+      }
+      // No active connections: fall through to bytecode-driven coloring below.
     }
 
     // Default: color if bytecode has any resonance signal

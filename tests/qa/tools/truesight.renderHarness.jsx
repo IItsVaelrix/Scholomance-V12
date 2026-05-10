@@ -18,6 +18,18 @@ if (typeof window !== 'undefined') {
     configurable: true,
     value: 1000,
   });
+  // Ensure ResizeObserver is available and fires immediately
+  global.ResizeObserver = class ResizeObserver {
+    constructor(callback) {
+      this.callback = callback;
+    }
+    observe() {
+      // Fire immediately with mock dimensions to prevent starvation
+      this.callback([{ contentRect: { width: 1000, height: 1000 } }]);
+    }
+    unobserve() {}
+    disconnect() {}
+  };
 }
 
 export async function renderTruesightEditor({
@@ -40,8 +52,8 @@ export async function renderTruesightEditor({
     result = render(
       <ThemeProvider>
         <ScrollEditor
-          initialTitle={title}
-          initialContent={content}
+          title={title}
+          content={content}
           isEditable={isEditable}
           isTruesight={isTruesight}
           analyzedWords={analyzedWords}

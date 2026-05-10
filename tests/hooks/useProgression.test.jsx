@@ -1,8 +1,13 @@
 import { renderHook, act } from '@testing-library/react';
 import { ProgressionProvider, useProgression } from '../../src/hooks/useProgression.jsx';
+import { AuthProvider } from '../../src/hooks/useAuth.jsx';
 import { describe, it, expect, beforeEach } from 'vitest';
 
-const wrapper = ({ children }) => <ProgressionProvider>{children}</ProgressionProvider>;
+const wrapper = ({ children }) => (
+  <AuthProvider>
+    <ProgressionProvider>{children}</ProgressionProvider>
+  </AuthProvider>
+);
 
 describe('useProgression Hook', () => {
   beforeEach(() => {

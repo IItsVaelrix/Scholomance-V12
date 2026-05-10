@@ -1,4 +1,4 @@
-import { SCHOOLS } from '../../../src/data/schools.js';
+import { SCHOOLS } from '../constants/schools.js';
 import { resolveSonicChroma } from '../phonology/chroma.resolver.js';
 import {
   clamp01,

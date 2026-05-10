@@ -1,5 +1,8 @@
 # Post-Implementation Report
 
+## Bytecode Search Code
+`SCHOL-ENC-BYKE-SEARCH-PIR-LEXORACLE-S1-S2`
+
 ## 1. Change Identity
 - **Report ID:** PIR-20260405-001
 - **Feature / Fix Name:** LexOracle S1+S2 — FTS5 Enriched Search + Phonemic Semantic Search

@@ -167,8 +167,8 @@ function renderEditorWithPrediction({
   return render(
     <ThemeProvider>
       <ScrollEditor
-        initialTitle="Test Scroll"
-        initialContent={content}
+        title="Test Scroll"
+        content={content}
         isEditable={true}
         isPredictive={true}
         predict={predict}
@@ -201,8 +201,8 @@ describe("ScrollEditor IntelliSense integration", () => {
     const { container } = render(
       <ThemeProvider>
         <ScrollEditor
-          initialTitle="Test"
-          initialContent="to"
+          title="Test"
+          content="to"
           isEditable={true}
           isPredictive={false}
           predict={() => ["tongue"]}
@@ -249,8 +249,8 @@ describe("ScrollEditor IntelliSense integration", () => {
     const { container } = render(
       <ThemeProvider>
         <ScrollEditor
-          initialTitle="Test"
-          initialContent=""
+          title="Test"
+          content=""
           isEditable={true}
           isPredictive={true}
           predict={predict}

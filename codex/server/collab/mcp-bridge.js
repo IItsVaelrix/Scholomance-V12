@@ -26,6 +26,14 @@ import { resolveDesignDecisions } from '../../core/grimdesign/decisionEngine.js'
 const MOD = MODULE_IDS.SHARED;
 import { CollabServiceError, collabService } from './collab.service.js';
 import { collabDiagnostic } from './collab.diagnostic.js';
+import {
+  getLatestReport as diagnosticGetLatestReport,
+  getReportById as diagnosticGetReportById,
+  queryViolations as diagnosticQueryViolations,
+  queryHealth as diagnosticQueryHealth,
+  runCells as diagnosticRunCells,
+  summary as diagnosticSummary,
+} from './diagnostic.mcp.js';
 import { 
     searchCodebase, 
     forensicSearch, 
@@ -33,10 +41,27 @@ import {
     getFileNeighbors, 
     listIndexedFiles 
 } from '../services/codebaseSearch.service.js';
+import { createRaidWithSeeds } from '../../core/immunity/clerical-raid.bootstrap.js';
+import { agentHookQuery, merlinAutoTrainPipeline } from '../../core/immunity/clerical-raid.agents.js';
+import {
+    merlinReportToBugReport,
+    extractVectorFromMerlinReport,
+    clusterPatternsBySimilarity,
+    deprecateStalePatterns,
+    findNearDuplicatePatterns,
+    patternEffectivenessScore,
+} from '../../core/immunity/clerical-raid.learning.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..', '..', '..');
+
+/** In-memory Clerical RAID library for MCP session (Phase 3–4 hooks). */
+let clericalRaidMcp = null;
+function getClericalRaidMcp() {
+    if (!clericalRaidMcp) clericalRaidMcp = createRaidWithSeeds();
+    return clericalRaidMcp;
+}
 
 function toJsonText(value) {
     return JSON.stringify(value, null, 2);
@@ -561,6 +586,73 @@ export function registerCollabMcpBridge(server, service = collabService) {
 
     registerTool(server, 'mcp_scholomance_collab_diagnostic_scan', {}, () => collabDiagnostic.scan());
 
+    // ========================
+    //  DIAGNOSTIC SUBSTRATE — Phase 3 (cells/reports/health/violations)
+    // ========================
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_get_latest_report',
+        {},
+        () => diagnosticGetLatestReport(),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_get_report_by_id',
+        {
+            reportId: z.string().describe('Report ID in PB-DIAG-v1-{timestamp}-{rand4} format'),
+        },
+        ({ reportId }) => diagnosticGetReportById({ reportId }),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_query_violations',
+        {
+            cell: z.string().optional().describe('Filter by cellId (or layer name) — e.g. IMMUNITY_SCAN, LAYER_BOUNDARY, bridge'),
+            severity: z.enum(['FATAL', 'CRIT', 'WARN', 'INFO']).optional().describe('Filter by severity'),
+            layer: z.string().optional().describe('Filter by context.layer (e.g. innate, adaptive, bridge, fixture, coverage)'),
+            ruleId: z.string().optional().describe('Filter by context.ruleId (e.g. QUANT-0101, LING-0F03)'),
+            limit: z.number().default(100).describe('Maximum results returned'),
+        },
+        (params) => diagnosticQueryViolations(params),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_query_health',
+        {
+            cellId: z.string().optional().describe('Filter by emitting cell'),
+            checkId: z.string().optional().describe('Filter by check name'),
+            moduleId: z.string().optional().describe('Filter by module path'),
+            limit: z.number().default(100).describe('Maximum results returned'),
+        },
+        (params) => diagnosticQueryHealth(params),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_run_cells',
+        {
+            files: z.array(z.object({
+                path: z.string(),
+                content: z.string(),
+            })).describe('Files to scan (in-memory, not persisted)'),
+            cellFilter: z.array(z.string()).optional().describe('Run only these cell IDs'),
+            commitHash: z.string().optional().describe('Optional commit hash to embed in the report'),
+            trigger: z.string().optional().describe('Trigger label (default: "mcp")'),
+        },
+        (params) => diagnosticRunCells(params),
+    );
+
+    registerTool(
+        server,
+        'mcp_scholomance_collab_diagnostic_summary',
+        {},
+        () => diagnosticSummary(),
+    );
+
     registerTool(server, 'mcp_scholomance_collab_search_codebase', {
         query: z.string().min(1).describe('The semantic search query for the codebase'),
     }, ({ query }) => searchCodebase(query));
@@ -642,6 +734,106 @@ export function registerCollabMcpBridge(server, service = collabService) {
     });
 
     registerTool(server, 'mcp_scholomance_collab_immunity_get_status', {}, () => service.getImmunityStatus());
+
+    // ========================
+    //  CLERICAL RAID (Phase 3–4)
+    // ========================
+
+    registerTool(server, 'mcp_scholomance_collab_clerical_raid_query', {
+        symptoms: z.array(z.string()).min(1).describe('Symptom lines or error descriptions'),
+        file_paths: z.array(z.string()).optional().describe('Affected paths'),
+        error_messages: z.array(z.string()).optional(),
+        layer_hint: z.string().optional(),
+        agent_role: z.enum(['codex', 'claude', 'gemini', 'merlin']).optional()
+            .describe('When set, attaches charter playbook + hook applicability'),
+    }, ({ symptoms, file_paths, error_messages, layer_hint, agent_role }) => {
+        const raid = getClericalRaidMcp();
+        const bugReport = {
+            symptoms,
+            filePaths: file_paths ?? [],
+            errorMessages: error_messages ?? [],
+            layerHint: layer_hint ?? null,
+            timestamp: Date.now(),
+        };
+        if (agent_role) {
+            return agentHookQuery(raid, agent_role, bugReport);
+        }
+        return raid.query(bugReport);
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_clerical_raid_merlin_ingest', {
+        merlin_report: z.record(z.string(), z.unknown()).describe('Collab bug row or Merlin JSON'),
+        train: z.boolean().optional().describe('Auto-train when verdict is NOVEL or NEEDS_MERLIN (default true)'),
+        train_needs_merlin: z.boolean().optional()
+            .describe('When false, train only on NOVEL (default true = train on NEEDS_MERLIN too)'),
+    }, ({ merlin_report, train, train_needs_merlin }) => {
+        const raid = getClericalRaidMcp();
+        const payload = merlinAutoTrainPipeline(raid, merlin_report, {
+            train: train !== false,
+            trainNeedsMerlin: train_needs_merlin !== false,
+        });
+        return {
+            ...payload,
+            vectorPreview16: Array.from(extractVectorFromMerlinReport(merlin_report).slice(0, 16)),
+        };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_clerical_raid_feedback', {
+        pattern_id: z.string().min(1),
+        positive: z.boolean().describe('True = confirm hit; false = false positive'),
+    }, ({ pattern_id, positive }) => {
+        const raid = getClericalRaidMcp();
+        if (positive) {
+            raid.confirm(pattern_id);
+        } else {
+            raid.feedbackNegative(pattern_id);
+        }
+        const p = raid.patterns.find(x => x.id === pattern_id);
+        return {
+            ok: !!p,
+            pattern_id,
+            confidence: p?.confidence,
+            hitCount: p?.hitCount,
+            missCount: p?.missCount,
+            effectiveness: p ? patternEffectivenessScore(p) : null,
+        };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_clerical_raid_learning', {
+        action: z.enum(['clusters', 'duplicates', 'deprecate', 'scores', 'bug_from_merlin']),
+        min_similarity: z.number().min(0).max(1).optional(),
+        merlin_report: z.record(z.string(), z.unknown()).optional(),
+    }, ({ action, min_similarity, merlin_report }) => {
+        const raid = getClericalRaidMcp();
+        if (action === 'bug_from_merlin') {
+            if (!merlin_report) {
+                return { ok: false, error: 'merlin_report required' };
+            }
+            return { ok: true, bugReport: merlinReportToBugReport(merlin_report) };
+        }
+        if (action === 'clusters') {
+            const thr = min_similarity ?? 0.92;
+            return { clusters: clusterPatternsBySimilarity(raid, thr) };
+        }
+        if (action === 'duplicates') {
+            const thr = min_similarity ?? 0.97;
+            return { pairs: findNearDuplicatePatterns(raid, thr) };
+        }
+        if (action === 'deprecate') {
+            const ids = deprecateStalePatterns(raid);
+            return { deprecatedIds: ids, stats: raid.getStats() };
+        }
+        const scores = raid.patterns
+            .filter(p => !p.deprecated)
+            .map(p => ({
+                id: p.id,
+                confidence: p.confidence,
+                effectiveness: patternEffectivenessScore(p),
+                hits: p.hitCount ?? 0,
+                misses: p.missCount ?? 0,
+            }));
+        return { scores };
+    });
 
     // ========================
     //  HEARTBEAT ALERTS

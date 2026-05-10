@@ -70,7 +70,7 @@ describe('Truesight Cursor — Pixel Perfection QA', () => {
 
     const { container } = render(
       <ScrollEditor 
-        initialContent={content}
+        content={content}
         isTruesight={true}
         isEditable={true}
       />

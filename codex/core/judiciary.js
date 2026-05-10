@@ -1,4 +1,4 @@
-import { HHM_LOGIC_ORDER, HHM_STAGE_WEIGHTS } from '../../src/lib/models/harkov.model.js';
+import { HHM_LOGIC_ORDER, HHM_STAGE_WEIGHTS } from './shared/models/harkov.model.js';
 import {
   arbitrateGraphCandidates,
   rankGraphCandidates as rankTokenGraphCandidates,
@@ -236,6 +236,19 @@ export class JudiciaryEngine {
       && candidate.layer !== 'SPELLCHECK'
     ) {
       modifier *= 0.8;
+    }
+
+    // In stressed content slots where rhyme is allowed, non-rhyme candidates
+    // (spellcheck/predictor surfaces) should yield to phoneme-anchored rhyme
+    // candidates so syntax modifiers apply BEFORE phoneme tie-breaking.
+    if (
+      !isRhymeCandidate
+      && syntaxContext.role === 'content'
+      && syntaxContext.stressRole === 'primary'
+      && syntaxContext.rhymePolicy !== 'suppress'
+      && candidate.layer !== 'PHONEME'
+    ) {
+      modifier *= 0.7;
     }
 
     return modifier;

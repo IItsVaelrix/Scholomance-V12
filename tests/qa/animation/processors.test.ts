@@ -4,11 +4,11 @@ import {
   deviceProfileProcessor,
   performanceCapProcessor,
   boundsConstraintProcessor
-} from '../../../src/codex/animation/processors/constraints/constraintProcessors.ts';
+} from "../../../codex/core/animation/processors/constraints/constraintProcessors.ts";
 import { 
   MotionWorkingState, 
   AnimationIntent 
-} from '../../../src/codex/animation/contracts/animation.types.ts';
+} from '../../../codex/core/animation/contracts/animation.types.ts';
 
 const createMockState = (intent: Partial<AnimationIntent> = {}, values: Partial<MotionWorkingState['values']> = {}): MotionWorkingState => ({
   intent: {

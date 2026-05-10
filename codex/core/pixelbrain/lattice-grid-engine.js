@@ -16,8 +16,8 @@
  * The grid is a spatial execution model.
  */
 
-import { safeDivide, toFinite } from '../../../src/lib/math/safe.js';
-import { processorBridge } from '../../../src/lib/processor-bridge.js';
+import { safeDivide, toFinite } from '../shared/math/safe.js';
+import { processorBridge } from '../shared/processor-bridge.js';
 import { generateSymmetryOverlay } from './symmetry-amp.js';
 
 /**
@@ -31,6 +31,15 @@ const LATTICE_CONSTANTS = {
   MAX_CANVAS_DIM: 16384, // GPU limit for most modern browsers
   COMMON_CELL_SIZES: [1, 2, 4, 8, 16, 32, 64],
 };
+
+function generateBufferHash(buffer) {
+  let hash = 5381;
+  // Sample every 64th byte for performance on large images
+  for (let i = 0; i < buffer.length; i += 64) {
+    hash = ((hash << 5) + hash) ^ buffer[i];
+  }
+  return (hash >>> 0).toString(16);
+}
 
 /**
  * Generate complete lattice grid from image analysis
@@ -46,9 +55,12 @@ export async function generateLatticeGrid(imageAnalysis) {
   const { pixelData, dimensions } = imageAnalysis;
   const { width: srcW, height: srcH } = dimensions;
 
+  const contentHash = generateBufferHash(pixelData);
+  const assetId = `upload_${contentHash}`;
+
   // ── STEP 1: DETECT SYMMETRY via Microprocessor ─────────────────────────────
   const symmetryResult = await processorBridge.execute('amp.symmetry', {
-    assetId: 'upload_' + Date.now(),
+    assetId,
     sourceType: 'image',
     pixelData,
     dimensions,
@@ -117,7 +129,7 @@ export async function generateLatticeGrid(imageAnalysis) {
   // ── STEP 6: APPLY COORDINATE SYMMETRY via Microprocessor ───────────────────
   if (symmetry && symmetry.significant && symmetry.type !== 'none') {
     const coordSymmetryResult = await processorBridge.execute('amp.coord-symmetry', {
-      assetId: 'upload_' + Date.now(),
+      assetId,
       coordinates: Array.from(lattice.cells.values()).map(c => ({
         x: c.col * cellSize,
         y: c.row * cellSize,

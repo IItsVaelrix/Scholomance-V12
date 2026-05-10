@@ -53,6 +53,14 @@ const SPECTRAL_ANCHORS = [
   "Resonance Optimization"
 ];
 
+function djb2(str) {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+  }
+  return hash >>> 0;
+}
+
 /**
  * Transmutes a raw string into an ATS-optimized 'Sigil' (Resume content).
  */
@@ -70,7 +78,9 @@ export function transmuteToSigil(text) {
   // 2. Infuse Spectral Anchors (Keywords)
   // Logic: Append relevant anchors if the text is short, or sprinkle them in.
   if (optimized.length < 500) {
-    const anchor = SPECTRAL_ANCHORS[Math.floor(Math.random() * SPECTRAL_ANCHORS.length)];
+    const seed = djb2(optimized);
+    const anchorIndex = seed % SPECTRAL_ANCHORS.length;
+    const anchor = SPECTRAL_ANCHORS[anchorIndex];
     optimized += `\n\nCORE RESONANCE: Specialized in ${anchor} and Systemic Calibration.`;
   }
 

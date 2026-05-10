@@ -1,4 +1,4 @@
-import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
+import { WORD_REGEX_GLOBAL } from '../../core/constants/regex.js';
 import { createLexiconAbyssService } from './lexiconAbyss.service.js';
 import { createWordLookupService } from './wordLookup.service.js';
 import { createCorpusService } from './corpus.service.js';

@@ -1,5 +1,6 @@
 import { getTrackEmbedConfig } from "../musicEmbeds";
 import { SCHOOLS } from "../../data/schools.js";
+import { freshRng } from '../math/seededRng.js';
 import {
   getDefaultSchoolId,
   getRandomizedStationTrackUrl,
@@ -239,18 +240,20 @@ function createWhiteNoiseBuffer(audioContext, durationSec) {
   const length = Math.max(1, Math.floor(audioContext.sampleRate * durationSec));
   const buffer = audioContext.createBuffer(1, length, audioContext.sampleRate);
   const channel = buffer.getChannelData(0);
+  const rng = freshRng();
   for (let index = 0; index < length; index += 1) {
-    channel[index] = Math.random() * 2 - 1;
+    channel[index] = rng() * 2 - 1;
   }
   return buffer;
 }
 
 function createCrackleCurve(steps = 256) {
   const curve = new Float32Array(steps);
+  const rng = freshRng();
   for (let index = 0; index < steps; index += 1) {
-    const baseNoise = Math.pow(Math.random(), 1.9) * 0.2;
-    const hasBurst = Math.random() > 0.84;
-    const burst = hasBurst ? 0.32 + Math.random() * 0.5 : 0;
+    const baseNoise = Math.pow(rng(), 1.9) * 0.2;
+    const hasBurst = rng() > 0.84;
+    const burst = hasBurst ? 0.32 + rng() * 0.5 : 0;
     curve[index] = Math.min(1, baseNoise + burst);
   }
   curve[0] = 0;

@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
 import { applySqlitePragmas, runSqliteMigrations } from '../db/sqlite.migrations.js';
 import { createDbWrapper } from '../db/persistence.wrapper.js';
-import { compileVerseToIR } from '../../../src/lib/truesight/compiler/compileVerseToIR.js';
-import { serializeVerseIR } from '../../../src/lib/truesight/compiler/verseIRSerialization.js';
+import { compileVerseToIR } from '../../core/shared/truesight/compiler/compileVerseToIR.js';
+import { serializeVerseIR } from '../../core/shared/truesight/compiler/verseIRSerialization.js';
 import {
   ABYSS_NEUTRAL_MULTIPLIER,
   classifyAbyssalState,

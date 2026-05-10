@@ -1,5 +1,8 @@
 # Post-Implementation Report: Microprocessor Refactoring — 2026-04-24
 
+## Bytecode Search Code
+`SCHOL-ENC-BYKE-SEARCH-PIR-IDE-ATMOSPHERE-MICROPROCESSORS`
+
 ## 1. Change Identity
 - **Report ID:** PIR-20260424-IDE-ATMOSPHERE-MICROPROCESSORS
 - **Feature / Fix Name:** IDE & Atmosphere Microprocessor Refactor

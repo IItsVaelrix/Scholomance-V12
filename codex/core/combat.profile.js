@@ -15,9 +15,9 @@ import {
 } from './semantics.registry.js';
 import { rawScoreToAbyssMultiplier } from './lexicon.abyss.js';
 import { analyzeSpeaking } from './speaking/index.js';
-import { WORD_REGEX_GLOBAL } from '../../src/lib/wordTokenization.js';
+import { WORD_REGEX_GLOBAL } from './constants/regex.js';
 import { normalizeVowelFamily } from './phonology/vowelFamily.js';
-import { VOWEL_FAMILY_TO_SCHOOL } from '../../src/data/schools.js';
+import { VOWEL_FAMILY_TO_SCHOOL } from './constants/schools.js';
 
 const STOP_WORDS = new Set([
   'a', 'an', 'and', 'as', 'at', 'be', 'but', 'by', 'for', 'from', 'had', 'has',

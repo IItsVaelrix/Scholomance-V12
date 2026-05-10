@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getAllPresets } from '../../src/codex/animation/presets/presetRegistry';
+import { getAllPresets } from '../../codex/core/animation/presets/presetRegistry';
 
 describe('Animation Preset Determinism', () => {
   it('ensures all registered presets have stable, deterministic defaults', () => {

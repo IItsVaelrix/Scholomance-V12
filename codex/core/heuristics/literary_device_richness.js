@@ -10,7 +10,7 @@
  * @returns {import('../schemas').ScoreTrace}
  */
 
-import { analyzeLiteraryDevices } from '../../../src/lib/literaryDevices.detector.js';
+import { analyzeLiteraryDevices } from '../shared/literaryDevices.detector.js';
 
 function clamp01(value) {
   if (Number.isNaN(value)) return 0;

@@ -4,33 +4,149 @@
 
 > "No fix is complete without its story."
 
-**Bytecode Search Code:** `SCHOL-ENC-BYKE-SEARCH`
+**Global Search Anchor:** `SCHOL-ENC-BYKE-SEARCH`
 
 ---
 
 ## Purpose
 
-The Scholomance Encyclopedia is the canonical repository of bug fix documentation, architectural decisions, and system knowledge. Every bug fixed, every pattern discovered, every lesson learned lives here.
+The Scholomance Encyclopedia is the canonical repository of bug fix documentation, architectural decisions, product design requirements, post-implementation reports, verdicts, handoffs, and operational knowledge.
 
-This is not a changelog. This is not a release notes document. This is **deep technical narrative** — the story of how and why the system evolved.
+This is not a changelog. This is deep technical narrative: what changed, why it changed, what broke, what was learned, and what future agents must not forget.
 
 ---
 
-## When to Write an Entry
+## Hygiene
 
-**Angel's Command:** When Angel says **"BUG REPORT AUDIT"**, you will:
+Run the encyclopedia hygiene audit after adding, moving, or renaming entries:
 
-1. Stop current work
-2. Open the relevant bug report
-3. Trace the fix you implemented
-4. Write the encyclopedia entry
-5. Commit with the bytecode search code in the message
+```bash
+node docs/scholomance-encyclopedia/tools/audit-hygiene.mjs
+```
+
+The audit checks root law entrypoints, archive index coverage, missing files, and zero-byte encyclopedia artifacts.
+
+---
+
+## Search
+
+- **Global audit:** search for `SCHOL-ENC-BYKE-SEARCH`.
+- **Bug-specific audit:** search for `SCHOL-ENC-BUG-`.
+- **CLI:** `rg "SCHOL-ENC-(BYKE-SEARCH|BUG-)" docs/scholomance-encyclopedia`
+
+---
+
+## Orders of Knowledge
+
+### Scholomance LAW
+
+Foundational mandates and contracts that govern agents and systems.
+
+- [`AGENTS.md`](./Scholomance%20LAW/AGENTS.md)
+- [`ARCH_CONTRACT_OVERLAY_INTEGRITY.md`](./Scholomance%20LAW/ARCH_CONTRACT_OVERLAY_INTEGRITY.md)
+- [`CLAUDE.md`](./Scholomance%20LAW/CLAUDE.md)
+- [`CODEX.md`](./Scholomance%20LAW/CODEX.md)
+- [`CURSOR.md`](./Scholomance%20LAW/CURSOR.md)
+- [`ENGINEERING_RULEBOOK.md`](./Scholomance%20LAW/ENGINEERING_RULEBOOK.md)
+- [`GEMINI.md`](./Scholomance%20LAW/GEMINI.md)
+- [`SCHEMA_CONTRACT.md`](./Scholomance%20LAW/SCHEMA_CONTRACT.md)
+- [`SHARED_PREAMBLE.md`](./Scholomance%20LAW/SHARED_PREAMBLE.md)
+- [`UNITY.md`](./Scholomance%20LAW/UNITY.md)
+- [`VAELRIX_LAW.md`](./Scholomance%20LAW/VAELRIX_LAW.md)
+- [`forensic-search.skill`](./Scholomance%20LAW/forensic-search.skill)
+- [`scholomance-feedback.skill`](./Scholomance%20LAW/scholomance-feedback.skill)
+- [`vaelrix-law-debug.skill`](./Scholomance%20LAW/vaelrix-law-debug.skill)
+- [`vaelrix-law.skill`](./Scholomance%20LAW/vaelrix-law.skill)
+
+### Scholomance Bug Reports
+
+The forensic record of failures, fixes, and lessons learned.
+
+- [`BUG-2026-03-28-INITIAL-AUDIT.md`](./Scholomance%20Bug%20Reports/BUG-2026-03-28-INITIAL-AUDIT.md)
+- [`BUG-2026-03-29-SKITTLES.md`](./Scholomance%20Bug%20Reports/BUG-2026-03-29-SKITTLES.md)
+- [`BUG-2026-04-02-WHITESPACE-ALIGNMENT.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-02-WHITESPACE-ALIGNMENT.md)
+- [`BUG-2026-04-03-DEV-MISSING-BACKEND.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-03-DEV-MISSING-BACKEND.md)
+- [`BUG-2026-04-03-LOCK-SYNC-SPLIT.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-03-LOCK-SYNC-SPLIT.md)
+- [`BUG-2026-04-03-PB-SANI-FINGERPRINTING.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-03-PB-SANI-FINGERPRINTING.md)
+- [`BUG-2026-04-03-SYSTEM-STABILIZATION.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-03-SYSTEM-STABILIZATION.md)
+- [`BUG-2026-04-26-IPV6-PROXY-BLINDNESS.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-26-IPV6-PROXY-BLINDNESS.md)
+- [`BUG-2026-04-27-COGNITIVE-BUS-MISAPPROPRIATION.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-27-COGNITIVE-BUS-MISAPPROPRIATION.md)
+- [`BUG-2026-04-27-RECURSIVE-SHADOW.md`](./Scholomance%20Bug%20Reports/BUG-2026-04-27-RECURSIVE-SHADOW.md)
+- [`BUG-2026-05-08-CARET-STICKING-DRIFT.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-08-CARET-STICKING-DRIFT.md)
+- [`BUG-2026-05-08-INPUT-LAG-COMPLETIONS.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-08-INPUT-LAG-COMPLETIONS.md)
+- [`BUG-2026-05-08-TRUESIGHT-SEMANTIC-AMBIGUITY.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-08-TRUESIGHT-SEMANTIC-AMBIGUITY.md)
+- [`BUG-2026-05-09-MISSING-VIEWPORT-BYTECODE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-MISSING-VIEWPORT-BYTECODE.md)
+- [`BUG-2026-05-09-REJECTED-WATER-SOURCE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-REJECTED-WATER-SOURCE.md)
+- [`BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md`](./Scholomance%20Bug%20Reports/BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md)
+- [`BUG-TEMPLATE.md`](./Scholomance%20Bug%20Reports/BUG-TEMPLATE.md)
+
+### PDR Archive
+
+Product Design Requirements: intent before implementation.
+
+- [`README.md`](./PDR-archive/README.md)
+
+The PDR archive README is the exhaustive PDR index.
+
+### Post-Implementation Reports
+
+Reality after implementation.
+
+- [`DEVELOPER_PRODUCTIVITY_METRICS_WEEK_13_2026.md`](./post-implementation-reports/DEVELOPER_PRODUCTIVITY_METRICS_WEEK_13_2026.md)
+- [`PIR-2026-04-26-TURBOQUANT-ASCENSION.md`](./post-implementation-reports/PIR-2026-04-26-TURBOQUANT-ASCENSION.md)
+- [`PIR-20260405-LEXORACLE-S1-S2.md`](./post-implementation-reports/PIR-20260405-LEXORACLE-S1-S2.md)
+- [`PIR-20260419-THOROUGH-AI-COMBAT.md`](./post-implementation-reports/PIR-20260419-THOROUGH-AI-COMBAT.md)
+- [`PIR-20260424-IDE-ATMOSPHERE-MICROPROCESSORS.md`](./post-implementation-reports/PIR-20260424-IDE-ATMOSPHERE-MICROPROCESSORS.md)
+- [`dead-code.md`](./post-implementation-reports/dead-code.md)
+
+### Architecture Docs
+
+Canonical architecture entries and system decisions.
+
+- [`ARCH-2026-04-02-FONT-ORACLE.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-02-FONT-ORACLE.md)
+- [`ARCH-2026-04-02-SOVEREIGN-EDITOR.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-02-SOVEREIGN-EDITOR.md)
+- [`ARCH-2026-04-26-IMMUNE-SYSTEM.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-26-IMMUNE-SYSTEM.md)
+- [`ARCH-2026-04-26-TURBOQUANT-VECTOR-BRIDGE.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-26-TURBOQUANT-VECTOR-BRIDGE.md)
+- [`ARCH-2026-04-27-ARCHIVE-OF-DOMINANCE.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-27-ARCHIVE-OF-DOMINANCE.md)
+- [`ARCH-2026-04-27-COGNITIVE-BUS.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-27-COGNITIVE-BUS.md)
+
+### Scholomance White Papers
+
+Deep technical analysis, operating manuals, and specialist briefs.
+
+- [`IMMUNE-SYSTEM-WHITE-PAPER.md`](./Scholomance%20White%20Papers/IMMUNE-SYSTEM-WHITE-PAPER.md)
+- [`MCP_INTEGRATION_GUIDE.md`](./Scholomance%20White%20Papers/MCP_INTEGRATION_GUIDE.md)
+- [`PARAEQ_PLUGIN.md`](./Scholomance%20White%20Papers/PARAEQ_PLUGIN.md)
+- [`TURBOQUANT-SERVICE-MANUAL.md`](./Scholomance%20White%20Papers/TURBOQUANT-SERVICE-MANUAL.md)
+- [`TURBOQUANT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/TURBOQUANT_WHITE_PAPER.md)
+- [`opencode.md`](./Scholomance%20White%20Papers/opencode.md)
+
+### Scholomance Verdicts
+
+Structured product reviews and judgment of ratified canon.
+
+- [`README.md`](./Scholomance-Verdicts/README.md)
+- [`VERDICT-2026-04-27-COGNITIVE-BUS-claude-ui.md`](./Scholomance-Verdicts/VERDICT-2026-04-27-COGNITIVE-BUS-claude-ui.md)
+- [`VERDICT-2026-04-27-IMMUNE-SYSTEM.md`](./Scholomance-Verdicts/VERDICT-2026-04-27-IMMUNE-SYSTEM.md)
+- [`VERDICT-2026-05-09-CELL-WALL-INFRA.md`](./Scholomance-Verdicts/VERDICT-2026-05-09-CELL-WALL-INFRA.md)
+
+### Changes
+
+- [`CHANGE-2026-04-02-PASSWORDLESS-AGENT.md`](./Scholomance%20Changes/CHANGE-2026-04-02-PASSWORDLESS-AGENT.md)
+
+### Handoffs
+
+- [`HANDOFF-2026-05-08-RHYME-CONSTELLATION-P1-P2.md`](./Scholomance%20Hand%20Offs/HANDOFF-2026-05-08-RHYME-CONSTELLATION-P1-P2.md)
+
+### Studies
+
+- [`study1.md`](./study1.md)
 
 ---
 
 ## Entry Format
 
-All entries follow this structure:
+Bug reports follow this structure:
 
 ```markdown
 # BUG-[YYYY-MM-DD]-[SHORT_NAME]
@@ -45,12 +161,7 @@ All entries follow this structure:
 [Technical explanation of why the bug occurred]
 
 ## Thought Process
-[Step-by-step reasoning:
-  1. First observation that led to hypothesis
-  2. Investigation path taken
-  3. Dead ends encountered
-  4. Breakthrough moment
-  5. Solution derived]
+[Step-by-step reasoning]
 
 ## Changes Made
 | File | Lines Changed | Rationale |
@@ -63,51 +174,6 @@ All entries follow this structure:
 ## Lessons Learned
 [What this teaches us about the system]
 ```
-
----
-
-## Entries
-
-| Bug Code | Date | Title | Files Changed |
-|----------|------|-------|---------------|
-| `TEMPLATE` | N/A | Entry Template | N/A |
-| `SCHOL-ENC-BYKE-SEARCH-001` | 2026-04-02 | Whitespace Alignment Bug | `IDE.css`, `ScrollEditor.jsx`, `corpusWhitespaceGrid.ts` |
-| `SCHOL-ENC-BYKE-SEARCH-002` | 2026-04-02 | Font Audit Oracle Architecture (PDR) | `pixelbrain_font_audit_bytecode_pdr.md` |
-| `SCHOL-ENC-BYKE-SEARCH-003` | 2026-04-02 | Sovereign Editor Principle (Foundational) | `SHARED_PREAMBLE.md` |
-| `SCHOL-ENC-BYKE-SEARCH-TURBOQUANT-ASCENSION` | 2026-04-26 | TurboQuant Vector Bridge | `ritual-prediction/run.js`, `turboqa.js`, `verify_turboqa.js` |
-| `SCHOL-ENC-BYKE-SEARCH-DISCONNECTED-LOGIC-FIX-PLAN` | 2026-04-26 | Disconnected Logic Bug-Fix Plan (5 tiers, P0–P5) | PLAN — see entry for full target list |
-| `SCHOL-ENC-BYKE-SEARCH-PDR-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (PDR) | `cognitive_bus_pdr.md` |
-| `SCHOL-ENC-BYKE-SEARCH-ARCH-COGNITIVE-BUS` | 2026-04-27 | Cognitive Bus (Architecture) | `ARCH-2026-04-27-COGNITIVE-BUS.md` |
-| `SCHOL-ENC-BYKE-SEARCH-TURBOQUANT-MANUAL` | 2026-05-08 | TurboQuant Service Manual | `TURBOQUANT-SERVICE-MANUAL.md` |
-
----
-
-## Searching the Encyclopedia
-
-Use the bytecode search code to find entries:
-
-- **In your editor:** Search for `SCHOL-ENC-BYKE-SEARCH-`
-- **CLI:** `grep -r "SCHOL-ENC-BYKE-SEARCH" docs/scholomance-encyclopedia/`
-- **By date:** Entries are dated `BUG-[YYYY-MM-DD]-*`
-- **By keyword:** Search entry titles for topic keywords
-
----
-
-## Sub-Collections
-
-The encyclopedia is the canonical home for the full architectural lifecycle. Each sub-collection covers a different phase:
-
-- **`PDR-archive/`** — Product Design Requirements. Pre-implementation architectural specifications. Per Law 13.
-- **`post-implementation-reports/`** — Post-Implementation Reports (PIRs). What actually shipped vs. what the PDR intended. Per Law 15.
-- **`Scholomance-Verdicts/`** — Structured product reviews of ratified canon. Seven-metric Scoring Sigil (0–10 anchored), Verdict Grade (S–F), Validated Praise, Architectural Concerns, Law Violations, Admonishment of the Arbiter, Recursive Bug Elimination notes, and four mandatory Remediation Tiers (Immediate / 30 Day / 90 Day / Long Term). See `Scholomance-Verdicts/README.md` for the format spec.
-
-**Lifecycle flow:** PDR (intent) → implementation → PIR (reality) → Verdict (judgment).
-
-## Related Documents
-
-- `VAELRIX_LAW.md` — Law 11 mandates this documentation
-- `SHARED_PREAMBLE.md` — Agent coordination protocols
-- `SCHEMA_CONTRACT.md` — Data shape definitions
 
 ---
 

@@ -9,7 +9,7 @@
  * Pure function — no side effects, no I/O.
  */
 
-import { computeBlendedHsl } from '../../../src/lib/truesight/color/pcaChroma.js';
+import { computeBlendedHsl } from '../shared/truesight/color/pcaChroma.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../constants/schools.js';
 
 // Mirrors token-to-bytecode.js phoneme sets — must stay in sync.

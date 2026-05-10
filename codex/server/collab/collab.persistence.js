@@ -649,20 +649,32 @@ async function updateTask(id, updates) {
 }
 
 async function assignTaskWithLocks(taskId, agentId, filePaths = [], ttlMinutes = 30) {
-    // FIX: Atomically claim locks using ON CONFLICT with WHERE to prevent race-condition
-    // lock-stealing. Only acquires/renews if caller already owns the lock or lock is empty.
-    // Pre-check eliminated — relies on conditional upsert instead.
-
     if (filePaths.length === 0) {
-        const result = await db.execute(`
-            UPDATE collab_tasks 
+        await db.execute(`
+            UPDATE collab_tasks
             SET assigned_agent = ?, status = 'assigned', updated_at = datetime('now')
             WHERE id = ?
         `, [agentId, taskId]);
         return { conflict: false, task: await getTask(taskId) };
     }
 
-    // Atomically upsert all locks — only succeeds if no conflict or caller already owns
+    // Pre-check: bail before acquiring any lock if a foreign agent holds one of
+    // the requested files. Without this, the batch transaction commits per-row
+    // acquisition before conflict detection runs, leaking partial locks.
+    for (const filePath of filePaths) {
+        const existing = await checkLock(filePath);
+        if (existing && existing.locked_by && existing.locked_by !== agentId) {
+            return {
+                conflict: true,
+                file: filePath,
+                locked_by: existing.locked_by,
+                task_id: existing.task_id || null,
+            };
+        }
+    }
+
+    // No foreign locks — acquire all atomically. Conditional upsert still
+    // protects against a tight race between the pre-check and acquisition.
     const lockStatements = filePaths.map(filePath => ({
         sql: `INSERT INTO collab_file_locks (file_path, locked_by, task_id, locked_at, expires_at)
               VALUES (?, ?, ?, datetime('now'), datetime('now', '+' || ? || ' minutes'))
@@ -677,9 +689,18 @@ async function assignTaskWithLocks(taskId, agentId, filePaths = [], ttlMinutes =
 
     const results = await db.batch(lockStatements);
 
-    // Detect conflict: if any lock statement affected 0 rows, another agent owns it
     const conflictIdx = results.findIndex(r => r.rowsAffected === 0);
     if (conflictIdx !== -1) {
+        // Race: a foreign agent acquired the lock between pre-check and batch.
+        // Release any locks we just acquired in this call before returning.
+        const releaseStatements = filePaths
+            .slice(0, conflictIdx)
+            .map(fp => ({
+                sql: `DELETE FROM collab_file_locks WHERE file_path = ? AND locked_by = ? AND task_id = ?`,
+                args: [fp, agentId, taskId]
+            }));
+        if (releaseStatements.length > 0) await db.batch(releaseStatements);
+
         const conflictFile = filePaths[conflictIdx];
         const existing = await checkLock(conflictFile);
         return {
@@ -692,7 +713,7 @@ async function assignTaskWithLocks(taskId, agentId, filePaths = [], ttlMinutes =
 
     // All locks claimed — update task assignment
     await db.execute(`
-        UPDATE collab_tasks 
+        UPDATE collab_tasks
         SET assigned_agent = ?, status = 'assigned', updated_at = datetime('now')
         WHERE id = ?
     `, [agentId, taskId]);

@@ -3,7 +3,7 @@
  * Generates CSS variables for school theming dynamically
  */
 
-import { SCHOOLS } from '../../../src/data/schools.js';
+import { SCHOOLS } from '../../core/constants/schools.js';
 
 /**
  * Generate CSS variables for all schools

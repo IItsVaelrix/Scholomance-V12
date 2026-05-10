@@ -2,6 +2,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import React from 'react';
+
+// Mock EventSource
+if (typeof global.EventSource === 'undefined') {
+  global.EventSource = class {
+    constructor() {
+      this.onmessage = null;
+      this.onerror = null;
+    }
+    close() {}
+  };
+}
+
 import ActivityFeed from '../../src/pages/Collab/ActivityFeed';
 import AgentMessaging from '../../src/pages/Collab/AgentMessaging';
 import MetricsGrid from '../../src/pages/Collab/MetricsGrid';

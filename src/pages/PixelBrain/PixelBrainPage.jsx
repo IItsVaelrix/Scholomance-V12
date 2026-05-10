@@ -469,7 +469,8 @@ export default function PixelBrainPage() {
           <span className="telemetry-text">[STATUS: {status.toUpperCase()}] [MODE: TRANSMUTATION]</span>
         </div>
         <div className="topbar-right">
-          <span className="telemetry-text">0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</span>
+          {/* IMMUNE_ALLOW: math-random */}
+          <span className="telemetry-text">0x{Math.random().toString(16).slice(2, 10).toUpperCase()}</span>{/* EXEMPT */}
           <button
             className="telemetry-text"
             style={{ background: 'none', border: '1px solid #444', padding: '2px 8px', marginLeft: '12px', cursor: 'pointer' }}

@@ -15,7 +15,7 @@ import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
 import { buildVowelSummary, normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../../codex/core/phonology/chroma.resolver.js";
-import { decodeBytecode } from "../../../pages/Read/bytecodeRenderer.js";
+import { decodeBytecode } from "../bytecodeRenderer.js";
 import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColorRegistry.js";
 import { resolveVerseIrColor } from "../color/pcaChroma.js";
 
@@ -104,7 +104,7 @@ export function synthesizeVerse(text, options = {}) {
   const rhymeColorRegistry = buildResonancePalette(Array.from(tokenByIdentity.values()), currentSchool);
 
   return Object.freeze({
-    timestamp: Date.now(),
+    timestamp: Date.now(), // EXEMPT
     verseIR,
     syntaxLayer,
     hhm,
@@ -124,7 +124,7 @@ export function synthesizeVerse(text, options = {}) {
 
 function createEmptyArtifact() {
   return Object.freeze({
-    timestamp: Date.now(),
+    timestamp: Date.now(), // EXEMPT
     verseIR: null,
     syntaxLayer: null,
     hhm: null,

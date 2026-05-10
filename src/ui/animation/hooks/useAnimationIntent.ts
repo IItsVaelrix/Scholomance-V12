@@ -2,12 +2,14 @@
  * Animation AMP — useAnimationIntent Hook
  * 
  * Submits an animation intent to the AMP and returns the resolved motion.
+ * 
+ * @see ARCH_CONTRACT_OVERLAY_INTEGRITY.md - Layer separation requirements
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { AnimationIntent, ResolvedMotionOutput } from '../../../codex/animation/contracts/animation.types.ts';
 import { processorBridge } from '../../../lib/processor-bridge.js';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion.js';
+import type { AnimationIntent, ResolvedMotionOutput } from '../../../types/animation';
 
 /**
  * Hook to submit an animation intent to the AMP

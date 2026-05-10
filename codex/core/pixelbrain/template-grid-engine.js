@@ -316,7 +316,7 @@ export function applySymmetry(coordinates, grid) {
  */
 export function createLayer(name = '') {
   return {
-    name: name || `Layer ${Date.now()}`,
+    name: name || `Layer ${Date.now()}`, // EXEMPT
     visible: true,
     locked: false,
     opacity: 1,

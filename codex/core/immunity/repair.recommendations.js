@@ -22,9 +22,9 @@
 export const REPAIR_RECOMMENDATIONS = Object.freeze({
   'repair.math-random.seeded': {
     key: 'repair.math-random.seeded',
-    title: 'Replace Math.random() with seeded RNG',
+    title: 'Replace Math.random() with seeded RNG', // EXEMPT
     suggestions: [
-      "Replace `Math.random()` with `seedrandom(seed)` from a deterministic source.",
+      "Replace `Math.random()` with `seedrandom(seed)` from a deterministic source.", // EXEMPT
       "Combat seeds derive from `combatId + turn`. Visual seeds derive from session context.",
       "If this is intentional visual jitter, annotate with `// IMMUNE_ALLOW: math-random`.",
     ],
@@ -41,7 +41,7 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     key: 'repair.unseeded-clock.pipeline-context',
     title: 'Use authoritative pipeline clock',
     suggestions: [
-      'Use the `clock` provided by the pipeline context instead of `Date.now()` / `performance.now()`.',
+      'Use the `clock` provided by the pipeline context instead of `Date.now()` / `performance.now()`.', // EXEMPT
       'Cross-browser parity requires a single authoritative timesource.',
     ],
     constraints: [
@@ -162,6 +162,25 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     invariants: ['Only useAuth.jsx initiates the primary handshake.'],
     references: ['BUG-2026-04-27-RECURSIVE-FRAGMENTATION'],
     canonical: 'const { token } = useAuth();',
+  },
+
+  'repair.phoneme.relative-bridge': {
+    key: 'repair.phoneme.relative-bridge',
+    title: 'Restore Phoneme Engine Bridge',
+    suggestions: [
+      'Fix the relative import depth in `vowelFamily.js`.',
+      "Use `./vowelWheel.js` for sibling imports instead of reaching up to root.",
+      "The 'Assonance Logic Collapse' occurs when family identities fail to resolve during analysis.",
+    ],
+    constraints: [
+      'Core modules must use stable sibling/child relative paths.',
+      'PhonemeEngine must resolve FAMILY_IDENTITY to produce resonant bytecode.',
+    ],
+    invariants: [
+      'importPath === "./vowelWheel.js"',
+    ],
+    references: ['BUG-2026-05-09-PHONEME-SEVERANCE'],
+    canonical: "import { FAMILY_IDENTITY } from './vowelWheel.js';",
   },
 });
 

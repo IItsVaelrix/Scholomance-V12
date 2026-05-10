@@ -21,7 +21,8 @@ function createLexiconFixtureDb(dbPath) {
       ending_signature TEXT NOT NULL,
       onset_signature TEXT NOT NULL,
       dominant_vowel_family TEXT NOT NULL,
-      frequency_score REAL NOT NULL
+      frequency_score REAL NOT NULL,
+      embeddings_tq BLOB
     );
   `);
   db.prepare(`

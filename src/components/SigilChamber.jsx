@@ -52,9 +52,15 @@ function buildSceneClass(Phaser, initData) {
 
     _starfield(W, H) {
       const g = this.add.graphics().setDepth(0);
+      let seed = 42;
+      const seededRandom = () => {
+        seed = (seed * 16807) % 2147483647;
+        return (seed - 1) / 2147483646;
+      };
+
       for (let i = 0; i < 30; i++) {
-        g.fillStyle(0xffffff, Math.random() * 0.32 + 0.05);
-        g.fillCircle(Math.random() * W, Math.random() * H, Math.random() * 1.2 + 0.2);
+        g.fillStyle(0xffffff, seededRandom() * 0.32 + 0.05);
+        g.fillCircle(seededRandom() * W, seededRandom() * H, seededRandom() * 1.2 + 0.2);
       }
       this.tweens.add({
         targets: g, alpha: { from: 0.55, to: 1 },

@@ -45,12 +45,12 @@ class MockTrie {
 describe('PoeticLanguageServer', () => {
   let pls;
 
-  beforeAll(() => {
+  beforeAll(async () => {
     pls = new PoeticLanguageServer({
       phonemeEngine: mockPhonemeEngine,
       trie: new MockTrie(),
     });
-    pls.buildIndex([
+    await pls.buildIndex([
       'night', 'light', 'fight', 'sight', 'time', 'fire',
       'face', 'base', 'dark', 'soul', 'into', 'the', 'void',
     ]);
@@ -166,7 +166,7 @@ describe('PoeticLanguageServer', () => {
       trie: new MockTrie(),
       dictionaryAPI,
     });
-    withDictionary.buildIndex([
+    await withDictionary.buildIndex([
       'night', 'light', 'fight', 'sight', 'time', 'fire',
       'face', 'base', 'dark', 'soul', 'into', 'the', 'void',
     ]);

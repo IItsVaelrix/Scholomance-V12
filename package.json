@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "node -e \"const cmd = process.platform === 'win32' ? 'start /B npm run dev:server && vite' : 'npm run dev:server & vite'; require('child_process').execSync(cmd, { stdio: 'inherit' });\"",
     "dev:server": "node --env-file=.env codex/server/index.js",
@@ -49,7 +52,13 @@
     "immune:scan:json": "node scripts/immunity-pre-commit.js --staged --json",
     "immune:stasis": "node tests/qa/immunity.stasis.test.js",
     "immune:stasis:glyph": "node tests/qa/immunity.glyph-stasis.test.js",
-    "immune:stasis:all": "node tests/qa/immunity.stasis.test.js && node tests/qa/immunity.glyph-stasis.test.js"
+    "immune:stasis:all": "node tests/qa/immunity.stasis.test.js && node tests/qa/immunity.glyph-stasis.test.js",
+    "diagnostic:scan": "node codex/core/diagnostic/run-diagnostic.cli.js",
+    "diagnostic:scan:ci": "node codex/core/diagnostic/run-diagnostic.cli.js --trigger ci",
+    "cleri": "node scripts/cleri-raid.js",
+    "polish": "node scripts/production-polish.js full",
+    "polish:quick": "node scripts/production-polish.js quick",
+    "polish:ci": "node scripts/production-polish.js full --ci"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",

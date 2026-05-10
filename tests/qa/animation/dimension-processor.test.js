@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DimensionProcessor } from '../../../codex/core/animation/processors/dimension-processor';
-import { ViewportChannel } from '../../../src/lib/truesight/compiler/viewportBytecode';
+import { ViewportChannel } from '../../../codex/core/shared/truesight/compiler/viewportBytecode';
 
 // Mock ViewportChannel
-vi.mock('../../../src/lib/truesight/compiler/viewportBytecode', () => ({
+vi.mock('../../../codex/core/shared/truesight/compiler/viewportBytecode', () => ({
   ViewportChannel: {
     getState: vi.fn(() => ({
       width: 1920,

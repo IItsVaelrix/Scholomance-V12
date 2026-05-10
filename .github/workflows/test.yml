@@ -34,6 +34,15 @@ jobs:
     - name: Verify backend contract
       run: npm run verify:backend-contract
 
+    - name: Run Cell Wall Audit (Tier 1)
+      run: node scripts/cell-wall-audit.js
+
+    - name: Run Nucleus Drift Audit (Tier 2)
+      run: node scripts/nucleus-drift-audit.js
+
+    - name: Run Override Circuit Breaker (Tier 3)
+      run: node scripts/circuit-breaker.js
+
     - name: Run Unit Tests
       run: npm run test -- --run
 

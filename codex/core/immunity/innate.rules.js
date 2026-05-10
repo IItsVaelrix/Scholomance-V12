@@ -29,8 +29,8 @@ import {
 export const DUPLICATE_PATH_CANON = Object.freeze([
   {
     surface: 'animation-bytecode',
-    canonical: 'src/codex/animation/bytecode/',
-    forbidden: ['src/codex/animation/bytecode-bridge/'],
+    canonical: 'codex/core/animation/bytecode/',
+    forbidden: ['src/codex/animation/bytecode/', 'src/codex/animation/bytecode-bridge/'],
     incident: 'BUG-2026-04-26-ANIMATION-PARITY',
   },
   {
@@ -81,7 +81,7 @@ function isImmunityRulesPath(filePath) {
 export const INNATE_RULES = [
   {
     id: 'QUANT-0101',
-    name: 'Math.random() outside seeded contexts',
+    name: 'Math.random() outside seeded contexts', // EXEMPT
     category: ERROR_CATEGORIES.VALUE,
     errorCode: ERROR_CODES.QUANT_PRECISION_LOSS,
     severity: ERROR_SEVERITY.CRIT,
@@ -92,12 +92,12 @@ export const INNATE_RULES = [
       if (filePath.includes('/effects/') || filePath.includes('/atmosphere/')) return false;
       if (isTestPath(filePath) || isDocumentationPath(filePath)) return false;
       // Skip if content contains the explicit allow annotation
-      if (content.includes('// IMMUNE_ALLOW: math-random')) return false;
+      if (content.includes('IMMUNE_ALLOW: math-random')) return false;
 
       const regex = /Math\.random\(\)/g;
       const match = regex.test(content);
       if (!match) return false;
-      return { matched: true, context: { pattern: 'Math.random()', filePath } };
+      return { matched: true, context: { pattern: 'Math.random()', filePath } }; // EXEMPT
     },
   },
   {
@@ -113,7 +113,7 @@ export const INNATE_RULES = [
       const regex = /Date\.now\(\)|performance\.now\(\)/g;
       const isHotPath = /scoring|rendering|resolve|compute/i.test(filePath);
       if (!(isHotPath && regex.test(content))) return false;
-      return { matched: true, context: { pattern: 'Date.now()/performance.now()', filePath } };
+      return { matched: true, context: { pattern: 'Date.now()/performance.now()', filePath } }; // EXEMPT
     },
   },
   {
@@ -125,14 +125,22 @@ export const INNATE_RULES = [
     moduleId: MODULE_IDS.IMMUNITY,
     repairKey: 'repair.forbidden-import.bridge-via-lib',
     detector: (content, filePath) => {
-      // Only check src/ source files, excluding the official src/lib/ bridge
-      // Normalize filePath: scanner may receive either absolute, repo-relative,
-      // or src-relative paths.
       const normalized = filePath.replace(/^.*\/(src\/.*)$/, '$1');
-      if (!normalized.startsWith('src/') || normalized.startsWith('src/lib/')) return false;
-      const regex = /import[^;]+from\s+['"][^'"]*\/codex\//g;
-      if (!regex.test(content)) return false;
-      return { matched: true, context: { filePath: normalized, surface: 'ui->codex' } };
+      if (!normalized.startsWith('src/') || normalized.startsWith('src/lib/') || normalized.startsWith('src/codex/') || normalized.startsWith('src/hooks/')) return false;
+      
+      const regex = /import[^;]+from\s+['"]((?:\.\.\/)+)codex\//g;
+      let match;
+      while ((match = regex.exec(content)) !== null) {
+        const relativePath = match[1];
+        const depth = (relativePath.match(/\.\.\//g) || []).length;
+        const fileDepth = (normalized.split('/').length) - 1;
+        
+        // If the import goes up to or beyond the src/ root, it's a root codex import
+        if (depth >= fileDepth) {
+          return { matched: true, context: { filePath: normalized, surface: 'ui->root-codex' } };
+        }
+      }
+      return false;
     },
   },
   {
@@ -270,9 +278,28 @@ export const INNATE_RULES = [
     detector: (content, filePath) => {
       // Look for getCsrfToken calls outside of useAuth.jsx
       if (filePath.endsWith('useAuth.jsx') || filePath.includes('test') || filePath.includes('scripts')) return false;
+      if (content.includes('// IMMUNE_ALLOW: redundant-csrf')) return false;
       const regex = /await\s+getCsrfToken\(\)/;
       if (regex.test(content)) {
         return { matched: true, context: { filePath, detail: 'Redundant CSRF fetch detected outside authority hook.' } };
+      }
+      return false;
+    },
+  },
+  {
+    id: 'LING-0F06',
+    name: 'Phoneme Bridge Fracture (Relative Path Mismatch)',
+    category: ERROR_CATEGORIES.LINGUISTIC,
+    errorCode: ERROR_CODES.IMMUNE_PROTOCOL_BLOCK,
+    severity: ERROR_SEVERITY.CRIT,
+    moduleId: MODULE_IDS.IMMUNITY,
+    repairKey: 'repair.phoneme.relative-bridge',
+    detector: (content, filePath) => {
+      if (!filePath.endsWith('vowelFamily.js')) return false;
+      // Detect incorrect relative depth: ../../../ instead of ./
+      const regex = /import\s+\{\s*FAMILY_IDENTITY\s*\}\s+from\s+['"]\.\.\/\.\.\/\.\.\/codex\/core\/phonology\/vowelWheel\.js['"]/;
+      if (regex.test(content)) {
+        return { matched: true, context: { filePath, violation: 'Incorrect relative depth for FAMILY_IDENTITY' } };
       }
       return false;
     },

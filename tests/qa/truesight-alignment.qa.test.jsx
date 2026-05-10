@@ -58,7 +58,7 @@ describe('Truesight Alignment — Pixel Perfection QA', () => {
 
     const { container } = render(
       <ScrollEditor 
-        initialContent={content}
+        content={content}
         isTruesight={true}
         isEditable={true}
         analysisMode="vowel"
@@ -122,22 +122,26 @@ describe('Truesight Alignment — Pixel Perfection QA', () => {
   });
 
   it('mathematically verifies adaptive whitespace consistency between words', async () => {
-    // In JSDOM we mock the measurement to be precise
-    const content = "Word1 Word2";
-    
-    // We expect: [Word1][Space][Word2]
-    // If Space width is 10px, and Word1 is 50px, Word2 MUST start at 60px.
-    
+    // In JSDOM we mock the measurement to be precise.
+    // Use letter-only tokens so LINE_TOKEN_REGEX doesn't split (it treats digits
+    // as a separate token type from letters).
+    const content = "Alpha Bravo";
+
+    // We expect: [Alpha][Space][Bravo]
+    // Each token is measured at the same width via the JSDOM canvas mock,
+    // so the gap between consecutive word edges equals the space width.
+
     const word1Width = 50;
     const spaceWidth = 10;
     const word2Width = 50;
 
     // 1. Mock measurement engine
-    vi.mock('../../src/lib/truesight/compiler/adaptiveWhitespaceGrid', async (importOriginal) => {
+    vi.mock('../../codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts', async (importOriginal) => {
       const actual = await importOriginal();
       return {
         ...actual,
         measureTextWidth: vi.fn().mockImplementation((text) => {
+          console.log(`[MOCK] measureTextWidth called with "${text}"`);
           if (text === 'Word1' || text === 'Word2') return word1Width;
           if (text === ' ') return spaceWidth;
           return text.length * 10;
@@ -157,7 +161,7 @@ describe('Truesight Alignment — Pixel Perfection QA', () => {
 
     const { container } = render(
       <ScrollEditor 
-        initialContent={content}
+        content={content}
         isTruesight={true}
         isEditable={true}
         analysisMode="vowel"

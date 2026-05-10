@@ -1,6 +1,6 @@
-import { MotionProcessor, MotionWorkingState, AnimationIntent } from '../contracts/motion-contract';
+import type { MotionProcessor, MotionWorkingState, AnimationIntent } from '../contracts/animation.types';
 import { DimensionCompiler, DimensionRuntime } from '../../pixelbrain/dimension-formula-compiler';
-import { ViewportChannel } from '../../../../src/lib/truesight/compiler/viewportBytecode';
+import { ViewportChannel } from '../../shared/truesight/compiler/viewportBytecode';
 
 /**
  * DIMENSION MICROPROCESSOR (mp.layout.dimensions)
@@ -13,7 +13,7 @@ import { ViewportChannel } from '../../../../src/lib/truesight/compiler/viewport
  */
 export class DimensionProcessor implements MotionProcessor {
   id = 'mp.layout.dimensions';
-  stage: const = 'normalize';
+  stage = 'normalize' as const;
   
   private compiler = new DimensionCompiler();
   private runtime = new DimensionRuntime();
@@ -48,13 +48,23 @@ export class DimensionProcessor implements MotionProcessor {
       state.values.width = result.width;
       state.values.height = result.height;
       state.diagnostics.push(`LAYOUT_RESOLVED: ${result.width}x${result.height} [${viewport.deviceClass}/${viewport.orientation}]`);
-      state.trace.push({ processorId: this.id, changed: ['width', 'height'] });
+      state.trace.push({ 
+        processorId: this.id, 
+        stage: this.stage,
+        changed: ['width', 'height'],
+        timestamp: performance.now(), // EXEMPT
+      });
     } catch (err) {
       // Fix: Avoid orphaned state by ensuring width/height are NOT partially applied if resolution fails
       delete state.values.width;
       delete state.values.height;
       state.diagnostics.push(`LAYOUT_ERROR: ${(err as Error).message}`);
-      state.trace.push({ processorId: this.id, changed: [] }); // Explicitly log that this processor ran but changed nothing (failed)
+      state.trace.push({ 
+        processorId: this.id, 
+        stage: this.stage,
+        changed: [], 
+        timestamp: performance.now(), // EXEMPT
+      }); // Explicitly log that this processor ran but changed nothing (failed)
     }
 
     return state;

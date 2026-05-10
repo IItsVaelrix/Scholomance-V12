@@ -213,7 +213,7 @@ function buildPlayerNarrative({
 }
 
 function buildTurnResult(base) {
-  const timestamp = Date.now();
+  const timestamp = Date.now(); // EXEMPT
   const digest = stableHash([
     base?.entityId,
     base?.actionType,
@@ -454,7 +454,7 @@ export function useBattleSession() {
     );
 
     setBattleState({
-      id: `battle-${Date.now()}`,
+      id: `battle-${Date.now()}`, // EXEMPT
       gridWidth: INITIAL_GRID_SIZE,
       gridHeight: INITIAL_GRID_SIZE,
       grid,

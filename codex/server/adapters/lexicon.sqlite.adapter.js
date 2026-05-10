@@ -107,6 +107,9 @@ function createEmptyAdapter(resolvedPath, logger) {
 
 export function createLexiconAdapter(dbPath, options = {}) {
   const logger = options.log ?? console;
+  if (!dbPath) {
+    return createEmptyAdapter(null, logger);
+  }
   const resolvedPath = resolveDatabasePath(dbPath, 'scholomance_dict.sqlite');
 
   let db = null;

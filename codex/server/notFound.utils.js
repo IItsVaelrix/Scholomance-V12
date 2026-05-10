@@ -1,4 +1,4 @@
-const API_PREFIXES = ['/api'];
+const API_PREFIXES = ['/api', '/auth', '/collab'];
 const STATIC_PREFIXES = ['/assets/', '/audio/'];
 const STATIC_FILE_NAMES = new Set([
   '/favicon.ico',

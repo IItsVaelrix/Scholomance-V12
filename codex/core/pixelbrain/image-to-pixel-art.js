@@ -7,7 +7,7 @@
 
 import { snapToPixelGrid } from './anti-alias-control.js';
 import { analyzeImageToFormula, formulaToBytecode } from './image-to-bytecode-formula.js';
-import { processorBridge } from '../../../src/lib/processor-bridge.js';
+import { processorBridge } from '../shared/processor-bridge.js';
 
 /**
  * @typedef {Object} ImageAnalysis

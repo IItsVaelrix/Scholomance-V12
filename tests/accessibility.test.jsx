@@ -13,12 +13,13 @@ import ScrollEditor from "../src/pages/Read/ScrollEditor.jsx";
 expect.extend(toHaveNoViolations);
 
 // Suppress Phaser loading errors in tests (Phaser is loaded dynamically)
+const originalConsoleError = console.error.bind(console);
 beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation((...args) => {
     if (args[0]?.includes?.('Phaser is not defined')) {
       return; // Suppress Phaser errors
     }
-    console.error(...args);
+    originalConsoleError(...args);
   });
 });
 
@@ -31,7 +32,7 @@ process.on('unhandledRejection', (reason) => {
   if (String(reason)?.includes('Phaser is not defined')) {
     return; // Suppress Phaser rejections
   }
-  console.error('Unhandled rejection:', reason);
+  originalConsoleError('Unhandled rejection:', reason);
 });
 
 const authState = vi.hoisted(() => ({
@@ -61,6 +62,17 @@ vi.mock("../src/hooks/useProgression.jsx", () => ({
     levelInfo: { level: 1, currentXp: 1000, nextXp: 2000, progress: 0.5 },
     availableSchools: ["SONIC", "ABJURATION"],
     totalSchools: 6,
+  }),
+}));
+
+vi.mock("../src/hooks/useScrolls.jsx", () => ({
+  ScrollsProvider: ({ children }) => children,
+  useScrolls: () => ({
+    refreshScrolls: vi.fn(async () => {}),
+    scrolls: [],
+    addScroll: vi.fn(),
+    deleteScroll: vi.fn(),
+    updateScroll: vi.fn(),
   }),
 }));
 

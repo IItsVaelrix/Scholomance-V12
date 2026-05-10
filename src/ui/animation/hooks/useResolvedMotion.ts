@@ -2,11 +2,13 @@
  * Animation AMP — useResolvedMotion Hook
  * 
  * Consumes the resolved motion output from an active animation by targetId.
+ * 
+ * @see ARCH_CONTRACT_OVERLAY_INTEGRITY.md - Layer separation requirements
  */
 
 import { useState, useEffect } from 'react';
-import { ResolvedMotionOutput } from '../../../codex/animation/contracts/animation.types.ts';
-import { getActiveAnimation } from '../../../codex/animation/amp/runAnimationAmp.ts';
+import { getActiveAnimation } from '../../../lib/amp-client.js';
+import type { ResolvedMotionOutput } from '../../../types/animation';
 
 /**
  * Hook to consume a resolved motion output for a given targetId
@@ -27,19 +29,19 @@ export function useResolvedMotion(
       return;
     }
 
-    // Initial check
-    const initial = getActiveAnimation(targetId);
-    if (initial) {
-      setMotion(initial);
-    }
-
-    // Polling for updates (could be replaced by an event emitter in future)
-    const interval = setInterval(() => {
-      const current = getActiveAnimation(targetId);
+    // Polling for updates
+    const fetchMotion = async () => {
+      const current = await getActiveAnimation(targetId);
       if (current !== motion) {
         setMotion(current || null);
       }
-    }, pollingIntervalMs);
+    };
+
+    // Initial check
+    fetchMotion();
+
+    // Set up polling
+    const interval = setInterval(fetchMotion, pollingIntervalMs);
 
     return () => {
       clearInterval(interval);

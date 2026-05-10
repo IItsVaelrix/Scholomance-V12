@@ -5,7 +5,7 @@
  * Standardizes the VerseSynthesis AMP interface.
  */
 
-import { synthesizeVerse } from '../../../../src/lib/truesight/compiler/VerseSynthesis.js';
+import { synthesizeVerse } from '../../shared/truesight/compiler/VerseSynthesis.js';
 
 /**
  * Synthesizes a verse into a structured artifact.

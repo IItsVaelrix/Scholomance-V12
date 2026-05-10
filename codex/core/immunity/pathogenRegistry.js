@@ -124,4 +124,22 @@ export const PATHOGEN_REGISTRY = [
     glyphs: '⧿⧿', // CRITICAL_PATH x2
     signature: (() => computeGlyphSignature('Keystroke Critical Path Contamination (Per-Stroke Sync Work)', 'pathogen.keystroke-critical-path'))(),
   },
+  {
+    id: 'pathogen.rejected-water-source',
+    name: 'Rejected Water Source (Shadow Path + Recursive Entropy)',
+    threshold: 0.85,
+    encyclopediaEntry: 'BUG-2026-05-09-REJECTED-WATER-SOURCE',
+    vector_id: 'TQ-SIGNATURE-REJECTED-WATER-V1',
+    glyphs: '⧫⟟', // SHADOW_PATH + LOOP_RECURSION
+    signature: (() => computeGlyphSignature('Rejected Water Source (Shadow Path + Recursive Entropy)', 'pathogen.rejected-water-source'))(),
+  },
+  {
+    id: 'pathogen.phoneme-engine-severance',
+    name: 'Phoneme Engine Severance (Internal Bridge Collapse)',
+    threshold: 0.90,
+    encyclopediaEntry: 'BUG-2026-05-09-PHONEME-SEVERANCE',
+    vector_id: 'TQ-SIGNATURE-PHONEME-SEVERANCE-V1',
+    glyphs: '◈⟟', // PROTOCOL_DRIFT + LOOP_RECURSION
+    signature: (() => computeGlyphSignature('Phoneme Engine Severance (Internal Bridge Collapse)', 'pathogen.phoneme-engine-severance'))(),
+  },
 ];

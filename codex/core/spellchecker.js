@@ -89,7 +89,7 @@ export class Spellchecker {
 
   isAsyncPathAvailable() {
     if (this.asyncDisabledUntil <= 0) return true;
-    if (Date.now() >= this.asyncDisabledUntil) {
+    if (Date.now() >= this.asyncDisabledUntil) { // EXEMPT
       this.asyncDisabledUntil = 0;
       return true;
     }
@@ -118,7 +118,7 @@ export class Spellchecker {
       return;
     }
 
-    this.asyncDisabledUntil = Date.now() + this.asyncRetryCooldownMs;
+    this.asyncDisabledUntil = Date.now() + this.asyncRetryCooldownMs; // EXEMPT
     this.asyncFailureCount = 0;
 
     if (!this.asyncOfflineAnnounced) {

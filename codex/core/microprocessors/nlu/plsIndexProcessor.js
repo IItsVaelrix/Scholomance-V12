@@ -5,7 +5,7 @@
  * Ensures the page loads instantly without blocking on heavy linguistic processing.
  */
 
-import { RhymeIndex } from '../../../../src/lib/pls/rhymeIndex.js';
+import { RhymeIndex } from '../../shared/rhymeIndex.js';
 import { PhonemeEngine } from '../../phonology/phoneme.engine.js';
 
 /**

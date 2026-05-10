@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { runAnimationAmp, initAnimationAmp, getActiveAnimation } from '../../../src/codex/animation/amp/runAnimationAmp.ts';
-import { AnimationIntent } from '../../../src/codex/animation/contracts/animation.types.ts';
+import { runAnimationAmp, initAnimationAmp, getActiveAnimation } from "../../../codex/core/animation/amp/runAnimationAmp.ts";
+import { AnimationIntent } from '../../../codex/core/animation/contracts/animation.types.ts';
 
 describe('Animation AMP Core', () => {
   beforeEach(() => {
@@ -19,7 +19,7 @@ describe('Animation AMP Core', () => {
     const output = await runAnimationAmp(intent);
 
     expect(output).toBeDefined();
-    expect(output.ok).toBe(true);
+    expect(output.success).toBe(true);
     expect(output.targetId).toBe('test-target-1');
     expect(output.renderer).toBe('framer');
     expect(output.values).toBeDefined();
@@ -75,7 +75,7 @@ describe('Animation AMP Core', () => {
     const output = await runAnimationAmp(intent);
     
     // It should still complete but might have diagnostics
-    expect(output.ok).toBe(true);
+    expect(output.success).toBe(true);
     expect(output.values).toBeDefined();
   });
 });

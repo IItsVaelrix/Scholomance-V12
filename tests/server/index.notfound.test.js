@@ -382,9 +382,9 @@ describe('[Server] index route integration', () => {
     });
     expect(registerResponse.statusCode).toBe(201);
 
-    const initialUser = userPersistence.users.findByEmail(email);
+    const initialUser = await userPersistence.users.findByEmail(email);
     const initialToken = initialUser.verificationToken;
-    const initialMessages = userPersistence.mail.getAll({ statuses: ['queued'] });
+    const initialMessages = await userPersistence.mail.getAll({ statuses: ['queued'] });
     const verificationMessages = initialMessages.filter((message) => message.recipient === email && message.templateKey === 'verify-email');
     expect(verificationMessages).toHaveLength(1);
 
@@ -400,9 +400,9 @@ describe('[Server] index route integration', () => {
     });
     expect(resendResponse.statusCode).toBe(200);
 
-    const updatedUser = userPersistence.users.findByEmail(email);
+    const updatedUser = await userPersistence.users.findByEmail(email);
     expect(updatedUser.verificationToken).not.toBe(initialToken);
-    const updatedMessages = userPersistence.mail.getAll({ statuses: ['queued'] });
+    const updatedMessages = await userPersistence.mail.getAll({ statuses: ['queued'] });
     const resentMessages = updatedMessages.filter((message) => message.recipient === email && message.templateKey === 'verify-email');
     expect(resentMessages).toHaveLength(2);
   });
@@ -411,8 +411,8 @@ describe('[Server] index route integration', () => {
     const jar = createCookieJar();
     const seed = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
     const user = await registerAndLogin(jar, seed);
-    const persistedUser = userPersistence.users.findByEmail(user.email);
-    userPersistence.users.verifyUser(persistedUser.id);
+    const persistedUser = await userPersistence.users.findByEmail(user.email);
+    await userPersistence.users.verifyUser(persistedUser.id);
 
     const forgotToken = await getCsrfToken(jar);
     const forgotResponse = await requestWithJar(jar, {
@@ -426,9 +426,8 @@ describe('[Server] index route integration', () => {
     });
     expect(forgotResponse.statusCode).toBe(200);
 
-    const queuedReset = userPersistence.mail
-      .getAll({ statuses: ['queued'] })
-      .find((message) => message.recipient === user.email && message.templateKey === 'password-reset');
+    const queuedMessages = await userPersistence.mail.getAll({ statuses: ['queued'] });
+    const queuedReset = queuedMessages.find((message) => message.recipient === user.email && message.templateKey === 'password-reset');
     expect(queuedReset).toBeTruthy();
 
     const resetUrlMatch = queuedReset.textBody.match(/https?:\/\/\S+/);

@@ -18,7 +18,8 @@ function createFixtureDb(dbPath) {
       etymology TEXT,
       senses_json TEXT NOT NULL,
       source TEXT NOT NULL,
-      source_url TEXT
+      source_url TEXT,
+      embeddings_tq BLOB
     );
 
     CREATE VIRTUAL TABLE entry_fts USING fts5(

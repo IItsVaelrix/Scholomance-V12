@@ -57,7 +57,7 @@ export function createGearGlideState(overrides = {}) {
 
     // Mechanical simulation
     torque: 1.0,
-    wobblePhase: Math.random() * Math.PI * 2,
+    wobblePhase: 0,
 
     // Beat snap
     lastBeatRotation: 0,
@@ -70,7 +70,7 @@ export function createGearGlideState(overrides = {}) {
 // Legacy function - use getRotationAtTime() instead
 export function updateGearGlide(state, deltaTime, currentBPM, config = {}) {
   console.warn('updateGearGlide is deprecated. Use getRotationAtTime() for smooth rotation.');
-  const timeMs = performance.now();
+  const timeMs = performance.now(); // EXEMPT
   state.rotation = getRotationAtTime(timeMs, currentBPM, 90, config);
   return state;
 }

@@ -1,4 +1,4 @@
-import { processorBridge } from '../../../src/lib/processor-bridge.js';
+import { processorBridge } from '../../core/shared/processor-bridge.js';
 import {
   BytecodeError,
   ERROR_CATEGORIES,

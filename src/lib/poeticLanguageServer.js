@@ -24,6 +24,7 @@ import { createTokenGraphSemanticRepo } from '../../codex/services/token-graph/s
 import { createTokenGraphSequenceRepo } from '../../codex/services/token-graph/sequence.repo.js';
 import { createRitualPredictionEngine } from '../../codex/core/ritual-prediction/run.js';
 import { processorBridge } from './processor-bridge.js';
+import { PhonemeEngine as CanonicalPhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 
 function resolvePredictionSchool(phonemeEngine, analysis) {
   const vowelFamily = Array.isArray(analysis?.vowelFamily)
@@ -88,6 +89,15 @@ export class PoeticLanguageServer {
    * @param {string[]} wordList
    */
   async buildIndex(wordList) {
+    // The bridge processor always uses the canonical PhonemeEngine. When a
+    // caller injects a different engine (tests, custom configurations), the
+    // rhymeIndex must be built with that injected engine for analysis parity.
+    if (this.phonemeEngine !== CanonicalPhonemeEngine) {
+      this.rhymeIndex.build(wordList, this.phonemeEngine);
+      this.ready = true;
+      return;
+    }
+
     // V12 PERFORMANCE: Offload to Microprocessor Factory for "Instant" page load
     try {
       const serializedIndex = await processorBridge.execute('pls.index', { wordList });

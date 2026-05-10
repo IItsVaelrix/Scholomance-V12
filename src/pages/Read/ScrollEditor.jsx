@@ -8,7 +8,7 @@ import Gutter from "./Gutter.jsx";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { WORD_TOKEN_REGEX } from "../../lib/wordTokenization.js";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
-import { decodeBytecode } from "./bytecodeRenderer.js";
+import { decodeBytecode } from "../../lib/truesight/bytecodeRenderer.js";
 import { resolveResonanceColor, buildResonancePalette } from "../../lib/truesight/color/rhymeColorRegistry.js";
 import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
@@ -263,6 +263,10 @@ const ScrollEditor = forwardRef(({
   plsPhoneticFeatures = null,
   theme = null,
   selectedSchool = "DEFAULT",
+  // Test-injection seams (bug a2812103) — let JSDOM-bound tests bypass real
+  // layout measurement. Production code never passes these.
+  forceTopology = null,
+  initialContainerWidth = null,
 }, ref) => {
   const { theme: activeTheme } = useTheme();
 
@@ -287,13 +291,13 @@ const ScrollEditor = forwardRef(({
   const [title, setTitle] = useState(initialTitle);
   const [isSaving, setIsSaving] = useState(false);
   const [scrollTop, setScrollTop] = useState(0);
-  const [containerWidth, setContainerWidth] = useState(0);
+  const [containerWidth, setContainerWidth] = useState(initialContainerWidth ?? 0);
   const [containerHeight, setContainerHeight] = useState(0);
   const [intellisenseSuggestions, setIntellisenseSuggestions] = useState([]);
   const [intellisenseIndex, setIntellisenseIndex] = useState(0);
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
   const [viewportState, setViewportState] = useState(null);
-  const [adaptiveTopology, setAdaptiveTopology] = useState(null);
+  const [adaptiveTopology, setAdaptiveTopology] = useState(forceTopology);
   const [isGhostPinned, setIsGhostPinned] = useState(false);
   const [ghostData, setGhostData] = useState(null);
   const [bytecodeArtifacts, setBytecodeArtifacts] = useState([]);
@@ -344,9 +348,11 @@ const ScrollEditor = forwardRef(({
     if (!wrapper) return;
 
     const styles = window.getComputedStyle(wrapper);
+    const clientWidth = wrapper.clientWidth;
     const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingTop = parseFloat(styles.paddingTop) || 0;
     const paddingRight = parseFloat(styles.paddingRight) || 0;
-    const clientWidth = Number.isFinite(wrapper.clientWidth) ? wrapper.clientWidth : 0;
+    
     const width = Math.max(0, clientWidth - paddingLeft - paddingRight);
     const height = wrapper.clientHeight;
 
@@ -360,7 +366,21 @@ const ScrollEditor = forwardRef(({
       return;
     }
 
-    const topology = computeAdaptiveGridTopology(wrapper, []);
+    const topology = computeAdaptiveGridTopology({
+      fontFamily: styles.fontFamily,
+      fontSize: styles.fontSize,
+      fontStyle: styles.fontStyle,
+      fontWeight: styles.fontWeight,
+      lineHeight: styles.lineHeight,
+      paddingLeft,
+      paddingTop,
+      paddingRight,
+      letterSpacing: parseFloat(styles.letterSpacing) || 0,
+      wordSpacing: parseFloat(styles.wordSpacing) || 0,
+      tabSize: parseInt(styles.tabSize || '2', 10) || 2,
+      containerWidth: clientWidth
+    });
+    
     stableTypographyRef.current = { 
       width, 
       height, 
@@ -375,6 +395,9 @@ const ScrollEditor = forwardRef(({
   }, []);
 
   useLayoutEffect(() => {
+    // When forceTopology is supplied (e.g., JSDOM tests), skip real
+    // measurement entirely — the injected topology IS the authoritative state.
+    if (forceTopology) return undefined;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -395,7 +418,7 @@ const ScrollEditor = forwardRef(({
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [updateTypography]);
+  }, [updateTypography, forceTopology]);
 
   const { overlayLines, allOverlayTokens } = useMemo(() => {
     if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
@@ -1034,8 +1057,8 @@ const ScrollEditor = forwardRef(({
                           : null;
                         
                         const color = shouldColor ? (
-                          rhymeColor
-                          || explicitColor
+                          explicitColor
+                          || rhymeColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
@@ -1223,8 +1246,8 @@ const ScrollEditor = forwardRef(({
                           : null;
                         
                         const color = shouldColor ? (
-                          rhymeColor
-                          || explicitColor
+                          explicitColor
+                          || rhymeColor
                           || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
                           || (typeof familyData === 'string' ? familyData : familyData?.color)
                           || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))

@@ -13,7 +13,8 @@ import {
   VOWEL_FAMILY_TO_SCHOOL as CORE_VOWEL_MAPPING,
   computeSchoolWeights,
   computeSchoolWeightsFromHints,
-  computeDominantSchool
+  computeDominantSchool,
+  generateSchoolColor as coreGenerateSchoolColor
 } from '../../codex/core/constants/schools.js';
 
 import { hslToHex } from '../../codex/core/pixelbrain/shared.js';
@@ -37,96 +38,48 @@ export const SCHOOLS = {
     description: "The art of sonic manipulation and harmonic resonance",
     tracks: ["sonic_harmony"],
     vowelAffinities: ["AE", "EH"],
-    atmosphere: {
-      auroraIntensity: 0.9,
-      saturation: 90,
-      vignetteStrength: 0.70,
-      scanlineOpacity: 0,
-    },
   },
   PSYCHIC: {
     ...CORE_SCHOOLS.PSYCHIC,
     description: "Mental discipline and psychic energy projection",
     tracks: ["schism"],
     vowelAffinities: ["IY", "IH"],
-    atmosphere: {
-      auroraIntensity: 0.8,
-      saturation: 85,
-      vignetteStrength: 0.65,
-      scanlineOpacity: 0,
-    },
   },
   VOID: {
     ...CORE_SCHOOLS.VOID,
     description: "The space between spaces, where entropy reigns",
     tracks: ["void"],
     vowelAffinities: ["AX", "UH"],
-    atmosphere: {
-      auroraIntensity: 0.15,
-      saturation: 15,
-      vignetteStrength: 0.92,
-      scanlineOpacity: 0.02,
-    },
   },
   ALCHEMY: {
     ...CORE_SCHOOLS.ALCHEMY,
     description: "The transmutation of meaning through spoken word",
     tracks: ["alchemy"],
     vowelAffinities: ["EY", "OY"],
-    atmosphere: {
-      auroraIntensity: 1.1,
-      saturation: 105,
-      vignetteStrength: 0.60,
-      scanlineOpacity: 0,
-    },
   },
   WILL: {
     ...CORE_SCHOOLS.WILL,
     description: "Focusing raw will into reality-altering force",
     tracks: ["will"],
     vowelAffinities: ["AH"],
-    atmosphere: {
-      auroraIntensity: 1.0,
-      saturation: 95,
-      vignetteStrength: 0.62,
-      scanlineOpacity: 0,
-    },
   },
   NECROMANCY: {
     ...CORE_SCHOOLS.NECROMANCY,
     description: "Communication with and manipulation of life force",
     tracks: [],
     vowelAffinities: ["AA", "A"],
-    atmosphere: {
-      auroraIntensity: 0.6,
-      saturation: 55,
-      vignetteStrength: 0.82,
-      scanlineOpacity: 0.01,
-    },
   },
   ABJURATION: {
     ...CORE_SCHOOLS.ABJURATION,
     description: "Protective magic and negation of effects",
     tracks: [],
     vowelAffinities: ["UW", "OW"],
-    atmosphere: {
-      auroraIntensity: 0.5,
-      saturation: 50,
-      vignetteStrength: 0.50,
-      scanlineOpacity: 0,
-    },
   },
   DIVINATION: {
     ...CORE_SCHOOLS.DIVINATION,
     description: "Seeing across time and space",
     tracks: [],
     vowelAffinities: ["AO", "AW"],
-    atmosphere: {
-      auroraIntensity: 0.85,
-      saturation: 88,
-      vignetteStrength: 0.55,
-      scanlineOpacity: 0,
-    },
   },
 };
 
@@ -196,20 +149,7 @@ export function getNextSchool(currentXP) {
  * @returns {string} Hex color
  */
 export function generateSchoolColor(schoolId) {
-  const school = SCHOOLS[schoolId];
-  if (!school) return "#888888";
-  
-  // Use explicit color if defined
-  if (school.color) return school.color;
-  
-  // Generate from HSL if defined
-  if (school.colorHsl) {
-    const { h, s, l } = school.colorHsl;
-    return hslToHex(h, s, l);
-  }
-  
-  // Fallback
-  return "#888888";
+  return coreGenerateSchoolColor(schoolId);
 }
 
 /**

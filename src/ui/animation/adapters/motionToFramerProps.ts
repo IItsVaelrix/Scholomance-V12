@@ -2,9 +2,11 @@
  * Animation AMP — Framer Motion Adapter
  * 
  * Converts resolved motion output into props for Framer Motion components.
+ * 
+ * @see ARCH_CONTRACT_OVERLAY_INTEGRITY.md - Layer separation requirements
  */
 
-import { ResolvedMotionOutput } from '../../../codex/animation/contracts/animation.types.ts';
+import type { ResolvedMotionOutput } from '../../../types/animation';
 
 export interface FramerMotionProps {
   initial?: any;
@@ -35,7 +37,7 @@ export function motionToFramerProps(
     includeGlow: true,
   }
 ): FramerMotionProps {
-  if (!motion.ok) {
+  if (!motion.success) {
     return {};
   }
 

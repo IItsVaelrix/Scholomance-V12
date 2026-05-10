@@ -74,7 +74,11 @@ export function createDbWrapper(options) {
                     for (const s of stmts) {
                         const stmt = db.prepare(typeof s === 'string' ? s : s.sql);
                         const args = typeof s === 'string' ? [] : (s.args || []);
-                        results.push(stmt.run(...args));
+                        const result = stmt.run(...args);
+                        results.push({
+                            rowsAffected: result.changes,
+                            lastInsertRowid: result.lastInsertRowid?.toString(),
+                        });
                     }
                 });
                 transaction(statements);

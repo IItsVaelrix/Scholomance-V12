@@ -36,21 +36,42 @@ describe('HIGH-01: Rhyme Astrology SQL Injection Prevention', () => {
                 ending_signature TEXT,
                 node_id TEXT,
                 token TEXT,
-                frequency_score INTEGER
+                frequency_score INTEGER,
+                syllable_count INTEGER,
+                stress_pattern TEXT,
+                dominant_vowel_family TEXT,
+                onset_signature TEXT,
+                phonemes_json TEXT,
+                vowel_skeleton_json TEXT,
+                consonant_skeleton_json TEXT
             )
         `);
         db.exec(`
             CREATE TABLE IF NOT EXISTS constellation_cluster (
                 id TEXT,
                 anchor_id TEXT,
-                label TEXT
+                label TEXT,
+                ending_signature TEXT,
+                dominant_vowel_family_json TEXT,
+                dominant_stress_pattern TEXT,
+                members_json TEXT,
+                density_score REAL,
+                cohesion_score REAL
             )
         `);
         db.exec(`
             CREATE TABLE IF NOT EXISTS hot_edge (
+                from_id TEXT,
                 to_id TEXT,
                 to_token TEXT,
-                overall_score INTEGER
+                exact_rhyme_score REAL,
+                slant_rhyme_score REAL,
+                vowel_match_score REAL,
+                consonant_match_score REAL,
+                stress_alignment_score REAL,
+                syllable_delta_penalty REAL,
+                overall_score REAL,
+                reasons_json TEXT
             )
         `);
         db.close();
@@ -123,8 +144,11 @@ describe('HIGH-01: Rhyme Astrology SQL Injection Prevention', () => {
     it('should have ALLOWED_PRAGMA_TABLES constant defined', async () => {
         // Verify the security constant exists by reading the module source
         const fs = await import('fs');
+        const path = await import('path');
+        const url = await import('url');
+        const here = path.dirname(url.fileURLToPath(import.meta.url));
         const source = fs.readFileSync(
-            '../../codex/services/rhyme-astrology/indexRepo.js',
+            path.resolve(here, '../../codex/services/rhyme-astrology/indexRepo.js'),
             'utf-8'
         );
         expect(source).toContain('ALLOWED_PRAGMA_TABLES');
@@ -170,11 +194,11 @@ describe('HIGH-02: Collab Tasks SQL Injection Prevention', () => {
         }
     });
 
-    it('should only allow updates to whitelisted columns', () => {
+    it('should only allow updates to whitelisted columns', async () => {
         const taskId = 'security-test-task-001';
-        
+
         // Create a task first
-        const task = collabPersistence.tasks.create({
+        const task = await collabPersistence.tasks.create({
             id: taskId,
             title: 'Security Test Task',
             description: 'Original description',
@@ -197,21 +221,21 @@ describe('HIGH-02: Collab Tasks SQL Injection Prevention', () => {
 
         for (const maliciousUpdate of maliciousUpdates) {
             // These should not throw, but should ignore invalid columns
-            const result = collabPersistence.tasks.update(taskId, maliciousUpdate);
+            const result = await collabPersistence.tasks.update(taskId, maliciousUpdate);
             // Task should still exist and be unchanged
             expect(result).toBeDefined();
         }
 
         // Verify task still exists with original data
-        const stillExists = collabPersistence.tasks.getById(taskId);
+        const stillExists = await collabPersistence.tasks.getById(taskId);
         expect(stillExists).toBeDefined();
         expect(stillExists.title).toBe('Security Test Task');
     });
 
-    it('should allow valid column updates', () => {
+    it('should allow valid column updates', async () => {
         const taskId = 'security-test-task-002';
-        
-        collabPersistence.tasks.create({
+
+        await collabPersistence.tasks.create({
             id: taskId,
             title: 'Valid Update Test',
             description: 'Test description',
@@ -222,7 +246,7 @@ describe('HIGH-02: Collab Tasks SQL Injection Prevention', () => {
         });
 
         // Valid updates should work
-        const validUpdate = collabPersistence.tasks.update(taskId, {
+        const validUpdate = await collabPersistence.tasks.update(taskId, {
             title: 'Updated Title',
             description: 'Updated description',
             priority: 3,
@@ -233,10 +257,10 @@ describe('HIGH-02: Collab Tasks SQL Injection Prevention', () => {
         expect(validUpdate.priority).toBe(3);
     });
 
-    it('should ignore invalid columns in mixed update objects', () => {
+    it('should ignore invalid columns in mixed update objects', async () => {
         const taskId = 'security-test-task-003';
-        
-        collabPersistence.tasks.create({
+
+        await collabPersistence.tasks.create({
             id: taskId,
             title: 'Mixed Update Test',
             description: 'Test description',
@@ -247,7 +271,7 @@ describe('HIGH-02: Collab Tasks SQL Injection Prevention', () => {
         });
 
         // Mix of valid and invalid columns
-        const mixedUpdate = collabPersistence.tasks.update(taskId, {
+        const mixedUpdate = await collabPersistence.tasks.update(taskId, {
             title: 'Valid Title Update',  // Valid
             "malicious'; DROP TABLE--": 'should be ignored',  // Invalid
             description: 'Valid description update',  // Valid

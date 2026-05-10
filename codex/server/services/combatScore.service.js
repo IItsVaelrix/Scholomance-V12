@@ -5,7 +5,7 @@ import { normalizeCombatScore } from '../../core/combat.scoring.js';
 import { createCorpusRankMap } from '../../core/combat.profile.js';
 import { createCombatScoringEngine } from '../../core/scoring.defaults.js';
 import { attachVerseIRAmplifier } from '../../core/verseir-amplifier/index.js';
-import { compileVerseToIR } from '../../../src/lib/truesight/compiler/compileVerseToIR.js';
+import { compileVerseToIR } from '../../core/shared/truesight/compiler/compileVerseToIR.js';
 import {
   loadSessionVoiceProfile,
   persistSessionVoiceProfile,

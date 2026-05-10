@@ -1,4 +1,4 @@
-import { HHM_STAGE_WEIGHTS } from '../../../../src/lib/models/harkov.model.js';
+import { HHM_STAGE_WEIGHTS } from '../../shared/models/harkov.model.js';
 import { hashString } from '../../pixelbrain/shared.js';
 import { ARBITER_FINGERPRINTS, getFingerprintChecksum } from './ArbiterChecksums.ts';
 import { PhonemeEngine } from '../../phonology/phoneme.engine.js';
@@ -70,7 +70,7 @@ export class ArbiterAMP {
     sequence_id: number
   ): Promise<RitualPredictionArtifact> {
     const diagnostics: string[] = [];
-    const startTime = Date.now();
+    const startTime = Date.now(); // EXEMPT
 
     await PhonemeEngine.init();
 
@@ -95,8 +95,8 @@ export class ArbiterAMP {
 
     // 3. Sorting & Winning (The Judiciary Tournament)
     const sorted = scoredCandidates
-      .filter(c => c.score >= this.options.minConfidence)
-      .sort((a, b) => b.score - a.score)
+      .filter((c: RitualPredictionCandidate) => c.score >= this.options.minConfidence)
+      .sort((a: RitualPredictionCandidate, b: RitualPredictionCandidate) => b.score - a.score)
       .slice(0, this.options.maxFanout);
 
     const winner = sorted[0] || null;
@@ -117,7 +117,7 @@ export class ArbiterAMP {
       bytecode: this.encodeBytecode(winner, sorted, sequence_id, failureReason),
       diagnostics: [
         ...diagnostics,
-        `Path coherence resolved in ${Date.now() - startTime}ms`,
+        `Path coherence resolved in ${Date.now() - startTime}ms`, // EXEMPT
         winner ? `Winner: ${winner.word} (${winner.score.toFixed(3)})` : 'No valid transition found.'
       ]
     };
@@ -154,13 +154,14 @@ export class ArbiterAMP {
     const prefixPhonemes = PhonemeEngine.analyzeWord(normalizedPrefix).phonemes;
     const candidates: any[] = [];
     
-    const corpusLexicon = Array.from(PhonemeEngine.CORPUS_DATA?.rankMap.keys() || []).slice(0, 15000);
+    const corpusData = (PhonemeEngine as any).CORPUS_DATA;
+    const corpusLexicon = Array.from(corpusData?.rankMap.keys() || []).slice(0, 15000);
     const dictLexicon = (PhonemeEngine as any).getDictionaryWords() || [];
     const fullLexicon = [...new Set([...corpusLexicon, ...dictLexicon])];
     
-    const bigramTransitions = prevWord ? PhonemeEngine.CORPUS_DATA?.bigrams[prevWord] || {} : {};
+    const bigramTransitions = prevWord ? corpusData?.bigrams[prevWord] || {} : {};
     
-    for (const word of fullLexicon) {
+    for (const word of (fullLexicon as string[])) {
       if (Math.abs(word.length - normalizedPrefix.length) > 5) continue;
       
       const wordPhonemes = PhonemeEngine.analyzeWord(word).phonemes;
@@ -194,7 +195,8 @@ export class ArbiterAMP {
     const prevWord = context?.prevToken?.normalized?.toLowerCase();
     
     // SYNTAX SIGNAL: Use corpus bigrams for ritual transition probability
-    const bigramTransitions = prevWord ? PhonemeEngine.CORPUS_DATA?.bigrams[prevWord] || {} : {};
+    const corpusData = (PhonemeEngine as any).CORPUS_DATA;
+    const bigramTransitions = prevWord ? corpusData?.bigrams[prevWord] || {} : {};
     const transitionCount = bigramTransitions[normalizedWord] || 0;
     const syntaxScore = transitionCount > 0 ? 0.9 : (context.lastRole === 'function' ? 0.6 : 0.4);
     

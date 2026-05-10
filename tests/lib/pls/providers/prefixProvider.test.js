@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { prefixProvider } from '../../../../src/lib/pls/providers/prefixProvider.js';
 
 describe('prefixProvider', () => {
-  it('blends prefix and bigram evidence and includes contextual candidates', () => {
+  it('blends prefix and bigram evidence and includes contextual candidates', async () => {
     const context = { prefix: 'li', prevWord: 'the' };
     const engines = {
       trie: {
@@ -11,7 +11,7 @@ describe('prefixProvider', () => {
       },
     };
 
-    const results = prefixProvider(context, engines);
+    const results = await prefixProvider(context, engines);
     const tokens = results.map((row) => row.token);
 
     expect(tokens).toContain('light');
@@ -20,7 +20,7 @@ describe('prefixProvider', () => {
     expect(tokens.indexOf('light')).toBeLessThan(tokens.indexOf('life'));
   });
 
-  it('falls back to next-word predictions when prefix is empty', () => {
+  it('falls back to next-word predictions when prefix is empty', async () => {
     const context = { prefix: '', prevWord: 'the' };
     const engines = {
       trie: {
@@ -29,7 +29,7 @@ describe('prefixProvider', () => {
       },
     };
 
-    const results = prefixProvider(context, engines);
+    const results = await prefixProvider(context, engines);
     expect(results.map((row) => row.token)).toEqual(['night', 'void']);
   });
 });

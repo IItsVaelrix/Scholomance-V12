@@ -9,6 +9,7 @@
  */
 
 import { initializeTurboQuant, quantizeVector, similarity, isWasmActive } from '../src/lib/math/quantization/index.js';
+import { mulberry32 } from '../codex/core/shared/math/seededRng.js';
 
 async function runBenchmark() {
     console.log('[SOVEREIGN] Initializing TurboQuant...');
@@ -21,9 +22,11 @@ async function runBenchmark() {
 
     const dim = 256;
     const wordCount = 300;
+    // Deterministic test vectors — fixed seed so benchmark runs are reproducible.
+    const rng = mulberry32(0x5C4014A1);
     const testVectors = Array.from({ length: wordCount }, () => {
         const vec = new Float32Array(dim);
-        for (let i = 0; i < dim; i++) vec[i] = Math.random() * 2 - 1;
+        for (let i = 0; i < dim; i++) vec[i] = rng() * 2 - 1;
         return vec;
     });
 

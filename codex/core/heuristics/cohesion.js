@@ -1,4 +1,4 @@
-import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
+import { WORD_REGEX_GLOBAL } from '../constants/regex.js';
 
 /**
  * Heuristic: Syntactic Cohesion

@@ -5,8 +5,8 @@
  * Allows animation intent resolution to be offloaded to WebWorkers.
  */
 
-import { runAnimationAmp } from '../../../../src/codex/animation/amp/runAnimationAmp.ts';
-import { AnimationIntent } from '../../../../src/codex/animation/contracts/animation.types.ts';
+import { runAnimationAmp } from '../../animation/amp/runAnimationAmp.ts';
+import { AnimationIntent } from '../../animation/contracts/animation.types.ts';
 
 /**
  * Run Animation AMP in the microprocessor pipeline

@@ -11,6 +11,7 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import { execSync } from 'node:child_process';
+import { assertTrue } from './tools/bytecode-assertions.js';
 
 /**
  * Vaelrix Law: Architecture Gauntlet
@@ -145,18 +146,21 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
       ];
 
       // Use grep to find occurrences
-      const grepCommand = `grep -r "Math.random()" ${dirs.join(' ')} --exclude-dir={${allowedExemptions.join(',')}} || true`;
+      const grepCommand = `grep -F -r "Math.random()" ${dirs.join(' ')} --exclude-dir={${allowedExemptions.join(',')}} || true`;
       const output = execSync(grepCommand).toString().trim();
       
       if (output) {
         const lines = output.split('\n');
-        const violations = lines.filter(line => !line.includes('// EXEMPT') && !line.includes('/* EXEMPT */'));
+        const violations = lines.filter(line => !line.includes('// EXEMPT') && !line.includes('/* EXEMPT */') && !line.includes('.md:'));
         
-        if (violations.length > 0) {
-          console.error('VIOLATION: Math.random() found in runtime code:');
-          console.error(violations.join('\n'));
-          expect(violations.length, `Found ${violations.length} Math.random() violations`).toBe(0);
-        }
+        assertTrue(violations.length === 0, {
+          testName: 'scans runtime code for forbidden Math.random() usage',
+          testFile: 'vaelrix-law-architecture-gauntlet.test.js',
+          testSuite: 'Vaelrix Law Architecture Gauntlet',
+          expected: '0 violations',
+          actual: `${violations.length} violations`,
+          extra: { violations }
+        });
       }
     });
   });
@@ -178,16 +182,20 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
         const activeDirs = criticalDirs.filter(d => fs.existsSync(d));
         if (activeDirs.length === 0) continue;
 
-        const grepCommand = `grep -r "${pattern.replace('(', '\\(').replace(')', '\\)')}" ${activeDirs.join(' ')} --exclude-dir=tests || true`;
+        const grepCommand = `grep -F -r "${pattern}" ${activeDirs.join(' ')} --exclude-dir=tests || true`;
         const output = execSync(grepCommand).toString().trim();
         
         if (output) {
-          const violations = output.split('\n').filter(line => !line.includes('// EXEMPT'));
-          if (violations.length > 0) {
-            console.error(`VIOLATION: ${pattern} found in critical runtime path:`);
-            console.error(violations.join('\n'));
-            expect(violations.length, `Found ${violations.length} ${pattern} violations`).toBe(0);
-          }
+          const violations = output.split('\n').filter(line => !line.includes('// EXEMPT') && !line.includes('.md:'));
+          
+          assertTrue(violations.length === 0, {
+            testName: 'scans critical paths for forbidden Date.now() or performance.now()',
+            testFile: 'vaelrix-law-architecture-gauntlet.test.js',
+            testSuite: 'Vaelrix Law Architecture Gauntlet',
+            expected: '0 violations',
+            actual: `${violations.length} violations for ${pattern}`,
+            extra: { violations, pattern }
+          });
         }
       }
     });

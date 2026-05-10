@@ -19,7 +19,15 @@ function djb2(str) {
 export function getDeviceId() {
   let id = Storage.getItem(DEVICE_ID_KEY);
   if (!id) {
-    id = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    // Crypto-grade UUID. globalThis.crypto.randomUUID is universally available
+    // in modern browsers; falls back to getRandomValues for very old surfaces.
+    if (typeof globalThis.crypto?.randomUUID === 'function') {
+      id = globalThis.crypto.randomUUID();
+    } else {
+      const buf = new Uint8Array(16);
+      globalThis.crypto.getRandomValues(buf);
+      id = Array.from(buf, b => b.toString(16).padStart(2, '0')).join('');
+    }
     Storage.setItem(DEVICE_ID_KEY, id);
   }
   return id;

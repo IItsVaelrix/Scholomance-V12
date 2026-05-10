@@ -1,4 +1,4 @@
-import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
+import { WORD_REGEX_GLOBAL } from '../constants/regex.js';
 import { analyzeAffect } from './affect.js';
 import { analyzeProsody } from './prosody.js';
 import { analyzeSeverityLexicon, analyzeSpeechActs } from './speechActs.js';

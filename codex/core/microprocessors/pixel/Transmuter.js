@@ -88,7 +88,7 @@ export async function transmuteAIArt({ buffer, mimetype, schoolId, styleId, targ
 function buildPaletteFromQuantized(quantizedColors, schoolId) {
   const uniqueColors = [...new Set(quantizedColors.map(q => q.quantized))];
   return [{
-    key: `transmute_${schoolId || 'none'}_${Date.now()}`,
+    key: `transmute_${schoolId || 'none'}_${Date.now()}`, // EXEMPT
     colors: uniqueColors,
     source: 'transmutation',
     schoolId

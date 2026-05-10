@@ -5,10 +5,10 @@
  */
 
 import { PhonemeEngine } from "../phonology/phoneme.engine.js";
-import { RHYME_TYPES } from "../../../src/data/rhymeScheme.patterns.js";
+import { RHYME_TYPES } from "../constants/data/rhymeScheme.patterns.js";
 import { normalizeVowelFamily } from "../phonology/vowelFamily.js";
-import { WORD_REGEX_GLOBAL } from "../../../src/lib/wordTokenization.js";
-import { compileVerseToIR } from "../../../src/lib/truesight/compiler/compileVerseToIR.js";
+import { WORD_REGEX_GLOBAL } from "../constants/regex.js";
+import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.js";
 
 /**
  * @typedef {object} WordPosition
@@ -30,7 +30,7 @@ const RHYME_THRESHOLD = 0.60;
 const ASSONANCE_THRESHOLD = 0.5;
 const STRESSED_ASSONANCE_SCORE = 0.62;
 const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
-const TRUESIGHT_RHYME_TYPES = new Set(['perfect', 'near', 'slant', 'assonance', 'identity']);
+const TRUESIGHT_RHYME_TYPES = new Set(['perfect', 'near', 'slant', 'identity']);
 const IGNORE_IDENTICAL_WORD_RHYMES = true;
 const SYNTAX_GATES = Object.freeze({
   ALLOW: 'allow',
@@ -396,7 +396,6 @@ export class DeepRhymeEngine {
   isTruesightRhymeConnection(connection) {
     if (!connection) return false;
     if (!TRUESIGHT_RHYME_TYPES.has(connection.type)) return false;
-    if (connection.type === 'assonance') return Number(connection.score) > ASSONANCE_THRESHOLD;
     return Number(connection.score) >= RHYME_THRESHOLD;
   }
 

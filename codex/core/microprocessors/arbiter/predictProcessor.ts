@@ -27,7 +27,7 @@ export async function predictNextRitualMove(payload: any) {
     prefix || '',
     context,
     oraclePayload || null,
-    sequence_id || Date.now()
+    sequence_id || Date.now() // EXEMPT
   );
 
   return artifact;

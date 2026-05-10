@@ -86,7 +86,7 @@ describe('Truesight Color — Pixel Perfection QA', () => {
     // 4. Render in Vowel Analysis mode
     const { container } = render(
       <ScrollEditor 
-        initialContent={content}
+        content={content}
         isTruesight={true}
         isEditable={true}
         analysisMode="vowel"

@@ -53,6 +53,11 @@ vi.mock('../../codex/server/collab/collab.service.js', () => ({
       running_pipelines: 0,
       active_locks: 0,
     })),
+    events: {
+      on: vi.fn(),
+      off: vi.fn(),
+      emit: vi.fn(),
+    },
   },
 }));
 

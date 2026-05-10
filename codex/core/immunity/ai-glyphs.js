@@ -27,7 +27,7 @@
  * 
  * Verification per VAELRIX_LAW §6 (Determinism):
  *   - Same glyph input → same vector output (100x deterministic pass required)
- *   - No entropy from timestamp, Math.random(), or environment
+ *   - No entropy from timestamp, no unseeded randomness, no environment
  * 
  * Reference: SCHOLOMANCE_IRONCLAD_STERILIZATION_PROTOCOL.skill.md
  * Skill ID: SISP-GLYPH-v1
@@ -62,6 +62,9 @@ export const GLYPH_CODES = Object.freeze({
   
   // Critical path latency (keystroke, input handling)
   CRITICAL_PATH: '⧿',
+
+  // Rejected water source (shadow path + recursive entropy)
+  REJECTED_WATER: '⧫⟟',
   
   // Sterilization marker (verified clean)
   VERIFIED_CLEAN: '◎',
@@ -80,6 +83,7 @@ export const PATHOGEN_GLYPHS = Object.freeze({
   'pathogen.recursive-fragmentation': '⟟⌁',
   'pathogen.async-protocol-drift': '◈◈',
   'pathogen.keystroke-critical-path': '⧿⧿',
+  'pathogen.rejected-water-source': '⧫⟟',
 });
 
 /**

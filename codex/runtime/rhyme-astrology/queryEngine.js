@@ -2,7 +2,7 @@ import { createHash } from 'crypto';
 import { buildPhoneticSignature } from '../../core/rhyme-astrology/signatures.js';
 import { clampUnitInterval } from '../../core/rhyme-astrology/scoring.js';
 import { scoreNodeSimilarity } from '../../core/rhyme-astrology/similarity.js';
-import { compileVerseToIR } from '../../../src/lib/truesight/compiler/compileVerseToIR.js';
+import { compileVerseToIR } from '../../core/shared/truesight/compiler/compileVerseToIR.js';
 import { normalizeVowelFamily } from '../../core/phonology/vowelFamily.js';
 import {
   assembleConstellations,

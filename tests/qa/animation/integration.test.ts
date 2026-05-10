@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { useAnimationIntent } from '../../../src/ui/animation/hooks/useAnimationIntent.ts';
 import { useResolvedMotion } from '../../../src/ui/animation/hooks/useResolvedMotion.ts';
-import { initAnimationAmp, runAnimationAmp } from '../../../src/codex/animation/amp/runAnimationAmp.ts';
-import { AnimationIntent } from '../../../src/codex/animation/contracts/animation.types.ts';
+import { initAnimationAmp, runAnimationAmp } from "../../../codex/core/animation/amp/runAnimationAmp.ts";
+import { AnimationIntent } from '../../../codex/core/animation/contracts/animation.types.ts';
 
 describe('Animation AMP Integration', () => {
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('Animation AMP Integration', () => {
     await waitFor(() => expect(result.current).not.toBeNull(), { timeout: 2000 });
     
     expect(result.current?.targetId).toBe('hook-test-1');
-    expect(result.current?.ok).toBe(true);
+    expect(result.current?.success).toBe(true);
   });
 
   it('should poll for updates via useResolvedMotion hook', async () => {
@@ -39,7 +39,7 @@ describe('Animation AMP Integration', () => {
 
     const { result } = renderHook(() => useResolvedMotion(targetId, 100));
 
-    expect(result.current?.targetId).toBe(targetId);
+    await waitFor(() => expect(result.current?.targetId).toBe(targetId), { timeout: 1000 });
 
     // 2. Trigger another run for same target
     await runAnimationAmp({

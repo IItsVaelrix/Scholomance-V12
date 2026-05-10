@@ -7,7 +7,7 @@
  * @returns {import('../schemas').ScoreTrace}
  */
 
-import { PhoneticHackingEngine } from '../../../src/lib/phoneticHacking.engine.js';
+import { PhoneticHackingEngine } from '../shared/phoneticHacking.engine.js';
 
 function clamp01(value) {
   if (Number.isNaN(value)) return 0;

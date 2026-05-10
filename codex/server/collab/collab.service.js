@@ -913,8 +913,8 @@ export const collabService = {
                     rest.priority ?? 1,
                     rest.created_by || null,
                     rest.assigned_agent || null,
-                    JSON.stringify([]),
-                    JSON.stringify([]),
+                    JSON.stringify(Array.isArray(rest.file_paths) ? rest.file_paths : []),
+                    JSON.stringify(Array.isArray(rest.depends_on) ? rest.depends_on : []),
                     null,
                     JSON.stringify(initialNotes),
                     now,
@@ -988,9 +988,9 @@ export const collabService = {
         const activityDetails = { ...updates };
         delete activityDetails.notes;
         statements.push({
-            sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
-                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            args: [uuid(), actor_agent_id || 'human', 'task_updated', 'task', id, JSON.stringify(activityDetails), now]
+            sql: `INSERT INTO collab_activity (agent_id, action, target_type, target_id, details, created_at)
+                  VALUES (?, ?, ?, ?, ?, ?)`,
+            args: [actor_agent_id || 'human', 'task_updated', 'task', id, JSON.stringify(activityDetails), now]
         });
 
         await db.batch(statements);
@@ -1005,8 +1005,8 @@ export const collabService = {
         await db.batch([
             { sql: `DELETE FROM collab_file_locks WHERE task_id = ?`, args: [id] },
             { sql: `DELETE FROM collab_tasks WHERE id = ?`, args: [id] },
-            { sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?)`, args: [uuid(), actor_agent_id || 'human', 'task_deleted', 'task', id, '{}', now] }
+            { sql: `INSERT INTO collab_activity (agent_id, action, target_type, target_id, details, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?)`, args: [actor_agent_id || 'human', 'task_deleted', 'task', id, '{}', now] }
         ]);
 
         return { ok: true };
@@ -1142,17 +1142,12 @@ export const collabService = {
             trigger_task_id,
         });
 
-        // Batch pipeline create + activity log
+        // Activity log (pipeline row already inserted via collabPersistence.pipelines.create above)
         await db.batch([
             {
-                sql: `INSERT INTO collab_pipelines (id, pipeline_type, stages, trigger_task_id, current_stage_index, status, created_at, updated_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                args: [pipelineId, pipeline_type, JSON.stringify(definition.stages), trigger_task_id || null, 0, 'running', now, now]
-            },
-            {
-                sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                args: [uuid(), actor_agent_id || 'human', 'pipeline_started', 'pipeline', pipelineId, JSON.stringify({
+                sql: `INSERT INTO collab_activity (agent_id, action, target_type, target_id, details, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+                args: [actor_agent_id || 'human', 'pipeline_started', 'pipeline', pipelineId, JSON.stringify({
                     type: pipeline_type,
                     name: definition.name,
                     stage_task_id: autoAssignment.task?.id ?? stageTask.id,
@@ -1353,9 +1348,9 @@ export const collabService = {
         // Batch message + activity log
         await db.batch([
             {
-                sql: `INSERT INTO collab_activity (id, agent_id, action, target_type, target_id, details, created_at)
-                      VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                args: [uuid(), sender_id, 'message_sent', 'agent', target_id || 'all', JSON.stringify({
+                sql: `INSERT INTO collab_activity (agent_id, action, target_type, target_id, details, created_at)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+                args: [sender_id, 'message_sent', 'agent', target_id || 'all', JSON.stringify({
                     glyph: message.glyph,
                     has_bytecode: !!bytecode,
                 }), now]

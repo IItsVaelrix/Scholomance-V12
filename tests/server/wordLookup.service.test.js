@@ -31,7 +31,7 @@ describe('[Server] WordLookupService', () => {
     expect(result.source).toBe('manual-override');
     expect(result.word).toBe('worcestershire');
     expect(result.data?.definitions?.[0]).toContain('West Midlands');
-    expect(result.data?.ipa).toBe('/WUH-ster-sheer/');
+    expect(result.data?.pronunciation).toBe('/WUH-ster-sheer/');
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -98,7 +98,7 @@ describe('[Server] WordLookupService', () => {
     const result = await service.lookupWord('hello');
     expect(result.source).toBe('external-api');
     expect(result.data?.definition?.text).toBe('A greeting');
-    expect(result.data?.ipa).toBe('/həˈləʊ/');
+    expect(result.data?.pronunciation).toBe('/həˈləʊ/');
   });
 
   it('serves cache hits from redis before network', async () => {

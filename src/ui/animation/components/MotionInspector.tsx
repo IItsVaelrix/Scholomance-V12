@@ -12,13 +12,11 @@ import {
   Info,
   Terminal
 } from 'lucide-react';
-import { 
-  getAllActiveAnimations, 
-  getAmpStatus 
-} from '../../../codex/animation/amp/runAnimationAmp.ts';
-import { 
-  ResolvedMotionOutput
-} from '../../../codex/animation/contracts/animation.types.ts';
+import {
+  getAllActiveAnimations,
+  getAmpStatus
+} from '../../../lib/amp-client.js';
+import type { ResolvedMotionOutput } from '../../../types/animation';
 import './MotionInspector.css';
 
 /**
@@ -36,17 +34,24 @@ export const MotionInspector: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTargetId, setSelectedTargetId] = useState<string | null>(null);
   const [activeAnimations, setActiveAnimations] = useState<Map<string, ResolvedMotionOutput>>(new Map());
-  const [status, setStatus] = useState(getAmpStatus());
+  const [status, setStatus] = useState<{ isRunning: boolean; activeCount: number; config: { debug: boolean } }>({ isRunning: false, activeCount: 0, config: { debug: false } });
   const [filter, setFilter] = useState('');
 
   // Poll for updates
   useEffect(() => {
     if (!isOpen) return;
 
-    const interval = setInterval(() => {
-      setActiveAnimations(getAllActiveAnimations());
-      setStatus(getAmpStatus());
-    }, 500);
+    const fetchData = async () => {
+      const [animations, s] = await Promise.all([
+        getAllActiveAnimations(),
+        getAmpStatus()
+      ]);
+      setActiveAnimations(new Map(animations));
+      setStatus(s as { isRunning: boolean; activeCount: number; config: { debug: boolean } });
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 500);
 
     return () => clearInterval(interval);
   }, [isOpen]);

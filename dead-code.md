@@ -1,214 +1,92 @@
 # Dead Code Report
 
-Generated at: 2026-05-08T11:51:34.017Z
+Generated at: 2026-05-10T08:08:10.485Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
-- [ ] src/codex/animation/bytecode-bridge/qa/blueprintQA.ts
 - [ ] src/components/ArchiveEventRingPulse.jsx
+- [ ] src/lib/animation-types.js
 - [ ] src/lib/css/schoolStyles.js
+- [ ] src/lib/literaryClassifier.js
 - [ ] src/lib/math/quantization/index.js
 - [ ] src/lib/math/quantization/turboquant.adapter.js
 - [ ] src/lib/math/quantization/turboquant.js
+- [ ] src/lib/math/safe.js
+- [ ] src/lib/microprocessor.worker-client.js
+- [ ] src/lib/phoneticHacking.engine.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
+- [ ] src/lib/syntax/hmmPass.js
+- [ ] src/lib/truesight/color/visemeMapping.js
+- [ ] src/lib/truesight/compiler/verseIRSerialization.js
 - [ ] src/pages/Collab/BugBoard.jsx
 - [ ] src/pages/PixelBrain/TemplateEditor.jsx
 - [ ] src/pages/PixelBrain/components/ExportOptions.jsx
 - [ ] src/pages/PixelBrain/components/FormulaEditor.jsx
 - [ ] src/pages/Read/TruesightControls.jsx
+- [ ] src/types/animation.d.ts
 - [ ] src/types/core/analysis.ts
 - [ ] src/types/core/combat.ts
 - [ ] src/types/core/judiciary.ts
 - [ ] src/types/core/lexical.ts
 - [ ] src/types/core/scoring.ts
+- [ ] src/types/core/scroll.ts
 - [ ] src/types/index.ts
 - [ ] src/types/lib/literary.ts
 - [ ] src/types/lib/phoneme.ts
 - [ ] src/types/lib/phonological.ts
 - [ ] src/types/lib/pls.ts
 - [ ] src/types/lib/rhyme.ts
+- [ ] src/types/runtime/runtime.ts
 - [ ] src/ui/animation/adapters/motionToFramerProps.ts
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
 - [ ] src/ui/animation/hooks/useCursorSync.ts
 - [ ] src/ui/animation/hooks/useResolvedMotion.ts
+- [ ] src/vite-env.d.ts
 - [ ] src/workers/microprocessor.worker.js
-- [ ] codex/core/animation/contracts/motion-contract.ts
-- [ ] codex/core/animation/processors/dimension-processor.ts
+- [ ] codex/core/diagnostic/index.js
+- [ ] codex/core/diagnostic/run-diagnostic.cli.js
 - [ ] codex/core/phonology/phonemeAlignment.js
 - [ ] codex/core/pixelbrain/coord-symmetry-errors.js
-- [ ] codex/core/pixelbrain/dimension-formula-compiler.ts
 - [ ] codex/core/pixelbrain/extensions/physics-extensions.js
 - [ ] codex/core/pixelbrain/extensions/style-extensions.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
 - [ ] codex/core/pixelbrain-phase3.js
+- [ ] codex/core/shared/ambient/bytecodeAMP.js
+- [ ] codex/core/shared/workers/microprocessor.worker.js
+- [ ] codex/runtime/apoptosis.listener.js
 - [ ] codex/server/services/imageAnalysis.service.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
+- [ ] codex/services/adapters/index.js
 
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
 
-- [ ] `initAnimationAmp` in `src/codex/animation/amp/runAnimationAmp.ts`
-- [ ] `clearActiveAnimation` in `src/codex/animation/amp/runAnimationAmp.ts`
-- [ ] `shutdownAnimationAmp` in `src/codex/animation/amp/runAnimationAmp.ts`
-- [ ] `MotionBytecodeInstruction` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
-- [ ] `decodeMotionBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
-- [ ] `hashMotionBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
-- [ ] `prettyPrintBytecode` in `src/codex/animation/bytecode/encodeMotionBytecode.ts`
-- [ ] `BackendAdapterCapabilities` in `src/codex/animation/bytecode-bridge/adapters/backendAdapters.ts`
-- [ ] `AdapterApplyOptions` in `src/codex/animation/bytecode-bridge/adapters/backendAdapters.ts`
-- [ ] `TargetSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `EasingSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `EnvelopeSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `ScalarTransformSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `TransformSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `SymmetrySpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `GridSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `AnchorSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `CompositingSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `BackendHintsSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `ConstraintSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `QASpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `MetadataSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `AnimationPresetV1Schema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `DiagnosticEntrySchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `KeyframeSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `CSSMotionPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `PhaserMotionPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `CoordinateSpecSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `PixelBrainFormulaPayloadSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `BytecodeInstructionSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `MotionBytecodeArtifactSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `CompiledAnimationOutputSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `BlueprintParseResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `BlueprintValidateResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `BlueprintCompileResultSchema` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `isAnimationBlueprint` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `isCompiledAnimationOutput` in `src/codex/animation/bytecode-bridge/contracts/blueprint.schemas.ts`
-- [ ] `TargetSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `EasingSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `ScalarTransformSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `EnvelopeMap` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `AnchorSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `CompositingSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `BackendHints` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `ConstraintSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `QASpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `MetadataSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `KeyframeSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `CoordinateSpec` in `src/codex/animation/bytecode-bridge/contracts/blueprint.types.ts`
-- [ ] `BridgeExecuteOptions` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `BridgeExecuteResult` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `parseAndValidate` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `compileToTargets` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `getAdapterCapabilities` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `adapterSupports` in `src/codex/animation/bytecode-bridge/index.ts`
-- [ ] `AssertionResult` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `QAReport` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `expectBlueprintInvariant` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `expectEnvelopeBound` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `expectDeterministicCompile` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `generateQAReport` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `createBlueprintFixture` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `assertBackendParity` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `BlueprintQA` in `src/codex/animation/bytecode-bridge/qa/blueprintQA.ts`
-- [ ] `AnimationTriggerSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `AnimationRendererSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `ProcessorStageSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `AnimationIntentSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `MotionValuesSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `MotionFlagsSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `ProcessorTraceSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `MotionWorkingStateSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `FramerTransitionSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `ResolvedMotionOutputSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `AnimationPresetSchema` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `isAnimationIntent` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `isMotionOutput` in `src/codex/animation/contracts/animation.schemas.ts`
-- [ ] `AnimationRenderer` in `src/codex/animation/contracts/animation.types.ts`
-- [ ] `ProcessorStage` in `src/codex/animation/contracts/animation.types.ts`
-- [ ] `TraceEntry` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `buildOutputTrace` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `formatTraceHuman` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `formatTraceJson` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `formatTraceMarkdown` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `analyzeTracePerformance` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `findProcessorsForValue` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `getStageSummary` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `debugPrintTrace` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `debugPrintPerformance` in `src/codex/animation/diagnostics/buildMotionTrace.ts`
-- [ ] `orbIdlePreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `glyphBreathePreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `ritualPanelEnterPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `hoverResonancePreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `transmissionPulsePreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `truesightHighlightPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `stationSelectPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `modalSummonPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `consoleAwakenPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `getAllPresets` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `registerAnimationPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `getValidatedPreset` in `src/codex/animation/presets/presetRegistry.ts`
-- [ ] `reducedMotionProcessor` in `src/codex/animation/processors/constraints/constraintProcessors.ts`
-- [ ] `deviceProfileProcessor` in `src/codex/animation/processors/constraints/constraintProcessors.ts`
-- [ ] `performanceCapProcessor` in `src/codex/animation/processors/constraints/constraintProcessors.ts`
-- [ ] `boundsConstraintProcessor` in `src/codex/animation/processors/constraints/constraintProcessors.ts`
-- [ ] `hoverProcessor` in `src/codex/animation/processors/input/interactionProcessors.ts`
-- [ ] `clickProcessor` in `src/codex/animation/processors/input/interactionProcessors.ts`
-- [ ] `scrollProcessor` in `src/codex/animation/processors/input/interactionProcessors.ts`
-- [ ] `focusProcessor` in `src/codex/animation/processors/input/interactionProcessors.ts`
-- [ ] `routeChangeProcessor` in `src/codex/animation/processors/input/interactionProcessors.ts`
-- [ ] `symmetryStaggerProcessor` in `src/codex/animation/processors/symmetry/symmetryMotionProcessor.ts`
-- [ ] `symmetryProcessors` in `src/codex/animation/processors/symmetry/symmetryMotionProcessor.ts`
-- [ ] `timeCurveProcessor` in `src/codex/animation/processors/time/timeVisualProcessors.ts`
-- [ ] `opacityProcessor` in `src/codex/animation/processors/time/timeVisualProcessors.ts`
-- [ ] `glowProcessor` in `src/codex/animation/processors/time/timeVisualProcessors.ts`
-- [ ] `translateProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
-- [ ] `scaleProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
-- [ ] `rotateProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
-- [ ] `anchorProcessor` in `src/codex/animation/processors/transform/transformProcessors.ts`
 - [ ] `ArchiveEventRingPulse` in `src/components/ArchiveEventRingPulse.jsx`
 - [ ] `BookIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsRightIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsLeftIcon` in `src/components/Icons.jsx`
 - [ ] `XP_SOURCES` in `src/data/progression_constants.js`
-- [ ] `RHYME_SUBTYPES` in `src/data/rhymeScheme.patterns.js`
 - [ ] `getSchoolById` in `src/data/schools.js`
 - [ ] `isSchoolUnlocked` in `src/data/schools.js`
 - [ ] `getLockTier` in `src/data/schools.js`
 - [ ] `getNextSchool` in `src/data/schools.js`
 - [ ] `getSchoolAngle` in `src/data/schools.js`
 - [ ] `getSchoolBadgeClass` in `src/data/schools.js`
-- [ ] `getSonicStationTrackPool` in `src/data/sonicStationBuckets.js`
-- [ ] `getDefaultSonicStationTrackUrl` in `src/data/sonicStationBuckets.js`
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
 - [ ] `emitXPEvent` in `src/hooks/useProgression.jsx`
 - [ ] `useXPEventListener` in `src/hooks/useProgression.jsx`
 - [ ] `onXPEvent` in `src/hooks/useProgression.jsx`
-- [ ] `AMBIENT_PLAYER_EVENTS` in `src/lib/ambient/ambientPlayer.service.js`
-- [ ] `createPercussivePulseState` in `src/lib/ambient/ambientPlayer.service.js`
-- [ ] `getPercussivePulseLevelFromWaveform` in `src/lib/ambient/ambientPlayer.service.js`
-- [ ] `lerpBytecodeAMP` in `src/lib/ambient/bytecodeAMP.js`
-- [ ] `getBPMRotationSpeed` in `src/lib/ambient/bytecodeAMP.js`
-- [ ] `getBPMRotationWithPhase` in `src/lib/ambient/bytecodeAMP.js`
-- [ ] `SCHOOL_AUDIO_CONFIG` in `src/lib/ambient/schoolAudio.config.js`
 - [ ] `emitBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `emitStasisBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `configureZodForCsp` in `src/lib/config/zod.config.js`
 - [ ] `generateLockedSchoolStyles` in `src/lib/css/schoolStyles.js`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
-- [ ] `GENRES` in `src/lib/literaryClassifier.js`
-- [ ] `LITERARY_DEVICES` in `src/lib/literaryDevices.detector.js`
-- [ ] `detectEmotion` in `src/lib/literaryDevices.detector.js`
 - [ ] `isWasmActive` in `src/lib/math/quantization/index.js`
 - [ ] `batchSearch` in `src/lib/math/quantization/turboquant.adapter.js`
-- [ ] `getMusicProvider` in `src/lib/musicEmbeds.js`
-- [ ] `getSunoEmbedUrl` in `src/lib/musicEmbeds.js`
-- [ ] `getSunoSongId` in `src/lib/musicEmbeds.js`
-- [ ] `getSunoAudioUrl` in `src/lib/musicEmbeds.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`
@@ -216,17 +94,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
 - [ ] `getXpForLevel` in `src/lib/progressionUtils.js`
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
-- [ ] `isComplexScheme` in `src/lib/rhymeScheme.detector.js`
-- [ ] `SyntaxAnalyzer` in `src/lib/syntax.layer.js`
-- [ ] `classifySyntaxToken` in `src/lib/syntax.layer.js`
-- [ ] `oklchToRgb` in `src/lib/truesight/color/oklch.js`
-- [ ] `AdaptiveGridTopology` in `src/lib/truesight/compiler/adaptiveWhitespaceGrid.ts`
-- [ ] `measureTextWidth` in `src/lib/truesight/compiler/adaptiveWhitespaceGrid.ts`
-- [ ] `COMPILER_DEPTHS` in `src/lib/truesight/compiler/analysisModes.js`
-- [ ] `resolveCompilerDepth` in `src/lib/truesight/compiler/analysisModes.js`
-- [ ] `TRUESIGHT_ANALYSIS_MODES` in `src/lib/truesight/compiler/analysisModes.js`
-- [ ] `ARCHIVED_MODES` in `src/lib/truesight/compiler/analysisModes.js`
-- [ ] `WORD_PATTERN` in `src/lib/wordTokenization.js`
 - [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
 - [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `keyToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
@@ -261,6 +128,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `RhymeSubtype` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGate` in `src/types/lib/rhyme.ts`
 - [ ] `SyntaxGatingStats` in `src/types/lib/rhyme.ts`
+- [ ] `CacheEntry` in `src/types/runtime/runtime.ts`
+- [ ] `EventCallback` in `src/types/runtime/runtime.ts`
 - [ ] `FramerMotionProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
 - [ ] `motionToFramerProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
 - [ ] `CursorSyncBlueprint` in `src/ui/animation/hooks/useCursorSync.ts`
@@ -268,13 +137,85 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `compileCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
 - [ ] `useCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
 - [ ] `useResolvedMotion` in `src/ui/animation/hooks/useResolvedMotion.ts`
+- [ ] `initAnimationAmp` in `codex/core/animation/amp/runAnimationAmp.ts`
+- [ ] `clearActiveAnimation` in `codex/core/animation/amp/runAnimationAmp.ts`
+- [ ] `shutdownAnimationAmp` in `codex/core/animation/amp/runAnimationAmp.ts`
 - [ ] `RitualPredictionCandidate` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `PredictionPixelBrainProjection` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `ArbiterOptions` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `ArbiterFingerprint` in `codex/core/animation/arbiter/ArbiterChecksums.ts`
-- [ ] `AnimationTargetType` in `codex/core/animation/contracts/motion-contract.ts`
-- [ ] `MotionValues` in `codex/core/animation/contracts/motion-contract.ts`
-- [ ] `DimensionProcessor` in `codex/core/animation/processors/dimension-processor.ts`
+- [ ] `MotionBytecodeInstruction` in `codex/core/animation/bytecode/encodeMotionBytecode.ts`
+- [ ] `decodeMotionBytecode` in `codex/core/animation/bytecode/encodeMotionBytecode.ts`
+- [ ] `hashMotionBytecode` in `codex/core/animation/bytecode/encodeMotionBytecode.ts`
+- [ ] `prettyPrintBytecode` in `codex/core/animation/bytecode/encodeMotionBytecode.ts`
+- [ ] `AnimationTriggerSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `AnimationRendererSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `ProcessorStageSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `AnimationIntentSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `MotionValuesSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `MotionFlagsSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `ProcessorTraceSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `MotionWorkingStateSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `FramerTransitionSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `ResolvedMotionOutputSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `AnimationPresetSchema` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `isAnimationIntent` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `isMotionOutput` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `validateAnimationPreset` in `codex/core/animation/contracts/animation.schemas.ts`
+- [ ] `TargetSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `EasingSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `TransformSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `ScalarTransformSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `EnvelopeMap` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `EnvelopeSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `SymmetrySpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `GridSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `AnchorSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `CompositingSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `BackendHints` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `ConstraintSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `QASpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `MetadataSpec` in `codex/core/animation/contracts/blueprint.types.ts`
+- [ ] `TraceEntry` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `buildOutputTrace` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `formatTraceHuman` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `formatTraceJson` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `formatTraceMarkdown` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `analyzeTracePerformance` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `findProcessorsForValue` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `getStageSummary` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `debugPrintTrace` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `debugPrintPerformance` in `codex/core/animation/diagnostics/buildMotionTrace.ts`
+- [ ] `orbIdlePreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `glyphBreathePreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `ritualPanelEnterPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `hoverResonancePreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `transmissionPulsePreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `truesightHighlightPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `stationSelectPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `modalSummonPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `consoleAwakenPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `getAllPresets` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `registerAnimationPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `getValidatedPreset` in `codex/core/animation/presets/presetRegistry.ts`
+- [ ] `reducedMotionProcessor` in `codex/core/animation/processors/constraints/constraintProcessors.ts`
+- [ ] `deviceProfileProcessor` in `codex/core/animation/processors/constraints/constraintProcessors.ts`
+- [ ] `performanceCapProcessor` in `codex/core/animation/processors/constraints/constraintProcessors.ts`
+- [ ] `boundsConstraintProcessor` in `codex/core/animation/processors/constraints/constraintProcessors.ts`
+- [ ] `hoverProcessor` in `codex/core/animation/processors/input/interactionProcessors.ts`
+- [ ] `clickProcessor` in `codex/core/animation/processors/input/interactionProcessors.ts`
+- [ ] `scrollProcessor` in `codex/core/animation/processors/input/interactionProcessors.ts`
+- [ ] `focusProcessor` in `codex/core/animation/processors/input/interactionProcessors.ts`
+- [ ] `routeChangeProcessor` in `codex/core/animation/processors/input/interactionProcessors.ts`
+- [ ] `symmetryStaggerProcessor` in `codex/core/animation/processors/symmetry/symmetryMotionProcessor.ts`
+- [ ] `symmetryProcessors` in `codex/core/animation/processors/symmetry/symmetryMotionProcessor.ts`
+- [ ] `timeCurveProcessor` in `codex/core/animation/processors/time/timeVisualProcessors.ts`
+- [ ] `opacityProcessor` in `codex/core/animation/processors/time/timeVisualProcessors.ts`
+- [ ] `glowProcessor` in `codex/core/animation/processors/time/timeVisualProcessors.ts`
+- [ ] `translateProcessor` in `codex/core/animation/processors/transform/transformProcessors.ts`
+- [ ] `scaleProcessor` in `codex/core/animation/processors/transform/transformProcessors.ts`
+- [ ] `rotateProcessor` in `codex/core/animation/processors/transform/transformProcessors.ts`
+- [ ] `anchorProcessor` in `codex/core/animation/processors/transform/transformProcessors.ts`
 - [ ] `BASE_MP_REGEN` in `codex/core/combat.balance.js`
 - [ ] `COMBAT_RARITY_TIERS` in `codex/core/combat.balance.js`
 - [ ] `computeVerseEfficiency` in `codex/core/combat.balance.js`
@@ -298,11 +239,33 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
 - [ ] `TEMPLATE_VOCAB` in `codex/core/commentary/phrase-bank.js`
 - [ ] `MODEL_CORPUS` in `codex/core/commentary/phrase-bank.js`
+- [ ] `RHYME_SUBTYPES` in `codex/core/constants/data/rhymeScheme.patterns.js`
+- [ ] `getSonicStationTrackPool` in `codex/core/constants/data/sonicStationBuckets.js`
+- [ ] `getDefaultSonicStationTrackUrl` in `codex/core/constants/data/sonicStationBuckets.js`
+- [ ] `deepFreezeClone` in `codex/core/diagnostic/BytecodeHealth.js`
 - [ ] `abyssalResonanceHeuristic` in `codex/core/heuristics/abyssal_resonance.js`
 - [ ] `verseIRAmplifierHeuristic` in `codex/core/heuristics/verseir_amplifier.js`
+- [ ] `verifyAdaptiveDeterminism` in `codex/core/immunity/adaptive.scanner.js`
+- [ ] `GLYPH_CODES` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `encodeGlyphs` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `generateGlyphVector` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `GLYPH_SYSTEM_VERSION` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `GLYPH_SYSTEM_ID` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `AGENT_HOOK_PLAYBOOK` in `codex/core/immunity/clerical-raid.agents.js`
+- [ ] `agentHookApplies` in `codex/core/immunity/clerical-raid.agents.js`
+- [ ] `resolveAgentIndex` in `codex/core/immunity/clerical-raid.agents.js`
+- [ ] `merlinReportToPattern` in `codex/core/immunity/clerical-raid.learning.js`
+- [ ] `SEED_STATS` in `codex/core/immunity/clerical-raid.patterns.js`
+- [ ] `LAYER_NAMES` in `codex/core/immunity/clerical-raid.schema.js`
+- [ ] `symptomsToVector` in `codex/core/immunity/clerical-raid.vector.js`
+- [ ] `detectLayer` in `codex/core/immunity/clerical-raid.vector.js`
+- [ ] `detectLawViolations` in `codex/core/immunity/clerical-raid.vector.js`
+- [ ] `assignAgent` in `codex/core/immunity/clerical-raid.vector.js`
+- [ ] `emitApoptosisSignal` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `PROTOCOL_ALLOW_LIST` in `codex/core/immunity/protocol.scanner.js`
 - [ ] `REPAIR_RECOMMENDATIONS` in `codex/core/immunity/repair.recommendations.js`
 - [ ] `JudiciaryEngine` in `codex/core/judiciary.js`
 - [ ] `normalizeAbyssWord` in `codex/core/lexicon.abyss.js`
@@ -338,10 +301,10 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DeviceClass` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `Orientation` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `RuntimeBindings` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
+- [ ] `CanonicalDimensionSpec` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
+- [ ] `BytecodeInstruction` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `REGISTERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `UNIT_MULTIPLIERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
-- [ ] `detectDeviceClass` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
-- [ ] `detectOrientation` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `evaluateFormula` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateFibonacciGrid` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateParametricCurve` in `codex/core/pixelbrain/formula-to-coordinates.js`
@@ -412,6 +375,20 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `entitiesToMathConstraints` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `constraintsToPixelBrainParams` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `getSymbolLibrary` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `LITERARY_DEVICES` in `codex/core/shared/literaryDevices.detector.js`
+- [ ] `getMusicProvider` in `codex/core/shared/musicEmbeds.js`
+- [ ] `getSunoEmbedUrl` in `codex/core/shared/musicEmbeds.js`
+- [ ] `getSunoSongId` in `codex/core/shared/musicEmbeds.js`
+- [ ] `getSunoAudioUrl` in `codex/core/shared/musicEmbeds.js`
+- [ ] `isComplexScheme` in `codex/core/shared/rhymeScheme.detector.js`
+- [ ] `SyntaxAnalyzer` in `codex/core/shared/syntax.layer.js`
+- [ ] `AdaptiveGridTopology` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
+- [ ] `measureTextWidth` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
+- [ ] `GridConstraint` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
+- [ ] `ViewportState` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
+- [ ] `DEFAULT_VIEWPORT_STATE` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
+- [ ] `encodeViewportBytecode` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
+- [ ] `createViewportChannel` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
 - [ ] `cadenceClosureWeight` in `codex/core/speaking/prosody.js`
 - [ ] `parseWeave` in `codex/core/spellweave.engine.js`
 - [ ] `createTokenizer` in `codex/core/tokenizer.js`
@@ -426,6 +403,14 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `inferMudEntityType` in `codex/core/world.entity.js`
 - [ ] `inferMudRarity` in `codex/core/world.entity.js`
 - [ ] `buildWorldEntitySummary` in `codex/core/world.entity.js`
+- [ ] `getAmpRuntimeStatus` in `codex/runtime/amp.pipeline.js`
+- [ ] `getAmpActiveAnimations` in `codex/runtime/amp.pipeline.js`
+- [ ] `getAmpAnimation` in `codex/runtime/amp.pipeline.js`
+- [ ] `setupAmpPipeline` in `codex/runtime/amp.pipeline.js`
+- [ ] `initializeAmpPipeline` in `codex/runtime/amp.pipeline.js`
+- [ ] `cleanupAmpPipeline` in `codex/runtime/amp.pipeline.js`
+- [ ] `initApoptosisListener` in `codex/runtime/apoptosis.listener.js`
+- [ ] `deleteFromCache` in `codex/runtime/cache.js`
 - [ ] `clearAllListeners` in `codex/runtime/eventBus.js`
 - [ ] `WORD_LOOKUP_EVENTS` in `codex/runtime/pipeline.js`
 - [ ] `resetRateLimit` in `codex/runtime/rateLimit.js`
@@ -459,6 +444,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getPendingCount` in `codex/server/services/wordLookupCoalescer.js`
 - [ ] `RHYME_ASTROLOGY_ARTIFACT_FILES` in `codex/server/utils/rhymeAstrologyPaths.js`
 - [ ] `hasRhymeAstrologyArtifactBundle` in `codex/server/utils/rhymeAstrologyPaths.js`
-- [ ] `DatamuseAdapter` in `codex/services/adapters/datamuse.adapter.js`
 - [ ] `FreeDictionaryAdapter` in `codex/services/adapters/freeDictionary.adapter.js`
-- [ ] `LocalDictionaryAdapter` in `codex/services/adapters/local.adapter.js`
+- [ ] `createAdapterChain` in `codex/services/adapters/index.js`
+- [ ] `createDefaultAdapterChain` in `codex/services/adapters/index.js`

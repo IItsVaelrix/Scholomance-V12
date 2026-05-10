@@ -389,7 +389,14 @@ function buildSyntheticTraces({
 }
 
 export function createCombatOpponent(options = {}) {
-  const random = typeof options.random === 'function' ? options.random : Math.random;
+  const random = typeof options.random === 'function' ? options.random : (() => {
+    let t = 0xDEADBEEF;
+    return () => {
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  })();
   const school = COMBAT_SCHOOLS.includes(options.school)
     ? options.school
     : pickOne(random, COMBAT_SCHOOLS);

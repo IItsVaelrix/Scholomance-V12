@@ -46,6 +46,7 @@ vi.mock('phaser', () => {
         getScene: vi.fn().mockReturnValue({
           updateState: vi.fn(),
         }),
+        isActive: vi.fn().mockReturnValue(true),
       };
     }
     destroy() {}
@@ -93,6 +94,17 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window.HTMLElement.prototype, 'clientWidth', {
+    configurable: true,
+    get: function() { return parseFloat(this.style.width) || 1000; }
+  });
+  Object.defineProperty(window.HTMLElement.prototype, 'clientHeight', {
+    configurable: true,
+    get: function() { return parseFloat(this.style.height) || 800; }
+  });
+}
+
 // Mock scrollIntoView
 if (typeof window !== 'undefined' && window.HTMLElement) {
   window.HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -116,12 +128,21 @@ if (typeof window !== 'undefined') {
 }
 
 // Mock requestAnimationFrame
-global.requestAnimationFrame = vi.fn().mockImplementation((cb) => {
-  return setTimeout(() => cb(Date.now()), 0);
-});
-global.cancelAnimationFrame = vi.fn().mockImplementation((id) => {
-  clearTimeout(id);
-});
+const raf = (cb) => setTimeout(() => cb(Date.now()), 0);
+const caf = (id) => clearTimeout(id);
+
+global.requestAnimationFrame = raf;
+global.cancelAnimationFrame = caf;
+
+if (typeof window !== 'undefined') {
+  window.requestAnimationFrame = raf;
+  window.cancelAnimationFrame = caf;
+}
+
+if (typeof globalThis !== 'undefined') {
+  globalThis.requestAnimationFrame = raf;
+  globalThis.cancelAnimationFrame = caf;
+}
 
 // Mock Canvas for getCursorCoordsFromTextarea
 if (typeof document !== 'undefined') {
@@ -178,14 +199,40 @@ global.fetch = vi.fn().mockImplementation((url) => {
   if (href.endsWith('phoneme_dictionary_v2.json')) {
     return Promise.resolve({
       ok: true,
-      json: () => Promise.resolve({ vowel_families: [] }),
+      json: () => Promise.resolve({
+        version: "2.0",
+        vowel_families: [
+          { id: "IY", name: "IY", hue: 0 },
+          { id: "IH", name: "IH", hue: 30 },
+          { id: "EY", name: "EY", hue: 60 },
+          { id: "EH", name: "EH", hue: 90 },
+          { id: "AE", name: "AE", hue: 120 },
+          { id: "AA", name: "AA", hue: 180 },
+          { id: "AO", name: "AO", hue: 210 },
+          { id: "OW", name: "OW", hue: 240 },
+          { id: "UH", name: "UH", hue: 270 },
+          { id: "UW", name: "UW", hue: 300 },
+          { id: "ER", name: "ER", hue: 330 },
+          { id: "AY", name: "AY", hue: 45 },
+          { id: "AW", name: "AW", hue: 165 },
+          { id: "OY", name: "OY", hue: 225 },
+          { id: "UR", name: "UR", hue: 315 },
+        ],
+      }),
     });
   }
 
   if (href.endsWith('rhyme_matching_rules_v2.json')) {
     return Promise.resolve({
       ok: true,
-      json: () => Promise.resolve({}),
+      json: () => Promise.resolve({
+        version: "2.0",
+        families: {
+          "IY": { hue: 0 }, "IH": { hue: 30 }, "EY": { hue: 60 }, "EH": { hue: 90 },
+          "AE": { hue: 120 }, "AA": { hue: 180 }, "AO": { hue: 210 }, "OW": { hue: 240 },
+          "UH": { hue: 270 }, "UW": { hue: 300 }, "ER": { hue: 330 }
+        }
+      }),
     });
   }
 

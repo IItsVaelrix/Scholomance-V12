@@ -5,7 +5,7 @@
  * Synchronizes external visual data with world-law color constraints.
  */
 
-import { SCHOOLS } from '../../../../src/data/schools.js';
+import { SCHOOLS } from '../../constants/schools.js';
 import { resolveSonicChroma } from '../../phonology/chroma.resolver.js';
 
 /**

@@ -687,6 +687,15 @@ function VHSStatic({ visible }) {
 
       const noise = getBytecodeAMP(timeMs, AMP_CHANNELS.NOISE);
 
+      const seededRandom = (s) => {
+        let val = s;
+        return () => {
+          val = (val * 16807) % 2147483647;
+          return (val - 1) / 2147483646;
+        };
+      };
+      const rnd = seededRandom(42);
+
       // Horizontal tracking glitch bands (VHS artifact)
       const numBands = 3 + Math.floor(noise * 4);
       ctx.clearRect(0, 0, W, H);
@@ -705,10 +714,10 @@ function VHSStatic({ visible }) {
       const imageData = ctx.createImageData(W, 1);
       const rowsToFill = Math.min(H, 20 + Math.floor(noise * 40));
       for (let r = 0; r < rowsToFill; r++) {
-        const y = Math.floor(Math.random() * H);
+        const y = Math.floor(rnd() * H);
         for (let x = 0; x < W; x++) {
           const px = x * 4;
-          const v = Math.random() * 180 * noise;
+          const v = rnd() * 180 * noise;
           imageData.data[px]     = v * 0.5;
           imageData.data[px + 1] = v * 0.6;
           imageData.data[px + 2] = v * 1.2; // blue bias
@@ -782,14 +791,23 @@ function DustMotes() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
 
+    const seededRandom = (s) => {
+      let val = s;
+      return () => {
+        val = (val * 16807) % 2147483647;
+        return (val - 1) / 2147483646;
+      };
+    };
+    const rnd = seededRandom(1337);
+
     // Generate stable mote positions
     const MOTES = Array.from({ length: 30 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      r: 0.8 + Math.random() * 1.4,
-      speed: 0.06 + Math.random() * 0.12,
-      drift: (Math.random() - 0.5) * 0.04,
-      phase: Math.random() * Math.PI * 2,
+      x: rnd() * canvas.width,
+      y: rnd() * canvas.height,
+      r: 0.8 + rnd() * 1.4,
+      speed: 0.06 + rnd() * 0.12,
+      drift: (rnd() - 0.5) * 0.04,
+      phase: rnd() * Math.PI * 2,
     }));
 
     function frame(timeMs) {
@@ -799,7 +817,7 @@ function DustMotes() {
       for (const m of MOTES) {
         m.y -= m.speed;
         m.x += m.drift;
-        if (m.y < -4) { m.y = canvas.height + 4; m.x = Math.random() * canvas.width; }
+        if (m.y < -4) { m.y = canvas.height + 4; m.x = rnd() * canvas.width; }
         if (m.x < -4) m.x = canvas.width + 4;
         if (m.x > canvas.width + 4) m.x = -4;
 

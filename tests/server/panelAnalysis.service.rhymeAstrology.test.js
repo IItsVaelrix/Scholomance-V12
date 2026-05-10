@@ -53,7 +53,7 @@ describe('[Server] panelAnalysis.service rhyme astrology', () => {
       },
     };
 
-    const service = createPanelAnalysisService({
+    const service = await createPanelAnalysisService({
       enableRhymeAstrology: true,
       rhymeAstrologyQueryEngine: queryEngine,
       gutenbergEmotionPriors: {

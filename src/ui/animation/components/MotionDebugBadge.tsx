@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAmpStatus } from '../../../codex/animation/amp/runAnimationAmp.ts';
+import { getAmpStatus } from '../../../../src/lib/amp-client.js';
 import './MotionDebugBadge.css';
 
 /**
@@ -8,13 +8,23 @@ import './MotionDebugBadge.css';
  * A compact status badge for the Animation AMP system.
  * Shows active animation count and performance warnings.
  */
+type AmpStatusShape = {
+  isRunning: boolean;
+  activeCount: number;
+  config: { debug?: boolean };
+};
+
 export const MotionDebugBadge: React.FC = () => {
-  const [status, setStatus] = useState(getAmpStatus());
+  const [status, setStatus] = useState<AmpStatusShape>({ isRunning: false, activeCount: 0, config: {} });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStatus(getAmpStatus());
-    }, 1000);
+    const fetchStatus = async () => {
+      const s = await getAmpStatus();
+      setStatus(s as AmpStatusShape);
+    };
+    
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 1000);
     return () => clearInterval(interval);
   }, []);
 

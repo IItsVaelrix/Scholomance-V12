@@ -73,8 +73,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="Line mapping"
-        initialContent={content}
+        title="Line mapping"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -92,8 +92,8 @@ describe("ScrollEditor Truesight overlay", () => {
     const view = renderWithProviders(
       <ScrollEditor
         documentIdentity="scroll-1:1"
-        initialTitle="Old Scroll"
-        initialContent="old verse"
+        title="Old Scroll"
+        content="old verse"
         isEditable={true}
       />
     );
@@ -109,8 +109,8 @@ describe("ScrollEditor Truesight overlay", () => {
       <ThemeProvider>
         <ScrollEditor
           documentIdentity="new:2"
-          initialTitle=""
-          initialContent=""
+          title=""
+          content=""
           isEditable={true}
         />
       </ThemeProvider>
@@ -129,8 +129,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="No connections"
-        initialContent={content}
+        title="No connections"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -161,8 +161,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="With connections"
-        initialContent={content}
+        title="With connections"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -205,8 +205,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="Vowel substitution"
-        initialContent={content}
+        title="Vowel substitution"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -247,8 +247,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="No broad family spill"
-        initialContent={content}
+        title="No broad family spill"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -280,8 +280,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="Activation"
-        initialContent={content}
+        title="Activation"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"
@@ -365,8 +365,8 @@ describe("ScrollEditor Truesight overlay", () => {
 
     const { container } = renderWithProviders(
       <ScrollEditor
-        initialTitle="Rhyme tail colors"
-        initialContent={content}
+        title="Rhyme tail colors"
+        content={content}
         isEditable={false}
         isTruesight={true}
         analysisMode="rhyme"

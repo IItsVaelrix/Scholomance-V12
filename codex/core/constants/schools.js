@@ -5,6 +5,8 @@
  * Core logic units (codex/) should import from here.
  */
 
+import { hslToHex } from '../pixelbrain/shared.js';
+
 export const VOWEL_FAMILY_TO_SCHOOL = Object.freeze({
   IY: 'PSYCHIC',
   IH: 'SONIC',
@@ -37,6 +39,12 @@ export const SCHOOLS = Object.freeze({
     angle: 288,
     unlockXP: 0,
     glyph: "♩",
+    atmosphere: {
+      auroraIntensity: 0.9,
+      saturation: 90,
+      vignetteStrength: 0.70,
+      scanlineOpacity: 0,
+    },
   },
   PSYCHIC: {
     id: "PSYCHIC",
@@ -46,6 +54,12 @@ export const SCHOOLS = Object.freeze({
     angle: 72,
     unlockXP: 250,
     glyph: "◬",
+    atmosphere: {
+      auroraIntensity: 0.8,
+      saturation: 85,
+      vignetteStrength: 0.65,
+      scanlineOpacity: 0,
+    },
   },
   VOID: {
     id: "VOID",
@@ -55,6 +69,12 @@ export const SCHOOLS = Object.freeze({
     angle: 0,
     unlockXP: 1500,
     glyph: "∅",
+    atmosphere: {
+      auroraIntensity: 0.15,
+      saturation: 15,
+      vignetteStrength: 0.92,
+      scanlineOpacity: 0.02,
+    },
   },
   ALCHEMY: {
     id: "ALCHEMY",
@@ -64,6 +84,12 @@ export const SCHOOLS = Object.freeze({
     angle: 144,
     unlockXP: 8000,
     glyph: "⚗",
+    atmosphere: {
+      auroraIntensity: 1.1,
+      saturation: 105,
+      vignetteStrength: 0.60,
+      scanlineOpacity: 0,
+    },
   },
   WILL: {
     id: "WILL",
@@ -73,6 +99,12 @@ export const SCHOOLS = Object.freeze({
     angle: 216,
     unlockXP: 25000,
     glyph: "⚡",
+    atmosphere: {
+      auroraIntensity: 1.0,
+      saturation: 95,
+      vignetteStrength: 0.62,
+      scanlineOpacity: 0,
+    },
   },
   NECROMANCY: {
     id: "NECROMANCY",
@@ -82,6 +114,12 @@ export const SCHOOLS = Object.freeze({
     angle: 36,
     unlockXP: 100000,
     glyph: "☠",
+    atmosphere: {
+      auroraIntensity: 0.6,
+      saturation: 55,
+      vignetteStrength: 0.82,
+      scanlineOpacity: 0.01,
+    },
   },
   ABJURATION: {
     id: "ABJURATION",
@@ -91,6 +129,12 @@ export const SCHOOLS = Object.freeze({
     angle: 108,
     unlockXP: 500000,
     glyph: "◇",
+    atmosphere: {
+      auroraIntensity: 0.5,
+      saturation: 50,
+      vignetteStrength: 0.50,
+      scanlineOpacity: 0,
+    },
   },
   DIVINATION: {
     id: "DIVINATION",
@@ -100,8 +144,36 @@ export const SCHOOLS = Object.freeze({
     angle: 180,
     unlockXP: 2000000,
     glyph: "◉",
+    atmosphere: {
+      auroraIntensity: 0.85,
+      saturation: 88,
+      vignetteStrength: 0.55,
+      scanlineOpacity: 0,
+    },
   },
 });
+
+/**
+ * Generate color for schools without explicit color
+ * @param {string} schoolId - School ID
+ * @returns {string} Hex color
+ */
+export function generateSchoolColor(schoolId) {
+  const school = SCHOOLS[schoolId];
+  if (!school) return "#888888";
+  
+  // Use explicit color if defined
+  if (school.color) return school.color;
+  
+  // Generate from HSL if defined
+  if (school.colorHsl) {
+    const { h, s, l } = school.colorHsl;
+    return hslToHex(h, s, l);
+  }
+  
+  // Fallback
+  return "#888888";
+}
 
 /**
  * Computes normalized school weights from a distribution of vowel families.

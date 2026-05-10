@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import ListenPage from "../../../src/pages/Listen/ListenPage";
 import { ProgressionProvider } from "../../../src/hooks/useProgression.jsx";
 import { SongProvider } from "../../../src/hooks/useCurrentSong";
+import { AuthProvider } from "../../../src/hooks/useAuth.jsx";
 
 global.fetch = vi.fn();
 
@@ -22,15 +23,17 @@ const normalizeUrl = (url) => {
 
 function renderListenPage(initialEntry = "/listen") {
   return render(
-    <ProgressionProvider>
-      <SongProvider>
-        <MemoryRouter initialEntries={[initialEntry]}>
-          <Routes>
-            <Route path="/listen" element={<ListenPage />} />
-          </Routes>
-        </MemoryRouter>
-      </SongProvider>
-    </ProgressionProvider>
+    <AuthProvider>
+      <ProgressionProvider>
+        <SongProvider>
+          <MemoryRouter initialEntries={[initialEntry]}>
+            <Routes>
+              <Route path="/listen" element={<ListenPage />} />
+            </Routes>
+          </MemoryRouter>
+        </SongProvider>
+      </ProgressionProvider>
+    </AuthProvider>
   );
 }
 

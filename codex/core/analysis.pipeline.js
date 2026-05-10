@@ -1,5 +1,5 @@
 import { PhonemeEngine } from './phonology/phoneme.engine.js';
-import { WORD_REGEX_GLOBAL } from "../../src/lib/wordTokenization.js";
+import { WORD_REGEX_GLOBAL } from "./constants/regex.js";
 import { 
   computeSchoolWeights, 
   computeDominantSchool 

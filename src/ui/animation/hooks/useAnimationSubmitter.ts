@@ -3,12 +3,14 @@
  * 
  * Provides an imperative function to submit animation intents to the AMP.
  * Ideal for use in event handlers or effects where the intent is dynamic.
+ * 
+ * @see ARCH_CONTRACT_OVERLAY_INTEGRITY.md - Layer separation requirements
  */
 
 import { useCallback } from 'react';
-import { AnimationIntent, ResolvedMotionOutput } from '../../../codex/animation/contracts/animation.types.ts';
 import { processorBridge } from '../../../lib/processor-bridge.js';
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion.js';
+import type { AnimationIntent, ResolvedMotionOutput } from '../../../types/animation';
 
 /**
  * Hook to get a submission function for animation intents

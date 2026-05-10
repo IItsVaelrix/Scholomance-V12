@@ -19,6 +19,54 @@ import {
 import { getRepair } from './repair.recommendations.js';
 
 /**
+ * Emits an Apoptosis signal and throws a BytecodeError.
+ * Used for domain self-signaling of architectural breaches (Law 13).
+ *
+ * @param {object} signal - The apoptosis signal payload per PDR-2026-05-09.
+ */
+export function emitApoptosisSignal(signal) {
+  const {
+    domain,
+    signal_type,
+    severity = 'warning',
+    evidence = [],
+    self_repair_possible = true,
+    escalation_required = false,
+  } = signal;
+
+  const context = {
+    layer: 'apoptosis',
+    apoptosis_signal_version: '1.0.0',
+    domain,
+    signal_type,
+    severity,
+    evidence,
+    self_repair_possible,
+    escalation_required,
+    encyclopedia_entry_required: true,
+  };
+
+  const error = new BytecodeError(
+    ERROR_CATEGORIES.STATE,
+    severity === 'critical' ? ERROR_SEVERITY.FATAL : ERROR_SEVERITY.CRIT,
+    MODULE_IDS.IMMUNITY,
+    ERROR_CODES.IMMUNE_APOPTOSIS_SIGNAL,
+    context,
+  );
+
+  // Side-channel emission for runtime listeners (e.g., CI/Forensic loggers)
+  if (typeof globalThis.process?.emit === 'function') {
+    globalThis.process.emit('codex:apoptosis', {
+      ...context,
+      bytecode: error.bytecode,
+      timestamp: Date.now(), // EXEMPT
+    });
+  }
+
+  throw error;
+}
+
+/**
  * Build a BytecodeError from a Layer 1 (innate) rule violation.
  * The rule object is expected to carry { category, errorCode, severity,
  * moduleId, repairKey, name, id }. The violation carries { ruleId, context }.

@@ -7,6 +7,7 @@
 
 import Phaser from 'phaser';
 import { getBytecodeAMP, AMP_CHANNELS, getRotationAtTime } from '../../../lib/ambient/bytecodeAMP';
+import { freshRng } from '../../../lib/math/seededRng.js';
 
 // ══════════════════════════════════════════════════════════════════════════
 // MODULE-LEVEL CACHED TEXTURES (pre-baked, shared across all instances)
@@ -192,8 +193,9 @@ export class AlchemicalLabScene extends Phaser.Scene {
 
   _buildParticles(W, H) {
     const cx = W * 0.5, cy = H * 0.50, outerR = this._archHexR * 1.8;
+    const rng = freshRng();
     for (let i = 0; i < 18; i++) {
-      const angle = (i / 18) * Math.PI * 2, dist = outerR * (0.7 + Math.random() * 0.3);
+      const angle = (i / 18) * Math.PI * 2, dist = outerR * (0.7 + rng() * 0.3);
       this.add.particles(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, 'labPt', {
         speed: { min: 8, max: 18 }, angle: { min: 240, max: 300 }, scale: { start: 0.3, end: 0 },
         alpha: { start: 0.4, end: 0 }, lifespan: { min: 1800, max: 2800 }, quantity: 1,

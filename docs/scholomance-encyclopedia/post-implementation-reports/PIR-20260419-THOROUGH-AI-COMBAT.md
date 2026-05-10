@@ -1,5 +1,8 @@
 # Post-Implementation Report
 
+## Bytecode Search Code
+`SCHOL-ENC-BYKE-SEARCH-PIR-THOROUGH-AI-COMBAT`
+
 ## 1. Change Identity
 - **Report ID:** PIR-20260419-THOROUGH-AI-COMBAT
 - **Feature / Fix Name:** Thorough AI combat convergence

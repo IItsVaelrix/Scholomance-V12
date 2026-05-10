@@ -9,10 +9,10 @@ export class CaptchaService {
    * @returns {Object} { id, challenge, solution }
    */
   generateChallenge() {
-    const num1 = Math.floor(Math.random() * 10) + 1;
-    const num2 = Math.floor(Math.random() * 10) + 1;
+    const num1 = crypto.randomInt(1, 11);
+    const num2 = crypto.randomInt(1, 11);
     const operators = ['+', '*'];
-    const operator = operators[Math.floor(Math.random() * operators.length)];
+    const operator = operators[crypto.randomInt(0, operators.length)];
     
     let solution = 0;
     if (operator === '+') solution = num1 + num2;

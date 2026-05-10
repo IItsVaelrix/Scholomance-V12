@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { encodeMotionBytecode, decodeMotionBytecode } from '../../src/codex/animation/bytecode/encodeMotionBytecode';
+import { encodeMotionBytecode, decodeMotionBytecode } from '../../codex/core/animation/bytecode/encodeMotionBytecode';
 
 describe('Animation Bytecode Round-trip', () => {
   it('encodes and decodes motion output with byte-parity', () => {

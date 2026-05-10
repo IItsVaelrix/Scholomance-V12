@@ -127,7 +127,7 @@ describe('[Server] wordLookup.routes', () => {
     const payload = res.json();
     expect(payload.source).toBe('external-api');
     expect(payload.data.definition.text).toBe('A greeting');
-    expect(payload.data.ipa).toBe('/həˈləʊ/');
+    expect(payload.data.pronunciation).toBe('/həˈləʊ/');
   });
 
   it('returns local data even without definition text when synonyms exist', async () => {

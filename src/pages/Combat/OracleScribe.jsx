@@ -11,7 +11,7 @@ import WordTooltip from '../../components/WordTooltip.jsx';
 import { WORD_TOKEN_REGEX } from '../../lib/wordTokenization.js';
 import { VOWEL_FAMILY_TO_SCHOOL } from '../../data/schools.js';
 import { normalizeVowelFamily } from '../../lib/phonology/vowelFamily.js';
-import { decodeBytecode } from '../Read/bytecodeRenderer.js';
+import { decodeBytecode } from '../../lib/truesight/bytecodeRenderer.js';
 import { resolveResonanceColor, buildResonancePalette } from '../../lib/truesight/color/rhymeColorRegistry.js';
 import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
 

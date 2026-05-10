@@ -65,10 +65,13 @@ vi.mock('../../codex/core/phonology/phoneme.engine.js', () => {
     };
   });
 
+  const calculateRarity = vi.fn(() => 'COMMON');
+
   return {
     PhonemeEngine: {
       analyzeWord,
-      analyzeDeep
+      analyzeDeep,
+      calculateRarity
     }
   };
 });

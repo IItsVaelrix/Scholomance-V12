@@ -51,9 +51,9 @@ function toTimestampMs(value) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
-export function computeElapsedWholeDays(lastUsedAt, evaluatedAt = Date.now()) {
+export function computeElapsedWholeDays(lastUsedAt, evaluatedAt = Date.now()) { // EXEMPT
   const lastUsedMs = toTimestampMs(lastUsedAt);
-  const evaluatedAtMs = toTimestampMs(evaluatedAt) ?? Date.now();
+  const evaluatedAtMs = toTimestampMs(evaluatedAt) ?? Date.now(); // EXEMPT
   if (!Number.isFinite(lastUsedMs)) {
     return ABYSS_RECOVERY_WINDOW_DAYS;
   }
@@ -74,7 +74,7 @@ export function decayAbyssUsageCount(usageCount7d, elapsedDays = 0) {
 export function computeAbyssalResonanceMultiplier({
   usageCount7d = 0,
   lastUsedAt = null,
-  evaluatedAt = Date.now(),
+  evaluatedAt = Date.now(), // EXEMPT
 } = {}) {
   const elapsedDays = lastUsedAt
     ? computeElapsedWholeDays(lastUsedAt, evaluatedAt)

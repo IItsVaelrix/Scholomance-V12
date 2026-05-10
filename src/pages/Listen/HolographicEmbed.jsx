@@ -186,9 +186,15 @@ export default function HolographicEmbed({
 
   useEffect(() => {
     let timeout;
+    let seed = 123;
+    const seededRandom = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+
     const scheduleNextTwitch = () => {
       // Randomize between 8 and 38 seconds — never predictable
-      const delay = 8000 + Math.random() * 30000;
+      const delay = 8000 + seededRandom() * 30000;
       timeout = setTimeout(() => {
         setIsTwitching(true);
         // Twitch resolves in 500ms — matches CSS animation duration

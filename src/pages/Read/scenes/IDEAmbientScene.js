@@ -9,6 +9,8 @@
  * Public API: setSchoolColor(hex: string)
  */
 
+import { freshRng } from '../../../lib/math/seededRng.js';
+
 function hexToNum(hex) {
   if (!hex || typeof hex !== 'string') return 0xc8a84b;
   const clean = hex.replace(/^#/, '');
@@ -48,14 +50,15 @@ export function buildAmbientScene(Phaser) {
       for (const m of this._motes) m.obj?.destroy();
       this._motes = [];
 
+      const rng = freshRng();
       for (let i = 0; i < 12; i++) {
-        const baseAlpha = Math.random() * 0.055 + 0.012;
-        const startX = Math.random() * this._W;
-        const startY = Math.random() * this._H;
-        
+        const baseAlpha = rng() * 0.055 + 0.012;
+        const startX = rng() * this._W;
+        const startY = rng() * this._H;
+
         const obj = this.add.image(startX, startY, 'iamb-dot')
           .setAlpha(baseAlpha)
-          .setScale(Math.random() * 0.85 + 0.2)
+          .setScale(rng() * 0.85 + 0.2)
           .setTint(this._color)
           .setDepth(1)
           .setBlendMode('ADD');
@@ -64,11 +67,11 @@ export function buildAmbientScene(Phaser) {
         this.tweens.add({
           targets: obj,
           alpha: { from: baseAlpha * 0.25, to: baseAlpha * 1.7 },
-          duration: 4500 + Math.random() * 7000,
+          duration: 4500 + rng() * 7000,
           repeat: -1,
           yoyo: true,
           ease: 'Sine.easeInOut',
-          delay: Math.random() * 6000,
+          delay: rng() * 6000,
         });
 
         this._motes.push({
@@ -76,8 +79,8 @@ export function buildAmbientScene(Phaser) {
           startX,
           startY,
           // Absolute velocity in pixels per second
-          vxp: (Math.random() - 0.5) * 8,
-          vyp: -(Math.random() * 15 + 5),
+          vxp: (rng() - 0.5) * 8,
+          vyp: -(rng() * 15 + 5),
         });
       }
     }

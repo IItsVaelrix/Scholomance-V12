@@ -272,7 +272,10 @@ describe('DeepRhymeEngine duplicate-scheme scanning', () => {
   });
 
   it('keeps function-content pairs when phonetic affinity is strong', async () => {
-    const engine = new DeepRhymeEngine(createUniformScoreMockPhonemeEngine(0.62));
+    // Use a uniform score above the SLANT threshold (0.66) so the connection
+    // lands in a structural rhyme type. Per the Vaelrix Law assonance audit,
+    // assonance-only pairs (score 0.6-0.66) are no longer structural.
+    const engine = new DeepRhymeEngine(createUniformScoreMockPhonemeEngine(0.7));
     const syntaxLayer = createSyntaxLayer([
       { lineNumber: 0, wordIndex: 0, charStart: 0, role: 'function', lineRole: 'line_start', stem: 'to', normalized: 'to' },
       { lineNumber: 0, wordIndex: 1, charStart: 3, role: 'content', lineRole: 'line_end', stem: 'glow', normalized: 'glow' },
@@ -298,9 +301,13 @@ describe('DeepRhymeEngine duplicate-scheme scanning', () => {
       ])
     );
 
-    ['obsidian', 'olympian', 'victim', 'rhythm', 'median'].forEach((word) => {
-      expect(connectedWords.has(word)).toBe(true);
-    });
-    expect(result.endRhymeConnections.some((connection) => connection.type === 'assonance')).toBe(true);
+    // Per the Vaelrix Law assonance audit, only structural rhyme types
+    // (perfect/near/slant/identity) are recognized as end-rhyme connections.
+    // The IN-cluster words must form a non-trivial structural connectivity
+    // graph — at least three of the five words connect, and no connection
+    // is of type 'assonance'.
+    expect(result.endRhymeConnections.length).toBeGreaterThan(0);
+    expect(connectedWords.size).toBeGreaterThanOrEqual(3);
+    expect(result.endRhymeConnections.every((connection) => connection.type !== 'assonance')).toBe(true);
   });
 });

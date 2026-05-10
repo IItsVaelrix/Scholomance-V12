@@ -1,5 +1,5 @@
 import { normalizeVowelFamily } from '../phonology/vowelFamily.js';
-import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../../../src/data/schools.js';
+import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from '../constants/schools.js';
 import { PhonemeEngine } from '../phonology/phoneme.engine.js';
 import { clamp01, createBytecodeString, roundTo } from './shared.js';
 import { extractVisualParameters } from '../semantic/visual-extractor.js';

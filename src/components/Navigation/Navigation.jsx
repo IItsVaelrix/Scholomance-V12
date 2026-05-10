@@ -51,7 +51,7 @@ export default function Navigation() {
   const { refreshScrolls } = useScrolls();
   const { refreshProgression } = useProgression(); // We might need to add this to useProgression
   const prefersReducedMotion = usePrefersReducedMotion();
-  const canAccessCollab = true;
+  const canAccessCollab = isAdminUser(user);
   const navLinks = LINKS.filter((link) => link.id !== "collab" || canAccessCollab);
 
   const handlePrefetch = useCallback((path) => {

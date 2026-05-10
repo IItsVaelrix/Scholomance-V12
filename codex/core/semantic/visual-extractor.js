@@ -6,7 +6,7 @@
  */
 
 import { applyPhoneticModifiers } from './phonetic-materials.js';
-import { SCHOOLS } from '../../../src/data/schools.js';
+import { SCHOOLS } from '../constants/schools.js';
 
 const GOLDEN_RATIO = 1.618033988749895;
 

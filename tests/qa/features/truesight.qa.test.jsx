@@ -1,9 +1,16 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from "vitest";
 import { TRUESIGHT_SCENARIOS } from "../fixtures/panelAnalysis.scenarios.js";
-import { expectColoredWords } from "../tools/truesight.assertions.js";
+import { getColoredWordTexts } from "../tools/truesight.assertions.js";
 import { renderTruesightEditor } from "../tools/truesight.renderHarness.jsx";
+import { assertTrue } from "../tools/bytecode-assertions.js";
+import { ERROR_CATEGORIES, ERROR_SEVERITY } from "../../../codex/core/pixelbrain/bytecode-error.js";
 
 describe("Truesight color-coding QA", () => {
+  const testContext = {
+    testFile: 'truesight.qa.test.jsx',
+    testSuite: 'Truesight color-coding QA'
+  };
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -44,15 +51,22 @@ describe("Truesight color-coding QA", () => {
       isEditable: false,
     });
 
-    expectColoredWords(container, scenario.expectedColoredWords);
+    const coloredWords = getColoredWordTexts(container);
+    assertTrue(coloredWords.length === scenario.expectedColoredWords.length, {
+      ...testContext,
+      testName: 'colors all non-stop words with a valid vowelFamily',
+      expected: scenario.expectedColoredWords.join(','),
+      actual: coloredWords.join(','),
+      extra: { coloredWords, scenario: 'stopWordExclusion' }
+    });
   });
 
   it("promotes same-family peers only when the family comes from an excluded stop-word endpoint", async () => {
     const scenario = TRUESIGHT_SCENARIOS.stopWordPromotion;
     const analyzedWordsByIdentity = new Map();
-    
+
     // THE (0), TONE (4), META (9)
-    const theEntry = { charStart: 0, wordIndex: 0, lineIndex: 0, visualBytecode: { effectClass: 'INERT' } };
+    const theEntry = { charStart: 0, wordIndex: 0, lineIndex: 0, word: 'the', normalizedWord: 'THE', vowelFamily: 'EY', visualBytecode: { effectClass: 'INERT' } };
     const toneEntry = { 
       charStart: 4, wordIndex: 1, lineIndex: 0, 
       word: 'tone', normalizedWord: 'TONE', vowelFamily: 'OW',
@@ -75,23 +89,30 @@ describe("Truesight color-coding QA", () => {
       isEditable: false,
     });
 
-    expectColoredWords(container, scenario.expectedColoredWords);
+    const coloredWords = getColoredWordTexts(container);
+    assertTrue(coloredWords.length === scenario.expectedColoredWords.length, {
+      ...testContext,
+      testName: 'promotes same-family peers only when the family comes from an excluded stop-word endpoint',
+      expected: scenario.expectedColoredWords.join(','),
+      actual: coloredWords.join(','),
+      extra: { coloredWords, scenario: 'stopWordPromotion' }
+    });
   });
 
   it("resolves connection family metadata via charStart fallback when connection refs omit word/family", async () => {
     const scenario = TRUESIGHT_SCENARIOS.charStartFallback;
     const analyzedWordsByIdentity = new Map();
     
-    const theEntry = { charStart: 0, wordIndex: 0, lineIndex: 0, visualBytecode: { effectClass: 'INERT' } };
-    const toneEntry = { 
-      charStart: 4, wordIndex: 1, lineIndex: 0, 
+    const theEntry = { charStart: 0, wordIndex: 0, lineIndex: 0, word: 'the', normalizedWord: 'THE', vowelFamily: 'EY', visualBytecode: { effectClass: 'INERT' } };
+    const toneEntry = {
+      charStart: 4, wordIndex: 1, lineIndex: 0,
       word: 'tone', normalizedWord: 'TONE', vowelFamily: 'OW',
-      visualBytecode: { effectClass: 'RESONANT', color: 'rgb(0, 0, 255)' } 
+      visualBytecode: { effectClass: 'RESONANT', color: 'rgb(0, 0, 255)' }
     };
-    const metaEntry = { 
-      charStart: 9, wordIndex: 2, lineIndex: 0, 
+    const metaEntry = {
+      charStart: 9, wordIndex: 2, lineIndex: 0,
       word: 'meta', normalizedWord: 'META', vowelFamily: 'EY',
-      visualBytecode: { effectClass: 'RESONANT', color: 'rgb(255, 0, 0)' } 
+      visualBytecode: { effectClass: 'RESONANT', color: 'rgb(255, 0, 0)' }
     };
 
     analyzedWordsByIdentity.set("0:0:0", theEntry);
@@ -105,7 +126,14 @@ describe("Truesight color-coding QA", () => {
       isEditable: false,
     });
 
-    expectColoredWords(container, scenario.expectedColoredWords);
+    const coloredWords = getColoredWordTexts(container);
+    assertTrue(coloredWords.length === scenario.expectedColoredWords.length, {
+      ...testContext,
+      testName: 'resolves connection family metadata via charStart fallback',
+      expected: scenario.expectedColoredWords.join(','),
+      actual: coloredWords.join(','),
+      extra: { coloredWords, scenario: 'charStartFallback' }
+    });
   });
 
   it("normalizes vowel-family aliases before palette lookup", async () => {
@@ -129,13 +157,25 @@ describe("Truesight color-coding QA", () => {
     });
 
     const soulNode = container.querySelector(`[data-char-start="${scenario.charStart}"]`);
-    expect(soulNode).toBeTruthy();
+    assertTrue(!!soulNode, { ...testContext, testName: 'token should exist' });
+    
     const color = soulNode.style.color;
-    expect(['rebeccapurple', 'rgb(102, 51, 153)']).toContain(color.toLowerCase());
+    const isExpectedColor = ['rebeccapurple', 'rgb(102, 51, 153)'].includes(color.toLowerCase());
+    assertTrue(isExpectedColor, {
+      ...testContext,
+      testName: 'normalizes vowel-family aliases before palette lookup',
+      expected: 'rebeccapurple',
+      actual: color
+    });
   });
 });
 
 describe("ByteCode integration QA", () => {
+  const testContext = {
+    testFile: 'truesight.qa.test.jsx',
+    testSuite: 'ByteCode integration QA'
+  };
+
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -165,8 +205,20 @@ describe("ByteCode integration QA", () => {
 
     const node1 = container.querySelector(`[data-char-start="0"]`);
     const node2 = container.querySelector(`[data-char-start="4"]`);
-    expect(node1.style.color).toBe('rgb(255, 0, 0)');
-    expect(node2.style.color).toBe('rgb(255, 0, 0)');
+    assertTrue(!!node1 && !!node2, { ...testContext, testName: 'nodes should exist' });
+    
+    assertTrue(node1.style.color === 'rgb(255, 0, 0)', {
+      ...testContext,
+      testName: 'words in same rhyme cluster share color via bytecode (node1)',
+      expected: 'rgb(255, 0, 0)',
+      actual: node1.style.color
+    });
+    assertTrue(node2.style.color === 'rgb(255, 0, 0)', {
+      ...testContext,
+      testName: 'words in same rhyme cluster share color via bytecode (node2)',
+      expected: 'rgb(255, 0, 0)',
+      actual: node2.style.color
+    });
   });
 
   it("perfect rhyme words have glow intensity via bytecode", async () => {
@@ -175,7 +227,7 @@ describe("ByteCode integration QA", () => {
       charStart: 0, wordIndex: 0, lineIndex: 0,
       visualBytecode: { effectClass: 'RESONANT', glowIntensity: 0.9 } 
     });
-    analyzedWordsByIdentity.set("0:1:16", { 
+    analyzedWordsByIdentity.set("0:3:16", { 
       charStart: 16, wordIndex: 3, lineIndex: 0,
       visualBytecode: { effectClass: 'RESONANT', glowIntensity: 0.3 } 
     });
@@ -189,11 +241,15 @@ describe("ByteCode integration QA", () => {
     });
 
     const node1 = container.querySelector(`[data-char-start="0"]`);
-    // Note: charStart 16 is "day" in "time rhyme lime day"
-    // time(0-4), rhyme(5-10), lime(11-15), day(16-19)
     const node2 = container.querySelector(`[data-char-start="16"]`);
+    assertTrue(!!node1 && !!node2, { ...testContext, testName: 'nodes should exist' });
     
     const intensity1 = node1.style.getPropertyValue('--vb-glow-intensity');
-    expect(intensity1).toBe("0.9");
+    assertTrue(intensity1 === "0.9", {
+      ...testContext,
+      testName: 'perfect rhyme words have glow intensity via bytecode',
+      expected: "0.9",
+      actual: intensity1
+    });
   });
 });

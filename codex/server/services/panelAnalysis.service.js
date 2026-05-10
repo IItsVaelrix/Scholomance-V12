@@ -4,19 +4,19 @@
  */
 
 import { existsSync, readFileSync } from 'node:fs';
-import { WORD_REGEX_GLOBAL } from '../../../src/lib/wordTokenization.js';
+import { WORD_REGEX_GLOBAL } from '../../core/constants/regex.js';
 import { analyzeText } from '../../core/analysis.pipeline.js';
 import { createDefaultScoringEngine } from '../../core/scoring.defaults.js';
 import { buildPlsPhoneticFeatures } from '../../core/rhyme-astrology/scoring.js';
 import { PhonemeEngine } from '../../core/phonology/phoneme.engine.js';
 import { DeepRhymeEngine } from '../../core/rhyme-astrology/deepRhyme.engine.js';
-import { detectScheme, analyzeMeter } from '../../../src/lib/rhymeScheme.detector.js';
-import { analyzeLiteraryDevices, detectEmotionDetailed } from '../../../src/lib/literaryDevices.detector.js';
+import { detectScheme, analyzeMeter } from '../../core/shared/rhymeScheme.detector.js';
+import { analyzeLiteraryDevices, detectEmotionDetailed } from '../../core/shared/literaryDevices.detector.js';
 import { normalizeVowelFamily } from '../../core/phonology/vowelFamily.js';
-import { buildSyntaxLayer } from '../../../src/lib/syntax.layer.js';
-import { buildHiddenHarkovSummary } from '../../../src/lib/models/harkov.model.js';
-import { LiteraryClassifier } from '../../../src/lib/literaryClassifier.js';
-import { compileVerseToIR } from '../../../src/lib/truesight/compiler/compileVerseToIR.js';
+import { buildSyntaxLayer } from '../../core/shared/syntax.layer.js';
+import { buildHiddenHarkovSummary } from '../../core/shared/models/harkov.model.js';
+import { LiteraryClassifier } from '../../core/shared/literaryClassifier.js';
+import { compileVerseToIR } from '../../core/shared/truesight/compiler/compileVerseToIR.js';
 import { parseBooleanFlag } from '../utils/envFlags.js';
 import { createRhymeAstrologyQueryEngine } from '../../runtime/rhyme-astrology/queryEngine.js';
 import { createRhymeAstrologyLexiconRepo } from '../../services/rhyme-astrology/lexiconRepo.js';
