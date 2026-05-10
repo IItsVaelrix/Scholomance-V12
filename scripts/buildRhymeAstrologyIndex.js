@@ -9,6 +9,8 @@ import {
 import { buildConstellationClusters } from '../codex/core/rhyme-astrology/clustering.js';
 import { scoreNodeSimilarity } from '../codex/core/rhyme-astrology/similarity.js';
 import { resolveDatabasePath } from '../codex/server/utils/pathResolution.js';
+import { generatePhonosemanticVector } from '../codex/core/semantic/vector.utils.js';
+import { quantizeVectorJS } from '../codex/core/quantization/turboquant.js';
 
 const TOKEN_REGEX = /[a-z]+(?:'[a-z]+)*/g;
 
@@ -363,11 +365,13 @@ function stageA_buildLexicon({
         INSERT INTO lexicon_node (
           id, token, normalized, phonemes_json, stress_pattern, syllable_count,
           vowel_skeleton_json, consonant_skeleton_json, ending_signature, onset_signature,
-          dominant_vowel_family, frequency_score, frequency_count, source, created_at
+          dominant_vowel_family, frequency_score, frequency_count, source, created_at,
+          embeddings_tq
         ) VALUES (
           @id, @token, @normalized, @phonemesJson, @stressPattern, @syllableCount,
           @vowelSkeletonJson, @consonantSkeletonJson, @endingSignature, @onsetSignature,
-          @dominantVowelFamily, @frequencyScore, @frequencyCount, @source, @createdAt
+          @dominantVowelFamily, @frequencyScore, @frequencyCount, @source, @createdAt,
+          @embeddingsTq
         )
       `);
 
@@ -400,6 +404,16 @@ function stageA_buildLexicon({
           const frequencyScore = Math.log1p(frequencyCount) / Math.log1p(maxFrequency);
           const nodeId = `w_${cursor + 1}`;
 
+          // Generate TurboQuant embedding for the node
+          const vector = generatePhonosemanticVector(normalized, 256);
+          const { data, norm } = quantizeVectorJS(vector, 42); // Using canonical seed 42
+
+          // Pack: [4-byte norm][data...]
+          const dataBuffer = Buffer.from(data);
+          const tqPayload = Buffer.alloc(4 + dataBuffer.length);
+          tqPayload.writeFloatLE(norm, 0); 
+          dataBuffer.copy(tqPayload, 4);
+
           const node = {
             id: nodeId,
             token: normalized,
@@ -416,6 +430,7 @@ function stageA_buildLexicon({
             frequencyCount,
             source: entry.source,
             signature,
+            embeddingsTq: tqPayload
           };
 
           insertLexiconStmt.run({
@@ -434,6 +449,7 @@ function stageA_buildLexicon({
             frequencyCount: node.frequencyCount,
             source: node.source,
             createdAt: builtAt,
+            embeddingsTq: node.embeddingsTq
           });
           nodes.push(node);
           cursor += 1;

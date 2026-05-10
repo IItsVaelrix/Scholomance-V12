@@ -173,24 +173,31 @@ export const PhonemeEngine = {
           const path = await import("node:path");
           const publicPath = path.join(globalThis.process.cwd(), "public");
 
-          const [dBuffer, rBuffer, cBuffer] = await Promise.all([
+          const [dBuffer, rBuffer, cBufferResult] = await Promise.allSettled([
             readFile(path.join(publicPath, "phoneme_dictionary_v2.json"), "utf8"),
             readFile(path.join(publicPath, "rhyme_matching_rules_v2.json"), "utf8"),
             readFile(path.join(publicPath, "corpus.json"), "utf8"),
           ]);
-          dictRaw = JSON.parse(dBuffer);
-          rulesRaw = JSON.parse(rBuffer);
-          corpusRaw = JSON.parse(cBuffer);
+          
+          if (dBuffer.status === 'fulfilled') dictRaw = JSON.parse(dBuffer.value);
+          else console.error("[PhonemeEngine] Critical: Failed to load phoneme dictionary.");
+
+          if (rBuffer.status === 'fulfilled') rulesRaw = JSON.parse(rBuffer.value);
+          else console.error("[PhonemeEngine] Critical: Failed to load rhyme rules.");
+
+          if (cBufferResult.status === 'fulfilled') corpusRaw = JSON.parse(cBufferResult.value);
+          else console.warn("[PhonemeEngine] Warning: corpus.json not found. Statistical features (rarity) will be limited.");
         } else {
           // Browser-side (Main thread or Web Worker): Use fetch
-          const [d, r, c] = await Promise.all([
+          const [d, r, c] = await Promise.allSettled([
             fetch("/phoneme_dictionary_v2.json").then((res) => res.json()),
             fetch("/rhyme_matching_rules_v2.json").then((res) => res.json()),
             fetch("/corpus.json").then((res) => res.json()),
           ]);
-          dictRaw = d;
-          rulesRaw = r;
-          corpusRaw = c;
+          
+          if (d.status === 'fulfilled') dictRaw = d.value;
+          if (r.status === 'fulfilled') rulesRaw = r.value;
+          if (c.status === 'fulfilled') corpusRaw = c.value;
         }
 
         this.DICT_V2 = dictRaw;

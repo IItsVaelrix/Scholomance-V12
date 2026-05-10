@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import Database from "better-sqlite3";
 import { PhonemeEngine } from "../codex/core/phonology/phoneme.engine.js";
+import { resolveDatabasePath } from "../codex/server/utils/pathResolution.js";
 
 const DICTIONARY_LIMIT = 20000;
 const SEQUENCE_LIMIT = 50000;
@@ -111,9 +112,12 @@ async function buildPayload(frequencyMap, sequenceMap) {
 }
 
 async function run() {
-  const corpusDbPath = process.env.SCHOLOMANCE_CORPUS_PATH || path.resolve(process.cwd(), "scholomance_corpus.sqlite");
+  const rawCorpusPath = process.env.SCHOLOMANCE_CORPUS_PATH;
+  const corpusDbPath = resolveDatabasePath(rawCorpusPath, "scholomance_corpus.sqlite");
   const preferredInputPath = path.resolve(process.cwd(), "docs", "references", "DATA-SET 1.md");
   const outputPath = path.resolve(process.cwd(), "public", "corpus.json");
+
+  console.log(`[corpus] resolving substrate: ${corpusDbPath}`);
 
   const frequencyMap = new Map();
   const sequenceMap = new Map();

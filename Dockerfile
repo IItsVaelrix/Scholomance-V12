@@ -41,11 +41,11 @@ ENV RHYME_ASTROLOGY_OUTPUT_DIR=/app/data/rhyme-astrology
 ENV RHYME_ASTROLOGY_HOT_EDGE_WORD_LIMIT=7500
 
 # Inject TurboQuant embeddings into the substrate BEFORE indexing
-RUN node scripts/build_vector_artifacts.js || echo "Vector artifact injection failed — embeddings_tq will be added at runtime"
+# We run this on the newly built dictionary to ensure it's production-ready
+RUN node scripts/build_vector_artifacts.js
 
 # Build Rhyme Astrology Index using the enriched substrate
-RUN npm run build:rhyme-astrology:index || \
-    echo "Rhyme astrology build failed — index will be computed at runtime"
+RUN npm run build:rhyme-astrology:index
 
 RUN npm run build
 RUN npm prune --omit=dev

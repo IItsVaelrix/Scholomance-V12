@@ -49,6 +49,8 @@ async function processDb(config) {
     
     console.log(`[RITUAL] Opening Database: ${dbPath}`);
     const db = new Database(dbPath);
+    db.pragma('journal_mode = WAL');
+    db.pragma('synchronous = NORMAL');
 
     // 1. Add column if missing
     try {
@@ -56,41 +58,47 @@ async function processDb(config) {
         console.log(`[RITUAL] Added column: ${table}.embeddings_tq`);
     } catch (e) {
         if (e.message.includes('duplicate column name')) {
-            console.log('[RITUAL] Column embeddings_tq already exists.');
+            console.log(`[RITUAL] Column embeddings_tq already exists in ${table}.`);
         } else {
+            console.error(`[RITUAL] Failed to alter table ${table}: ${e.message}`);
+            db.close();
             throw e;
         }
     }
 
-    // 2. Fetch all entries
-    const entries = db.prepare(`SELECT id, ${textColumn} FROM ${table}`).all();
-    console.log(`[RITUAL] Generating Phonosemantic Embeddings for ${entries.length} nodes in ${table}...`);
+    // 2. Fetch all entries in chunks to save memory
+    const count = db.prepare(`SELECT COUNT(*) as n FROM ${table}`).get().n;
+    console.log(`[RITUAL] Generating Phonosemantic Embeddings for ${count} nodes in ${table}...`);
 
     const updateStmt = db.prepare(`UPDATE ${table} SET embeddings_tq = ? WHERE id = ?`);
+    
+    const CHUNK_SIZE = 1000;
+    for (let offset = 0; offset < count; offset += CHUNK_SIZE) {
+        const rows = db.prepare(`SELECT id, ${textColumn} FROM ${table} LIMIT ? OFFSET ?`).all(CHUNK_SIZE, offset);
+        
+        const transaction = db.transaction((batch) => {
+            for (const row of batch) {
+                const textValue = row[textColumn];
+                if (!textValue) continue;
+                
+                const vector = generatePhonosemanticVector(textValue, TARGET_DIM);
+                const { data, norm } = quantizeVectorJS(vector, SEED);
 
-    // 3. Batch process
-    const transaction = db.transaction((rows) => {
-        let count = 0;
-        for (const row of rows) {
-            const textValue = row[textColumn];
-            if (!textValue) continue;
-            
-            const vector = generatePhonosemanticVector(textValue, TARGET_DIM);
-            const { data, norm } = quantizeVectorJS(vector, SEED);
+                const dataBuffer = Buffer.from(data);
+                const tqPayload = Buffer.alloc(4 + dataBuffer.length);
+                tqPayload.writeFloatLE(norm, 0); 
+                dataBuffer.copy(tqPayload, 4);
 
-            // Pack: [4-byte norm][data...]
-            const dataBuffer = Buffer.from(data);
-            const tqPayload = Buffer.alloc(4 + dataBuffer.length);
-            tqPayload.writeFloatLE(norm, 0); 
-            dataBuffer.copy(tqPayload, 4);
+                updateStmt.run(tqPayload, row.id);
+            }
+        });
 
-            updateStmt.run(tqPayload, row.id);
-            count++;
-            if (count % 10000 === 0) console.log(`  - Ascended ${count}...`);
+        transaction(rows);
+        if (offset % 5000 === 0 || offset + CHUNK_SIZE >= count) {
+            console.log(`  - Ascended ${Math.min(offset + CHUNK_SIZE, count)}/${count}...`);
         }
-    });
+    }
 
-    transaction(entries);
     console.log(`[RITUAL] Ascension Complete for ${dbPath}.`);
     db.close();
 }
