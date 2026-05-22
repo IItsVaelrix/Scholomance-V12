@@ -1,0 +1,1 @@
+export { ScholomanceDictionaryAPI } from '../../codex/core/shared/scholomanceDictionary.api.js';

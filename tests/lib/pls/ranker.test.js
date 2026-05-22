@@ -1,0 +1,230 @@
+import { describe, it, expect } from 'vitest';
+import {
+  rankCandidates,
+  DEFAULT_WEIGHTS,
+  deriveFeatureAdjustedWeights,
+} from '../../../src/lib/pls/ranker.js';
+
+describe('Ranker', () => {
+  it('ranks by weighted final score', () => {
+    const generators = {
+      rhyme: [
+        { token: 'light', score: 1.0, badge: 'RHYME' },
+        { token: 'dream', score: 0.5, badge: null },
+      ],
+      prefix: [
+        { token: 'like', score: 0.9, badge: null },
+        { token: 'light', score: 0.7, badge: null },
+      ],
+    };
+    const scorers = {
+      meter: [
+        { token: 'light', scores: { meter: 0.9 } },
+        { token: 'dream', scores: { meter: 0.6 } },
+        { token: 'like', scores: { meter: 0.8 } },
+      ],
+      color: [
+        { token: 'light', scores: { color: 1.0 } },
+        { token: 'dream', scores: { color: 0.0 } },
+        { token: 'like', scores: { color: 0.5 } },
+      ],
+    };
+
+    const results = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, { currentLineWords: ['the'] });
+
+    expect(results[0].token).toBe('light');
+    expect(results[0].score).toBeGreaterThan(0.45);
+    expect(results[0].badges).toContain('RHYME');
+    expect(results[0].badges).toContain('COLOR');
+  });
+
+  it('generates ghost lines from context', () => {
+    const generators = {
+      rhyme: [{ token: 'night', score: 1.0, badge: 'RHYME' }],
+      prefix: [],
+    };
+    const scorers = { meter: [], color: [] };
+    const context = { currentLineWords: ['into', 'the'] };
+
+    const results = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, context);
+    expect(results[0].ghostLine).toBe('into the night');
+  });
+
+  it('respects limit parameter', () => {
+    const generators = {
+      rhyme: Array.from({ length: 20 }, (_, i) => ({ token: `word${i}`, score: 0.5, badge: null })),
+      prefix: [],
+    };
+    const scorers = { meter: [], color: [] };
+
+    const results = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, {}, 5);
+    expect(results).toHaveLength(5);
+  });
+
+  it('tie-breaks by badge count then alphabetical', () => {
+    const generators = {
+      rhyme: [
+        { token: 'beta', score: 0.5, badge: 'RHYME' },
+        { token: 'alpha', score: 0.5, badge: null },
+      ],
+      prefix: [
+        { token: 'beta', score: 0.5, badge: null },
+        { token: 'alpha', score: 0.5, badge: null },
+      ],
+    };
+    const scorers = { meter: [], color: [] };
+
+    const results = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, {});
+    expect(results[0].token).toBe('beta');
+  });
+
+  it('includes per-provider score breakdown', () => {
+    const generators = {
+      rhyme: [{ token: 'test', score: 0.8, badge: null }],
+      prefix: [{ token: 'test', score: 0.6, badge: null }],
+    };
+    const scorers = {
+      meter: [{ token: 'test', scores: { meter: 0.7 } }],
+      color: [{ token: 'test', scores: { color: 0.3 } }],
+    };
+
+    const results = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, {});
+    expect(results[0].scores.rhyme).toBe(0.8);
+    expect(results[0].scores.prefix).toBe(0.6);
+    expect(results[0].scores.meter).toBe(0.7);
+    expect(results[0].scores.color).toBe(0.3);
+  });
+
+  it('uses predictability score in final ranking', () => {
+    const generators = {
+      rhyme: [],
+      prefix: [
+        { token: 'ember', score: 0.6, badge: null },
+        { token: 'ash', score: 0.6, badge: null },
+      ],
+    };
+    const scorers = {
+      meter: [],
+      color: [],
+      predictability: [
+        { token: 'ember', scores: { predictability: 1 } },
+        { token: 'ash', scores: { predictability: 0.1 } },
+      ],
+    };
+
+    const weights = {
+      rhyme: 0,
+      meter: 0,
+      color: 0,
+      prefix: 0.1,
+      synonym: 0,
+      validity: 0,
+      democracy: 0,
+      predictability: 0.9,
+    };
+    const results = rankCandidates(generators, scorers, weights, {});
+
+    expect(results[0].token).toBe('ember');
+    expect(results[0].badges).toContain('PREDICTABILITY');
+    expect(results[0].scores.predictability).toBe(1);
+  });
+
+  it('applies arbiter second-pass when top scores are ambiguous', () => {
+    const generators = {
+      rhyme: [],
+      prefix: [
+        { token: 'ash', score: 0.6, badge: null },
+        { token: 'ember', score: 0.6, badge: null },
+      ],
+    };
+    const scorers = {
+      meter: [],
+      color: [],
+      predictability: [
+        {
+          token: 'ash',
+          scores: { predictability: 0.6 },
+          arbiter: {
+            source: 'detect_first_predictability',
+            confidence: 0.2,
+            reason: 'lexical_fit_dominant',
+            signals: { lexicalFit: 0.25 },
+          },
+        },
+        {
+          token: 'ember',
+          scores: { predictability: 0.6 },
+          arbiter: {
+            source: 'detect_first_predictability',
+            confidence: 0.95,
+            reason: 'sequential_evidence_dominant',
+            signals: { lexicalFit: 0.95 },
+          },
+        },
+      ],
+    };
+
+    const weights = {
+      rhyme: 0,
+      meter: 0,
+      color: 0,
+      prefix: 0.5,
+      synonym: 0,
+      validity: 0,
+      democracy: 0,
+      predictability: 0.5,
+    };
+
+    const results = rankCandidates(generators, scorers, weights, {
+      syntaxContext: { role: 'content' },
+    });
+
+    expect(results[0].token).toBe('ember');
+    expect(results[0].badges).toContain('ARBITER');
+    expect(results[0].arbiter?.secondPass?.applied).toBe(true);
+    expect(results[0].score).toBeGreaterThan(results[1].score);
+  });
+
+  it('derives deterministic weight adjustments from PLS phonetic features', () => {
+    const adjusted = deriveFeatureAdjustedWeights(DEFAULT_WEIGHTS, {
+      plsPhoneticFeatures: {
+        rhymeAffinityScore: 0.9,
+        constellationDensity: 0.85,
+        internalRecurrenceScore: 0.8,
+        phoneticNoveltyScore: 0.2,
+      },
+    });
+
+    expect(adjusted.rhyme).toBeGreaterThan(DEFAULT_WEIGHTS.rhyme);
+    expect(adjusted.predictability).toBeGreaterThan(DEFAULT_WEIGHTS.predictability);
+    expect(adjusted.synonym).toBeLessThan(DEFAULT_WEIGHTS.synonym);
+  });
+
+  it('applies phonetic feature context to ranking outcomes', () => {
+    const generators = {
+      rhyme: [{ token: 'ember', score: 0.8, badge: null }],
+      synonym: [{ token: 'cinder', score: 0.8, badge: null }],
+      prefix: [],
+    };
+    const scorers = {
+      meter: [],
+      color: [],
+      validity: [],
+      democracy: [],
+      predictability: [],
+    };
+
+    const baseResults = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, {});
+    const noveltyResults = rankCandidates(generators, scorers, DEFAULT_WEIGHTS, {
+      plsPhoneticFeatures: {
+        rhymeAffinityScore: 0,
+        constellationDensity: 0,
+        internalRecurrenceScore: 0.4,
+        phoneticNoveltyScore: 1,
+      },
+    });
+
+    expect(baseResults[0].token).toBe('ember');
+    expect(noveltyResults[0].token).toBe('cinder');
+  });
+});

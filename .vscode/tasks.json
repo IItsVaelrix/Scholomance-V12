@@ -1,0 +1,71 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Scholomance: Start Collab Server",
+      "type": "shell",
+      "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/npm run dev:server",
+      "options": {
+        "shell": {
+          "executable": "/bin/bash",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Scholomance: Start Collab MCP Bridge",
+      "type": "shell",
+      "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/npm run mcp:collab",
+      "options": {
+        "shell": {
+          "executable": "/bin/bash",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Scholomance: Start Collab Stack",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Scholomance: Start Collab Server",
+        "Scholomance: Start Collab MCP Bridge"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "Scholomance: Probe Collab MCP Bridge",
+      "type": "shell",
+      "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/npm run mcp:probe -- --json",
+      "options": {
+        "shell": {
+          "executable": "/bin/bash",
+          "args": [
+            "-lc"
+          ]
+        }
+      },
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "new"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

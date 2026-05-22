@@ -1,0 +1,1 @@
+export { buildResonancePalette, resolveResonanceColor } from '../../../../codex/core/shared/truesight/color/rhymeColorRegistry.js';

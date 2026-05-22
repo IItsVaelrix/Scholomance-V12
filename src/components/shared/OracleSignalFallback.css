@@ -1,0 +1,97 @@
+/* OracleSignalFallback — "Oracle signal fading" overlay (Pillar 4, S-Gate). */
+
+.oracle-signal-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  padding: 1.5rem 1.25rem;
+  margin: 0.5rem 0;
+  border: 1px solid var(--school-accent, rgba(196, 164, 92, 0.4));
+  border-radius: 10px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(20, 16, 28, 0.55), rgba(12, 10, 18, 0.85));
+  color: var(--ink-soft, #d8cfa8);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.oracle-signal-fallback__glyph {
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--school-accent, #c4a45c);
+  filter: drop-shadow(0 0 6px var(--school-accent, rgba(196, 164, 92, 0.6)));
+  animation: oracle-signal-pulse 2.4s ease-in-out infinite;
+}
+
+.oracle-signal-fallback__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink-strong, #f0e6c8);
+}
+
+.oracle-signal-fallback__body {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.85;
+}
+
+.oracle-signal-fallback__detail {
+  margin: 0.25rem 0 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.72rem;
+  opacity: 0.6;
+}
+
+.oracle-signal-fallback__reconnect {
+  margin-top: 0.5rem;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--school-accent, rgba(196, 164, 92, 0.55));
+  border-radius: 999px;
+  background: transparent;
+  color: var(--school-accent, #c4a45c);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background-color 240ms ease-in-out, color 240ms ease-in-out;
+}
+
+.oracle-signal-fallback__reconnect:hover:not(:disabled) {
+  background: var(--school-accent, #c4a45c);
+  color: var(--bg-deep, #0c0a12);
+}
+
+.oracle-signal-fallback__reconnect:focus-visible {
+  outline: 2px solid var(--school-accent, #c4a45c);
+  outline-offset: 2px;
+}
+
+.oracle-signal-fallback__reconnect:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+/* The warming state reads as patient rather than faulted. */
+.oracle-signal-fallback--initializing {
+  border-color: var(--school-dominant, rgba(120, 150, 200, 0.4));
+}
+
+@keyframes oracle-signal-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-signal-fallback__glyph {
+    animation: none;
+  }
+  .oracle-signal-fallback__reconnect {
+    transition: none;
+  }
+}

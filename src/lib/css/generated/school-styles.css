@@ -1,0 +1,18 @@
+:root {
+  --sonic-primary: hsl(175, 85%, 55%);
+  --sonic-primary-glow: hsla(175, 85%, 55%, 0.3);
+  --psychic-primary: hsl(220, 90%, 60%);
+  --psychic-primary-glow: hsla(220, 90%, 60%, 0.3);
+  --void-primary: hsl(215, 15%, 41%);
+  --void-primary-glow: hsla(215, 15%, 41%, 0.3);
+  --alchemy-primary: hsl(325, 80%, 58%);
+  --alchemy-primary-glow: hsla(325, 80%, 58%, 0.3);
+  --will-primary: hsl(0, 85%, 48%);
+  --will-primary-glow: hsla(0, 85%, 48%, 0.3);
+  --necromancy-primary: hsl(120, 75%, 40%);
+  --necromancy-primary-glow: hsla(120, 75%, 40%, 0.3);
+  --abjuration-primary: hsl(180, 80%, 68%);
+  --abjuration-primary-glow: hsla(180, 80%, 68%, 0.3);
+  --divination-primary: hsl(45, 90%, 68%);
+  --divination-primary-glow: hsla(45, 90%, 68%, 0.3);
+}

@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScholomanceDivLayout",
+  "description": "Deterministic, schema-validated layout element tree (DIV Wand)",
+  "type": "object",
+  "required": ["id", "type", "role"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Unique identifier for targeting, inspection, and tests"
+    },
+    "type": {
+      "type": "string",
+      "enum": ["container", "element"],
+      "description": "Node classification: container (has children) or leaf element"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "wrapper",
+        "card",
+        "header",
+        "content",
+        "footer",
+        "grid",
+        "row",
+        "column",
+        "text",
+        "button",
+        "badge",
+        "glow-container"
+      ],
+      "description": "Semantic structural role"
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "display": {
+          "type": "string",
+          "enum": ["flex", "grid", "block", "none"]
+        },
+        "position": {
+          "type": "string",
+          "enum": ["relative", "absolute", "fixed", "sticky"]
+        },
+        "top": { "type": ["number", "string"] },
+        "left": { "type": ["number", "string"] },
+        "right": { "type": ["number", "string"] },
+        "bottom": { "type": ["number", "string"] },
+        "width": { "type": ["number", "string"] },
+        "height": { "type": ["number", "string"] },
+        "padding": { "type": ["number", "string"] },
+        "margin": { "type": ["number", "string"] },
+        "gap": { "type": ["number", "string"] },
+        "flexDirection": {
+          "type": "string",
+          "enum": ["row", "column", "row-reverse", "column-reverse"]
+        },
+        "justifyContent": {
+          "type": "string",
+          "enum": ["flex-start", "flex-end", "center", "space-between", "space-around", "space-evenly"]
+        },
+        "alignItems": {
+          "type": "string",
+          "enum": ["flex-start", "flex-end", "center", "stretch", "baseline"]
+        },
+        "gridTemplateColumns": { "type": "string" },
+        "gridTemplateRows": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "style": {
+      "type": "object",
+      "properties": {
+        "variant": {
+          "type": "string",
+          "enum": ["glassmorphic", "neonBorder", "obsidianPanel", "solid", "transparent"]
+        },
+        "glowColor": {
+          "type": "string",
+          "enum": ["sonic", "psychic", "void", "alchemy", "will"]
+        },
+        "borderRadius": { "type": ["number", "string"] },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "props": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "icon": { "type": "string" },
+        "title": { "type": "string" },
+        "subtitle": { "type": "string" },
+        "interactive": { "type": "boolean" },
+        "onClickAction": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "children": {
+      "type": "array",
+      "items": {
+        "$ref": "#"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "src/main.jsx",
+    "src/main.tsx",
+    "vite.config.js",
+    "codex/server/index.js"
+  ],
+  "project": [
+    "src/**/*.{js,jsx,ts,tsx}",
+    "codex/**/*.{js,ts}"
+  ],
+  "ignore": [
+    "dist/**",
+    "src/types/**",
+    "**/*.d.ts"
+  ],
+  "ignoreDependencies": [
+    "phaser",
+    "@fontsource/press-start-2p"
+  ],
+  "ignoreExportsUsedInFile": true
+}

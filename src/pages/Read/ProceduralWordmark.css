@@ -1,0 +1,78 @@
+/* src/pages/Read/ProceduralWordmark.css */
+
+/* Container — flex row with em-relative gap so spacing scales with font-size. */
+.grim-wordmark {
+  --grim-glyph-cell: clamp(0.85em, 1em, 4em);          /* size adapts to parent */
+  --grim-glyph-stroke-width: clamp(1.2px, 0.08em, 3.2px); /* legibility floor + ceiling */
+  --grim-glyph-color: var(--word-school-primary, hsl(215, 15%, 41%)); /* VOID fallback */
+  --grim-glyph-glow: 0 0 2px hsla(215, 15%, 60%, 0.35);
+  --grim-glyph-draw-ms: 320ms;
+  --grim-glyph-stagger-ms: 28ms;
+
+  display: inline-flex;
+  align-items: baseline;
+  gap: calc(var(--grim-glyph-cell) * 0.18);
+  line-height: 1;
+  vertical-align: baseline;
+}
+
+/* Single glyph — square cell sized by custom property. */
+.grim-glyph {
+  width: var(--grim-glyph-cell);
+  height: calc(var(--grim-glyph-cell) * 1.333); /* 12:16 aspect from viewBox */
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: drop-shadow(var(--grim-glyph-glow));
+  transition: filter var(--grim-transition, 240ms) ease-out;
+}
+
+/* Stroke — the actual visible mark. */
+.grim-glyph-stroke {
+  fill: none;
+  stroke: var(--grim-glyph-color);
+  stroke-width: var(--grim-glyph-stroke-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0; /* default fully drawn */
+  transition: stroke var(--grim-transition, 240ms) ease-out;
+}
+
+/* First-reveal draw-in — only when animate=true AND reduced-motion allows. */
+@media (prefers-reduced-motion: no-preference) {
+  .grim-wordmark[data-animate='true'] .grim-glyph-stroke[data-animate='true'] {
+    stroke-dashoffset: 100;
+    animation:
+      grim-stroke-draw var(--grim-glyph-draw-ms) ease-out forwards,
+      grim-breathe 1800ms ease-in-out infinite;
+    animation-delay:
+      calc(var(--glyph-index) * var(--grim-glyph-stagger-ms) + var(--stroke-index) * 40ms),
+      calc(var(--grim-glyph-draw-ms) + var(--glyph-index) * var(--grim-glyph-stagger-ms));
+  }
+}
+
+/* Reduced motion — strokes appear instantly, no breathing. */
+@media (prefers-reduced-motion: reduce) {
+  .grim-wordmark .grim-glyph-stroke {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+@keyframes grim-stroke-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* HARMONIC micro-modulation — stroke-width oscillates ±10% around base. */
+@keyframes grim-breathe {
+  0%, 100% { stroke-width: var(--grim-glyph-stroke-width); }
+  50% {
+    stroke-width: calc(var(--grim-glyph-stroke-width) * 1.1);
+  }
+}
+
+/* Hover/focus — strokes intensify slightly without breaking the breath cycle. */
+.grim-wordmark:hover .grim-glyph,
+.grim-wordmark:focus-within .grim-glyph {
+  filter: drop-shadow(0 0 4px var(--grim-glyph-color));
+}

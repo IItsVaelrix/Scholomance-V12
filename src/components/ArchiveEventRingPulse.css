@@ -1,0 +1,39 @@
+/**
+ * @file src/components/ArchiveEventRingPulse.css
+ */
+
+.archive-event-ring-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 100;
+  border: 2px solid var(--pulse-color, var(--school-primary));
+  animation: archive-ring-expand var(--pulse-duration, 1200ms) cubic-bezier(0.1, 0, 0.3, 1) forwards;
+}
+
+@keyframes archive-ring-expand {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+    border-width: 4px;
+  }
+  100% {
+    width: 400px;
+    height: 400px;
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-event-ring-pulse {
+    animation: none;
+    opacity: 0;
+  }
+}

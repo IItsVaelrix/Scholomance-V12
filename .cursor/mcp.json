@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "scholomance-collab": {
+      "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/node",
+      "args": [
+        "--env-file=/home/deck/Downloads/scholomance-V12/.env",
+        "/home/deck/Downloads/scholomance-V12/codex/server/collab/mcp-bridge.js"
+      ],
+      "cwd": "/home/deck/Downloads/scholomance-V12",
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  }
+}

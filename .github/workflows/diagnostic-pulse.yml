@@ -1,0 +1,44 @@
+name: Diagnostic Pulse
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run every hour to detect drift
+    - cron: '0 * * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  diagnostic-scan:
+    name: Codebase Health Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Diagnostic Scan
+        run: npm run diagnostic:scan:ci
+        env:
+          NODE_ENV: test
+
+      - name: Archive Diagnostic Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-reports
+          path: .codex/diagnostic-reports/*.json
+          retention-days: 7

@@ -1,0 +1,59 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScholomanceFormulaProposal",
+  "description": "Wraps a proposed formula with AI metadata and confidence targets",
+  "type": "object",
+  "required": [
+    "rationale",
+    "confidence",
+    "reviewRequired",
+    "proposedFormula"
+  ],
+  "properties": {
+    "rationale": {
+      "type": "string",
+      "description": "Textual justification for why this formula matches the PDR intent"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Self-assessed confidence of the AI agent"
+    },
+    "reviewRequired": {
+      "type": "boolean",
+      "description": "Flag to mark if the proposal contains creative violence or high risk"
+    },
+    "sourceIntentHash": {
+      "type": "string",
+      "description": "Trace hash of the source PDR text block"
+    },
+    "evalSuiteId": {
+      "type": "string",
+      "description": "Identifier of the QA test suite this proposal was verified against"
+    },
+    "proposedFormula": {
+      "type": "object",
+      "required": ["role", "formula"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "description": "Semantic rendering target role (e.g. shrine.altar, sigil.capsule)"
+        },
+        "material": {
+          "type": "string",
+          "description": "Asset material look (e.g. stone, glass, aura, wood, paper)"
+        },
+        "paletteChannel": {
+          "type": "integer",
+          "description": "Optional color channel override"
+        },
+        "formula": {
+          "$ref": "formula.schema.json"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

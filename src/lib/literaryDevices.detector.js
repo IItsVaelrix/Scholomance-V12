@@ -1,0 +1,1 @@
+export { analyzeLiteraryDevices, detectEmotion, detectEmotionDetailed } from '../../codex/core/shared/literaryDevices.detector.js';

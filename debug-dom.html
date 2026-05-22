@@ -1,0 +1,155 @@
+<div class="div-wand-container"><div class="div-wand-header"><h1><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" aria-hidden="true" style="color: rgb(201, 162, 39);"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg>Scholomance DIV Grid Manipulator</h1><div class="div-wand-header-actions"><button class="div-wand-btn btn-active"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sliders-vertical" aria-hidden="true"><path d="M10 8h4"></path><path d="M12 21v-9"></path><path d="M12 8V3"></path><path d="M17 16h4"></path><path d="M19 12V3"></path><path d="M19 21v-5"></path><path d="M3 14h4"></path><path d="M5 10V3"></path><path d="M5 21v-7"></path></svg>Inspector HUD</button><button class="div-wand-btn"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-save" aria-hidden="true"><path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"></path><path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7"></path><path d="M7 3v4a1 1 0 0 0 1 1h7"></path></svg>Register Catalog</button></div></div><div class="div-wand-body"><div class="div-wand-editor-pane"><div class="div-wand-pane-title"><span>Grimoire Proposal JSON</span><div style="display: flex; gap: 12px;"><button style="background: transparent; border: medium; color: rgb(201, 162, 39); cursor: pointer; font-size: 0.75rem;">[Alchemist Card Deck]</button><button style="background: transparent; border: medium; color: rgb(201, 162, 39); cursor: pointer; font-size: 0.75rem;">[Grimoire Dashboard Grid]</button></div></div><div class="div-wand-textarea-wrapper"><textarea class="div-wand-textarea">{
+  "rationale": "Synthesize high-acuity grimoire card layout with neon highlight highlights.",
+  "confidence": 0.98,
+  "reviewRequired": false,
+  "sourceIntentHash": "alchemist-card-core",
+  "evalSuiteId": "suite-cards",
+  "proposedLayout": {
+    "id": "root-wrapper",
+    "type": "container",
+    "role": "wrapper",
+    "layout": {
+      "display": "flex",
+      "flexDirection": "column",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "width": "100%",
+      "height": "100%",
+      "padding": 24
+    },
+    "style": {
+      "variant": "transparent"
+    },
+    "children": [
+      {
+        "id": "spell-card",
+        "type": "container",
+        "role": "card",
+        "layout": {
+          "display": "flex",
+          "flexDirection": "column",
+          "width": 320,
+          "height": 400,
+          "padding": 16,
+          "gap": 12
+        },
+        "style": {
+          "variant": "glassmorphic",
+          "glowColor": "alchemy",
+          "borderRadius": 12
+        },
+        "props": {
+          "interactive": true
+        },
+        "children": [
+          {
+            "id": "spell-header",
+            "type": "container",
+            "role": "header",
+            "layout": {
+              "display": "flex",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "height": 40
+            },
+            "style": {
+              "variant": "transparent"
+            },
+            "children": [
+              {
+                "id": "spell-title",
+                "type": "element",
+                "role": "text",
+                "props": {
+                  "title": "Transmutation Arc"
+                }
+              },
+              {
+                "id": "spell-badge",
+                "type": "element",
+                "role": "badge",
+                "style": {
+                  "variant": "neonBorder",
+                  "glowColor": "will"
+                },
+                "props": {
+                  "text": "Lvl 4"
+                }
+              }
+            ]
+          },
+          {
+            "id": "spell-content",
+            "type": "container",
+            "role": "content",
+            "layout": {
+              "display": "flex",
+              "flexDirection": "column",
+              "justifyContent": "center",
+              "alignItems": "center",
+              "padding": 16,
+              "height": 240
+            },
+            "style": {
+              "variant": "obsidianPanel",
+              "borderRadius": 8
+            },
+            "children": [
+              {
+                "id": "spell-glyph-box",
+                "type": "element",
+                "role": "glow-container",
+                "style": {
+                  "variant": "neonBorder",
+                  "glowColor": "psychic",
+                  "borderRadius": 40
+                },
+                "layout": {
+                  "width": 80,
+                  "height": 80
+                },
+                "props": {
+                  "icon": "Sparkles"
+                }
+              }
+            ]
+          },
+          {
+            "id": "spell-footer",
+            "type": "container",
+            "role": "footer",
+            "layout": {
+              "display": "flex",
+              "justifyContent": "space-between",
+              "alignItems": "center",
+              "height": 48
+            },
+            "style": {
+              "variant": "transparent"
+            },
+            "children": [
+              {
+                "id": "spell-trigger-btn",
+                "type": "element",
+                "role": "button",
+                "style": {
+                  "variant": "neonBorder",
+                  "glowColor": "will",
+                  "borderRadius": 4
+                },
+                "layout": {
+                  "padding": 8,
+                  "width": 120
+                },
+                "props": {
+                  "text": "Cast Spell",
+                  "onClickAction": "heal"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}</textarea></div><div class="div-wand-terminal"><div class="div-wand-pane-title"><span style="display: flex; align-items: center; gap: 6px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-terminal" aria-hidden="true"><path d="M12 19h8"></path><path d="m4 17 6-6-6-6"></path></svg>Live Validation Logs</span><span><span style="color: rgb(0, 255, 102); display: flex; align-items: center; gap: 4px;"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-check-big" aria-hidden="true"><path d="M21.801 10A10 10 0 1 1 17 3.335"></path><path d="m9 11 3 3L22 4"></path></svg> COMPLIANT</span></span></div><div class="div-wand-terminal-log"><div class="log-item success">[3:43:47 PM] Validation Success. All nodes comply with schemas.</div></div></div></div><div class="div-wand-preview-pane"><div class="div-wand-pane-title"><span>Deterministic Preview Sandbox</span></div><div class="div-wand-preview-canvas"><div class="crt-overlay"></div><div class="div-wand-preview-root"><div id="root-wrapper" class="div-node variant-transparent" style="display: flex; width: 100%; height: 100%; padding: 24px; flex-direction: column; justify-content: center; align-items: center;"><div id="spell-card" class="div-node variant-glassmorphic div-glow-alchemy div-interactive" style="display: flex; width: 320px; height: 400px; padding: 16px; gap: 12px; flex-direction: column; border-radius: 12px;"><div id="spell-header" class="div-node variant-transparent" style="display: flex; height: 40px; justify-content: space-between; align-items: center;"><div id="spell-title" class="div-node"><div><div style="font-weight: 700; color: rgb(201, 162, 39);">Transmutation Arc</div></div></div><div id="spell-badge" class="div-node variant-neonBorder div-glow-will"><span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; text-transform: uppercase;">Lvl 4</span></div></div><div id="spell-content" class="div-node variant-obsidianPanel" style="display: flex; height: 240px; padding: 16px; flex-direction: column; justify-content: center; align-items: center; border-radius: 8px;"><div id="spell-glyph-box" class="div-node variant-neonBorder div-glow-psychic" style="width: 80px; height: 80px; border-radius: 40px;"><div style="display: flex; justify-content: center; align-content: center; width: 100%; height: 100%; align-items: center;"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sparkles" aria-hidden="true" style="color: var(--school-color, #c9a227);"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z"></path><path d="M20 2v4"></path><path d="M22 4h-4"></path><circle cx="4" cy="20" r="2"></circle></svg></div></div></div><div id="spell-footer" class="div-node variant-transparent" style="display: flex; height: 48px; justify-content: space-between; align-items: center;"><div id="spell-trigger-btn" class="div-node variant-neonBorder div-glow-will" style="width: 120px; padding: 8px; border-radius: 4px;"><button style="background: transparent; border: medium; color: inherit; width: 100%; cursor: pointer;">Cast Spell</button></div></div></div></div></div></div></div></div></div>

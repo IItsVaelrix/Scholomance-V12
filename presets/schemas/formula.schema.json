@@ -1,0 +1,191 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScholomanceFormula",
+  "description": "Discriminated union of the Scholomance Fairly Odd Wand formula grammar",
+  "type": "object",
+  "required": ["type"],
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "parametric_curve",
+        "edge_trace",
+        "fractal_iter",
+        "grid_projection",
+        "fibonacci",
+        "template_based",
+        "composite",
+        "vectorized_text"
+      ]
+    }
+  },
+  "oneOf": [
+    {
+      "properties": {
+        "type": { "const": "parametric_curve" },
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "cx": { "type": "number" },
+            "cy": { "type": "number" },
+            "a": { "type": "number", "minimum": -2000, "maximum": 2000 },
+            "b": { "type": "number" },
+            "c": { "type": "number" },
+            "n": { "type": "integer", "minimum": 1, "maximum": 2048 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "edge_trace" },
+        "tracePath": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number" },
+              "y": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "unitTracePath": {
+          "type": "array",
+          "maxItems": 512,
+          "items": {
+            "type": "object",
+            "required": ["x", "y"],
+            "properties": {
+              "x": { "type": "number", "minimum": 0, "maximum": 1 },
+              "y": { "type": "number", "minimum": 0, "maximum": 1 }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "fractal_iter" },
+        "iterations": { "type": "integer", "minimum": 0, "maximum": 6 },
+        "baseShape": { "type": "string", "enum": ["triangle", "square", "circle"] },
+        "scale": { "type": "number", "minimum": 0, "maximum": 100 },
+        "cx": { "type": "number" },
+        "cy": { "type": "number" }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "grid_projection" },
+        "gridType": { "type": "string", "enum": ["rectangular", "hexagonal", "isometric"] },
+        "cellSize": { "type": "number", "minimum": 4, "maximum": 32 },
+        "snapStrength": { "type": "number", "minimum": 0, "maximum": 1 },
+        "gridWidth": { "type": "number" },
+        "gridHeight": { "type": "number" }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "fibonacci" },
+        "iterations": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "scale": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "template_based" },
+        "template": {
+          "type": "object",
+          "properties": {
+            "anchorPoints": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["x", "y"],
+                "properties": {
+                  "x": { "type": "number" },
+                  "y": { "type": "number" },
+                  "locked": { "type": "boolean" },
+                  "label": { "type": "string" }
+                },
+                "additionalProperties": false
+              }
+            },
+            "symmetryAxes": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["vertical", "horizontal"] }
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": ["type"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "composite" },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["role", "anchor", "formula"],
+            "properties": {
+              "role": { "type": "string" },
+              "anchor": {
+                "type": "object",
+                "required": ["x", "y"],
+                "properties": {
+                  "x": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "y": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false
+              },
+              "size": {
+                "type": "object",
+                "required": ["w", "h"],
+                "properties": {
+                  "w": { "type": "number", "minimum": 0, "maximum": 1 },
+                  "h": { "type": "number", "minimum": 0, "maximum": 1 }
+                },
+                "additionalProperties": false
+              },
+              "material": { "type": "string" },
+              "paletteChannel": { "type": "number" },
+              "formula": { "$ref": "#" }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["type", "children"],
+      "additionalProperties": false
+    },
+    {
+      "properties": {
+        "type": { "const": "vectorized_text" },
+        "text": { "type": "string", "maxLength": 32 },
+        "fontSize": { "type": "number", "minimum": 10, "maximum": 100 },
+        "cx": { "type": "number" },
+        "cy": { "type": "number" },
+        "spacing": { "type": "number", "minimum": 0.1, "maximum": 5 }
+      },
+      "required": ["type", "text"],
+      "additionalProperties": false
+    }
+  ]
+}

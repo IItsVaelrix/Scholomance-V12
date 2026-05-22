@@ -1,0 +1,650 @@
+/**
+ * BugBoard — Pac-Man Arcade Cabinet Aesthetic
+ * Diagnostic Ghost: white body, red medical cross hat
+ * Ghost roster: Blinky (CRIT/red), Pinky (HIGH/pink), Inky (MED/cyan),
+ *               Clyde (LOW/orange), Sue (INFO/purple)
+ */
+
+@import '@fontsource/press-start-2p';
+
+/* ─── Arcade Cabinet ────────────────────────────────────────────────────── */
+
+.bug-arcade {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px 12px 6px 6px;
+    overflow: hidden;
+    background: #1a0a2e;
+    border: 3px solid #3a1a5e;
+    box-shadow:
+        0 0 0 2px #6a2a9e,
+        0 8px 40px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    position: relative;
+}
+
+.bug-arcade__bezel--top {
+    height: 18px;
+    background: linear-gradient(180deg, #4a2a7e 0%, #2a1050 100%);
+    border-bottom: 2px solid #6a3aae;
+    flex-shrink: 0;
+}
+
+.bug-arcade__bezel--bottom {
+    height: 52px;
+    background: linear-gradient(180deg, #2a1050 0%, #1a0830 100%);
+    border-top: 2px solid #6a3aae;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    flex-shrink: 0;
+}
+
+/* ─── CRT Screen ────────────────────────────────────────────────────────── */
+
+.bug-arcade__screen {
+    background: #000010;
+    position: relative;
+    overflow: hidden;
+    flex: 1;
+}
+
+/* CRT scanlines overlay */
+.arcade-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 30, 0.35) 2px,
+        rgba(0, 0, 30, 0.35) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+}
+
+/* CRT corner vignette */
+.bug-arcade__screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.6) 100%);
+    pointer-events: none;
+    z-index: 9;
+}
+
+/* ─── Screen Header ─────────────────────────────────────────────────────── */
+
+.arcade-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px 10px;
+    border-bottom: 2px solid #2121DE;
+    background: rgba(0, 0, 16, 0.8);
+    position: relative;
+    z-index: 1;
+}
+
+.arcade-header__left {
+    width: 60px;
+    display: flex;
+    justify-content: center;
+}
+
+.arcade-header__center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.arcade-header__right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.arcade-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 14px;
+    color: #FFB800;
+    margin: 0;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 10px #FFB800;
+}
+
+.arcade-stats {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #9090c0;
+}
+
+.arcade-stat {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.arcade-stat-sep {
+    color: #2121DE;
+    opacity: 0.6;
+}
+
+/* ─── Maze Column Headers ───────────────────────────────────────────────── */
+
+.maze-header {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    background: rgba(33, 33, 222, 0.12);
+    border-bottom: 1px solid rgba(33, 33, 222, 0.4);
+    position: relative;
+    z-index: 1;
+}
+
+.maze-header__col {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: #2121DE;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.maze-header__col--ghost     { width: 80px; flex-shrink: 0; }
+.maze-header__col--title     { flex: 1; }
+.maze-header__col--cat       { width: 90px; flex-shrink: 0; }
+.maze-header__col--status    { width: 80px; flex-shrink: 0; }
+.maze-header__col--integrity { width: 60px; flex-shrink: 0; text-align: center; }
+
+/* ─── Maze Body ─────────────────────────────────────────────────────────── */
+
+.maze-body {
+    overflow-y: auto;
+    max-height: 400px;
+    position: relative;
+    z-index: 1;
+
+    /* Pac-Man maze wall pattern on left/right edges */
+    background-image:
+        linear-gradient(rgba(33, 33, 222, 0.08) 1px, transparent 1px);
+    background-size: 100% 48px;
+}
+
+/* ─── Maze Row ──────────────────────────────────────────────────────────── */
+
+.maze-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(33, 33, 222, 0.25);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
+    border-left: 3px solid transparent;
+}
+
+.maze-row:hover {
+    border-left-color: #FFB800;
+}
+
+.maze-row:focus-visible {
+    outline: 2px solid #FFB800;
+    outline-offset: -2px;
+}
+
+/* Left maze wall notch */
+.maze-row::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: rgba(33, 33, 222, 0.3);
+    border-radius: 0 2px 2px 0;
+    transition: background 0.15s ease, height 0.15s ease;
+}
+
+.maze-row:hover::before {
+    background: #FFB800;
+    height: 80%;
+}
+
+.maze-row__ghost-col {
+    width: 80px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.maze-row__ghost-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    opacity: 0.8;
+    letter-spacing: 0.05em;
+}
+
+.maze-row__title-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.maze-row__title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #e0e0ff;
+    line-height: 1.5;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maze-row__id {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    color: #404060;
+    letter-spacing: 0.04em;
+}
+
+.maze-row__cat-col {
+    width: 90px;
+    flex-shrink: 0;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 6px;
+    color: #6060a0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.maze-row__status-col {
+    width: 80px;
+    flex-shrink: 0;
+}
+
+.maze-status {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 5px;
+    padding: 3px 6px;
+    border-radius: 2px;
+    letter-spacing: 0.06em;
+    border: 1px solid currentColor;
+}
+
+.maze-status--new        { color: #00FFFF; }
+.maze-status--triaged    { color: #FFB800; }
+.maze-status--assigned   { color: #FFB800; }
+.maze-status--in_progress{ color: #FFB847; }
+.maze-status--fixed      { color: #40ff80; }
+.maze-status--verified   { color: #40ff80; }
+.maze-status--closed     { color: #404060; }
+.maze-status--duplicate  { color: #404060; }
+
+.maze-row__integrity-col {
+    width: 60px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.integrity-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.integrity-dot--ok   { background: #40ff80; box-shadow: 0 0 4px #40ff80; }
+.integrity-dot--fail { background: #FF0000; box-shadow: 0 0 4px #FF0000; }
+.integrity-dot--warn { background: #FFB800; box-shadow: 0 0 4px #FFB800; }
+
+/* ─── Pac-Dots ──────────────────────────────────────────────────────────── */
+
+.pac-dots {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pac-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #FFB8AE;
+    display: inline-block;
+    box-shadow: 0 0 4px rgba(255, 184, 174, 0.6);
+}
+
+/* ─── Arcade Footer ─────────────────────────────────────────────────────── */
+
+.arcade-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    border-top: 2px solid #2121DE;
+    background: rgba(0, 0, 16, 0.8);
+    position: relative;
+    z-index: 1;
+}
+
+.arcade-footer__score {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: #FFB800;
+    letter-spacing: 0.1em;
+}
+
+/* ─── Buttons ───────────────────────────────────────────────────────────── */
+
+.arcade-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    padding: 7px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.06em;
+    transition: all 0.1s ease;
+    border: 2px solid transparent;
+}
+
+.arcade-btn--ghost {
+    background: transparent;
+    border-color: rgba(33, 33, 222, 0.5);
+    color: #6060c0;
+}
+
+.arcade-btn--ghost:hover {
+    border-color: #2121DE;
+    color: #9090ff;
+    box-shadow: 0 0 8px rgba(33, 33, 222, 0.4);
+}
+
+.arcade-btn--coin {
+    background: #FFB800;
+    border-color: #FFB800;
+    color: #000;
+}
+
+.arcade-btn--coin:hover {
+    background: #FFD040;
+    border-color: #FFD040;
+    box-shadow: 0 0 12px rgba(255, 184, 0, 0.5);
+    transform: translateY(-1px);
+}
+
+.arcade-btn-row {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+/* ─── Arcade Text (empty state) ─────────────────────────────────────────── */
+
+.arcade-text {
+    font-family: 'Press Start 2P', monospace;
+    text-align: center;
+    margin: 0;
+}
+
+.arcade-text--title {
+    font-size: 16px;
+    color: #FFB800;
+    text-shadow: 0 0 12px #FFB800;
+    margin-top: 16px;
+}
+
+.arcade-text--sub {
+    font-size: 8px;
+    color: #4040a0;
+    margin-top: 8px;
+    margin-bottom: 16px;
+}
+
+/* ─── Empty State ───────────────────────────────────────────────────────── */
+
+.bug-arcade--empty .bug-arcade__screen {
+    min-height: 280px;
+}
+
+.bug-arcade__empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    position: relative;
+    z-index: 1;
+}
+
+/* ─── Coin Slot ─────────────────────────────────────────────────────────── */
+
+.bug-arcade__coin-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 20px;
+    background: #0a0018;
+    border: 2px inset #6a3aae;
+    border-radius: 2px;
+}
+
+.coin-slot-text {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 4px;
+    color: #3a1a5e;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+/* ─── Speaker ───────────────────────────────────────────────────────────── */
+
+.bug-arcade__speaker {
+    display: grid;
+    grid-template-columns: repeat(4, 6px);
+    gap: 4px;
+    opacity: 0.5;
+}
+
+.speaker-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #3a1a5e;
+    border: 1px solid #6a3aae;
+}
+
+/* ─── Ghost Icon (severity chip replacement) ────────────────────────────── */
+
+.ghost-icon {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+}
+
+.ghost-icon__body {
+    width: 100%;
+    height: 100%;
+    background: var(--ghost-color, #FF0000);
+    border-radius: 50% 50% 0 0;
+    position: relative;
+    overflow: visible;
+}
+
+.ghost-icon__eye {
+    position: absolute;
+    top: 28%;
+    width: 28%;
+    height: 32%;
+    background: white;
+    border-radius: 50%;
+}
+
+.ghost-icon__eye::after {
+    content: '';
+    position: absolute;
+    top: 35%;
+    right: 10%;
+    width: 45%;
+    height: 45%;
+    background: #00008B;
+    border-radius: 50%;
+}
+
+.ghost-icon__eye--left  { left: 14%; }
+.ghost-icon__eye--right { right: 14%; }
+
+/* Pac-Man ghost skirt (three bumps pointing down) */
+.ghost-icon__skirt {
+    position: absolute;
+    bottom: -35%;
+    left: 0;
+    width: 100%;
+    height: 40%;
+    background: var(--ghost-color, #FF0000);
+    clip-path: polygon(
+        0% 0%,
+        0% 100%,
+        16.6% 50%,
+        33.3% 100%,
+        50%   50%,
+        66.6% 100%,
+        83.3% 50%,
+        100%  100%,
+        100%  0%
+    );
+}
+
+/* ─── Diagnostic Ghost (mascot) ─────────────────────────────────────────── */
+
+.diagnostic-ghost {
+    position: relative;
+    width: 48px;
+    height: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Medical cross hat */
+.diagnostic-ghost__hat {
+    width: 24px;
+    height: 20px;
+    background: white;
+    border-radius: 3px 3px 0 0;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.4);
+}
+
+/* Red cross on hat — vertical bar */
+.diagnostic-ghost__hat::before {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 5px;
+    height: 14px;
+    background: #FF0000;
+    border-radius: 1px;
+}
+
+/* Red cross on hat — horizontal bar */
+.diagnostic-ghost__hat::after {
+    content: '';
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 14px;
+    height: 5px;
+    background: #FF0000;
+    border-radius: 1px;
+}
+
+.diagnostic-ghost__body {
+    width: 48px;
+    height: 48px;
+    background: white;
+    border-radius: 24px 24px 0 0;
+    position: relative;
+    box-shadow:
+        0 0 16px rgba(255, 255, 255, 0.3),
+        inset 0 -4px 8px rgba(0, 0, 50, 0.1);
+}
+
+.diagnostic-ghost__eye {
+    position: absolute;
+    top: 28%;
+    width: 26%;
+    height: 30%;
+    background: #2121DE;
+    border-radius: 50%;
+}
+
+.diagnostic-ghost__eye::after {
+    content: '';
+    position: absolute;
+    top: 25%;
+    right: 15%;
+    width: 40%;
+    height: 40%;
+    background: white;
+    border-radius: 50%;
+}
+
+.diagnostic-ghost__eye--left  { left: 16%; }
+.diagnostic-ghost__eye--right { right: 16%; }
+
+/* Ghost skirt (three bumps) */
+.diagnostic-ghost__skirt {
+    position: absolute;
+    bottom: -40%;
+    left: 0;
+    width: 100%;
+    height: 45%;
+    background: white;
+    clip-path: polygon(
+        0% 0%,
+        0% 100%,
+        16.6% 50%,
+        33.3% 100%,
+        50%   50%,
+        66.6% 100%,
+        83.3% 50%,
+        100%  100%,
+        100%  0%
+    );
+}
+
+/* Ambient glow aura */
+.diagnostic-ghost__aura {
+    position: absolute;
+    inset: -8px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+    .arcade-scanlines { display: none; }
+    .pac-dot { animation: none !important; opacity: 1; }
+}

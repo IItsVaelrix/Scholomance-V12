@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ScholomanceDivLayoutProposal",
+  "description": "Wraps a proposed DOM layout with AI metadata and confidence targets",
+  "type": "object",
+  "required": [
+    "rationale",
+    "confidence",
+    "reviewRequired",
+    "proposedLayout"
+  ],
+  "properties": {
+    "rationale": {
+      "type": "string",
+      "description": "Textual justification for this layout proposal matching the design intent"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Self-assessed confidence of the AI agent"
+    },
+    "reviewRequired": {
+      "type": "boolean",
+      "description": "Flag to mark if the proposal contains high-risk experimental items"
+    },
+    "sourceIntentHash": {
+      "type": "string",
+      "description": "Trace hash of the source PDR text block"
+    },
+    "evalSuiteId": {
+      "type": "string",
+      "description": "Identifier of the QA test suite this proposal was verified against"
+    },
+    "proposedLayout": {
+      "$ref": "div-layout.schema.json"
+    }
+  },
+  "additionalProperties": false
+}

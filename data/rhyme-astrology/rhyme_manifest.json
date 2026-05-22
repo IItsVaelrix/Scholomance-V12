@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "builtAt": "2026-04-25T10:17:53.617Z",
+  "sources": {
+    "dictionary": "/home/deck/Downloads/scholomance-V11/scholomance_dict.sqlite",
+    "corpus": "/home/deck/Downloads/scholomance-V11/scholomance_corpus.sqlite"
+  },
+  "config": {
+    "targetLexiconSize": 50000,
+    "hotEdgeWordLimit": 7500,
+    "hotEdgeTopK": 50,
+    "oversizedBucketThreshold": 500,
+    "bucketCandidateCap": 200,
+    "clusterLimitPerBucket": 6,
+    "storageTargetMb": 100,
+    "outputDir": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology",
+    "emotionPriorTopK": 180,
+    "emotionPriorMinCount": 3
+  },
+  "lexiconCount": 50000,
+  "signatureBuckets": 1955,
+  "hotEdgeWords": 7500,
+  "hotEdgeCount": 305407,
+  "clusterCount": 2660,
+  "diagnostics": {
+    "stageA": {
+      "durationMs": 4075,
+      "skippedLexiconCount": 0,
+      "pronunciationBackedWordCount": 123611,
+      "corpusOverlapCount": 39594
+    },
+    "stageB": {
+      "durationMs": 911,
+      "largestBucketSize": 4554,
+      "oversizedBucketCount": 14
+    },
+    "stageC": {
+      "durationMs": 23016,
+      "truncatedCandidateBuckets": 3705
+    },
+    "stageD": {
+      "durationMs": 1175,
+      "sentenceCount": 111617,
+      "tokenCount": 1275365
+    },
+    "timingsMs": {
+      "total": 29609
+    }
+  },
+  "validation": {
+    "rowCounts": {
+      "lexiconNode": 50000,
+      "signatureBucket": 50000,
+      "signatureBucketStats": 1955,
+      "constellationCluster": 2660,
+      "hotEdge": 305407,
+      "hotEdgeWordCount": 7448
+    },
+    "artifactSizes": {
+      "rhymeLexiconSqlite": {
+        "path": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_lexicon.sqlite",
+        "exists": true,
+        "bytes": 11501568,
+        "mb": 10.969
+      },
+      "rhymeIndexSqlite": {
+        "path": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_index.sqlite",
+        "exists": true,
+        "bytes": 9691136,
+        "mb": 9.242
+      },
+      "rhymeEdgesSqlite": {
+        "path": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_edges.sqlite",
+        "exists": true,
+        "bytes": 75173888,
+        "mb": 71.691
+      },
+      "rhymeEmotionPriorsJson": {
+        "path": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_emotion_priors.json",
+        "exists": true,
+        "bytes": 27357,
+        "mb": 0.026
+      }
+    },
+    "totalArtifactBytes": 96393949,
+    "totalArtifactMb": 91.928,
+    "storageTargetMb": 100,
+    "storageWithinTarget": true,
+    "oversizedBucketsPath": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_oversized_buckets.json",
+    "oversizedBucketCount": 14,
+    "emotionPriorsPath": "/home/deck/Downloads/scholomance-V11/data/rhyme-astrology/rhyme_emotion_priors.json",
+    "emotionPriorsEmotionCount": 6
+  },
+  "meta": {
+    "lexicon": {
+      "version": "1",
+      "built_at": "2026-04-25T10:17:26.652Z",
+      "target_lexicon_size": "50000",
+      "lexicon_count": "50000",
+      "skipped_count": "0",
+      "source_dict_path": "/home/deck/Downloads/scholomance-V11/scholomance_dict.sqlite",
+      "source_corpus_path": "/home/deck/Downloads/scholomance-V11/scholomance_corpus.sqlite"
+    },
+    "index": {
+      "version": "1",
+      "built_at": "2026-04-25T10:17:28.470Z",
+      "bucket_count": "1955",
+      "lexicon_count": "50000",
+      "cluster_count": "2660",
+      "oversized_bucket_count": "14",
+      "oversized_bucket_threshold": "500"
+    },
+    "edges": {
+      "version": "1",
+      "built_at": "2026-04-25T10:17:29.401Z",
+      "hot_edge_word_limit": "7500",
+      "hot_edge_top_k": "50",
+      "bucket_candidate_cap": "200",
+      "hot_edge_word_count": "7500",
+      "hot_edge_count": "305407",
+      "truncated_candidate_buckets": "3705"
+    }
+  }
+}

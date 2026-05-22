@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-04-25T10:17:53.617Z",
+  "threshold": 500,
+  "count": 14,
+  "buckets": [
+    {
+      "endingSignature": "IY0-open",
+      "memberCount": 4554,
+      "dominantVowelFamily": "EH"
+    },
+    {
+      "endingSignature": "IH0-NG",
+      "memberCount": 3044,
+      "dominantVowelFamily": "EY"
+    },
+    {
+      "endingSignature": "ER0-open",
+      "memberCount": 2474,
+      "dominantVowelFamily": "EH"
+    },
+    {
+      "endingSignature": "AH0-N",
+      "memberCount": 2461,
+      "dominantVowelFamily": "EY"
+    },
+    {
+      "endingSignature": "AH0-L",
+      "memberCount": 2038,
+      "dominantVowelFamily": "EH"
+    },
+    {
+      "endingSignature": "AH0-open",
+      "memberCount": 1891,
+      "dominantVowelFamily": "AA"
+    },
+    {
+      "endingSignature": "ER0-Z",
+      "memberCount": 1171,
+      "dominantVowelFamily": "EH"
+    },
+    {
+      "endingSignature": "OW0-open",
+      "memberCount": 1036,
+      "dominantVowelFamily": "AA"
+    },
+    {
+      "endingSignature": "AH0-S",
+      "memberCount": 1024,
+      "dominantVowelFamily": "EH"
+    },
+    {
+      "endingSignature": "IH0-D",
+      "memberCount": 733,
+      "dominantVowelFamily": "EY"
+    },
+    {
+      "endingSignature": "AH0-N-Z",
+      "memberCount": 723,
+      "dominantVowelFamily": "EY"
+    },
+    {
+      "endingSignature": "IH0-K",
+      "memberCount": 607,
+      "dominantVowelFamily": "AE"
+    },
+    {
+      "endingSignature": "AH0-D",
+      "memberCount": 576,
+      "dominantVowelFamily": "EY"
+    },
+    {
+      "endingSignature": "AH0-N-T",
+      "memberCount": 540,
+      "dominantVowelFamily": "EH"
+    }
+  ]
+}

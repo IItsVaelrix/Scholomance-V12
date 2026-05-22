@@ -1,0 +1,180 @@
+/**
+ * @file src/animations.css
+ * @owner Claude
+ * 
+ * PixelBrain Animation System — Lore-Consistent Phonemic Physics.
+ * Parameterized by CSS custom properties derived from computeAnimationSpec.js.
+ */
+
+/* Base school keyframes — parameterized */
+
+@keyframes anim-breathe {
+  0%, 100% { 
+    transform: scale(1.0);
+    box-shadow: 0 0 calc(var(--anim-glow-radius, 8px) * 0.5) var(--anim-glow-color, transparent);
+  }
+  50% { 
+    transform: scale(1.015);
+    box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent);
+  }
+}
+
+@keyframes anim-pulse {
+  0%, 100% { 
+    opacity: 0.75; 
+    box-shadow: none; 
+  }
+  50% { 
+    opacity: 1.0; 
+    box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); 
+  }
+}
+
+@keyframes anim-shimmer {
+  0%, 100% { 
+    filter: hue-rotate(0deg) brightness(1.0); 
+  }
+  50% { 
+    filter: hue-rotate(20deg) brightness(1.15); 
+  }
+}
+
+@keyframes anim-void {
+  0%   { opacity: 1.0; filter: saturate(1.0); }
+  100% { opacity: 0.7; filter: saturate(0.3); }
+}
+
+@keyframes anim-sawtooth {
+  0%   { transform: scale(1.0); }
+  85%  { transform: scale(1.025); }
+  90%  { transform: scale(0.98); }
+  100% { transform: scale(1.0); }
+}
+
+@keyframes anim-square {
+  0%, 45% { opacity: 1; box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); }
+  50%, 95% { opacity: 0.8; box-shadow: none; }
+  100% { opacity: 1; }
+}
+
+@keyframes anim-decay {
+  0% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
+/* Stat overlay keyframes */
+
+@keyframes overlay-synt-lattice {
+  0%, 100% { outline: 1px solid transparent; }
+  40%, 60% { outline: 1px solid hsla(var(--anim-h, 0), var(--anim-s, 70%), 70%, 0.4); }
+}
+
+@keyframes overlay-meta-ascent {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes overlay-myth-surge {
+  0%, 100% { transform: scale(1.0); }
+  40%       { transform: scale(1.03); }
+}
+
+@keyframes overlay-vis-saturate {
+  0%, 100% { filter: saturate(1.0); }
+  50%       { filter: saturate(1.4); }
+}
+
+@keyframes overlay-psyc-fracture {
+  0%, 100% { opacity: 1.0; }
+  25%       { opacity: 0.6; }
+  75%       { opacity: 0.85; }
+}
+
+@keyframes overlay-codex-ring {
+  0%   { box-shadow: 0 0 0 0 var(--anim-glow-color, transparent); }
+  50%  { box-shadow: 0 0 0 6px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes overlay-cnwv-flow {
+  0% { transform: translateX(-2px); opacity: 0.8; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes overlay-cinf-vignette {
+  0%, 100% { box-shadow: inset 0 0 0 transparent; }
+  50% { box-shadow: inset 0 0 12px var(--anim-glow-color); }
+}
+
+@keyframes overlay-psch-collapse {
+  0% { filter: invert(0); transform: scale(1); }
+  50% { filter: invert(0.2); transform: scale(0.98); }
+  100% { filter: invert(0); transform: scale(1); }
+}
+
+@keyframes overlay-excl-freeze {
+  0%, 100% { filter: grayscale(0); }
+  10%, 90% { filter: grayscale(1) contrast(1.2); }
+}
+
+@keyframes overlay-void-coldwave {
+  0%, 100% { filter: saturate(1) brightness(1); }
+  50% { filter: saturate(0) brightness(0.8); }
+}
+
+/* Activation Classes */
+
+@media (prefers-reduced-motion: no-preference) {
+  .anim-breathe  { animation: anim-breathe  var(--anim-duration, 1600ms) var(--anim-easing, ease-in-out) infinite; }
+  .anim-pulse    { animation: anim-pulse    var(--anim-duration, 800ms)  var(--anim-easing, ease-in-out) infinite; }
+  .anim-shimmer  { animation: anim-shimmer  var(--anim-duration, 800ms)  ease-in-out infinite; }
+  .anim-sawtooth { animation: anim-sawtooth var(--anim-duration, 600ms)  ease-in-out infinite; }
+  .anim-void     { animation: anim-void     var(--anim-duration, 2000ms) var(--anim-easing, ease-out) forwards; }
+  .anim-square   { animation: anim-square   var(--anim-duration, 1200ms) step-end infinite; }
+  .anim-decay    { animation: anim-decay    var(--anim-duration, 1800ms) ease-out forwards; }
+
+  .overlay-synt  { animation: overlay-synt-lattice 400ms ease-in-out 1; }
+  .overlay-meta  { animation: overlay-meta-ascent  500ms ease-in-out 1; }
+  .overlay-myth  { animation: overlay-myth-surge   600ms ease-in-out 1; }
+  .overlay-vis   { animation: overlay-vis-saturate 350ms ease-in-out 1; }
+  .overlay-psyc  { animation: overlay-psyc-fracture 450ms ease-in-out 1; }
+  .overlay-codex { animation: overlay-codex-ring   700ms ease-out 1; }
+  .overlay-cnwv  { animation: overlay-cnwv-flow    800ms ease-out 1; }
+  .overlay-cinf  { animation: overlay-cinf-vignette 900ms ease-in-out 1; }
+  .overlay-psch  { animation: overlay-psch-collapse 750ms ease-in-out 1; }
+  .overlay-excl  { animation: overlay-excl-freeze  500ms ease-in-out 1; }
+  .overlay-void  { animation: overlay-void-coldwave 1000ms ease-in-out 1; }
+
+  /* Burst Unlock cascade */
+  .burst-active .pixel-brain-chip {
+    animation: burst-cascade-chip 200ms ease-out 1 forwards;
+    animation-delay: var(--chip-delay, 0ms);
+  }
+  
+  .burst-active.score-panel {
+    animation: burst-glow-expand var(--burst-cascade-duration, 800ms) ease-in-out 1;
+  }
+
+  /* Discovery Aurora */
+  .discovery-active {
+    animation: discovery-aurora 3000ms ease-in-out infinite;
+  }
+}
+
+@keyframes burst-cascade-chip {
+  from { opacity: 0.3; transform: scale(0.9); }
+  to   { opacity: 1.0; transform: scale(1.0); }
+}
+
+@keyframes burst-glow-expand {
+  0%   { box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); }
+  50%  { box-shadow: 0 0 var(--burst-glow-radius, 16px) var(--burst-color, transparent); }
+  100% { box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); }
+}
+
+@keyframes discovery-aurora {
+  0%, 100% { filter: brightness(1) contrast(1); }
+  50% { filter: brightness(1.3) contrast(1.1) saturate(1.2); }
+}
+

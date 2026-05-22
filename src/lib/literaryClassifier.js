@@ -1,0 +1,1 @@
+export { GENRES, LiteraryClassifier } from '../../codex/core/shared/literaryClassifier.js';
