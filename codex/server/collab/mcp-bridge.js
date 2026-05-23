@@ -1032,32 +1032,20 @@ function holdProcessOpenForStdio() {
     return () => clearInterval(interval);
 }
 
-function createDefaultStdin() {
-    return fs.createReadStream(null, { fd: 0, autoClose: false });
-}
-
-function createDefaultStdout() {
-    return {
-        write(chunk) {
-            fs.writeSync(1, Buffer.isBuffer(chunk) ? chunk : String(chunk));
-            return true;
-        },
-        once() {},
-    };
-}
-
-export async function main({ stdin = createDefaultStdin(), stdout = createDefaultStdout() } = {}) {
+export async function main() {
     traceMcpBridge('main:start');
+    // Resume process.stdin before connecting so messages buffered by MCP hosts
+    // that spawn with paused stdio are delivered after the transport attaches.
+    // process.stdin (net.Socket over fd 0) re-enters flowing mode reliably on
+    // every data chunk, unlike fs.createReadStream which uses fs.read() pulls
+    // and can stall after the first message.
+    process.stdin.resume();
     const server = createCollabMcpServer();
     traceMcpBridge('main:server-created');
-    const transport = new StdioServerTransport(stdin, stdout);
+    const transport = new StdioServerTransport(process.stdin, process.stdout);
     const releaseKeepAlive = holdProcessOpenForStdio();
 
     await server.connect(transport);
-    // Some MCP hosts spawn the bridge with paused stdio streams. Resume stdin
-    // after the SDK transport has attached its listener so buffered initialize
-    // messages are delivered instead of left unread.
-    stdin.resume?.();
     traceMcpBridge('main:stdin-resumed');
     if (process.env.SCHOL_MCP_BRIDGE_TRACE) {
         const originalOnMessage = transport.onmessage;

@@ -3,10 +3,10 @@
     "scholomance-collab": {
       "command": "/home/deck/.nvm/versions/node/v24.14.1/bin/node",
       "args": [
-        "--env-file=/home/deck/Downloads/scholomance-V12/.env",
-        "/home/deck/Downloads/scholomance-V12/codex/server/collab/mcp-bridge.js"
+        "--env-file=/home/deck/Desktop/Scholomance-V12-main/.env",
+        "/home/deck/Desktop/Scholomance-V12-main/codex/server/collab/mcp-bridge.js"
       ],
-      "cwd": "/home/deck/Downloads/scholomance-V12",
+      "cwd": "/home/deck/Desktop/Scholomance-V12-main",
       "env": {
         "NODE_ENV": "development"
       }
