@@ -118,8 +118,6 @@ export function generateSemanticPalette(params = {}, paletteSizeOverride) {
   });
 }
 
-// Alias for V11 compatibility
-export const generatePaletteFromSemantics = generateSemanticPalette;
 
 /**
  * Internal color builder with deterministic pseudo-random variation
@@ -256,6 +254,8 @@ export function bytecodeToPalette(bytecode, options = {}) {
  * Deterministic "SSD" Block-Aligned addressing
  * Maps bytes to blocks/pages before modulo-snapping to colors.
  */
+export const generatePaletteFromSemantics = generateSemanticPalette;
+
 export function getHexForByte(bytecode, byteIndex, options = {}) {
   const palette = bytecodeToPalette(bytecode, options);
   const colors = palette.colors;

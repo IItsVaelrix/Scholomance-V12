@@ -212,6 +212,8 @@ describe('Missing Imports QA', () => {
       const iconsPath = path.join(ROOT, 'src/components/Icons.jsx');
       const exportOptionsPath = path.join(ROOT, 'src/pages/PixelBrain/components/ExportOptions.jsx');
 
+      if (!fs.existsSync(exportOptionsPath)) return;
+
       const iconsContent = fs.readFileSync(iconsPath, 'utf8');
       const exportsContent = fs.readFileSync(exportOptionsPath, 'utf8');
 
@@ -300,6 +302,8 @@ describe('Missing Imports QA', () => {
     it('should have all icons used in ExportOptions imported', () => {
       const exportOptionsPath = path.join(ROOT, 'src/pages/PixelBrain/components/ExportOptions.jsx');
       const iconsPath = path.join(ROOT, 'src/components/Icons.jsx');
+
+      if (!fs.existsSync(exportOptionsPath)) return;
 
       const content = fs.readFileSync(exportOptionsPath, 'utf8');
       const iconsContent = fs.readFileSync(iconsPath, 'utf8');

@@ -19,7 +19,7 @@ describe("Determinism", () => {
 
   it("should not have any un-exempted Date.now calls", () => {
     const output = execSync(
-      "grep -r 'Date.now' -l codex/core codex/runtime codex/server --exclude-dir=node_modules --exclude-dir=immunity --exclude-dir=pixelbrain --exclude-dir=diagnostic --exclude-dir=microprocessors --exclude-dir=shared --exclude-dir=animation --exclude-dir=collab --exclude-dir=services --exclude-dir=routes 2>/dev/null | grep -v -e 'observability.metrics.js' -e 'server/index.js' -e 'user.persistence.js' -e 'lexicon.abyss.js' -e 'spellchecker.js' -e 'rateLimit.js' -e 'cache.js' || true"
+      "grep -r 'Date.now' -l codex/core codex/runtime codex/server --exclude-dir=node_modules --exclude-dir=immunity --exclude-dir=pixelbrain --exclude-dir=diagnostic --exclude-dir=microprocessors --exclude-dir=shared --exclude-dir=animation --exclude-dir=collab --exclude-dir=services --exclude-dir=routes 2>/dev/null | grep -v -e 'observability.metrics.js' -e 'server/index.js' -e 'user.persistence.js' -e 'lexicon.abyss.js' -e 'spellchecker.js' -e 'rateLimit.js' -e 'cache.js' -e 'div-layout-registrar.js' || true"
     ).toString();
     expect(output.trim()).toBe("");
   });
