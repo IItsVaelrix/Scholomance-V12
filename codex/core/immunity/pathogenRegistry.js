@@ -178,4 +178,13 @@ export const PATHOGEN_REGISTRY = [
     glyphs: '◈⌁', // PROTOCOL_DRIFT + EQUIVALENCE
     signature: (() => computeGlyphSignature('Non-Canonical Persistence Drift (Hash Collision / Duplicate Registry)', 'pathogen.noncanonical-persistence-drift'))(),
   },
+  {
+    id: 'pathogen.rename-without-consumer-grep',
+    name: 'Rename Without Consumer Grep',
+    threshold: 0.85,
+    encyclopediaEntry: 'BUG-2026-05-24-RENAME-WITHOUT-CONSUMER-GREP',
+    vector_id: 'TQ-SIGNATURE-RENAME-GREP-V1',
+    glyphs: '⧫◈', // SHADOW_PATH + PROTOCOL_DRIFT
+    signature: (() => computeGlyphSignature('Rename Without Consumer Grep', 'pathogen.rename-without-consumer-grep'))(),
+  },
 ];

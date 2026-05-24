@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-05-24T18:39:11.633Z
+Generated at: 2026-05-24T18:49:58.923Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -285,6 +285,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `generateSemanticPalette` in `codex/core/pixelbrain/color-byte-mapping.js`
+- [ ] `generatePaletteFromSemantics` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `getHexForByte` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
 - [ ] `generateSpiralCoordinates` in `codex/core/pixelbrain/coordinate-mapping.js`

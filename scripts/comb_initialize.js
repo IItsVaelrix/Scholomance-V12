@@ -192,7 +192,7 @@ function runDocCurrency() {
   
   const checks = [
     { file: 'SCHEMA_CONTRACT.md', check: 'schema version' },
-    { file: 'routes.js', check: 'exports' },
+    { file: 'src/lib/routes.js', check: 'exports' },
   ];
   
   let stale = 0;
