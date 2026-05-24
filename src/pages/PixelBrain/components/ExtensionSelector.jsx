@@ -130,4 +130,3 @@ export function ExtensionSelector({ selectedExtensions, onChange }) {
   );
 }
 
-export default ExtensionSelector;

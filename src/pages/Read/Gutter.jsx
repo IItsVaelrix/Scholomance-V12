@@ -5,6 +5,7 @@ import './IDE.css';
 const Gutter = forwardRef(function Gutter({
   overlayLines = [],
   lineCounts = [],
+  contentLineCount = 0,
   topOffset = 0,
   viewportHeight,
   lineHeightPx,
@@ -40,21 +41,31 @@ const Gutter = forwardRef(function Gutter({
         className="gutter-track"
         style={safeTopOffset > 0 ? { paddingTop: `${safeTopOffset}px` } : undefined}
       >
-        {overlayLines.map((line, i) => {
-          const rawIdx = line.rawLineIndex;
-          const isFirstVisualLine = !shownRawLines.has(rawIdx);
-          if (isFirstVisualLine) shownRawLines.add(rawIdx);
-
-          const syllableCount = isFirstVisualLine ? (Number(lineCounts[rawIdx]) || 0) : 0;
-
-          return (
-            <div key={i} className="gutter-row" style={rowStyle}>
-              <div className="gutter-icons"></div>
-              <span className="line-number">{isFirstVisualLine ? rawIdx + 1 : ''}</span>
-              <span className="syllable-count-mini">{syllableCount > 0 ? syllableCount : ''}</span>
-            </div>
-          );
-        })}
+        {overlayLines.length > 0
+          ? overlayLines.map((line, i) => {
+              const rawIdx = line.rawLineIndex;
+              const isFirstVisualLine = !shownRawLines.has(rawIdx);
+              if (isFirstVisualLine) shownRawLines.add(rawIdx);
+              const syllableCount = isFirstVisualLine ? (Number(lineCounts[rawIdx]) || 0) : 0;
+              return (
+                <div key={i} className="gutter-row" style={rowStyle}>
+                  <div className="gutter-icons"></div>
+                  <span className="line-number">{isFirstVisualLine ? rawIdx + 1 : ''}</span>
+                  <span className="syllable-count-mini">{syllableCount > 0 ? syllableCount : ''}</span>
+                </div>
+              );
+            })
+          : Array.from({ length: contentLineCount }, (_, i) => {
+              const syllableCount = Number(lineCounts[i]) || 0;
+              return (
+                <div key={i} className="gutter-row" style={rowStyle}>
+                  <div className="gutter-icons"></div>
+                  <span className="line-number">{i + 1}</span>
+                  <span className="syllable-count-mini">{syllableCount > 0 ? syllableCount : ''}</span>
+                </div>
+              );
+            })
+        }
       </div>
     </div>
   );

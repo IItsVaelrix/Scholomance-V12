@@ -15,6 +15,7 @@ export {
   encodeArchivedHealth,
   checksumHealth,
   verifyHealthDeterminism,
+  buildDiagnosticSynthesisSnapshot,
   HEALTH_CODES,
   ARCHIVED_CODES,
   HEALTH_SEVERITY,
@@ -34,11 +35,23 @@ export {
   runDiagnostic,
   runCellById,
   getAvailableCells,
+  buildSynthesisSnapshot,
   CELL_IDS,
 } from './diagnostic-runner.js';
 
 // Re-export cell IDs for convenience
 export { CELL_IDS as CELLS } from './diagnostic-runner.js';
+
+// ByteCode Diagnostic Synthesis — Stage 2 public API
+export {
+  evaluateCleriRaidMind,
+  maybeRunDiagnosticSynthesis,
+  shouldFailDiagnosticGate,
+} from './CleriRaidMind.js';
+
+export { normalizeBytecodeHealthSnapshot, normalizeSignal } from './BytecodeHealthAdapter.js';
+export { normalizeStoichVector, evaluateStoichComplex } from './StoichComplexHealth.js';
+export { CLERI_RAID_COMPLEXES } from './CleriRaidComplexRegistry.js';
 
 // Persistence + Logarithmic Pruner
 export {

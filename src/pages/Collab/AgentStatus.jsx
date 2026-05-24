@@ -93,7 +93,7 @@ function buildPresenceSummary(agents) {
     });
 }
 
-function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDeleteClick }) {
+function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDeleteClick, pendingDeleteId }) {
     return (
         <section className="agents-section">
             <div className="agents-section__header">
@@ -152,12 +152,12 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
                                         Log In
                                     </button>
                                     <button
-                                        className="agent-card__delete-btn"
+                                        className={`agent-card__delete-btn${pendingDeleteId === agent.id ? ' agent-card__delete-btn--confirm' : ''}`}
                                         onClick={(e) => onDeleteClick(e, agent.id)}
-                                        aria-label={`Delete ${agent.name}`}
-                                        title="Remove this agent"
+                                        aria-label={pendingDeleteId === agent.id ? `Confirm remove ${agent.name}` : `Delete ${agent.name}`}
+                                        title={pendingDeleteId === agent.id ? 'Click again to confirm removal' : 'Remove this agent'}
                                     >
-                                        ×
+                                        {pendingDeleteId === agent.id ? '?' : '×'}
                                     </button>
                                 </div>
                             </div>
@@ -198,6 +198,7 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
     const [selectedAgentId, setSelectedAgentId] = useState(null);
     const [deleteStatus, setDeleteStatus] = useState(null); // { type: 'success' | 'error', message: string }
     const [registerWizardOpen, setRegisterWizardOpen] = useState(false);
+    const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
     const handleLoginClick = useCallback((e, agentId) => {
         e.stopPropagation();
@@ -207,9 +208,11 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
 
     const handleDeleteClick = useCallback(async (e, agentId) => {
         e.stopPropagation();
-        if (!confirm(`Are you sure you want to remove agent "${agentId}"? This cannot be undone.`)) {
+        if (pendingDeleteId !== agentId) {
+            setPendingDeleteId(agentId);
             return;
         }
+        setPendingDeleteId(null);
         try {
             const response = await fetch(`/collab/agents/${agentId}`, {
                 method: 'DELETE',
@@ -229,7 +232,7 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
             // Clear error message after 6s
             setTimeout(() => setDeleteStatus(null), 6000);
         }
-    }, [onRefresh, onError]);
+    }, [pendingDeleteId, onRefresh, onError]);
 
     const handleLoginSuccess = useCallback((agent) => {
         // Parent component can refresh agents list via callback
@@ -346,6 +349,7 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
                 emptyText="No agents are actively responding right now."
                 onLoginClick={handleLoginClick}
                 onDeleteClick={handleDeleteClick}
+                pendingDeleteId={pendingDeleteId}
             />
 
             <AgentSection
@@ -355,6 +359,7 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
                 emptyText="No stale or disconnected agents."
                 onLoginClick={handleLoginClick}
                 onDeleteClick={handleDeleteClick}
+                pendingDeleteId={pendingDeleteId}
             />
 
             <AgentLoginModal

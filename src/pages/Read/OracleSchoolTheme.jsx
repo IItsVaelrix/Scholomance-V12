@@ -36,4 +36,3 @@ export function getOracleSchoolTheme(selectedSchool) {
   };
 }
 
-export default getOracleSchoolTheme;

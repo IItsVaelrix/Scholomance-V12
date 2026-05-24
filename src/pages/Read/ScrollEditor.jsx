@@ -14,7 +14,7 @@ import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
 import { resolveSonicChroma } from "../../lib/phonology.adapter.js";
 import { BytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, ERROR_CODES, MODULE_IDS } from "../../lib/pixelbrain.adapter.js";
-import AnimatedSurface from "../../components/AnimatedSurface";
+import { AnimatedSurface } from "../../components/AnimatedSurface";
 
 
 const MAX_CONTENT_LENGTH = 50000;
@@ -594,18 +594,20 @@ const ScrollEditor = forwardRef(/**
   }, [updateTypography, forceTopology, activeIdeMode]);
 
   const { overlayLines, allOverlayTokens } = useMemo(() => {
-    if (activeIdeMode === "NEUTRAL" || !adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
+    if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
       return { overlayLines: [], allOverlayTokens: [] };
     }
     const result = buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology);
     return { overlayLines: result.lines, allOverlayTokens: result.allTokens };
-  }, [contentForOverlay, containerWidth, adaptiveTopology, activeIdeMode]);
+  }, [contentForOverlay, containerWidth, adaptiveTopology]);
 
   const lineSyllableCounts = useMemo(() => {
     if (propLineSyllableCounts) return propLineSyllableCounts;
     if (analyzedDocument?.lineSyllableCounts) return analyzedDocument.lineSyllableCounts;
     return overlayLines.map(() => 0);
   }, [propLineSyllableCounts, analyzedDocument, overlayLines]);
+
+  const contentLineCount = useMemo(() => (content ? content.split('\n').length : 0), [content]);
 
   const syntaxLayer = useMemo(() => analyzedDocument?.syntaxSummary || null, [analyzedDocument]);
 
@@ -1182,6 +1184,7 @@ const ScrollEditor = forwardRef(/**
           ref={gutterRef}
           overlayLines={overlayLines}
           lineCounts={lineSyllableCounts}
+          contentLineCount={contentLineCount}
           topOffset={adaptiveTopology?.originY || 0}
           viewportHeight={containerHeight}
           lineHeightPx={lineHeightPx}
@@ -1389,7 +1392,7 @@ const ScrollEditor = forwardRef(/**
           <textarea
             id="scroll-content"
             ref={textareaRef}
-            className={`editor-textarea ${isTruesight ? "truesight-transparent editor-textarea--underlay" : "editor-textarea--foreground"} ${!isEditable && !isTruesight ? "editor-textarea--read-only" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
+            className={`editor-textarea ${isTruesight ? "truesight-transparent" : "editor-textarea--foreground"} ${isReadOnlyTruesight ? "editor-textarea--underlay" : ""} ${!isEditable && !isTruesight ? "editor-textarea--read-only" : ""} ${isReadOnlyTruesight ? "editor-textarea--read-only-truesight" : ""}`}
             style={cursorSync?.textareaStyles}
             aria-hidden={isTruesight && !isEditable && !!onWordActivate}
             tabIndex={isTruesight && !isEditable && !!onWordActivate ? -1 : undefined}

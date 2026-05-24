@@ -235,15 +235,6 @@ function getAdaptiveTokenWidth(
   });
 }
 
-/**
- * Build adaptive grid coordinates with measured widths
- * Legacy support for direct coordinate compilation
- */
-function compileAdaptiveGrid(lines: any[], topology: AdaptiveGridTopology, _options: { mirrored?: boolean } = {}) {
-  const coordinates: any[] = [];
-  return coordinates; 
-}
-
 export interface GridConstraint {
   fontFamily: string;
   fontSize: string;

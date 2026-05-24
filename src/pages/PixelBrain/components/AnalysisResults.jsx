@@ -107,4 +107,3 @@ export function AnalysisResults({ analysis }) {
   );
 }
 
-export default AnalysisResults;

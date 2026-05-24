@@ -297,6 +297,12 @@ export default function CollabPage() {
     const [showCreatePipeline, setShowCreatePipeline] = useState(false);
     const [newPipelineType, setNewPipelineType] = useState('code_review_test');
 
+    // Confirmation and inline-input state (replaces confirm/prompt)
+    const [archiveConfirmPending, setArchiveConfirmPending] = useState(false);
+    const [taskDeletePendingId, setTaskDeletePendingId] = useState(null);
+    const [bugAssignState, setBugAssignState] = useState(null); // { bugId, input }
+    const [bugDuplicateState, setBugDuplicateState] = useState(null); // { bugId, input }
+
     const canvasRef = useRef(null);
 
     // Tab switching event listener
@@ -518,9 +524,11 @@ export default function CollabPage() {
     }, [newTaskTitle, newTaskPriority, refresh]);
 
     const handleArchiveAll = useCallback(async () => {
-        if (!confirm('This ritual will archive all active tasks on the board. History will be preserved, but the board will be cleared. Proceed?')) {
+        if (!archiveConfirmPending) {
+            setArchiveConfirmPending(true);
             return;
         }
+        setArchiveConfirmPending(false);
 
         setStatus('processing');
         try {
@@ -530,7 +538,7 @@ export default function CollabPage() {
             setError(err?.message || 'Archive ritual failed');
             setStatus('error');
         }
-    }, [refresh]);
+    }, [archiveConfirmPending, refresh]);
 
     const toggleArchiveMode = useCallback((active) => {
         if (document.startViewTransition) {
@@ -607,22 +615,28 @@ export default function CollabPage() {
         }
     }, [refresh]);
 
-    const handleBugAssign = useCallback(async (bugId) => {
-        const agentId = prompt('Enter Agent ID to assign:');
-        if (!agentId) return;
+    const handleBugAssign = useCallback((bugId) => {
+        setBugAssignState({ bugId, input: '' });
+    }, []);
+
+    const handleBugAssignSubmit = useCallback(async () => {
+        if (!bugAssignState) return;
+        const { bugId, input: agentId } = bugAssignState;
+        if (!agentId.trim()) return;
+        setBugAssignState(null);
 
         try {
             const updated = await fetchCollabJson(`/collab/bugs/${bugId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ assigned_agent_id: agentId, status: 'assigned' }),
+                body: JSON.stringify({ assigned_agent_id: agentId.trim(), status: 'assigned' }),
             });
             handleBugUpdate(updated);
         } catch (err) {
             setError(err?.message || 'Failed to assign agent');
             setStatus('error');
         }
-    }, [handleBugUpdate]);
+    }, [bugAssignState, handleBugUpdate]);
 
     const handleBugVerify = useCallback(async (bugId) => {
         try {
@@ -638,22 +652,28 @@ export default function CollabPage() {
         }
     }, [handleBugUpdate]);
 
-    const handleBugDuplicate = useCallback(async (bugId) => {
-        const originalId = prompt('Enter Original Bug ID:');
-        if (!originalId) return;
+    const handleBugDuplicate = useCallback((bugId) => {
+        setBugDuplicateState({ bugId, input: '' });
+    }, []);
+
+    const handleBugDuplicateSubmit = useCallback(async () => {
+        if (!bugDuplicateState) return;
+        const { bugId, input: originalId } = bugDuplicateState;
+        if (!originalId.trim()) return;
+        setBugDuplicateState(null);
 
         try {
             const updated = await fetchCollabJson(`/collab/bugs/${bugId}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: 'duplicate', duplicate_of_bug_id: originalId }),
+                body: JSON.stringify({ status: 'duplicate', duplicate_of_bug_id: originalId.trim() }),
             });
             handleBugUpdate(updated);
         } catch (err) {
             setError(err?.message || 'Failed to mark as duplicate');
             setStatus('error');
         }
-    }, [handleBugUpdate]);
+    }, [bugDuplicateState, handleBugUpdate]);
 
     const handlePrevBug = useCallback(() => {
         if (bugs.length === 0) return;
@@ -730,8 +750,12 @@ export default function CollabPage() {
 
     // Handle task delete
     const handleTaskDelete = useCallback(async (taskId) => {
-        if (!confirm('Are you sure you want to delete this task?')) return;
-        
+        if (taskDeletePendingId !== taskId) {
+            setTaskDeletePendingId(taskId);
+            return;
+        }
+        setTaskDeletePendingId(null);
+
         try {
             await fetchCollabJson(`/collab/tasks/${taskId}`, {
                 method: 'DELETE',
@@ -743,7 +767,7 @@ export default function CollabPage() {
             setError(err?.message || 'Failed to delete task');
             setStatus('error');
         }
-    }, [refresh]);
+    }, [taskDeletePendingId, refresh]);
 
     // Handle pipeline advance
     const handlePipelineAdvance = useCallback(async (result) => {
@@ -1097,10 +1121,11 @@ export default function CollabPage() {
                                     {showCreateTask ? 'CANCEL' : '+ NEW TASK'}
                                 </button>
                                 <button
-                                    className="quick-action-btn quick-action-btn--secondary"
+                                    className={`quick-action-btn quick-action-btn--secondary${archiveConfirmPending ? ' quick-action-btn--confirm' : ''}`}
                                     onClick={handleArchiveAll}
+                                    title={archiveConfirmPending ? 'Click again to confirm archive' : 'Archive all active tasks'}
                                 >
-                                    ARCHIVE BOARD
+                                    {archiveConfirmPending ? 'CONFIRM ARCHIVE?' : 'ARCHIVE BOARD'}
                                 </button>
                             </div>
                         )}
@@ -1322,6 +1347,7 @@ export default function CollabPage() {
                 onAssign={handleTaskAssign}
                 onStatusChange={handleTaskStatusChange}
                 onDelete={handleTaskDelete}
+                deleteConfirmPending={taskDeletePendingId === selectedTask?.id}
                 />
 
                 {/* Bug Detail Drawer */}
@@ -1359,6 +1385,62 @@ export default function CollabPage() {
                         setSelectedPipeline(null);
                     }}
                 />
+            )}
+
+            {/* Inline input modal — Bug Assign */}
+            {bugAssignState && (
+                <>
+                    <button
+                        type="button"
+                        className="modal-backdrop"
+                        onClick={() => setBugAssignState(null)}
+                        aria-label="Cancel agent assignment"
+                    />
+                    <div className="inline-prompt-modal" role="dialog" aria-modal="true" aria-label="Assign agent">
+                        <h4 className="inline-prompt-title">Assign Agent</h4>
+                        <label htmlFor="bug-assign-agent-id" className="inline-prompt-label">Agent ID:</label>
+                        <input
+                            id="bug-assign-agent-id"
+                            className="inline-prompt-input"
+                            type="text"
+                            value={bugAssignState.input}
+                            onChange={(e) => setBugAssignState(s => ({ ...s, input: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleBugAssignSubmit(); if (e.key === 'Escape') setBugAssignState(null); }}
+                        />
+                        <div className="inline-prompt-actions">
+                            <button className="modal-btn modal-btn--cancel" onClick={() => setBugAssignState(null)}>Cancel</button>
+                            <button className="modal-btn modal-btn--submit" onClick={handleBugAssignSubmit}>Assign</button>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            {/* Inline input modal — Bug Duplicate */}
+            {bugDuplicateState && (
+                <>
+                    <button
+                        type="button"
+                        className="modal-backdrop"
+                        onClick={() => setBugDuplicateState(null)}
+                        aria-label="Cancel duplicate marking"
+                    />
+                    <div className="inline-prompt-modal" role="dialog" aria-modal="true" aria-label="Mark as duplicate">
+                        <h4 className="inline-prompt-title">Mark as Duplicate</h4>
+                        <label htmlFor="bug-duplicate-original-id" className="inline-prompt-label">Original Bug ID:</label>
+                        <input
+                            id="bug-duplicate-original-id"
+                            className="inline-prompt-input"
+                            type="text"
+                            value={bugDuplicateState.input}
+                            onChange={(e) => setBugDuplicateState(s => ({ ...s, input: e.target.value }))}
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleBugDuplicateSubmit(); if (e.key === 'Escape') setBugDuplicateState(null); }}
+                        />
+                        <div className="inline-prompt-actions">
+                            <button className="modal-btn modal-btn--cancel" onClick={() => setBugDuplicateState(null)}>Cancel</button>
+                            <button className="modal-btn modal-btn--submit" onClick={handleBugDuplicateSubmit}>Mark Duplicate</button>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     );

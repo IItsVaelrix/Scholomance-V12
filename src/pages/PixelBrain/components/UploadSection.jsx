@@ -160,4 +160,3 @@ export function UploadSection({ onImageUpload, analysis, onClear, uploadError })
   );
 }
 
-export default UploadSection;

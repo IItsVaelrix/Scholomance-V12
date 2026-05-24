@@ -1,29 +1,18 @@
 # Dead Code Report
 
-Generated at: 2026-05-22T20:27:36.610Z
+Generated at: 2026-05-24T18:39:11.633Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
-- [ ] src/components/ArchiveEventRingPulse.jsx
 - [ ] src/lib/animation-types.js
 - [ ] src/lib/css/schoolStyles.js
 - [ ] src/lib/literaryClassifier.js
-- [ ] src/lib/math/quantization/turboquant.adapter.js
 - [ ] src/lib/math/safe.js
-- [ ] src/lib/microprocessor.worker-client.js
-- [ ] src/lib/phoneticHacking.engine.js
-- [ ] src/lib/processor-bridge.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
-- [ ] src/lib/syntax/hmmPass.js
 - [ ] src/lib/truesight/color/visemeMapping.js
 - [ ] src/lib/truesight/compiler/verseIRSerialization.js
-- [ ] src/pages/Collab/BugBoard.jsx
-- [ ] src/pages/PixelBrain/TemplateEditor.jsx
-- [ ] src/pages/PixelBrain/components/ExportOptions.jsx
-- [ ] src/pages/PixelBrain/components/FormulaEditor.jsx
-- [ ] src/pages/Read/TruesightControls.jsx
 - [ ] src/types/animation.d.ts
 - [ ] src/types/core/analysis.ts
 - [ ] src/types/core/combat.ts
@@ -38,12 +27,9 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/types/lib/pls.ts
 - [ ] src/types/lib/rhyme.ts
 - [ ] src/types/runtime/runtime.ts
-- [ ] src/ui/animation/adapters/motionToFramerProps.ts
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
-- [ ] src/ui/animation/hooks/useCursorSync.ts
 - [ ] src/ui/animation/hooks/useResolvedMotion.ts
 - [ ] src/vite-env.d.ts
-- [ ] src/workers/microprocessor.worker.js
 - [ ] codex/core/diagnostic/index.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
 - [ ] codex/core/immunity/clerical-raid.substrate.js
@@ -54,15 +40,12 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/phonology/dictionary.web-worker.js
 - [ ] codex/core/phonology/dictionary.worker.js
 - [ ] codex/core/phonology/phonemeAlignment.js
-- [ ] codex/core/pixelbrain/coord-symmetry-errors.js
 - [ ] codex/core/pixelbrain/extensions/physics-extensions.js
 - [ ] codex/core/pixelbrain/extensions/style-extensions.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
-- [ ] codex/core/pixelbrain-phase3.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
 - [ ] codex/core/shared/workers/microprocessor.worker.js
 - [ ] codex/server/collab/mcp-bridge-entry.js
-- [ ] codex/server/services/imageAnalysis.service.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
 - [ ] codex/services/adapters/index.js
@@ -70,10 +53,11 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
 
-- [ ] `ArchiveEventRingPulse` in `src/components/ArchiveEventRingPulse.jsx`
 - [ ] `BookIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsRightIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsLeftIcon` in `src/components/Icons.jsx`
+- [ ] `RefreshIcon` in `src/components/Icons.jsx`
+- [ ] `DownloadIcon` in `src/components/Icons.jsx`
 - [ ] `XP_SOURCES` in `src/data/progression_constants.js`
 - [ ] `getSchoolById` in `src/data/schools.js`
 - [ ] `isSchoolUnlocked` in `src/data/schools.js`
@@ -91,10 +75,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `configureZodForCsp` in `src/lib/config/zod.config.js`
 - [ ] `generateLockedSchoolStyles` in `src/lib/css/schoolStyles.js`
 - [ ] `BrowserBytecodeHealth` in `src/lib/diagnostic.adapter.js`
+- [ ] `engineMicroprocessors` in `src/lib/engine.adapter.js`
 - [ ] `padFlatVectorToPowerOfTwo` in `src/lib/engine.adapter.js`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
-- [ ] `batchSearch` in `src/lib/math/quantization/turboquant.adapter.js`
+- [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
+- [ ] `clearLatticeCell` in `src/lib/pixelbrain.adapter.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`
 - [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
@@ -112,9 +98,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getConePattern` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `labelToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `getLinePattern` in `src/pages/Combat/state/combatPreviewUtils.js`
-- [ ] `TemplateEditor` in `src/pages/PixelBrain/TemplateEditor.jsx`
-- [ ] `ExportOptions` in `src/pages/PixelBrain/components/ExportOptions.jsx`
-- [ ] `FormulaEditor` in `src/pages/PixelBrain/components/FormulaEditor.jsx`
 - [ ] `DocumentStats` in `src/types/core/analysis.ts`
 - [ ] `DocumentParsed` in `src/types/core/analysis.ts`
 - [ ] `JudiciaryLayer` in `src/types/core/judiciary.ts`
@@ -137,12 +120,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `SyntaxGatingStats` in `src/types/lib/rhyme.ts`
 - [ ] `CacheEntry` in `src/types/runtime/runtime.ts`
 - [ ] `EventCallback` in `src/types/runtime/runtime.ts`
-- [ ] `FramerMotionProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
-- [ ] `motionToFramerProps` in `src/ui/animation/adapters/motionToFramerProps.ts`
-- [ ] `CursorSyncBlueprint` in `src/ui/animation/hooks/useCursorSync.ts`
-- [ ] `CursorSyncOutput` in `src/ui/animation/hooks/useCursorSync.ts`
-- [ ] `compileCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
-- [ ] `useCursorSync` in `src/ui/animation/hooks/useCursorSync.ts`
 - [ ] `useResolvedMotion` in `src/ui/animation/hooks/useResolvedMotion.ts`
 - [ ] `RoleBinding` in `src/ui/features/mysticHolistics/hero/roleDispatcher.ts`
 - [ ] `getEasingProgress` in `codex/core/animation/amp/motionVectorizer.ts`
@@ -307,16 +284,14 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
-- [ ] `generatePaletteFromSemantics` in `codex/core/pixelbrain/color-byte-mapping.js`
+- [ ] `generateSemanticPalette` in `codex/core/pixelbrain/color-byte-mapping.js`
+- [ ] `getHexForByte` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
-- [ ] `COORDSYM_ERROR_CODES` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `COORDSYM_ERROR_METADATA` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createTransformError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createInvalidTransformModeError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createInvalidSymmetryTypeError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createSymmetryAxisMissingError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createCoordinateOutOfBoundsError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
-- [ ] `createGridSnapFailedError` in `codex/core/pixelbrain/coord-symmetry-errors.js`
+- [ ] `generateSpiralCoordinates` in `codex/core/pixelbrain/coordinate-mapping.js`
+- [ ] `mapSemanticToCoordinateConstraints` in `codex/core/pixelbrain/coordinate-mapping.js`
+- [ ] `resolveDominantAxis` in `codex/core/pixelbrain/coordinate-mapping.js`
+- [ ] `resolveSymmetryType` in `codex/core/pixelbrain/coordinate-mapping.js`
+- [ ] `applyGoldenRatio` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `DimensionCompileError` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FormulaNode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FitMode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
@@ -329,6 +304,15 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BytecodeInstruction` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `REGISTERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `UNIT_MULTIPLIERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
+- [ ] `physicsStretchSquash` in `codex/core/pixelbrain/extensions/physics-extensions.js`
+- [ ] `physicsGravity` in `codex/core/pixelbrain/extensions/physics-extensions.js`
+- [ ] `physicsBounce` in `codex/core/pixelbrain/extensions/physics-extensions.js`
+- [ ] `PHYSICS_EXTENSIONS` in `codex/core/pixelbrain/extensions/physics-extensions.js`
+- [ ] `styleGameBoy` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `style8Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `style16Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `styleCRT` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `STYLE_EXTENSIONS` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `evaluateFibonacciGrid` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateParametricCurve` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateGridProjection` in `codex/core/pixelbrain/formula-to-coordinates.js`
@@ -354,6 +338,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `quantizeColorsToFormula` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateTemplateFromFormula` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateIdleAnimationConfig` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
+- [ ] `generateSilhouetteFromImage` in `codex/core/pixelbrain/image-to-pixel-art.js`
+- [ ] `fillShape` in `codex/core/pixelbrain/image-to-pixel-art.js`
+- [ ] `imageToPixelBrainParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
+- [ ] `mergeImageAndNLUParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
+- [ ] `generatePaletteFromImage` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
+- [ ] `extractCoordinateHints` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
+- [ ] `normalizeNoiseSeed` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `generatePermutationTable` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `perlin2D` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `getTexturePalette` in `codex/core/pixelbrain/procedural-noise.js`
@@ -368,6 +359,10 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createFrame` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getOnionSkins` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `importFromAseprite` in `codex/core/pixelbrain/template-grid-engine.js`
+- [ ] `mapVowelFamilyToSchoolId` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `calculateRarityFromPhonemes` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `determineEffectFromToken` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `extractColorFeatures` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `semanticToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `tokenToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `buildPixelBrainTokenBytecodeWithSemantics` in `codex/core/pixelbrain/token-to-bytecode.js`
@@ -391,6 +386,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DEFAULT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `COMBAT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `getCombatScoringHeuristics` in `codex/core/scoring.defaults.js`
+- [ ] `PHONEME_MATERIAL_MAP` in `codex/core/semantic/phonetic-materials.js`
+- [ ] `DEFAULT_MATERIAL_PROPS` in `codex/core/semantic/phonetic-materials.js`
+- [ ] `calculateSurfaceHardness` in `codex/core/semantic/phonetic-materials.js`
 - [ ] `MOOD_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `MATERIAL_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `STYLE_CONSTRAINTS` in `codex/core/semantic/semantic-math-bridge.js`
@@ -400,6 +398,11 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `entitiesToMathConstraints` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `constraintsToPixelBrainParams` in `codex/core/semantic/semantic-math-bridge.js`
 - [ ] `getSymbolLibrary` in `codex/core/semantic/semantic-math-bridge.js`
+- [ ] `DEFAULT_VISUAL_PARAMS` in `codex/core/semantic/visual-extractor.js`
+- [ ] `applySchoolModifiers` in `codex/core/semantic/visual-extractor.js`
+- [ ] `applySemanticWeight` in `codex/core/semantic/visual-extractor.js`
+- [ ] `extractVerseVisualParameters` in `codex/core/semantic/visual-extractor.js`
+- [ ] `SemanticController` in `codex/core/semantic/visual-extractor.js`
 - [ ] `LITERARY_DEVICES` in `codex/core/shared/literaryDevices.detector.js`
 - [ ] `isComplexScheme` in `codex/core/shared/rhymeScheme.detector.js`
 - [ ] `SyntaxAnalyzer` in `codex/core/shared/syntax.layer.js`

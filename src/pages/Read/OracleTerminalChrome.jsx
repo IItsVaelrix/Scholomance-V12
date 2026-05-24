@@ -2,7 +2,7 @@ import { memo } from 'react';
 
 const GLYPHS = ['ᛖ', 'ᚱ', 'ᚦ', 'ᚠ'];
 
-export const OracleTerminalChrome = memo(function OracleTerminalChrome({
+const OracleTerminalChrome = memo(function OracleTerminalChrome({
   schoolId = 'VOID',
   isLoading = false,
   linkStrength = 0.72,

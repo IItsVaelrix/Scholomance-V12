@@ -267,4 +267,3 @@ export function useWordLookup() {
   };
 }
 
-export default useWordLookup;

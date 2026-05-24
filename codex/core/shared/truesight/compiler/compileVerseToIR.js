@@ -126,7 +126,7 @@ function createOffsetTranslator(rawText) {
     endMap[safeStart] = graphemeIndex;
 
     for (let offset = safeStart + 1; offset <= safeEnd; offset += 1) {
-      startMap[offset] = graphemeIndex + 1;
+      startMap[offset] = offset < safeEnd ? graphemeIndex : graphemeIndex + 1;
       endMap[offset] = graphemeIndex + 1;
     }
 

@@ -1,0 +1,446 @@
+{
+  "raidId": "CLERI_RAID_TEST",
+  "mindState": "fractured",
+  "globalHealth": 0.747625,
+  "complexes": [
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "health": 0.751634,
+      "status": "critical",
+      "limiting": [
+        {
+          "subunitId": "authSender",
+          "target": 0.333333,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.333333,
+          "state": "missing"
+        },
+        {
+          "subunitId": "csrfBoundary",
+          "target": 0.166667,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.2,
+          "deviation": 0.166667,
+          "state": "missing"
+        }
+      ],
+      "excess": [
+        {
+          "subunitId": "sessionContinuity",
+          "target": 0.166667,
+          "actual": 0.5,
+          "ratio": 2.999994,
+          "weight": 1.1,
+          "deviation": 0.333333,
+          "state": "excess"
+        },
+        {
+          "subunitId": "identityProof",
+          "target": 0.333333,
+          "actual": 0.5,
+          "ratio": 1.500002,
+          "weight": 1.4,
+          "deviation": 0.166667,
+          "state": "excess"
+        }
+      ],
+      "subunits": [
+        {
+          "subunitId": "authSender",
+          "target": 0.333333,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.333333,
+          "state": "missing"
+        },
+        {
+          "subunitId": "csrfBoundary",
+          "target": 0.166667,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.2,
+          "deviation": 0.166667,
+          "state": "missing"
+        },
+        {
+          "subunitId": "identityProof",
+          "target": 0.333333,
+          "actual": 0.5,
+          "ratio": 1.500002,
+          "weight": 1.4,
+          "deviation": 0.166667,
+          "state": "excess"
+        },
+        {
+          "subunitId": "sessionContinuity",
+          "target": 0.166667,
+          "actual": 0.5,
+          "ratio": 2.999994,
+          "weight": 1.1,
+          "deviation": 0.333333,
+          "state": "excess"
+        }
+      ],
+      "repairVector": [
+        {
+          "subunitId": "authSender",
+          "action": "restore_signal",
+          "delta": 0.333333,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "sessionContinuity",
+          "action": "reduce_noise",
+          "delta": -0.333333,
+          "reason": "excess"
+        },
+        {
+          "subunitId": "csrfBoundary",
+          "action": "restore_signal",
+          "delta": 0.166667,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "identityProof",
+          "action": "reduce_noise",
+          "delta": -0.166667,
+          "reason": "excess"
+        }
+      ]
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "health": 0.74124,
+      "status": "critical",
+      "limiting": [
+        {
+          "subunitId": "checksum",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.285714,
+          "state": "missing"
+        },
+        {
+          "subunitId": "decodability",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.5,
+          "deviation": 0.285714,
+          "state": "missing"
+        },
+        {
+          "subunitId": "schema",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.285714,
+          "state": "missing"
+        },
+        {
+          "subunitId": "provenance",
+          "target": 0.142857,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.142857,
+          "state": "missing"
+        }
+      ],
+      "excess": [],
+      "subunits": [
+        {
+          "subunitId": "checksum",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.285714,
+          "state": "missing"
+        },
+        {
+          "subunitId": "decodability",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.5,
+          "deviation": 0.285714,
+          "state": "missing"
+        },
+        {
+          "subunitId": "provenance",
+          "target": 0.142857,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.142857,
+          "state": "missing"
+        },
+        {
+          "subunitId": "schema",
+          "target": 0.285714,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.4,
+          "deviation": 0.285714,
+          "state": "missing"
+        }
+      ],
+      "repairVector": [
+        {
+          "subunitId": "checksum",
+          "action": "restore_signal",
+          "delta": 0.285714,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "decodability",
+          "action": "restore_signal",
+          "delta": 0.285714,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "schema",
+          "action": "restore_signal",
+          "delta": 0.285714,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "provenance",
+          "action": "restore_signal",
+          "delta": 0.142857,
+          "reason": "missing"
+        }
+      ]
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "health": 0.75,
+      "status": "critical",
+      "limiting": [
+        {
+          "subunitId": "cursorState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.2,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "overlayState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.1,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "routeState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "viewState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.25,
+          "state": "missing"
+        }
+      ],
+      "excess": [],
+      "subunits": [
+        {
+          "subunitId": "cursorState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.2,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "overlayState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1.1,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "routeState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.25,
+          "state": "missing"
+        },
+        {
+          "subunitId": "viewState",
+          "target": 0.25,
+          "actual": 0,
+          "ratio": 0,
+          "weight": 1,
+          "deviation": 0.25,
+          "state": "missing"
+        }
+      ],
+      "repairVector": [
+        {
+          "subunitId": "cursorState",
+          "action": "restore_signal",
+          "delta": 0.25,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "overlayState",
+          "action": "restore_signal",
+          "delta": 0.25,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "routeState",
+          "action": "restore_signal",
+          "delta": 0.25,
+          "reason": "missing"
+        },
+        {
+          "subunitId": "viewState",
+          "action": "restore_signal",
+          "delta": 0.25,
+          "reason": "missing"
+        }
+      ]
+    }
+  ],
+  "primaryFaults": [
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "subunitId": "authSender",
+      "state": "missing",
+      "severity": 0.333333
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "subunitId": "checksum",
+      "state": "missing",
+      "severity": 0.285714
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "subunitId": "decodability",
+      "state": "missing",
+      "severity": 0.285714
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "subunitId": "cursorState",
+      "state": "missing",
+      "severity": 0.25
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "subunitId": "overlayState",
+      "state": "missing",
+      "severity": 0.25
+    },
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "subunitId": "csrfBoundary",
+      "state": "missing",
+      "severity": 0.166667
+    }
+  ],
+  "nextDebugActions": [
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "subunitId": "authSender",
+      "action": "restore_signal",
+      "delta": 0.333333,
+      "reason": "missing"
+    },
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "subunitId": "sessionContinuity",
+      "action": "reduce_noise",
+      "delta": -0.333333,
+      "reason": "excess"
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "subunitId": "checksum",
+      "action": "restore_signal",
+      "delta": 0.285714,
+      "reason": "missing"
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "subunitId": "decodability",
+      "action": "restore_signal",
+      "delta": 0.285714,
+      "reason": "missing"
+    },
+    {
+      "complexId": "BYTECODE_INTEGRITY_COMPLEX",
+      "subunitId": "schema",
+      "action": "restore_signal",
+      "delta": 0.285714,
+      "reason": "missing"
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "subunitId": "cursorState",
+      "action": "restore_signal",
+      "delta": 0.25,
+      "reason": "missing"
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "subunitId": "overlayState",
+      "action": "restore_signal",
+      "delta": 0.25,
+      "reason": "missing"
+    },
+    {
+      "complexId": "UI_STATE_COHERENCE_COMPLEX",
+      "subunitId": "routeState",
+      "action": "restore_signal",
+      "delta": 0.25,
+      "reason": "missing"
+    },
+    {
+      "complexId": "AUTH_HANDSHAKE_COMPLEX",
+      "subunitId": "csrfBoundary",
+      "action": "restore_signal",
+      "delta": 0.166667,
+      "reason": "missing"
+    }
+  ],
+  "qbitPayload": {
+    "qbitType": "BYTECODE_DIAGNOSTIC_SYNTHESIS",
+    "raidId": "CLERI_RAID_TEST",
+    "collapseConfidence": 0.747625,
+    "complexCount": 3,
+    "unstableComplexes": [
+      "AUTH_HANDSHAKE_COMPLEX",
+      "BYTECODE_INTEGRITY_COMPLEX",
+      "UI_STATE_COHERENCE_COMPLEX"
+    ]
+  }
+}

@@ -78,4 +78,3 @@ export function registerSchoolStylesRoutes(fastify, options, done) {
   done();
 }
 
-export default registerSchoolStylesRoutes;

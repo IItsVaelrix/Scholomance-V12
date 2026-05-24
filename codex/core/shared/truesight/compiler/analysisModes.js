@@ -82,8 +82,5 @@ export function getTruesightAnalysisModeConfig(mode) {
   return MODE_CONFIGS[resolveCompilerDepth(mode)];
 }
 
-// Backward compatibility exports
-export const TRUESIGHT_ANALYSIS_MODES = COMPILER_DEPTHS;
-export const ARCHIVED_MODES = {};
 export function resolveTruesightAnalysisMode(mode) { return resolveCompilerDepth(mode); }
 

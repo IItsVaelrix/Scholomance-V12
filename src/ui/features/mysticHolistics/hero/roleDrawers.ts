@@ -403,7 +403,7 @@ export function registerBuiltInDrawers(): void {
         smooth.forEach((p, i) => {
           const px = p.x + ink(p.x, p.y, ci * 3.1);
           const py = p.y + ink(p.y, p.x, ci * 7.4);
-          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          if (i === 0) { ctx.moveTo(px, py); } else { ctx.lineTo(px, py); }
         });
         ctx.lineWidth = 4.2 + midE * 1.6;
         ctx.strokeStyle = 'rgba(245, 243, 255, 0.92)';
@@ -416,7 +416,7 @@ export function registerBuiltInDrawers(): void {
         smooth.forEach((p, i) => {
           const px = p.x + ink(p.x, p.y, ci * 1.9 + 50) * 0.35;
           const py = p.y + ink(p.y, p.x, ci * 4.2 + 50) * 0.35;
-          i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          if (i === 0) { ctx.moveTo(px, py); } else { ctx.lineTo(px, py); }
         });
         ctx.lineWidth = 1.4 + midE * 0.5;
         ctx.strokeStyle = 'rgba(190, 200, 255, 0.50)';

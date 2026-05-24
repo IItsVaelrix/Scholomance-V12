@@ -334,7 +334,7 @@ export default function WandPage() {
         console.error("Failed to parse custom presets", e);
       }
     }
-  }, []);
+  }, [addTerminalLog]);
 
   // ── TURBOQUANT REACTIVE QUANTIZER ───────────────────────────────────────────
   useEffect(() => {
@@ -587,7 +587,7 @@ export default function WandPage() {
     if (isAnimating) {
       runEvaluation(proposal);
     }
-  }, [time, isAnimating]);
+  }, [time, isAnimating, runEvaluation, proposal]);
 
   // ── REGISTRY PERSISTENCE (UNKNOWN ROLE GATING) ────────────────────────────────
   const handleSaveToCatalog = () => {
@@ -611,7 +611,7 @@ export default function WandPage() {
     const unregistered = rolesToCheck.filter(r => !REGISTERED_DRAWER_ROLES.includes(r));
     if (unregistered.length > 0) {
       addTerminalLog(`PERSIST REJECTED: Semantic role "${unregistered[0]}" has no registered drawer. Presisted formulas require structural law.`, "error");
-      alert(`PERSISTENCE BLOCKED: Semantic role "${unregistered[0]}" is unregistered in standard drawer catalog. Approved catalog roles are: [${REGISTERED_DRAWER_ROLES.join(', ')}]`);
+      addTerminalLog(`PERSISTENCE BLOCKED: Role "${unregistered[0]}" unregistered. Approved roles: [${REGISTERED_DRAWER_ROLES.join(', ')}]`, "error");
       return;
     }
 
@@ -631,7 +631,7 @@ export default function WandPage() {
     localStorage.setItem('scholomance_wand_presets', JSON.stringify(updated));
 
     addTerminalLog(`Idempotently registered formula catalog: ${catId}`, "success");
-    alert(`FORMULA PERSISTED SUCCESSFULLY!\nDeterministic Catalog ID: ${catId}\nSaved in Local Sanctuary.`);
+    addTerminalLog(`FORMULA PERSISTED: Catalog ID ${catId} — saved in Local Sanctuary.`, "success");
   };
 
   const handleLoadPreset = (presetProposal, name) => {
@@ -801,10 +801,13 @@ export default function WandPage() {
                 <h3>SCHOLASTIC PRESETS</h3>
                 <div className="preset-grid">
                   {INITIAL_PRESETS.map((p) => (
-                    <div 
+                    <div
                       key={p.id}
                       className="preset-card animate-btn"
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleLoadPreset(p.proposal, p.name)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLoadPreset(p.proposal, p.name); }}
                     >
                       <div className="preset-card-header">
                         <h4>{p.name}</h4>
@@ -820,10 +823,13 @@ export default function WandPage() {
                     <h3>SAVED SANCTUARY CATALOGS</h3>
                     <div className="preset-grid">
                       {customPresets.map((p) => (
-                        <div 
+                        <div
                           key={p.catalogId}
                           className="preset-card custom-preset-card animate-btn"
+                          role="button"
+                          tabIndex={0}
                           onClick={() => handleLoadPreset(p.proposal, p.name)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleLoadPreset(p.proposal, p.name); }}
                         >
                           <div className="preset-card-header">
                             <h4>{p.name}</h4>
@@ -851,21 +857,23 @@ export default function WandPage() {
                 <div className="architect-section">
                   <h3>AI INTENT METADATA</h3>
                   <div className="input-group">
-                    <label>Rationale (Visual Intention)</label>
-                    <textarea 
-                      value={proposal.rationale} 
+                    <label htmlFor="wand-rationale">Rationale (Visual Intention)</label>
+                    <textarea
+                      id="wand-rationale"
+                      value={proposal.rationale}
                       onChange={(e) => updateRootField('rationale', e.target.value)}
                       placeholder="Enter visual intent rationale..."
                     />
                   </div>
                   <div className="input-row">
                     <div className="input-group flex-1">
-                      <label>Confidence Rating (0 - 1)</label>
-                      <input 
-                        type="number" 
-                        step="0.05" 
-                        min="0" 
-                        max="1" 
+                      <label htmlFor="wand-confidence">Confidence Rating (0 - 1)</label>
+                      <input
+                        id="wand-confidence"
+                        type="number"
+                        step="0.05"
+                        min="0"
+                        max="1"
                         value={proposal.confidence}
                         onChange={(e) => updateRootField('confidence', parseFloat(e.target.value) || 0)}
                       />
@@ -882,17 +890,19 @@ export default function WandPage() {
                   </div>
                   <div className="input-row">
                     <div className="input-group flex-1">
-                      <label>Source Intent Hash</label>
-                      <input 
-                        type="text" 
+                      <label htmlFor="wand-source-intent-hash">Source Intent Hash</label>
+                      <input
+                        id="wand-source-intent-hash"
+                        type="text"
                         value={proposal.sourceIntentHash || ''}
                         onChange={(e) => updateRootField('sourceIntentHash', e.target.value)}
                       />
                     </div>
                     <div className="input-group flex-1">
-                      <label>Eval Suite ID</label>
-                      <input 
-                        type="text" 
+                      <label htmlFor="wand-eval-suite-id">Eval Suite ID</label>
+                      <input
+                        id="wand-eval-suite-id"
+                        type="text"
                         value={proposal.evalSuiteId || ''}
                         onChange={(e) => updateRootField('evalSuiteId', e.target.value)}
                       />
@@ -905,8 +915,9 @@ export default function WandPage() {
                   <h3>ROLE DISPATCHER BINDING</h3>
                   <div className="input-row">
                     <div className="input-group flex-1">
-                      <label>Semantic Role</label>
-                      <select 
+                      <label htmlFor="wand-semantic-role">Semantic Role</label>
+                      <select
+                        id="wand-semantic-role"
                         value={proposal.proposedFormula.role}
                         onChange={(e) => updateProposedFormulaField('role', e.target.value)}
                       >
@@ -921,8 +932,9 @@ export default function WandPage() {
                       </select>
                     </div>
                     <div className="input-group flex-1">
-                      <label>Material Preset</label>
-                      <select 
+                      <label htmlFor="wand-material-preset">Material Preset</label>
+                      <select
+                        id="wand-material-preset"
                         value={proposal.proposedFormula.material || 'aura'}
                         onChange={(e) => updateProposedFormulaField('material', e.target.value)}
                       >
@@ -959,10 +971,11 @@ export default function WandPage() {
                         <h4>Parametric Curve (Sample limit n ≤ 512)</h4>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Samples count (n)</label>
+                            <label htmlFor="wand-param-n">Samples count (n)</label>
                             <span>{proposal.proposedFormula.formula.parameters?.n ?? 128}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-param-n"
                             type="range" min="16" max="512" step="16"
                             value={proposal.proposedFormula.formula.parameters?.n ?? 128}
                             onChange={(e) => updateLeafParam('n', parseInt(e.target.value))}
@@ -970,10 +983,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Amplitude / Radius (a)</label>
+                            <label htmlFor="wand-param-a">Amplitude / Radius (a)</label>
                             <span>{proposal.proposedFormula.formula.parameters?.a ?? 100}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-param-a"
                             type="range" min="-400" max="400" step="10"
                             value={proposal.proposedFormula.formula.parameters?.a ?? 100}
                             onChange={(e) => updateLeafParam('a', parseInt(e.target.value))}
@@ -981,10 +995,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Frequencies multiplier (b)</label>
+                            <label htmlFor="wand-param-b">Frequencies multiplier (b)</label>
                             <span>{proposal.proposedFormula.formula.parameters?.b ?? 0.1}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-param-b"
                             type="range" min="0" max="5" step="0.05"
                             value={proposal.proposedFormula.formula.parameters?.b ?? 0.1}
                             onChange={(e) => updateLeafParam('b', parseFloat(e.target.value))}
@@ -998,8 +1013,9 @@ export default function WandPage() {
                       <div className="dialect-subfields">
                         <h4>Grid Projection (Cell Size ≥ 4)</h4>
                         <div className="input-group">
-                          <label>Grid Alignment Type</label>
-                          <select 
+                          <label htmlFor="wand-grid-type">Grid Alignment Type</label>
+                          <select
+                            id="wand-grid-type"
                             value={proposal.proposedFormula.formula.gridType}
                             onChange={(e) => {
                               const updated = {
@@ -1022,10 +1038,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Minimum Cell Size</label>
+                            <label htmlFor="wand-cell-size">Minimum Cell Size</label>
                             <span>{proposal.proposedFormula.formula.cellSize ?? 12}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-cell-size"
                             type="range" min="4" max="32" step="2"
                             value={proposal.proposedFormula.formula.cellSize ?? 12}
                             onChange={(e) => {
@@ -1052,10 +1069,11 @@ export default function WandPage() {
                         <h4>Fibonacci Subdivision</h4>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Recursive Subdivisions</label>
+                            <label htmlFor="wand-iterations-fib">Recursive Subdivisions</label>
                             <span>{proposal.proposedFormula.formula.iterations ?? 6}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-iterations-fib"
                             type="range" min="1" max="12" step="1"
                             value={proposal.proposedFormula.formula.iterations ?? 6}
                             onChange={(e) => {
@@ -1075,10 +1093,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Scale Factor</label>
+                            <label htmlFor="wand-scale">Scale Factor</label>
                             <span>{(proposal.proposedFormula.formula.scale ?? 1.0).toFixed(2)}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-scale"
                             type="range" min="0.1" max="5.0" step="0.05"
                             value={proposal.proposedFormula.formula.scale ?? 1.0}
                             onChange={(e) => {
@@ -1105,10 +1124,11 @@ export default function WandPage() {
                         <h4>Fractal Iteration (Limit: 5 iterations)</h4>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Iterations</label>
+                            <label htmlFor="wand-iterations-fractal">Iterations</label>
                             <span>{proposal.proposedFormula.formula.iterations ?? 3}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-iterations-fractal"
                             type="range" min="1" max="5" step="1"
                             value={proposal.proposedFormula.formula.iterations ?? 3}
                             onChange={(e) => {
@@ -1127,8 +1147,9 @@ export default function WandPage() {
                           />
                         </div>
                         <div className="input-group">
-                          <label>Base Geometry Shape</label>
-                          <select 
+                          <label htmlFor="wand-base-shape">Base Geometry Shape</label>
+                          <select
+                            id="wand-base-shape"
                             value={proposal.proposedFormula.formula.baseShape}
                             onChange={(e) => {
                               const updated = {
@@ -1162,7 +1183,7 @@ export default function WandPage() {
                             onClick={() => {
                               const currentChildren = proposal.proposedFormula.formula.children || [];
                               if (currentChildren.length >= 12) {
-                                alert("Cannot exceed 12 composite children coordinates.");
+                                addTerminalLog("Cannot exceed 12 composite children coordinates.", "error");
                                 return;
                               }
                               const newChild = {
@@ -1221,8 +1242,9 @@ export default function WandPage() {
                               
                               <div className="input-row">
                                 <div className="input-group flex-1">
-                                  <label>Role</label>
-                                  <select 
+                                  <label htmlFor={`wand-child-role-${idx}`}>Role</label>
+                                  <select
+                                    id={`wand-child-role-${idx}`}
                                     value={child.role}
                                     onChange={(e) => {
                                       const updatedChildren = [...proposal.proposedFormula.formula.children];
@@ -1248,7 +1270,7 @@ export default function WandPage() {
                                   </select>
                                 </div>
                                 <div className="input-group flex-1">
-                                  <label>Anchor (x, y)</label>
+                                  <span className="input-group-label">Anchor (x, y)</span>
                                   <div className="double-inputs">
                                     <input 
                                       type="number" step="0.05" min="0" max="1"
@@ -1302,8 +1324,9 @@ export default function WandPage() {
                       <div className="dialect-subfields">
                         <h4>Vectorized Neon Ink (Limit: 32 chars)</h4>
                         <div className="input-group">
-                          <label>Spell Inscription (Uppercase A-Z, 0-9, Space)</label>
-                          <input 
+                          <label htmlFor="wand-inscription">Spell Inscription (Uppercase A-Z, 0-9, Space)</label>
+                          <input
+                            id="wand-inscription"
                             type="text"
                             maxLength={32}
                             value={proposal.proposedFormula.formula.text ?? ''}
@@ -1326,10 +1349,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Font Size (px)</label>
+                            <label htmlFor="wand-font-size">Font Size (px)</label>
                             <span>{proposal.proposedFormula.formula.fontSize ?? 24}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-font-size"
                             type="range" min="10" max="100" step="1"
                             value={proposal.proposedFormula.formula.fontSize ?? 24}
                             onChange={(e) => {
@@ -1349,10 +1373,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Spacing</label>
+                            <label htmlFor="wand-spacing">Spacing</label>
                             <span>{(proposal.proposedFormula.formula.spacing ?? 1.0).toFixed(2)}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-spacing"
                             type="range" min="0.1" max="5.0" step="0.05"
                             value={proposal.proposedFormula.formula.spacing ?? 1.0}
                             onChange={(e) => {
@@ -1372,10 +1397,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Center X (cx)</label>
+                            <label htmlFor="wand-cx">Center X (cx)</label>
                             <span>{proposal.proposedFormula.formula.cx ?? 400}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-cx"
                             type="range" min="0" max="800" step="10"
                             value={proposal.proposedFormula.formula.cx ?? 400}
                             onChange={(e) => {
@@ -1395,10 +1421,11 @@ export default function WandPage() {
                         </div>
                         <div className="range-group">
                           <div className="range-header">
-                            <label>Center Y (cy)</label>
+                            <label htmlFor="wand-cy">Center Y (cy)</label>
                             <span>{proposal.proposedFormula.formula.cy ?? 300}</span>
                           </div>
-                          <input 
+                          <input
+                            id="wand-cy"
                             type="range" min="0" max="600" step="10"
                             value={proposal.proposedFormula.formula.cy ?? 300}
                             onChange={(e) => {

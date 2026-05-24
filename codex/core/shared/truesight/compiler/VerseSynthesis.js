@@ -95,8 +95,8 @@ export function synthesizeVerse(text, options = {}) {
     tokenByIdentity.set(identityKey, unifiedToken);
     tokenByCharStart.set(token.charStart, unifiedToken);
     
-    if (!tokenByNormalizedWord.has(token.normalizedWord)) {
-      tokenByNormalizedWord.set(token.normalizedWord, unifiedToken);
+    if (!tokenByNormalizedWord.has(token.normalized)) {
+      tokenByNormalizedWord.set(token.normalized, unifiedToken);
     }
   });
 

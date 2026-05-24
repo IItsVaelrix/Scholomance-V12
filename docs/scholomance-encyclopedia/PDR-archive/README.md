@@ -12,6 +12,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 
 | PDR | Status | Classification | Priority |
 |-----|--------|----------------|----------|
+| [`bytecode_contextual_compression_checksums_pdr.md`](./bytecode_contextual_compression_checksums_pdr.md) | Draft | Architectural \| AI Observability \| MCP Memory \| TurboQuant Infrastructure | High |
 | [`ByteCode_Error_System_V3_pdr.md`](./ByteCode_Error_System_V3_pdr.md) | Archived placeholder | Bytecode + QA + Error Transport | High |
 | [`PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md`](./PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md) | READY FOR GEMINI PHASE 0 KICKOFF. | Unclassified | Unclassified |
 | [`PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md`](./PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md) | READY (blocked on Gemini Phase 2 acceptance). | Unclassified | Unclassified |

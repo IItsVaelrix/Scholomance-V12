@@ -57,4 +57,3 @@ export const AnimatedSurface = React.forwardRef(function AnimatedSurface({
   );
 });
 
-export default AnimatedSurface;

@@ -129,4 +129,3 @@ export function useCODExPipeline() {
   return context;
 }
 
-export default CODExProvider;

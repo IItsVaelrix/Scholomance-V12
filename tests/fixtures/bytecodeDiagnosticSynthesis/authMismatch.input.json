@@ -1,0 +1,15 @@
+{
+  "raidId": "CLERI_RAID_TEST",
+  "bytecodeHealthSnapshot": {
+    "AUTH_SENDER_MATCH": {
+      "score": 0,
+      "bytecode": "PB-ERR-v1-STATE-AUTH_SENDER_MISMATCH"
+    },
+    "IDENTITY_PROOF_VALID": {
+      "status": "stable"
+    },
+    "SESSION_CONTINUITY": {
+      "status": "stable"
+    }
+  }
+}

@@ -350,4 +350,4 @@ function getVerseIrColorProjection(family) {
   return getPCABasis().projections[resolvedFamily] || null;
 }
 
-const VERSE_IR_PCA_CHROMA_BASIS = getPCABasis();
+const _init = getPCABasis(); // warm the lazy singleton on module load

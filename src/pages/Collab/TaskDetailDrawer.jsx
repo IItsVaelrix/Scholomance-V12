@@ -50,6 +50,7 @@ export default function TaskDetailDrawer({
   onAssign,
   onStatusChange,
   onDelete,
+  deleteConfirmPending = false,
 }) {
   const [activeSection, setActiveSection] = useState('summary');
   const [isAssigning, setIsAssigning] = useState(false);
@@ -300,10 +301,11 @@ export default function TaskDetailDrawer({
             {/* Footer Actions */}
             <div className="drawer-footer">
               <button
-                className="drawer-delete-btn"
+                className={`drawer-delete-btn${deleteConfirmPending ? ' drawer-delete-btn--confirm' : ''}`}
                 onClick={() => onDelete(task.id)}
+                title={deleteConfirmPending ? 'Click again to confirm deletion' : 'Delete this task'}
               >
-                Delete Task
+                {deleteConfirmPending ? 'Confirm Delete?' : 'Delete Task'}
               </button>
               <span className="drawer-task-id">ID: {task.id.slice(0, 8)}...</span>
             </div>

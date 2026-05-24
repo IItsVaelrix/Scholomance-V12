@@ -91,11 +91,12 @@ export function DuplicateSection({ referenceFile, isProcessing, onProcessingChan
 
         <div className="slider-group">
           <div className="slider-item">
-            <label className="telemetry-text">OPACITY: {Math.round(opacity * 100)}%</label>
-            <input 
-              type="range" 
-              min="0" max="1" step="0.1" 
-              value={opacity} 
+            <label htmlFor="duplicate-opacity-range" className="telemetry-text">OPACITY: {Math.round(opacity * 100)}%</label>
+            <input
+              id="duplicate-opacity-range"
+              type="range"
+              min="0" max="1" step="0.1"
+              value={opacity}
               onChange={(e) => setOpacity(parseFloat(e.target.value))}
             />
           </div>

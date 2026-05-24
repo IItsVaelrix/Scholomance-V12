@@ -265,3 +265,19 @@ export function verifyHealthDeterminism(cellId, checkId, context = {}) {
     sampleChecksum: checksums[0],
   };
 }
+
+// ─── Synthesis Bridge ─────────────────────────────────────────────────────────
+
+/**
+ * Minimal bridge for the ByteCode Diagnostic Synthesis layer.
+ * Accepts raw health state and returns it unchanged — normalization
+ * happens inside BytecodeHealthAdapter, not here.
+ *
+ * Reference: ByteCode Diagnostic Synthesis PDR § Step 6
+ *
+ * @param {Record<string, unknown>} rawHealthState
+ * @returns {Record<string, unknown>}
+ */
+export function buildDiagnosticSynthesisSnapshot(rawHealthState) {
+  return rawHealthState;
+}

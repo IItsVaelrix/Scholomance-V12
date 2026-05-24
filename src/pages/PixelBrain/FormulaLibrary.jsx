@@ -121,4 +121,3 @@ export function FormulaLibrary({ onSelect, currentFormulaId }) {
   );
 }
 
-export default FormulaLibrary;

@@ -76,4 +76,3 @@ export function ProceduralWordmark({ word, animateOnReveal = true, className = '
   );
 }
 
-export default ProceduralWordmark;

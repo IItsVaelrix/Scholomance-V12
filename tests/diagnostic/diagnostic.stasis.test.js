@@ -7,7 +7,7 @@
  * Reference: PDR-2026-05-09-DIAGNOSTIC-CELL-INFRASTRUCTURE
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   BytecodeHealth,
   encodeBytecodeHealth,
@@ -30,6 +30,7 @@ import {
   runDiagnostic,
   runCellById,
   getAvailableCells,
+  buildSynthesisSnapshot,
   CELL_IDS,
 } from '../../codex/core/diagnostic/diagnostic-runner.js';
 
@@ -666,5 +667,212 @@ describe('generateDiagnosticReport() — cellErrors are first-class', () => {
     expect(report.summary.cellErrors).toBe(1);
     expect(report.cellErrors).toHaveLength(1);
     expect(report.cellErrors[0].cellId).toBe('CELL_B');
+  });
+});
+
+// ─── Stage 2: Synthesis Wiring ────────────────────────────────────────────────
+
+describe('buildSynthesisSnapshot()', () => {
+  it('maps IMMUNITY_SCAN health to BYTECODE_DECODABLE and BYTECODE_SCHEMA_VALID', () => {
+    const results = [
+      { cellId: 'IMMUNITY_SCAN', cellError: null, health: [{}], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(snapshot.BYTECODE_DECODABLE).toBe(1);
+    expect(snapshot.BYTECODE_SCHEMA_VALID).toBe(1);
+  });
+
+  it('maps LAYER_BOUNDARY health to ROUTE_STATE_HEALTH and VIEW_STATE_HEALTH', () => {
+    const results = [
+      { cellId: 'LAYER_BOUNDARY', cellError: null, health: [{}], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(snapshot.ROUTE_STATE_HEALTH).toBe(1);
+    expect(snapshot.VIEW_STATE_HEALTH).toBe(1);
+  });
+
+  it('maps TEST_COVERAGE health to BYTECODE_PROVENANCE_VALID', () => {
+    const results = [
+      { cellId: 'TEST_COVERAGE', cellError: null, health: [{}], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(snapshot.BYTECODE_PROVENANCE_VALID).toBe(1);
+  });
+
+  it('returns 0 for a crashed cell', () => {
+    const results = [
+      { cellId: 'FIXTURE_SHAPE', cellError: { message: 'boom' }, health: [], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(snapshot.BYTECODE_CHECKSUM_VALID).toBe(0);
+  });
+
+  it('takes minimum when multiple cells map to the same signal', () => {
+    const results = [
+      { cellId: 'IMMUNITY_SCAN',    cellError: null, health: [{}], errors: [] },
+      { cellId: 'PROCESSOR_BRIDGE', cellError: null, health: [{}], errors: [{}] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    // PROCESSOR_BRIDGE has 1 pass + 1 fail → score = 0.5; IMMUNITY_SCAN → 1.0; min = 0.5
+    expect(snapshot.BYTECODE_DECODABLE).toBe(0.5);
+  });
+
+  it('ignores unknown cell IDs', () => {
+    const results = [
+      { cellId: 'UNKNOWN_FUTURE_CELL', cellError: null, health: [{}], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(Object.keys(snapshot)).toHaveLength(0);
+  });
+
+  it('returns 0.5 for a cell with no health signals and no errors', () => {
+    const results = [
+      { cellId: 'TEST_COVERAGE', cellError: null, health: [], errors: [] },
+    ];
+    const snapshot = buildSynthesisSnapshot(results);
+    expect(snapshot.BYTECODE_PROVENANCE_VALID).toBe(0.5);
+  });
+});
+
+describe('runDiagnostic() — synthesis wiring', () => {
+  it('report includes synthesis field in shadow mode', async () => {
+    const report = await runDiagnostic({
+      snapshot: EMPTY_SNAPSHOT,
+      files: [CLEAN_FILE],
+      commitHash: 'test',
+      trigger: 'test',
+    });
+
+    expect(report.synthesis).toBeDefined();
+    expect(report.synthesis.enforced).toBe(false);
+    expect(report.synthesis.mind).toBeDefined();
+    expect(typeof report.synthesis.mind.mindState).toBe('string');
+    expect(typeof report.synthesis.mind.globalHealth).toBe('number');
+  });
+
+  it('synthesis mind has expected output shape', async () => {
+    const report = await runDiagnostic({
+      snapshot: EMPTY_SNAPSHOT,
+      files: [CLEAN_FILE],
+      commitHash: 'test',
+      trigger: 'test',
+    });
+
+    const { mind } = report.synthesis;
+    expect(mind.raidId).toBe('CLERI_RAID_MAIN');
+    expect(Array.isArray(mind.complexes)).toBe(true);
+    expect(Array.isArray(mind.primaryFaults)).toBe(true);
+    expect(Array.isArray(mind.nextDebugActions)).toBe(true);
+    expect(mind.qbitPayload.qbitType).toBe('BYTECODE_DIAGNOSTIC_SYNTHESIS');
+  });
+
+  it('report checksum is not affected by synthesis field', async () => {
+    const { generateDiagnosticReport, verifyReport } = await import('../../codex/core/diagnostic/DiagnosticReport.js');
+    const report = await runDiagnostic({
+      snapshot: EMPTY_SNAPSHOT,
+      files: [CLEAN_FILE],
+      commitHash: 'check-integrity',
+      trigger: 'test',
+    });
+
+    const integrity = verifyReport(report);
+    expect(integrity.valid).toBe(true);
+  });
+
+  it('synthesis is deterministic across runs for same input', async () => {
+    const opts = { snapshot: EMPTY_SNAPSHOT, files: [CLEAN_FILE], commitHash: 'det', trigger: 'test' };
+    const r1 = await runDiagnostic(opts);
+    const r2 = await runDiagnostic(opts);
+
+    expect(r1.synthesis.mind.mindState).toBe(r2.synthesis.mind.mindState);
+    expect(r1.synthesis.mind.globalHealth).toBe(r2.synthesis.mind.globalHealth);
+  });
+});
+
+// ─── Stage 3: Warn Mode ───────────────────────────────────────────────────────
+
+describe('runDiagnostic() — warn mode (Stage 3)', () => {
+  it('emits structured stderr warning when mindState is not coherent in warn mode', async () => {
+    const stderrLines = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+      stderrLines.push(args.join(' '));
+    });
+
+    const originalMode = process.env.CLERI_RAID_SYNTHESIS_MODE;
+    process.env.CLERI_RAID_SYNTHESIS_MODE = 'warn';
+
+    try {
+      const report = await runDiagnostic({
+        snapshot: EMPTY_SNAPSHOT,
+        files: [CLEAN_FILE],
+        commitHash: 'warn-test',
+        trigger: 'test',
+      });
+
+      // Synthesis in warn mode always sets warning when mind is not coherent
+      if (report.synthesis?.warning) {
+        expect(stderrLines.length).toBeGreaterThan(0);
+        const output = stderrLines.join('\n');
+        expect(output).toMatch(/\[CLERI_RAID_MIND\]/);
+        expect(output).toMatch(/state=/);
+        expect(output).toMatch(/health=/);
+      } else {
+        // Mind happened to be coherent — no warning expected
+        expect(stderrLines.length).toBe(0);
+      }
+    } finally {
+      process.env.CLERI_RAID_SYNTHESIS_MODE = originalMode;
+      spy.mockRestore();
+    }
+  });
+
+  it('does not emit stderr in shadow mode', async () => {
+    const stderrLines = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args) => {
+      stderrLines.push(args.join(' '));
+    });
+
+    const originalMode = process.env.CLERI_RAID_SYNTHESIS_MODE;
+    process.env.CLERI_RAID_SYNTHESIS_MODE = 'shadow';
+
+    try {
+      await runDiagnostic({
+        snapshot: EMPTY_SNAPSHOT,
+        files: [CLEAN_FILE],
+        commitHash: 'shadow-quiet-test',
+        trigger: 'test',
+      });
+
+      // Shadow mode must not emit warnings — it only observes
+      expect(stderrLines.length).toBe(0);
+    } finally {
+      process.env.CLERI_RAID_SYNTHESIS_MODE = originalMode;
+      spy.mockRestore();
+    }
+  });
+
+  it('warn mode synthesis result has warning field when not coherent', async () => {
+    const originalMode = process.env.CLERI_RAID_SYNTHESIS_MODE;
+    process.env.CLERI_RAID_SYNTHESIS_MODE = 'warn';
+
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    try {
+      const report = await runDiagnostic({
+        snapshot: EMPTY_SNAPSHOT,
+        files: [CLEAN_FILE],
+        commitHash: 'warn-shape-test',
+        trigger: 'test',
+      });
+
+      expect(report.synthesis).toBeDefined();
+      expect(report.synthesis.enforced).toBe(false);
+      expect(report.synthesis.mind).toBeDefined();
+      // warning is either the string constant or null — both are valid shapes
+      expect('warning' in report.synthesis).toBe(true);
+    } finally {
+      process.env.CLERI_RAID_SYNTHESIS_MODE = originalMode;
+      spy.mockRestore();
+    }
   });
 });

@@ -197,11 +197,12 @@ export default function PipelineTerminal({
               Fail Stage
             </button>
 
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--color-collab-text-dim)', cursor: 'pointer', marginLeft: 'auto' }}>
-                <input 
-                    type="checkbox" 
-                    checked={createBugOnFail} 
-                    onChange={e => setCreateBugOnFail(e.target.checked)} 
+            <label htmlFor="create-bug-on-fail" style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--color-collab-text-dim)', cursor: 'pointer', marginLeft: 'auto' }}>
+                <input
+                    id="create-bug-on-fail"
+                    type="checkbox"
+                    checked={createBugOnFail}
+                    onChange={e => setCreateBugOnFail(e.target.checked)}
                 />
                 Auto-create Bug Report
             </label>

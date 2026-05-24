@@ -326,6 +326,7 @@ export function PredictorProvider({ children }) {
     return () => {
       isDisposed = true;
       cancelBatchValidator?.();
+      loadAttemptedRef.current = false;
     };
   }, [model, spellchecker]);
 

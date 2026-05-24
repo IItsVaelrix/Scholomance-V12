@@ -112,4 +112,3 @@ export function ParameterSliders({ parameters, onChange, school }) {
   );
 }
 
-export default ParameterSliders;

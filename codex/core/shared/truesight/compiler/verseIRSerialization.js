@@ -272,7 +272,7 @@ export function serializeVerseIR(verseIR) {
   };
 }
 
-function deserializeVerseIR(payload) {
+export function deserializeVerseIR(payload) {
   if (!payload || typeof payload !== 'object') {
     return createEmptyVerseIR();
   }

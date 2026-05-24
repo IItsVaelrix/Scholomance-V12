@@ -119,4 +119,3 @@ export function StatusDisplay({ status, error, bytecode }) {
   );
 }
 
-export default StatusDisplay;

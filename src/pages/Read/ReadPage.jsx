@@ -165,6 +165,7 @@ export default function ReadPage() {
     }
     return settings?.truesightEnabled ?? false;
   });
+  const [isPredictive, setIsPredictive] = useState(true);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
   const [highlightedLines, setHighlightedLines] = useState([]);
@@ -264,7 +265,7 @@ export default function ReadPage() {
   } = useVerseSynthesis(truesightContent, {
     mode: analysisMode,
     school: selectedSchool,
-    paused: ideMode === "EDIT" || ideMode === "NEUTRAL"
+    paused: ideMode === "EDIT"
   });
 
   // Fallbacks for legacy fields moving to AMP
@@ -309,6 +310,10 @@ export default function ReadPage() {
       return next;
     });
   }, [updateSettings]);
+
+  const handleTogglePredictive = useCallback(() => {
+    setIsPredictive((prev) => !prev);
+  }, []);
 
   const handleToggleMirrored = useCallback(() => {
     setMirrored((prev) => {
@@ -448,12 +453,15 @@ export default function ReadPage() {
     bumpAutosaveContext(activeScrollId, activeScroll?.title, activeScrollContent);
     setEditorTitle(String(activeScroll?.title || ""));
     setEditorContent(activeScrollContent);
-    issueEditorDocumentIdentity(activeScrollId || "new");
+    // Do NOT call issueEditorDocumentIdentity here — we are editing the same
+    // document already mounted in ScrollEditor. Changing the key would remount
+    // it, losing scroll position and resetting adaptiveTopology (which clears
+    // the Gutter's per-line syllable counts).
     setIsEditing(true);
     setIsEditable(true);
     setHighlightedLines([]);
     setIdeMode("EDIT");
-  }, [activeScroll?.title, activeScrollContent, activeScrollId, bumpAutosaveContext, issueEditorDocumentIdentity]);
+  }, [activeScroll?.title, activeScrollContent, activeScrollId, bumpAutosaveContext]);
 
   const handleEditScrollById = useCallback((id) => {
     const scroll = getScrollById(id);
@@ -758,7 +766,8 @@ export default function ReadPage() {
       isEditable={isEditable}
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
-      isPredictive={true}
+      isPredictive={isPredictive}
+      onTogglePredictive={handleTogglePredictive}
       mirrored={mirrored}
       onToggleMirrored={handleToggleMirrored}
       analysisMode={analysisMode}
@@ -890,7 +899,7 @@ export default function ReadPage() {
             <div className="settings-panel-body">
               <div className="settings-panel-section">
                 <span className="settings-panel-label">Optics</span>
-                <label className="settings-panel-row">
+                <div className="settings-panel-row">
                   <span>Truesight</span>
                   <button
                     type="button"
@@ -900,8 +909,8 @@ export default function ReadPage() {
                   >
                     {isTruesight ? 'On' : 'Off'}
                   </button>
-                </label>
-                <label className="settings-panel-row">
+                </div>
+                <div className="settings-panel-row">
                   <span>Symmetrical</span>
                   <button
                     type="button"
@@ -911,7 +920,7 @@ export default function ReadPage() {
                   >
                     {mirrored ? 'On' : 'Off'}
                   </button>
-                </label>
+                </div>
               </div>
             </div>
           </FloatingPanel>
@@ -1016,7 +1025,7 @@ export default function ReadPage() {
                   isEditable={isEditable}
                   disabled={false}
                   isTruesight={isTruesight}
-                  isPredictive={true}
+                  isPredictive={isPredictive}
                   predict={predict}
                   getCompletions={getCompletions}
                   checkSpelling={checkSpelling}
@@ -1192,8 +1201,8 @@ export default function ReadPage() {
                       isEditable={isEditable}
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
-                      isPredictive={true}
-                      onTogglePredictive={() => {}}
+                      isPredictive={isPredictive}
+                      onTogglePredictive={handleTogglePredictive}
                       mirrored={mirrored}
                       onToggleMirrored={handleToggleMirrored}
                       analysisMode={analysisMode}
@@ -1264,7 +1273,7 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
-                    isPredictive={true}
+                    isPredictive={isPredictive}
                     predict={predict}
                     getCompletions={getCompletions}
                     checkSpelling={checkSpelling}

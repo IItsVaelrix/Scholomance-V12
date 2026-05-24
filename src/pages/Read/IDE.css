@@ -3600,8 +3600,11 @@
 }
 
 .ide-layout-wrapper .editor-textarea--read-only {
-  /* No layout-breaking clip/absolute; keeps scroll sync stable */
-  opacity: 1;
+  /* Stays in layout for scroll sync; text hidden so markdown-rendered is the sole visible layer */
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  background: transparent !important;
+  caret-color: transparent;
 }
 
 .ide-layout-wrapper .markdown-rendered {

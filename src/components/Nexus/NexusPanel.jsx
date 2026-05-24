@@ -10,7 +10,7 @@ const formatSynergyLabel = (synergyId) =>
     .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
     .join(' ');
 
-export const NexusPanel = () => {
+const NexusPanel = () => {
   const { nexus } = useProgression();
   const [selectedWord, setSelectedWord] = useState(null);
 
