@@ -72,6 +72,18 @@ export const getCsrfToken = async (forceRefresh = false) => {
   return globalCsrfPromise;
 };
 
+export const csrfFetch = async (url, options = {}) => {
+  const token = await getCsrfToken();
+  return fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+      'x-csrf-token': token,
+    },
+  });
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [csrfToken, setCsrfTokenState] = useState(null);

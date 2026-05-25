@@ -20,8 +20,6 @@ import './IDE.css';
  *   selectedSchool: string,
  *   onSchoolChange: (schoolId: string) => void,
  *   schoolList: Array<{ id: string, glyph: string, name: string }>,
- *   editorRef: import('react').RefObject<import('./ScrollEditor.jsx').ScrollEditorHandle>,
- *   isEditable: boolean,
  * }} ToolsSidebarProps
  */
 
@@ -43,45 +41,10 @@ export default function ToolsSidebar({
   selectedSchool,
   onSchoolChange,
   schoolList,
-  editorRef,
-  isEditable,
 }) {
-  const handleFormat = (type) => {
-    editorRef?.current?.applyFormat(type);
-  };
-
   return (
     <div className="tools-sidebar">
 
-      {/* ── Formatting Tools ── */}
-      {isEditable && (
-        <div className="sidebar-section">
-          <h3 className="sidebar-section-title">
-            <span className="sidebar-section-glyph" aria-hidden="true">✎</span>
-            Format
-          </h3>
-          <div className="format-toolbar">
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('heading')} title="Heading (##)">
-              <span className="material-symbols-outlined">title</span>
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('bold')} title="Bold (**)">
-              <span className="material-symbols-outlined">format_bold</span>
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('italic')} title="Italic (*)">
-              <span className="material-symbols-outlined">format_italic</span>
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('code')} title="Code (`)">
-              <span className="material-symbols-outlined">code</span>
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('bullet')} title="Bullet List (-)">
-              <span className="material-symbols-outlined">format_list_bulleted</span>
-            </button>
-            <button type="button" className="toolbar-btn" onClick={() => handleFormat('quote')} title="Quote (> )">
-              <span className="material-symbols-outlined">format_quote</span>
-            </button>
-          </div>
-        </div>
-      )}
       {/* ── Visual Skin ── */}
       <div className="sidebar-section">
         <h3 className="sidebar-section-title">

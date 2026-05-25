@@ -201,6 +201,7 @@ function OracleWordTitle({ word, pronunciation, frameGlyph, prefersReducedMotion
   return (
     <div
       className="oracle-word-title"
+      role="img"
       data-word-school={wordSchool}
       data-first-reveal={animate ? 'true' : 'false'}
       style={inlineStyle}
@@ -227,6 +228,7 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
   return (
     <div
       className="oracle-pronunciation-slot"
+      role="group"
       data-first-reveal={animate ? 'true' : 'false'}
       aria-label={pronunciationLead}
     >

@@ -761,9 +761,7 @@ export default function ReadPage() {
   };
 
   const toolsBlock = (
-    <ToolsSidebar 
-      editorRef={editorRef}
-      isEditable={isEditable}
+    <ToolsSidebar
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
       isPredictive={isPredictive}
@@ -1196,9 +1194,7 @@ export default function ReadPage() {
                 )}
                 {sidebarTab === 'TOOLS' && (
                   <div className="sidebar-tools">
-                    <ToolsSidebar 
-                      editorRef={editorRef}
-                      isEditable={isEditable}
+                    <ToolsSidebar
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
                       isPredictive={isPredictive}

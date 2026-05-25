@@ -567,17 +567,18 @@ const ScrollEditor = forwardRef(/**
     // When forceTopology is supplied (e.g., JSDOM tests), skip real
     // measurement entirely — the injected topology IS the authoritative state.
     if (forceTopology) return undefined;
-    // EDIT mode types rapidly — measuring on every keystroke resize is wasteful
-    // and the Gutter isn't the primary concern while composing.
-    // NEUTRAL and TRUESIGHT both need accurate topology: TRUESIGHT for overlay
-    // layout, NEUTRAL for Gutter syllable-count alignment.
+    // EDIT mode types rapidly — skip continuous measurement while composing.
     if (activeIdeMode === "EDIT") return undefined;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
-    // Initial measurement
+    // Initial measurement covers Gutter alignment in all non-EDIT modes.
     updateTypography(true);
 
+    // NEUTRAL is static — initial measurement is sufficient; skip observer.
+    if (activeIdeMode === "NEUTRAL") return undefined;
+
+    // TRUESIGHT needs continuous tracking for overlay layout.
     let frameId;
     const observer = new ResizeObserver(() => {
       cancelAnimationFrame(frameId);
@@ -1165,13 +1166,24 @@ const ScrollEditor = forwardRef(/**
               maxLength={100}
               aria-required="true"
             />
-            <button 
-              type="button" 
+            <button
+              type="button"
               className="btn btn-primary save-scroll-btn"
               onClick={handleSave}
               disabled={disabled || isSaving || !content.trim()}
             >
               {isSaving ? "Saving..." : "Save Scroll"}
+            </button>
+            <button
+              type="button"
+              className="scroll-top-btn"
+              onClick={scrollToTopSmooth}
+              aria-label="Scroll to top"
+              title="Scroll to top"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M2 9.5L7 4.5L12 9.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </button>
           </div>
         ) : (

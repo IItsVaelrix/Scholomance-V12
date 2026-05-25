@@ -642,7 +642,7 @@ function SearchPanelInner({
 
         {/* WORD mode: suggestion row */}
         {mode === 'WORD' && (suggestions.length > 0 || isSuggesting) && (
-          <div className="oracle-suggestion-row" aria-label="Suggested words">
+          <div className="oracle-suggestion-row" role="group" aria-label="Suggested words">
             {isSuggesting && suggestions.length === 0 ? (
               <span className="oracle-suggestion-meta">predicting archive matches...</span>
             ) : (
@@ -663,7 +663,7 @@ function SearchPanelInner({
 
         {/* CORPUS mode: facet filter strip */}
         {mode === 'CORPUS' && corpusFacets.types.length > 1 && (
-          <div className="oracle-facet-strip" aria-label="Filter by type">
+          <div className="oracle-facet-strip" role="group" aria-label="Filter by type">
             <button
               type="button"
               className={`oracle-facet-pill${!activeTypeFilter ? ' oracle-facet-pill--active' : ''}`}
