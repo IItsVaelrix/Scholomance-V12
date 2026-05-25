@@ -567,10 +567,11 @@ const ScrollEditor = forwardRef(/**
     // When forceTopology is supplied (e.g., JSDOM tests), skip real
     // measurement entirely — the injected topology IS the authoritative state.
     if (forceTopology) return undefined;
-    // ResizeObserver is only meaningful in TRUESIGHT mode — overlay layout
-    // depends on exact container width. EDIT and NEUTRAL never render overlays,
-    // so observing is wasteful and breaks state-isolation invariants.
-    if (activeIdeMode !== "TRUESIGHT") return undefined;
+    // EDIT mode types rapidly — measuring on every keystroke resize is wasteful
+    // and the Gutter isn't the primary concern while composing.
+    // NEUTRAL and TRUESIGHT both need accurate topology: TRUESIGHT for overlay
+    // layout, NEUTRAL for Gutter syllable-count alignment.
+    if (activeIdeMode === "EDIT") return undefined;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 

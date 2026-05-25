@@ -147,6 +147,16 @@ function splitPhonemes(pronunciation, fallbackWord) {
   return Array.from(compact).map(normalizePhonemeToken).filter(Boolean).slice(0, 18);
 }
 
+function formatPronunciationLead(pronunciation) {
+  const raw = String(pronunciation || '')
+    .replace(/[()[\]{}]/g, '')
+    .replace(/[0-9]/g, '')
+    .trim();
+  if (!raw) return null;
+  if (raw.startsWith('/') || raw.startsWith('[')) return raw;
+  return `/${raw}/`;
+}
+
 function classTone(partOfSpeech) {
   const value = String(partOfSpeech || '').toLowerCase();
   if (value.includes('verb')) return 'verb';
@@ -197,11 +207,7 @@ function OracleWordTitle({ word, pronunciation, frameGlyph, prefersReducedMotion
       aria-label={`Oracle resolved: ${displayWord}`}
     >
       <span className="oracle-word-title-glyph" aria-hidden="true">{schoolGlyph}</span>
-      <ProceduralWordmark
-        word={displayWord}
-        animateOnReveal={animate}
-        className="oracle-word-title-wordmark"
-      />
+      <span className="oracle-word-title-serif" aria-hidden="true">{displayWord}</span>
       <span className="oracle-word-title-rule" aria-hidden="true" />
     </div>
   );
@@ -212,6 +218,7 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
   const cacheKey = `pronunciation:${String(fallbackWord || pronunciation || '').toLowerCase()}`;
   const isFirstReveal = useFirstReveal(cacheKey);
   const animate = isFirstReveal && !prefersReducedMotion;
+  const pronunciationLead = formatPronunciationLead(pronunciation) || `/${fallbackWord || ''}/`;
 
   if (phonemes.length === 0) {
     return <span className="oracle-articulation-empty">phonemes unresolved</span>;
@@ -219,25 +226,41 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
 
   return (
     <div
-      className="oracle-articulation-strip"
+      className="oracle-pronunciation-slot"
       data-first-reveal={animate ? 'true' : 'false'}
-      aria-label="Pronunciation, articulation-encoded"
+      aria-label={pronunciationLead}
     >
-      {phonemes.map((phoneme, index) => {
-        const manner = getArticulationManner(phoneme);
-        return (
-          <span
-            key={`${phoneme}-${index}`}
-            className="oracle-articulation-phoneme"
-            data-manner={manner}
-            style={{ '--phoneme-index': index }}
-            aria-label={`${manner} ${phoneme}`}
-          >
-            <span className="oracle-articulation-phoneme-glyph">{phoneme}</span>
-            <span className="oracle-articulation-phoneme-trace" aria-hidden="true" />
-          </span>
-        );
-      })}
+      {/* Layer 1: Sharpener — blurred phoneme blobs converge, focus-pull primes the serif */}
+      <div
+        className="oracle-articulation-strip oracle-articulation-strip--sharpener"
+        aria-hidden="true"
+      >
+        {phonemes.map((phoneme, index) => {
+          const manner = getArticulationManner(phoneme);
+          return (
+            <span
+              key={`${phoneme}-${index}`}
+              className="oracle-articulation-phoneme"
+              data-manner={manner}
+              style={{ '--phoneme-index': index }}
+            >
+              <span className="oracle-articulation-phoneme-glyph">{phoneme}</span>
+            </span>
+          );
+        })}
+      </div>
+      {/* Layer 2: Serif lead — primary readable pronunciation, arrives as sharpener converges */}
+      <span className="oracle-pronunciation-serif" aria-hidden="true">
+        {pronunciationLead}
+      </span>
+      {/* Layer 3: Ink overlay — ProceduralWordmark strokes painted over serif via screen blend */}
+      <span aria-hidden="true">
+        <ProceduralWordmark
+          word={fallbackWord || ''}
+          animateOnReveal={animate}
+          className="oracle-pronunciation-ink"
+        />
+      </span>
     </div>
   );
 }
