@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { ResonanceScene } from './scenes/ResonanceScene.js';
+import { combatBridge } from './combatBridge.js';
+import { buildVoidArenaRestingScene } from '../../lib/godot-export/voidArenaScene.ts';
+import { buildSingularityTriggerTimeline } from '../../lib/godot-export/voidSingularityTrigger.ts';
+import { parseBooleanEnvFlag } from '../../hooks/useCODExPipeline.jsx';
+
+const VOID_ARENA_SCENE_ENABLED = parseBooleanEnvFlag(import.meta.env.VITE_VOID_ARENA_SCENE_ENABLED, true);
 
 /**
  * PhaserLayer.jsx
@@ -63,6 +69,11 @@ const PhaserLayer = forwardRef(function PhaserLayer(
     },
     animateHit(affectedTiles, school, descriptor, onComplete) {
       if (sceneRef.current) {
+        if (VOID_ARENA_SCENE_ENABLED && school === 'VOID' && affectedTiles.length > 0) {
+          const baseState = buildVoidArenaRestingScene();
+          const timeline = buildSingularityTriggerTimeline(baseState);
+          combatBridge.emit('godot_spell_impact', timeline);
+        }
         sceneRef.current.animateHit(affectedTiles, school, descriptor, onComplete);
       } else {
         onComplete?.();
@@ -118,7 +129,13 @@ const PhaserLayer = forwardRef(function PhaserLayer(
             scene.onSelectCell = selectCellRef.current;
 
             // Sync current prop state into the now-ready scene
-            if (schoolRef.current)            scene.setArenaSchool(schoolRef.current);
+            if (schoolRef.current) {
+              scene.setArenaSchool(schoolRef.current);
+              if (VOID_ARENA_SCENE_ENABLED && schoolRef.current === 'VOID') {
+                const restingScene = buildVoidArenaRestingScene();
+                combatBridge.emit('godot_scene_load', restingScene);
+              }
+            }
             if (tileVMRef.current?.length)    scene.updateTileStates(tileVMRef.current);
             if (unitsRef.current?.length)     scene.renderUnits(unitsRef.current);
             if (cursorRef.current)            scene.setCursor(cursorRef.current);
