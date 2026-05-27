@@ -10,6 +10,7 @@ import {
   pseudoRandom,
   hashString,
 } from './shared.js';
+import { mapFormantsToMetrics, getVisemeStyles } from '../shared/truesight/color/visemeMapping.js';
 
 /**
  * LAYER 2: COLOR-BYTE MAPPING — V12 DETERMINISTIC STANDARD
@@ -271,4 +272,16 @@ export function getHexForByte(bytecode, byteIndex, options = {}) {
   const paletteIndex = (pageOffset + pageJitter) % numColors;
   
   return colors[paletteIndex] || colors[0];
+}
+
+/**
+ * Chain terminus: formants → viseme CSS vars (pixelbrain consumer).
+ * Closes the pipeline: pcaChroma bridge → visemeMapping → here.
+ *
+ * @param {number[]} formants - [F1, F2] Hz
+ * @param {boolean} isAnchor - phonetic anchor status
+ * @returns {object} CSS custom properties map
+ */
+export function getVisemeForFormants(formants, isAnchor = false) {
+  return getVisemeStyles(mapFormantsToMetrics(formants), isAnchor);
 }
