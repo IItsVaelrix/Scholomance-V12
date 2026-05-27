@@ -12,7 +12,7 @@ describe('Godot PixelBrain reimport workflow', () => {
   it('save_and_reimport chains save_to_path then filesystem scan', () => {
     const dock = readAddonFile('editor/pixelbrain_paint_dock.gd');
     const block = dock.slice(dock.indexOf('func save_and_reimport'));
-    expect(block).toContain('save_to_path(path)');
+    expect(block).toContain('save_to_path(path, use_strict_validation)');
     expect(block).toContain('EditorInterface.get_resource_filesystem().scan()');
   });
 

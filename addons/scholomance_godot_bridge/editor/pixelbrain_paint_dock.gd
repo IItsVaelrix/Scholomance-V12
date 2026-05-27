@@ -17,6 +17,7 @@ var artifact: Dictionary = {
 	"bytecode": "",
 }
 var source_path := ""
+var use_strict_validation := false
 var canvas_view: Control
 var palette_panel: Control
 
@@ -57,6 +58,13 @@ func _ready() -> void:
 	paint_btn.pressed.connect(func(): canvas_view.tool_mode = "paint")
 	toolbar.add_child(paint_btn)
 
+	var strict_check := CheckButton.new()
+	strict_check.text = "Strict"
+	strict_check.tooltip_text = "Reject invalid artifacts on save (recommended)"
+	strict_check.button_pressed = use_strict_validation
+	strict_check.toggled.connect(func(on): use_strict_validation = on)
+	toolbar.add_child(strict_check)
+
 func _on_paint_requested(x: int, y: int, color_text: String) -> void:
 	artifact = ArtifactEditor.paint_pixel(artifact, x, y, color_text)
 	canvas_view.artifact = artifact
@@ -93,7 +101,7 @@ func save_to_path(path: String, strict: bool = false) -> Error:
 	return OK
 
 func save_and_reimport(path: String) -> Error:
-	var result := save_to_path(path)
+	var result := save_to_path(path, use_strict_validation)
 	if result != OK:
 		return result
 	if Engine.is_editor_hint():
