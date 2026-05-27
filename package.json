@@ -14,7 +14,8 @@
     "pnpm": "10.33.4"
   },
   "scripts": {
-    "dev": "node -e \"const cmd = process.platform === 'win32' ? 'start /B npm run dev:server && vite' : 'npm run dev:server & vite'; require('child_process').execSync(cmd, { stdio: 'inherit' });\"",
+    "godot": "STEAM_COMPAT_DATA_PATH=\"/home/deck/.local/share/Steam/steamapps/compatdata/404790\" STEAM_COMPAT_CLIENT_INSTALL_PATH=\"/home/deck/.local/share/Steam\" \"/home/deck/.local/share/Steam/steamapps/common/Proton - Experimental/proton\" run \"/home/deck/.local/share/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe\" --path \"Z:\\\\home\\\\deck\\\\Desktop\\\\Scholomance-V12-main\\\\godot_project\"",
+    "dev": "node --env-file=.env scripts/dev-with-collab-reuse.js",
     "dev:server": "node --env-file=.env codex/server/index.js",
     "dev:dict": "python scripts/serve_scholomance_dict.py --db scholomance_dict.sqlite --port 8787",
     "dev:all": "node -e \"const cmd = process.platform === 'win32' ? 'start /B npm run dev:dict && start /B npm run dev:server && vite' : 'npm run dev:dict & npm run dev:server & vite'; require('child_process').execSync(cmd, { stdio: 'inherit' });\"",
