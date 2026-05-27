@@ -54,7 +54,7 @@ static func validate_common_artifact(artifact: Dictionary, expected_kind: String
 
 static func validate_pixelbrain_artifact(artifact: Dictionary, strict_validation: bool) -> bool:
 	var ok := validate_common_artifact(artifact, PIXELBRAIN_KIND, strict_validation)
-	ok = validate_supported_fields("PixelBrain artifact", artifact, ["kind", "version", "canvas", "palettes", "coordinates", "formula", "bytecode"], strict_validation) and ok
+	ok = validate_supported_fields("PixelBrain artifact", artifact, ["kind", "version", "canvas", "palettes", "coordinates", "formula", "bytecode", "bytecodeStatus"], strict_validation) and ok
 
 	var canvas: Variant = artifact.get("canvas")
 	if typeof(canvas) != TYPE_DICTIONARY:

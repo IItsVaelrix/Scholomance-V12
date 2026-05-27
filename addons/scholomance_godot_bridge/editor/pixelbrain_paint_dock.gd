@@ -83,8 +83,8 @@ func load_from_path(path: String) -> Error:
 	palette_panel.load_palette(palettes)
 	return OK
 
-func save_to_path(path: String) -> Error:
-	if not ArtifactLoader.validate_pixelbrain_artifact(artifact, true):
+func save_to_path(path: String, strict: bool = false) -> Error:
+	if not ArtifactLoader.validate_pixelbrain_artifact(artifact, strict):
 		return ERR_INVALID_DATA
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	if file == null:
