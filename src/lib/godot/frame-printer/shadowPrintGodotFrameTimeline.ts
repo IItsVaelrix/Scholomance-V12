@@ -3,11 +3,7 @@ import { printFrameTimeline } from "./printFrameTimeline";
 import type { PrintFrameTimelineOptions } from "./printFrameTimeline";
 import type { NormalizedFrameState } from "./types";
 
-export type ShadowPrintGodotFrameTimelineOptions = Partial<PrintFrameTimelineOptions> & {
-  sceneId?: string;
-  fps?: number;
-  seed?: string;
-};
+export type ShadowPrintGodotFrameTimelineOptions = Partial<PrintFrameTimelineOptions>;
 
 export function shadowPrintGodotFrameTimeline(
   frames: NormalizedFrameState[],

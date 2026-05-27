@@ -91,6 +91,45 @@ describe("diffFrameState", () => {
     expect(diffFrameState(frame, { ...frame, frame: 1 }).update).toHaveLength(0);
   });
 
+  it("does not emit ghost updates when explicit visibility becomes unspecified", () => {
+    const previousFrame: NormalizedFrameState = {
+      frame: 0,
+      timestampMs: 0,
+      sceneId: "visibility_unspecified_test",
+      seed: "seed_visibility_unspecified",
+      objects: [
+        {
+          id: "orb",
+          type: "Sprite2D",
+          visible: true,
+          transform: {
+            x: 0,
+            y: 0,
+            rotation: 0,
+            scaleX: 1,
+            scaleY: 1,
+          },
+        },
+      ],
+    };
+
+    const nextFrame: NormalizedFrameState = {
+      ...previousFrame,
+      frame: 1,
+      objects: [
+        {
+          ...previousFrame.objects[0],
+          visible: undefined,
+        },
+      ],
+    };
+
+    const diff = diffFrameState(previousFrame, nextFrame);
+
+    expect(diff.update).toHaveLength(0);
+    expect(JSON.stringify(diff.update)).toBe("[]");
+  });
+
   it("distinguishes null from non-finite prop numbers", () => {
     const previousFrame: NormalizedFrameState = {
       frame: 0,

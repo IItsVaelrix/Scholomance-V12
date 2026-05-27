@@ -1,3 +1,7 @@
+/**
+ * Normalizes caller-provided parts into a Godot-safe ID. This is not a hash;
+ * different inputs can normalize to the same value after separator collapse.
+ */
 export function toStableGodotId(parts: Array<string | number | undefined>): string {
   const raw = parts
     .filter((part) => part !== undefined && part !== "")

@@ -29,6 +29,7 @@ export type GodotUpdateInstruction = {
   op: "update";
   id: string;
   transform?: Partial<GodotTransform2D>;
+  /** Omitted when visibility is unchanged or the source has no explicit visibility preference. */
   visible?: boolean;
   props?: Record<string, unknown>;
 };
@@ -66,6 +67,7 @@ export type FrameInstantiationTimeline = {
   schemaVersion: 1;
   sceneId: string;
   fps: number;
+  /** Exclusive upper bound of frame numbers, not the number of packets in sparse timelines. */
   durationFrames: number;
   seed: string;
   frames: FrameInstantiationPacket[];
@@ -85,6 +87,7 @@ export type NormalizedSceneObject = {
   parentId?: string;
   resource?: string;
   transform: GodotTransform2D;
+  /** Undefined means no explicit visibility preference; it is not serialized as a reset. */
   visible?: boolean;
   props?: Record<string, unknown>;
 };

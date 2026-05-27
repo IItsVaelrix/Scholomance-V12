@@ -320,6 +320,14 @@ body::before {
   --gradient-secondary: linear-gradient(135deg, var(--school-alchemy), var(--school-will));
   --gradient-void: linear-gradient(135deg, #1e1e2e, #0d0d15);
   
+  /* VOID School Arena Colors */
+  --void-fissure-core: #00E5FF;
+  --void-fissure-aura: #000000;
+  --void-amethyst-crack: #7B2FBE;
+  --void-pillar-obsidian: #0D0D1A;
+  --void-fractal-neg: #001A1A;
+  --void-tile-base: #111118;
+  
   /* Glow Colors */
   --glow-color: var(--school-sonic-glow);
   

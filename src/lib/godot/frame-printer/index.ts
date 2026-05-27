@@ -1,6 +1,6 @@
 export * from "./types";
 export * from "./constants";
-export * from "./deterministicHash";
+export { deterministicHash } from "./deterministicHash";
 export * from "./stableId";
 export * from "./diffFrameState";
 export * from "./printFrameTimeline";

@@ -86,6 +86,13 @@ function diffTransform(
   return Object.keys(diff).length > 0 ? diff : undefined;
 }
 
+function hasExplicitVisibilityChange(
+  previous: NormalizedSceneObject,
+  next: NormalizedSceneObject
+): boolean {
+  return next.visible !== undefined && previous.visible !== next.visible;
+}
+
 function toCreateInstruction(object: NormalizedSceneObject): GodotCreateInstruction {
   return {
     op: "create",
@@ -127,7 +134,7 @@ export function diffFrameState(
 
     const transformDiff = diffTransform(previousObject.transform, nextObject.transform);
     const propsChanged = !deepEqualProps(previousObject.props, nextObject.props);
-    const visibleChanged = previousObject.visible !== nextObject.visible;
+    const visibleChanged = hasExplicitVisibilityChange(previousObject, nextObject);
 
     if (transformDiff || propsChanged || visibleChanged) {
       update.push({
