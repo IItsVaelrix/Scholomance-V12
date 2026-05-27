@@ -3,8 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Terminal, Save, AlertTriangle, CheckCircle,
   Sliders, Copy, AlignLeft, Grid, ZoomIn, ZoomOut, X,
+  Download,
 } from 'lucide-react';
 import { validateDivProposal } from '../../lib/engine.adapter.js';
+import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
+import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
+import { buildDivWandGodotExport } from '../../lib/godot-export/divwandGodotExport.js';
 import './DivWandPage.css';
 
 // ── BROWSER-SAFE CATALOG ──────────────────────────────────────────────────────
@@ -324,6 +328,7 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
 export default function DivWandPage() {
+  const isGodotExportEnabled = useGodotExportFlag();
   const [selectedPreset, setSelectedPreset]     = useState(PRESETS[0]);
   const [proposalText, setProposalText]         = useState(() => JSON.stringify(PRESETS[0].proposal, null, 2));
   const [validationResult, setValidationResult] = useState({ valid: true, ok: true, errors: [] });
@@ -407,6 +412,17 @@ export default function DivWandPage() {
       }]);
     } catch (e) {
       setTerminalLogs(prev => [...prev, { type: 'error', text: `Register failed: ${e.message}`, ts: ts() }]);
+    }
+  }, [proposalText]);
+
+  const handleGodotArtifactExport = useCallback(() => {
+    try {
+      const parsed = JSON.parse(proposalText);
+      const artifactText = buildDivWandGodotExport(parsed);
+      downloadTextFile(`divwand_${parsed.proposedLayout?.role || 'layout'}_${Date.now()}.divwand`, artifactText);
+      setTerminalLogs(prev => [...prev, { type: 'success', text: 'Godot DivWand artifact exported.', ts: ts() }]);
+    } catch (e) {
+      setTerminalLogs(prev => [...prev, { type: 'error', text: `Godot export failed: ${e.message}`, ts: ts() }]);
     }
   }, [proposalText]);
 
@@ -498,6 +514,18 @@ export default function DivWandPage() {
             <Save size={13} aria-hidden="true" />
             Register
           </button>
+          {isGodotExportEnabled && (
+            <button
+              className="dw-btn"
+              onClick={handleGodotArtifactExport}
+              title="Export Godot DivWand artifact"
+              aria-label="Export Godot DivWand artifact"
+              type="button"
+            >
+              <Download size={13} aria-hidden="true" />
+              Export
+            </button>
+          )}
         </div>
       </header>
 

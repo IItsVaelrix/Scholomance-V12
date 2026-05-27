@@ -8,6 +8,8 @@ import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePredictor } from "../../hooks/usePredictor.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
+import { useGodotExportFlag } from "../../hooks/useGodotExportFlag.js";
+import { downloadTextFile } from "../../components/GodotExportButton/downloadTextFile.js";
 
 // New components
 import { UploadSection } from "./components/UploadSection.jsx";
@@ -27,6 +29,7 @@ import {
   formulaToBytecode,
   processorBridge
 } from "../../lib/pixelbrain.adapter.js";
+import { buildPixelBrainGodotExport } from "../../lib/godot-export/pixelbrainGodotExport.js";
 import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
 
 import "./PixelBrainPage.css";
@@ -123,6 +126,7 @@ function describeVerseAmplifier(verseAmplifier) {
 
 export default function PixelBrainPage() {
   const { getCompletions, isReady: isPredictiveReady } = usePredictor();
+  const isGodotExportEnabled = useGodotExportFlag();
   const [verseText, setVerseText] = useState("");
 
   const {
@@ -325,6 +329,24 @@ export default function PixelBrainPage() {
       setStatus('error');
     }
   }, [coordinates, palettes, formula, activeSchool]);
+
+  const handleGodotArtifactExport = useCallback(() => {
+    try {
+      const artifactText = buildPixelBrainGodotExport({
+        canvas: pixelCanvas,
+        palettes,
+        coordinates,
+        formula,
+      });
+
+      downloadTextFile(`pixelbrain_${activeSchool.toLowerCase()}_${Date.now()}.pbrain`, artifactText);
+      setStatus('ready');
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Godot artifact export failed');
+      setStatus('error');
+    }
+  }, [activeSchool, coordinates, formula, palettes, pixelCanvas]);
 
   // Handle clear
   const handleClear = useCallback(() => {
@@ -630,6 +652,16 @@ export default function PixelBrainPage() {
           >
             EXECUTE_BURN_TO_LATTICE
           </button>
+          {isGodotExportEnabled && (
+            <button
+              className="transmute-ignite-btn"
+              onClick={handleGodotArtifactExport}
+              disabled={coordinates.length === 0}
+              type="button"
+            >
+              EXPORT_GODOT_ARTIFACT
+            </button>
+          )}
         </aside>
       </div>
 

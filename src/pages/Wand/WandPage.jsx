@@ -23,7 +23,8 @@ import {
   Sliders, 
   Plus, 
   Trash2, 
-  FolderOpen 
+  FolderOpen,
+  Download,
 } from 'lucide-react';
 
 // Core engine imports
@@ -38,6 +39,9 @@ import {
 } from '../../lib/engine.adapter.js';
 import { roleDispatcher } from '../../ui/features/mysticHolistics/hero/roleDispatcher';
 import { registerBuiltInDrawers } from '../../ui/features/mysticHolistics/hero/roleDrawers';
+import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
+import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
+import { buildWandGodotExport } from '../../lib/godot-export/wandGodotExport.js';
 
 import './WandPage.css';
 
@@ -287,6 +291,7 @@ const INITIAL_PRESETS = [
 const REGISTERED_DRAWER_ROLES = ["shrine.window", "shrine.moon", "shrine.cabinet", "shrine.altar", "sigil.capsule", "text.vector", "ink.ballpoint"];
 
 export default function WandPage() {
+  const isGodotExportEnabled = useGodotExportFlag();
   const [proposal, setProposal] = useState(INITIAL_PRESETS[0].proposal);
   const [rawJsonText, setRawJsonText] = useState(JSON.stringify(INITIAL_PRESETS[0].proposal, null, 2));
   const [editorMode, setEditorMode] = useState('visual'); // 'visual' | 'json'
@@ -634,6 +639,16 @@ export default function WandPage() {
     addTerminalLog(`FORMULA PERSISTED: Catalog ID ${catId} — saved in Local Sanctuary.`, "success");
   };
 
+  const handleGodotArtifactExport = () => {
+    try {
+      const artifactText = buildWandGodotExport(proposal);
+      downloadTextFile(`wand_${proposal.proposedFormula?.role || 'proposal'}_${Date.now()}.wand`, artifactText);
+      addTerminalLog('Godot Wand artifact exported.', 'success');
+    } catch (err) {
+      addTerminalLog(`Godot export failed: ${err.message}`, 'error');
+    }
+  };
+
   const handleLoadPreset = (presetProposal, name) => {
     handleProposalChange(presetProposal, 'visual');
     addTerminalLog(`Loaded preset: "${name}"`, "info");
@@ -764,6 +779,17 @@ export default function WandPage() {
             <Save className="btn-icon" />
             Persist Catalog
           </button>
+          {isGodotExportEnabled && (
+            <button
+              className="action-btn animate-btn"
+              onClick={handleGodotArtifactExport}
+              type="button"
+              title="Export Godot Wand artifact"
+            >
+              <Download className="btn-icon" />
+              Export Godot
+            </button>
+          )}
         </div>
       </header>
 
