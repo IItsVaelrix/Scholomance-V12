@@ -1,12 +1,13 @@
 # Dead Code Report
 
-Generated at: 2026-05-25T10:26:11.780Z
+Generated at: 2026-05-27T20:29:28.354Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
 - [ ] src/lib/animation-types.js
 - [ ] src/lib/css/schoolStyles.js
+- [ ] src/lib/godot-export/shadowFrameTimeline.ts
 - [ ] src/lib/literaryClassifier.js
 - [ ] src/lib/math/safe.js
 - [ ] src/lib/reference.engine.js
@@ -30,6 +31,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
 - [ ] src/ui/animation/hooks/useResolvedMotion.ts
 - [ ] src/vite-env.d.ts
+- [ ] codex/core/archive/truesight/color/visemeMapping.ARCHIVED.js
 - [ ] codex/core/diagnostic/index.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
 - [ ] codex/core/immunity/clerical-raid.substrate.js
@@ -67,6 +69,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSchoolBadgeClass` in `src/data/schools.js`
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
+- [ ] `setGodotExportFlag` in `src/hooks/useGodotExportFlag.js`
+- [ ] `GODOT_EXPORT_FLAG_CHANGED_EVENT` in `src/hooks/useGodotExportFlag.js`
+- [ ] `GODOT_EXPORT_FLAG_KEY` in `src/hooks/useGodotExportFlag.js`
 - [ ] `emitXPEvent` in `src/hooks/useProgression.jsx`
 - [ ] `useXPEventListener` in `src/hooks/useProgression.jsx`
 - [ ] `onXPEvent` in `src/hooks/useProgression.jsx`
@@ -77,6 +82,24 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BrowserBytecodeHealth` in `src/lib/diagnostic.adapter.js`
 - [ ] `engineMicroprocessors` in `src/lib/engine.adapter.js`
 - [ ] `padFlatVectorToPowerOfTwo` in `src/lib/engine.adapter.js`
+- [ ] `FrameStateDiff` in `src/lib/godot/frame-printer/diffFrameState.ts`
+- [ ] `GodotFrameInstruction` in `src/lib/godot/frame-printer/types.ts`
+- [ ] `FrameValidationIssue` in `src/lib/godot/frame-printer/validateFramePacket.ts`
+- [ ] `FrameValidationResult` in `src/lib/godot/frame-printer/validateFramePacket.ts`
+- [ ] `validateFrameTimeline` in `src/lib/godot/frame-printer/validateFramePacket.ts`
+- [ ] `GODOT_ARTIFACT_VERSION` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `PIXELBRAIN_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `WAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `DIVWAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `VOID_SCENE_WIDTH` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_SCENE_HEIGHT` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_GRID_COLS` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_GRID_ROWS` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `PHI` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_SINGULARITY_TILE` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_TICK_DAMAGE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_TICK_COUNT` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `VOID_MAX_EXPOSURE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
 - [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
@@ -287,6 +310,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `generateSemanticPalette` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `generatePaletteFromSemantics` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `getHexForByte` in `codex/core/pixelbrain/color-byte-mapping.js`
+- [ ] `getVisemeForFormants` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
 - [ ] `generateSpiralCoordinates` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `mapSemanticToCoordinateConstraints` in `codex/core/pixelbrain/coordinate-mapping.js`

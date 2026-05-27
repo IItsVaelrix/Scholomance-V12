@@ -12,8 +12,10 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 
 | PDR | Status | Classification | Priority |
 |-----|--------|----------------|----------|
+| [`ByteCode%20Diagnostic%20Synthesis%20PDR (1).md`](./ByteCode%2520Diagnostic%2520Synthesis%2520PDR%20%281%29.md) | Unclassified | Bytecode + Diagnostic Synthesis | Unclassified |
 | [`bytecode_contextual_compression_checksums_pdr.md`](./bytecode_contextual_compression_checksums_pdr.md) | Draft | Architectural \| AI Observability \| MCP Memory \| TurboQuant Infrastructure | High |
 | [`ByteCode_Error_System_V3_pdr.md`](./ByteCode_Error_System_V3_pdr.md) | Archived placeholder | Bytecode + QA + Error Transport | High |
+| [`CLERICAL_RAID_PDR.md`](./CLERICAL_RAID_PDR.md) | Unclassified | Clerical RAID + Documentation Infrastructure | Unclassified |
 | [`PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md`](./PDR-2026-05-08-IDE-BYTECODE-PROFESSIONAL.md) | READY FOR GEMINI PHASE 0 KICKOFF. | Unclassified | Unclassified |
 | [`PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md`](./PDR-2026-05-08-IDE-PHASE-3-SUBSTRATE-APPLICATION.md) | READY (blocked on Gemini Phase 2 acceptance). | Unclassified | Unclassified |
 | [`PDR-2026-05-08-IDE-PHASE-4-SURFACE-POLISH.md`](./PDR-2026-05-08-IDE-PHASE-4-SURFACE-POLISH.md) | READY (blocked on Phase 3 acceptance). | Unclassified | Unclassified |
@@ -22,6 +24,10 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`PDR-2026-05-10-PROACTIVE-ANTIGEN-PROBE.md`](./PDR-2026-05-10-PROACTIVE-ANTIGEN-PROBE.md) | Draft | Architectural \| Immune System \| AI Safety | High |
 | [`PDR-2026-05-10-BYTECODE-DIAGNOSTIC-REPORTING.md`](./PDR-2026-05-10-BYTECODE-DIAGNOSTIC-REPORTING.md) | In Progress | Architectural \| QA Infrastructure \| AI Observability | High |
 | [`PDR-2026-05-10-DIAGNOSTIC-ARCHIVED-HEALTH.md`](./PDR-2026-05-10-DIAGNOSTIC-ARCHIVED-HEALTH.md) | Implemented | Architectural \| QA Infrastructure \| AI Safety | High |
+| [`PDR-2026-05-22-TOOLING-HARDENING-SPEC.md`](./PDR-2026-05-22-TOOLING-HARDENING-SPEC.md) | Unclassified | Tooling Hardening | Unclassified |
+| [`PDR-2026-05-22-TOOLING-HARDENING.md`](./PDR-2026-05-22-TOOLING-HARDENING.md) | Unclassified | Tooling Hardening | Unclassified |
+| [`PDR-2026-05-27-VOID-ART-SCENE.md`](./PDR-2026-05-27-VOID-ART-SCENE.md) | Draft | UI + Rendering + Godot Interop + Behavioral | High |
+| [`PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md`](./PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md) | Draft | Structural + Behavioral + Godot Interop + Tooling | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |
@@ -37,7 +43,9 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`combat_component_pdr.md`](./combat_component_pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`combat_grid_component_pdr.md`](./combat_grid_component_pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`experience_bytecode_pdr.md`](./experience_bytecode_pdr.md) | Draft | new heuristic | Unclassified |
+| [`Godot Frame Instantiation Printer PDR.md`](./Godot%20Frame%20Instantiation%20Printer%20PDR.md) | Draft | Architectural + Structural + Godot Interop | High |
 | [`grimdesign_pdr.md`](./grimdesign_pdr.md) | Draft | UI + Tooling + PixelBrain + VerseIR + Developer Experience | High |
+| [`godot-side-painting-ui-pdr.md`](./godot-side-painting-ui-pdr.md) | Draft | Architectural + Tooling + PixelBrain + Godot Editor UI | High |
 | [`heartbeat_alert_identity_packet_pdr.md`](./heartbeat_alert_identity_packet_pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`lexical_atrium_pdr_redesign.md`](./lexical_atrium_pdr_redesign.md) | Unclassified | Unclassified | Unclassified |
 | [`lexicon_oracle_aesthetic_refinement_pdr.md`](./lexicon_oracle_aesthetic_refinement_pdr.md) | Draft | UI + Data Visualization + Animation | High |
@@ -49,6 +57,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`pdr_markdown_temp.md`](./pdr_markdown_temp.md) | Unclassified | Unclassified | Unclassified |
 | [`pixelbrain_animation_algorithms_pdr.md`](./pixelbrain_animation_algorithms_pdr.md) | Draft — Canon Proposal | UI + PixelBrain + Animation System + Lore Infrastructure | High |
 | [`pixelbrain_font_audit_bytecode_pdr.md`](./pixelbrain_font_audit_bytecode_pdr.md) | Draft for implementation | Architectural + Rendering Systems + Measurement Infrastructure | Critical |
+| [`pixelbrain_wand_divwand_godot_bridge_pdr.md`](./pixelbrain_wand_divwand_godot_bridge_pdr.md) | Implemented | Architectural + Tooling + PixelBrain + Godot Interop | High |
 | [`postfix_integration_pdr.md`](./postfix_integration_pdr.md) | Draft | Infrastructure \| Security \| Communications | High |
 | [`prototype_systems_wiring_pdr.md`](./prototype_systems_wiring_pdr.md) | Draft | Architectural + Core Pipeline + Scoring | Critical |
 | [`render_secret_sync_pdr.md`](./render_secret_sync_pdr.md) | Implemented | Infrastructure \| DevOps \| Security | High |

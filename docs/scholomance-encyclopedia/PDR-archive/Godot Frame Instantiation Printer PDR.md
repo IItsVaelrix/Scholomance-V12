@@ -273,6 +273,7 @@ export type GodotUpdateInstruction = {
   op: "update";
   id: string;
   transform?: Partial<GodotTransform2D>;
+  /** Omitted when visibility is unchanged or the source has no explicit visibility preference. */
   visible?: boolean;
   props?: Record<string, unknown>;
 };
@@ -310,6 +311,7 @@ export type FrameInstantiationTimeline = {
   schemaVersion: 1;
   sceneId: string;
   fps: number;
+  /** Exclusive upper bound of frame numbers, not the number of packets in sparse timelines. */
   durationFrames: number;
   seed: string;
   frames: FrameInstantiationPacket[];
@@ -329,6 +331,7 @@ export type NormalizedSceneObject = {
   parentId?: string;
   resource?: string;
   transform: GodotTransform2D;
+  /** Undefined means no explicit visibility preference; it is not serialized as a reset. */
   visible?: boolean;
   props?: Record<string, unknown>;
 };
@@ -647,11 +650,50 @@ import type {
   NormalizedSceneObject,
 } from "./types";
 
-function shallowEqualObject(
+function deepEqualValue(left: unknown, right: unknown): boolean {
+  if (Object.is(left, right)) {
+    return true;
+  }
+
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+      return false;
+    }
+
+    return left.every((leftValue, index) => deepEqualValue(leftValue, right[index]));
+  }
+
+  if (
+    left &&
+    right &&
+    typeof left === "object" &&
+    typeof right === "object"
+  ) {
+    const leftEntries = Object.entries(left as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+    const rightEntries = Object.entries(right as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b)
+    );
+
+    if (leftEntries.length !== rightEntries.length) {
+      return false;
+    }
+
+    return leftEntries.every(([key, leftValue], index) => {
+      const [rightKey, rightValue] = rightEntries[index];
+      return key === rightKey && deepEqualValue(leftValue, rightValue);
+    });
+  }
+
+  return false;
+}
+
+function deepEqualProps(
   left: Record<string, unknown> | undefined,
   right: Record<string, unknown> | undefined
 ): boolean {
-  return JSON.stringify(left ?? {}) === JSON.stringify(right ?? {});
+  return deepEqualValue(left ?? {}, right ?? {});
 }
 
 function diffTransform(
@@ -710,8 +752,8 @@ export function diffFrameState(
     }
 
     const transformDiff = diffTransform(previousObject.transform, nextObject.transform);
-    const propsChanged = !shallowEqualObject(previousObject.props, nextObject.props);
-    const visibleChanged = previousObject.visible !== nextObject.visible;
+    const propsChanged = !deepEqualProps(previousObject.props, nextObject.props);
+    const visibleChanged = nextObject.visible !== undefined && previousObject.visible !== nextObject.visible;
 
     if (transformDiff || propsChanged || visibleChanged) {
       update.push({
