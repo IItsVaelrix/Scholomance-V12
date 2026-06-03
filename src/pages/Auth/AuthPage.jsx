@@ -2,7 +2,29 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { buildAuthorityUrl } from "../../lib/apiUrl.js";
 import "./AuthPage.css";
+
+const OAUTH_MESSAGES = {
+  unverified: "Your Google account's email isn't verified. Please register with email and password instead.",
+  error: "Google sign-in was cancelled or failed. Please try again.",
+  bad_state: "Google sign-in could not be verified. Please try again.",
+  expired: "That Google sign-in expired. Please try again.",
+  token_failed: "Google sign-in failed during token exchange. Please try again.",
+  no_profile: "Google didn't return a usable profile. Please try again.",
+  link_failed: "Could not complete Google sign-in. Please try again.",
+};
+
+function GoogleGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.68-3.89 2.68-6.62z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z" />
+      <path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z" />
+      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+    </svg>
+  );
+}
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -26,7 +48,19 @@ export default function AuthPage() {
     if (searchParams.get("verified") === "true") {
       setSuccessMsg("Email verified! You can now log in.");
     }
+    const oauth = searchParams.get("oauth");
+    if (oauth === "link_required") {
+      const email = searchParams.get("email");
+      setError(`An account already exists for ${email || "that email"}. Sign in below, then link Google from your profile.`);
+    } else if (oauth && OAUTH_MESSAGES[oauth]) {
+      setError(OAUTH_MESSAGES[oauth]);
+    }
   }, [searchParams]);
+
+  const handleGoogleSignIn = () => {
+    // Top-level navigation (not fetch) so the provider redirect works.
+    window.location.href = buildAuthorityUrl("/auth/oauth/google");
+  };
 
   useEffect(() => {
     if (!isLogin) {
@@ -36,7 +70,7 @@ export default function AuthPage() {
 
   const fetchCaptcha = async () => {
     try {
-      const res = await fetch('/auth/captcha', { credentials: 'include' });
+      const res = await fetch(buildAuthorityUrl('/auth/captcha'), { credentials: 'include' });
       const data = await res.json();
       setCaptcha(data);
     } catch (e) {
@@ -165,7 +199,20 @@ export default function AuthPage() {
             </p>
           </header>
 
-          <form onSubmit={handleSubmit} className="auth-form mt-8">
+          <div className="auth-oauth mt-8">
+            <button
+              type="button"
+              className="btn btn-secondary w-full auth-oauth-btn"
+              onClick={handleGoogleSignIn}
+            >
+              <GoogleGlyph /> Continue with Google
+            </button>
+            <div className="auth-divider">
+              <span>or {isLogin ? "sign in" : "register"} with email</span>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="auth-form">
             <div className="field-group">
               <label htmlFor="username">Initiate Name</label>
               <input

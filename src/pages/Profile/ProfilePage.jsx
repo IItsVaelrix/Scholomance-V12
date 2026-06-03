@@ -4,6 +4,7 @@ import { useProgression } from "../../hooks/useProgression.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { SCHOOLS } from "../../data/schools";
 import { getTierForLevel } from "../../lib/progressionUtils";
+import LinkedAccounts from "./LinkedAccounts.jsx";
 import "./ProfilePage.css";
 
 export default function ProfilePage() {
@@ -138,6 +139,16 @@ export default function ProfilePage() {
                 </div>
               ))}
             </div>
+          </motion.div>
+
+          {/* Linked Accounts */}
+          <motion.div
+            className="content-panel glass"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+          >
+            <LinkedAccounts />
           </motion.div>
         </div>
       </div>

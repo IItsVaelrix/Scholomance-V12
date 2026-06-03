@@ -339,7 +339,41 @@ async function authRoutesInternal(fastify, opts) {
         // Don't send sensitive data
         return { user: { id: user.id, username: user.username, email: user.email } };
     });
-    
+
+    // ── Linked identities (password + OAuth providers) ──────────────────────
+    // List the current user's login methods.
+    fastify.get('/identities', async (request, reply) => {
+        if (!request.session.user) {
+            return reply.status(401).send({ message: 'Not authenticated' });
+        }
+        const rows = await userPersistence.identities.listForUser(request.session.user.id);
+        return {
+            identities: rows.map((row) => ({
+                provider: row.provider,
+                email: row.email,
+                emailVerified: Number(row.email_verified) === 1,
+                createdAt: row.created_at,
+            })),
+        };
+    });
+
+    // Unlink a provider. CSRF is covered by the SameSite=Lax session cookie (a
+    // cross-site POST never carries it), consistent with the other auth mutations.
+    fastify.post('/identities/:provider/unlink', async (request, reply) => {
+        if (!request.session.user) {
+            return reply.status(401).send({ message: 'Not authenticated' });
+        }
+        const { provider } = request.params;
+        const result = await userPersistence.identities.unlink(request.session.user.id, provider);
+        if (!result.ok) {
+            return reply.status(409).send({
+                message: 'Cannot unlink your only remaining login method.',
+                reason: result.reason,
+            });
+        }
+        return reply.status(200).send({ message: `Unlinked ${provider}.` });
+    });
+
     // CSRF Token
     // SECURITY: Rate limit to prevent session flooding attacks
     fastify.get('/csrf-token', {
