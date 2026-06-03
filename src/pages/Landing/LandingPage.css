@@ -153,6 +153,9 @@
   color: transparent;
   filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.35));
   transition: filter 0.4s ease;
+  animation: wind-blow 7s infinite ease-in-out;
+  transform-origin: center bottom;
+  display: inline-block;
 }
 
 .portal-gate:hover .grimoire-title,
@@ -219,7 +222,100 @@
   .portal-halo,
   .portal-ring--energy,
   .portal-hint,
-  .portal-hint-beacon {
+  .portal-hint-beacon,
+  .portal-lightning,
+  .portal-smoke--1,
+  .portal-smoke--2,
+  .portal-smoke--3,
+  .grimoire-title {
     animation: none;
   }
+}
+
+/* ── Lightning Effect ─────────────────────────────────────────────────────── */
+
+.portal-lightning {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0);
+  z-index: 0;
+  animation: lightning-flash 15s infinite;
+}
+
+@keyframes lightning-flash {
+  0%, 88%, 92%, 96%, 100% { background: rgba(255, 255, 255, 0); }
+  89% { background: rgba(200, 230, 255, 0.15); }
+  90% { background: rgba(255, 255, 255, 0); }
+  93% { background: rgba(230, 250, 255, 0.25); }
+  94% { background: rgba(255, 255, 255, 0); }
+  97% { background: rgba(180, 220, 255, 0.1); }
+  98% { background: rgba(255, 255, 255, 0); }
+}
+
+/* ── Smoke Effects ────────────────────────────────────────────────────────── */
+
+.portal-smoke-container {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.portal-smoke {
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  top: -50%;
+  left: -50%;
+  filter: blur(80px);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+}
+
+.portal-smoke--1 {
+  background: radial-gradient(circle at 40% 60%, rgba(100, 120, 150, 0.15) 0%, transparent 50%);
+  animation: smoke-swirl-1 35s infinite linear;
+}
+
+.portal-smoke--2 {
+  background: radial-gradient(circle at 60% 40%, rgba(80, 100, 130, 0.12) 0%, transparent 60%);
+  animation: smoke-swirl-2 45s infinite linear reverse;
+}
+
+.portal-smoke--3 {
+  background: radial-gradient(circle at 50% 50%, rgba(120, 140, 170, 0.1) 0%, transparent 70%);
+  animation: smoke-swirl-3 25s infinite ease-in-out alternate;
+}
+
+@keyframes smoke-swirl-1 {
+  0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+  50% { transform: rotate(180deg) scale(1.1) translate(-2%, 5%); }
+  100% { transform: rotate(360deg) scale(1) translate(0, 0); }
+}
+
+@keyframes smoke-swirl-2 {
+  0% { transform: rotate(0deg) scale(1) translate(0, 0); }
+  50% { transform: rotate(-180deg) scale(1.2) translate(3%, -4%); }
+  100% { transform: rotate(-360deg) scale(1) translate(0, 0); }
+}
+
+@keyframes smoke-swirl-3 {
+  0% { transform: scale(1) translate(0, 0); }
+  100% { transform: scale(1.15) translate(-1%, -2%); }
+}
+
+/* ── Wind on Letters ──────────────────────────────────────────────────────── */
+
+@keyframes wind-blow {
+  0%   { transform: skewX(0deg) translateX(0px); }
+  10%  { transform: skewX(-1deg) translateX(-1px); }
+  15%  { transform: skewX(-4deg) translateX(-4px); }
+  25%  { transform: skewX(-2deg) translateX(-2px); }
+  35%  { transform: skewX(-5deg) translateX(-5px); }
+  45%  { transform: skewX(-1deg) translateX(-1px); }
+  55%  { transform: skewX(-3deg) translateX(-3px); }
+  70%  { transform: skewX(0deg) translateX(0px); }
+  100% { transform: skewX(0deg) translateX(0px); }
 }

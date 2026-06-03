@@ -28,6 +28,14 @@ export default function LandingPage() {
 
   return (
     <div className="portal-scene" aria-label="Scholomance — enter the portal">
+      <div className="portal-lightning" aria-hidden="true" />
+      
+      <div className="portal-smoke-container" aria-hidden="true">
+        <div className="portal-smoke portal-smoke--1" />
+        <div className="portal-smoke portal-smoke--2" />
+        <div className="portal-smoke portal-smoke--3" />
+      </div>
+
       <div className="portal-halo" aria-hidden="true" />
 
       <WatercolorDissolve dissolving={dissolving} onDissolveComplete={handleDissolveComplete}>

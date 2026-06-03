@@ -274,6 +274,38 @@ const USER_MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 14,
+    name: 'create_user_identities_table',
+    up(database) {
+      // One user may own several login methods (password + OAuth providers).
+      // Existing password users are backfilled a 'password' identity so the
+      // identities table is the complete source of truth from day one.
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS user_identities (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          provider TEXT NOT NULL,
+          provider_user_id TEXT NOT NULL,
+          email TEXT,
+          email_verified INTEGER NOT NULL DEFAULT 0,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_identities_provider_uid
+          ON user_identities(provider, provider_user_id);
+        CREATE INDEX IF NOT EXISTS idx_identities_user ON user_identities(user_id);
+
+        INSERT INTO user_identities (user_id, provider, provider_user_id, email, email_verified)
+        SELECT id, 'password', CAST(id AS TEXT), email, COALESCE(verified, 0)
+        FROM users
+        WHERE NOT EXISTS (
+          SELECT 1 FROM user_identities ui
+          WHERE ui.user_id = users.id AND ui.provider = 'password'
+        );
+      `);
+    },
+  },
 ];
 
 let db;
@@ -472,11 +504,36 @@ async function findUserByRecoveryTokenHash(tokenHash) {
 
 async function createUser(username, email, hashedPassword, verificationToken) {
   const result = await db.execute('INSERT INTO users (username, email, password, verificationToken, verified) VALUES (?, ?, ?, ?, 0)', [username, email, hashedPassword, verificationToken]);
-  return { id: result.lastInsertRowid, username, email };
+  const userId = result.lastInsertRowid;
+  // Mirror every password account as a 'password' identity so user_identities
+  // is the complete source of truth for new and backfilled users alike.
+  await db.execute(
+    `INSERT INTO user_identities (user_id, provider, provider_user_id, email, email_verified)
+     VALUES (?, 'password', ?, ?, 0)`,
+    [userId, String(userId), email],
+  );
+  return { id: userId, username, email };
 }
 
 async function verifyUser(userId) {
   await db.execute('UPDATE users SET verified = 1, verificationToken = NULL WHERE id = ?', [userId]);
+  // Keep the password identity's verification flag in step with the user row.
+  await db.execute(
+    `UPDATE user_identities SET email_verified = 1 WHERE user_id = ? AND provider = 'password'`,
+    [userId],
+  );
+}
+
+async function createOAuthUser(username, email, passwordHash) {
+  // A passwordless (OAuth-only) account: the email is already verified (the
+  // provider attested it), and `passwordHash` is a real but unknowable hash so
+  // the /login path can never authenticate it. The caller links the provider
+  // identity separately.
+  const result = await db.execute(
+    'INSERT INTO users (username, email, password, verificationToken, verified) VALUES (?, ?, ?, NULL, 1)',
+    [username, email, passwordHash],
+  );
+  return { id: result.lastInsertRowid, username, email };
 }
 
 async function setVerificationToken(userId, verificationToken) {
@@ -507,6 +564,53 @@ async function clearRecoveryToken(userId) {
     WHERE id = ?
   `, [userId]);
   return await findUserById(userId);
+}
+
+// ── User identities (password + OAuth providers) ─────────────────────────────
+
+async function findIdentity(provider, providerUserId) {
+  const result = await db.execute(
+    'SELECT * FROM user_identities WHERE provider = ? AND provider_user_id = ?',
+    [provider, String(providerUserId)],
+  );
+  return result.rows[0] || null;
+}
+
+async function findUserByIdentity(provider, providerUserId) {
+  const identity = await findIdentity(provider, providerUserId);
+  if (!identity) return null;
+  return await findUserById(identity.user_id);
+}
+
+async function linkIdentity({ userId, provider, providerUserId, email = null, emailVerified = false }) {
+  await db.execute(
+    `INSERT INTO user_identities (user_id, provider, provider_user_id, email, email_verified)
+     VALUES (?, ?, ?, ?, ?)`,
+    [userId, provider, String(providerUserId), email, emailVerified ? 1 : 0],
+  );
+  return await findIdentity(provider, providerUserId);
+}
+
+async function listIdentitiesForUser(userId) {
+  const result = await db.execute(
+    `SELECT id, user_id, provider, provider_user_id, email, email_verified, created_at
+     FROM user_identities WHERE user_id = ? ORDER BY created_at ASC, id ASC`,
+    [userId],
+  );
+  return result.rows || [];
+}
+
+async function unlinkIdentity(userId, provider) {
+  // Never strand an account with zero login methods.
+  const identities = await listIdentitiesForUser(userId);
+  if (identities.length <= 1) {
+    return { ok: false, reason: 'last_identity' };
+  }
+  await db.execute(
+    'DELETE FROM user_identities WHERE user_id = ? AND provider = ?',
+    [userId, provider],
+  );
+  return { ok: true };
 }
 
 async function updatePasswordHash(userId, hashedPassword) {
@@ -941,11 +1045,19 @@ export const userPersistence = {
     findByVerificationToken: findUserByVerificationToken,
     findByRecoveryTokenHash: findUserByRecoveryTokenHash,
     createUser: createUser,
+    createOAuthUser: createOAuthUser,
     verifyUser: verifyUser,
     setVerificationToken: setVerificationToken,
     setRecoveryToken: setRecoveryToken,
     clearRecoveryToken: clearRecoveryToken,
     updatePasswordHash: updatePasswordHash,
+  },
+  identities: {
+    find: findIdentity,
+    findUser: findUserByIdentity,
+    link: linkIdentity,
+    listForUser: listIdentitiesForUser,
+    unlink: unlinkIdentity,
   },
   mail: {
     queue: queueEmail,

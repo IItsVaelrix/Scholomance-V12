@@ -188,6 +188,9 @@ async function authRoutesInternal(fastify, opts) {
                  return reply.status(403).send({ message: 'Email not verified' });
             }
 
+            // Prevent session fixation: issue a fresh session id on successful login,
+            // discarding any pre-authentication session the client arrived with.
+            await request.session.regenerate();
             request.session.user = { id: user.id, username: user.username, email: user.email };
             request.session[LEXICON_GUEST_SESSION_KEY] = false;
             return reply.status(200).send({ message: 'Logged in successfully' });

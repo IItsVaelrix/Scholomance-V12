@@ -38,6 +38,7 @@ import { grimdesignRoutes } from './routes/grimdesign.routes.js';
 import { combatRoutes } from './routes/combat.routes.js';
 import { lexiconRoutes } from './routes/lexicon.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
+import { oauthRoutes } from './routes/oauth.routes.js';
 import { worldRoutes } from './routes/world.routes.js';
 import { isApiRoutePath, isStaticAssetPath, stripQueryFromUrl } from './notFound.utils.js';
 import { createOpsMetrics } from './observability.metrics.js';
@@ -231,16 +232,30 @@ const COLLAB_ALLOWED_ORIGINS = (process.env.COLLAB_ALLOWED_ORIGINS || '')
 
 const COLLAB_REMOTE_ACCESS = process.env.COLLAB_REMOTE_ACCESS === 'true';
 
-if (COLLAB_REMOTE_ACCESS && COLLAB_ALLOWED_ORIGINS.length > 0) {
+// Cross-origin app origins — e.g. the Cloudflare Pages SPA at https://scholomance.live
+// calling this API at https://api.scholomance.live. When set, CORS is restricted to
+// these origins with credentials; otherwise we reflect the request origin so local
+// same-origin development keeps working untouched.
+const APP_ALLOWED_ORIGINS = (process.env.APP_ALLOWED_ORIGINS || process.env.PUBLIC_APP_URL || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+const CORS_ALLOWED_ORIGINS = [...new Set([
+    ...(COLLAB_REMOTE_ACCESS ? COLLAB_ALLOWED_ORIGINS : []),
+    ...APP_ALLOWED_ORIGINS,
+])];
+
+if (CORS_ALLOWED_ORIGINS.length > 0) {
     fastify.register(fastifyCors, {
-        origin: COLLAB_ALLOWED_ORIGINS,
+        origin: CORS_ALLOWED_ORIGINS,
         methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Agent-ID'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Agent-ID', 'x-csrf-token'],
         exposedHeaders: ['X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset'],
         credentials: true,
         maxAge: 86400, // 24h preflight cache
     });
-    fastify.log.info(`[CORS] Remote access enabled. Origins: ${COLLAB_ALLOWED_ORIGINS.join(', ')}`);
+    fastify.log.info(`[CORS] Restricted to origins: ${CORS_ALLOWED_ORIGINS.join(', ')}`);
 } else {
     // Default: allow same origin for local development
     fastify.register(fastifyCors, {
@@ -267,6 +282,13 @@ const COLLAB_AGENT_RATE_LIMIT_MAX = parseInt(process.env.COLLAB_AGENT_RATE_LIMIT
 const COLLAB_AGENT_RATE_LIMIT_WINDOW = process.env.COLLAB_AGENT_RATE_LIMIT_WINDOW || '1 minute';
 
 const SESSION_COOKIE_NAME = 'scholomance.sid';
+// 'lax' (default) lets the session cookie ride the top-level redirect back from an
+// OAuth provider, while remaining safe alongside the CSRF double-submit token.
+// Override per-environment if needed (e.g. 'strict' for an API-only deployment).
+const SESSION_COOKIE_SAMESITE = process.env.SESSION_COOKIE_SAMESITE || 'lax';
+// Optional: set to '.scholomance.live' to share the cookie across subdomains.
+// Left undefined → host-only cookie (recommended; the SPA never reads it anyway).
+const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN || undefined;
 const PORT = Number(process.env.PORT ?? 8080);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const TURSO_USER_DB_URL = process.env.TURSO_USER_DB_URL;
@@ -525,7 +547,8 @@ const sessionOptions = {
   cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: SESSION_COOKIE_SAMESITE,
+    domain: SESSION_COOKIE_DOMAIN,
     maxAge: 4 * 60 * 60 * 1000, // 4 hours
     path: '/',
   },
@@ -704,6 +727,13 @@ fastify.register(authRoutes, {
     appBaseUrl: SERVER_BASE_URL,
     publicAppUrl: PUBLIC_APP_URL,
     appName: 'Scholomance',
+});
+
+// OAuth social login — inert unless a provider's credentials are configured.
+fastify.register(oauthRoutes, {
+    prefix: '/auth/oauth',
+    serverBaseUrl: SERVER_BASE_URL,
+    publicAppUrl: PUBLIC_APP_URL,
 });
 
 // Reference API Proxy Routes

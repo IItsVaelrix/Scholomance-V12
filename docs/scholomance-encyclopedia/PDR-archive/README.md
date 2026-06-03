@@ -28,6 +28,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`PDR-2026-05-22-TOOLING-HARDENING.md`](./PDR-2026-05-22-TOOLING-HARDENING.md) | Unclassified | Tooling Hardening | Unclassified |
 | [`PDR-2026-05-27-VOID-ART-SCENE.md`](./PDR-2026-05-27-VOID-ART-SCENE.md) | Draft | UI + Rendering + Godot Interop + Behavioral | High |
 | [`PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md`](./PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md) | Draft | Structural + Behavioral + Godot Interop + Tooling | High |
+| [`PDR-2026-06-03-ACCOUNTS-EMAIL-OAUTH.md`](./PDR-2026-06-03-ACCOUNTS-EMAIL-OAUTH.md) | In Progress | Auth + Backend + Security + Data Model | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |
