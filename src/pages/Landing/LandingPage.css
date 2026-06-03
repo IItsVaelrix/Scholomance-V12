@@ -1,0 +1,225 @@
+/**
+ * SCHOLOMANCE LANDING — MINIMAL MAGICAL PORTAL
+ *
+ * A single luminous gate floating in a dark void. The energy ring slowly turns,
+ * the halo breathes, and the word SCHOLOMANCE hangs in the aperture. Clicking the
+ * gate triggers the watercolor dissolve and steps the user through to /read.
+ *
+ * Design language borrowed from Wand + DivWand: near-black void, gold (#d4af37)
+ * and sonic-teal (#2ee6cf) neon, soft glow, restrained motion.
+ */
+
+.portal-scene {
+  --portal-gold: #d4af37;
+  --portal-gold-soft: rgba(212, 175, 55, 0.55);
+  --portal-teal: #2ee6cf;
+  --portal-teal-soft: rgba(46, 230, 207, 0.5);
+
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 44%, #0c1119 0%, #07080f 52%, #030308 100%);
+}
+
+/* ── Ambient halo behind the gate ─────────────────────────────────────────── */
+
+.portal-halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(360px, 66vmin, 720px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(212, 175, 55, 0.16) 0%,
+    rgba(46, 230, 207, 0.07) 40%,
+    transparent 68%
+  );
+  filter: blur(10px);
+  pointer-events: none;
+  animation: portal-breathe 7s ease-in-out infinite;
+}
+
+/* ── The gate (clickable) ─────────────────────────────────────────────────── */
+
+.portal-gate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: clamp(260px, 44vmin, 440px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  user-select: none;
+  transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.portal-gate:hover,
+.portal-gate:focus-visible {
+  transform: scale(1.025);
+  outline: none;
+}
+
+/* Slowly rotating energy ring — gold/teal arcs masked into a thin rim */
+.portal-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.portal-ring--energy {
+  background: conic-gradient(
+    from 0deg,
+    rgba(212, 175, 55, 0) 0deg,
+    rgba(212, 175, 55, 0) 38deg,
+    var(--portal-teal) 92deg,
+    var(--portal-gold) 168deg,
+    rgba(212, 175, 55, 0) 214deg,
+    rgba(46, 230, 207, 0) 250deg,
+    var(--portal-gold) 320deg,
+    rgba(212, 175, 55, 0) 360deg
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+          mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4)) drop-shadow(0 0 18px rgba(46, 230, 207, 0.18));
+  animation: portal-spin 20s linear infinite;
+}
+
+/* Crisp inner rim that frames the aperture */
+.portal-ring--edge {
+  inset: 6px;
+  border: 1px solid var(--portal-gold-soft);
+  box-shadow:
+    0 0 20px rgba(212, 175, 55, 0.22),
+    inset 0 0 26px rgba(46, 230, 207, 0.07);
+}
+
+/* The portal depth — a dark well you are looking through */
+.portal-aperture {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(46, 230, 207, 0.1) 0%,
+    rgba(9, 12, 20, 0.92) 46%,
+    #04050b 100%
+  );
+  box-shadow:
+    inset 0 0 60px rgba(0, 0, 0, 0.85),
+    inset 0 0 34px rgba(46, 230, 207, 0.06);
+  pointer-events: none;
+  transition: box-shadow 0.5s ease;
+}
+
+.portal-gate:hover .portal-aperture,
+.portal-gate:focus-visible .portal-aperture {
+  box-shadow:
+    inset 0 0 70px rgba(0, 0, 0, 0.85),
+    inset 0 0 44px rgba(46, 230, 207, 0.14),
+    0 0 40px rgba(212, 175, 55, 0.16);
+}
+
+/* ── Content suspended in the aperture ────────────────────────────────────── */
+
+.portal-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0 12%;
+}
+
+.grimoire-title {
+  margin: 0;
+  font-family: var(--font-sans), "Space Grotesk", system-ui, sans-serif;
+  font-size: clamp(1.25rem, 3.4vmin, 2rem);
+  font-weight: 500;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em; /* re-center despite trailing letter-spacing */
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f5ead0 0%, var(--portal-gold) 48%, var(--portal-teal) 140%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.35));
+  transition: filter 0.4s ease;
+}
+
+.portal-gate:hover .grimoire-title,
+.portal-gate:focus-visible .grimoire-title {
+  filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.5)) drop-shadow(0 0 38px rgba(46, 230, 207, 0.25));
+}
+
+.portal-tagline {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: clamp(0.58rem, 1.4vmin, 0.72rem);
+  letter-spacing: 0.2em;
+  text-indent: 0.2em;
+  text-transform: uppercase;
+  color: rgba(206, 224, 232, 0.5);
+}
+
+.portal-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.5rem 0 0;
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-size: clamp(0.55rem, 1.2vmin, 0.64rem);
+  letter-spacing: 0.3em;
+  text-indent: 0.3em;
+  text-transform: uppercase;
+  color: var(--portal-gold-soft);
+  animation: portal-hint-pulse 3.2s ease-in-out infinite;
+}
+
+.portal-hint-beacon {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--portal-teal);
+  box-shadow: 0 0 8px var(--portal-teal);
+  animation: portal-beacon 1.6s ease-in-out infinite alternate;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────── */
+
+@keyframes portal-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes portal-breathe {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(1); }
+  50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
+}
+
+@keyframes portal-hint-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+@keyframes portal-beacon {
+  from { opacity: 0.3; transform: scale(0.8); }
+  to   { opacity: 1;   transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-halo,
+  .portal-ring--energy,
+  .portal-hint,
+  .portal-hint-beacon {
+    animation: none;
+  }
+}

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { VOWEL_FAMILY_TO_SCHOOL, SCHOOLS } from '../../data/schools.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { ProceduralWordmark } from './ProceduralWordmark.jsx';
+import { ProceduralSigil } from './ProceduralSigil.jsx';
 
 const ARPABET_VOWELS = new Set([
   'AA', 'AE', 'AH', 'AO', 'AW', 'AX', 'AY',
@@ -186,12 +187,12 @@ function zodiacGlyph(sign) {
   return ZODIAC_GLYPHS[normalized] || '✦';
 }
 
-function OracleWordTitle({ word, pronunciation, frameGlyph, prefersReducedMotion }) {
+function OracleWordTitle({ word, pronunciation, prefersReducedMotion }) {
   const displayWord = String(word || 'awaiting query').trim();
   const phonemes = splitPhonemes(pronunciation, displayWord);
   const wordSchool = deriveWordSchool(phonemes, displayWord);
   const schoolColor = SCHOOLS[wordSchool]?.color || null;
-  const schoolGlyph = SCHOOLS[wordSchool]?.glyph || frameGlyph || '◉';
+  const phonemeSpecs = phonemes.map((token) => ({ token, manner: getArticulationManner(token) }));
   const cacheKey = displayWord.toLowerCase();
   const isFirstReveal = useFirstReveal(cacheKey);
   const animate = isFirstReveal && !prefersReducedMotion;
@@ -207,8 +208,12 @@ function OracleWordTitle({ word, pronunciation, frameGlyph, prefersReducedMotion
       style={inlineStyle}
       aria-label={`Oracle resolved: ${displayWord}`}
     >
-      <span className="oracle-word-title-glyph" aria-hidden="true">{schoolGlyph}</span>
-      <span className="oracle-word-title-serif" aria-hidden="true">{displayWord}</span>
+      <ProceduralSigil
+        className="oracle-word-title-sigil"
+        phonemes={phonemeSpecs}
+        word={displayWord}
+        animate={animate}
+      />
       <span className="oracle-word-title-rule" aria-hidden="true" />
     </div>
   );
@@ -281,7 +286,6 @@ export function CapabilityTruth({ word, partOfSpeech, pronunciation, echoKey, sc
       <OracleWordTitle
         word={displayWord}
         pronunciation={pronunciation}
-        frameGlyph={schoolTheme?.glyph}
         prefersReducedMotion={prefersReducedMotion}
       />
 

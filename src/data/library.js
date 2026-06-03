@@ -28,6 +28,11 @@ export const LIBRARY = {
     yt: "5iIUiYkmkw8",
     school: "WILL",
   },
+  void_transmission: {
+    title: "Void Transmission",
+    yt: "ZdKADAEM7bo",
+    school: "VOID",
+  },
   sonic_harmony: {
     title: "Harmony",
     suno: "https://suno.com/song/e4570794-8296-40b0-8330-4dcd50ea62d3",
@@ -49,6 +54,7 @@ export const INTERNAL_MODULES = [
   { id: "career", path: "/career", label: "Career" },
   { id: "collab", path: "/collab", label: "Collab" },
   { id: "wand", path: "/wand", label: "Wand Workspace" },
+  { id: "photonic-bridge", path: "/photonic-bridge", label: "Photonic Bridge" },
 ];
 
 // Dynamically generate COLORS from SCHOOLS source of truth

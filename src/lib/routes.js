@@ -13,9 +13,10 @@ export const PixelBrainPage = lazyWithRetry(() => import("../pages/PixelBrain/Pi
 export const CareerPage = lazyWithRetry(() => import("../pages/Career/CareerPage"), "career-page");
 export const WandPage = lazyWithRetry(() => import("../pages/Wand/WandPage.jsx"), "wand-page");
 export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandPage.jsx"), "div-wand-page");
+export const PhotonicBridgeLabPage = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge-lab");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
-const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand"];
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/photonic-bridge"];
 
 const ALL_COMPONENTS = {
   "/watch": WatchPage,
@@ -30,6 +31,7 @@ const ALL_COMPONENTS = {
   "/career": CareerPage,
   "/wand": WandPage,
   "/div-wand": DivWandPage,
+  "/photonic-bridge": PhotonicBridgeLabPage,
 };
 
 

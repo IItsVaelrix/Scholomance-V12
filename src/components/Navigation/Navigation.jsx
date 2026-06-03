@@ -1,6 +1,6 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useRef, useTransition } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
@@ -40,6 +40,7 @@ const MOBILE_ROUTE_COPY = {
   wand: "Wield the Fairly Odd Wand formula system & designer.",
   profile: "Review account standing and inner-sanctum access.",
   auth: "Enter the portal and secure your chamber.",
+  "photonic-bridge": "Diagnostic interface for the Photonic Quantization Bridge.",
 };
 
 export default function Navigation() {
@@ -89,13 +90,16 @@ export default function Navigation() {
       setNavigatingPath(null);
       return;
     }
-    
+
+    if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
     setNavigatingPath(path);
+    // Safety net: clear stuck navigating state if route never resolves (lazy load failure etc.)
+    navTimeoutRef.current = setTimeout(() => setNavigatingPath(null), 8000);
     navigate(path);
   }, [navigate, location.pathname]);
 
-  // ... (rest of the handlers and effects remain the same)
   useEffect(() => {
+    if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
     setNavigatingPath(null);
     setIsMenuOpen(false);
   }, [location.pathname]);
@@ -108,8 +112,7 @@ export default function Navigation() {
     return () => { document.body.style.overflow = ""; };
   }, [isMenuOpen]);
   useEffect(() => {
-    const timeoutId = navTimeoutRef.current;
-    return () => { if (timeoutId) clearTimeout(timeoutId); };
+    return () => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); };
   }, []);
   const handleToggle = useCallback(() => {
     triggerHapticPulse(UI_HAPTICS.MEDIUM);

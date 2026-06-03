@@ -1,0 +1,62 @@
+/* src/pages/Read/ProceduralSigil.css */
+
+/* Procedural sigil — composite glyph drawn from a word's phoneme texture.
+   Sizes em-relative so it tracks the word title's font-size; the school color
+   feeds the stroke so the sigil stays tonally bound to the resolved word. */
+.oracle-sigil {
+  --sigil-size: clamp(2em, 2.4em, 4em);
+  --sigil-color: var(--word-school-primary, var(--oracle-school-color, hsl(215, 15%, 52%)));
+  --sigil-stroke-width: clamp(1.1px, 0.07em, 2.6px);
+  --sigil-draw-ms: 380ms;
+  --sigil-stagger-ms: 60ms;
+
+  width: var(--sigil-size);
+  height: var(--sigil-size);
+  flex: 0 0 auto;
+  overflow: visible;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--sigil-color) 42%, transparent));
+}
+
+.oracle-sigil-stroke {
+  fill: none;
+  stroke: color-mix(in srgb, var(--sigil-color) 78%, var(--oracle-gold, #d8c27a));
+  stroke-width: var(--sigil-stroke-width);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 0; /* default fully drawn (cached / reduced motion) */
+  transition: stroke var(--grim-transition, 240ms) ease-out;
+}
+
+/* The central core spokes read a touch brighter than the ring edges. */
+.oracle-sigil-stroke[data-kind='core'] {
+  stroke: color-mix(in srgb, var(--oracle-gold, #d8c27a) 70%, var(--sigil-color));
+}
+
+/* First-reveal draw-in — strokes inscribe in sequence, then settle. */
+@media (prefers-reduced-motion: no-preference) {
+  .oracle-sigil[data-animate='true'] .oracle-sigil-stroke {
+    stroke-dashoffset: 100;
+    animation: oracle-sigil-inscribe var(--sigil-draw-ms) ease-out forwards;
+    animation-delay: calc(var(--sigil-stroke-index) * var(--sigil-stagger-ms));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oracle-sigil .oracle-sigil-stroke {
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+}
+
+@keyframes oracle-sigil-inscribe {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Hover/focus on the title intensifies the sigil glow. */
+.oracle-word-title:hover .oracle-sigil,
+.oracle-word-title:focus-within .oracle-sigil {
+  filter: drop-shadow(0 0 8px color-mix(in srgb, var(--sigil-color) 60%, transparent));
+}

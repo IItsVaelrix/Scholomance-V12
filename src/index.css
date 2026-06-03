@@ -1720,3 +1720,20 @@ h6 { font-size: var(--text-base); }
   mix-blend-mode: multiply;
   z-index: 5;
 }
+
+/* Grimoire Landing */
+:root {
+  --grimoire-desk-warm:             #8B5E3C;
+  --grimoire-desk-highlight:        #C4874F;
+  --grimoire-desk-shadow:           #4A2E12;
+  --grimoire-leather:               #2A1708;
+  --grimoire-parchment:             #F5EDD6;
+  --grimoire-parchment-aged:        #E8D8B0;
+  --grimoire-ink:                   #1A0F05;
+  --grimoire-gold:                  #C9A84C;
+  --grimoire-gold-dim:              #8B6E2A;
+  --grimoire-wax-seal:              #6B1515;
+  --grimoire-dissolve-primary:      #7B4F2E;
+  --grimoire-dissolve-secondary:    #3D1F0A;
+  --grimoire-tilt:                  -0.6deg;
+}

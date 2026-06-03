@@ -1052,10 +1052,23 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.55rem 0.72rem 0.7rem;
+  /* Bottom padding is intentionally dropped here — a flex column that is also a
+     scroll container clips its own padding-bottom once content overflows, leaving
+     the final ~20px unreachable. The .oracle-feed::after spacer below restores that
+     trailing space as a real, scroll-counted flex child instead. */
+  padding: 0.55rem 0.72rem 0;
   display: flex;
   flex-direction: column;
   gap: 0;
+}
+
+/* Guaranteed-reachable bottom breathing room: a flex-shrink:0 spacer is always
+   included in scrollHeight, so the feed scrolls cleanly to its true end and the
+   last line clears the shell's rounded bottom edge. */
+.oracle-feed::after {
+  content: "";
+  display: block;
+  flex: 0 0 1.5rem;
 }
 
 .oracle-feed::before {
@@ -1558,6 +1571,17 @@
   font-size: 1.1rem;
   letter-spacing: 0.18em;
   text-shadow: 0 0 14px color-mix(in srgb, var(--title-color) 38%, transparent);
+}
+
+/* Procedural sigil IS the word — the resolved lexeme converted to a single
+   glyph. It owns row 1 as the title's hero mark; no readable text accompanies
+   it (the container's aria-label carries the word for assistive tech). */
+.oracle-word-title .oracle-word-title-sigil {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  justify-self: start;
+  align-self: center;
+  --sigil-size: clamp(3.2rem, 9vw, 5.4rem);
 }
 
 .oracle-word-title-serif {

@@ -204,6 +204,13 @@ export async function quantizeFlatCoordinates(flatCoords, options = {}) {
   };
 }
 
-
-
+/**
+ * --- PHOTONIC QUANTIZATION BRIDGE ---
+ */
+// Photonic Quantization Bridge - experimental, shadow-first research adapter.
+// Keep as a narrow export. Do not import internal files directly from UI.
+export {
+  analyzePhotonicQuantizationBridge,
+  PHOTONIC_BRIDGE_MODES,
+} from './photonic-quantization/index.js';
 

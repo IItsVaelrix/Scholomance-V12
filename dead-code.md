@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-05-27T20:29:28.354Z
+Generated at: 2026-05-29T15:10:24.164Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -10,6 +10,8 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/godot-export/shadowFrameTimeline.ts
 - [ ] src/lib/literaryClassifier.js
 - [ ] src/lib/math/safe.js
+- [ ] src/lib/photonic-quantization/photonic-errors.js
+- [ ] src/lib/photonic-quantization/photonic-types.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
 - [ ] src/lib/truesight/color/visemeMapping.js
@@ -100,9 +102,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `VOID_TICK_DAMAGE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_TICK_COUNT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_MAX_EXPOSURE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `buildSingularityTriggerFrames` in `src/lib/godot-export/voidSingularityTrigger.ts`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
 - [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
+- [ ] `PHOTONIC_ERROR_CODES` in `src/lib/photonic-quantization/photonic-errors.js`
+- [ ] `PHOTONIC_SEVERITIES` in `src/lib/photonic-quantization/photonic-errors.js`
 - [ ] `clearLatticeCell` in `src/lib/pixelbrain.adapter.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`

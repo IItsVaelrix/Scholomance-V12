@@ -109,21 +109,23 @@ function applyTickFrame(
   };
 }
 
+export function buildSingularityTriggerFrames(
+  baseState: NormalizedFrameState,
+  frameOffset: number = 0,
+): NormalizedFrameState[] {
+  return [
+    singularityFlashFrame(baseState, frameOffset),
+    { ...baseState, frame: frameOffset + 2, timestampMs: ((frameOffset + 2) / 60) * 1000 },
+    ...VOID_TICK_FRAME_OFFSETS.map((offset, tickIndex) =>
+      applyTickFrame(baseState, frameOffset + offset + 2, tickIndex)
+    ),
+  ];
+}
+
 export function buildSingularityTriggerTimeline(
   baseState: NormalizedFrameState,
 ): FrameInstantiationTimeline {
-  const frames: NormalizedFrameState[] = [
-    // Frame 0: singularity flash (impact)
-    singularityFlashFrame(baseState, 0),
-    // Frame 2: flash ends, snap back
-    { ...baseState, frame: 2, timestampMs: (2 / 60) * 1000 },
-    // 8 fibonacci-timed tick frames
-    ...VOID_TICK_FRAME_OFFSETS.map((offset, tickIndex) =>
-      applyTickFrame(baseState, offset + 2, tickIndex) // Resolved Q3: offset by 2
-    ),
-  ];
-
-  return printFrameTimeline(frames, {
+  return printFrameTimeline(buildSingularityTriggerFrames(baseState, 0), {
     sceneId: "void_arena",
     fps: 60,
     seed: "void_arena_v1",
