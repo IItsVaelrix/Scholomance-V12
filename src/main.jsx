@@ -21,7 +21,6 @@ import {
   CareerPage,
   WandPage,
   DivWandPage,
-  PhotonicBridgeLabPage,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
 
@@ -30,7 +29,7 @@ void import("phaser").catch(() => {});
 
 // Eagerly preload page chunks with staggering to avoid CPU/Network congestion
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
-const INTERNAL_PATHS = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/photonic-bridge"];
+const INTERNAL_PATHS = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand"];
 
 setTimeout(() => {
   const components = Object.entries(PAGE_COMPONENTS);
@@ -65,7 +64,6 @@ const router = createBrowserRouter([
           { path: "career", element: <AdminRoute><CareerPage /></AdminRoute> },
           { path: "wand", element: <AdminRoute><WandPage /></AdminRoute> },
           { path: "div-wand", element: <AdminRoute><DivWandPage /></AdminRoute> },
-          { path: "photonic-bridge", element: <AdminRoute><PhotonicBridgeLabPage /></AdminRoute> },
         ],
       },
     ],

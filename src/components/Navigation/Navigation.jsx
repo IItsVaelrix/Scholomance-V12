@@ -40,7 +40,6 @@ const MOBILE_ROUTE_COPY = {
   wand: "Wield the Fairly Odd Wand formula system & designer.",
   profile: "Review account standing and inner-sanctum access.",
   auth: "Enter the portal and secure your chamber.",
-  "photonic-bridge": "Diagnostic interface for the Photonic Quantization Bridge.",
 };
 
 export default function Navigation() {
