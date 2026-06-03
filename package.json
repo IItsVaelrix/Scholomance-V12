@@ -24,6 +24,7 @@
     "verify:css-tokens": "node scripts/verify-css-tokens.js",
     "build": "node scripts/verify-css-tokens.js && node scripts/generate-school-styles.js && npm run build:corpus && vite build",
     "build:app": "vite build",
+    "deploy": "bash scripts/deploy.sh",
     "lint": "eslint . --ext js,jsx,ts,tsx --report-unused-disable-directives --quiet",
     "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.checkjs.json && tsc -p tsconfig.ide-targets.json",
     "test:visual": "playwright test tests/visual --project=chromium --workers=1 --reporter=line",
