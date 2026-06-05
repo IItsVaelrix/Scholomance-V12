@@ -13,6 +13,7 @@
 import { analyzeKeywordGap, splitPhraseSegments } from './keyword-gap.js';
 import { transmuteToSigil, transmuteToSigilWithProvenance } from './transmuter.js';
 import { assembleDataArchive } from './data-archive.js';
+import { analyzeAcronymCoverage } from './acronyms.js';
 import { analyzeResumeLegibility } from '../../../codex/core/career/ats-hmm/index.js';
 
 const MAX_RESONANCE_ANCHORS = 6;
@@ -126,11 +127,16 @@ export function buildSigilDataArchive(resumeText, jobDescriptionText, options = 
   // surface them for the user to fix rather than guessing where the commas belong.
   const jdBoundaryAudit = analyzeResumeLegibility(splitPhraseSegments(jobDescriptionText).join('\n'));
 
+  // Acronym coverage runs on the user's RAW résumé (the transmuter never touches acronyms),
+  // surfacing single-form usages so the author can add the missing variant for literal ATS scans.
+  const acronymCoverage = analyzeAcronymCoverage(resumeText, jobDescriptionText, options);
+
   const archive = assembleDataArchive({
     changes,
     report,
     legibility,
     jdBoundaryWarnings: jdBoundaryAudit.flagged,
+    acronymCoverage,
   });
   return { sigil, report, archive };
 }

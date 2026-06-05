@@ -133,6 +133,33 @@ function buildBoundaryWarningSection(jdBoundaryWarnings) {
   };
 }
 
+function buildAcronymSection(acronymCoverage) {
+  const gaps = acronymCoverage?.gaps || [];
+  const covered = acronymCoverage?.covered || [];
+  return {
+    id: 'acronyms',
+    title: 'Acronym Coverage',
+    summary:
+      gaps.length === 0
+        ? covered.length === 0
+          ? 'No tracked industry acronyms detected in your résumé.'
+          : `Every detected acronym appears in both forms — ${pluralize(covered.length, 'term')} fully covered.`
+        : `${pluralize(gaps.length, 'acronym')} appear in only one form; ATS keyword scans are literal, so add the missing variant.`,
+    entries: gaps.map((g) => ({
+      label: g.present === 'acronym' ? `${g.acronym} → add "${g.expansion}"` : `${g.expansion} → add "${g.acronym}"`,
+      detail: g.inJobDescription ? 'also in the job description' : `missing the ${g.missingForm}`,
+      reason: g.suggestion,
+    })),
+    meta: {
+      covered: covered.map((c) => c.acronym),
+      note:
+        'ATS keyword matching is literal — the acronym and its spelled-out form are different ' +
+        'strings. Including both once each covers a posting whichever way it is written. ' +
+        'Suggestions only; nothing was inserted (placement is yours to choose).',
+    },
+  };
+}
+
 function buildLegibilitySection(legibility) {
   const flagged = legibility?.flagged || [];
   const lines = legibility?.lines || [];
@@ -164,7 +191,7 @@ function buildLegibilitySection(legibility) {
 /**
  * Assembles the full Data Archive from the pipeline's analyses.
  *
- * @param {{ changes: Array<object>, report: object, legibility: object }} inputs
+ * @param {{ changes: Array<object>, report: object, legibility: object, acronymCoverage: object }} inputs
  * @returns {{ schemaVersion: 1, alignmentScore: number|null, legibilityScore: number|null, sections: ArchiveSection[] }}
  */
 export function assembleDataArchive({
@@ -172,11 +199,13 @@ export function assembleDataArchive({
   report = {},
   legibility = {},
   jdBoundaryWarnings = [],
+  acronymCoverage = {},
 } = {}) {
   const sections = [
     buildVerbSection(changes),
     buildPreservedSection(report),
     buildAlignmentSection(report),
+    buildAcronymSection(acronymCoverage),
     buildBoundaryWarningSection(jdBoundaryWarnings),
     buildAnchorSection(changes),
     buildLegibilitySection(legibility),
