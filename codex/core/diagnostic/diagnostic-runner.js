@@ -17,13 +17,15 @@ import * as fixtureShapeScan from './cells/fixture-shape.cell.js';
 import * as processorBridgeScan from './cells/processor-bridge.cell.js';
 import { generateDiagnosticReport } from './DiagnosticReport.js';
 import { maybeRunDiagnosticSynthesis } from './CleriRaidMind.js';
+import { CELL_IDS } from './diagnostic-constants.js';
+import { collectFileSource, createArrayFileSource, createScanContext } from './diagnostic-file-source.js';
+import { runDiagnosticMemoryInfusion } from './diagnostic-memory-infusion.js';
 
-export const CELL_IDS = Object.freeze({
-  IMMUNITY_SCAN: 'IMMUNITY_SCAN',
-  LAYER_BOUNDARY: 'LAYER_BOUNDARY',
-  TEST_COVERAGE: 'TEST_COVERAGE',
-  FIXTURE_SHAPE: 'FIXTURE_SHAPE',
-  PROCESSOR_BRIDGE: 'PROCESSOR_BRIDGE',
+export { CELL_IDS };
+
+export const CELL_SCAN_CONTRACTS = Object.freeze({
+  LEGACY_FILES: 'legacy-files-v1',
+  STREAMING_CONTEXT: 'streaming-context-v1',
 });
 
 /**
@@ -54,6 +56,11 @@ function assertCellInterface(id, mod) {
   if (typeof mod.scan !== 'function') {
     throw new Error(`[diagnostic-runner] Cell ${id}.scan must be a function, got ${typeof mod.scan}`);
   }
+  if (mod.SCAN_CONTRACT !== undefined && !Object.values(CELL_SCAN_CONTRACTS).includes(mod.SCAN_CONTRACT)) {
+    throw new Error(
+      `[diagnostic-runner] Cell ${id}.SCAN_CONTRACT must be one of ${Object.values(CELL_SCAN_CONTRACTS).join(', ')}`,
+    );
+  }
 }
 
 /** @type {Array<{id: string, scan: function, name: string, description: string, schedule: string}>} */
@@ -62,6 +69,7 @@ const CELLS = Object.entries(CELL_MODULES).map(([id, mod]) => {
   return {
     id,
     scan: mod.scan,
+    contract: mod.SCAN_CONTRACT || CELL_SCAN_CONTRACTS.LEGACY_FILES,
     name: mod.CELL_NAME,
     description: mod.CELL_DESCRIPTION,
     schedule: mod.CELL_SCHEDULE,
@@ -76,9 +84,11 @@ const CELLS = Object.entries(CELL_MODULES).map(([id, mod]) => {
  * @param {Array<{content: string, path: string}>} files
  * @returns {Promise<{cellId: string, errors: [], health: [], skipped: []}>}
  */
-async function runCell(cell, snapshot, files) {
+async function runCell(cell, snapshot, files, fileSource) {
   try {
-    const result = await cell.scan(snapshot, files);
+    const result = cell.contract === CELL_SCAN_CONTRACTS.STREAMING_CONTEXT
+      ? await cell.scan(createScanContext({ snapshot, fileSource }))
+      : await cell.scan(snapshot, files);
     return {
       cellId: cell.id,
       errors: result.errors || [],
@@ -87,6 +97,9 @@ async function runCell(cell, snapshot, files) {
       cellError: null,
     };
   } catch (error) {
+    if (isDiagnosticLimitError(error)) {
+      throw error;
+    }
     // Cell crashed — surface as a first-class cellError, distinct from
     // per-check `skipped`. The runner stays alive so other cells finish.
     console.error(`[diagnostic-runner] Cell ${cell.id} crashed:`, error.message);
@@ -100,25 +113,49 @@ async function runCell(cell, snapshot, files) {
   }
 }
 
+function isDiagnosticLimitError(error) {
+  return typeof error?.message === 'string' && (
+    error.message.startsWith('[diagnostic] file limit exceeded') ||
+    error.message.startsWith('[diagnostic] file byte limit exceeded') ||
+    error.message.startsWith('[diagnostic] total byte limit exceeded')
+  );
+}
+
 /**
  * Run all diagnostic cells against the provided files.
  *
  * @param {object} snapshot
  * @param {Array<{content: string, path: string}>} files
  * @param {object} options
+ * @param {object} [options.fileSource] - Lazy file source for streaming cells
  * @param {string} [options.commitHash='unknown']
  * @param {string} [options.trigger='manual']
  * @param {string[]} [options.cellFilter] - Run only these cell IDs
+ * @param {object} [options.memoryInfusion] - Opt-in BytecodeXP/QBIT memory writes
  * @returns {Promise<object>} Complete diagnostic report
  */
-export async function runDiagnostic({ snapshot, files = [], commitHash = 'unknown', trigger = 'manual', cellFilter = null }) {
+export async function runDiagnostic({
+  snapshot,
+  files = [],
+  fileSource = null,
+  commitHash = 'unknown',
+  trigger = 'manual',
+  cellFilter = null,
+  memoryInfusion = null,
+}) {
   const cellsToRun = cellFilter
     ? CELLS.filter(c => cellFilter.includes(c.id))
     : CELLS;
 
+  const source = fileSource || createArrayFileSource(files);
+  const legacyFilesPromise = cellsToRun.some(cell => cell.contract === CELL_SCAN_CONTRACTS.LEGACY_FILES)
+    ? collectFileSource(source)
+    : Promise.resolve(files);
+  const legacyFiles = await legacyFilesPromise;
+
   // Run all cells in parallel
   const results = await Promise.all(
-    cellsToRun.map(cell => runCell(cell, snapshot, files))
+    cellsToRun.map(cell => runCell(cell, snapshot, legacyFiles, source))
   );
 
   // Generate the report
@@ -135,15 +172,24 @@ export async function runDiagnostic({ snapshot, files = [], commitHash = 'unknow
   // from the report checksum per the determinism contract.
   const synthesisMode = process.env.CLERI_RAID_SYNTHESIS_MODE ?? 'shadow';
   if (synthesisMode !== 'off') {
+    const synthesisProjection = buildSynthesisProjection(results);
     report.synthesis = maybeRunDiagnosticSynthesis({
       enabled: true,
       mode: synthesisMode,
-      snapshot: buildSynthesisSnapshot(results),
+      snapshot: synthesisProjection.snapshot,
     });
+    if (report.synthesis) {
+      report.synthesis.projections = synthesisProjection.projections;
+      report.synthesis.missingSignals = synthesisProjection.missingSignals;
+    }
 
     if (synthesisMode === 'warn' && report.synthesis?.warning) {
       emitSynthesisWarning(report.synthesis.mind);
     }
+  }
+
+  if (memoryInfusion?.enabled) {
+    report.memoryInfusion = await runDiagnosticMemoryInfusion(results, memoryInfusion);
   }
 
   return report;
@@ -176,6 +222,7 @@ export function getAvailableCells() {
     name: cell.name || cell.id,
     description: cell.description || '',
     schedule: cell.schedule || 'manual',
+    contract: cell.contract,
   }));
 }
 
@@ -278,7 +325,13 @@ function emitSynthesisWarning(mind) {
 }
 
 export function buildSynthesisSnapshot(cellResults) {
+  return buildSynthesisProjection(cellResults).snapshot;
+}
+
+export function buildSynthesisProjection(cellResults) {
   const snapshot = {};
+  const projections = [];
+  const projectedSignals = new Set();
 
   for (const result of cellResults) {
     const signals = CELL_SIGNAL_MAP[result.cellId];
@@ -290,8 +343,32 @@ export function buildSynthesisSnapshot(cellResults) {
       snapshot[signalKey] = signalKey in snapshot
         ? Math.min(snapshot[signalKey], score)
         : score;
+      projectedSignals.add(signalKey);
+      projections.push({
+        signalKey,
+        sourceCellId: result.cellId,
+        score,
+        evidence: buildProjectionEvidence(result),
+      });
     }
   }
 
-  return snapshot;
+  const knownSignals = [...new Set(Object.values(CELL_SIGNAL_MAP).flat())].sort((a, b) => a.localeCompare(b));
+
+  return {
+    snapshot,
+    projections: projections.sort((a, b) =>
+      a.signalKey.localeCompare(b.signalKey) || a.sourceCellId.localeCompare(b.sourceCellId)
+    ),
+    missingSignals: knownSignals.filter(signalKey => !projectedSignals.has(signalKey)),
+  };
+}
+
+function buildProjectionEvidence(result) {
+  const evidence = [];
+  if (result.cellError) evidence.push(`cellError:${result.cellError.message || 'unknown'}`);
+  evidence.push(`health:${result.health.length}`);
+  evidence.push(`errors:${result.errors.length}`);
+  if (result.skipped?.length) evidence.push(`skipped:${result.skipped.length}`);
+  return evidence;
 }

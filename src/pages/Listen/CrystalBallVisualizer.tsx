@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type Phaser from 'phaser';
-import { CrystalBallScene } from './scenes/CrystalBallScene';
+import { buildCrystalBallScene } from './scenes/CrystalBallScene.js';
+import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
 import { getAmbientPlayerService } from '../../lib/ambient/ambientPlayer.service.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 
@@ -25,46 +26,59 @@ export const CrystalBallVisualizer: React.FC<CrystalBallVisualizerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
-  const sceneRef = useRef<CrystalBallScene | null>(null);
+  const sceneRef = useRef<any>(null);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
-    let game: Phaser.Game | null = null;
+    const controller = new AbortController();
+    let runtimeHandle: { game: Phaser.Game; destroy: () => void } | null = null;
 
     const initPhaser = async () => {
-      const { default: PhaserLib } = await import('phaser');
-      if (!containerRef.current) return;
+      if (!containerRef.current || controller.signal.aborted) return;
 
-      game = new PhaserLib.Game({
-        type: PhaserLib.WEBGL,
-        width: size,
-        height: size,
+      runtimeHandle = await mountPhaserGame({
         parent: containerRef.current,
-        transparent: true,
-        antialias: true,
-        scene: [CrystalBallScene],
-        fps: { target: 60 },
-        render: {
-          powerPreference: 'high-performance',
-          batchSize: 1024,
-        }
+        buildScenes: [buildCrystalBallScene],
+        config: {
+          type: 2, // Phaser.WEBGL
+          width: size,
+          height: size,
+          transparent: true,
+          antialias: true,
+          fps: { target: 60 },
+          render: {
+            powerPreference: 'high-performance',
+            batchSize: 1024,
+          }
+        },
+        signal: controller.signal,
       });
 
-      game.events.once('ready', () => {
-        const scene = game?.scene.getScene('CrystalBallScene') as CrystalBallScene;
-        sceneRef.current = scene;
-        // Push initial state immediately
-        const bpm = getAmbientPlayerService()?.getBPM?.() || 90;
-        scene?.updateState({ signalLevel, schoolColor, glyph, isTuning, isPlaying, schoolId, bpm, reducedMotion: prefersReducedMotion });
-      });
+      if (!runtimeHandle || controller.signal.aborted) return;
 
+      const game = runtimeHandle.game;
       gameRef.current = game;
+
+      game.scene.stop('CrystalBallScene');
+      game.scene.start('CrystalBallScene', { reducedMotion: prefersReducedMotion });
+      
+      const scene = game.scene.getScene('CrystalBallScene');
+      sceneRef.current = scene;
+      
+      // We push initial state
+      const bpm = getAmbientPlayerService()?.getBPM?.() || 90;
+      scene?.updateState?.({ signalLevel, schoolColor, glyph, isTuning, isPlaying, schoolId, bpm, reducedMotion: prefersReducedMotion });
     };
 
     void initPhaser();
 
     return () => {
-      game?.destroy(true);
+      controller.abort();
+      if (runtimeHandle) {
+        runtimeHandle.destroy();
+      }
+      gameRef.current = null;
+      sceneRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [size]);

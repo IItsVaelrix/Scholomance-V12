@@ -12,6 +12,7 @@ import {
   WatchPage,
   ListenPage,
   ReadPage,
+  GrimoireSpread,
   AuthPage,
   CollabPage,
   ProfilePage,
@@ -21,27 +22,37 @@ import {
   CareerPage,
   WandPage,
   DivWandPage,
+  PhotonicBridgeLab,
+  StudioUpload,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
 
-// Ambiently preload Phaser to eliminate latency when mounting visualizers
-void import("phaser").catch(() => {});
-
-// Eagerly preload page chunks with staggering to avoid CPU/Network congestion
-const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
-const INTERNAL_PATHS = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand"];
-
-setTimeout(() => {
-  const components = Object.entries(PAGE_COMPONENTS);
-  components.forEach(([path, c], i) => {
-    // In production, don't even trigger preloads for internal paths
-    if (IS_PROD && INTERNAL_PATHS.includes(path)) return;
-    
-    setTimeout(() => c.preload?.(), i * 200);
-  });
-}, 1500);
-
 import { AdminRoute } from "./components/AdminRoute.jsx";
+
+// DEV-ONLY de-risking spike (PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE).
+// The guard `import.meta.env.DEV` is statically false in production, so the route is
+// NEVER registered in prod (devSpikeRoutes stays []) — unreachable, never rendered,
+// its lazy chunk never fetched. (Vite still lists the chunk name in its dep-map array,
+// but no code path loads it.) Not wired into navigation; reachable only at
+// /combat-godot-spike during `npm run dev`.
+let devSpikeRoutes = [];
+if (import.meta.env.DEV) {
+  // Godot WASM spike retained as the documented fallback path. The Phaser 4 spike was
+  // retired once its verdict (uplift = go) folded into the real ResonanceScene on 2026-06-05.
+  const CombatGodotSpike = React.lazy(() =>
+    import("./pages/CombatGodotSpike/CombatGodotSpike.jsx")
+  );
+  devSpikeRoutes = [
+    {
+      path: "combat-godot-spike",
+      element: (
+        <React.Suspense fallback={null}>
+          <CombatGodotSpike />
+        </React.Suspense>
+      ),
+    },
+  ];
+}
 
 const router = createBrowserRouter([
   {
@@ -49,11 +60,13 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <LandingPage /> },
+      ...devSpikeRoutes,
       {
         element: <App />,
         children: [
           { path: "watch", element: <WatchPage /> },
           { path: "listen", element: <ListenPage /> },
+          { path: "grimoire/:trackId", element: <GrimoireSpread /> },
           { path: "read", element: <ReadPage /> },
           { path: "auth", element: <AuthPage /> },
           { path: "profile", element: <ProfilePage /> },
@@ -64,6 +77,8 @@ const router = createBrowserRouter([
           { path: "career", element: <AdminRoute><CareerPage /></AdminRoute> },
           { path: "wand", element: <AdminRoute><WandPage /></AdminRoute> },
           { path: "div-wand", element: <AdminRoute><DivWandPage /></AdminRoute> },
+          { path: "internal/photonic-bridge", element: <AdminRoute><PhotonicBridgeLab /></AdminRoute> },
+          { path: "internal/studio", element: <AdminRoute><StudioUpload /></AdminRoute> },
         ],
       },
     ],
@@ -80,4 +95,3 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     </ThemeProvider>
   </React.StrictMode>
 );
-

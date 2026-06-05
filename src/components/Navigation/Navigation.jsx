@@ -3,10 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { useScrolls } from "../../hooks/useScrolls.jsx";
-import { useProgression } from "../../hooks/useProgression.jsx";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
-import { useTheme } from "../../hooks/useTheme.jsx";
 import { preloadRoute } from "../../lib/routes.js";
 
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics.js";
@@ -40,20 +37,18 @@ const MOBILE_ROUTE_COPY = {
   wand: "Wield the Fairly Odd Wand formula system & designer.",
   profile: "Review account standing and inner-sanctum access.",
   auth: "Enter the portal and secure your chamber.",
+  "photonic-bridge": "Diagnostic interface for the Photonic Quantization Bridge.",
 };
 
 export default function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
-  const activeSection = location.pathname.replace("/", "") || "watch";
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [navigatingPath, setNavigatingPath] = useState(null);
   const navTimeoutRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
   const { user } = useAuth();
-  const { refreshScrolls } = useScrolls();
-  const { refreshProgression } = useProgression(); 
   const prefersReducedMotion = usePrefersReducedMotion();
-  const { theme, toggleTheme } = useTheme();
 
   const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
   const isInternalAdmin = isAdminUser(user);
@@ -64,15 +59,21 @@ export default function Navigation() {
     ...(!IS_PROD || isInternalAdmin ? INTERNAL_MODULES : []),
   ];
 
-  const handlePrefetch = useCallback((path) => {
-    preloadRoute(path);
-    if (path === "/read") {
-      refreshScrolls();
-    }
-    if (path === "/nexus" || path === "/profile") {
-      if (typeof refreshProgression === 'function') refreshProgression();
-    }
-  }, [refreshScrolls, refreshProgression]);
+  // Prefetch only warms the route's code chunk. Page data is owned by the
+  // Scrolls/Progression providers (loaded once, kept in context across
+  // navigation), so prefetching on hover securely speeds up navigation
+  // without triggering redundant API calls.
+  // A 75ms intentionality delay prevents "swipe-across" network congestion.
+  const handlePrefetchStart = useCallback((path) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      preloadRoute(path);
+    }, 75);
+  }, []);
+
+  const handlePrefetchCancel = useCallback(() => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+  }, []);
 
   const allLinks = [
     ...navLinks,
@@ -83,17 +84,24 @@ export default function Navigation() {
     },
   ];
 
-  const handleNav = useCallback((path) => {
+  const handleNav = useCallback(async (path) => {
     if (location.pathname === path) {
       setIsMenuOpen(false);
       setNavigatingPath(null);
       return;
     }
 
-    if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
     setNavigatingPath(path);
-    // Safety net: clear stuck navigating state if route never resolves (lazy load failure etc.)
-    navTimeoutRef.current = setTimeout(() => setNavigatingPath(null), 8000);
+
+    // Wait for the chunk to load BEFORE navigating, ensuring the target page
+    // won't hit a Suspense fallback boundary during the exit/enter animation.
+    try {
+      await preloadRoute(path);
+    } catch (error) {
+      console.error("Failed to preload route:", error);
+    }
+
+    if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
     navigate(path);
   }, [navigate, location.pathname]);
 
@@ -111,7 +119,10 @@ export default function Navigation() {
     return () => { document.body.style.overflow = ""; };
   }, [isMenuOpen]);
   useEffect(() => {
-    return () => { if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current); };
+    return () => { 
+      if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
   }, []);
   const handleToggle = useCallback(() => {
     triggerHapticPulse(UI_HAPTICS.MEDIUM);
@@ -131,82 +142,26 @@ export default function Navigation() {
 
   return (
     <>
-      <nav className="primary-nav" aria-label="Primary navigation">
-        <div className="nav-inner">
-          <motion.button
-            className="nav-brand font-bold"
-            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={isMenuOpen}
-            onClick={handleToggle}
-            whileTap={{ scale: 0.96 }}
-            animate={{ 
-              textShadow: isMenuOpen 
-                ? "0 0 20px var(--active-school-color)" 
-                : "0 0 0px var(--active-school-color)"
-            }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-          >
-            SCHOLOMANCE
-          </motion.button>
+      {/* Floating navigation button (top-left) — opens the fullscreen menu */}
+      <motion.button
+        className="nav-brand nav-brand--floating font-bold"
+        aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+        aria-expanded={isMenuOpen}
+        aria-controls="nav-mobile-menu"
+        onClick={handleToggle}
+        whileTap={{ scale: 0.96 }}
+        drag="x"
+        animate={{
+          textShadow: isMenuOpen
+            ? "0 0 20px var(--active-school-color)"
+            : "0 0 0px var(--active-school-color)"
+        }}
+        transition={{ type: "spring", stiffness: 400, damping: 25 }}
+      >
+        SCHOLOMANCE
+      </motion.button>
 
-          {/* Desktop nav links */}
-          <div id="nav-links" className="nav-links">
-            {allLinks.map((l) => (
-              <div key={l.id} className="relative">
-                <NavLink
-                  to={l.path}
-                  className={({ isActive }) =>
-                    `nav-link${isActive ? " active" : ""}${navigatingPath === l.path ? " is-navigating" : ""}`
-                  }
-                  onMouseEnter={() => handlePrefetch(l.path)}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleNav(l.path);
-                  }}
-                >
-                  {l.label}
-                </NavLink>
-                {activeSection === l.id && (
-                  <motion.div
-                    layoutId="nav-highlight"
-                    className="absolute bottom-0 left-0 w-full h-0.5"
-                    style={{ backgroundColor: "var(--active-school-color)" }}
-                    transition={{ type: "spring", bounce: 0.25, duration: 0.6 }}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="nav-controls">
-            {/* Theme toggle */}
-            <button
-              className="theme-toggle-btn"
-              aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              onClick={toggleTheme}
-              type="button"
-            >
-              {theme === 'dark' ? '☀' : '☾'}
-            </button>
-
-            {/* Mobile menu button */}
-            <button
-              className="nav-toggle"
-              aria-expanded={isMenuOpen}
-              aria-controls="nav-mobile-menu"
-              aria-label={isMenuOpen ? "Close menu" : "Open menu"}
-              onClick={handleToggle}
-            >
-              <span aria-hidden="true">
-                <div className={`hamburger-bar${isMenuOpen ? " hamburger-bar--open-top" : ""}`} />
-                <div className={`hamburger-bar${isMenuOpen ? " hamburger-bar--open-mid" : ""}`} />
-                <div className={`hamburger-bar${isMenuOpen ? " hamburger-bar--open-bot" : ""}`} />
-              </span>
-            </button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Mobile fullscreen overlay */}
+      {/* Fullscreen navigation overlay */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -255,7 +210,12 @@ export default function Navigation() {
                       <NavLink
                         to={l.path}
                         onClick={(e) => handleMobileNavClick(e, l.path)}
-                        onTouchStart={() => handlePrefetch(l.path)}
+                        onTouchStart={() => handlePrefetchStart(l.path)}
+                        onTouchMove={handlePrefetchCancel}
+                        onTouchEnd={handlePrefetchCancel}
+                        onTouchCancel={handlePrefetchCancel}
+                        onMouseEnter={() => handlePrefetchStart(l.path)}
+                        onMouseLeave={handlePrefetchCancel}
                         className={`nav-mobile-link${isActive ? " active" : ""}${isSelected ? " nav-mobile-link--selected" : ""}`}
                       >
                         <span className="nav-mobile-link-copy">

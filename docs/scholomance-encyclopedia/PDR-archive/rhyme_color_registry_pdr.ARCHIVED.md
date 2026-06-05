@@ -1,12 +1,38 @@
-# PDR: Rhyme Color Registry — YouTube-Style Adaptive Rhyme Coloring
+# PDR: Rhyme Color Registry — YouTube-Style Adaptive Rhyme Coloring  *(ARCHIVED — SUPERSEDED)*
 
 **Subtitle:** Each rhyme sound earns its color. The same sound always glows the same way.
 
-**Status:** Ready for Implementation  
-**Classification:** Color Engine + Codex Contract + UI Wire  
-**Priority:** High  
-**Primary Owner:** Codex (core module + schema) → Claude (UI wire)  
-**Secondary Owner:** Minimax (QA)
+**Status:** ⚰️ **Superseded (built, then replaced).** Do not implement this document.
+**Classification:** Color Engine + Codex Contract + UI Wire
+**Priority:** — (historical)
+**Original Owner:** Codex (core module + schema) → Claude (UI wire) → Minimax (QA)
+**Original Author / Date:** claude-ui · 2026-04-13
+**Archived:** 2026-06-04
+
+---
+
+## 0. Archival Note — Why this PDR is dead
+
+This PDR's design was implemented and then **deliberately replaced** by a different one. It is retained only as a historical record. The slot-ordered, golden-angle, verse-scoped registry described below **was rejected** — do not "restore" the live color module to match it.
+
+**What this PDR proposed (and what actually shipped instead):**
+
+| | This PDR proposed | What lives in the code now |
+|---|---|---|
+| Algorithm | Verse-scoped, **first-seen slot ordering** (slot 0, 1, 2…), recurrence snaps back | **Stateless hash** of `rhymeKey` → deterministic hue (no slots, no discovery order) |
+| API | `buildRhymeColorRegistry(tokens)` → `Map<rhymeKey,hex>`; `resolveTokenColor(rhymeKey, registry, pcaColor)` | `resolveResonanceColor(rhymeKey, schoolId, fallback)`; `buildResonancePalette(profiles, schoolId)` → `Map<wordIdentity,hex>` |
+| Hue spacing | Golden angle for **maximal distinctness** (slots all >30° apart) | Golden angle reused as a **hash multiplier**, then clamped into a ±30° school wedge — adjacent groups may be close *on purpose* |
+| School modulation | "Optional Phase 2"; Phase 1 is school-agnostic | **Mandatory from the start** (VAELRIX Law 8 — anti "rainbow-sludge") |
+| `rhymeKey` propagation gap | Open; needs wiring | **Closed** — `ReadPage.jsx` propagates `core.rhymeKey`; `ScrollEditor.jsx` reads it for the palette |
+
+**Authoritative replacement (as-built):**
+- Module — `codex/core/shared/truesight/color/rhymeColorRegistry.js` (re-export bridge at `src/lib/truesight/color/rhymeColorRegistry.js`). Exports `resolveResonanceColor` + `buildResonancePalette`.
+- Wire-in — `src/pages/Read/ScrollEditor.jsx:435` builds `resonancePalette = buildResonancePalette(profiles, selectedSchool)`; the in-code comment at `:433-434` records the rejection verbatim: *"REJUVENATION: Deterministic Resonance Palette (Law 8 + 5) — Replaces the discovery-order registry with hash-based harmonic gamut colors."*
+- Authority — since 2026-06-03, `bytecode.color` resolved via `resolveResonanceColor` is the single authority for editor + tooltip word color.
+
+**Why it was replaced:** the live design prioritizes *harmonic* school-coherence (hues confined to a school's ±30° gamut wedge to avoid "rainbow-sludge," per VAELRIX Law 8) and *stateless* determinism (same `rhymeKey` + school → same color globally, not just within one verse). That directly contradicts this PDR's headline goal of slot-ordered, maximally-distinct, verse-scoped rhyme colors. The two cannot both hold; the codebase chose harmony over distinctness.
+
+> Everything below this line is the **original 2026-04-13 proposal, preserved unedited**. It does not describe current behavior.
 
 ---
 

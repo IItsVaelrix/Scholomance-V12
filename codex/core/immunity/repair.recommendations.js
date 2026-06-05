@@ -182,6 +182,26 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     references: ['BUG-2026-05-09-PHONEME-SEVERANCE'],
     canonical: "import { FAMILY_IDENTITY } from './vowelWheel.js';",
   },
+
+  'repair.color-authority.unify': {
+    key: 'repair.color-authority.unify',
+    title: 'Collapse competing color authorities to one source',
+    suggestions: [
+      'A per-school resolver that ignores its `school` argument is a dead skin: either honor the argument or delete the parameter and rename the function to reflect that the palette is school-invariant.',
+      'The authoritative token color is `bytecode.color` from the `phonetic_color` amplifier plugin (family -> school -> hue). Treat it as the single source; reserve the rhyme resonance registry as the only override (rhyme mode).',
+      'Retire redundant generators and the deep `color = a || b || c || d || e` fallback stack — each fallback tier should resolve a distinct, documented case, not re-derive the same family hue.',
+    ],
+    constraints: [
+      'One generator owns family -> color; overrides must be explicit and scoped (e.g. rhyme resonance), not silent fallbacks.',
+      'No public API may advertise a parameter it ignores.',
+      'Coloring output for non-rhyme words must be unchanged after unification (verify with the TrueSight color differential).',
+    ],
+    invariants: [
+      'A `getX(arg)` whose body ignores `arg` must not ship; drop the param or honor it.',
+    ],
+    references: ['AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY'],
+    canonical: 'color = bytecode.color ?? resonanceColor(rhymeKey)  // single authority + scoped rhyme override',
+  },
 });
 
 /**

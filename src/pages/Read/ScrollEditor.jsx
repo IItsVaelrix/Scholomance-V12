@@ -661,6 +661,7 @@ const ScrollEditor = forwardRef(/**
       charStart: analysis.charStart,
       visualBytecode: analysis.visualBytecode || analysis.trueVisionBytecode,
       vowelFamily: analysis.vowelFamily,
+      phonemes: analysis.phonemes,
     })),
     activeConnections,
     syntaxLayer,

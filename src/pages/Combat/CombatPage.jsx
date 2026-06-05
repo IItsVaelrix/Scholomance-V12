@@ -13,6 +13,7 @@ import TileInspector from './components/TileInspector.jsx';
 import BottomCommandBand from './components/BottomCommandBand.jsx';
 import { getCrossPattern } from './state/combatPreviewUtils.js';
 import { combatBridge } from './combatBridge.js';
+import GodotOverlay from './components/GodotOverlay.jsx';
 import './CombatPage.css';
 
 export default function CombatPage() {
@@ -253,6 +254,7 @@ export default function CombatPage() {
                   onSelectCell={handleSelectCell}
                   onReady={() => setArenaReady(true)}
                 />
+                <GodotOverlay />
               </div>
               <BottomCommandBand
                 selectedAction={selectedAction}

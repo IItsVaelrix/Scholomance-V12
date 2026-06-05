@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
-import { ResonanceScene } from './scenes/ResonanceScene.js';
+import { buildResonanceScene } from './scenes/ResonanceScene.js';
+import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
 import { combatBridge } from './combatBridge.js';
 import { buildVoidArenaRestingScene } from '../../lib/godot-export/voidArenaScene.ts';
 import { buildSingularityTriggerTimeline } from '../../lib/godot-export/voidSingularityTrigger.ts';
 import { parseBooleanEnvFlag } from '../../hooks/useCODExPipeline.jsx';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 
 const VOID_ARENA_SCENE_ENABLED = parseBooleanEnvFlag(import.meta.env.VITE_VOID_ARENA_SCENE_ENABLED, true);
 
@@ -29,6 +31,10 @@ const PhaserLayer = forwardRef(function PhaserLayer(
   const gameRef  = useRef(null);
   const sceneRef = useRef(null);
   const [isReady, setIsReady] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const reducedMotionRef = useRef(reducedMotion);
+
+  useEffect(() => { reducedMotionRef.current = reducedMotion; }, [reducedMotion]);
 
   // Keep latest prop values accessible inside the init closure without re-running it.
   const tileVMRef     = useRef(tileViewModels);
@@ -91,37 +97,46 @@ const PhaserLayer = forwardRef(function PhaserLayer(
   // --- Phaser init (runs once on mount) ---
   useEffect(() => {
     let mounted = true;
-    let game    = null;
+    const controller = new AbortController();
+    let runtimeHandle = null;
 
     const init = async () => {
       try {
-        const { default: Phaser } = await import('phaser');
-        if (!mounted || !hostRef.current) return;
+        if (!hostRef.current) return;
 
         const w = hostRef.current.clientWidth  || 500;
         const h = hostRef.current.clientHeight || 500;
 
-        game = new Phaser.Game({
-          type:        Phaser.AUTO,
-          parent:      hostRef.current,
-          width:       w,
-          height:      h,
-          transparent: true,
-          pixelArt:    false,
-          scene:       [ResonanceScene],
-          // Prevent Phaser from capturing keyboard events — React owns WASD/input.
-          input: { keyboard: false },
+        runtimeHandle = await mountPhaserGame({
+          parent: hostRef.current,
+          buildScenes: [buildResonanceScene],
+          config: {
+            type: 0, // Phaser.AUTO
+            width: w,
+            height: h,
+            transparent: true,
+            pixelArt: false,
+            input: { keyboard: false },
+          },
+          signal: controller.signal,
         });
 
+        if (!runtimeHandle || controller.signal.aborted) return;
+
+        const game = runtimeHandle.game;
         gameRef.current = game;
+        
+        // Restart the scene so we can pass data to init()
+        game.scene.stop('ResonanceScene');
+        game.scene.start('ResonanceScene', { reducedMotion: reducedMotionRef.current });
+        const scene = game.scene.getScene('ResonanceScene');
 
         // Poll until the scene's create() has completed (sys.isActive becomes true).
         let attempts = 0;
         const poll = setInterval(() => {
-          if (!mounted) { clearInterval(poll); return; }
+          if (!mounted || controller.signal.aborted) { clearInterval(poll); return; }
           if (++attempts > 100) { clearInterval(poll); return; } // 10s timeout
 
-          const scene = game.scene.getScene('ResonanceScene');
           if (scene && scene.sys.isActive()) {
             sceneRef.current = scene;
 
@@ -154,7 +169,10 @@ const PhaserLayer = forwardRef(function PhaserLayer(
 
     return () => {
       mounted = false;
-      game?.destroy(true);
+      controller.abort();
+      if (runtimeHandle) {
+        runtimeHandle.destroy();
+      }
       gameRef.current  = null;
       sceneRef.current = null;
     };

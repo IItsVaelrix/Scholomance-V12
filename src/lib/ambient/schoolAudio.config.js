@@ -30,17 +30,29 @@ export function getRandomizedStationTrackUrl(schoolId, { excludeUrl = null } = {
 
 export function getPlayableSchoolIds(unlockedSchools = []) {
   const ids = Array.isArray(unlockedSchools) ? unlockedSchools : [];
-  // Ensure SONIC is always available as a base station
-  const baseSchools = ids.length === 0 ? ['SONIC'] : ids;
-  
+
+  // When no specific schools are unlocked, expose ALL schools that have tracks.
+  // SONIC no longer gets unconditional priority — the radio has no allegiance.
+  const baseSchools = ids.length === 0
+    ? Object.keys(SCHOOL_AUDIO_CONFIG)
+    : ids;
+
   return Object.values(SCHOOL_AUDIO_CONFIG)
     .filter((config) => baseSchools.includes(config.schoolId) && Boolean(config?.trackUrl))
     .map((config) => config.schoolId);
 }
 
+// Round-robin counter — advances on every call, no Math.random, no PRNG seed.
+// This ensures the initial station selection rotates sporadically across the
+// available pool without any school having allegiance.
+let _rrCounter = 0;
+
 export function getDefaultSchoolId(playableSchoolIds = []) {
   if (!Array.isArray(playableSchoolIds) || playableSchoolIds.length === 0) {
     return null;
   }
-  return playableSchoolIds[0];
+  // Advance the counter and pick the next school in rotation.
+  const index = _rrCounter % playableSchoolIds.length;
+  _rrCounter = (_rrCounter + 1) % (playableSchoolIds.length * 16); // avoid overflow
+  return playableSchoolIds[index];
 }

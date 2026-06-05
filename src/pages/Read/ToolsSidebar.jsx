@@ -126,13 +126,6 @@ export default function ToolsSidebar({
           <span className="tool-label">Rhyme Astrology</span>
         </button>
         <button
-          className={`sidebar-tool-btn ${analysisMode === ANALYSIS_MODES.VOWEL ? 'active' : ''}`}
-          onClick={() => onModeChange(ANALYSIS_MODES.VOWEL)}
-        >
-          <span className="tool-icon"><MetricsIcon /></span>
-          <span className="tool-label">Phoneme Breakdown</span>
-        </button>
-        <button
           className={`sidebar-tool-btn ${analysisMode === ANALYSIS_MODES.ANALYZE ? 'active' : ''}`}
           onClick={() => onModeChange(ANALYSIS_MODES.ANALYZE)}
         >

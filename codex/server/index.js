@@ -70,6 +70,8 @@ import { rhymeAstrologyRoutes } from './routes/rhymeAstrology.routes.js';
 import { resolveRhymeAstrologyArtifactPaths } from './utils/rhymeAstrologyPaths.js';
 import { imageAnalysisRoutes } from './routes/imageAnalysis.routes.js';
 import { registerSchoolStylesRoutes } from './routes/schoolStyles.routes.js';
+import { catalogRoutes } from './routes/catalog.routes.js';
+import { studioRoutes } from './routes/studio.routes.js';
 import { createMailQueueWorker, createMailerService } from './services/mailer.service.js';
 import { R2AudioAdapter } from './services/r2Audio.adapter.js';
 
@@ -623,7 +625,7 @@ function requireJsonContentType(request, reply) {
 // 3. Register global rate limiting (per-user when authenticated, per-IP otherwise)
 fastify.register(rateLimit, {
   global: true,
-  max: 150,
+  max: process.env.NODE_ENV === 'production' ? 150 : 5000,
   timeWindow: '1 minute',
   keyGenerator: (request) => {
     // Use session user ID for authenticated users so each user gets their own budget.
@@ -846,6 +848,9 @@ function getAudioAdapter() {
     return null; // Fallback to local fs logic for now
 }
 
+import { LocalAudioAdapter } from './adapters/localAudio.adapter.js';
+const localAudioAdapter = new LocalAudioAdapter({ uploadPath: AUDIO_UPLOAD_PATH });
+
 const audioAdapter = getAudioAdapter();
 
 function sanitizeAudioFilename(raw) {
@@ -1041,6 +1046,8 @@ fastify.register(worldRoutes, { prefix: '/api/world', adapter: lexiconAdapter, p
 fastify.register(corpusRoutes, { prefix: '/api/corpus', adapter: corpusAdapter, lexiconAdapter });
 fastify.register(imageAnalysisRoutes, { prefix: '/api/image' });
 fastify.register(registerSchoolStylesRoutes, { prefix: '/api/styles' });
+fastify.register(catalogRoutes);
+fastify.register(studioRoutes, { localAudioAdapter });
 if (ENABLE_RHYME_ASTROLOGY) {
     if (RHYME_ASTROLOGY_PATHS.usedExistingArtifactsFallback || RHYME_ASTROLOGY_PATHS.usedProductionPersistentFallback) {
         fastify.log.warn({
@@ -1075,7 +1082,9 @@ if (ENABLE_COLLAB_API) {
     }
     await fastify.register(async function collabApiPlugin(instance) {
         instance.register(async function collabRestApiPlugin(restApi) {
-            restApi.addHook('preHandler', requireAuth);
+            if (IS_PRODUCTION) {
+                restApi.addHook('preHandler', requireAuth);
+            }
             restApi.register(collabRoutes, { prefix: '/collab' });
         });
 

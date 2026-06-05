@@ -1,3 +1,6 @@
+import { resolveResonanceUrl } from './resonance/resonanceUrlResolver.js';
+import { ResonanceTimeline } from './resonance/ResonanceTimeline.js';
+import { validateDurationSync } from './resonance/resonanceSchema.js';
 import { getTrackEmbedConfig } from "../musicEmbeds";
 import { SCHOOLS } from "../../data/schools.js";
 import { freshRng } from '../math/seededRng.js';
@@ -66,6 +69,12 @@ export const AMBIENT_PLAYER_EVENTS = Object.freeze({
   PAUSE: "PAUSE",
   TRACK_ENDED: "TRACK_ENDED",
   ERROR: "ERROR",
+  // Resonance Bytecode Events
+  RESONANCE_LOADING: "resonance-loading",
+  RESONANCE_READY: "resonance-ready",
+  RESONANCE_TICK: "resonance-tick",
+  RESONANCE_UNAVAILABLE: "resonance-unavailable",
+  RESONANCE_ERROR: "resonance-error",
 });
 
 function canUseBrowser() {
@@ -772,11 +781,24 @@ function createAmbientPlayerService(options = {}) {
   const initialSchoolId = persisted.schoolId; // Default to null if not persisted
   const schoolConfig = getSchoolConfig(initialSchoolId);
 
+
+  const lastResolvedTrackUrlBySchool = new Map();
+  function resolveTrackUrlForSchool(schoolId, fallbackTrackUrl = null) {
+    if (!schoolId) return fallbackTrackUrl || null;
+    const previousTrackUrl = lastResolvedTrackUrlBySchool.get(schoolId) || null;
+    const randomizedTrackUrl = getRandomizedStationTrackUrl(schoolId, { excludeUrl: previousTrackUrl });
+    const resolvedTrackUrl = randomizedTrackUrl || fallbackTrackUrl || null;
+    if (resolvedTrackUrl) {
+      lastResolvedTrackUrlBySchool.set(schoolId, resolvedTrackUrl);
+    }
+    return resolvedTrackUrl;
+  }
+
   let state = {
     status: AMBIENT_PLAYER_STATES.IDLE,
     schoolId: initialSchoolId,
     queuedSchoolId: null,
-    trackUrl: schoolConfig?.trackUrl || null,
+    trackUrl: resolveTrackUrlForSchool(initialSchoolId, schoolConfig?.trackUrl || null),
     isPlaying: false,
     isLoading: false,
     volume: persisted.volume,
@@ -793,9 +815,121 @@ function createAmbientPlayerService(options = {}) {
   };
 
   const listeners = new Set();
+
+  let activeResonanceTimeline = null;
+  let resonanceAbortController = null;
+  let resonanceRafId = null;
+
+  const eventBus = new Map();
+
+  function emitEvent(eventName, payload) {
+    const handlers = eventBus.get(eventName);
+    if (handlers) {
+      handlers.forEach(h => h(payload));
+    }
+  }
+
+  function onEvent(eventName, handler) {
+    if (!eventBus.has(eventName)) {
+      eventBus.set(eventName, new Set());
+    }
+    eventBus.get(eventName).add(handler);
+    return () => eventBus.get(eventName).delete(handler);
+  }
+
+  function cancelResonanceLoop() {
+    if (resonanceRafId !== null) {
+      cancelAnimationFrame(resonanceRafId);
+      resonanceRafId = null;
+    }
+  }
+
+  function broadcastResonanceTick() {
+    if (!state.isPlaying || !activeResonanceTimeline || !currentController || !currentController.audio) {
+      cancelResonanceLoop();
+      return;
+    }
+    const audio = currentController.audio;
+    if (!Number.isFinite(audio.currentTime)) {
+      cancelResonanceLoop();
+      return;
+    }
+
+    const playbackTimeMs = Math.round(audio.currentTime * 1000);
+    const tick = activeResonanceTimeline.sampleAt(playbackTimeMs);
+    
+    // Freeze payload
+    Object.freeze(tick.spectral);
+    Object.freeze(tick.resonance);
+    Object.freeze(tick);
+
+    emitEvent(AMBIENT_PLAYER_EVENTS.RESONANCE_TICK, tick);
+    resonanceRafId = requestAnimationFrame(broadcastResonanceTick);
+  }
+
+  function startResonanceLoop() {
+    cancelResonanceLoop();
+    if (activeResonanceTimeline && state.isPlaying) {
+      resonanceRafId = requestAnimationFrame(broadcastResonanceTick);
+    }
+  }
+
+  async function loadResonanceSidecar(fingerprintId, durationMs) {
+    if (resonanceAbortController) {
+      resonanceAbortController.abort();
+    }
+    activeResonanceTimeline = null;
+    cancelResonanceLoop();
+
+    if (!fingerprintId) {
+      emitEvent(AMBIENT_PLAYER_EVENTS.RESONANCE_UNAVAILABLE, { reason: "no_fingerprint" });
+      return;
+    }
+
+    const abortController = new AbortController();
+    resonanceAbortController = abortController;
+    const { signal } = abortController;
+
+    emitEvent(AMBIENT_PLAYER_EVENTS.RESONANCE_LOADING, { fingerprintId });
+
+    try {
+      const url = resolveResonanceUrl(fingerprintId);
+      const response = await fetch(url, { signal });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch sidecar: ${response.status}`);
+      }
+      const data = await response.json();
+      if (signal.aborted) return;
+
+      const timeline = new ResonanceTimeline(data);
+      if (durationMs) {
+        validateDurationSync(durationMs, timeline.sourceDurationMs);
+      }
+
+      activeResonanceTimeline = timeline;
+      emitEvent(AMBIENT_PLAYER_EVENTS.RESONANCE_READY, {
+        trackId: timeline.trackId,
+        fingerprintId: timeline.fingerprintId,
+        schemaVersion: timeline.schemaVersion,
+        analysisVersion: timeline.analysisVersion,
+        source: 'compiled-sidecar',
+      });
+
+      if (state.isPlaying) {
+        startResonanceLoop();
+      }
+    } catch (err) {
+      if (!signal.aborted) {
+        console.warn('Failed to load resonance sidecar:', err);
+        emitEvent(AMBIENT_PLAYER_EVENTS.RESONANCE_ERROR, { error: err.message });
+      }
+    }
+  }
+
   let playableSchoolIds = [];
   let pendingTuneTimer = null;
   let pendingTuneSchoolId = null;
+  let pendingTuneTrackUrl = null;
   let pendingTuneOperationId = null;
   let fadeOutPromise = Promise.resolve();
   let currentController = null;
@@ -809,7 +943,6 @@ function createAmbientPlayerService(options = {}) {
   const dialSfxPlayer = options.dialSfxPlayer || ((settings) => defaultDialSfxPlayer(audioContextRef, settings));
   const nowFn = options.nowFn || (() => { let counter = 0; return () => counter += 1; })();
   const randomFn = typeof options.randomFn === "function" ? options.randomFn : freshRng();
-  const lastResolvedTrackUrlBySchool = new Map();
   let hasPlayedDialSfx = false;
   let tuneOperationId = 0;
   let activeTuneOperationId = 0;
@@ -890,19 +1023,6 @@ function createAmbientPlayerService(options = {}) {
     deviceChangeListenersAttached = false;
   }
 
-  function resolveTrackUrlForSchool(schoolId, fallbackTrackUrl = null) {
-    if (!schoolId) return fallbackTrackUrl || null;
-    
-    // All schools now use the randomized station track pool
-    const previousTrackUrl = lastResolvedTrackUrlBySchool.get(schoolId) || null;
-    const randomizedTrackUrl = getRandomizedStationTrackUrl(schoolId, { excludeUrl: previousTrackUrl });
-    const resolvedTrackUrl = randomizedTrackUrl || fallbackTrackUrl || null;
-    
-    if (resolvedTrackUrl) {
-      lastResolvedTrackUrlBySchool.set(schoolId, resolvedTrackUrl);
-    }
-    return resolvedTrackUrl;
-  }
 
   function handleTrackEnded(schoolId) {
     transition(AMBIENT_PLAYER_EVENTS.TRACK_ENDED);
@@ -1044,22 +1164,24 @@ function createAmbientPlayerService(options = {}) {
     }
   }
 
-  function applySchoolSelection(schoolId) {
+  function applySchoolSelection(schoolId, trackUrl = null) {
     const config = getSchoolConfig(schoolId);
     setState({
       schoolId,
-      trackUrl: config?.trackUrl || null,
+      trackUrl: trackUrl || resolveTrackUrlForSchool(schoolId, config?.trackUrl || null),
     });
   }
 
   function transition(event, payload = {}) {
     switch (event) {
       case AMBIENT_PLAYER_EVENTS.SELECT_SCHOOL: {
-        const { schoolId, queued = false, tuneOperationId: opId = activeTuneOperationId } = payload;
+        const { schoolId, trackUrl = null, queued = false, tuneOperationId: opId = activeTuneOperationId } = payload;
         if (Number.isFinite(opId)) {
           activeTuneOperationId = opId;
         }
-        applySchoolSelection(schoolId);
+        _fingerprintLockedSchool = null; // Reset fingerprint lock on new selection
+        applySchoolSelection(schoolId, trackUrl);
+        pendingTuneTrackUrl = trackUrl || null;
         if (queued) {
           setState({
             queuedSchoolId: schoolId,
@@ -1095,6 +1217,7 @@ function createAmbientPlayerService(options = {}) {
           isLoading: false,
           error: null,
         });
+        startResonanceLoop();
         return;
       }
       case AMBIENT_PLAYER_EVENTS.PAUSE: {
@@ -1103,10 +1226,12 @@ function createAmbientPlayerService(options = {}) {
           isPlaying: false,
           isLoading: false,
         });
+        cancelResonanceLoop();
         return;
       }
       case AMBIENT_PLAYER_EVENTS.TRACK_ENDED: {
         setState({ isPlaying: true });
+        cancelResonanceLoop();
         return;
       }
       case AMBIENT_PLAYER_EVENTS.ERROR: {
@@ -1286,12 +1411,15 @@ function createAmbientPlayerService(options = {}) {
       return;
     }
 
+    const targetExplicitTrackUrl = pendingTuneTrackUrl;
+
     if (pendingTuneOperationId === id) {
       if (pendingTuneTimer) {
         clearTimeout(pendingTuneTimer);
       }
       pendingTuneTimer = null;
       pendingTuneDurationMs = null;
+      pendingTuneTrackUrl = null;
       pendingTuneOperationId = null;
     }
 
@@ -1308,7 +1436,7 @@ function createAmbientPlayerService(options = {}) {
     }
 
     const targetConfig = getSchoolConfig(targetSchoolId);
-    const targetTrackUrl = resolveTrackUrlForSchool(targetSchoolId, targetConfig?.trackUrl || null);
+    const targetTrackUrl = targetExplicitTrackUrl || resolveTrackUrlForSchool(targetSchoolId, targetConfig?.trackUrl || null);
     if (!targetTrackUrl) {
       if (isTuneOperationCurrent(id)) {
         transition(AMBIENT_PLAYER_EVENTS.ERROR, { error: "Selected school has no track" });
@@ -1443,6 +1571,15 @@ function createAmbientPlayerService(options = {}) {
       await ctrl.loadPromise;
     }
 
+    const config = getSchoolConfig(schoolId);
+    if (config?.resonanceFingerprintId) {
+      // Pass audio.duration (seconds -> ms) to check sync
+      const durationMs = ctrl.audio && Number.isFinite(ctrl.audio.duration) ? Math.round(ctrl.audio.duration * 1000) : null;
+      loadResonanceSidecar(config.resonanceFingerprintId, durationMs);
+    } else {
+      loadResonanceSidecar(null);
+    }
+
     if (!isTuneOperationActive(id)) {
       if (currentController === ctrl) {
         currentController = null;
@@ -1525,6 +1662,10 @@ function createAmbientPlayerService(options = {}) {
 
   // ─── Public API ────────────────────────────────────────────────────────────
 
+  function on(eventName, handler) {
+    return onEvent(eventName, handler);
+  }
+
   function subscribe(listener) {
     if (typeof listener !== "function") {
       return () => {};
@@ -1552,91 +1693,27 @@ function createAmbientPlayerService(options = {}) {
     return computeSignalLevel();
   }
 
-  let lockedDetectedSchool = null;
+  // Fingerprint checksum: the detected school is the one locked into the active
+  // controller at load time. No frequency analysis, no band-energy guessing.
+  // The controller.schoolId is set by loadSchoolTrack() and is the single
+  // authoritative source of what is actually playing.
+  let _fingerprintLockedSchool = null;
 
   /**
-   * Performs real-time spectral analysis to detect the dominant school.
-   * Locks the first clear detection per play session.
+   * Fingerprint-based school identification.
+   * Reads the schoolId stamped onto the active controller at load time.
+   * Locks immediately — no frequency scanning, no per-frame energy analysis.
    */
   async function getDetectedSchoolId() {
-    // If already locked for this session, stay locked
-    if (lockedDetectedSchool) return lockedDetectedSchool;
+    // Already locked this session — return immediately.
+    if (_fingerprintLockedSchool) return _fingerprintLockedSchool;
 
-    if (!currentController?.analyser) return null;
-    
-    const audioContext = audioContextRef.current;
-    if (audioContext && audioContext.state === 'suspended') {
-      try {
-        await audioContext.resume();
-      } catch (e) {
-        // Ignore resume errors during analysis
-      }
+    // The controller carries the authoritative school checksum set during loadSchoolTrack().
+    const schoolId = currentController?.schoolId || null;
+    if (schoolId) {
+      _fingerprintLockedSchool = schoolId;
     }
-    
-    const bufferLength = currentController.analyser.frequencyBinCount;
-    const data = new Uint8Array(bufferLength);
-    currentController.analyser.getByteFrequencyData(data);
-
-    const schoolEnergy = { VOID: 0, SONIC: 0, WILL: 0, ALCHEMY: 0, PSYCHIC: 0 };
-    const schoolBins = { VOID: 0, SONIC: 0, WILL: 0, ALCHEMY: 0, PSYCHIC: 0 };
-
-    for (let i = 0; i < bufferLength; i++) {
-      const v = data[i] / 255.0;
-      const freq = (i * 22050) / bufferLength;
-
-      // SPEC V1.8: Pink-Noise Compensated Weighting (Tilt)
-      // We multiply higher frequencies to account for natural 1/f energy decay
-      let weight = 1.0;
-      let band = null;
-
-      if (freq >= 20 && freq < 150) { 
-        band = 'VOID'; 
-        weight = 1.0; 
-      } else if (freq >= 150 && freq < 500) { 
-        band = 'SONIC'; 
-        weight = 1.4; // Mid-range compensation
-      } else if (freq >= 500 && freq < 2000) { 
-        band = 'WILL'; 
-        weight = 2.2; 
-      } else if (freq >= 2000 && freq < 6500) { 
-        band = 'ALCHEMY'; 
-        weight = 3.5; 
-      } else if (freq >= 6500) { 
-        band = 'PSYCHIC'; 
-        weight = 5.0; // Heavy tilt for high-frequency air
-      }
-
-      if (band) {
-        schoolEnergy[band] += v * weight;
-        schoolBins[band] += 1;
-      }
-    }
-
-    const averages = {};
-    let totalAvg = 0;
-    let maxAvg = 0;
-    let winner = null;
-    
-    Object.entries(schoolEnergy).forEach(([key, energy]) => {
-      const avg = energy / (schoolBins[key] || 1);
-      averages[key] = avg;
-      totalAvg += avg;
-      if (avg > maxAvg) {
-        maxAvg = avg;
-        winner = key;
-      }
-    });
-
-    // RELATIVE DOMINANCE CHECK (Spec v1.8)
-    // A school wins if its average energy is significantly higher than the mean of other bands
-    const otherAvg = (totalAvg - maxAvg) / 4;
-    
-    if (winner && maxAvg > otherAvg * 1.8 && maxAvg > 0.05) {
-      lockedDetectedSchool = winner;
-      return winner;
-    }
-    
-    return null;
+    return schoolId;
   }
 
   function getAnalyser() {
@@ -1726,10 +1803,12 @@ function createAmbientPlayerService(options = {}) {
     await unlockAudio();
 
     const opId = nextTuneOperationId();
+    const trackUrl = typeof schoolOptions.trackUrl === "string" ? schoolOptions.trackUrl : null;
 
     if (state.status === AMBIENT_PLAYER_STATES.TUNING) {
       transition(AMBIENT_PLAYER_EVENTS.SELECT_SCHOOL, {
         schoolId,
+        trackUrl,
         queued: true,
         tuneOperationId: opId,
       });
@@ -1746,6 +1825,7 @@ function createAmbientPlayerService(options = {}) {
 
     transition(AMBIENT_PLAYER_EVENTS.SELECT_SCHOOL, {
       schoolId,
+      trackUrl,
       queued: false,
       tuneOperationId: opId,
     });
@@ -1837,7 +1917,7 @@ function createAmbientPlayerService(options = {}) {
   async function pause() {
     clearTuneTimer();
     nextTuneOperationId(); // Invalidate any pending tuning operations
-    lockedDetectedSchool = null; // Reset fingerprint lock on pause
+    _fingerprintLockedSchool = null; // Reset fingerprint lock on pause
     if (currentController) {
       try {
         await currentController.pause();
@@ -1935,6 +2015,7 @@ function createAmbientPlayerService(options = {}) {
   attachDeviceListeners();
 
   return {
+    on,
     subscribe,
     getState,
     setContainer,

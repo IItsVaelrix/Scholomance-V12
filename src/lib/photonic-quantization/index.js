@@ -1,6 +1,7 @@
 import {
   DEFAULT_PHOTONIC_BRIDGE_CONFIG,
   PHOTONIC_BRIDGE_MODES,
+  PHOTONIC_EXECUTION_CLASSES,
 } from './photonic.config.js';
 import { validatePhotonicVectorPacket } from './vector-packet.schema.js';
 import { classifyVectorCodec } from './vector-codec.js';
@@ -112,4 +113,5 @@ export function analyzePhotonicQuantizationBridge(input, options = {}) {
 export {
   DEFAULT_PHOTONIC_BRIDGE_CONFIG,
   PHOTONIC_BRIDGE_MODES,
+  PHOTONIC_EXECUTION_CLASSES,
 };

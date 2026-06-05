@@ -73,14 +73,16 @@ export async function resolveOAuthIdentity({
   }
 
   // 5. Brand-new verified email → create a passwordless account + this identity.
+  //    Both writes happen atomically inside createOAuthAccount so a partial failure
+  //    can never leave an account without a usable login method.
   const username = await generateUniqueUsername(persistence, profile.email);
   const placeholderHash = await makePlaceholderPasswordHash();
-  const user = await persistence.users.createOAuthUser(username, profile.email, placeholderHash);
-  await persistence.identities.link({
-    userId: user.id,
+  const user = await persistence.users.createOAuthAccount({
+    username,
+    email: profile.email,
+    passwordHash: placeholderHash,
     provider,
     providerUserId: profile.providerUserId,
-    email: profile.email,
     emailVerified: true,
   });
   return { action: 'created', user };

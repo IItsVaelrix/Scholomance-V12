@@ -34,7 +34,10 @@ describe('Animation AMP Integration', () => {
       version: 'v1.0',
       targetId,
       trigger: 'mount',
-      preset: 'orb-idle'
+      preset: 'orb-idle',
+      constraints: {
+        motionSafetyMode: 'off'
+      }
     });
 
     const { result } = renderHook(() => useResolvedMotion(targetId, 100));
@@ -46,10 +49,26 @@ describe('Animation AMP Integration', () => {
       version: 'v1.0',
       targetId,
       trigger: 'hover',
-      state: { scale: 1.2 }
+      state: { scale: 1.2 },
+      constraints: {
+        motionSafetyMode: 'off'
+      }
     });
 
     // 3. Hook should pick up update after polling
     await waitFor(() => expect(result.current?.values.scale).toBe(1.2), { timeout: 1000 });
+  });
+
+  it('does not dampen ordinary hover scale under corrected TurboQuant cosine', async () => {
+    const output = await runAnimationAmp({
+      version: 'v1.0',
+      targetId: 'cosine-calibration-hover',
+      trigger: 'hover',
+      state: { scale: 1.2 }
+    });
+
+    expect(output.success).toBe(true);
+    expect(output.values.scale).toBe(1.2);
+    expect(output.trace.find(t => t.processorId === 'mp.turboquant.similarity')?.changed || []).not.toContain('scale');
   });
 });

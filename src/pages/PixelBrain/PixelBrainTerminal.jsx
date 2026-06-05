@@ -262,6 +262,7 @@ function AnalysisMetrics({ result, onExport }) {
     { label: "SYMMETRY", value: result.dominantSymmetry?.toUpperCase() || "N/A" },
     { label: "COVERAGE", value: `${Math.round((result.activeTokenCount / Math.max(1, result.tokenCount)) * 100)}%` },
   ];
+  const photonicRoute = result.photonicRoute;
 
   return (
     <div className="metrics-section">
@@ -286,6 +287,67 @@ function AnalysisMetrics({ result, onExport }) {
             <div className="metric-label">{metric.label}</div>
             <div className="metric-value">{metric.value}</div>
           </motion.div>
+        ))}
+      </div>
+      {photonicRoute && (
+        <PhotonicTrace route={photonicRoute} />
+      )}
+    </div>
+  );
+}
+
+function formatPacketId(packetId) {
+  const value = String(packetId || 'retina_null');
+  if (value.length <= 18) return value;
+  return `${value.slice(0, 10)}...${value.slice(-6)}`;
+}
+
+function byteClass(value) {
+  if (value < 0) return 'negative';
+  if (value > 0) return 'positive';
+  return 'zero';
+}
+
+function PhotonicTrace({ route }) {
+  const previewValues = Array.isArray(route?.preview?.values)
+    ? route.preview.values.slice(0, 24)
+    : [];
+  const bridgeGrade = route?.bridgeReport?.compatibilityGrade || 'N/A';
+  const opticalFit = Math.round((Number(route?.opticalSimulation?.opticalFit) || 0) * 100);
+  const deltaCount = Number(route?.delta?.changedCount) || 0;
+  const packetId = route?.packet?.packetId || route?.preview?.packetId;
+
+  return (
+    <div className="photonic-trace" aria-label="Photonic Retina bridge trace">
+      <div className="photonic-trace-head">
+        <span className="photonic-trace-title">PHOTONIC TRACE</span>
+        <span className="photonic-packet-id" title={packetId}>{formatPacketId(packetId)}</span>
+      </div>
+      <div className="photonic-trace-grid">
+        <div className="photonic-trace-cell">
+          <span>RETINA</span>
+          <strong>{previewValues.length}B</strong>
+        </div>
+        <div className="photonic-trace-cell">
+          <span>BRIDGE</span>
+          <strong>{bridgeGrade}</strong>
+        </div>
+        <div className="photonic-trace-cell">
+          <span>OPTICAL</span>
+          <strong>{opticalFit}%</strong>
+        </div>
+        <div className="photonic-trace-cell">
+          <span>DELTA</span>
+          <strong>{deltaCount}</strong>
+        </div>
+      </div>
+      <div className="photonic-byte-strip" aria-label="Photonic low-bit preview bytes">
+        {previewValues.map((value, index) => (
+          <span
+            key={`${index}-${value}`}
+            className={`photonic-byte ${byteClass(value)}`}
+            title={`Byte ${index}: ${value}`}
+          />
         ))}
       </div>
     </div>

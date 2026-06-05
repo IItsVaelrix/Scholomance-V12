@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { freshRng } from '../../lib/math/seededRng.js';
 import { motion } from 'framer-motion';
 import { getTrackEmbedConfig } from "../../lib/musicEmbeds";
 
@@ -181,29 +182,31 @@ export default function HolographicEmbed({
   onIgnite,
   sinkId = '',
 }) {
-  /* Aetheric current overflow twitch — truly random interval, purely visual */
+  /* Aetheric current overflow twitch — non-deterministic interval, purely visual */
   const [isTwitching, setIsTwitching] = useState(false);
 
   useEffect(() => {
     let timeout;
-    let seed = 123;
-    const seededRandom = () => {
-      seed = (seed * 16807) % 2147483647;
-      return (seed - 1) / 2147483646;
-    };
+    let twitchResetTimeout;
+    // Crypto-seeded per mount via the sanctioned RNG bridge — varies per
+    // page-load, no raw host RNG (QUANT-0101 / VAELRIX_LAW §6). Purely visual.
+    const random = freshRng();
 
     const scheduleNextTwitch = () => {
-      // Randomize between 8 and 38 seconds — never predictable
-      const delay = 8000 + seededRandom() * 30000;
+      // Randomize between 8 and 38 seconds.
+      const delay = 8000 + random() * 30000;
       timeout = setTimeout(() => {
         setIsTwitching(true);
         // Twitch resolves in 500ms — matches CSS animation duration
-        setTimeout(() => setIsTwitching(false), 500);
+        twitchResetTimeout = setTimeout(() => setIsTwitching(false), 500);
         scheduleNextTwitch();
       }, delay);
     };
     scheduleNextTwitch();
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(twitchResetTimeout);
+    };
   }, []);
 
   /* Resolve props */
@@ -218,11 +221,6 @@ export default function HolographicEmbed({
     : isTuning  ? 'loading'
     : isPlaying ? 'playing'
     : 'paused';
-
-  const stateLabel = {
-    standby: 'STANDBY', loading: 'SYNCING',
-    playing: 'TRANSMITTING', paused: 'STANDBY',
-  }[playerState] ?? 'STANDBY';
 
   const signalStatusValue = {
     standby: 'Standby', loading: 'Synchronizing',
@@ -280,8 +278,6 @@ export default function HolographicEmbed({
                         d="M24 144 C54 172, 90 118, 122 146 S188 190, 224 144 S280 108, 304 132" />
                 </svg>
 
-                <div className="signal-core__screen-label">{stateLabel}</div>
-                
                 {/* Central Power Ignition Icon — Replaces Glyph and Focus Dots */}
                 <button 
                   className="signal-core__ignition-btn"

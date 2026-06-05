@@ -132,7 +132,6 @@ export function useVerseSynthesis(content, options = {}) {
     syntaxLayer: artifact?.syntaxLayer,
     scheme: artifact?.scheme,
     meter: artifact?.meter,
-    vowelSummary: artifact?.vowelSummary,
     literaryDevices: artifact?.literaryDevices,
     emotion: artifact?.emotion,
     totalSyllables: artifact?.totalSyllables || 0,

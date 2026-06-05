@@ -37,6 +37,7 @@ export const SCHOOLS = Object.freeze({
     color: "#1ab4a8",
     colorHsl: { h: 175, s: 85, l: 55 },
     angle: 288,
+    baseFrequency: 325,
     unlockXP: 0,
     glyph: "♩",
     atmosphere: {
@@ -52,6 +53,7 @@ export const SCHOOLS = Object.freeze({
     color: "#3b82f6",
     colorHsl: { h: 220, s: 90, l: 60 },
     angle: 72,
+    baseFrequency: 8500,
     unlockXP: 250,
     glyph: "◬",
     atmosphere: {
@@ -67,6 +69,7 @@ export const SCHOOLS = Object.freeze({
     color: "#94a3b8",
     colorHsl: { h: 215, s: 15, l: 41 },
     angle: 0,
+    baseFrequency: 85,
     unlockXP: 1500,
     glyph: "∅",
     atmosphere: {
@@ -82,6 +85,7 @@ export const SCHOOLS = Object.freeze({
     color: "#ec4899",
     colorHsl: { h: 325, s: 80, l: 58 },
     angle: 144,
+    baseFrequency: 4250,
     unlockXP: 8000,
     glyph: "⚗",
     atmosphere: {
@@ -97,6 +101,7 @@ export const SCHOOLS = Object.freeze({
     color: "#ef4444",
     colorHsl: { h: 0, s: 85, l: 48 },
     angle: 216,
+    baseFrequency: 1250,
     unlockXP: 25000,
     glyph: "⚡",
     atmosphere: {
@@ -112,6 +117,7 @@ export const SCHOOLS = Object.freeze({
     color: "#22c55e",
     colorHsl: { h: 120, s: 75, l: 40 },
     angle: 36,
+    baseFrequency: 250,
     unlockXP: 100000,
     glyph: "☠",
     atmosphere: {
@@ -127,6 +133,7 @@ export const SCHOOLS = Object.freeze({
     color: "#06b6d4",
     colorHsl: { h: 180, s: 80, l: 68 },
     angle: 108,
+    baseFrequency: 180,
     unlockXP: 500000,
     glyph: "◇",
     atmosphere: {
@@ -142,6 +149,7 @@ export const SCHOOLS = Object.freeze({
     color: "#eab308",
     colorHsl: { h: 45, s: 90, l: 68 },
     angle: 180,
+    baseFrequency: 600,
     unlockXP: 2000000,
     glyph: "◉",
     atmosphere: {

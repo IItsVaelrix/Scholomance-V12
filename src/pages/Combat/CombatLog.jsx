@@ -19,24 +19,10 @@ export default function CombatLog({ history, isResolving, activeIntent, isCollap
   const logRef = useRef(null);
 
   useEffect(() => {
-    if (history.length === 0) {
-      setVisibleHistory([]);
-      return;
-    }
-    const lastEntry = history[history.length - 1];
-    if (visibleHistory.find(h => h.id === lastEntry.id || (h.narrativeLog === lastEntry.narrativeLog && h.timestamp === lastEntry.timestamp))) {
-      return;
-    }
     if (!activeIntent) {
       setVisibleHistory(history);
     }
-  }, [history, activeIntent, visibleHistory]);
-
-  useEffect(() => {
-    if (!activeIntent && history.length > visibleHistory.length) {
-      setVisibleHistory(history.slice(0, visibleHistory.length + 1));
-    }
-  }, [activeIntent, history, visibleHistory]);
+  }, [history, activeIntent]);
 
   useEffect(() => {
     if (logRef.current && !isCollapsed) {

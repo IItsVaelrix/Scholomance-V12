@@ -12,7 +12,7 @@ import { buildSyntaxLayer } from "../../syntax.layer.js";
 import { buildHiddenHarkovSummary } from "../../models/harkov.model.js";
 import { compileVerseToIR } from "./compileVerseToIR.js";
 import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
-import { buildVowelSummary, normalizeVowelFamily } from '../../phonology/vowelFamily.js';
+import { normalizeVowelFamily } from '../../phonology/vowelFamily.js';
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../../codex/core/phonology/chroma.resolver.js";
 import { decodeBytecode } from "../bytecodeRenderer.js";
@@ -45,7 +45,6 @@ export function synthesizeVerse(text, options = {}) {
   // 4. Rhyme & Meter Detection (The Echo)
   const scheme = detectScheme(syntaxLayer.schemePattern, syntaxLayer.rhymeGroups);
   const meter = analyzeMeter(analyzedDoc.lines);
-  const vowelSummary = buildVowelSummary(analyzedDoc);
 
   // 5. Stylistic Inference (The Soul)
   const literaryDevices = analyzeLiteraryDevices(normalizedText);
@@ -71,7 +70,6 @@ export function synthesizeVerse(text, options = {}) {
     // PIPELINE B: Unified Visual (Locked to Anchor)
     const verseIrColor = token.terminalVowelFamily 
       ? resolveVerseIrColor(token.terminalVowelFamily, currentSchool, {
-          forcedHue: sonicChroma?.h ?? null,
           phase: index / (verseIR.tokens.length || 1)
         })
       : null;
@@ -110,7 +108,6 @@ export function synthesizeVerse(text, options = {}) {
     hhm,
     scheme,
     meter,
-    vowelSummary,
     literaryDevices,
     emotion,
     tokenByIdentity,
@@ -130,7 +127,6 @@ function createEmptyArtifact() {
     hhm: null,
     scheme: null,
     meter: null,
-    vowelSummary: { families: [], totalWords: 0, uniqueWords: 0 },
     literaryDevices: [],
     emotion: 'Neutral',
     tokenByIdentity: new Map(),

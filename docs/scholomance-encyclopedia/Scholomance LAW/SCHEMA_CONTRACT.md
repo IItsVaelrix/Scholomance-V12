@@ -7,13 +7,22 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.23** | Last updated: 2026-04-18
+**Version: 1.24** | Last updated: 2026-06-04
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
 
 ---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: BytecodeXP QBIT memory infusion contract
+- Version: 1.23 -> 1.24
+- Changed fields: added internal `BytecodeXPVaccineArtifact`, `QbitPulseNodeArtifact`, `QbitProbeEnrichmentArtifact`, and `BytecodeXPMemoryEnvelope` contracts for `PB-XP-v1` vaccine artifacts and QBIT pulse memory envelopes; reserved `SCHOL-BYTXP-MEM-v1` as the internal memory envelope schema
+- Breaking: no
+- Claude impact: no required UI change; future surfaces may render these artifacts only after an explicit product/UI integration
+- Gemini impact: diagnostic and MCP fixture tests can assert the stable envelope contract without inferring fields from implementation modules
 
 ## SCHEMA CHANGE NOTICE
 
@@ -154,6 +163,73 @@ enum StackingTier {
 These are the current shared shapes used across `codex/core/`, `src/types/`, and bridge hooks.
 
 ```ts
+type BytecodeXPSourceKind = "error" | "health" | "cccb";
+
+interface BytecodeXPVaccineArtifact {
+  version: "v1";
+  bytecode: string;        // PB-XP-v1-{SOURCE_KIND}-{SLUG}-{FINGERPRINT}-{CHECKSUM}
+  vaccineId: string;
+  sourceKind: BytecodeXPSourceKind;
+  sourceBytecode: string | null;
+  semanticSlug: string;
+  fingerprint: string;
+  recoveryKey: string | null;
+  stableContext: Record<string, unknown>;
+  checksum: string;
+}
+
+interface QbitPulseNodeArtifact {
+  qbitType: "BYTECODE_XP_VACCINE_PULSE";
+  vaccineId: string;
+  origin: {
+    path: string | null;
+    code: string | null;
+    cellId: string | null;
+  };
+  pulseRadius: number;          // clamped 0..1
+  collapseConfidence: number;   // clamped 0..1
+  hotspots: Array<{
+    path: string;
+    resonance: number;          // clamped 0..1
+    reason: string;
+  }>;
+  checksum: string;
+}
+
+interface QbitProbeEnrichmentArtifact {
+  hypothesis: string | null;
+  hotspots: QbitPulseNodeArtifact["hotspots"];
+  metadata: {
+    probe?: "cleri-probe";
+    skipped?: boolean;
+    reason?: string;
+    timedOut?: boolean;
+    scannedFiles?: number;
+    maxFiles?: number;
+    maxFileBytes?: number;
+    maxHotspots?: number;
+    maxRuntimeMs?: number;
+    minResonance?: number;
+  };
+}
+
+interface BytecodeXPMemoryEnvelope {
+  schema: "SCHOL-BYTXP-MEM-v1";
+  artifactKind: "BYTECODE_XP_MEMORY_INFUSION";
+  memoryKey: string;            // scholomance:bytecode-xp:{vaccineId}
+  vaccine: BytecodeXPVaccineArtifact;
+  pulse: QbitPulseNodeArtifact | null;
+  enrichment: QbitProbeEnrichmentArtifact | null;
+  labels: string[];
+  provenance: {
+    source: string;
+    pdr: string;
+    phase: string;
+    createdBy: string;
+  };
+  checksum: string;
+}
+
 interface Scroll {
   id: string; // "scroll-{timestamp}-{7char}"
   title: string;

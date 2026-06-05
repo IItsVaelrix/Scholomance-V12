@@ -9,6 +9,8 @@
  *   schoolColor {string} — hex color for the active school (e.g. "#651fff")
  */
 import { useEffect, useRef } from 'react';
+import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
+import { buildAmbientScene } from './scenes/IDEAmbientScene.js';
 
 const useRIC = typeof requestIdleCallback !== 'undefined';
 
@@ -24,46 +26,47 @@ export default function IDEAmbientCanvas({ schoolColor = '#c8a84b' }) {
     if (!el) return;
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
 
-    let alive = true;
+    const controller = new AbortController();
+    let runtimeHandle = null;
 
     async function initPhaser() {
-      if (!alive) return;
+      if (controller.signal.aborted) return;
       try {
-        const [{ default: Phaser }, { buildAmbientScene }] = await Promise.all([
-          import('phaser'),
-          import('./scenes/IDEAmbientScene.js'),
-        ]);
-        if (!alive) return;
-
         const W = el.offsetWidth  || window.innerWidth;
         const H = el.offsetHeight || window.innerHeight;
 
-        const game = new Phaser.Game({
-          type:        Phaser.WEBGL,
-          parent:      el,
-          width:       W,
-          height:      H,
-          transparent: true,
-          antialias:   true,
-          scene:       [buildAmbientScene(Phaser)],
-          audio:       { noAudio: true },
-          scale:       { mode: Phaser.Scale.RESIZE },
-          banner:      false,
-          render: {
-            powerPreference: 'high-performance',
-            batchSize: 4096,
+        runtimeHandle = await mountPhaserGame({
+          parent: el,
+          buildScenes: [buildAmbientScene],
+          config: {
+            type: 2, // Phaser.WEBGL
+            width: W,
+            height: H,
+            transparent: true,
+            antialias: true,
+            audio: { noAudio: true },
+            scale: { mode: 3 }, // Phaser.Scale.RESIZE
+            banner: false,
+            render: {
+              powerPreference: 'high-performance',
+              batchSize: 4096,
+            },
           },
+          signal: controller.signal,
         });
 
-        game.events.once('ready', () => {
-          if (!alive) { game.destroy(true); return; }
-          if (game.canvas) game.canvas.style.pointerEvents = 'none';
-          gameRef.current = game;
-          const scene = game.scene.getScene('IDEAmbientScene');
-          scene?.setSchoolColor?.(colorRef.current);
-        });
-      } catch {
-        /* Phaser unavailable — ambient layer absent */
+        if (runtimeHandle) {
+          if (runtimeHandle.game.canvas) runtimeHandle.game.canvas.style.pointerEvents = 'none';
+          gameRef.current = runtimeHandle.game;
+          
+          runtimeHandle.game.events.once('ready', () => {
+            if (controller.signal.aborted) return;
+            const scene = runtimeHandle.game.scene.getScene('IDEAmbientScene');
+            scene?.setSchoolColor?.(colorRef.current);
+          });
+        }
+      } catch (e) {
+        console.error("Ambient layer unavailable:", e);
       }
     }
 
@@ -74,13 +77,13 @@ export default function IDEAmbientCanvas({ schoolColor = '#c8a84b' }) {
       : setTimeout(initPhaser, 1200);
 
     return () => {
-      alive = false;
+      controller.abort();
       if (useRIC) cancelIdleCallback(idleHandle);
       else        clearTimeout(idleHandle);
-      if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
+      if (runtimeHandle) {
+        runtimeHandle.destroy();
       }
+      gameRef.current = null;
     };
   }, []);
 

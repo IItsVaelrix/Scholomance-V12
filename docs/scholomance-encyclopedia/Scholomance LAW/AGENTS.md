@@ -455,6 +455,7 @@ New jest-axe tests go in `tests/qa/features/`. Playwright axe specs go in `tests
 
 - **Shared preamble**: `SHARED_PREAMBLE.md` — read before every session
 - **Global law**: `VAELRIX_LAW.md` — read before acting
+- **Resonance law**: `RESONANCE_LAW.md` — compiling perception into deterministic memory
 - **Architecture & agent playbooks**: `AI_ARCHITECTURE_V2.md`
 - **Security patterns & code**: `ARCH_CONTRACT_SECURITY.md`
 - **Runtime architecture**: `docs/ai/AI_README_ARCHITECTURE.md`

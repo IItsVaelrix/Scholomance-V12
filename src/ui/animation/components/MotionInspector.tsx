@@ -1,23 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Activity, 
-  ChevronRight, 
-  ChevronDown, 
-  X, 
-  Search, 
-  Clock, 
-  Cpu, 
-  AlertTriangle, 
+import {
+  Activity,
+  ChevronRight,
+  ChevronDown,
+  X,
+  Search,
+  Clock,
+  Cpu,
+  AlertTriangle,
   Info,
-  Terminal
+  Terminal,
+  Trash2,
+  Copy,
+  Layers
 } from 'lucide-react';
 import {
   getAllActiveAnimations,
-  getAmpStatus
+  getAmpStatus,
+  clearActiveAnimation,
+  buildOutputTrace,
+  getStageSummary,
+  formatTraceJson,
+  formatTraceMarkdown,
+  debugPrintTrace,
+  debugPrintPerformance
 } from '../../../lib/amp-client.js';
+import { useResolvedMotion } from '../hooks/useResolvedMotion';
 import type { ResolvedMotionOutput } from '../../../types/animation';
 import './MotionInspector.css';
+
+interface TraceEntry {
+  timestamp: number;
+  processorId: string;
+  stage: string;
+  changed: string[];
+}
+
+type StageSummary = Record<string, { count: number; processors: string[]; totalTimeMs: number }>;
 
 /**
  * MotionInspector Component
@@ -57,12 +77,29 @@ export const MotionInspector: React.FC = () => {
   }, [isOpen]);
 
   const filteredAnimations = Array.from(activeAnimations.entries()).filter(
-    ([id, output]) => 
-      id.toLowerCase().includes(filter.toLowerCase()) || 
+    ([id, output]) =>
+      id.toLowerCase().includes(filter.toLowerCase()) ||
       output.renderer.toLowerCase().includes(filter.toLowerCase())
   );
 
-  const selectedAnimation = selectedTargetId ? activeAnimations.get(selectedTargetId) : null;
+  // Live per-target read straight from the AMP registry (fresher than the 500ms
+  // list poll). Falls back to the list snapshot if the live read is empty.
+  const liveSelected = useResolvedMotion(selectedTargetId);
+  const selectedAnimation = liveSelected
+    ?? (selectedTargetId ? activeAnimations.get(selectedTargetId) ?? null : null);
+
+  // Prune a stale target from the registry (clearActiveAnimation is otherwise
+  // never called, so the Map only grows).
+  const handleClear = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    await clearActiveAnimation(id);
+    if (selectedTargetId === id) setSelectedTargetId(null);
+    setActiveAnimations((prev) => {
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  };
 
   if (!isOpen) {
     return (
@@ -151,6 +188,13 @@ export const MotionInspector: React.FC = () => {
                     <span className="target-id">{id}</span>
                     <span className="target-renderer">{output.renderer}</span>
                   </div>
+                  <button
+                    className="motion-clear-btn"
+                    onClick={(e) => handleClear(id, e)}
+                    title="Clear from registry"
+                  >
+                    <Trash2 size={12} />
+                  </button>
                   <ChevronRight size={14} />
                 </div>
               ))
@@ -175,15 +219,52 @@ export const MotionInspector: React.FC = () => {
 
 const AnimationDetails: React.FC<{ output: ResolvedMotionOutput }> = ({ output }) => {
   const [expandedSection, setExpandedSection] = useState<string | null>('trace');
+  const [trace, setTrace] = useState<TraceEntry[]>([]);
+  const [stageSummary, setStageSummary] = useState<StageSummary>({});
+
+  // Build the diagnostic trace + stage rollup through the motion-trace module.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const built = (await buildOutputTrace(output)) as TraceEntry[];
+      if (!active) return;
+      setTrace(built);
+      setStageSummary((await getStageSummary(built)) as StageSummary);
+    })();
+    return () => { active = false; };
+  }, [output]);
 
   const toggleSection = (section: string) => {
     setExpandedSection(expandedSection === section ? null : section);
+  };
+
+  const copyTraceJson = async () => {
+    const json = await formatTraceJson(trace);
+    navigator.clipboard?.writeText(json);
+  };
+  const copyTraceMarkdown = async () => {
+    const md = await formatTraceMarkdown(trace);
+    navigator.clipboard?.writeText(md);
   };
 
   return (
     <div className="animation-details">
       <div className="details-header">
         <h3>{output.targetId}</h3>
+        <div className="trace-actions">
+          <button className="trace-action-btn" onClick={copyTraceJson} title="Copy trace as JSON">
+            <Copy size={12} /> JSON
+          </button>
+          <button className="trace-action-btn" onClick={copyTraceMarkdown} title="Copy trace as Markdown">
+            <Copy size={12} /> MD
+          </button>
+          <button className="trace-action-btn" onClick={() => debugPrintTrace(trace)} title="Print trace to console">
+            <Terminal size={12} /> Trace
+          </button>
+          <button className="trace-action-btn" onClick={() => debugPrintPerformance(trace)} title="Print performance analysis to console">
+            <Terminal size={12} /> Perf
+          </button>
+        </div>
         <div className="performance-chips">
           {output.performance && (
             <>
@@ -219,14 +300,14 @@ const AnimationDetails: React.FC<{ output: ResolvedMotionOutput }> = ({ output }
         </div>
       </Section>
 
-      <Section 
-        title={`Trace (${output.trace.length} steps)`} 
-        id="trace" 
-        isOpen={expandedSection === 'trace'} 
+      <Section
+        title={`Trace (${trace.length} steps)`}
+        id="trace"
+        isOpen={expandedSection === 'trace'}
         onToggle={() => toggleSection('trace')}
       >
         <div className="trace-list">
-          {output.trace.map((step, idx) => (
+          {trace.map((step, idx) => (
             <div key={`${step.processorId}-${idx}`} className="trace-step">
               <div className="step-header">
                 <span className={`stage-tag ${step.stage}`}>{step.stage}</span>
@@ -237,6 +318,25 @@ const AnimationDetails: React.FC<{ output: ResolvedMotionOutput }> = ({ output }
                   <span key={c} className="change-tag">{c}</span>
                 ))}
               </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      <Section
+        title={`Stage Summary (${Object.keys(stageSummary).length})`}
+        id="stages"
+        isOpen={expandedSection === 'stages'}
+        onToggle={() => toggleSection('stages')}
+        icon={<Layers size={14} />}
+      >
+        <div className="stage-summary-list">
+          {Object.entries(stageSummary).map(([stage, info]) => (
+            <div key={stage} className="stage-summary-item">
+              <span className={`stage-tag ${stage}`}>{stage}</span>
+              <span className="stage-meta">
+                {info.count} proc · {info.totalTimeMs.toFixed(1)}ms
+              </span>
             </div>
           ))}
         </div>
@@ -256,6 +356,44 @@ const AnimationDetails: React.FC<{ output: ResolvedMotionOutput }> = ({ output }
                 <AlertTriangle size={12} />
                 <span>{msg}</span>
               </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {output.photonicRoute && (
+        <Section
+          title="Photonic Route"
+          id="photonic"
+          isOpen={expandedSection === 'photonic'}
+          onToggle={() => toggleSection('photonic')}
+          icon={<Cpu size={14} />}
+        >
+          <div className="photonic-route-grid">
+            <div className="photonic-route-cell">
+              <span>Retina</span>
+              <strong>{output.photonicRoute.preview?.values?.length ?? 0}B</strong>
+            </div>
+            <div className="photonic-route-cell">
+              <span>Bridge</span>
+              <strong>{String((output.photonicRoute.bridgeReport as any)?.compatibilityGrade ?? 'N/A')}</strong>
+            </div>
+            <div className="photonic-route-cell">
+              <span>Optical</span>
+              <strong>{Math.round((Number(output.photonicRoute.opticalSimulation?.opticalFit) || 0) * 100)}%</strong>
+            </div>
+            <div className="photonic-route-cell">
+              <span>Delta</span>
+              <strong>{output.photonicRoute.delta?.changedCount ?? 0}</strong>
+            </div>
+          </div>
+          <div className="photonic-route-strip" aria-label="Animation AMP photonic preview bytes">
+            {(output.photonicRoute.preview?.values ?? []).slice(0, 24).map((value, index) => (
+              <span
+                key={`${index}-${value}`}
+                className={`photonic-route-byte ${value < 0 ? 'negative' : value > 0 ? 'positive' : 'zero'}`}
+                title={`Byte ${index}: ${value}`}
+              />
             ))}
           </div>
         </Section>

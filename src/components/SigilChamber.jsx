@@ -8,6 +8,7 @@
  * environments where canvas APIs are unavailable.
  */
 import { useEffect, useRef } from "react";
+import { mountPhaserGame } from '../lib/phaser/phaser-runtime.adapter.js';
 
 /* ── Color util (no Phaser dep) ───────────────────────────────────────────── */
 function hexToNum(hex) {
@@ -18,17 +19,23 @@ function hexToNum(hex) {
 }
 
 /* ── Scene factory — receives Phaser as argument so no top-level import ──── */
-function buildSceneClass(Phaser, initData) {
+function buildSceneClass(Phaser) {
   return class SigilScene extends Phaser.Scene {
     constructor() {
       super({ key: "SigilScene" });
-      this.d       = initData;
+      this.d       = {};
       this.outerC  = null;
       this.midC    = null;
       this.innerC  = null;
       this.glyphT  = null;
       this.emitter = null;
       this.R = 0; this.cx = 0; this.cy = 0;
+    }
+
+    init(data) {
+      if (data && Object.keys(data).length > 0) {
+        this.d = data;
+      }
     }
 
     preload() {
@@ -208,43 +215,57 @@ export default function SigilChamber({ color, glyph, syllables, word }) {
   useEffect(() => {
     const el = elRef.current;
     if (!el) return;
-    let alive = true;
 
-    import("phaser")
-      .then(({ default: Phaser }) => {
-        if (!alive) return;
+    const controller = new AbortController();
+    let runtimeHandle = null;
+
+    const initPhaser = async () => {
+      try {
         const W = el.offsetWidth  || 370;
         const H = el.offsetHeight || 160;
-        const { color: c, glyph: g, syllables: s } = latestDataRef.current;
 
-        const game = new Phaser.Game({
-          type: Phaser.AUTO,
+        runtimeHandle = await mountPhaserGame({
           parent: el,
-          width: W, height: H,
-          transparent: true,
-          antialias: true,
-          scene: [buildSceneClass(Phaser, { color: c, glyph: g, syllables: s || 1 })],
-          audio: { noAudio: true },
-          scale: { mode: Phaser.Scale.NONE },
-          banner: false,
+          buildScenes: [buildSceneClass],
+          config: {
+            type: 0, // Phaser.AUTO
+            width: W, 
+            height: H,
+            transparent: true,
+            antialias: true,
+            audio: { noAudio: true },
+            scale: { mode: 0 }, // Phaser.Scale.NONE
+            banner: false,
+          },
+          signal: controller.signal,
         });
+
+        if (!runtimeHandle || controller.signal.aborted) return;
+
+        const game = runtimeHandle.game;
+        gameRef.current = game;
+
+        const { color: c, glyph: g, syllables: s } = latestDataRef.current;
+        game.scene.stop('SigilScene');
+        game.scene.start('SigilScene', { color: c, glyph: g, syllables: s || 1 });
 
         game.events.once("ready", () => {
-          if (!alive) { game.destroy(true); return; }
+          if (controller.signal.aborted) return;
           if (game.canvas) game.canvas.style.pointerEvents = "none";
-          gameRef.current = game;
         });
-      })
-      .catch(() => {
+      } catch (err) {
         /* Phaser unavailable (test env / no WebGL) — sigil chamber renders empty */
-      });
+      }
+    };
+
+    void initPhaser();
 
     return () => {
-      alive = false;
-      if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
+      controller.abort();
+      if (runtimeHandle) {
+        runtimeHandle.destroy();
       }
+      gameRef.current = null;
     };
   }, []);
 

@@ -20,6 +20,7 @@ export const CELL_ID = 'FIXTURE_SHAPE';
 export const CELL_NAME = 'Test Fixture Quality';
 export const CELL_DESCRIPTION = 'Detects test harness antipatterns';
 export const CELL_SCHEDULE = 'on-test-run';
+export const SCAN_CONTRACT = 'streaming-context-v1';
 
 // Antipattern patterns
 const ANTIPATTERNS = [
@@ -58,10 +59,10 @@ const ANTIPATTERNS = [
 /**
  * Scan test file content for antipatterns.
  * @param {string} content
- * @param {string} path
+ * @param {string} _path
  * @returns {Array<{antipattern: object, line: number}>}
  */
-function scanForAntipatterns(content, path) {
+function scanForAntipatterns(content, _path) {
   const findings = [];
   const lines = content.split('\n');
 
@@ -104,13 +105,15 @@ function isTestFile(path) {
  * @param {Array<{content: string, path: string}>} files
  * @returns {Promise<ScanResult>}
  */
-export async function scan(_snapshot, files = []) {
+export async function scan(contextOrSnapshot, files = []) {
   const errors = [];
   const health = [];
 
-  const testFiles = files.filter(f => isTestFile(f.path));
+  const testFiles = [];
 
-  for (const { content, path } of testFiles) {
+  for await (const { content, path } of iterateFiles(contextOrSnapshot, files)) {
+    if (!isTestFile(path)) continue;
+    testFiles.push({ content, path });
     const findings = scanForAntipatterns(content, path);
 
     for (const f of findings) {
@@ -164,4 +167,15 @@ export async function scan(_snapshot, files = []) {
   }
 
   return { errors, health, skipped: [] };
+}
+
+async function* iterateFiles(contextOrSnapshot, files) {
+  if (contextOrSnapshot?.files && typeof contextOrSnapshot.files[Symbol.asyncIterator] === 'function') {
+    yield* contextOrSnapshot.files;
+    return;
+  }
+
+  for (const file of files) {
+    yield file;
+  }
 }

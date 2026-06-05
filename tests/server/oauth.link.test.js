@@ -15,9 +15,17 @@ function makeMockPersistence() {
         findById: async (id) => users.get(Number(id)) || null,
         findByEmail: async (email) => [...users.values()].find((u) => u.email === email) || null,
         findByUsername: async (username) => [...users.values()].find((u) => u.username === username) || null,
-        createOAuthUser: async (username, email, passwordHash) => {
+        createOAuthAccount: async ({ username, email, passwordHash, provider, providerUserId, emailVerified }) => {
+          // Mirror the persistence layer: user + identity created together (atomic).
           const id = nextId++;
           users.set(id, { id, username, email, password: passwordHash, verified: 1 });
+          identities.push({
+            user_id: id,
+            provider,
+            provider_user_id: String(providerUserId),
+            email,
+            email_verified: emailVerified ? 1 : 0,
+          });
           return { id, username, email };
         },
       },

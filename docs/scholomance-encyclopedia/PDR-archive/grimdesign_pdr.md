@@ -7,8 +7,9 @@
 **Priority:** High
 **Primary Goal:** Build a design generation system that derives visual decisions (color, glow, animation timing, border weight, atmosphere intensity) directly from CODEx phonemic analysis of a natural-language design intent description — producing world-law-grounded UI component specs and code automatically.
 
-**Owner (Phases 1–2):** Codex — analysis API surface and signal extraction module
-**Owner (Phases 3–5):** Claude — decision engine, output format, Claude Code skill
+**Owner (Phases 1–2):** Codex — analysis modules (intent analyzer, signal extractor, decision engine) and the API route
+**Owner (Phases 3–4):** Claude — output format, Claude Code skill, hook + in-IDE design panel
+**Owner (Phase 5):** Minimax — QA
 **Reviewer:** Gemini — world-law validation, mechanic consistency
 
 ---
@@ -148,7 +149,7 @@ glowIntensity 0.0       → no shadow
 glowIntensity 0.0–0.3   → box-shadow: 0 0 4px  (subtle)
 glowIntensity 0.3–0.6   → box-shadow: 0 0 12px (present)
 glowIntensity 0.6–0.8   → box-shadow: 0 0 20px (strong)
-glowIntensity 0.8–1.0   → box-shadow: 0 0 32px (beacon)
+glowIntensity 0.8–1.0   → box-shadow: 0 0 28px (beacon)
 ```
 
 #### syllableDepth → Component Complexity
@@ -348,7 +349,7 @@ export function resolveDesignDecisions(signal) { ... }
  *
  *   // Geometry
  *   borderAlpha: number,            // 0.15 – 0.85
- *   glowRadius: number,             // px — 0, 4, 12, 20, 32
+ *   glowRadius: number,             // px — 0, 4, 12, 20, 28
  *   paddingScale: 'tight' | 'standard' | 'generous',
  *   componentComplexity: 1 | 2 | 3 | 4,
  *

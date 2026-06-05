@@ -12,9 +12,9 @@
   --editor-line-box: calc(var(--editor-content-font-size) * var(--editor-content-line-height));
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - 48px);
-  height: calc(100dvh - 48px);
-  width: 100vw;
+  min-height: 100dvh;
+  height: 100dvh;
+  width: 100%;
   color: var(--read-text-strong);
   background: var(--ritual-abyss, #090916);
   position: relative;
@@ -3462,13 +3462,17 @@
   box-sizing: border-box;
 }
 
-/* Read-only Truesight: overlay rises above the textarea so word spans
-   receive direct pointer events. The container stays pointer-events:none —
-   only individual word spans with pointer-events:auto are hittable. */
-.ide-layout-wrapper .word-background-layer--interactive {
+/* Read-only Truesight: the overlay IS the scroll viewport (see getViewportNode
+   + onScroll={handleOverlayScroll}). It must receive wheel/touch/scrollbar
+   events itself, so pointer-events:auto and overflow-y:auto. Word spans are
+   pointer-events:auto children; whitespace/punctuation spans are
+   pointer-events:none, so empty-area gestures fall through to the scroll
+   container. Compound selector keeps these overrides above the duplicate base
+   `.word-background-layer` rule that follows later in this file. */
+.ide-layout-wrapper .word-background-layer.word-background-layer--interactive {
   z-index: var(--z-above);
-  overflow-y: hidden;
-  pointer-events: none;
+  overflow-y: auto;
+  pointer-events: auto;
 }
 
 .ide-layout-wrapper .editor-textarea--underlay {
@@ -4389,8 +4393,8 @@
 
 @media (max-width: 960px) {
   .ide-layout-wrapper {
-    min-height: calc(100dvh - 68px);
-    height: calc(100dvh - 68px);
+    min-height: calc(100dvh - 20px);
+    height: calc(100dvh - 20px);
     padding: var(--space-4, 1rem) var(--space-3, 0.75rem);
   }
 
@@ -5199,7 +5203,7 @@
      Ensure the editor doesn't underlap the home indicator on notched iPhones.
   */
   .ide-layout-wrapper--mobile {
-    min-height: calc(100dvh - 48px);
+    min-height: 100dvh;
   }
 
   .ide-mobile-content {

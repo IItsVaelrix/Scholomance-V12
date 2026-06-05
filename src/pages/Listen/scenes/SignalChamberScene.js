@@ -3,13 +3,12 @@
  * ══════════════════════════════════════════════════════════════════════════════
  */
 
-import Phaser from 'phaser';
 import { getBytecodeAMP, AMP_CHANNELS, getRotationAtTime } from '../../../lib/ambient/bytecodeAMP';
 
 const REF = { W: 1920, H: 1080 };
 const CONSOLE = { x: 960, y: 560, w: 1160, h: 640, cr: 16 };
 const PANEL_L = { x: 510, y: 455, w: 260, h: 280 };
-const RADAR = { x: 960, y: 515, r: 210 };
+const RADAR = { x: 960, y: 515, r: 398 };
 const PANEL_R = { x: 1410, y: 455, w: 260, h: 300 };
 const GAUGE_L = { x: 510, y: 715, r: 54 };
 const GAUGE_R = { x: 1410, y: 715, r: 54 };
@@ -20,10 +19,12 @@ const SIG_SLD  = { x: 1410, top: 315, bot: 580, w: 26 };
 
 const PAL = { voidNavy: 0x050816, nearBlack: 0x03040a, consoleBase: 0x060810, panelFace: 0x030508, teal: 0x00cfc8, brass: 0xb4912f, dimGold: 0xd5b34b, amber: 0xd47a1c };
 
-export class SignalChamberScene extends Phaser.Scene {
+export function buildSignalChamberScene(Phaser) {
+  return class SignalChamberScene extends Phaser.Scene {
   constructor() { super({ key: 'SignalChamberScene' }); }
 
-  init() {
+  init(data) {
+    this.reducedMotion = data?.reducedMotion ?? false;
     this._sig = 0; this._vol = 0.5; this._colHex = '#d5b34b'; this._col = PAL.dimGold;
     this._schoolId = null; this._isTuning = false; this._isPlaying = false; this._status = 'STANDBY';
     this._stationName = 'NO SIGNAL'; this._stations = []; this._logs = []; this._scanAngle = 0;
@@ -73,8 +74,12 @@ export class SignalChamberScene extends Phaser.Scene {
       size: (Math.sin(i * 29.3) * 0.5 + 0.5) * 1.4 + 0.2, phase: i * 0.7, speed: (Math.sin(i * 11.7) * 0.5 + 0.5) * 0.0015 + 0.0005,
     }));
 
-    this._buildTextLayer(); this._wireInput(); this._redrawPlayButton(); this._redrawVolSlider(); this._redrawSignalSlider();
-    if (this.cameras.main.postFX) this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.8, 1.1);
+    this._wireInput(); this._redrawPlayButton(); this._redrawVolSlider(); this._redrawSignalSlider();
+    // Phaser 4: postFX→Filters; addBloom removed → Glow + brightness lift.
+    try {
+      const f = this.cameras.main?.filters?.internal;
+      if (f && !this.reducedMotion) { f.addGlow(0xffffff, 1.4, 0, 1, false, 8, 15); f.addColorMatrix().brightness(1.06); }
+    } catch { /* tolerate filter API drift */ }
     this._isCreated = true;
   }
 
@@ -252,11 +257,6 @@ export class SignalChamberScene extends Phaser.Scene {
     this._volTrk.fillStyle(0x030608, 1); this._volTrk.fillRoundedRect(VOL_SLD.x * sx - (VOL_SLD.w * sx)/2, VOL_SLD.y * sy - (VOL_SLD.h * sy)/2, VOL_SLD.w * sx, VOL_SLD.h * sy, (VOL_SLD.h * sy)/2);
   }
 
-  _buildTextLayer() {
-    const sx = this._sx, sy = this._sy;
-    this._txtStaName = this.add.text(PANEL_L.x * sx - (PANEL_L.w * sx)/2 + 14 * sx, PANEL_L.y * sy - (PANEL_L.h * sy)/2 + 50 * sy, 'NO SIGNAL', { fontFamily: 'monospace', fontSize: '13px', color: '#00ffcc' }).setDepth(72);
-  }
-
   _wireInput() {
     const sx = this._sx, sy = this._sy, ms = this._ms, bx = BTN_PLAY.x * sx, by = BTN_PLAY.y * sy, br = BTN_PLAY.r * ms;
     const playZone = this.add.zone(bx, by, br * 2, br * 2).setInteractive({ useHandCursor: true }).setDepth(133);
@@ -300,8 +300,6 @@ export class SignalChamberScene extends Phaser.Scene {
     if (data.bpm !== undefined) { this._bpm = data.bpm; }
     if (data.isPlaying !== undefined && data.isPlaying !== this._isPlaying) { this._isPlaying = data.isPlaying; this._redrawPlayButton(); }
     if (data.schoolColor !== undefined && data.schoolColor !== this._colHex) { this._colHex = data.schoolColor; this._col = this._hexToInt(data.schoolColor); this._drawGaugeFaces(); }
-    if (data.stationName !== undefined) this._txtStaName?.setText(data.stationName);
-    
     // Store AMP motion data
     if (data.orbMotion) this._orbMotion = data.orbMotion;
     if (data.consoleMotion) this._consoleMotion = data.consoleMotion;
@@ -366,4 +364,5 @@ export class SignalChamberScene extends Phaser.Scene {
   }
 
   _hexToInt(hex) { try { return Phaser.Display.Color.HexStringToColor(hex.startsWith('#') ? hex : '#' + hex).color; } catch { return PAL.dimGold; } }
+  };
 }

@@ -4,6 +4,7 @@ import { isAdminUser } from "../components/Navigation/Navigation.jsx";
 export const WatchPage = lazyWithRetry(() => import("../pages/Watch/WatchPage.jsx"), "watch-page");
 export const ListenPage = lazyWithRetry(() => import("../pages/Listen/ListenPage"), "listen-page");
 export const ReadPage = lazyWithRetry(() => import("../pages/Read/ReadPage.jsx"), "read-page");
+export const GrimoireSpread = lazyWithRetry(() => import("../pages/Grimoire/GrimoireSpread"), "grimoire-spread");
 export const AuthPage = lazyWithRetry(() => import("../pages/Auth/AuthPage.jsx"), "auth-page");
 export const CollabPage = lazyWithRetry(() => import("../pages/Collab/CollabPage.jsx"), "collab-page");
 export const ProfilePage = lazyWithRetry(() => import("../pages/Profile/ProfilePage.jsx"), "profile-page");
@@ -14,10 +15,13 @@ export const CareerPage = lazyWithRetry(() => import("../pages/Career/CareerPage
 export const WandPage = lazyWithRetry(() => import("../pages/Wand/WandPage.jsx"), "wand-page");
 export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandPage.jsx"), "div-wand-page");
 
-const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
-const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand"];
+export const PhotonicBridgeLab = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge");
+export const StudioUpload = lazyWithRetry(() => import("../pages/internal/Studio/StudioUpload.jsx"), "studio-upload");
 
-const ALL_COMPONENTS = {
+const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/internal/photonic-bridge", "/internal/studio"];
+
+export const ALL_COMPONENTS = {
   "/watch": WatchPage,
   "/listen": ListenPage,
   "/read": ReadPage,
@@ -30,8 +34,9 @@ const ALL_COMPONENTS = {
   "/career": CareerPage,
   "/wand": WandPage,
   "/div-wand": DivWandPage,
+  "/internal/photonic-bridge": PhotonicBridgeLab,
+  "/internal/studio": StudioUpload,
 };
-
 
 /**
  * PAGE_COMPONENTS is now a function that accepts the current user to resolve 
@@ -63,13 +68,11 @@ export const PAGE_COMPONENTS = Object.fromEntries(
   })
 );
 
-/**
- * Trigger pre-fetching of a page chunk.
- * @param {string} path 
- */
 export function preloadRoute(path) {
-  const component = PAGE_COMPONENTS[path];
+  // Use ALL_COMPONENTS for preloading so hover prefetch works for admins in PROD
+  const component = ALL_COMPONENTS[path];
   if (component && typeof component.preload === "function") {
-    void component.preload();
+    return component.preload();
   }
+  return Promise.resolve();
 }

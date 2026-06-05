@@ -25,7 +25,7 @@ export function stripQueryFromUrl(rawUrl) {
 
 export function isApiRoutePath(rawUrl) {
   const pathname = stripQueryFromUrl(rawUrl);
-  return API_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+  return API_PREFIXES.some((prefix) => pathname.startsWith(`${prefix}/`));
 }
 
 export function isStaticAssetPath(rawUrl) {

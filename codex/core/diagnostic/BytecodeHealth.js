@@ -30,6 +30,8 @@
  */
 
 import crypto from 'node:crypto';
+import { normalizeBytecodeHealthSnapshot } from './BytecodeHealthAdapter.js';
+import { CELL_IDS, HEALTH_CODES, HEALTH_SEVERITY } from './diagnostic-constants.js';
 
 // ─── Deep Freeze ──────────────────────────────────────────────────────────────
 
@@ -57,36 +59,9 @@ export function deepFreezeClone(value) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const HEALTH_CODES = Object.freeze({
-  IMMUNE_PASS_COORD: 'PB-OK-v1-IMMUNE-PASS-COORD',
-  LAYER_BOUNDARY_OK: 'PB-OK-v1-LAYER-BOUNDARY-OK',
-  TEST_COVERAGE_PASS: 'PB-OK-v1-TEST-COVERAGE-PASS',
-  FIXTURE_SHAPE_OK: 'PB-OK-v1-FIXTURE-SHAPE-OK',
-  PROCESSOR_BRIDGE_CLEAN: 'PB-OK-v1-PROCESSOR-BRIDGE-CLEAN',
-  CELL_SCAN_CLEAN: 'PB-OK-v1-CELL-SCAN-CLEAN',
-});
-
-export const HEALTH_SEVERITY = Object.freeze({
-  PASS: 'pass',
-  INFO: 'info',
-  ARCHIVED: 'archived',
-});
+export { CELL_IDS, HEALTH_CODES, HEALTH_SEVERITY };
 
 const HEALTH_VERSION = 'v1';
-
-/**
- * Well-known cell IDs.
- */
-export const CELL_IDS = Object.freeze({
-  IMMUNITY_SCAN: 'IMMUNITY_SCAN',
-  LAYER_BOUNDARY: 'LAYER_BOUNDARY',
-  TEST_COVERAGE: 'TEST_COVERAGE',
-  FIXTURE_SHAPE: 'FIXTURE_SHAPE',
-  PROCESSOR_BRIDGE: 'PROCESSOR_BRIDGE',
-  CONNECTION_HEALTH: 'CONNECTION_HEALTH',
-  LIFECYCLE: 'LIFECYCLE',
-  DB_HEALTH: 'DB_HEALTH',
-});
 
 // ─── Archived ────────────────────────────────────────────────────────────────
 
@@ -231,12 +206,48 @@ export function encodeModuleHealth(moduleId, cellId, checkId, context = {}) {
  * @param {object} [context={}] - Additional context
  * @returns {BytecodeHealth}
  */
-export function encodeArchivedHealth(cellId, checkId, context = {}) {
+export function encodeArchivedHealth(cellId, checkId, context = {}, archivedCode = ARCHIVED_CODES.LOGIC_INCOMPLETE) {
+  if (!Object.values(ARCHIVED_CODES).includes(archivedCode)) {
+    throw new Error(`Unknown archived health code: ${archivedCode}`);
+  }
+
   return new BytecodeHealth({
-    code: ARCHIVED_CODES.LOGIC_INCOMPLETE,
+    code: archivedCode,
     cellId,
     checkId,
     context,
+  });
+}
+
+/**
+ * Create a health signal for a vector-quantization fidelity check.
+ *
+ * This is the "eye's self-awareness" flowing through the green-path channel: a
+ * passing grade means the TurboQuant compression preserved enough direction that
+ * downstream similarity/resonance scores can be trusted. Only A/B grades should
+ * be emitted as health — C/D/F belong on the BytecodeError (red) channel, since
+ * they signal the similarity ranking is at risk.
+ *
+ * @param {{grade:string, score:number, dim:number}} report - from gradeQuantizationFidelity()
+ * @param {object} [opts]
+ * @param {string} [opts.moduleId] - what was graded (e.g. 'codebase-search-query')
+ * @param {string} [opts.checkId='QUANT_FIDELITY']
+ * @param {object} [opts.context={}]
+ * @returns {BytecodeHealth}
+ */
+export function encodeQuantizationFidelityHealth(report, opts = {}) {
+  const { moduleId = null, checkId = 'QUANT_FIDELITY', context = {} } = opts;
+  return new BytecodeHealth({
+    code: HEALTH_CODES.QUANT_FIDELITY_PASS,
+    cellId: CELL_IDS.VECTOR_FIDELITY,
+    checkId,
+    moduleId,
+    context: {
+      grade: report?.grade ?? null,
+      score: typeof report?.score === 'number' ? report.score : null,
+      dim: report?.dim ?? null,
+      ...context,
+    },
   });
 }
 
@@ -269,9 +280,9 @@ export function verifyHealthDeterminism(cellId, checkId, context = {}) {
 // ─── Synthesis Bridge ─────────────────────────────────────────────────────────
 
 /**
- * Minimal bridge for the ByteCode Diagnostic Synthesis layer.
- * Accepts raw health state and returns it unchanged — normalization
- * happens inside BytecodeHealthAdapter, not here.
+ * Bridge for the ByteCode Diagnostic Synthesis layer.
+ * Keeps BytecodeHealthAdapter as the normalization authority while giving
+ * callers a canonical synthesis snapshot instead of a raw passthrough.
  *
  * Reference: ByteCode Diagnostic Synthesis PDR § Step 6
  *
@@ -279,5 +290,5 @@ export function verifyHealthDeterminism(cellId, checkId, context = {}) {
  * @returns {Record<string, unknown>}
  */
 export function buildDiagnosticSynthesisSnapshot(rawHealthState) {
-  return rawHealthState;
+  return normalizeBytecodeHealthSnapshot(rawHealthState);
 }

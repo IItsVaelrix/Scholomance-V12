@@ -5,6 +5,7 @@ import { vectorizeMotion } from '../../../codex/core/animation/amp/motionVectori
 import { runAnimationAmp, initAnimationAmp } from '../../../codex/core/animation/amp/runAnimationAmp.ts';
 import { quantizeVectorJS, similarity } from '../../../codex/core/quantization/turboquant.js';
 import { ResolvedMotionOutput, AnimationIntent } from '../../../codex/core/animation/contracts/animation.types.ts';
+import { MOTION_COSINE_DEVIATION_THRESHOLD } from '../../../codex/core/animation/processors/vector/TurboQuantMotionProcessor.ts';
 
 describe('Animation AMP to TurboQuant Vector Wiring Hardening Suite', () => {
   beforeEach(() => {
@@ -200,7 +201,7 @@ describe('Animation AMP to TurboQuant Vector Wiring Hardening Suite', () => {
     const output = await runAnimationAmp(intent);
 
     expect(output.success).toBe(true);
-    expect(output.vectorSimilarity).toBeLessThan(0.75);
+    expect(output.vectorSimilarity).toBeLessThan(MOTION_COSINE_DEVIATION_THRESHOLD);
     expect(output.values.translateY).toBe(400); // 800 * 0.5
     expect(output.values.scale).toBe(2.0);       // Capped to 3.0 by bounds, then 1.0 + (3.0 - 1.0) * 0.5 = 2.0
     expect(output.nearestMotionArchetype).toBe('unknown');
@@ -228,7 +229,7 @@ describe('Animation AMP to TurboQuant Vector Wiring Hardening Suite', () => {
     const output = await runAnimationAmp(intent);
 
     expect(output.success).toBe(true);
-    expect(output.vectorSimilarity).toBeLessThan(0.75);
+    expect(output.vectorSimilarity).toBeLessThan(MOTION_COSINE_DEVIATION_THRESHOLD);
     expect(output.values.translateY).toBe(600); // 800 * 0.75
     expect(output.values.scale).toBe(2.5);       // Capped to 3.0 by bounds, then 1.0 + (3.0 - 1.0) * 0.75 = 2.5
     expect(output.diagnostics.some(d => d.includes("dampening applied by coefficient 0.75"))).toBe(true);
@@ -255,7 +256,7 @@ describe('Animation AMP to TurboQuant Vector Wiring Hardening Suite', () => {
     const output = await runAnimationAmp(intent);
 
     expect(output.success).toBe(true);
-    expect(output.vectorSimilarity).toBeLessThan(0.75);
+    expect(output.vectorSimilarity).toBeLessThan(MOTION_COSINE_DEVIATION_THRESHOLD);
     expect(output.values.translateY).toBe(800); // Unaltered
     expect(output.values.scale).toBe(3.0);       // Clamped only by bounds processor (capped to 3.0), no safety dampening
     expect(output.diagnostics.some(d => d.includes("Warn-only policy active; no dampening applied"))).toBe(true);

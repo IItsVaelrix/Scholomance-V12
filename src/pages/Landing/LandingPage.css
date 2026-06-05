@@ -1,20 +1,28 @@
 /**
- * SCHOLOMANCE LANDING — MINIMAL MAGICAL PORTAL
+ * SCHOLOMANCE LANDING — SCRYING ORB IN AN ABANDONED DUNGEON
  *
- * A single luminous gate floating in a dark void. The energy ring slowly turns,
- * the halo breathes, and the word SCHOLOMANCE hangs in the aperture. Clicking the
- * gate triggers the watercolor dissolve and steps the user through to /read.
+ * A glass scrying orb rests on a cracked plinth in a dark stone chamber. Behind
+ * it, a photonic storm fills the dungeon sky; within the orb, a contained vision
+ * of the same storm swirls. The lightning is algorithmic — procedurally grown
+ * bolts seeded by the Photonic-Retina/Quantization bridge (see StormCanvas) —
+ * not CSS opacity flashes. Clicking the orb triggers the watercolor dissolve to
+ * /read.
  *
- * Design language borrowed from Wand + DivWand: near-black void, gold (#d4af37)
- * and sonic-teal (#2ee6cf) neon, soft glow, restrained motion.
+ * Palette: divination amethyst (#7b6cff) + electric arc-blue (#bfe3ff), with gold
+ * (#d4af37) as a residual relic accent on the rim.
  */
 
 .portal-scene {
+  --portal-amethyst: #7b6cff;
+  --portal-amethyst-soft: rgba(123, 108, 255, 0.5);
+  --portal-arc: #bfe3ff;
+  --portal-arc-soft: rgba(191, 227, 255, 0.5);
   --portal-gold: #d4af37;
-  --portal-gold-soft: rgba(212, 175, 55, 0.55);
-  --portal-teal: #2ee6cf;
-  --portal-teal-soft: rgba(46, 230, 207, 0.5);
+  --portal-gold-soft: rgba(212, 175, 55, 0.45);
+  --portal-phoneme: hsl(173, 82%, 54%);
+  --portal-phoneme-soft: hsla(173, 82%, 74%, 0.5);
 
+  cursor: none;
   position: fixed;
   inset: 0;
   display: flex;
@@ -22,7 +30,142 @@
   justify-content: center;
   overflow: hidden;
   background:
-    radial-gradient(ellipse 90% 70% at 50% 44%, #0c1119 0%, #07080f 52%, #030308 100%);
+    radial-gradient(ellipse 70% 50% at 50% 30%, rgba(40, 36, 70, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 120% 80% at 50% 120%, rgba(20, 18, 30, 0.9) 0%, transparent 55%),
+    radial-gradient(ellipse 90% 70% at 50% 44%, #0b0d16 0%, #07070e 52%, #020205 100%);
+}
+
+/* Damp stone vignette + chamber floor */
+.portal-scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+  background:
+    radial-gradient(ellipse 65% 55% at 50% 46%, transparent 52%, rgba(2, 2, 6, 0.72) 100%);
+  mix-blend-mode: multiply;
+}
+
+/* Cracked plinth glow beneath the orb */
+.portal-scene::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  width: clamp(220px, 38vmin, 380px);
+  height: clamp(40px, 8vmin, 80px);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(123, 108, 255, 0.18) 0%, rgba(123, 108, 255, 0.05) 45%, transparent 72%);
+  filter: blur(6px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── Storm canvases ───────────────────────────────────────────────────────── */
+
+.portal-storm {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+}
+
+/* Static moon: a cold witness above the scrying chamber */
+.portal-moon {
+  position: absolute;
+  top: clamp(24px, 6vh, 68px);
+  right: clamp(24px, 7vw, 96px);
+  width: clamp(82px, 12vmin, 148px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 31% 24%, rgba(255, 255, 255, 0.86) 0 5%, transparent 6%),
+    radial-gradient(circle at 56% 57%, rgba(74, 78, 92, 0.32) 0 10%, transparent 11%),
+    radial-gradient(circle at 39% 68%, rgba(56, 62, 78, 0.28) 0 7%, transparent 8%),
+    radial-gradient(circle at 72% 36%, rgba(91, 91, 96, 0.22) 0 6%, transparent 7%),
+    radial-gradient(circle at 27% 48%, rgba(78, 72, 66, 0.2) 0 4%, transparent 5%),
+    radial-gradient(circle at 50% 45%, #eee6cf 0%, #c8c1ad 48%, #8f98aa 100%);
+  box-shadow:
+    0 0 32px rgba(218, 238, 255, 0.34),
+    0 0 92px rgba(191, 227, 255, 0.22),
+    0 0 146px rgba(123, 108, 255, 0.14),
+    inset -12px -10px 22px rgba(41, 45, 60, 0.34),
+    inset 10px 8px 18px rgba(255, 251, 228, 0.36);
+  opacity: 0.88;
+  overflow: hidden;
+  animation: portal-moonlight-break 13s ease-in-out infinite;
+  isolation: isolate;
+}
+
+.portal-moon::before,
+.portal-moon::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.portal-moon::before {
+  z-index: 2;
+  background:
+    radial-gradient(ellipse at 52% 30%, rgba(66, 60, 54, 0.14) 0 17%, transparent 18%),
+    radial-gradient(ellipse at 68% 72%, rgba(54, 58, 72, 0.18) 0 13%, transparent 14%),
+    radial-gradient(circle at 18% 58%, rgba(47, 43, 39, 0.22) 0 2%, transparent 3%),
+    radial-gradient(circle at 82% 50%, rgba(47, 51, 66, 0.2) 0 2%, transparent 3%),
+    radial-gradient(circle at 45% 84%, rgba(37, 39, 48, 0.18) 0 1.5%, transparent 2.5%),
+    radial-gradient(circle at 64% 18%, rgba(88, 83, 74, 0.18) 0 1.5%, transparent 2.5%);
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+}
+
+.portal-moon::after {
+  z-index: 4;
+  background:
+    repeating-linear-gradient(23deg, rgba(44, 42, 39, 0.08) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(117deg, transparent 0 4px, rgba(255, 255, 255, 0.05) 4px 5px),
+    radial-gradient(circle at 50% 50%, transparent 0 54%, rgba(38, 42, 58, 0.34) 74%, rgba(12, 14, 22, 0.48) 100%);
+  filter: contrast(1.25);
+  opacity: 0.78;
+}
+
+.portal-moon-cloud {
+  position: absolute;
+  inset: -34% -72%;
+  border-radius: 45%;
+  pointer-events: none;
+  z-index: 3;
+  mix-blend-mode: multiply;
+  filter: blur(5px);
+  background:
+    radial-gradient(ellipse 42% 24% at 18% 48%, rgba(29, 34, 49, 0.64) 0%, rgba(29, 34, 49, 0.4) 44%, transparent 72%),
+    radial-gradient(ellipse 36% 18% at 48% 42%, rgba(48, 52, 66, 0.5) 0%, rgba(48, 52, 66, 0.24) 48%, transparent 76%),
+    radial-gradient(ellipse 40% 20% at 76% 56%, rgba(24, 28, 42, 0.58) 0%, rgba(24, 28, 42, 0.28) 46%, transparent 74%);
+  opacity: 0;
+  transform: translateX(-28%) translateY(2%) rotate(-8deg);
+  animation: portal-moon-cloud-pass 13s ease-in-out infinite;
+}
+
+.portal-moon-cloud--thin {
+  inset: -22% -54%;
+  filter: blur(7px);
+  background:
+    radial-gradient(ellipse 44% 16% at 18% 48%, rgba(80, 86, 104, 0.34) 0%, rgba(80, 86, 104, 0.14) 48%, transparent 78%),
+    radial-gradient(ellipse 38% 14% at 58% 56%, rgba(34, 39, 58, 0.3) 0%, rgba(34, 39, 58, 0.12) 44%, transparent 74%);
+  animation-duration: 19s;
+  animation-delay: -6s;
+}
+
+.portal-moon-cloud--slow {
+  animation-delay: -2s;
 }
 
 /* ── Ambient halo behind the gate ─────────────────────────────────────────── */
@@ -37,16 +180,17 @@
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(212, 175, 55, 0.16) 0%,
-    rgba(46, 230, 207, 0.07) 40%,
+    rgba(123, 108, 255, 0.18) 0%,
+    rgba(191, 227, 255, 0.07) 42%,
     transparent 68%
   );
-  filter: blur(10px);
+  filter: blur(12px);
   pointer-events: none;
+  z-index: 1;
   animation: portal-breathe 7s ease-in-out infinite;
 }
 
-/* ── The gate (clickable) ─────────────────────────────────────────────────── */
+/* ── The orb (clickable) ──────────────────────────────────────────────────── */
 
 .portal-gate {
   position: relative;
@@ -55,8 +199,9 @@
   width: clamp(260px, 44vmin, 440px);
   aspect-ratio: 1;
   border-radius: 50%;
-  cursor: pointer;
+  cursor: none;
   user-select: none;
+  z-index: 2;
   transition: transform 0.5s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
@@ -66,7 +211,7 @@
   outline: none;
 }
 
-/* Slowly rotating energy ring — gold/teal arcs masked into a thin rim */
+/* Slowly rotating energy ring — amethyst/arc arcs masked into a thin rim */
 .portal-ring {
   position: absolute;
   inset: 0;
@@ -75,63 +220,234 @@
 }
 
 .portal-ring--energy {
+  z-index: 4;
   background: conic-gradient(
     from 0deg,
-    rgba(212, 175, 55, 0) 0deg,
-    rgba(212, 175, 55, 0) 38deg,
-    var(--portal-teal) 92deg,
-    var(--portal-gold) 168deg,
-    rgba(212, 175, 55, 0) 214deg,
-    rgba(46, 230, 207, 0) 250deg,
+    rgba(123, 108, 255, 0) 0deg,
+    rgba(123, 108, 255, 0) 38deg,
+    var(--portal-arc) 92deg,
+    var(--portal-amethyst) 168deg,
+    rgba(123, 108, 255, 0) 214deg,
+    rgba(191, 227, 255, 0) 250deg,
     var(--portal-gold) 320deg,
-    rgba(212, 175, 55, 0) 360deg
+    rgba(123, 108, 255, 0) 360deg
   );
   -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
           mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
-  filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4)) drop-shadow(0 0 18px rgba(46, 230, 207, 0.18));
+  filter: drop-shadow(0 0 10px rgba(123, 108, 255, 0.45)) drop-shadow(0 0 18px rgba(191, 227, 255, 0.2));
   animation: portal-spin 20s linear infinite;
 }
 
-/* Crisp inner rim that frames the aperture */
+/* Crisp inner rim that frames the vision */
 .portal-ring--edge {
   inset: 6px;
-  border: 1px solid var(--portal-gold-soft);
+  z-index: 4;
+  border: 1px solid var(--portal-amethyst-soft);
   box-shadow:
-    0 0 20px rgba(212, 175, 55, 0.22),
-    inset 0 0 26px rgba(46, 230, 207, 0.07);
+    0 0 22px rgba(123, 108, 255, 0.26),
+    inset 0 0 26px rgba(191, 227, 255, 0.08);
 }
 
-/* The portal depth — a dark well you are looking through */
+/* The well behind the vision — dark scrying depth */
 .portal-aperture {
   position: absolute;
   inset: 8px;
   border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
-    rgba(46, 230, 207, 0.1) 0%,
-    rgba(9, 12, 20, 0.92) 46%,
-    #04050b 100%
+    rgba(123, 108, 255, 0.1) 0%,
+    rgba(9, 10, 22, 0.94) 48%,
+    #03040a 100%
   );
   box-shadow:
-    inset 0 0 60px rgba(0, 0, 0, 0.85),
-    inset 0 0 34px rgba(46, 230, 207, 0.06);
+    inset 0 0 60px rgba(0, 0, 0, 0.88),
+    inset 0 0 34px rgba(123, 108, 255, 0.06);
   pointer-events: none;
+  z-index: 0;
   transition: box-shadow 0.5s ease;
+}
+
+/* Glass specular shell over the vision */
+.portal-glass {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  box-shadow: inset 0 0 50px rgba(0, 0, 0, 0.5);
 }
 
 .portal-gate:hover .portal-aperture,
 .portal-gate:focus-visible .portal-aperture {
   box-shadow:
     inset 0 0 70px rgba(0, 0, 0, 0.85),
-    inset 0 0 44px rgba(46, 230, 207, 0.14),
-    0 0 40px rgba(212, 175, 55, 0.16);
+    inset 0 0 44px rgba(123, 108, 255, 0.16),
+    0 0 44px rgba(123, 108, 255, 0.2);
 }
 
-/* ── Content suspended in the aperture ────────────────────────────────────── */
+/* Living phoneme fragments pulled into the scrying surface */
+.portal-phoneme-ring {
+  --glyph-radius: clamp(134px, 26vmin, 236px);
+
+  position: absolute;
+  inset: -9%;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 1;
+  color: var(--portal-phoneme);
+  opacity: 0.62;
+  text-shadow:
+    0 0 8px var(--portal-phoneme-soft),
+    0 0 18px rgba(191, 227, 255, 0.18);
+  transform: scale(1);
+  transition:
+    opacity 400ms ease,
+    transform 400ms ease,
+    text-shadow 400ms ease;
+}
+
+.portal-phoneme-ring::before,
+.portal-phoneme-ring::after {
+  content: "";
+  position: absolute;
+  inset: 7%;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background:
+    conic-gradient(
+      from 18deg,
+      transparent 0deg,
+      var(--portal-phoneme-soft) 24deg,
+      transparent 54deg,
+      transparent 122deg,
+      rgba(212, 175, 55, 0.34) 146deg,
+      transparent 172deg,
+      transparent 248deg,
+      rgba(191, 227, 255, 0.28) 282deg,
+      transparent 316deg
+    )
+    border-box;
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+          mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  opacity: 0.5;
+}
+
+.portal-phoneme-ring::after {
+  inset: 14%;
+  opacity: 0.22;
+  transform: rotate(18deg);
+}
+
+.portal-phoneme-ring::before {
+  animation: portal-phoneme-orbit 32s linear infinite;
+}
+
+.portal-phoneme-ring::after {
+  animation: portal-phoneme-orbit 46s linear infinite reverse;
+}
+
+.portal-phoneme-glyph,
+.portal-phoneme-fragment {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-family: var(--font-mono), "JetBrains Mono", monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.portal-phoneme-glyph {
+  --glyph-angle: 0deg;
+  font-size: clamp(0.46rem, 1.05vmin, 0.68rem);
+  letter-spacing: 0.08em;
+  opacity: 0.66;
+  transform:
+    translate(-50%, -50%)
+    rotate(var(--glyph-angle))
+    translateY(calc(var(--glyph-radius) * -1))
+    rotate(calc(var(--glyph-angle) * -1));
+  transition:
+    opacity 400ms ease,
+    transform 400ms ease;
+}
+
+.portal-phoneme-glyph:nth-child(1) { --glyph-angle: 8deg; }
+.portal-phoneme-glyph:nth-child(2) { --glyph-angle: 54deg; }
+.portal-phoneme-glyph:nth-child(3) { --glyph-angle: 101deg; }
+.portal-phoneme-glyph:nth-child(4) { --glyph-angle: 148deg; }
+.portal-phoneme-glyph:nth-child(5) { --glyph-angle: 207deg; }
+.portal-phoneme-glyph:nth-child(6) { --glyph-angle: 262deg; }
+.portal-phoneme-glyph:nth-child(7) { --glyph-angle: 306deg; }
+.portal-phoneme-glyph:nth-child(8) { --glyph-angle: 338deg; }
+
+.portal-phoneme-fragment {
+  font-size: clamp(0.42rem, 0.95vmin, 0.58rem);
+  letter-spacing: 0.22em;
+  color: rgba(226, 255, 250, 0.86);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.94);
+  transition:
+    opacity 280ms ease,
+    transform 360ms ease;
+}
+
+.portal-phoneme-fragment--words {
+  top: 16%;
+}
+
+.portal-phoneme-fragment--weapons {
+  top: 84%;
+}
+
+.portal-phoneme-fragment--scroll {
+  left: 86%;
+  transform: translate(-50%, -50%) rotate(90deg) scale(0.94);
+}
+
+.portal-gate:hover .portal-phoneme-ring,
+.portal-gate:focus-visible .portal-phoneme-ring {
+  opacity: 0.92;
+  transform: scale(0.975);
+  text-shadow:
+    0 0 12px var(--portal-phoneme-soft),
+    0 0 26px rgba(191, 227, 255, 0.25);
+}
+
+.portal-gate:hover .portal-phoneme-ring::before,
+.portal-gate:hover .portal-phoneme-ring::after,
+.portal-gate:focus-visible .portal-phoneme-ring::before,
+.portal-gate:focus-visible .portal-phoneme-ring::after {
+  animation-duration: 1600ms;
+}
+
+.portal-gate:hover .portal-phoneme-glyph,
+.portal-gate:focus-visible .portal-phoneme-glyph {
+  opacity: 0.18;
+}
+
+.portal-gate:hover .portal-phoneme-fragment,
+.portal-gate:focus-visible .portal-phoneme-fragment {
+  opacity: 0.82;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.portal-gate:hover .portal-phoneme-fragment--scroll,
+.portal-gate:focus-visible .portal-phoneme-fragment--scroll {
+  transform: translate(-50%, -50%) rotate(90deg) scale(1);
+}
+
+/* ── Content suspended in the orb ─────────────────────────────────────────── */
 
 .portal-content {
   position: relative;
-  z-index: 2;
+  z-index: 5;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -147,11 +463,11 @@
   letter-spacing: 0.34em;
   text-indent: 0.34em; /* re-center despite trailing letter-spacing */
   text-transform: uppercase;
-  background: linear-gradient(180deg, #f5ead0 0%, var(--portal-gold) 48%, var(--portal-teal) 140%);
+  background: linear-gradient(180deg, #f3f0ff 0%, var(--portal-amethyst) 52%, var(--portal-arc) 140%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  filter: drop-shadow(0 0 16px rgba(212, 175, 55, 0.35));
+  filter: drop-shadow(0 0 16px rgba(123, 108, 255, 0.4));
   transition: filter 0.4s ease;
   animation: wind-blow 7s infinite ease-in-out;
   transform-origin: center bottom;
@@ -160,7 +476,7 @@
 
 .portal-gate:hover .grimoire-title,
 .portal-gate:focus-visible .grimoire-title {
-  filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.5)) drop-shadow(0 0 38px rgba(46, 230, 207, 0.25));
+  filter: drop-shadow(0 0 22px rgba(123, 108, 255, 0.55)) drop-shadow(0 0 38px rgba(191, 227, 255, 0.3));
 }
 
 .portal-tagline {
@@ -170,7 +486,8 @@
   letter-spacing: 0.2em;
   text-indent: 0.2em;
   text-transform: uppercase;
-  color: rgba(206, 224, 232, 0.5);
+  color: rgba(206, 224, 232, 0.55);
+  text-shadow: 0 0 12px rgba(0, 0, 0, 0.6);
 }
 
 .portal-hint {
@@ -184,7 +501,7 @@
   letter-spacing: 0.3em;
   text-indent: 0.3em;
   text-transform: uppercase;
-  color: var(--portal-gold-soft);
+  color: var(--portal-arc-soft);
   animation: portal-hint-pulse 3.2s ease-in-out infinite;
 }
 
@@ -192,8 +509,8 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--portal-teal);
-  box-shadow: 0 0 8px var(--portal-teal);
+  background: var(--portal-arc);
+  box-shadow: 0 0 8px var(--portal-arc);
   animation: portal-beacon 1.6s ease-in-out infinite alternate;
 }
 
@@ -208,6 +525,61 @@
   50%      { opacity: 1;   transform: translate(-50%, -50%) scale(1.06); }
 }
 
+@keyframes portal-moonlight-break {
+  0%, 18%, 42%, 100% {
+    box-shadow:
+      0 0 30px rgba(218, 238, 255, 0.28),
+      0 0 74px rgba(191, 227, 255, 0.16),
+      0 0 112px rgba(123, 108, 255, 0.1),
+      inset -12px -10px 22px rgba(41, 45, 60, 0.38),
+      inset 10px 8px 18px rgba(255, 251, 228, 0.28);
+    opacity: 0.8;
+  }
+  28%, 70% {
+    box-shadow:
+      0 0 48px rgba(238, 248, 255, 0.52),
+      0 0 128px rgba(191, 227, 255, 0.38),
+      0 0 210px rgba(123, 108, 255, 0.22),
+      inset -10px -8px 18px rgba(41, 45, 60, 0.28),
+      inset 12px 10px 22px rgba(255, 251, 228, 0.45);
+    opacity: 0.96;
+  }
+  58% {
+    box-shadow:
+      0 0 24px rgba(218, 238, 255, 0.18),
+      0 0 58px rgba(191, 227, 255, 0.1),
+      0 0 92px rgba(123, 108, 255, 0.08),
+      inset -16px -12px 26px rgba(24, 28, 42, 0.5),
+      inset 8px 6px 14px rgba(255, 251, 228, 0.22);
+    opacity: 0.72;
+  }
+}
+
+@keyframes portal-moon-cloud-pass {
+  0%, 12% {
+    opacity: 0;
+    transform: translateX(-36%) translateY(2%) rotate(-8deg);
+  }
+  25% {
+    opacity: 0.72;
+  }
+  43% {
+    opacity: 0.48;
+    transform: translateX(3%) translateY(-1%) rotate(-5deg);
+  }
+  58% {
+    opacity: 0.82;
+    transform: translateX(18%) translateY(3%) rotate(-2deg);
+  }
+  76% {
+    opacity: 0.16;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(40%) translateY(-2%) rotate(2deg);
+  }
+}
+
 @keyframes portal-hint-pulse {
   0%, 100% { opacity: 0.55; }
   50%      { opacity: 1; }
@@ -218,96 +590,11 @@
   to   { opacity: 1;   transform: scale(1.15); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .portal-halo,
-  .portal-ring--energy,
-  .portal-hint,
-  .portal-hint-beacon,
-  .portal-lightning,
-  .portal-smoke--1,
-  .portal-smoke--2,
-  .portal-smoke--3,
-  .grimoire-title {
-    animation: none;
-  }
+@keyframes portal-phoneme-orbit {
+  to { rotate: 360deg; }
 }
 
-/* ── Lightning Effect ─────────────────────────────────────────────────────── */
-
-.portal-lightning {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: rgba(255, 255, 255, 0);
-  z-index: 0;
-  animation: lightning-flash 15s infinite;
-}
-
-@keyframes lightning-flash {
-  0%, 88%, 92%, 96%, 100% { background: rgba(255, 255, 255, 0); }
-  89% { background: rgba(200, 230, 255, 0.15); }
-  90% { background: rgba(255, 255, 255, 0); }
-  93% { background: rgba(230, 250, 255, 0.25); }
-  94% { background: rgba(255, 255, 255, 0); }
-  97% { background: rgba(180, 220, 255, 0.1); }
-  98% { background: rgba(255, 255, 255, 0); }
-}
-
-/* ── Smoke Effects ────────────────────────────────────────────────────────── */
-
-.portal-smoke-container {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.portal-smoke {
-  position: absolute;
-  width: 200%;
-  height: 200%;
-  top: -50%;
-  left: -50%;
-  filter: blur(80px);
-  opacity: 0.5;
-  mix-blend-mode: screen;
-}
-
-.portal-smoke--1 {
-  background: radial-gradient(circle at 40% 60%, rgba(100, 120, 150, 0.15) 0%, transparent 50%);
-  animation: smoke-swirl-1 35s infinite linear;
-}
-
-.portal-smoke--2 {
-  background: radial-gradient(circle at 60% 40%, rgba(80, 100, 130, 0.12) 0%, transparent 60%);
-  animation: smoke-swirl-2 45s infinite linear reverse;
-}
-
-.portal-smoke--3 {
-  background: radial-gradient(circle at 50% 50%, rgba(120, 140, 170, 0.1) 0%, transparent 70%);
-  animation: smoke-swirl-3 25s infinite ease-in-out alternate;
-}
-
-@keyframes smoke-swirl-1 {
-  0% { transform: rotate(0deg) scale(1) translate(0, 0); }
-  50% { transform: rotate(180deg) scale(1.1) translate(-2%, 5%); }
-  100% { transform: rotate(360deg) scale(1) translate(0, 0); }
-}
-
-@keyframes smoke-swirl-2 {
-  0% { transform: rotate(0deg) scale(1) translate(0, 0); }
-  50% { transform: rotate(-180deg) scale(1.2) translate(3%, -4%); }
-  100% { transform: rotate(-360deg) scale(1) translate(0, 0); }
-}
-
-@keyframes smoke-swirl-3 {
-  0% { transform: scale(1) translate(0, 0); }
-  100% { transform: scale(1.15) translate(-1%, -2%); }
-}
-
-/* ── Wind on Letters ──────────────────────────────────────────────────────── */
-
+/* Wind on the suspended title */
 @keyframes wind-blow {
   0%   { transform: skewX(0deg) translateX(0px); }
   10%  { transform: skewX(-1deg) translateX(-1px); }
@@ -318,4 +605,18 @@
   55%  { transform: skewX(-3deg) translateX(-3px); }
   70%  { transform: skewX(0deg) translateX(0px); }
   100% { transform: skewX(0deg) translateX(0px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .portal-halo,
+  .portal-moon,
+  .portal-moon-cloud,
+  .portal-ring--energy,
+  .portal-phoneme-ring::before,
+  .portal-phoneme-ring::after,
+  .portal-hint,
+  .portal-hint-beacon,
+  .grimoire-title {
+    animation: none;
+  }
 }

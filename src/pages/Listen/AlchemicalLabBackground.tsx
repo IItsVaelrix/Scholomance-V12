@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type Phaser from 'phaser';
 import { cacheBackground } from '../../lib/cache/backgroundCache';
 import { getAmbientPlayerService } from '../../lib/ambient/ambientPlayer.service.js';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
 
 // Shared game reference for SignalChamberConsole to attach to
 let sharedPhaserGame: Phaser.Game | null = null;
@@ -25,50 +27,62 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
   const gameRef = useRef<Phaser.Game | null>(null);
   const bgSceneRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
+    let isMounted = true;
     if (!phaserRef.current || gameRef.current) return;
     const el = phaserRef.current;
 
+    const controller = new AbortController();
+    let runtimeHandle: { game: Phaser.Game; destroy: () => void } | null = null;
+
     // Load Phaser in background (non-blocking)
     const initBackground = async () => {
-      const { default: PhaserLib } = await import('phaser');
-      const { AlchemicalLabScene } = await import('./scenes/AlchemicalLabScene');
-      const { SignalChamberScene } = await import('./scenes/SignalChamberScene');
+      const { buildAlchemicalLabScene } = await import('./scenes/AlchemicalLabScene.js');
+      const { buildSignalChamberScene } = await import('./scenes/SignalChamberScene.js');
 
-      if (!el || gameRef.current) return;
+      if (controller.signal.aborted || !el || gameRef.current) return;
 
-      const config = {
-        type: PhaserLib.WEBGL,
+      runtimeHandle = await mountPhaserGame({
         parent: el,
-        width: el.offsetWidth || window.innerWidth,
-        height: el.offsetHeight || window.innerHeight,
-        backgroundColor: '#010305',
-        transparent: false,
-        antialias: true,
-        powerPreference: 'high-performance' as const,
-        fps: { target: 60, forceSetTimeOut: false },
-        scene: [AlchemicalLabScene, SignalChamberScene],
-        input: { mouse: true, touch: true, keyboard: true, gamepad: false },
-        render: {
-          pixelArt: false,
+        buildScenes: [buildAlchemicalLabScene, buildSignalChamberScene],
+        config: {
+          type: 2, // Phaser.WEBGL
+          width: el.offsetWidth || window.innerWidth,
+          height: el.offsetHeight || window.innerHeight,
+          backgroundColor: '#010305',
+          transparent: false,
           antialias: true,
-          powerPreference: 'high-performance',
-          batchSize: 4096,
+          fps: { target: 60, forceSetTimeOut: false },
+          input: { mouse: true, touch: true, keyboard: true, gamepad: false },
+          render: {
+            pixelArt: false,
+            antialias: true,
+            powerPreference: 'high-performance',
+            batchSize: 4096,
+          },
         },
-      };
+        signal: controller.signal,
+      });
 
-      const game = new PhaserLib.Game(config);
+      if (!runtimeHandle || controller.signal.aborted) return;
+
+      const game = runtimeHandle.game;
       sharedPhaserGame = game;
       gameRef.current = game;
 
+      game.scene.stop('AlchemicalLabScene');
+      game.scene.start('AlchemicalLabScene', { reducedMotion: prefersReducedMotion });
+      game.scene.stop('SignalChamberScene');
+      game.scene.start('SignalChamberScene', { reducedMotion: prefersReducedMotion });
+
       game.events.once('ready', () => {
+        if (controller.signal.aborted) return;
         // Get background scene
         const bgScene = game.scene.getScene('AlchemicalLabScene');
         if (bgScene) {
           bgSceneRef.current = bgScene;
-          // In Phaser 3, zIndex is on the Scene's plugin or handled via Scene order,
-          // settings.zIndex is not a standard property. Using scene.bringToTop() or similar is preferred.
         }
 
         // Style the Phaser canvas
@@ -89,13 +103,14 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
 
         // Cache the static background for next visit (after a delay to not block render)
         setTimeout(() => {
-          cacheStaticBackground(PhaserLib, bgScene);
+          if (controller.signal.aborted) return;
+          cacheStaticBackground(bgScene);
         }, 1000);
       });
     };
 
     // Render and cache static background
-    const cacheStaticBackground = async (PhaserLib: any, bgScene: any) => {
+    const cacheStaticBackground = async (bgScene: any) => {
       if (!bgScene || !sharedPhaserGame) return;
 
       try {
@@ -124,13 +139,16 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
     void initBackground();
 
     return () => {
-      if (gameRef.current) {
-        gameRef.current.destroy(true);
-        gameRef.current = null;
+      isMounted = false;
+      controller.abort();
+      if (runtimeHandle) {
+        runtimeHandle.destroy();
       }
+      gameRef.current = null;
       bgSceneRef.current = null;
       sharedPhaserGame = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

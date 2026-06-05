@@ -31,7 +31,7 @@ import {
 import {
   bytecodeToPalette,
   getHexForByte,
-  generatePaletteFromSemantics,
+  generateSemanticPalette as generatePaletteFromSemantics,
 } from '../../../codex/core/pixelbrain/color-byte-mapping.js';
 
 import {

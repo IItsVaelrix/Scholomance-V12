@@ -42,6 +42,7 @@ import { registerBuiltInDrawers } from '../../ui/features/mysticHolistics/hero/r
 import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
 import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
 import { buildWandGodotExport } from '../../lib/godot-export/wandGodotExport.js';
+import { routeRetinaPacketToPhotonicBridge } from '../../lib/photonic-retina/index.js';
 
 import './WandPage.css';
 
@@ -305,6 +306,7 @@ export default function WandPage() {
   const [metrics, setMetrics] = useState({ pointCount: 0, overflowed: false });
   const [terminalLogs, setTerminalLogs] = useState([]);
   const [quantStats, setQuantStats] = useState(null);
+  const [photonicRoute, setPhotonicRoute] = useState(null);
 
   // Animation time
   const [time, setTime] = useState(0);
@@ -314,6 +316,15 @@ export default function WandPage() {
   const canvasRef = useRef(null);
   const animationFrameRef = useRef(null);
   const debounceTimerRef = useRef(null);
+
+  // ── TERMINAL LOGGER ──────────────────────────────────────────────────────────
+  const addTerminalLog = useCallback((message, severity = 'info') => {
+    const timestamp = new Date().toLocaleTimeString();
+    setTerminalLogs(prev => [
+      { timestamp, message, severity },
+      ...prev.slice(0, 49) // Keep last 50 logs
+    ]);
+  }, []);
 
   // ── LOAD CUSTOM PRESETS ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -341,10 +352,11 @@ export default function WandPage() {
     }
   }, [addTerminalLog]);
 
-  // ── TURBOQUANT REACTIVE QUANTIZER ───────────────────────────────────────────
+  // ── TURBOQUANT REACTIVE QUANTIZER & PHOTONIC ROUTE ──────────────────────────
   useEffect(() => {
     if (coordinates.length === 0) {
       setQuantStats(null);
+      setPhotonicRoute(null);
       return;
     }
 
@@ -352,34 +364,52 @@ export default function WandPage() {
       const targetCoords = coordinates.filter(c => c.role === 'text.vector' || c.role === 'ink.ballpoint');
       if (targetCoords.length === 0) {
         setQuantStats(null);
-        return;
+      } else {
+        const flatArray = [];
+        targetCoords.forEach(c => {
+          flatArray.push(c.x, c.y);
+        });
+
+        quantizeFlatCoordinates(flatArray)
+          .then(stats => {
+            setQuantStats(stats);
+          })
+          .catch(err => {
+            console.error("Quantization error:", err);
+          });
       }
 
-      const flatArray = [];
-      targetCoords.forEach(c => {
-        flatArray.push(c.x, c.y);
-      });
+      // Route all coordinates through Photonic Bridge
+      try {
+        const retinaInput = {
+          sourceKind: 'coordinates',
+          payload: coordinates.map(c => ({
+            x: Number(c.x ?? 0),
+            y: Number(c.y ?? 0),
+            color: c.color || '#d4af37',
+            emphasis: Number(c.emphasis ?? c.pressure ?? 1.0)
+          })),
+          dimensions: { width: 800, height: 600 }
+        };
 
-      quantizeFlatCoordinates(flatArray)
-        .then(stats => {
-          setQuantStats(stats);
-        })
-        .catch(err => {
-          console.error("Quantization error:", err);
+        const route = routeRetinaPacketToPhotonicBridge(retinaInput, {
+          retina: {
+            targetDimension: 64,
+            bitWidth: 4,
+          },
+          bridge: {
+            mode: 'shadow'
+          }
         });
+        setPhotonicRoute(route);
+      } catch (err) {
+        console.error("Photonic Bridge routing error:", err);
+        setPhotonicRoute(null);
+      }
     }, 50);
 
     return () => clearTimeout(timer);
   }, [coordinates]);
-
-  // ── TERMINAL LOGGER ──────────────────────────────────────────────────────────
-  const addTerminalLog = useCallback((message, severity = 'info') => {
-    const timestamp = new Date().toLocaleTimeString();
-    setTerminalLogs(prev => [
-      { timestamp, message, severity },
-      ...prev.slice(0, 49) // Keep last 50 logs
-    ]);
-  }, []);
 
   // ── DETECT CHANGES AND RUN DEBOUNCED ENGINE ──────────────────────────────────
   const runEvaluation = useCallback((currentProposal) => {
@@ -1519,9 +1549,9 @@ export default function WandPage() {
               height={600} 
               className="magic-canvas"
             />
-            {/* Real-time TurboQuant Telemetry Panel */}
+            {/* Real-time Telemetry Panel */}
             <AnimatePresence>
-              {quantStats && (
+              {(quantStats || photonicRoute) && (
                 <motion.div 
                   className="tq-telemetry-panel"
                   initial={{ opacity: 0, y: 20 }}
@@ -1530,67 +1560,105 @@ export default function WandPage() {
                   transition={{ duration: 0.3 }}
                 >
                   <div className="crt-scanlines" />
-                  <div className="telemetry-header-bar">
-                    <span className="telemetry-title">⚡ AETHERLINK TURBOQUANT CORE</span>
-                    <div className="backend-badge-container">
-                      <span className={`backend-badge ${quantStats.backend === 'wasm' ? 'wasm-active' : 'js-fallback'}`}>
-                        <span className="badge-beacon" />
-                        {quantStats.backend === 'wasm' ? 'WASM HARDWARE' : 'JS FALLBACK'}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="telemetry-grid">
-                    <div className="metric-box">
-                      <span className="metric-label">COMPRESSION RATIO</span>
-                      <span className="metric-value text-glow-cyan">
-                        {(quantStats.compressionRatio * 100).toFixed(1)}%
-                      </span>
-                      <span className="metric-sub">
-                        {(100 - quantStats.compressionRatio * 100).toFixed(1)}% saved space
-                      </span>
-                    </div>
-                    
-                    <div className="metric-box">
-                      <span className="metric-label">RAW VECTORS</span>
-                      <span className="metric-value">
-                        {quantStats.originalLength} <span className="metric-unit">px</span>
-                      </span>
-                      <span className="metric-sub">
-                        {(quantStats.originalLength * Float32Array.BYTES_PER_ELEMENT).toLocaleString()} Bytes
-                      </span>
-                    </div>
-                    
-                    <div className="metric-box">
-                      <span className="metric-label">PADDED VECTOR</span>
-                      <span className="metric-value text-glow-gold">
-                        {quantStats.paddedLength} <span className="metric-unit">px</span>
-                      </span>
-                      <span className="metric-sub">
-                        +{quantStats.padCount} zeros ({quantStats.padPolicy})
-                      </span>
+                  <div className="telemetry-split-layout">
+                    {/* Left Column: TurboQuant / Coordinates */}
+                    <div className="telemetry-column">
+                      {quantStats ? (
+                        <>
+                          <div className="telemetry-header-bar">
+                            <span className="telemetry-title">⚡ AETHERLINK TURBOQUANT CORE</span>
+                            <span className={`backend-badge ${quantStats.backend === 'wasm' ? 'wasm-active' : 'js-fallback'}`}>
+                              <span className="badge-beacon" />
+                              {quantStats.backend === 'wasm' ? 'WASM' : 'JS FALLBACK'}
+                            </span>
+                          </div>
+                          <div className="telemetry-grid-2">
+                            <div className="metric-box">
+                              <span className="metric-label">COMPRESSION RATIO</span>
+                              <span className="metric-value text-glow-cyan">
+                                {(quantStats.compressionRatio * 100).toFixed(1)}%
+                              </span>
+                              <span className="metric-sub">
+                                {(100 - quantStats.compressionRatio * 100).toFixed(1)}% saved space
+                              </span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">RAW VECTORS</span>
+                              <span className="metric-value">
+                                {quantStats.originalLength} <span className="metric-unit">px</span>
+                              </span>
+                              <span className="metric-sub">
+                                {(quantStats.originalLength * Float32Array.BYTES_PER_ELEMENT).toLocaleString()} Bytes
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="telemetry-header-bar">
+                            <span className="telemetry-title">⚡ SANCTUARY COORDINATES SUMMARY</span>
+                            <span className="backend-badge js-fallback">
+                              <span className="badge-beacon" />
+                              UNQUANTIZED
+                            </span>
+                          </div>
+                          <div className="telemetry-grid-2">
+                            <div className="metric-box">
+                              <span className="metric-label">COORDINATE POINTS</span>
+                              <span className="metric-value text-glow-cyan">
+                                {coordinates.length}
+                              </span>
+                              <span className="metric-sub">
+                                Active plotted points
+                              </span>
+                            </div>
+                            <div className="metric-box">
+                              <span className="metric-label">DIMENSIONALITY</span>
+                              <span className="metric-value">
+                                2D <span className="metric-unit">(x, y)</span>
+                              </span>
+                              <span className="metric-sub">
+                                Plotted in coordinate space
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
 
-                    <div className="metric-box">
-                      <span className="metric-label">L2 VECTOR NORM</span>
-                      <span className="metric-value">
-                        {(() => {
-                          let l2Norm = '0.00';
-                          if (quantStats && quantStats.quantized) {
-                            const data = quantStats.quantized.data || quantStats.quantized;
-                            if (data && (Array.isArray(data) || ArrayBuffer.isView(data))) {
-                              let sumSquares = 0;
-                              for (let i = 0; i < data.length; i++) {
-                                sumSquares += data[i] * data[i];
-                              }
-                              l2Norm = Math.sqrt(sumSquares).toFixed(2);
-                            }
-                          }
-                          return l2Norm;
-                        })()}
-                      </span>
-                      <span className="metric-sub">Spectral Energy</span>
-                    </div>
+                    {/* Right Column: Photonic Bridge */}
+                    {photonicRoute && (
+                      <div className="telemetry-column border-left-cyan">
+                        <div className="telemetry-header-bar">
+                          <span className="telemetry-title text-gold">🌀 PHOTONIC QUANTIZATION BRIDGE</span>
+                          <span className={`backend-badge grade-badge grade-${String(photonicRoute.bridgeReport?.compatibilityGrade || 'F').toLowerCase()}`}>
+                            GRADE {photonicRoute.bridgeReport?.compatibilityGrade || 'F'}
+                          </span>
+                        </div>
+                        <div className="telemetry-grid-2">
+                          <div className="metric-box">
+                            <span className="metric-label">COMPATIBILITY SCORE</span>
+                            <span className="metric-value text-glow-gold">
+                              {(photonicRoute.bridgeReport?.compatibilityScore || 0).toFixed(4)}
+                            </span>
+                            <span className="metric-sub text-glow-gold font-bold">
+                              {photonicRoute.bridgeReport?.compatibilityGrade === 'A' || photonicRoute.bridgeReport?.compatibilityGrade === 'B' ? '🚀 OPTICAL READY' : '⚠️ HIGH LOSS'}
+                            </span>
+                          </div>
+                          {photonicRoute.opticalSimulation && (
+                            <div className="metric-box">
+                              <span className="metric-label">SIMULATED LATENCY / POWER</span>
+                              <span className="metric-value text-glow-aurora">
+                                {photonicRoute.opticalSimulation.estimatedLatencyNs?.toFixed(1)} <span className="metric-unit">ns</span>
+                              </span>
+                              <span className="metric-sub text-glow-aurora">
+                                {photonicRoute.opticalSimulation.estimatedPowerPj?.toFixed(1)} pJ // {photonicRoute.opticalSimulation.photonicOpCount} Ops
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}

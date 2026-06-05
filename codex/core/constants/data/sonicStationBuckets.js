@@ -6,7 +6,7 @@ const DEFAULT_SONIC_STATION_BUCKETS = Object.freeze({
   ]),
   VOID: Object.freeze([
     "https://cdn1.suno.ai/9dcaac18-70f1-48e6-8118-eb0ffac890d3.mp3", // Dark Techno
-    "https://cdb1.suno.ai/1e8ead1e-4764-4545-aa0b-84acc37f7d10.mp3", // Industrial Ambient
+    "https://cdn1.suno.ai/1e8ead1e-4764-4545-aa0b-84acc37f7d10.mp3", // Industrial Ambient
   ]),
   WILL: Object.freeze([
     "https://cdn1.suno.ai/5c4c8872-e669-4954-94cc-5bbb3a96b695.mp3", // Orchestral Metal
@@ -67,11 +67,11 @@ export function getDefaultSonicStationTrackUrl() {
   return first?.url || null;
 }
 
-export function pickRandomSonicStationTrack({ schoolId = null, excludeUrl = null, randomFn = Math.random } = {}) {
+export function pickRandomSonicStationTrack({ schoolId = null, excludeUrl = null, randomFn = null } = {}) {
   let pool = getSonicStationTrackPool();
   if (!pool.length) return null;
 
-  // Filter by school if provided
+  // Every school is isolated to its own bucket — no school acts as a universal shuffle.
   if (schoolId) {
     pool = pool.filter(track => track.schoolId === schoolId);
   }
@@ -82,7 +82,28 @@ export function pickRandomSonicStationTrack({ schoolId = null, excludeUrl = null
   const totalWeight = candidates.reduce((acc, track) => acc + track.weight, 0);
   if (!totalWeight) return candidates[0]?.url || null;
 
-  let cursor = Math.max(0, randomFn()) * totalWeight;
+  // Vaelrix Law: Avoid Math.random. Use provided PRNG, or fall back to a deterministic selection
+  // based on schoolId to ensure consistent SSR hydration.
+  let rng = randomFn;
+  if (typeof rng !== 'function') {
+    let hash = 0xdeadbeef;
+    const str = schoolId || 'DEFAULT';
+    for (let i = 0; i < str.length; i++) {
+      hash = Math.imul(hash ^ str.charCodeAt(i), 2654435761);
+    }
+    hash = ((hash ^ hash >>> 16) >>> 0);
+    
+    // Inline mulberry32 PRNG
+    rng = function() {
+      hash = (hash + 0x6d2b79f5) >>> 0;
+      let t = hash;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  let cursor = Math.max(0, rng()) * totalWeight;
   for (const track of candidates) {
     cursor -= track.weight;
     if (cursor <= 0) return track.url;

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applySqlitePragmas, runSqliteMigrations, runAsyncMigrations } from './db/sqlite.migrations.js';
 import { createDbWrapper } from './db/persistence.wrapper.js';
+import { applyCatalogV18, applyCatalogV19, applyCatalogV20 } from './catalog/catalog.schema.js';
 import {
   DEFAULT_WORLD_ENTITIES,
   DEFAULT_WORLD_ROOMS,
@@ -306,6 +307,147 @@ const USER_MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 15,
+    name: 'create_catalog_core',
+    up(database) {
+      // Sonic Exchange catalog: artist → release → track. Lives in the same DB
+      // as `users` so artists.user_id can FK to it. See
+      // PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING.
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS artists (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          handle TEXT NOT NULL UNIQUE,
+          display_name TEXT NOT NULL,
+          bio TEXT,
+          avatar_url TEXT,
+          banner_url TEXT,
+          primary_school TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_artists_user ON artists(user_id);
+
+        CREATE TABLE IF NOT EXISTS releases (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          artist_id INTEGER NOT NULL,
+          slug TEXT NOT NULL,
+          title TEXT NOT NULL,
+          kind TEXT NOT NULL DEFAULT 'album',
+          cover_url TEXT,
+          about TEXT,
+          price_mode TEXT NOT NULL DEFAULT 'nyp',
+          price_min_cents INTEGER NOT NULL DEFAULT 0,
+          currency TEXT NOT NULL DEFAULT 'USD',
+          visibility TEXT NOT NULL DEFAULT 'draft',
+          published_at DATETIME,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(artist_id, slug),
+          FOREIGN KEY (artist_id) REFERENCES artists(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_releases_artist ON releases(artist_id);
+
+        CREATE TABLE IF NOT EXISTS tracks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          release_id INTEGER NOT NULL,
+          position INTEGER NOT NULL,
+          title TEXT NOT NULL,
+          duration_ms INTEGER,
+          school TEXT,
+          explicit INTEGER NOT NULL DEFAULT 0,
+          stream_url TEXT,
+          download_url TEXT,
+          waveform_url TEXT,
+          fingerprint_id TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(release_id, position),
+          FOREIGN KEY (release_id) REFERENCES releases(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_tracks_release ON tracks(release_id);
+        CREATE INDEX IF NOT EXISTS idx_tracks_fingerprint ON tracks(fingerprint_id);
+
+        CREATE TABLE IF NOT EXISTS track_tags (
+          track_id INTEGER NOT NULL,
+          tag TEXT NOT NULL,
+          PRIMARY KEY (track_id, tag),
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+        );
+      `);
+    },
+  },
+  {
+    version: 16,
+    name: 'create_track_provenance',
+    up(database) {
+      // The wedge: a signed, versioned, artist-attested AI-provenance ledger.
+      // Transparency is a feature, not a confession.
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS track_provenance (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          track_id INTEGER NOT NULL,
+          version INTEGER NOT NULL DEFAULT 1,
+          origin TEXT NOT NULL,
+          model TEXT,
+          prompt_lineage TEXT,
+          human_edit_ratio REAL,
+          stems_available INTEGER NOT NULL DEFAULT 0,
+          license TEXT NOT NULL DEFAULT 'all_rights_reserved',
+          declared_by INTEGER NOT NULL,
+          signature TEXT,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_provenance_track ON track_provenance(track_id, version);
+      `);
+    },
+  },
+  {
+    version: 17,
+    name: 'create_track_resonance',
+    up(database) {
+      // Sidecar registry: binds a track's content fingerprint to its compiled
+      // ResonanceTimeline JSON, the deterministic art layer the engine plays.
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS track_resonance (
+          fingerprint_id TEXT PRIMARY KEY,
+          track_id INTEGER NOT NULL,
+          sidecar_url TEXT NOT NULL,
+          schema_version TEXT NOT NULL,
+          analysis_version TEXT NOT NULL,
+          source_duration_ms INTEGER NOT NULL,
+          status TEXT NOT NULL DEFAULT 'pending',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (track_id) REFERENCES tracks(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_resonance_track ON track_resonance(track_id);
+      `);
+    },
+  },
+  {
+    version: 18,
+    name: 'create_lyrics_annotations',
+    up(database) {
+      // Left-page substrate: timed lyrics (karaoke highlight), Genius-style
+      // line annotations, and tracks.bpm/musical_key/genre. DDL is shared with
+      // the schema test via catalog/catalog.schema.js (single source of truth).
+      applyCatalogV18(database);
+    },
+  },
+  {
+    version: 19,
+    name: 'create_commerce',
+    up(database) {
+      applyCatalogV19(database);
+    },
+  },
+  {
+    version: 20,
+    name: 'create_social_analytics',
+    up(database) {
+      applyCatalogV20(database);
+    },
+  },
 ];
 
 let db;
@@ -405,6 +547,45 @@ async function ensureWorldSeedData(database) {
   }
 }
 
+async function ensureCatalogSeedData(database) {
+  try {
+    const { catalogPersistence: catalogApi } = await import('./catalog.persistence.js');
+    const { seedCatalog: runSeed } = await import('./catalog/catalog.seed.js');
+
+    if (isClosed) return;
+
+    const existing = await catalogApi.artists.findByHandle('scholomance-station');
+    if (existing) {
+      logUserDbInfo(`[DB:user] Catalog seed is already current. Skipping catalog seed.`);
+      return;
+    }
+
+    if (isClosed) return;
+
+    let systemUser = await findUserByUsername('system') || await findUserByUsername('test');
+    if (!systemUser) {
+      if (isClosed) return;
+      logUserDbInfo(`[DB:user] Creating system user for catalog seeding...`);
+      systemUser = await createUser('system', 'system@scholomance.local', 'system-seeded-password-hash', null);
+      await verifyUser(systemUser.id);
+    }
+
+    if (isClosed) return;
+
+    logUserDbInfo(`[DB:user] Running catalog seed for user ${systemUser.username} (${systemUser.id})...`);
+    const result = await runSeed({
+      api: catalogApi,
+      systemUserId: systemUser.id,
+    });
+    logUserDbInfo(`[DB:user] Catalog seed finished: created=${result.created}, tracks=${result.trackCount}`);
+  } catch (error) {
+    if (isClosed || error.message?.includes('database connection is not open')) {
+      return;
+    }
+    console.error('[DB:user] Failed to ensure catalog seed data:', error);
+  }
+}
+
 async function initializeDatabase() {
   try {
     if (TURSO_URL) {
@@ -448,6 +629,7 @@ async function initializeDatabase() {
     // --- LAZY SEEDING (V12) ---
     // Background the seeding process so it doesn't block the initial page transition/auth.
     ensureWorldSeedData(db).catch(err => console.error('[DB:user] Background seeding error:', err));
+    ensureCatalogSeedData(db).catch(err => console.error('[DB:user] Background catalog seeding error:', err));
 
   } catch (error) {
     console.error(`[DB:user] Failed to connect to database at ${TURSO_URL || DB_PATH}.`);
@@ -524,16 +706,30 @@ async function verifyUser(userId) {
   );
 }
 
-async function createOAuthUser(username, email, passwordHash) {
+async function createOAuthAccount({ username, email, passwordHash, provider, providerUserId, emailVerified = true }) {
   // A passwordless (OAuth-only) account: the email is already verified (the
   // provider attested it), and `passwordHash` is a real but unknowable hash so
-  // the /login path can never authenticate it. The caller links the provider
-  // identity separately.
-  const result = await db.execute(
-    'INSERT INTO users (username, email, password, verificationToken, verified) VALUES (?, ?, ?, NULL, 1)',
-    [username, email, passwordHash],
-  );
-  return { id: result.lastInsertRowid, username, email };
+  // the /login path can never authenticate it.
+  //
+  // The user row and its provider identity are written in a SINGLE atomic batch.
+  // If the identity insert fails (e.g. a concurrent duplicate trips
+  // idx_identities_provider_uid), the user insert rolls back with it — otherwise
+  // we'd strand an emailed-but-loginless account that future sign-ins would bounce
+  // to `link_requires_login` on a password nobody holds. The identity's user_id is
+  // resolved via the just-inserted unique email within the same transaction.
+  await db.batch([
+    {
+      sql: 'INSERT INTO users (username, email, password, verificationToken, verified) VALUES (?, ?, ?, NULL, 1)',
+      args: [username, email, passwordHash],
+    },
+    {
+      sql: `INSERT INTO user_identities (user_id, provider, provider_user_id, email, email_verified)
+            VALUES ((SELECT id FROM users WHERE email = ?), ?, ?, ?, ?)`,
+      args: [email, provider, String(providerUserId), email, emailVerified ? 1 : 0],
+    },
+  ]);
+  const user = await findUserByEmail(email);
+  return { id: user.id, username: user.username, email: user.email };
 }
 
 async function setVerificationToken(userId, verificationToken) {
@@ -1045,7 +1241,7 @@ export const userPersistence = {
     findByVerificationToken: findUserByVerificationToken,
     findByRecoveryTokenHash: findUserByRecoveryTokenHash,
     createUser: createUser,
-    createOAuthUser: createOAuthUser,
+    createOAuthAccount: createOAuthAccount,
     verifyUser: verifyUser,
     setVerificationToken: setVerificationToken,
     setRecoveryToken: setRecoveryToken,
@@ -1103,5 +1299,3 @@ export const userPersistence = {
   close: closeDatabase,
   getStatus,
 };
-
-export const persistence = userPersistence;

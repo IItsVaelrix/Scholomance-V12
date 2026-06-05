@@ -255,8 +255,6 @@ export function bytecodeToPalette(bytecode, options = {}) {
  * Deterministic "SSD" Block-Aligned addressing
  * Maps bytes to blocks/pages before modulo-snapping to colors.
  */
-export const generatePaletteFromSemantics = generateSemanticPalette;
-
 export function getHexForByte(bytecode, byteIndex, options = {}) {
   const palette = bytecodeToPalette(bytecode, options);
   const colors = palette.colors;

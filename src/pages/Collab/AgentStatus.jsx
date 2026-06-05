@@ -136,7 +136,7 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
                                                 className="agent-card__framework-sigil" 
                                                 title={`Framework: ${agent.framework_origin}`}
                                             >
-                                                {FRAMEWORK_ICONS[agent.framework_origin.toLowerCase()] || '◈'}
+                                                {FRAMEWORK_ICONS[String(agent.framework_origin || '').toLowerCase()] || '◈'}
                                             </span>
                                         )}
                                     </div>

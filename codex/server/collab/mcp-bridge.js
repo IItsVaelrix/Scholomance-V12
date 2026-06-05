@@ -738,6 +738,9 @@ export function registerCollabMcpBridge(server, service = collabService) {
         'mcp_scholomance_collab_diagnostic_trigger_full_scan',
         {
             trigger: z.string().optional().default('mcp').describe('Trigger source identifier'),
+            writeMemory: z.boolean().optional().default(true).describe('Persist BytecodeXP/QBIT memory envelopes for scan findings'),
+            memoryMax: z.number().int().positive().optional().default(32).describe('Maximum memory artifacts to persist'),
+            memoryIncludeHealth: z.boolean().optional().default(false).describe('Also persist passing health signals, not only violations'),
         },
         (params) => diagnosticTriggerFullScan(params),
     );

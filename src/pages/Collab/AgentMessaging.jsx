@@ -4,13 +4,13 @@
  * Messages are "thought-threads" — glyph-tagged, persisted to the deterministic ledger
  * via /collab/messages (Migration v14, collab_messages table), and broadcast across
  * present minds. Each thought is etched into the chamber's memory and retrievable
- * by future incantations. Same-tab cross-component sync rides BroadcastChannel;
+ * by future incantations. Server-driven realtime across all clients rides SSE;
+ * cross-tab echo within the same browser rides BroadcastChannel;
  * persistence rides the Cognitive Bus.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useAuth } from '../../hooks/useAuth.jsx';
 
 const GLYPHS = ['✦', '◈', '⬡', '◎', '⟐', '⧫', '✧', '◉'];
 const MAX_MESSAGES = 50;
@@ -23,8 +23,8 @@ function renderMessageText(text) {
     const parts = text.split(/(PB-EXP-v1-[A-Z0-9-]+)/g);
     return parts.map((part, i) => {
         if (part.startsWith('PB-EXP-v1')) {
-            // In a real scenario, these would be fetched from the ledger service
-            // For now, we simulate the visual presence of corroboration data
+            // Clicking dispatches an inspect event; the bytecode's corroboration
+            // data is resolved by the listener from the ledger, not fabricated here.
             return (
                 <button
                     key={i}
@@ -37,9 +37,6 @@ function renderMessageText(text) {
                 >
                     <span className="experience-rune__glyph">✦</span>
                     <span className="experience-rune__hash">{part.slice(0, 15)}...</span>
-                    <span className="experience-rune__corroboration" title="Corroboration Count">
-                        [2]
-                    </span>
                 </button>
             );
         }
@@ -62,7 +59,6 @@ function getChannel() {
 }
 
 export default function AgentMessaging({ agents, currentAgentId }) {
-    const { getCsrfToken } = useAuth();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState('');
     const [selectedGlyph, setSelectedGlyph] = useState(GLYPHS[0]);
@@ -71,6 +67,7 @@ export default function AgentMessaging({ agents, currentAgentId }) {
     const messagesEndRef = useRef(null);
     const channelRef = useRef(null);
     const fallbackMessageCounterRef = useRef(0);
+    const didInitialScrollRef = useRef(false);
 
     // Fetch initial messages and set up SSE for realtime sync
     useEffect(() => {
@@ -121,10 +118,27 @@ export default function AgentMessaging({ agents, currentAgentId }) {
         };
     }, []);
 
-    // Auto-scroll to bottom on new messages
+    // Auto-scroll behavior:
+    //  - First time content hydrates, jump straight to the bottom (no animation).
+    //  - After that, only follow new messages if the user is already near the
+    //    bottom, so we don't yank them away from history they scrolled up to read.
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+        const anchor = messagesEndRef.current;
+        if (!anchor) return;
+        const container = anchor.parentElement;
+
+        if (!didInitialScrollRef.current) {
+            if (messages.length > 0) {
+                anchor.scrollIntoView({ behavior: 'auto' });
+                didInitialScrollRef.current = true;
+            }
+            return;
+        }
+
+        const nearBottom = !container ||
+            container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+        if (nearBottom) {
+            anchor.scrollIntoView({ behavior: 'smooth' });
         }
     }, [messages]);
 
@@ -166,7 +180,8 @@ export default function AgentMessaging({ agents, currentAgentId }) {
         const bytecode = bytecodeMatch ? bytecodeMatch[0] : null;
 
         try {
-            // POST to backend for persistence (authority hook auto-injects CSRF)
+            // POST to backend for persistence. Auth rides the same-origin session
+            // cookie (sent automatically); collab routes are not CSRF-gated.
             const response = await fetch('/collab/messages', {
                 method: 'POST',
                 headers: { 
@@ -199,8 +214,10 @@ export default function AgentMessaging({ agents, currentAgentId }) {
                 channel.postMessage(message);
             }
 
-            // Also add to local state
+            // Also add to local state. Guard against the SSE echo of our own
+            // message arriving before this resolves — it shares the same id.
             setMessages(prev => {
+                if (prev.some(m => m.id === message.id)) return prev;
                 const next = [...prev, message];
                 return next.slice(-MAX_MESSAGES);
             });
@@ -258,7 +275,16 @@ export default function AgentMessaging({ agents, currentAgentId }) {
             {/* Message stream */}
             <div className="messaging-stream" role="log" aria-live="polite" aria-label="Agent messages">
                 <AnimatePresence initial={false}>
-                    {messages.length === 0 ? (
+                    {isLoading ? (
+                        <motion.div
+                            className="messaging-empty"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                        >
+                            <span className="messaging-empty__glyph">⟐</span>
+                            <p className="messaging-empty-text">Summoning thought-threads from the ledger…</p>
+                        </motion.div>
+                    ) : messages.length === 0 ? (
                         <motion.div
                             className="messaging-empty"
                             initial={{ opacity: 0 }}

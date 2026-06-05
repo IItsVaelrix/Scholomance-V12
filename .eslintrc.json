@@ -121,7 +121,8 @@
         "codex/server/db/sqlite.migrations.js",
         "codex/server/db/sqliteWriteQueue.js",
         "codex/server/collab/collab.persistence.js",
-        "codex/server/user.persistence.js"
+        "codex/server/user.persistence.js",
+        "codex/server/catalog/catalog.schema.js"
       ],
       "rules": {
         "no-restricted-syntax": [
@@ -133,6 +134,23 @@
           {
             "selector": "CallExpression[callee.property.name='run'][callee.object.type='CallExpression'][callee.object.callee.property.name='prepare']",
             "message": "Direct prepare().run() bypasses the SQLite write serialization queue. Route writes through createDbWrapper().execute() / .batch() / .transaction()."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
+      "excludedFiles": ["src/lib/phaser/phaser-runtime.adapter.js"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "phaser",
+                "message": "Import Phaser exclusively through phaser-runtime.adapter.js"
+              }
+            ]
           }
         ]
       }

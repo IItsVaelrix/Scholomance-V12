@@ -12,10 +12,9 @@ import { buildSyntaxLayer } from "../../syntax.layer.js";
 import { buildHiddenHarkovSummary } from "../../models/harkov.model.js";
 import { compileVerseToIR } from "./compileVerseToIR.js";
 import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
-import { buildVowelSummary, normalizeVowelFamily } from "../../../phonology/vowelFamily.js";
+import { normalizeVowelFamily } from "../../../phonology/vowelFamily.js";
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../phonology/chroma.resolver.js";
-import { decodeBytecode } from "../bytecodeRenderer.js";
 import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColorRegistry.js";
 import { resolveVerseIrColor } from "../color/pcaChroma.js";
 
@@ -45,7 +44,6 @@ export function synthesizeVerse(text, options = {}) {
   // 4. Rhyme & Meter Detection (The Echo)
   const scheme = detectScheme(syntaxLayer.schemePattern, syntaxLayer.rhymeGroups);
   const meter = analyzeMeter(analyzedDoc.lines);
-  const vowelSummary = buildVowelSummary(analyzedDoc);
 
   // 5. Stylistic Inference (The Soul)
   const literaryDevices = analyzeLiteraryDevices(normalizedText);
@@ -61,8 +59,9 @@ export function synthesizeVerse(text, options = {}) {
 
   const currentSchool = options.school || 'DEFAULT';
 
-  verseIR.tokens.forEach((token, index) => {
-    const syntaxToken = syntaxLayer.tokens[index] || {};
+  const tokensToIterate = verseIR?.tokens || [];
+  tokensToIterate.forEach((token, index) => {
+    const syntaxToken = syntaxLayer?.tokens?.[index] || {};
     const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
     
     // PIPELINE A: Phonetic Anchor
@@ -71,13 +70,9 @@ export function synthesizeVerse(text, options = {}) {
     // PIPELINE B: Unified Visual (Locked to Anchor)
     const verseIrColor = token.terminalVowelFamily 
       ? resolveVerseIrColor(token.terminalVowelFamily, currentSchool, {
-          forcedHue: sonicChroma?.h ?? null,
           phase: index / (verseIR.tokens.length || 1)
         })
       : null;
-
-    const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
-    const decoded = visualBytecode ? decodeBytecode(visualBytecode) : null;
 
     const unifiedToken = {
       ...token,
@@ -87,7 +82,7 @@ export function synthesizeVerse(text, options = {}) {
       verseIrColor,
       precomputed: {
         sonicChroma,
-        decoded,
+        decoded: null,
         hex: verseIrColor?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
       }
     };
@@ -110,14 +105,13 @@ export function synthesizeVerse(text, options = {}) {
     hhm,
     scheme,
     meter,
-    vowelSummary,
     literaryDevices,
     emotion,
     tokenByIdentity,
     tokenByCharStart,
     tokenByNormalizedWord,
     rhymeColorRegistry,
-    totalSyllables: verseIR.metadata.syllableCount || 0,
+    totalSyllables: verseIR?.tokens?.reduce((n, t) => n + (t.syllableCount || 0), 0) || 0,
     isPure: true
   });
 }
@@ -130,12 +124,12 @@ function createEmptyArtifact() {
     hhm: null,
     scheme: null,
     meter: null,
-    vowelSummary: { families: [], totalWords: 0, uniqueWords: 0 },
     literaryDevices: [],
     emotion: 'Neutral',
     tokenByIdentity: new Map(),
     tokenByCharStart: new Map(),
     tokenByNormalizedWord: new Map(),
+    rhymeColorRegistry: new Map(),
     totalSyllables: 0,
     isPure: true
   });

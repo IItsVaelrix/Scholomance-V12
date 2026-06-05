@@ -29,8 +29,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': 'http://localhost:8080',
-      '/auth': 'http://localhost:8080',
-      '/collab': 'http://localhost:8080',
+      '^/auth/.*': { target: 'http://localhost:8080' },
+      '^/collab/.*': { target: 'http://localhost:8080' },
       '/audio': 'http://localhost:8080',
     },
   },

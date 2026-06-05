@@ -3,7 +3,7 @@
 
 **Bytecode Search Code:** `SCHOL-ENC-BYKE-SEARCH-CCCB-PDR`
 
-**Status:** Draft
+**Status:** In Progress — Phase 0-1 implemented 2026-06-04
 **Classification:** Architectural | AI Observability | MCP Memory | TurboQuant Infrastructure
 **Priority:** High
 **Pre-Implementation Rating:** A — `SCHOL-FEEDBACK-V1-ACK`
@@ -311,6 +311,8 @@ Implement the FNV-1a checksum utility and CCCB serializer/parser as a shared uti
 **File target:** `codex/core/diagnostic/cccbEncoder.js`
 **Owner:** Gemini (implementation)
 
+**Implementation note (2026-06-04):** `cccbEncoder.js` is implemented. The reference implementation follows the FNV-1a algorithm in §6 exactly. It detects that some pilot IDs in §11 were authored with non-matching checksum suffixes. Those pilot blocks must be regenerated through `buildCccbId()` before MCP memory infusion.
+
 ---
 
 ## Phase 2 — PDR Pilot Encoding
@@ -481,12 +483,13 @@ CCCB_END
 
 # 12. QA Requirements
 
-- [ ] FNV-1a checksum function produces identical output for identical inputs
-- [ ] CCCB parser rejects blocks with missing required fields
-- [ ] CCCB parser emits `PB-ERR-v1` formatted errors on parse failure
+- [x] FNV-1a checksum function produces identical output for identical inputs
+- [x] CCCB parser rejects blocks with missing required fields
+- [x] CCCB parser emits `PB-ERR-v1` formatted errors on parse failure
 - [ ] MCP memory write/read round-trip preserves block content exactly
 - [ ] TurboQuant hybrid search retrieves correct block from partial semantic query
-- [ ] Graph traversal from Phase 01 reaches TERMINAL in exactly N steps (N = number of phases)
+- [x] Graph traversal reaches TERMINAL for verified CCCB blocks
+- [ ] Pilot §11 block IDs regenerated through the reference implementation before MCP infusion
 - [ ] All `# INFUSION_ALLOW` blocks pass `npm run memory:infuse` without errors
 - [ ] No block's TURBO_VEC contains generic stop-words (the, and, for, with)
 

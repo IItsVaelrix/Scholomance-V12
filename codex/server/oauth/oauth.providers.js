@@ -21,6 +21,15 @@ function trimTrailingSlash(value) {
   return String(value || '').replace(/\/+$/, '');
 }
 
+function isDevMockActive() {
+  const isProd = process.env.NODE_ENV === 'production';
+  const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+  // Deny by default. The mock consent screen issues a session for ANY typed email,
+  // so it must be an explicit opt-in (ENABLE_DEV_AUTH=true) — never something that
+  // switches itself on just because NODE_ENV happens not to be 'production'.
+  return !isProd && !isTest && process.env.ENABLE_DEV_AUTH === 'true';
+}
+
 /**
  * Resolve a single provider's full config, or null if not configured.
  * @param {string} provider
@@ -29,9 +38,16 @@ function trimTrailingSlash(value) {
 export function getProviderConfig(provider, { serverBaseUrl, env = process.env } = {}) {
   const def = PROVIDER_DEFS[provider];
   if (!def) return null;
-  const clientId = env[def.clientIdEnv];
-  const clientSecret = env[def.clientSecretEnv];
-  if (!clientId || !clientSecret) return null;
+  let clientId = env[def.clientIdEnv];
+  let clientSecret = env[def.clientSecretEnv];
+  if (!clientId || !clientSecret) {
+    if (isDevMockActive()) {
+      clientId = `mock-${provider}-client-id`;
+      clientSecret = `mock-${provider}-client-secret`;
+    } else {
+      return null;
+    }
+  }
   return {
     provider,
     authorizationUrl: def.authorizationUrl,

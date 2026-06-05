@@ -2,7 +2,7 @@ import { useRef, useLayoutEffect, useEffect, useState, useId } from "react";
 import PropTypes from "prop-types";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../hooks/useTheme.jsx";
-import { getVowelColorsForSchool } from "../data/schoolPalettes.js";
+import { getUniversalVowelColors } from "../data/schoolPalettes.js";
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from "../data/schools.js";
 import { normalizeVowelFamily } from "../lib/phonology/vowelFamily.js";
 import { resolveSonicColor } from "../lib/truesight/color/pcaChroma.js";
@@ -84,7 +84,7 @@ const WordTooltip = ({
   onSessionNavigate = () => {},
 }) => {
   const { theme } = useTheme();
-  const vowelPalette  = getVowelColorsForSchool("DEFAULT", theme);
+  const vowelPalette  = getUniversalVowelColors();
   const containerRef  = useRef(null);
   const titleId       = useId();
 
@@ -373,12 +373,17 @@ const WordTooltip = ({
     const schoolIcon    = localCore?.schoolGlyph || SCHOOLS[schoolId]?.glyph || "✦";
     const fallbackColor = theme === "light" ? "#1a1a2e" : "#f8f9ff";
     
+    // Single color authority: prefer the bytecode color the editor already
+    // painted (threaded through analysis.core.color), so the card matches the
+    // rendered word. Recomputation paths below are legacy fallbacks only.
+    const authoritativeColor = localCore?.color || null;
+
     // Sonic Color Logic: try high-fidelity phoneme signature first
     const sonicColor    = (Array.isArray(phonemes) && phonemes.length > 0) ? resolveSonicColor(phonemes).hex : null;
-    
+
     // 20-vowel lookup: fallback to palette if sonic color is unavailable
-    const vowelColor    = sonicColor || (rawVowelFamily && vowelPalette[rawVowelFamily] 
-      ? vowelPalette[rawVowelFamily] 
+    const vowelColor    = authoritativeColor || sonicColor || (rawVowelFamily && vowelPalette[rawVowelFamily]
+      ? vowelPalette[rawVowelFamily]
       : (vowelPalette[vowelFamily] || fallbackColor));
     const rarity        = getRarity(word);
     const syllables     = wordData?.syllableCount || localCore?.syllableCount || 1;

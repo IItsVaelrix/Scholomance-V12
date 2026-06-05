@@ -12,6 +12,7 @@ import { MagicNamePlate } from "./MagicNamePlate";
 import { OutputDeviceSelector } from "./OutputDeviceSelector";
 import { ScholomanceStation } from "./ScholomanceStation";
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics";
+import ResonanceDebugPanel from "../../lib/ambient/resonance/ResonanceDebugPanel";
 import "./ListenPage.css";
 
 /**
@@ -37,9 +38,10 @@ export default function ListenPage() {
     sinkId,
     setOutputDevice,
     updateOutputDevices,
+    trackUrl,
   } = useAmbientPlayer(allSchoolIds);
 
-  const { detectedSchoolId } = useSonicAnalysis(getByteFrequencyData, isPlaying);
+  const { detectedSchoolId } = useSonicAnalysis(isPlaying);
 
   // ── View Mode: CHAMBER (Cockpit) vs STATION (Orb Focus) ─────────────
   const [viewMode, setViewMode] = useState<'CHAMBER' | 'STATION'>('CHAMBER');
@@ -245,28 +247,28 @@ export default function ListenPage() {
             {/* Center: The Core 3D Console */}
             <main className="hud-center">
               <h1 className="chamber-heading">Scholomance Signal Chamber</h1>
+              {/* Floating Status Plate */}
+              <div className="core-status-plate" style={{ '--accent': activeStation.color } as any}>
+                <div className="status-indicator">
+                  <span className={`pulse-dot ${isPlaying ? 'is-active' : ''}`} />
+                  {isTuning ? "SYNCHRONIZING..." : "RESONANCE_LOCKED"}
+                </div>
+                
+                <MagicNamePlate 
+                  name={activeStation.name} 
+                  color={activeStation.color} 
+                />
+
+                <div className="frequency-readout">
+                  {((activeStation.baseFrequency || 432) + signalLevel * 8).toFixed(2)} Hz
+                </div>
+              </div>
+
               <div className={`core-mount ${isPlaying ? 'is-playing' : ''}`}>
                 <SignalChamberConsole 
                   overrideSchoolId={activeStation.id} 
                   onOrbClick={triggerIgnition}
                 />
-
-                {/* Floating Status Plate */}
-                <div className="core-status-plate" style={{ '--accent': activeStation.color } as any}>
-                  <div className="status-indicator">
-                    <span className={`pulse-dot ${isPlaying ? 'is-active' : ''}`} />
-                    {isTuning ? "SYNCHRONIZING..." : "RESONANCE_LOCKED"}
-                  </div>
-                  
-                  <MagicNamePlate 
-                    name={activeStation.name} 
-                    color={activeStation.color} 
-                  />
-
-                  <div className="frequency-readout">
-                    {(432 + signalLevel * 8).toFixed(2)} Hz
-                  </div>
-                </div>
               </div>
             </main>
 
@@ -441,11 +443,10 @@ export default function ListenPage() {
               signalLevel={signalLevel}
               isPlaying={isPlaying}
               isTuning={isTuning}
+              trackUrl={trackUrl}
               onClose={() => setViewMode('CHAMBER')}
               onSelectTrack={(url, schoolId) => {
-                void tuneToSchool(schoolId);
-                // In a real app, we'd also set the specific track URL
-                // but the service currently picks a random track for the school.
+                void tuneToSchool(schoolId, { trackUrl: url, forceRetune: true });
               }}
             />
           </div>
@@ -454,6 +455,9 @@ export default function ListenPage() {
 
       {/* Global Hud Noise/Grit Overlay */}
       <div className="hud-noise" />
+
+      {/* Resonance Bytecode Fingerprint Debugger */}
+      <ResonanceDebugPanel />
     </section>
   );
 }

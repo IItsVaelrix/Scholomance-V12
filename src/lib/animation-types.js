@@ -34,6 +34,7 @@
  * @property {Object} [framerTransition] - Framer Motion transition config
  * @property {Object} [phaserPayload] - Phaser-specific motion payload
  * @property {Object} [pixelBrainPayload] - PixelBrain-specific formula payload
+ * @property {Object} [photonicRoute] - Shadow Photonic Retina bridge telemetry
  * @property {string[]} [bytecode] - Motion bytecode instructions
  * @property {string[]} diagnostics - Diagnostic messages
  * @property {Array} trace - Full processor trace

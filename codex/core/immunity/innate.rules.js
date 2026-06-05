@@ -304,6 +304,35 @@ export const INNATE_RULES = [
       return false;
     },
   },
+  {
+    id: 'LING-0F07',
+    name: 'Color Authority Disparity (No-Op Skin / Shadow Palette)',
+    category: ERROR_CATEGORIES.LINGUISTIC,
+    errorCode: ERROR_CODES.IMMUNE_KNOWN_VIOLATION_LITERAL,
+    severity: ERROR_SEVERITY.WARN,
+    moduleId: MODULE_IDS.IMMUNITY,
+    repairKey: 'repair.color-authority.unify',
+    detector: (content, filePath) => {
+      if (isTestPath(filePath) || isDocumentationPath(filePath) || isImmunityRulesPath(filePath)) return false;
+      // Known color-logic-disparity literals (AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY).
+      // Disease class: multiple color authorities for the same token where one
+      // silently wins, leaving the others as inert "skins". The canonical tell
+      // is a per-school palette resolver whose `school` argument is underscore-
+      // prefixed (deliberately ignored) — every school then resolves to one
+      // palette, so the school selector is dead. Vector/adaptive immunity cannot
+      // detect this (its phonosemantic signatures encode lexical texture, not
+      // semantics), so it is pinned here as a deterministic literal.
+      const tells = [
+        {
+          rx: /getVowelColorsForSchool\s*\(\s*_\w*\s*\)/,
+          tell: 'per-school palette resolver ignores its `school` argument (dead skin)',
+        },
+      ];
+      const hit = tells.find((t) => t.rx.test(content));
+      if (!hit) return false;
+      return { matched: true, context: { tell: hit.tell, incident: 'AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY' } };
+    },
+  },
 ];
 
 function escapeForRegex(str) {

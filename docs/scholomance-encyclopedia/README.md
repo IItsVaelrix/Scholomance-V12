@@ -54,7 +54,8 @@ Foundational mandates and contracts that govern agents and systems.
 - [`UNITY.md`](./Scholomance%20LAW/UNITY.md)
 - [`VAELRIX_LAW.md`](./Scholomance%20LAW/VAELRIX_LAW.md)
 - [`forensic-search.skill`](./Scholomance%20LAW/forensic-search.skill)
-- [`scholomance-feedback.skill`](./Scholomance%20LAW/scholomance-feedback.skill)
+- [`modular-defragmentation.md`](./Scholomance%20LAW/modular-defragmentation.md)
+
 - [`vaelrix-law-debug.skill`](./Scholomance%20LAW/vaelrix-law-debug.skill)
 - [`vaelrix-law.skill`](./Scholomance%20LAW/vaelrix-law.skill)
 
@@ -77,6 +78,8 @@ The forensic record of failures, fixes, and lessons learned.
 - [`BUG-2026-05-08-TRUESIGHT-SEMANTIC-AMBIGUITY.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-08-TRUESIGHT-SEMANTIC-AMBIGUITY.md)
 - [`BUG-2026-05-09-MISSING-VIEWPORT-BYTECODE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-MISSING-VIEWPORT-BYTECODE.md)
 - [`BUG-2026-05-09-REJECTED-WATER-SOURCE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-REJECTED-WATER-SOURCE.md)
+- [`BUG-2026-06-04-VECTOR-AMP-FIDELITY-ALIGNMENT.md`](./Scholomance%20Bug%20Reports/BUG-2026-06-04-VECTOR-AMP-FIDELITY-ALIGNMENT.md)
+- [`BUG-2026-06-03-SQLITE-BUSY-STATE-DRIFT.md`](./Scholomance%20Bug%20Reports/BUG-2026-06-03-SQLITE-BUSY-STATE-DRIFT.md)
 - [`BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md`](./Scholomance%20Bug%20Reports/BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md)
 - [`BUG-TEMPLATE.md`](./Scholomance%20Bug%20Reports/BUG-TEMPLATE.md)
 
@@ -102,8 +105,23 @@ Reality after implementation.
 - [`PIR-20260526-GODOT-EXPORT-PHASE-3.md`](./post-implementation-reports/PIR-20260526-GODOT-EXPORT-PHASE-3.md)
 - [`PIR-20260526-GODOT-EXPORT-PHASE-4.md`](./post-implementation-reports/PIR-20260526-GODOT-EXPORT-PHASE-4.md)
 - [`PIR-20260526-GODOT-EXPORT-PHASE-5.md`](./post-implementation-reports/PIR-20260526-GODOT-EXPORT-PHASE-5.md)
+- [`PIR-20260603-GRIMDESIGN-SKILL.md`](./post-implementation-reports/PIR-20260603-GRIMDESIGN-SKILL.md)
+- [`PIR-20260603-LANDING-PHONEME-SIGIL-RING.md`](./post-implementation-reports/PIR-20260603-LANDING-PHONEME-SIGIL-RING.md)
+- [`PIR-20260603-PHOTONIC-RETINA-PHASE-3.md`](./post-implementation-reports/PIR-20260603-PHOTONIC-RETINA-PHASE-3.md)
+- [`PIR-20260604-DIAGNOSTIC-A-GRADE-HARDENING.md`](./post-implementation-reports/PIR-20260604-DIAGNOSTIC-A-GRADE-HARDENING.md)
+- [`PIR-20260604-DIAGNOSTIC-SUBSYSTEM-TIGHTENING.md`](./post-implementation-reports/PIR-20260604-DIAGNOSTIC-SUBSYSTEM-TIGHTENING.md)
+- [`PIR-20260604-CCCB-PHASE-1.md`](./post-implementation-reports/PIR-20260604-CCCB-PHASE-1.md)
+- [`PIR-20260604-BYTECODE-XP-VACCINE-PHASE-2.md`](./post-implementation-reports/PIR-20260604-BYTECODE-XP-VACCINE-PHASE-2.md)
+- [`PIR-20260604-QBIT-PULSE-PHASE-3.md`](./post-implementation-reports/PIR-20260604-QBIT-PULSE-PHASE-3.md)
+- [`PIR-20260604-QBIT-PROBE-ENRICHMENT-PHASE-4.md`](./post-implementation-reports/PIR-20260604-QBIT-PROBE-ENRICHMENT-PHASE-4.md)
+- [`PIR-20260604-QBIT-MEMORY-PERSISTENCE-PHASE-5.md`](./post-implementation-reports/PIR-20260604-QBIT-MEMORY-PERSISTENCE-PHASE-5.md)
+- [`PIR-20260604-DIAGNOSTIC-MEMORY-SCAN-WRITES.md`](./post-implementation-reports/PIR-20260604-DIAGNOSTIC-MEMORY-SCAN-WRITES.md)
+- [`PIR-20260604-VECTOR-AMP-SAVAGE-AUDIT-FIXES.md`](./post-implementation-reports/PIR-20260604-VECTOR-AMP-SAVAGE-AUDIT-FIXES.md)
+- [`PIR-20260604-LISTEN-SAVAGE-AUDIT-FIXES.md`](./post-implementation-reports/PIR-20260604-LISTEN-SAVAGE-AUDIT-FIXES.md)
+- [`PIR-20260604-WAND-PHOTONIC-BRIDGE-INTEGRATION.md`](./post-implementation-reports/PIR-20260604-WAND-PHOTONIC-BRIDGE-INTEGRATION.md)
 - [`dead-code.md`](./post-implementation-reports/dead-code.md)
 - [`Wand_RAID_UX_Audit_Report.md`](./Wand_RAID_UX_Audit_Report.md)
+- [`UX Report/Scrying_Orb_Landing_UX_Report.md`](./UX%20Report/Scrying_Orb_Landing_UX_Report.md)
 - [`UX Report/Wand_RAID_UX_Audit_Report.md`](./UX%20Report/Wand_RAID_UX_Audit_Report.md)
 
 ### Architecture Docs
@@ -117,6 +135,7 @@ Canonical architecture entries and system decisions.
 - [`ARCH-2026-04-27-ARCHIVE-OF-DOMINANCE.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-27-ARCHIVE-OF-DOMINANCE.md)
 - [`ARCH-2026-04-27-COGNITIVE-BUS.md`](./ARCH%20Scholomance%20Docs/ARCH-2026-04-27-COGNITIVE-BUS.md)
 - [`IDE_Runtime_Stasis_Promotion_Plan.md`](./IDE_Runtime_Stasis_Promotion_Plan.md)
+- [`phaser4-runtime-decoupling-walkthrough.md`](./phaser4-runtime-decoupling-walkthrough.md)
 - [`wand.md`](./wand.md)
 
 ### Scholomance White Papers
@@ -124,6 +143,7 @@ Canonical architecture entries and system decisions.
 Deep technical analysis, operating manuals, and specialist briefs.
 
 - [`IMMUNE-SYSTEM-WHITE-PAPER.md`](./Scholomance%20White%20Papers/IMMUNE-SYSTEM-WHITE-PAPER.md)
+- [`CAREER_RESONANCE_ALIGNMENT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/CAREER_RESONANCE_ALIGNMENT_WHITE_PAPER.md)
 - [`MCP_INTEGRATION_GUIDE.md`](./Scholomance%20White%20Papers/MCP_INTEGRATION_GUIDE.md)
 - [`PARAEQ_PLUGIN.md`](./Scholomance%20White%20Papers/PARAEQ_PLUGIN.md)
 - [`TURBOQUANT-SERVICE-MANUAL.md`](./Scholomance%20White%20Papers/TURBOQUANT-SERVICE-MANUAL.md)
@@ -138,6 +158,7 @@ Structured product reviews and judgment of ratified canon.
 - [`VERDICT-2026-04-27-COGNITIVE-BUS-claude-ui.md`](./Scholomance-Verdicts/VERDICT-2026-04-27-COGNITIVE-BUS-claude-ui.md)
 - [`VERDICT-2026-04-27-IMMUNE-SYSTEM.md`](./Scholomance-Verdicts/VERDICT-2026-04-27-IMMUNE-SYSTEM.md)
 - [`VERDICT-2026-05-09-CELL-WALL-INFRA.md`](./Scholomance-Verdicts/VERDICT-2026-05-09-CELL-WALL-INFRA.md)
+- [`VERDICT-2026-06-05-PHASER4-MIGRATION.md`](./Scholomance-Verdicts/VERDICT-2026-06-05-PHASER4-MIGRATION.md)
 
 ### Changes
 
@@ -150,6 +171,13 @@ Structured product reviews and judgment of ratified canon.
 ### Studies
 
 - [`study1.md`](./study1.md)
+
+### Scholomance Bible
+
+Current-state synthesis artifacts live beside the encyclopedia.
+
+- [`SCHOLOMANCE_BIBLE.md`](../scholomance-bible/SCHOLOMANCE_BIBLE.md)
+- [`BIBLE_BYTECODE_INDEX.md`](../scholomance-bible/BIBLE_BYTECODE_INDEX.md)
 
 ---
 
@@ -187,3 +215,58 @@ Bug reports follow this structure:
 ---
 
 *The Scholomance Encyclopedia grows with every battle fought. Each entry is a lesson for the next agent who walks this path.*
+
+## Automatically Restored Links
+
+- [`settings.local.json`](./.claude/settings.local.json)
+- [`FAILURE_TRIBUNAL_2026-05-10.md`](./FAILURE_TRIBUNAL_2026-05-10.md)
+
+- [`BUG-2026-05-09-TEST-INFRASTRUCTURE-CRITIQUE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-TEST-INFRASTRUCTURE-CRITIQUE.md)
+- [`comb-initialize.skill`](./Scholomance%20LAW/comb-initialize.skill)
+- [`SKILL.md`](./Scholomance%20LAW/comb-initialize/SKILL.md)
+- [`comb-reports.md`](./Scholomance%20LAW/comb-initialize/references/comb-reports.md)
+- [`file-categories.md`](./Scholomance%20LAW/comb-initialize/references/file-categories.md)
+- [`production_polish.md`](./Scholomance%20LAW/production_polish.md)
+- [`SKILL.md`](./Scholomance%20LAW/scholomance-feedback/SKILL.md)
+- [`bytecode-schema.md`](./Scholomance%20LAW/scholomance-feedback/references/bytecode-schema.md)
+- [`fit-matrix.md`](./Scholomance%20LAW/scholomance-feedback/references/fit-matrix.md)
+- [`vaelrix_law_debug.md`](./Scholomance%20LAW/vaelrix_law_debug.md)
+- [`5⁄21⁄2026 Report.png`](./Scholomance%20System%20Report%20Cards/5%E2%81%8421%E2%81%842026%20Report.png)
+- [`BYTECODE_DIAGNOSTIC_SYNTHESIS_WHITE_PAPER.md`](./Scholomance%20White%20Papers/BYTECODE_DIAGNOSTIC_SYNTHESIS_WHITE_PAPER.md)
+- [`BYTECODE_HEALTH_WHITE_PAPER.md`](./Scholomance%20White%20Papers/BYTECODE_HEALTH_WHITE_PAPER.md)
+- [`CLERICAL_RAID_WHITE_PAPER.md`](./Scholomance%20White%20Papers/CLERICAL_RAID_WHITE_PAPER.md)
+- [`CODEX_MCP_READINESS.md`](./Scholomance%20White%20Papers/CODEX_MCP_READINESS.md)
+- [`SCHOLOMANCE-DIV-WAND-v1.md`](./Scholomance%20White%20Papers/SCHOLOMANCE-DIV-WAND-v1.md)
+- [`VERDICT-2026-05-09-DIAGNOSTIC-CELL-INFRASTRUCTURE.md`](./Scholomance-Verdicts/VERDICT-2026-05-09-DIAGNOSTIC-CELL-INFRASTRUCTURE.md)
+- [`VERDICT-2026-05-09-TRUESIGHT-MEASUREMENT-GATE.md`](./Scholomance-Verdicts/VERDICT-2026-05-09-TRUESIGHT-MEASUREMENT-GATE.md)
+- [`VERDICT-2026-05-10-BIBLE-SYNTHESIS-FUNCTIONALITY.md`](./Scholomance-Verdicts/VERDICT-2026-05-10-BIBLE-SYNTHESIS-FUNCTIONALITY.md)
+- [`VERDICT-2026-05-10-BIBLE-SYNTHESIS-SKILL.md`](./Scholomance-Verdicts/VERDICT-2026-05-10-BIBLE-SYNTHESIS-SKILL.md)
+- [`VERDICT-2026-05-10-DIAGNOSTIC-STASIS.md`](./Scholomance-Verdicts/VERDICT-2026-05-10-DIAGNOSTIC-STASIS.md)
+- [`VERDICT-2026-05-22-IDE-STASIS-CALIBRATION.md`](./Scholomance-Verdicts/VERDICT-2026-05-22-IDE-STASIS-CALIBRATION.md)
+- [`VERDICT-2026-05-24-8-MONTH-SOLO-ACHIEVEMENT.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-8-MONTH-SOLO-ACHIEVEMENT.md)
+- [`VERDICT-2026-05-24-COGNITIVE-BUS-codex-partial.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-COGNITIVE-BUS-codex-partial.md)
+- [`VERDICT-2026-05-24-COGNITIVE-BUS-gemini-partial.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-COGNITIVE-BUS-gemini-partial.md)
+- [`VERDICT-2026-05-24-COGNITIVE-BUS-reconciliation.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-COGNITIVE-BUS-reconciliation.md)
+- [`VERDICT-2026-05-24-IMMUNE-SYSTEM-codex-partial.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-IMMUNE-SYSTEM-codex-partial.md)
+- [`VERDICT-2026-05-24-IMMUNE-SYSTEM-gemini-partial.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-IMMUNE-SYSTEM-gemini-partial.md)
+- [`VERDICT-2026-05-24-IMMUNE-SYSTEM-reconciliation.md`](./Scholomance-Verdicts/VERDICT-2026-05-24-IMMUNE-SYSTEM-reconciliation.md)
+- [`IDE_Stasis_Promotion_UX_Report.md`](./UX%20Report/IDE_Stasis_Promotion_UX_Report.md)
+- [`amp-vector-wiring-implementation-plan.md`](./amp-vector-wiring-implementation-plan.md)
+- [`amp-vector-wiring-task.md`](./amp-vector-wiring-task.md)
+- [`amp-vector-wiring-walkthrough.md`](./amp-vector-wiring-walkthrough.md)
+- [`PIR-20260508-TS-DECOUPLE.md`](./post-implementation-reports/PIR-20260508-TS-DECOUPLE.md)
+- [`PIR-20260521-IDE-STASIS-PROMOTION-S.md`](./post-implementation-reports/PIR-20260521-IDE-STASIS-PROMOTION-S.md)
+- [`PIR-20260521-LINUX_SETUP_SCRIPT.md`](./post-implementation-reports/PIR-20260521-LINUX_SETUP_SCRIPT.md)
+- [`PIR-20260521-MCP-PROBE-FALLBACK.md`](./post-implementation-reports/PIR-20260521-MCP-PROBE-FALLBACK.md)
+- [`PIR-20260521-MCP-TOOL-ALIASES.md`](./post-implementation-reports/PIR-20260521-MCP-TOOL-ALIASES.md)
+- [`PIR-20260526-DEV-COLLAB-REUSE.md`](./post-implementation-reports/PIR-20260526-DEV-COLLAB-REUSE.md)
+- [`PIR-20260526-GODOT-BRIDGE-CONNECTOR.md`](./post-implementation-reports/PIR-20260526-GODOT-BRIDGE-CONNECTOR.md)
+- [`PIR-20260526-GODOT-FRAME-PRINTER-STEPS-1-10.md`](./post-implementation-reports/PIR-20260526-GODOT-FRAME-PRINTER-STEPS-1-10.md)
+- [`PIR-20260527-GODOT-FRAME-PRINTER-AUDIT-PASS-2.md`](./post-implementation-reports/PIR-20260527-GODOT-FRAME-PRINTER-AUDIT-PASS-2.md)
+- [`PIR-20260527-GODOT-PAINTING-DOCK-PHASES-0-3.md`](./post-implementation-reports/PIR-20260527-GODOT-PAINTING-DOCK-PHASES-0-3.md)
+- [`BUG-REPORT-2026-05-10-ZOD-API-CORRUPTION.md`](./reports/BUG-REPORT-2026-05-10-ZOD-API-CORRUPTION.md)
+- [`scholomance_collab.sqlite`](./scholomance_collab.sqlite)
+- [`scholomance_collab.sqlite-shm`](./scholomance_collab.sqlite-shm)
+- [`scholomance_collab.sqlite-wal`](./scholomance_collab.sqlite-wal)
+- [`test_output.log`](./test_output.log)
+- [`SCHOLOMANCE-FAIRLY-ODD-WAND-v1(1).md`](./SCHOLOMANCE-FAIRLY-ODD-WAND-v1%281%29.md)

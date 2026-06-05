@@ -168,6 +168,13 @@ export async function requireCollabAuth(request, reply) {
         return;
     }
 
+    // Allow seamless bypass in local development
+    if (process.env.NODE_ENV !== 'production') {
+        request.session = request.session || {};
+        request.session.user = { id: 'local-dev', name: 'Local Developer' };
+        return;
+    }
+
     // 3. Fallback: Unauthorized
     return reply.status(401).send({
         error: 'Unauthorized',

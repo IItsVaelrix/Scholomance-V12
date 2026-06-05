@@ -1,9 +1,6 @@
 .motion-inspector-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
   pointer-events: none;
   z-index: 9999;
   display: flex;
@@ -333,6 +330,63 @@
 }
 
 .text-warn { color: #ef4444; }
+
+.photonic-route-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.photonic-route-cell {
+  min-height: 42px;
+  padding: 6px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  text-align: center;
+}
+
+.photonic-route-cell span {
+  color: #6ee7b7;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.photonic-route-cell strong {
+  color: #ecfdf5;
+  font-size: 12px;
+}
+
+.photonic-route-strip {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(3px, 1fr));
+  gap: 2px;
+  height: 18px;
+  margin-top: 10px;
+}
+
+.photonic-route-byte {
+  border-radius: 1px;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.photonic-route-byte.positive {
+  background: #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.35);
+}
+
+.photonic-route-byte.negative {
+  background: #3b82f6;
+  box-shadow: 0 0 6px rgba(59, 130, 246, 0.3);
+}
+
+.photonic-route-byte.zero {
+  background: rgba(71, 85, 105, 0.45);
+}
 
 .bytecode-container pre {
   margin: 0;

@@ -123,6 +123,38 @@ describe("AmbientPlayerService", () => {
     expect(service.getState().status).toBe(AMBIENT_PLAYER_STATES.PLAYING);
   });
 
+  it("passes an explicit track URL through tuning into the loaded controller", async () => {
+    const selectedTrackUrl = "https://cdn1.suno.ai/manual-void-track.mp3";
+    const controllerFactory = vi.fn(async ({ schoolId }) => {
+      const controller = createMockController(0);
+      controller.schoolId = schoolId;
+      return controller;
+    });
+
+    const service = createService({
+      controllerFactory,
+      storage: createMemoryStorage(),
+      tuningDurationMs: 50,
+      fadeOutMs: 0,
+      fadeInMs: 0,
+      dialSfxPlayer: vi.fn(),
+    });
+
+    service.setPlayableSchools(["SONIC", "PSYCHIC", "VOID"]);
+    await service.setSchool("VOID", { trackUrl: selectedTrackUrl, forceRetune: true });
+    await vi.runAllTimersAsync();
+
+    expect(controllerFactory).toHaveBeenCalledTimes(1);
+    expect(controllerFactory).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        schoolId: "VOID",
+        trackUrl: selectedTrackUrl,
+      })
+    );
+    expect(service.getState().trackUrl).toBe(selectedTrackUrl);
+    expect(service.getState().status).toBe(AMBIENT_PLAYER_STATES.PLAYING);
+  });
+
   it("retunes the active school without reloading the track", async () => {
     const controllerFactory = vi.fn(async ({ schoolId }) => {
       const controller = createMockController(0);

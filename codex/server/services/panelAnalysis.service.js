@@ -26,12 +26,6 @@ import { enhanceVerseIRWithServerPolicy } from './verseirAmplifier.service.js';
 import { createPhonemicOracleService } from './phonemicOracle.service.js';
 import { resolveRhymeAstrologyArtifactPaths } from '../utils/rhymeAstrologyPaths.js';
 
-const EMPTY_VOWEL_SUMMARY = Object.freeze({
-  families: [],
-  totalWords: 0,
-  uniqueWords: 0,
-});
-
 const DEFAULT_RHYME_ASTROLOGY_ANCHOR_LIMIT = 14;
 const DEFAULT_RHYME_ASTROLOGY_MATCH_LIMIT = 6;
 const DEFAULT_RHYME_ASTROLOGY_MIN_SCORE = 0.35;
@@ -157,45 +151,6 @@ function toSerializableGroupEntries(value) {
   ]);
 }
 
-function summarizeVowelFamilies(analyzedDoc) {
-  if (!analyzedDoc || !Array.isArray(analyzedDoc.allWords)) {
-    return EMPTY_VOWEL_SUMMARY;
-  }
-
-  const familyCounts = new Map();
-  const uniqueWords = new Set();
-
-  for (const analyzedWord of analyzedDoc.allWords) {
-    const normalized = String(analyzedWord?.normalized || '').trim().toUpperCase();
-    if (normalized) {
-      uniqueWords.add(normalized);
-    }
-
-    const familyId = normalizeVowelFamily(analyzedWord?.phonetics?.vowelFamily);
-    if (!familyId) continue;
-    familyCounts.set(familyId, (familyCounts.get(familyId) || 0) + 1);
-  }
-
-  const totalWords = Array.from(familyCounts.values()).reduce((sum, count) => sum + count, 0);
-
-  const families = Array.from(familyCounts.entries())
-    .map(([id, count]) => ({
-      id,
-      count,
-      percent: totalWords > 0 ? count / totalWords : 0,
-    }))
-    .sort((a, b) => {
-      if (b.count !== a.count) return b.count - a.count;
-      return a.id.localeCompare(b.id);
-    });
-
-  return {
-    families,
-    totalWords,
-    uniqueWords: uniqueWords.size,
-  };
-}
-
 function toMinimalAnalysisPayload(
   analysis,
   wordAnalyses,
@@ -232,7 +187,6 @@ function createEmptyPanelPayload() {
     genreProfile: null,
     emotion: 'Neutral',
     scoreData: null,
-    vowelSummary: EMPTY_VOWEL_SUMMARY,
     rhymeAstrology: null,
     narrativeAMP: null,
     oracle: null,
@@ -901,7 +855,6 @@ export async function createPanelAnalysisService(options = {}) {
         literaryDevices,
         emotion,
         scoreData: scoreDataWithPlsFeatures,
-        vowelSummary: summarizeVowelFamilies(analyzedDoc),
         rhymeAstrology,
         narrativeAMP,
         oracle: toLegacyOraclePayload(narrativeAMP),

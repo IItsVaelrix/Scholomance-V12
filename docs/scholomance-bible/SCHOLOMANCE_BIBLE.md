@@ -1,8 +1,8 @@
 # The Scholomance Bible — v1.0.0
 
-> Generated: 2026-05-22
+> Generated: 2026-06-04
 > Generator: BIBLE-v1 (Scholomance Bible Synthesis Skill)
-> Bytecode Health Anchor: `SCHOL-BIBLE-v1-eb1a44ff`
+> Bytecode Health Anchor: `SCHOL-BIBLE-v1-9ad73d8a`
 > Companion: `docs/scholomance-encyclopedia/` (history)
 
 ---
@@ -29,6 +29,9 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | .antigravitycli | .antigravitycli | Unknown | 0 codes | 0 codes |
 | commands | .claude/commands | Unknown | 0 codes | 0 codes |
 | .claude | .claude | Unknown | 0 codes | 0 codes |
+| grimdesign | .claude/skills/grimdesign | Unknown | 0 codes | 0 codes |
+| agents | .claude/skills/grimdesign/agents | Unknown | 0 codes | 0 codes |
+| scripts | .claude/skills/grimdesign/scripts | Unknown | 0 codes | 0 codes |
 | .cursor | .cursor | Unknown | 0 codes | 0 codes |
 | .dockerignore | .dockerignore | Unknown | 0 codes | 0 codes |
 | .env | .env | Unknown | 0 codes | 0 codes |
@@ -53,6 +56,10 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | VAELRIX_LAW.md | VAELRIX_LAW.md | Unknown | 0 codes | 0 codes |
 | abyss.sqlite-shm | abyss.sqlite-shm | Unknown | 0 codes | 0 codes |
 | abyss.sqlite-wal | abyss.sqlite-wal | Unknown | 0 codes | 0 codes |
+| scholomance_godot_bridge | addons/scholomance_godot_bridge | Unknown | 0 codes | 0 codes |
+| editor | addons/scholomance_godot_bridge/editor | Unknown | 0 codes | 0 codes |
+| importers | addons/scholomance_godot_bridge/importers | Unknown | 0 codes | 0 codes |
+| runtime | addons/scholomance_godot_bridge/runtime | Unknown | 0 codes | 0 codes |
 | codex | codex | Unknown | 0 codes | 0 codes |
 | core | codex/core | Core | 0 codes | 0 codes |
 | animation | codex/core/animation | Core | 0 codes | 0 codes |
@@ -71,10 +78,11 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | time | codex/core/animation/processors/time | Core | 0 codes | 0 codes |
 | transform | codex/core/animation/processors/transform | Core | 0 codes | 0 codes |
 | vector | codex/core/animation/processors/vector | Core | 1 codes | 0 codes |
+| color | codex/core/archive/truesight/color | Core | 0 codes | 0 codes |
 | commentary | codex/core/commentary | Core | 0 codes | 0 codes |
 | data | codex/core/constants/data | Core | 0 codes | 0 codes |
 | constants | codex/core/constants | Core | 0 codes | 0 codes |
-| diagnostic | codex/core/diagnostic | Core | 0 codes | 9 codes |
+| diagnostic | codex/core/diagnostic | Core | 0 codes | 10 codes |
 | cells | codex/core/diagnostic/cells | Core | 0 codes | 4 codes |
 | grimdesign | codex/core/grimdesign | Core | 0 codes | 0 codes |
 | heuristics | codex/core/heuristics | Core | 0 codes | 0 codes |
@@ -91,6 +99,7 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | quantization | codex/core/quantization | Core | 0 codes | 0 codes |
 | rhyme-astrology | codex/core/rhyme-astrology | Core | 0 codes | 0 codes |
 | ritual-prediction | codex/core/ritual-prediction | Core | 0 codes | 0 codes |
+| amp | codex/core/semantic/amp | Core | 0 codes | 0 codes |
 | semantic | codex/core/semantic | Core | 0 codes | 0 codes |
 | ambient | codex/core/shared/ambient | Core | 0 codes | 0 codes |
 | shared | codex/core/shared | Core | 0 codes | 0 codes |
@@ -112,6 +121,7 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | server | codex/server | Server | 0 codes | 0 codes |
 | collab | codex/server/collab | Server | 0 codes | 0 codes |
 | db | codex/server/db | Server | 0 codes | 0 codes |
+| oauth | codex/server/oauth | Server | 0 codes | 0 codes |
 | routes | codex/server/routes | Server | 0 codes | 0 codes |
 | services | codex/server/services | Server | 0 codes | 0 codes |
 | rhyme-astrology | codex/server/services/rhyme-astrology | Server | 0 codes | 0 codes |
@@ -121,6 +131,7 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | token-graph | codex/services/token-graph | Services | 0 codes | 0 codes |
 | rhyme-astrology | data/rhyme-astrology | Unknown | 0 codes | 0 codes |
 | dead-code.md | dead-code.md | Unknown | 0 codes | 0 codes |
+| debug-dom.html | debug-dom.html | Unknown | 0 codes | 0 codes |
 | debug_truesight.test.js | debug_truesight.test.js | Unknown | 0 codes | 0 codes |
 | dict_data | dict_data | Unknown | 0 codes | 0 codes |
 | rhyme-astrology | dict_data/rhyme-astrology | Unknown | 0 codes | 0 codes |
@@ -137,11 +148,12 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | operations | docs/operations | Doc | 0 codes | 0 codes |
 | pixelbrain | docs/pixelbrain | Doc | 0 codes | 0 codes |
 | project | docs/project | Doc | 0 codes | 0 codes |
+| proofs | docs/proofs | Doc | 0 codes | 0 codes |
 | qa | docs/qa | Doc | 0 codes | 0 codes |
 | references | docs/references | Doc | 0 codes | 0 codes |
 | reports | docs/reports | Doc | 0 codes | 0 codes |
 | rhyme-astrology | docs/rhyme-astrology | Doc | 0 codes | 0 codes |
-| scholomance-bible | docs/scholomance-bible | Doc | 78 codes | 16 codes |
+| scholomance-bible | docs/scholomance-bible | Doc | 78 codes | 17 codes |
 | .claude | docs/scholomance-encyclopedia/.claude | Doc | 0 codes | 0 codes |
 | ARCH Scholomance Docs | docs/scholomance-encyclopedia/ARCH Scholomance Docs | Doc | 7 codes | 0 codes |
 | scholomance-encyclopedia | docs/scholomance-encyclopedia | Doc | 1 codes | 0 codes |
@@ -163,11 +175,21 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | skills | docs/skills | Doc | 3 codes | 2 codes |
 | daily-wrapups | docs/team/daily-wrapups | Doc | 1 codes | 0 codes |
 | end-of-day-results | end-of-day-results | Unknown | 0 codes | 0 codes |
+| fix-drift.mjs | fix-drift.mjs | Unknown | 0 codes | 0 codes |
 | fly.toml | fly.toml | Unknown | 0 codes | 0 codes |
 | forensic-search | forensic-search | Unknown | 0 codes | 0 codes |
 | references | forensic-search/references | Unknown | 0 codes | 0 codes |
+| scholomance_godot_bridge | godot_project/addons/scholomance_godot_bridge | Unknown | 0 codes | 0 codes |
+| editor | godot_project/addons/scholomance_godot_bridge/editor | Unknown | 0 codes | 0 codes |
+| importers | godot_project/addons/scholomance_godot_bridge/importers | Unknown | 0 codes | 0 codes |
+| runtime | godot_project/addons/scholomance_godot_bridge/runtime | Unknown | 0 codes | 0 codes |
+| assets | godot_project/assets | Unknown | 0 codes | 0 codes |
+| godot_project | godot_project | Unknown | 0 codes | 0 codes |
+| scenes | godot_project/scenes | Unknown | 0 codes | 0 codes |
+| scripts | godot_project/scripts | Unknown | 0 codes | 0 codes |
 | index.html | index.html | Unknown | 0 codes | 0 codes |
 | install.ps1 | install.ps1 | Unknown | 0 codes | 0 codes |
+| knip.json | knip.json | Unknown | 0 codes | 0 codes |
 | linguistic.iq.test.js | linguistic.iq.test.js | Unknown | 0 codes | 0 codes |
 | mailer.adapter.js | mailer.adapter.js | Unknown | 0 codes | 0 codes |
 | mcp.json | mcp.json | Unknown | 0 codes | 0 codes |
@@ -182,6 +204,7 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | schemas | presets/schemas | Unknown | 0 codes | 0 codes |
 | public | public | Unknown | 0 codes | 0 codes |
 | data | public/data | Unknown | 0 codes | 0 codes |
+| pw_text_tmp.mjs | pw_text_tmp.mjs | Unknown | 0 codes | 0 codes |
 | qa_tests.py | qa_tests.py | Unknown | 0 codes | 0 codes |
 | render.yaml | render.yaml | Unknown | 0 codes | 0 codes |
 | scholomance_collab.sqlite-shm | scholomance_collab.sqlite-shm | Unknown | 0 codes | 0 codes |
@@ -201,10 +224,12 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | setup-linux.sh | setup-linux.sh | Unknown | 0 codes | 0 codes |
 | src | src | UI | 0 codes | 0 codes |
 | components | src/components | UI | 0 codes | 0 codes |
+| GodotExportButton | src/components/GodotExportButton | UI | 0 codes | 0 codes |
 | Navigation | src/components/Navigation | UI | 0 codes | 0 codes |
 | Nexus | src/components/Nexus | UI | 0 codes | 0 codes |
 | ParaEQ | src/components/ParaEQ | UI | 0 codes | 0 codes |
 | TruesightDebugColorPanel | src/components/TruesightDebugColorPanel | UI | 0 codes | 0 codes |
+| grimoire | src/components/grimoire | UI | 0 codes | 0 codes |
 | shared | src/components/shared | UI | 0 codes | 0 codes |
 | data | src/data | UI | 0 codes | 0 codes |
 | hooks | src/hooks | UI | 0 codes | 0 codes |
@@ -218,6 +243,9 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | generated | src/lib/css/generated | UI | 0 codes | 0 codes |
 | css | src/lib/css | UI | 0 codes | 0 codes |
 | docs | src/lib/docs | UI | 0 codes | 0 codes |
+| adapters | src/lib/godot/frame-printer/adapters | UI | 0 codes | 0 codes |
+| frame-printer | src/lib/godot/frame-printer | UI | 0 codes | 0 codes |
+| godot-export | src/lib/godot-export | UI | 0 codes | 0 codes |
 | quantization | src/lib/math/quantization | UI | 0 codes | 0 codes |
 | rust-kernel | src/lib/math/quantization/rust-kernel | UI | 0 codes | 0 codes |
 | pkg | src/lib/math/quantization/rust-kernel/pkg | UI | 0 codes | 0 codes |
@@ -245,10 +273,11 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | math | src/lib/math | UI | 0 codes | 0 codes |
 | models | src/lib/models | UI | 0 codes | 0 codes |
 | phonology | src/lib/phonology | UI | 0 codes | 0 codes |
+| photonic-quantization | src/lib/photonic-quantization | UI | 0 codes | 0 codes |
+| photonic-retina | src/lib/photonic-retina | UI | 0 codes | 0 codes |
 | platform | src/lib/platform | UI | 0 codes | 0 codes |
 | providers | src/lib/pls/providers | UI | 0 codes | 0 codes |
 | pls | src/lib/pls | UI | 0 codes | 0 codes |
-| syntax | src/lib/syntax | UI | 0 codes | 0 codes |
 | truesight | src/lib/truesight | UI | 0 codes | 0 codes |
 | color | src/lib/truesight/color | UI | 0 codes | 0 codes |
 | compiler | src/lib/truesight/compiler | UI | 0 codes | 0 codes |
@@ -265,6 +294,9 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | render | src/pages/Combat/render | UI | 0 codes | 0 codes |
 | scenes | src/pages/Combat/scenes | UI | 0 codes | 0 codes |
 | state | src/pages/Combat/state | UI | 0 codes | 0 codes |
+| DivWand | src/pages/DivWand | UI | 0 codes | 0 codes |
+| Landing | src/pages/Landing | UI | 0 codes | 0 codes |
+| storm | src/pages/Landing/storm | UI | 0 codes | 0 codes |
 | Listen | src/pages/Listen | UI | 0 codes | 0 codes |
 | scenes | src/pages/Listen/scenes | UI | 0 codes | 0 codes |
 | Nexus | src/pages/Nexus | UI | 0 codes | 0 codes |
@@ -276,21 +308,29 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | scenes | src/pages/Read/scenes | UI | 0 codes | 0 codes |
 | Wand | src/pages/Wand | UI | 1 codes | 0 codes |
 | Watch | src/pages/Watch | UI | 0 codes | 0 codes |
+| photonic-bridge | src/pages/internal/photonic-bridge | UI | 0 codes | 0 codes |
 | types | src/types | UI | 0 codes | 0 codes |
 | core | src/types/core | UI | 0 codes | 0 codes |
 | lib | src/types/lib | UI | 0 codes | 0 codes |
 | runtime | src/types/runtime | UI | 0 codes | 0 codes |
-| adapters | src/ui/animation/adapters | UI | 0 codes | 0 codes |
 | components | src/ui/animation/components | UI | 0 codes | 0 codes |
 | hooks | src/ui/animation/hooks | UI | 0 codes | 0 codes |
 | hero | src/ui/features/mysticHolistics/hero | UI | 0 codes | 0 codes |
-| workers | src/workers | UI | 0 codes | 0 codes |
+| test-results | test-results | Unknown | 0 codes | 0 codes |
 | test_hmm_analysis.js | test_hmm_analysis.js | Unknown | 0 codes | 0 codes |
 | tests | tests | Test | 0 codes | 0 codes |
+| truesight | tests/codex/core/shared/truesight | Test | 0 codes | 0 codes |
+| color | tests/codex/core/shared/truesight/color | Test | 0 codes | 0 codes |
+| compiler | tests/codex/core/shared/truesight/compiler | Test | 0 codes | 0 codes |
 | collab | tests/collab | Test | 0 codes | 0 codes |
+| GodotExportButton | tests/components/GodotExportButton | Test | 0 codes | 0 codes |
 | components | tests/components | Test | 0 codes | 0 codes |
 | core | tests/core | Test | 0 codes | 0 codes |
 | diagnostic | tests/diagnostic | Test | 0 codes | 1 codes |
+| bytecodeDiagnosticSynthesis | tests/fixtures/bytecodeDiagnosticSynthesis | Test | 0 codes | 0 codes |
+| godot-export | tests/fixtures/godot-export | Test | 0 codes | 0 codes |
+| godot | tests/godot | Test | 0 codes | 0 codes |
+| godot-export | tests/godot-export | Test | 0 codes | 0 codes |
 | hooks | tests/hooks | Test | 0 codes | 0 codes |
 | __snapshots__ | tests/lib/__snapshots__ | Test | 0 codes | 0 codes |
 | adapters | tests/lib/adapters | Test | 0 codes | 0 codes |
@@ -300,6 +340,8 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | truesight | tests/lib/truesight | Test | 0 codes | 0 codes |
 | pages | tests/pages | Test | 0 codes | 0 codes |
 | pb-sani | tests/pb-sani | Test | 1 codes | 0 codes |
+| photonic-quantization | tests/photonic-quantization | Test | 0 codes | 0 codes |
+| photonic-retina | tests/photonic-retina | Test | 0 codes | 0 codes |
 | qa | tests/qa | Test | 15 codes | 1 codes |
 | animation | tests/qa/animation | Test | 1 codes | 0 codes |
 | __snapshots__ | tests/qa/backend/__snapshots__ | Test | 0 codes | 0 codes |
@@ -317,18 +359,22 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | runtime | tests/runtime | Test | 0 codes | 0 codes |
 | security | tests/security | Test | 0 codes | 0 codes |
 | server | tests/server | Test | 0 codes | 0 codes |
+| truesight | tests/src/lib/truesight | Test | 0 codes | 0 codes |
+| color | tests/src/lib/truesight/color | Test | 0 codes | 0 codes |
+| compiler | tests/src/lib/truesight/compiler | Test | 0 codes | 0 codes |
 | unit | tests/unit | Test | 0 codes | 0 codes |
 | microprocessors | tests/unit/microprocessors | Test | 1 codes | 0 codes |
 | visual | tests/visual | Test | 0 codes | 0 codes |
 | tmp | tmp | Unknown | 0 codes | 0 codes |
 | tsconfig.checkjs.json | tsconfig.checkjs.json | Unknown | 0 codes | 0 codes |
+| tsconfig.ide-targets.json | tsconfig.ide-targets.json | Unknown | 0 codes | 0 codes |
 | tsconfig.json | tsconfig.json | Unknown | 0 codes | 0 codes |
 | verseir_20vowel_matrix.txt | verseir_20vowel_matrix.txt | Unknown | 0 codes | 0 codes |
 | verseir_chroma_engine.py | verseir_chroma_engine.py | Unknown | 0 codes | 0 codes |
 | verseir_palette_payload.json | verseir_palette_payload.json | Unknown | 0 codes | 0 codes |
 | verseir_perfect_chroma.txt | verseir_perfect_chroma.txt | Unknown | 0 codes | 0 codes |
 | vite.config.js | vite.config.js | Unknown | 0 codes | 0 codes |
-| wrangler.jsonc | wrangler.jsonc | Unknown | 0 codes | 0 codes |
+| wrangler.toml | wrangler.toml | Unknown | 0 codes | 0 codes |
 
 ---
 
@@ -349,7 +395,7 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 | 0501 | EXT | CRIT | EXTREG | docs/ByteCode Error System/01_Bytecode_Error_System_Overview.md |
 | 0502 | EXT | WARN | EXTREG | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | 0B01 | FORMULA | CRIT | IMGFOR | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
-| 0B03 | FORMULA | CRIT | IMGFOR | dist/assets/WandPage-CuInsBRS.js |
+| 0B03 | FORMULA | CRIT | IMGFOR | dist/assets/WandPage-BUrY7iud.js |
 | 0401 | HOOK | CRIT | EXTREG | docs/ByteCode Error System/01_Bytecode_Error_System_Overview.md |
 | 0403 | HOOK | CRIT | EXTREG | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | 0403 | HOOK | WARN | EXTREG | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
@@ -425,17 +471,18 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 |------|---------|-------------|
 | PB-OK-v1-ANTIGEN-REGEN | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | PB-OK-v1-BIBLE-GENERATED- | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
-| PB-OK-v1-CELL-SCAN-CLEAN | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
+| PB-OK-v1-CELL-SCAN-CLEAN | Health Signal | codex/core/diagnostic/diagnostic-constants.js |
 | PB-OK-v1-DEPRECATED-STASIS | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
-| PB-OK-v1-FIXTURE-SHAPE-OK | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
+| PB-OK-v1-FIXTURE-SHAPE-OK | Health Signal | codex/core/diagnostic/cells/fixture-shape.cell.js |
 | PB-OK-v1-IMMUNE-PASS-COORD | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
 | PB-OK-v1-IMMUNE-PASS-COORD- | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | PB-OK-v1-IMMUNE-PASS-COORD-IMMUNITY_SCAN- | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
-| PB-OK-v1-LAYER-BOUNDARY-OK | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
+| PB-OK-v1-LAYER-BOUNDARY-OK | Health Signal | codex/core/diagnostic/diagnostic-constants.js |
 | PB-OK-v1-LOGIC-INCOMPLETE | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
 | PB-OK-v1-LOGIC-INCOMPLETE-IMMUNITY_SCAN- | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
-| PB-OK-v1-PROCESSOR-BRIDGE-CLEAN | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
-| PB-OK-v1-TEST-COVERAGE-PASS | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
+| PB-OK-v1-PROCESSOR-BRIDGE-CLEAN | Health Signal | codex/core/diagnostic/cells/processor-bridge.cell.js |
+| PB-OK-v1-QUANT-FIDELITY-PASS | Health Signal | codex/core/diagnostic/diagnostic-constants.js |
+| PB-OK-v1-TEST-COVERAGE-PASS | Health Signal | codex/core/diagnostic/cells/test-coverage.cell.js |
 | PB-OK-v1-TEST-FIXTURE-SHAPE-OK | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | PB-OK-v1-THEORETICAL-PROBE | Health Signal | docs/scholomance-bible/BIBLE_BYTECODE_INDEX.md |
 | PB-OK-v1-WIP-STUB | Health Signal | codex/core/diagnostic/BytecodeHealth.js |
@@ -448,9 +495,9 @@ Browser (React SPA) ──→ CODEx Engine (4-layer)
 
 | Area | Status | Last Verified |
 |------|--------|---------------|
-| Immunity | ACTIVE | 2026-05-22 |
-| Layer Boundary | ACTIVE | 2026-05-22 |
-| Bridge Integrity | ACTIVE | 2026-05-22 |
+| Immunity | ACTIVE | 2026-06-04 |
+| Layer Boundary | ACTIVE | 2026-06-04 |
+| Bridge Integrity | ACTIVE | 2026-06-04 |
 
 ---
 

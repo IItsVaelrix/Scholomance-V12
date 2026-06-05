@@ -7,9 +7,9 @@
  * Integrates configurable safety policies to control how aesthetic clamping is applied:
  *   - 'off': Completely bypass similarity checks/clamping.
  *   - 'warn-only': Computes similarity/archetype diagnostics, but does not modify values.
- *   - 'dampen-soft': Softly clamps translation & scale by 25% if similarity < 0.75.
- *   - 'dampen-hard': Clamps translation & scale by 50% if similarity < 0.75 (standard default).
- *   - 'reject': Rejects the animation entirely if similarity < 0.75 by throwing a violation.
+ *   - 'dampen-soft': Softly clamps translation & scale by 25% if similarity falls below the calibrated threshold.
+ *   - 'dampen-hard': Clamps translation & scale by 50% if similarity falls below the calibrated threshold.
+ *   - 'reject': Rejects the animation entirely if similarity falls below the calibrated threshold.
  */
 
 import {
@@ -22,6 +22,12 @@ import {
 } from '../../contracts/animation.types.ts';
 import { vectorizeMotion } from '../../amp/motionVectorizer.ts';
 import { quantizeVectorJS, similarity } from '../../../quantization/turboquant.js';
+
+// Calibrated against corrected cosine similarity. The previous 0.75 threshold
+// was tuned to the old inflated inner-product primitive and over-dampened
+// ordinary hover/mount motion after the primitive was fixed.
+export const MOTION_COSINE_DEVIATION_THRESHOLD = 0.50;
+export const MOTION_ARCHETYPE_MATCH_THRESHOLD = 0.60;
 
 // Predefined set of golden aesthetic curves
 const GOLDEN_CURVES = [
@@ -44,7 +50,7 @@ export const turboQuantMotionProcessor: MotionProcessor = {
   stage: 'finalize',
   priority: 10, // Runs early in finalize stage
 
-  supports(intent: AnimationIntent): boolean {
+  supports(_intent: AnimationIntent): boolean {
     return true;
   },
 
@@ -142,7 +148,7 @@ export const turboQuantMotionProcessor: MotionProcessor = {
       }
 
       // Safeguard archetype mappings
-      if (maxSimilarity < 0.70) {
+      if (maxSimilarity < MOTION_ARCHETYPE_MATCH_THRESHOLD) {
         matchedCurveName = 'unknown';
       }
 
@@ -151,8 +157,8 @@ export const turboQuantMotionProcessor: MotionProcessor = {
       (state as any).nearestMotionArchetype = matchedCurveName;
       state.diagnostics.push(`TurboQuant similarity: ${maxSimilarity.toFixed(4)} (matched: ${matchedCurveName})`);
 
-      // Evaluate deviations (>25% deviation from any preset, meaning similarity < 0.75)
-      if (maxSimilarity < 0.75) {
+      // Evaluate deviations against the corrected-cosine threshold.
+      if (maxSimilarity < MOTION_COSINE_DEVIATION_THRESHOLD) {
         if (safetyMode === 'reject') {
           throw new AnimationAmpError(
             `Aesthetic deviation violation detected (similarity: ${maxSimilarity.toFixed(4)}) under reject safety policy.`,

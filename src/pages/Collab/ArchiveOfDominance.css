@@ -1,9 +1,6 @@
 .archive-dominance {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
+    inset: 0;
     background-color: #050508;
     color: #e0e0ff;
     z-index: 9000;

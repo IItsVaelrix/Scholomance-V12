@@ -202,8 +202,8 @@ export const AgentMessageSchema = z.object({
     sender_id: z.string().min(1).max(64),
     target_id: z.string().min(1).max(64).default('all'),
     glyph: z.string().max(8).optional().default('✦'),
-    text: z.string().max(4096),
-    bytecode: z.string().max(16384).optional(),
+    text: z.string().min(1).max(4096),
+    bytecode: z.string().max(16384).nullable().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
 });
 

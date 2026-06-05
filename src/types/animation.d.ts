@@ -87,6 +87,24 @@ export interface ResolvedMotionOutput {
     formula: string;
     coordinates: Array<{ x: number; y: number; space: 'pixel' | 'cell' | 'lattice' }>;
   };
+  photonicRoute?: {
+    ok: boolean;
+    routeId: string;
+    packet?: unknown;
+    bridgeReport?: unknown;
+    preview?: {
+      values?: number[];
+      previewHash?: string;
+    };
+    delta?: {
+      changedCount?: number;
+      deltaHash?: string;
+    };
+    opticalSimulation?: {
+      opticalFit?: number;
+      softwareOnly?: boolean;
+    };
+  };
   bytecode?: string[];
   diagnostics: string[];
   trace: Array<{

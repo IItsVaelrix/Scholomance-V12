@@ -10,6 +10,8 @@
  * @see ARCH_CONTRACT_OVERLAY_INTEGRITY.md - Layer separation requirements
  */
 
+import { attachAnimationPhotonicRoute } from './animation-photonic.adapter.js';
+
 /**
  * @typedef {Object} AmpStatus
  * @property {boolean} isRunning
@@ -52,5 +54,58 @@ export async function getActiveAnimation(targetId) {
  */
 export async function submitAmpIntent(intent) {
   const { runAnimationAmp } = await import('../../codex/core/animation/amp/runAnimationAmp.ts');
-  return runAnimationAmp(intent);
+  const output = await runAnimationAmp(intent);
+  return attachAnimationPhotonicRoute(output);
 }
+
+/**
+ * Clear a resolved animation from the active registry by targetId.
+ * Pruning is otherwise never invoked, so the registry only grows — this is the
+ * hook the Motion Inspector calls to release stale targets.
+ * @param {string} targetId
+ */
+export async function clearActiveAnimation(targetId) {
+  const { clearActiveAnimation: clearActive } = await import('../../codex/core/animation/amp/runAnimationAmp.ts');
+  return clearActive(targetId);
+}
+
+/**
+ * --- MOTION TRACE DIAGNOSTICS ---
+ * Bridges codex/core/animation/diagnostics/buildMotionTrace over the Cell Wall.
+ * Pure functions on a ResolvedMotionOutput / TraceEntry[]; async only because
+ * codex .ts is reached via dynamic import (project convention for this layer).
+ */
+export async function buildOutputTrace(output) {
+  const { buildOutputTrace: build } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return build(output);
+}
+
+export async function getStageSummary(trace) {
+  const { getStageSummary: summary } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return summary(trace);
+}
+
+export async function formatTraceJson(trace) {
+  const { formatTraceJson: fmt } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return fmt(trace);
+}
+
+export async function formatTraceMarkdown(trace) {
+  const { formatTraceMarkdown: fmt } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return fmt(trace);
+}
+
+export async function debugPrintTrace(trace) {
+  const { debugPrintTrace: print } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return print(trace);
+}
+
+export async function debugPrintPerformance(trace) {
+  const { debugPrintPerformance: print } = await import('../../codex/core/animation/diagnostics/buildMotionTrace.ts');
+  return print(trace);
+}
+
+export {
+  attachAnimationPhotonicRoute,
+  buildAnimationAmpPhotonicRoute,
+} from './animation-photonic.adapter.js';

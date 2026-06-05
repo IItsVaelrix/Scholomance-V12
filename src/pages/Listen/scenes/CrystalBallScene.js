@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { AMP_CHANNELS, getBytecodeAMP, getRotationAtTime } from '../../../lib/ambient/bytecodeAMP';
 
 const TAU = Math.PI * 2;
@@ -84,13 +83,15 @@ function toHexColor(color) {
   return `#${color.toString(16).padStart(6, '0')}`;
 }
 
-export class CrystalBallScene extends Phaser.Scene {
+export function buildCrystalBallScene(Phaser) {
+  return class CrystalBallScene extends Phaser.Scene {
   constructor() {
     super({ key: 'CrystalBallScene' });
     this._isCreated = false;
   }
 
-  init() {
+  init(data) {
+    this.reducedMotion = data?.reducedMotion ?? false;
     this.signalLevel = 0;
     this.schoolColor = '#c9a227';
     this._cachedCol = 0xc9a227;
@@ -98,7 +99,6 @@ export class CrystalBallScene extends Phaser.Scene {
     this.isTuning = false;
     this.isPlaying = false;
     this.schoolId = null;
-    this.reducedMotion = false;
     this._schoolChanged = false;
     this._lastSwitchTime = 0;
     this._bpm = 90;
@@ -165,9 +165,14 @@ export class CrystalBallScene extends Phaser.Scene {
     this.patternLayer.setMask(mask);
     this.glyphText.setMask(mask);
 
-    if (this.cameras.main.postFX) {
-      this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.85, 1.12);
-    }
+    // Phaser 4: postFX→Filters; addBloom removed → Glow + brightness lift.
+    try {
+      const f = this.cameras.main?.filters?.internal;
+      if (f && !this.reducedMotion) {
+        f.addGlow(0xffffff, 1.5, 0, 1, false, 8, 16);
+        f.addColorMatrix().brightness(1.07);
+      }
+    } catch { /* tolerate filter API drift */ }
 
     this._isCreated = true;
   }
@@ -212,7 +217,8 @@ export class CrystalBallScene extends Phaser.Scene {
     bake('orb_seed_of_life', Math.round(radius * 1.5), (g, cx, cy) => {
       g.lineStyle(2.4, 0xffffff, 1);
       const orbitR = cx * 0.34;
-      for (let i = 0; i < 7; i++) {
+      g.strokeCircle(cx, cy, orbitR);
+      for (let i = 0; i < 6; i++) {
         const angle = (i / 6) * TAU;
         g.strokeCircle(cx + Math.cos(angle) * orbitR, cy + Math.sin(angle) * orbitR, orbitR);
       }
@@ -582,4 +588,5 @@ export class CrystalBallScene extends Phaser.Scene {
       .setAlpha(glyphAlpha * glow * transitionAlpha)
       .setScale(1 + motionFactor * 0.025 * Math.sin(time * 0.0017 + 1.2));
   }
+  };
 }

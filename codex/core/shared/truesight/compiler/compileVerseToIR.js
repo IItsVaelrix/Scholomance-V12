@@ -754,7 +754,7 @@ export function createEmptyVerseIR(options = {}) {
       }),
     }),
     metadata: Object.freeze({
-      mode,
+      depth: mode,
       lineBreakStyle: 'none',
       tokenCount: 0,
       lineCount: 0,
@@ -835,7 +835,7 @@ export function compileVerseToIR(rawText, options = {}) {
     indexes,
     featureTables,
     metadata: Object.freeze({
-      mode,
+      depth: mode,
       lineBreakStyle: inferLineBreakStyle(source),
       tokenCount: frozenTokens.length,
       lineCount: lines.length,

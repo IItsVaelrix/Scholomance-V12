@@ -422,6 +422,102 @@
   font-weight: bold;
 }
 
+.photonic-trace {
+  margin-top: 12px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, rgba(0, 255, 136, 0.04), rgba(0, 0, 0, 0)),
+    #090909;
+  border: 1px solid #183629;
+  border-radius: 4px;
+}
+
+.photonic-trace-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+
+.photonic-trace-title {
+  font-size: 9px;
+  color: #9fffc7;
+  letter-spacing: 1px;
+  flex: 0 0 auto;
+}
+
+.photonic-packet-id {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #56685e;
+  font-size: 8px;
+  text-align: right;
+}
+
+.photonic-trace-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.photonic-trace-cell {
+  min-height: 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px;
+  background: #101410;
+  border: 1px solid #18221c;
+  border-radius: 3px;
+  text-align: center;
+}
+
+.photonic-trace-cell span {
+  color: #4d6256;
+  font-size: 7px;
+  letter-spacing: 1px;
+}
+
+.photonic-trace-cell strong {
+  color: #c9ffe0;
+  font-size: 12px;
+}
+
+.photonic-byte-strip {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(3px, 1fr));
+  gap: 2px;
+  height: 18px;
+  margin-top: 10px;
+  align-items: stretch;
+}
+
+.photonic-byte {
+  display: block;
+  min-width: 0;
+  border-radius: 1px;
+  background: #172017;
+}
+
+.photonic-byte.positive {
+  background: #00ff88;
+  box-shadow: 0 0 6px rgba(0, 255, 136, 0.35);
+}
+
+.photonic-byte.negative {
+  background: #58a6ff;
+  box-shadow: 0 0 6px rgba(88, 166, 255, 0.25);
+}
+
+.photonic-byte.zero {
+  background: #223027;
+}
+
 /* === PALETTE DISPLAY === */
 .palette-section.empty {
   min-height: 150px;
@@ -579,6 +675,10 @@
     grid-template-columns: repeat(3, 1fr);
   }
 
+  .photonic-trace-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .bezel-emitter {
     width: 36px;
     height: 36px;
@@ -588,6 +688,11 @@
 @media (max-width: 480px) {
   .metrics-grid {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .photonic-byte-strip {
+    grid-template-columns: repeat(12, minmax(4px, 1fr));
+    height: 38px;
   }
 
   .terminal-screen {

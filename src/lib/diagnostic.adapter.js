@@ -1,20 +1,11 @@
 /**
  * DIAGNOSTIC ADAPTER
- * 
+ *
  * Permitted, browser-safe bridge between UI pages and Codex core diagnostics.
  * Prevents importing Node-only modules (like node:crypto) into client-side code.
  */
 
-export const CELL_IDS = Object.freeze({
-  IMMUNITY_SCAN: 'IMMUNITY_SCAN',
-  LAYER_BOUNDARY: 'LAYER_BOUNDARY',
-  TEST_COVERAGE: 'TEST_COVERAGE',
-  FIXTURE_SHAPE: 'FIXTURE_SHAPE',
-  PROCESSOR_BRIDGE: 'PROCESSOR_BRIDGE',
-  CONNECTION_HEALTH: 'CONNECTION_HEALTH',
-  LIFECYCLE: 'LIFECYCLE',
-  DB_HEALTH: 'DB_HEALTH',
-});
+export { CELL_IDS } from '../../codex/core/diagnostic/diagnostic-constants.js';
 
 function base64url(str) {
   try {

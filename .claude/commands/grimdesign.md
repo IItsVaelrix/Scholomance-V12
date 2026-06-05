@@ -35,9 +35,17 @@ You are the GrimDesign engine. The user has invoked `/grimdesign` with the follo
 
 **Intent:** $ARGUMENTS
 
-### Step 1 — Call the API
+### Step 1 — Resolve the GrimDesign signal
 
-Attempt to call the GrimDesign API:
+Prefer the repository skill helper:
+
+```
+node .claude/skills/grimdesign/scripts/grimdesign.mjs "$ARGUMENTS"
+```
+
+It attempts the local API, falls back to local CODEx modules, and only then uses the marked heuristic path.
+
+If you cannot run the helper, attempt to call the GrimDesign API manually:
 
 ```
 POST http://localhost:3000/api/grimdesign/analyze

@@ -5,7 +5,7 @@ interface MagicNamePlateProps {
   color: string;
 }
 
-const GLYPHS = "01010101010101010101010101010101"; // Or use phonetic characters
+const GLYPHS = "01AEIOUYRLMNSKTDZH";
 
 /**
  * MagicNamePlate — Digitally/Magically morphs text and color.
@@ -22,12 +22,12 @@ export const MagicNamePlate: React.FC<MagicNamePlateProps> = ({ name, color }) =
       prevNameRef.current = name;
 
       let iteration = 0;
+      let seed = 5;
+      const seededRandom = () => {
+        const x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      };
       const interval = setInterval(() => {
-        let seed = 5;
-        const seededRandom = () => {
-          const x = Math.sin(seed++) * 10000;
-          return x - Math.floor(x);
-        };
         setDisplayText(() => 
           name.split("").map((char, index) => {
             if (index < iteration) return name[index];

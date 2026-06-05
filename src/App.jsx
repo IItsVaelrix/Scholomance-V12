@@ -1,5 +1,5 @@
-import { Suspense, useEffect, useRef } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import React, { Suspense, useEffect, useRef } from "react";
+import { useOutlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Navigation from "./components/Navigation/Navigation.jsx";
 import AtmosphereSync from "./components/AtmosphereSync.jsx";
@@ -41,6 +41,7 @@ function AuthScopedProviders({ children }) {
 
 export default function App() {
   const location = useLocation();
+  const currentOutlet = useOutlet();
   const prefersReducedMotion = usePrefersReducedMotion();
   const shouldReduceMotion = prefersReducedMotion;
   const pageVariants = shouldReduceMotion ? reducedMotionVariants : fullMotionVariants;
@@ -92,7 +93,7 @@ export default function App() {
                     transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
                   >
                     <Suspense fallback={null}>
-                      <Outlet />
+                      {currentOutlet && React.cloneElement(currentOutlet, { key: location.pathname })}
                     </Suspense>
                   </motion.main>
                 </AnimatePresence>

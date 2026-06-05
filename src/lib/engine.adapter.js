@@ -214,3 +214,51 @@ export {
   PHOTONIC_BRIDGE_MODES,
 } from './photonic-quantization/index.js';
 
+import { PHOTONIC_EXECUTION_CLASSES } from './photonic-quantization/index.js';
+
+const PHOTONIC_BACKENDS = Object.freeze([
+  Object.freeze({
+    id: 'software-shadow',
+    name: 'Software Shadow Simulator',
+    type: 'software',
+  }),
+]);
+
+export function getAvailableBackends() {
+  return PHOTONIC_BACKENDS;
+}
+
+export function simulateHardwareBackend(packet, operationGraph, backendId = 'software-shadow') {
+  const backend = PHOTONIC_BACKENDS.find((candidate) => candidate.id === backendId) || PHOTONIC_BACKENDS[0];
+  const operations = Array.isArray(operationGraph?.operations) ? operationGraph.operations : [];
+  const dimension = Math.max(1, Number(packet?.dimension) || 1);
+
+  const photonicOpCount = operations.filter(
+    (op) => op?.executionClass === PHOTONIC_EXECUTION_CLASSES.PHOTONIC_FRIENDLY,
+  ).length;
+  const electronicOpCount = operations.filter(
+    (op) => op?.executionClass === PHOTONIC_EXECUTION_CLASSES.ELECTRONIC_REQUIRED,
+  ).length;
+
+  const electronicBoundaries = Array.isArray(operationGraph?.electronicBoundaries)
+    ? operationGraph.electronicBoundaries
+    : [];
+  const electronicPenalty = electronicBoundaries.length * 12;
+
+  const bottlenecks = operations
+    .filter((op) => op?.executionClass === PHOTONIC_EXECUTION_CLASSES.ELECTRONIC_REQUIRED)
+    .map((op) => `${op.kind} (${op.id}) forces an electronic boundary — data must leave the photonic domain.`);
+
+  return Object.freeze({
+    backendId: backend.id,
+    backendName: backend.name,
+    backendType: backend.type,
+    estimatedLatencyNs: Number((operations.length * 8 + Math.log2(dimension + 1) + electronicPenalty).toFixed(2)),
+    estimatedPowerPj: Number((operations.length * 3.5 + (Number(packet?.bitWidth) || 8) * 0.75 + electronicPenalty * 0.4).toFixed(2)),
+    photonicOpCount,
+    electronicOpCount,
+    bottlenecks: Object.freeze(bottlenecks),
+    softwareOnly: true,
+    hardwareBacked: false,
+  });
+}

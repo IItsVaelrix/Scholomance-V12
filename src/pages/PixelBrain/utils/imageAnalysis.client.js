@@ -8,6 +8,10 @@
  * optional enhancement — if it's unavailable or broken, this is sufficient.
  */
 
+// Symmetry detection runs through the Symmetry AMP (codex core), reached via
+// the Cell Wall adapter so this UI module never imports core directly.
+import { detectSymmetry } from '../../../lib/pixelbrain.adapter.js';
+
 /**
  * Extract the top N dominant colors from pixel data via bucket quantization.
  * @param {Uint8ClampedArray} pixelData
@@ -59,10 +63,17 @@ function analyzeComposition(pixelData, width, height) {
     }
   }
   const complexity = Math.min(1, totalEdges / (width * height * 0.3));
+
+  // Real symmetry detection via the Symmetry AMP — replaces the former
+  // hardcoded 'none' that left the Analysis "Symmetry" card permanently blank.
+  const symmetry = detectSymmetry(pixelData, { width, height });
+
   return {
     dominantAxis: edgeH >= edgeV ? 'horizontal' : 'vertical',
-    hasSymmetry: false,
-    symmetryType: 'none',
+    hasSymmetry: symmetry.significant,
+    symmetryType: symmetry.significant ? symmetry.type : 'none',
+    symmetryConfidence: Number(symmetry.confidence.toFixed(4)),
+    symmetrySuggestions: symmetry.suggestions,
     complexity,
     edgeDensity: complexity,
   };

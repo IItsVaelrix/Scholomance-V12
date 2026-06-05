@@ -6,6 +6,7 @@
  */
 
 import { processorBridge, hslToHex } from './engine.adapter.js';
+import { routeRetinaPacketToPhotonicBridge } from './photonic-retina/index.js';
 
 // --- Coordinate & Formula Logic ---
 import { 
@@ -151,6 +152,60 @@ export function getRotationAtTime(time, bpm) {
 
 export function roundTo(val, precision) {
   return codexRoundTo(val, precision);
+}
+
+function normalizePixelBrainCoordinate(coord) {
+  return Object.freeze({
+    x: Number(coord?.snappedX ?? coord?.x ?? 0),
+    y: Number(coord?.snappedY ?? coord?.y ?? 0),
+    color: coord?.color || '#ffffff',
+    emphasis: Number(coord?.emphasis ?? coord?.pressure ?? 1),
+  });
+}
+
+export function buildPixelBrainPhotonicRoute(payload, options = {}) {
+  try {
+    const coordinates = Array.isArray(payload?.coordinates) ? payload.coordinates : [];
+
+    if (coordinates.length === 0) {
+      return null;
+    }
+
+    const canvas = payload?.canvas || {};
+    const dimensions = {
+      width: Number(canvas.width) || 160,
+      height: Number(canvas.height) || 144,
+    };
+
+    return routeRetinaPacketToPhotonicBridge(
+      {
+        sourceKind: 'coordinates',
+        dimensions,
+        payload: coordinates.map(normalizePixelBrainCoordinate),
+        metadata: {
+          sourceSystem: 'pixelbrain',
+          paletteCount: Array.isArray(payload?.palettes) ? payload.palettes.length : 0,
+        },
+      },
+      {
+        retina: {
+          targetDimension: options.targetDimension || 64,
+          bitWidth: options.bitWidth || 4,
+        },
+        bridge: {
+          mode: options.mode || 'shadow',
+        },
+        previousPacket: options.previousPacket,
+        previewLength: options.previewLength || 24,
+      }
+    );
+  } catch (error) {
+    if (options.mode === 'warn') {
+      console.warn('[PixelBrain Photonic Retina] routing failed:', error);
+    }
+
+    return null;
+  }
 }
 
 // --- LATTICE GRID ENGINE EXPORTS ---

@@ -5,7 +5,6 @@
  * to eliminate runtime texture generation delays.
  */
 
-import Phaser from 'phaser';
 import { getBytecodeAMP, AMP_CHANNELS, getRotationAtTime } from '../../../lib/ambient/bytecodeAMP';
 import { freshRng } from '../../../lib/math/seededRng.js';
 
@@ -21,7 +20,7 @@ function preBakeTextures() {
   const particleG = document.createElement('canvas');
   particleG.width = 16;
   particleG.height = 16;
-  const pCtx = particleG.getContext('2d');
+  const pCtx = particleG.getContext('2d', { willReadFrequently: true });
   
   const pGradient = pCtx.createRadialGradient(8, 8, 0, 8, 8, 8);
   pGradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
@@ -35,15 +34,19 @@ function preBakeTextures() {
 // SCENE CLASS
 // ══════════════════════════════════════════════════════════════════════════
 
-export class AlchemicalLabScene extends Phaser.Scene {
+export function buildAlchemicalLabScene(Phaser) {
+  return class AlchemicalLabScene extends Phaser.Scene {
   constructor() {
     super({ key: 'AlchemicalLabScene' });
     this._sprites = {};
     this._archHexR = 0;
-    this._frictionSparks = null;
     this._isCreated = false;
     this._sig = 0;
     this._bpm = 90; // Default BPM for rotation sync
+  }
+
+  init(data) {
+    this.reducedMotion = data?.reducedMotion ?? false;
   }
 
   preload() {
@@ -75,31 +78,19 @@ export class AlchemicalLabScene extends Phaser.Scene {
     this._drawArchStatic(W, H);
     this._createArchRotatingSprite(W, H); // GPU PENTAGRAM
     this._buildParticles(W, H);
-    this._buildFrictionSparks(W, H);
     this._drawVignette(W, H);
 
-    // ── PostFX Refinement (Video Game Lighting) ──
-    if (this.cameras.main.postFX) {
-      // Subtle selective bloom for that magical "paintbrush" look
-      this._bloom = this.cameras.main.postFX.addBloom(0xffffff, 1, 1, 0.7, 1.0);
-    }
+    // ── Filters Refinement (Phaser 4: postFX→Filters; addBloom removed, approximate
+    // the "paintbrush" bloom with a soft Glow + brightness lift) ──
+    try {
+      const f = this.cameras.main?.filters?.internal;
+      if (f && !this.reducedMotion) {
+        f.addGlow(0xffffff, 1.3, 0, 1, false, 8, 14);
+        f.addColorMatrix().brightness(1.05);
+      }
+    } catch { /* tolerate filter API drift */ }
 
     this._isCreated = true;
-  }
-
-  _buildFrictionSparks(W, H) {
-    const cx = W * 0.5;
-    const cy = H * 0.50;
-    this._frictionSparks = this.add.particles(cx, cy, 'labPt', {
-      speed: { min: 80, max: 200 },
-      scale: { start: 0.25, end: 0 },
-      alpha: { start: 0.6, end: 0 },
-      lifespan: { min: 400, max: 700 },
-      gravityY: 150,
-      blendMode: 'ADD',
-      tint: 0x2ddbde,
-      frequency: -1, 
-    });
   }
 
   _createArchRotatingSprite(W, H) {
@@ -215,7 +206,6 @@ export class AlchemicalLabScene extends Phaser.Scene {
 
     // ── Clear Dynamic Graphics ──
     this._glowGfx.clear();
-    this._vigGfx.clear(); // Redraw vignette if needed, or keep static
 
     // ── Update Synchronized Bytecode AMP Signals ──
     const flicker = getBytecodeAMP(time, AMP_CHANNELS.FLICKER);
@@ -251,25 +241,5 @@ export class AlchemicalLabScene extends Phaser.Scene {
     if (data.signalLevel !== undefined) this._sig = data.signalLevel;
     if (data.bpm !== undefined) this._bpm = data.bpm;
   }
-}
-
-export async function renderStaticBackground(width, height) {
-  const PhaserLib = (await import('phaser')).default;
-  const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
-  const game = new PhaserLib.Game({
-    type: PhaserLib.WEBGL, parent: canvas, width, height, backgroundColor: '#010305',
-    transparent: false, antialias: true, scene: [], render: { pixelArt: false, antialias: true },
-  });
-  return new Promise((resolve) => {
-    game.events.once('ready', () => {
-      const tempScene = new AlchemicalLabScene();
-      game.scene.add('temp', tempScene, true);
-      setTimeout(() => {
-        const dataURL = canvas.toDataURL('image/png', 0.9);
-        game.destroy(true);
-        resolve(dataURL);
-      }, 500);
-    });
-  });
+  };
 }

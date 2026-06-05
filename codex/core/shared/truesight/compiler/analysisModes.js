@@ -7,7 +7,6 @@ export const ANALYSIS_MODES = Object.freeze({
   ANALYZE: 'analyze',
   ASTROLOGY: 'astrology',
   RHYME: 'rhyme',
-  VOWEL: 'vowel',
 });
 
 /**
@@ -32,7 +31,6 @@ const MODE_TO_DEPTH = Object.freeze({
   [ANALYSIS_MODES.ANALYZE]: COMPILER_DEPTHS.DEEP,
   [ANALYSIS_MODES.ASTROLOGY]: COMPILER_DEPTHS.DEEP,
   [ANALYSIS_MODES.RHYME]: COMPILER_DEPTHS.BALANCED,
-  [ANALYSIS_MODES.VOWEL]: COMPILER_DEPTHS.BALANCED,
 });
 
 const MODE_CONFIGS = Object.freeze({

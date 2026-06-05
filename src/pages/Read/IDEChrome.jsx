@@ -1,6 +1,6 @@
-/* IMMUNE_ALLOW: math-random */
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import { freshRng } from '../../lib/math/seededRng.js';
 import './IDE.css';
 
 // ─── MatrixTitle ──────────────────────────────────────────────────────────────
@@ -17,7 +17,8 @@ const GLOW_DURATIONS = {
 };
 
 function randMatrixChar() {
-  return MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]; // EXEMPT
+  const rng = freshRng();
+  return MATRIX_CHARS[Math.floor(rng() * MATRIX_CHARS.length)];
 }
 
 function MatrixTitle({ title }) {
@@ -35,9 +36,10 @@ function MatrixTitle({ title }) {
   const glowClear = useRef(null);
 
   const scheduleGlow = useCallback(() => {
-    const delay = 15000 + Math.random() * 30000; // EXEMPT
+    const rng = freshRng();
+    const delay = 15000 + rng() * 30000;
     glowTimer.current = setTimeout(() => {
-      const variant = GLOW_VARIANTS[Math.floor(Math.random() * GLOW_VARIANTS.length)]; // EXEMPT
+      const variant = GLOW_VARIANTS[Math.floor(rng() * GLOW_VARIANTS.length)];
       setGlowClass(`ide-title--${variant}`);
       glowClear.current = setTimeout(() => {
         setGlowClass('');
@@ -92,7 +94,8 @@ function MatrixTitle({ title }) {
       }, 45);
       cycleIds.current[i] = cId;
 
-      const delay = 80 + i * 55 + Math.random() * 20; // EXEMPT
+      const rng = freshRng();
+      const delay = 80 + i * 55 + rng() * 20;
       const sId = setTimeout(() => {
         clearInterval(cycleIds.current[i]);
         setSlots(prev => {

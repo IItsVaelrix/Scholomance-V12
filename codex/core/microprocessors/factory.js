@@ -35,6 +35,14 @@ export function createMicroprocessorFactory() {
           { parameter: 'processorFn', expectedType: 'function', actualType: typeof processorFn, microprocessorId: id },
         );
       }
+      if (registry.has(id)) {
+        const warnError = new BytecodeError(
+          ERROR_CATEGORIES.EXT, ERROR_SEVERITY.WARN, MOD,
+          ERROR_CODES.EXT_ALREADY_REGISTERED,
+          { microprocessorId: id, operation: 'register' },
+        );
+        console.warn(warnError.bytecode);
+      }
       registry.set(id, processorFn);
     },
 
@@ -61,6 +69,9 @@ export function createMicroprocessorFactory() {
       try {
         return await Promise.resolve(processor(payload, context));
       } catch (error) {
+        if (error instanceof BytecodeError || (error && error.bytecode)) {
+          throw error;
+        }
         throw new BytecodeError(
           ERROR_CATEGORIES.HOOK, ERROR_SEVERITY.CRIT, MOD,
           ERROR_CODES.HOOK_CHAIN_BREAK,
@@ -79,7 +90,13 @@ export function createMicroprocessorFactory() {
      * @returns {Promise<any>} The final processed output
      */
     async executePipeline(sequence, initialPayload, context = {}) {
-      if (!Array.isArray(sequence)) return initialPayload;
+      if (!Array.isArray(sequence)) {
+        throw new BytecodeError(
+          ERROR_CATEGORIES.TYPE, ERROR_SEVERITY.CRIT, MOD,
+          ERROR_CODES.TYPE_MISMATCH,
+          { parameter: 'sequence', expectedType: 'array', actualType: typeof sequence },
+        );
+      }
       
       let currentPayload = initialPayload;
       for (const id of sequence) {

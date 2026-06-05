@@ -19,6 +19,7 @@ import { ParameterSliders } from "./components/ParameterSliders.jsx";
 import { ExtensionSelector } from "./components/ExtensionSelector.jsx";
 import { StatusDisplay } from "./components/StatusDisplay.jsx";
 import { DuplicateSection } from "./components/DuplicateSection.jsx";
+import { LatticeCanvas } from "./components/LatticeCanvas.jsx";
 
 import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
 
@@ -27,7 +28,8 @@ import {
   generatePixelArtFromImage, 
   evaluateFormulaWithColor, 
   formulaToBytecode,
-  processorBridge
+  processorBridge,
+  buildPixelBrainPhotonicRoute,
 } from "../../lib/pixelbrain.adapter.js";
 import { buildPixelBrainGodotExport } from "../../lib/godot-export/pixelbrainGodotExport.js";
 import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
@@ -153,8 +155,10 @@ export default function PixelBrainPage() {
   const [leftTab, setLeftTab] = useState('upload'); // 'upload' or 'transmute'
   const [plsSuggestions, setPlsSuggestions] = useState([]);
   const [pixelCanvas, setPixelCanvas] = useState(DEFAULT_PIXEL_CANVAS);
+  const [photonicRoute, setPhotonicRoute] = useState(null);
   
   const canvasRef = useRef(null);
+  const previousPhotonicPacketRef = useRef(null);
 
   const bridgedPlsFeatures = synthesis?.features || null;
   const verseAmplifier = verseAnalysis?.verseIRAmplifier || null;
@@ -356,6 +360,8 @@ export default function PixelBrainPage() {
     setCoordinates([]);
     setPalettes([]);
     setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+    setPhotonicRoute(null);
+    previousPhotonicPacketRef.current = null;
     setParameters({});
     setStatus('idle');
     setError(null);
@@ -407,6 +413,31 @@ export default function PixelBrainPage() {
       isCancelled = true;
     };
   }, [bridgedPlsFeatures, getCompletions, isPredictiveReady, verseAnalysis, verseText]);
+
+  useEffect(() => {
+    if (coordinates.length === 0 || status !== 'ready') {
+      setPhotonicRoute(null);
+      previousPhotonicPacketRef.current = null;
+      return;
+    }
+
+    const route = buildPixelBrainPhotonicRoute(
+      {
+        coordinates,
+        palettes,
+        canvas: pixelCanvas,
+      },
+      {
+        previousPacket: previousPhotonicPacketRef.current,
+      }
+    );
+
+    setPhotonicRoute(route);
+
+    if (route?.packet) {
+      previousPhotonicPacketRef.current = route.packet;
+    }
+  }, [coordinates, palettes, pixelCanvas, status]);
 
   // Render canvas preview — flat 2D only, no Z transforms
   useEffect(() => {
@@ -473,6 +504,7 @@ export default function PixelBrainPage() {
     formula,
     canvas: { width: 160, height: 144, gridSize: 1 },
     referenceImage,
+    photonicRoute,
   } : versePixelBrainPayload ? {
     ...versePixelBrainPayload,
     coordinates,
@@ -480,6 +512,7 @@ export default function PixelBrainPage() {
     formula,
     canvas: pixelCanvas,
     referenceImage: null,
+    photonicRoute,
   } : null;
 
   return (
@@ -633,6 +666,8 @@ export default function PixelBrainPage() {
               readOnly
             />
           </div>
+
+          <LatticeCanvas analysis={imageAnalysis} />
 
           <ParameterSliders
             parameters={parameters}

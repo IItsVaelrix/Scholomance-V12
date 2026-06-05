@@ -1,11 +1,16 @@
 /**
- * ResonanceScene.js — Phaser 3 Scene
+ * ResonanceScene.js — Phaser 4 Scene
  *
  * Renders the 9x9 "Geometric Lexicon" tactical board.
  * Receives fully-derived render state from React via public API methods.
+ *
+ * Phaser 4 migration (2026-06-05): renderer-rewrite uplift folded in from the
+ * PHASER4-COMBAT-SPIKE. FX use the 4.x Filters API (camera.filters / enableFilters),
+ * not the removed Phaser-3 postFX. All filter calls are guarded so any API drift
+ * degrades to "no glow" rather than blanking the board.
  */
 
-import Phaser from 'phaser';
+
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -37,10 +42,11 @@ const SCHOOL_GLYPHS = {
 };
 
 // ---------------------------------------------------------------------------
-// Scene
+// Scene Factory
 // ---------------------------------------------------------------------------
 
-export class ResonanceScene extends Phaser.Scene {
+export function buildResonanceScene(Phaser) {
+  return class ResonanceScene extends Phaser.Scene {
   constructor() {
     super({ key: 'ResonanceScene' });
   }
@@ -51,6 +57,7 @@ export class ResonanceScene extends Phaser.Scene {
 
   init(data) {
     this.onSelectCell = data?.onSelectCell ?? null;
+    this.reducedMotion = data?.reducedMotion ?? false;
 
     this._ignited         = false;
     this._schoolColor     = SCHOOL_COLORS.SONIC;
@@ -78,9 +85,11 @@ export class ResonanceScene extends Phaser.Scene {
   }
 
   create() {
-    // Generate texture in create to ensure renderer is ready
+    // Generate texture in create to ensure renderer is ready.
+    // Phaser 4: use add.graphics()+destroy (the make.graphics({add:false}) config
+    // field was replaced by a positional addToScene arg in 4.x).
     if (!this.textures.exists('dust')) {
-      const g = this.make.graphics({ add: false });
+      const g = this.add.graphics();
       g.fillStyle(0xffffff, 1);
       g.fillRect(0, 0, 4, 4);
       g.generateTexture('dust', 4, 4);
@@ -101,7 +110,41 @@ export class ResonanceScene extends Phaser.Scene {
       this._ignited = true;
     }
 
+    this._applyCameraGrade();
+
     this.scale.on('resize', this._handleResize, this);
+  }
+
+  // --- Phaser 4 Filters uplift -------------------------------------------------
+
+  /**
+   * Full-screen cinematic grade: a soft white bloom (Glow), gentle saturation/
+   * brightness lift, and a vignette to focus the arena. Camera exposes `.filters`
+   * directly in 4.x (no enableFilters). White glow is school-agnostic so it survives
+   * setArenaSchool() changes without re-stacking filters. Applied once in create().
+   */
+  _applyCameraGrade() {
+    if (this.reducedMotion) return;
+    try {
+      const f = this.cameras.main?.filters?.internal;
+      if (!f) return;
+      f.addGlow(0xffffff, 1.1, 0, 1, false, 6, 10);
+      f.addColorMatrix().saturate(0.12).brightness(1.04);
+      f.addVignette(0.5, 0.5, 0.58, 0.42);
+    } catch { /* tolerate filter API drift */ }
+  }
+
+  /**
+   * Make a single GameObject emit light. Safe to call once per object lifetime
+   * (do NOT call repeatedly on persistent objects — filters stack). Used on freshly
+   * created unit containers and transient cast effects, never on reused tile graphics.
+   */
+  _applyGlow(obj, color, outer = 5, quality = 10, distance = 14) {
+    if (this.reducedMotion) return;
+    try {
+      if (typeof obj.enableFilters === 'function') obj.enableFilters();
+      obj.filters?.external?.addGlow?.(color, outer, 0, 1, false, quality, distance);
+    } catch { /* tolerate filter API drift */ }
   }
 
   _handleResize() {
@@ -402,6 +445,9 @@ export class ResonanceScene extends Phaser.Scene {
       const glyphText = this.add.text(0, 0, glyph, { fontSize: isScholar ? '11px' : '10px', color: `#${color.toString(16).padStart(6, '0')}`, fontFamily: 'JetBrains Mono, monospace' }).setOrigin(0.5, 0.5);
 
       container.add([glow, sigil, glyphText]);
+      // Phaser 4: school-colored glow makes each sigil emit light. Once per fresh
+      // container (rebuild destroys the old one) so filters never stack.
+      this._applyGlow(container, color, isScholar ? 6 : 7, 10, 16);
       this.tweens.add({ targets: container, y: py - 6, duration: isScholar ? 2100 : 2700, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
       this.unitContainer.add(container);
       this._unitContainers.set(unit.id, container);
@@ -530,7 +576,7 @@ export class ResonanceScene extends Phaser.Scene {
     const start = this._getTilePixelCenter(origin.x, origin.y);
     const end = this._getTilePixelCenter(target.x, target.y);
     const color = SCHOOL_COLORS[school] ?? SCHOOL_COLORS.SONIC;
-    const beam = this.add.graphics(); this.unitContainer.add(beam);
+    const beam = this.add.graphics(); this._applyGlow(beam, color, 6, 8, 14); this.unitContainer.add(beam);
     const progress = { t: 0 };
     this.tweens.add({
       targets: progress, t: 1, duration: 380, ease: 'Quad.easeIn',
@@ -550,6 +596,7 @@ export class ResonanceScene extends Phaser.Scene {
   _playRipple(target, color) {
     const { px, py } = this._getTilePixelCenter(target.x, target.y);
     const ring = this.add.graphics(); ring.lineStyle(2, color, 1); ring.strokeCircle(0, 0, 8);
+    this._applyGlow(ring, color, 8, 12, 22);
     const c = this.add.container(px, py, [ring]); this.unitContainer.add(c);
     this.tweens.add({ targets: ring, scaleX: 7, scaleY: 7, alpha: 0, duration: 750, ease: 'Quad.easeOut', onComplete: () => c.destroy() });
   }
@@ -566,7 +613,7 @@ export class ResonanceScene extends Phaser.Scene {
     const c = this.add.container(px, py); this.unitContainer.add(c);
     for (let i = 0; i < 4; i++) {
       const angle = (i * 90) * (Math.PI / 180);
-      const line = this.add.graphics(); line.lineStyle(2, 0x00e5ff, 0.9); line.lineBetween(0, 0, Math.cos(angle) * 34, Math.sin(angle) * 34); c.add(line);
+      const line = this.add.graphics(); line.lineStyle(2, 0x00e5ff, 0.9); line.lineBetween(0, 0, Math.cos(angle) * 34, Math.sin(angle) * 34); this._applyGlow(line, 0x00e5ff, 6, 8, 14); c.add(line);
       this.tweens.add({ targets: line, alpha: 0, x: Math.cos(angle) * 16, y: Math.sin(angle) * 16, duration: 440, ease: 'Cubic.easeOut' });
     }
     this.time.delayedCall(480, () => c.destroy());
@@ -584,6 +631,7 @@ export class ResonanceScene extends Phaser.Scene {
     const ripple = this.add.graphics();
     ripple.lineStyle(2, color, 0.8);
     ripple.strokeRect(-this.cellSize / 2, -this.cellSize / 2, this.cellSize, this.cellSize);
+    this._applyGlow(ripple, color, 7, 10, 18);
     
     const rippleContainer = this.add.container(px, py, [ripple]);
     this.gridContainer.add(rippleContainer);
@@ -614,4 +662,5 @@ export class ResonanceScene extends Phaser.Scene {
       onComplete: () => glowContainer.destroy()
     });
   }
+  };
 }

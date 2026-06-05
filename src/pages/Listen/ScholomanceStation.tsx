@@ -1,15 +1,33 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CrystalBallVisualizer } from './CrystalBallVisualizer';
 import { SCHOOLS } from '../../data/schools';
 import { getSonicStationBuckets } from '../../data/sonicStationBuckets';
 import { triggerHapticPulse, UI_HAPTICS } from '../../lib/platform/haptics';
+import { resolveTrackId } from '../../lib/catalog.api.js';
+
+function getTrackLabel(url: string, idx: number) {
+  const fallback = `RESONANCE_PATH_${String(idx + 1).padStart(2, '0')}`;
+  try {
+    const parsed = new URL(url);
+    const rawName = parsed.pathname.split('/').filter(Boolean).pop() || parsed.hostname;
+    return decodeURIComponent(rawName)
+      .replace(/\.[a-z0-9]+$/i, '')
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '')
+      .toUpperCase() || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 interface ScholomanceStationProps {
   activeStation: any;
   signalLevel: number;
   isPlaying: boolean;
   isTuning: boolean;
+  trackUrl?: string;
   onClose: () => void;
   onSelectTrack: (url: string, schoolId: string) => void;
 }
@@ -19,10 +37,51 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
   signalLevel,
   isPlaying,
   isTuning,
+  trackUrl,
   onClose,
   onSelectTrack,
 }) => {
   const buckets = getSonicStationBuckets();
+  const targetUrl = trackUrl || (activeStation?.id ? buckets[activeStation.id.toUpperCase()]?.[0] : null) || buckets.SONIC?.[0];
+
+  const [resolvedTrackId, setResolvedTrackId] = useState<number | null>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!targetUrl) {
+      setResolvedTrackId(null);
+      return;
+    }
+    let cancelled = false;
+    resolveTrackId(targetUrl)
+      .then((res) => {
+        if (!cancelled && res?.trackId) {
+          setResolvedTrackId(res.trackId);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to resolve track ID for url:', targetUrl, err);
+        if (!cancelled) setResolvedTrackId(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [targetUrl]);
+
+  const handleBlackHoleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (resolvedTrackId) return;
+    e.preventDefault();
+    if (!targetUrl) return;
+    try {
+      const res = await resolveTrackId(targetUrl);
+      if (res?.trackId) {
+        setResolvedTrackId(res.trackId);
+        navigate(`/grimoire/${res.trackId}`);
+      }
+    } catch (err) {
+      console.error('Failed to resolve track ID on click:', err);
+    }
+  };
 
   const handleTrackSelect = (url: string, schoolId: string) => {
     triggerHapticPulse(UI_HAPTICS.LIGHT);
@@ -52,7 +111,7 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
             <p>AURAL_SELECTION_MATRIX_V11</p>
           </div>
         </header>
-
+ 
         <main className="station-focus">
           <div className="track-matrix">
             {Object.entries(buckets).map(([schoolId, tracks]) => (
@@ -69,19 +128,20 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
                       whileHover={{ scale: 1.02, x: 5, backgroundColor: "rgba(255,255,255,0.1)" }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <span className="track-idx">0{idx + 1}</span>
-                      <span className="track-label">RESONANCE_PATH</span>
+                      <span className="track-idx">{String(idx + 1).padStart(2, '0')}</span>
+                      <span className="track-label">{getTrackLabel(url, idx)}</span>
                     </motion.button>
                   ))}
                 </div>
               </div>
             ))}
           </div>
-
+ 
           {/* Sacred Geometry Sphere — Procedurally Generated Orb */}
           <div className={`orb-centerpiece ${isPlaying ? 'is-playing' : ''} ${isTuning ? 'is-tuning' : ''}`}>
-             {/* Opaque backing disc — masks the entire circumference behind the sphere */}
-             <div className="orb-centerpiece__backing" />
+             {/* Block layer: opaque disc BEHIND the orb (z-index:-1) — masks the
+                 track-matrix text that bleeds through the transparent canvas. */}
+             <div className="orb-centerpiece__backing" aria-hidden="true" />
              <div className="orb-centerpiece__ring-layer">
                <div className="orb-ring-decoration" style={{ '--accent': activeStation.color } as React.CSSProperties} />
              </div>
@@ -94,6 +154,17 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
                 glyph={activeStation.glyph || '✦'}
                 isTuning={isTuning}
              />
+          </div>
+ 
+          <div className="station-studio-access">
+             <Link
+               to={resolvedTrackId ? `/grimoire/${resolvedTrackId}` : '#'}
+               onClick={handleBlackHoleClick}
+               className="black-hole-btn"
+             >
+               <span className="black-hole-horizon"></span>
+               <span className="black-hole-text">Enter the Storm</span>
+             </Link>
           </div>
         </main>
       </div>

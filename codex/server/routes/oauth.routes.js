@@ -26,6 +26,16 @@ import { resolveOAuthIdentity } from '../oauth/oauth.link.js';
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // a handshake older than 10 min is stale
 
+/** Escape a value before interpolating it into HTML. */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export async function oauthRoutes(fastify, options = {}) {
   const { serverBaseUrl, publicAppUrl } = options;
   const enabled = getEnabledProviders({ serverBaseUrl });
@@ -65,6 +75,14 @@ export async function oauthRoutes(fastify, options = {}) {
       createdAt: Date.now(),
     };
 
+    const isDevMock = cfg.clientId.startsWith('mock-');
+    if (isDevMock) {
+      const consentUrl = new URL(`${appBase}/auth/oauth/mock-consent`);
+      consentUrl.searchParams.set('state', state);
+      consentUrl.searchParams.set('provider', provider);
+      return reply.redirect(consentUrl.toString());
+    }
+
     const authUrl = new URL(cfg.authorizationUrl);
     authUrl.searchParams.set('client_id', cfg.clientId);
     authUrl.searchParams.set('redirect_uri', cfg.redirectUri);
@@ -77,6 +95,153 @@ export async function oauthRoutes(fastify, options = {}) {
     authUrl.searchParams.set('prompt', 'select_account');
 
     return reply.redirect(authUrl.toString());
+  });
+
+  // Serve mock consent page for development/offline testing
+  fastify.get('/mock-consent', async (request, reply) => {
+    const { state, provider } = request.query;
+    const saved = request.session.oauth;
+    if (!saved || saved.state !== state || saved.provider !== provider) {
+      return reply.status(400).send('Invalid or expired mock OAuth session.');
+    }
+
+    // These are already gated to server-generated values by the equality check above,
+    // but escape on the way into HTML so safety never rides on a distant guard.
+    const safeProvider = escapeHtml(provider);
+    const safeState = escapeHtml(state);
+
+    reply.type('text/html');
+    return `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Scholomance Aetheric Identity Link (Mock OAuth)</title>
+          <style>
+            body {
+              background-color: #0c0a09;
+              color: #f5f5f4;
+              font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              min-height: 100vh;
+              margin: 0;
+            }
+            .card {
+              background: rgba(28, 25, 23, 0.7);
+              border: 1px solid rgba(217, 119, 6, 0.3);
+              backdrop-filter: blur(12px);
+              padding: 2.5rem;
+              border-radius: 1rem;
+              width: 100%;
+              max-width: 400px;
+              box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+              text-align: center;
+            }
+            .kicker {
+              color: #d97706;
+              font-size: 0.8rem;
+              text-transform: uppercase;
+              letter-spacing: 0.15em;
+              margin-bottom: 0.5rem;
+            }
+            h1 {
+              font-size: 1.5rem;
+              margin: 0 0 1.5rem 0;
+              font-family: Georgia, serif;
+            }
+            .field {
+              margin-bottom: 1.5rem;
+              text-align: left;
+            }
+            label {
+              display: block;
+              font-size: 0.85rem;
+              margin-bottom: 0.5rem;
+              color: #a8a29e;
+            }
+            input[type="email"] {
+              width: 100%;
+              padding: 0.75rem;
+              background: #1c1917;
+              border: 1px solid #44403c;
+              border-radius: 0.375rem;
+              color: #f5f5f4;
+              box-sizing: border-box;
+              font-size: 1rem;
+            }
+            input[type="email"]:focus {
+              border-color: #d97706;
+              outline: none;
+            }
+            .checkbox-group {
+              display: flex;
+              align-items: center;
+              gap: 0.5rem;
+            }
+            input[type="checkbox"] {
+              accent-color: #d97706;
+              width: 1.1rem;
+              height: 1.1rem;
+            }
+            .btn {
+              width: 100%;
+              padding: 0.75rem;
+              background: #d97706;
+              color: #0c0a09;
+              border: none;
+              border-radius: 0.375rem;
+              font-weight: 600;
+              font-size: 1rem;
+              cursor: pointer;
+              transition: background 0.2s;
+            }
+            .btn:hover {
+              background: #f59e0b;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <div class="kicker">Mock ${safeProvider} Authority</div>
+            <h1>Aetheric Identity Link</h1>
+            <form action="${appBase}/auth/oauth/mock-submit" method="GET">
+              <input type="hidden" name="state" value="${safeState}" />
+              <input type="hidden" name="provider" value="${safeProvider}" />
+              <div class="field">
+                <label for="email">Essence Email</label>
+                <input type="email" id="email" name="email" value="mock-${safeProvider}-user@example.com" required />
+              </div>
+              <div class="field checkbox-group">
+                <input type="checkbox" id="emailVerified" name="emailVerified" value="true" checked />
+                <label for="emailVerified">Mark Email as Verified</label>
+              </div>
+              <button type="submit" class="btn">Synchronize Essence</button>
+            </form>
+          </div>
+        </body>
+      </html>
+    `;
+  });
+
+  // Process mock consent choices and redirect to standard callback
+  fastify.get('/mock-submit', async (request, reply) => {
+    const { state, provider, email, emailVerified } = request.query;
+    const saved = request.session.oauth;
+    if (!saved || saved.state !== state || saved.provider !== provider) {
+      return reply.status(400).send('Invalid or expired mock OAuth session.');
+    }
+
+    request.session.oauthMockProfile = {
+      email: String(email),
+      emailVerified: emailVerified === 'true' || emailVerified === true,
+    };
+    await request.session.save();
+
+    const callbackUrl = new URL(`${serverBaseUrl}/auth/oauth/${provider}/callback`);
+    callbackUrl.searchParams.set('code', 'mock-code');
+    callbackUrl.searchParams.set('state', state);
+    return reply.redirect(callbackUrl.toString());
   });
 
   // ── Callback: verify, exchange, find-or-link, establish session ───────────
@@ -103,25 +268,42 @@ export async function oauthRoutes(fastify, options = {}) {
 
     // Exchange the authorization code for tokens (PKCE).
     let tokenJson;
-    try {
-      const body = new URLSearchParams({
-        grant_type: 'authorization_code',
-        code: String(code),
-        redirect_uri: cfg.redirectUri,
-        client_id: cfg.clientId,
-        client_secret: cfg.clientSecret,
-        code_verifier: saved.codeVerifier,
-      });
-      const resp = await fetch(cfg.tokenUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
-        body,
-      });
-      if (!resp.ok) throw new Error(`token endpoint returned ${resp.status}`);
-      tokenJson = await resp.json();
-    } catch (err) {
-      fastify.log.error({ err }, '[OAUTH] token exchange failed');
-      return toApp(reply, '/auth?oauth=token_failed');
+    const isDevMock = cfg.clientId.startsWith('mock-');
+    if (isDevMock) {
+      const mockProfile = request.session.oauthMockProfile;
+      request.session.oauthMockProfile = null;
+      if (!mockProfile) {
+        return toApp(reply, '/auth?oauth=token_failed');
+      }
+      tokenJson = {
+        id_token: `header.${Buffer.from(JSON.stringify({
+          sub: `mock-${provider}-sub-${mockProfile.email}`,
+          email: mockProfile.email,
+          email_verified: mockProfile.emailVerified,
+          name: mockProfile.email.split('@')[0],
+        })).toString('base64url')}.signature`,
+      };
+    } else {
+      try {
+        const body = new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: String(code),
+          redirect_uri: cfg.redirectUri,
+          client_id: cfg.clientId,
+          client_secret: cfg.clientSecret,
+          code_verifier: saved.codeVerifier,
+        });
+        const resp = await fetch(cfg.tokenUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', Accept: 'application/json' },
+          body,
+        });
+        if (!resp.ok) throw new Error(`token endpoint returned ${resp.status}`);
+        tokenJson = await resp.json();
+      } catch (err) {
+        fastify.log.error({ err }, '[OAUTH] token exchange failed');
+        return toApp(reply, '/auth?oauth=token_failed');
+      }
     }
 
     // The id_token came straight from the token endpoint over TLS — trusting it

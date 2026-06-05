@@ -10,14 +10,14 @@ import { createRequire } from 'module';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { collabPersistence } from '../collab/collab.persistence.js';
-import { estimateInnerProduct, quantizeVectorJS } from '../../core/quantization/turboquant.js';
+import { runVectorAmp, compareSignatures } from '../../core/semantic/amp/runVectorAmp.js';
 
 const require = createRequire(import.meta.url);
 const { CMUDict } = require('cmudict');
 const dict = new CMUDict();
 
-const SEED = 1337; // Must match indexer seed
 const SEARCH_LIMIT = 10;
+const PROBE_MIN_RESONANCE = 0.18; // resonance floor for the hypothesis probe
 
 const IGNORED_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.cache', 'coverage']);
 
@@ -169,48 +169,22 @@ export async function forensicSearch(query, options = {}) {
 }
 
 /**
- * Generate a semantic vector for a search query.
- * (Optimized for code search intent)
- */
-function generateQueryVector(query, dim = 256) {
-    const vec = new Float32Array(dim);
-    const content = query.toLowerCase();
-    
-    // 1. Keyword emphasis
-    const keywords = content.split(/\s+/);
-    keywords.forEach(word => {
-        // Find if it's a known semantic keyword
-        const h = Math.abs(word.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0)) % dim;
-        vec[h] += 5.0;
-    });
-
-    // 2. Character n-gram fallback
-    for (let i = 0; i < content.length - 1; i++) {
-        const gram = content.slice(i, i + 2);
-        const h = ((gram.charCodeAt(0) << 5) + gram.charCodeAt(1)) % 64;
-        vec[192 + h] += 1.0;
-    }
-
-    return vec;
-}
-
-/**
  * Perform an instant semantic search over the indexed codebase.
+ * Query and index share one lens/seed via the Vector AMP.
  */
 export async function searchCodebase(query) {
     const start = performance.now();
-    
-    // 1. Quantize Query
-    const qVec = generateQueryVector(query, 256);
-    const { data: qData, norm: qNorm } = quantizeVectorJS(qVec, SEED);
-    
-    // 2. Load all embeddings from persistence
-    const index = await collabPersistence.codebase.getAll();
-    
-    // 3. Compare similarity
-    const results = scoreEmbeddings(index, qData, qNorm);
 
-    // 4. Sort and return top candidates
+    // 1. Vectorize + grade the query through the AMP.
+    const amp = runVectorAmp(query);
+
+    // 2. Load all embeddings from persistence.
+    const index = await collabPersistence.codebase.getAll();
+
+    // 3. Compare similarity in the shared signature space.
+    const results = scoreEmbeddings(index, amp.signature);
+
+    // 4. Sort and return top candidates.
     const topResults = results
         .sort((a, b) => b.score - a.score)
         .slice(0, SEARCH_LIMIT);
@@ -223,24 +197,64 @@ export async function searchCodebase(query) {
         metadata: {
             duration_ms: duration,
             index_size: index.length,
-            engine: 'TurboQuant-v1'
+            engine: 'VectorAMP-code-aware-v1',
+            fidelity: amp.fidelity,            // the eye's trust grade for this query
+            fidelity_bytecode: amp.health?.bytecode || null
         }
     };
 }
 
-function scoreEmbeddings(index, qData, qNorm) {
-    return index.map(entry => {
-        const tqBlob = entry.vector_tq;
-        const vData = new Uint8Array(tqBlob);
-        const score = estimateInnerProduct(qData, vData, qNorm, 1.0);
-        
-        return {
-            file_path: entry.file_path,
-            chunk_index: entry.chunk_index,
-            preview: entry.content_preview,
-            score
-        };
-    });
+function scoreEmbeddings(index, querySignature) {
+    return index.map(entry => ({
+        file_path: entry.file_path,
+        chunk_index: entry.chunk_index,
+        preview: entry.content_preview,
+        score: compareSignatures(querySignature, { data: new Uint8Array(entry.vector_tq) })
+    }));
+}
+
+/**
+ * Proactive antigen probe over the SHARED INDEX (no full re-scan).
+ * Vectorizes a bug hypothesis through the AMP and scores it against every
+ * indexed chunk — the fast, index-backed replacement for protein-probe's
+ * live substrate walk.
+ */
+export async function probeSubstrate(hypothesis, options = {}) {
+    const start = performance.now();
+    const minResonance = options.minResonance ?? PROBE_MIN_RESONANCE;
+
+    const amp = runVectorAmp(hypothesis);
+    const index = await collabPersistence.codebase.getAll();
+
+    // Best-resonating chunk per file (the genetic heatmap).
+    const byFile = new Map();
+    for (const entry of index) {
+        const resonance = compareSignatures(amp.signature, { data: new Uint8Array(entry.vector_tq) });
+        const current = byFile.get(entry.file_path);
+        if (!current || resonance > current.resonance) {
+            byFile.set(entry.file_path, {
+                file_path: entry.file_path,
+                chunk_index: entry.chunk_index,
+                preview: entry.content_preview,
+                resonance
+            });
+        }
+    }
+
+    const heatmap = [...byFile.values()]
+        .filter(h => h.resonance >= minResonance)
+        .sort((a, b) => b.resonance - a.resonance);
+
+    return {
+        hypothesis,
+        heatmap,
+        metadata: {
+            duration_ms: performance.now() - start,
+            index_size: index.length,
+            fidelity: amp.fidelity,
+            fidelity_bytecode: amp.health?.bytecode || null
+        }
+    };
 }
 
 /**
@@ -268,10 +282,9 @@ export async function getFileNeighbors(filePath) {
 
     // 3. For each chunk of our file, find best neighbors in others
     const representative = fileEmbeddings[0];
-    const qData = new Uint8Array(representative.vector_tq);
-    const qNorm = 1.0; 
+    const querySignature = { data: new Uint8Array(representative.vector_tq) };
 
-    const semanticResults = scoreEmbeddings(otherEmbeddings, qData, qNorm)
+    const semanticResults = scoreEmbeddings(otherEmbeddings, querySignature)
         .sort((a, b) => b.score - a.score)
         .slice(0, 5);
 

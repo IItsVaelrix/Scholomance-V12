@@ -1,18 +1,64 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { triggerHapticPulse, UI_HAPTICS } from '../../lib/platform/haptics';
-import { transmuteToSigil, generateSigilFile } from '../../lib/career/transmuter';
+import { generateSigilFile, SIGIL_VERSION } from '../../lib/career/transmuter';
+import { buildSigilDataArchive } from '../../lib/career/sigil-pipeline';
+import DataArchiveDrawer, { type DataArchive } from './DataArchiveDrawer';
 import './CareerPage.css';
 
 /**
  * CareerPage — The Career Ignition Chamber.
- * Transmutes raw experience into ATS-optimized sigils.
+ *
+ * Wires the Resonance Alignment Engine (src/lib/career/keyword-gap.js) into the UI:
+ * the user supplies their experience AND a target job description, and the page reports
+ * a deterministic 0–100 alignment score, the missing JD keywords, and which terms were
+ * preserved literally so the transmuter does not delete the very keywords it measured.
+ *
+ * The score bar reflects the REAL computed score (no longer a cosmetic timer), and the
+ * Sigil download is user-initiated (no silent auto-download).
  */
+
+interface KeywordHit {
+  term: string;
+  kind: 'unigram' | 'bigram';
+  weight: number;
+  matched: boolean;
+  inSkillsLexicon: boolean;
+}
+
+interface TorqueConflict {
+  jobTerm: string;
+  torqueKey: string;
+  wouldReplaceWith: string;
+}
+
+interface KeywordGapReport {
+  score: number;
+  rawScore: number;
+  matched: KeywordHit[];
+  missing: KeywordHit[];
+  jobKeywords: KeywordHit[];
+  torqueConflicts: TorqueConflict[];
+  diagnostics: string[];
+}
+
+interface SigilResult {
+  sigil: string;
+  report: KeywordGapReport;
+  archive: DataArchive;
+}
+
+const MAX_MISSING_CHIPS = 14;
+
 export default function CareerPage() {
   const [content, setContent] = useState('');
+  const [jobDescription, setJobDescription] = useState('');
   const [status, setStatus] = useState<'IDLE' | 'TRANSMUTING' | 'COMPLETE'>('IDLE');
-  const [progress, setProgress] = useState(0);
+  const [scoreFill, setScoreFill] = useState(0);
+  const [result, setResult] = useState<SigilResult | null>(null);
+  const [archiveOpen, setArchiveOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const fillTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // -- Ripple Follower ---------------------------------------------
   useEffect(() => {
@@ -29,85 +75,100 @@ export default function CareerPage() {
     return () => window.removeEventListener('mousemove', handleGlobalMouseMove);
   }, []);
 
+  // Clear any in-flight fill animation on unmount.
+  useEffect(() => () => {
+    if (fillTimer.current) clearInterval(fillTimer.current);
+  }, []);
+
+  // High score = green (good), low score = red. Inverse of a depleting health bar:
+  // 0 -> #ef4444, 100 -> #22c55e.
+  const getScoreColor = (p: number) => {
+    const r = Math.round(239 - (239 - 34) * (p / 100));
+    const g = Math.round(68 + (197 - 68) * (p / 100));
+    const b = Math.round(68 + (94 - 68) * (p / 100));
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  // Editing either field after a run invalidates the stale report.
+  const resetToIdle = () => {
+    if (status === 'COMPLETE') {
+      setStatus('IDLE');
+      setResult(null);
+      setScoreFill(0);
+      setArchiveOpen(false);
+    }
+  };
+
   // -- Ignition Ritual ---------------------------------------------
+  const finalizeRitual = useCallback(() => {
+    setStatus('COMPLETE');
+    triggerHapticPulse(UI_HAPTICS.SUCCESS);
+  }, []);
+
   const handleIgnite = () => {
     if (!content.trim() || status !== 'IDLE') return;
-    
+
+    // The analysis is synchronous and deterministic. We run it up front, then animate
+    // the score bar filling to the REAL value — the bar measures the result, it does
+    // not fabricate progress.
+    const ignite = buildSigilDataArchive(content, jobDescription) as SigilResult;
+
     setStatus('TRANSMUTING');
-    setProgress(0);
+    setScoreFill(0);
+    setResult(ignite);
     triggerHapticPulse(UI_HAPTICS.HEAVY);
 
-    const duration = 3000; // 3 seconds for the ritual
-    const interval = 30;
-    const step = 100 / (duration / interval);
+    const target = ignite.report.score;
+    const duration = 900;
+    const interval = 20;
+    const step = Math.max(1, target / (duration / interval));
 
-    const timer = setInterval(() => {
-      setProgress(prev => {
+    if (fillTimer.current) clearInterval(fillTimer.current);
+    fillTimer.current = setInterval(() => {
+      setScoreFill((prev) => {
         const next = prev + step;
-        if (next >= 100) {
-          clearInterval(timer);
+        if (next >= target) {
+          if (fillTimer.current) clearInterval(fillTimer.current);
           finalizeRitual();
-          return 100;
+          return target;
         }
         return next;
       });
     }, interval);
   };
 
-  const finalizeRitual = useCallback(() => {
-    // 1. Perform Transmutation
-    const optimized = transmuteToSigil(content);
-    
-    // 2. Set complete state
-    setStatus('COMPLETE');
-    triggerHapticPulse(UI_HAPTICS.SUCCESS);
-    
-    // 3. Finalize payoff
-    setTimeout(() => {
-      // 4. Update text area with the 'Sigil'
-      setContent(optimized);
-      
-      // 5. Generate and download the file
-      generateSigilFile(optimized);
-      
-      // 6. Reset ritual to IDLE
-      setStatus('IDLE');
-      setProgress(0);
-    }, 2500);
-  }, [content]);
-
-  // Interpolate health bar color (Green -> Red)
-  const getHealthColor = (p: number) => {
-    // 0% = #22c55e (Green), 100% = #ef4444 (Red)
-    const r = Math.floor(34 + (239 - 34) * (p / 100));
-    const g = Math.floor(197 - (197 - 68) * (p / 100));
-    const b = Math.floor(94 - (94 - 68) * (p / 100));
-    return `rgb(${r}, ${g}, ${b})`;
+  const handleDownload = () => {
+    if (!result) return;
+    generateSigilFile(result.sigil);
+    triggerHapticPulse(UI_HAPTICS.MEDIUM);
   };
+
+  const hasJd = jobDescription.trim().length > 0;
+  const report = result?.report;
 
   return (
     <div className="career-ignition-chamber">
       <div className="career-bg-noise" />
 
       {/* -- Page Header ---------------------------------------------- */}
-      <motion.header 
+      <motion.header
         className="career-hud-header"
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: 'easeOut' }}
       >
         <div className="hud-logo">
           <span className="logo-eyebrow">Linguistic Particle Accelerator</span>
           <span className="logo-text arcade-glow">PROFESSIONAL SCRIBE MATRIX</span>
-          <span className="logo-ver">V11.3 // CAREER_IGNITION_PROTOCOL</span>
+          <span className="logo-ver">{`${SIGIL_VERSION.toUpperCase()} // CAREER_IGNITION_PROTOCOL`}</span>
         </div>
       </motion.header>
-      
-      <motion.div 
+
+      <motion.div
         className="void-parchment-container"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.8, ease: 'easeOut' }}
         ref={containerRef}
       >
         <header className="parchment-header">
@@ -117,31 +178,67 @@ export default function CareerPage() {
           </div>
         </header>
 
-        <textarea 
-          className="void-textarea"
-          placeholder="Enter your experience or paste a Job Description to begin the transmutation..."
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          disabled={status !== 'IDLE'}
-        />
+        <div className="parchment-body">
+          <div className="parchment-field parchment-field--resume">
+            <label className="field-label" htmlFor="resume-input">
+              Your Experience
+            </label>
+            <textarea
+              id="resume-input"
+              className="void-textarea"
+              placeholder="Paste your experience or résumé bullets here..."
+              value={content}
+              onChange={(e) => {
+                setContent(e.target.value);
+                resetToIdle();
+              }}
+              disabled={status === 'TRANSMUTING'}
+            />
+          </div>
+
+          <div className="parchment-field parchment-field--jd">
+            <label className="field-label" htmlFor="jd-input">
+              Target Job Description <span className="field-hint">— measured against your experience</span>
+            </label>
+            <textarea
+              id="jd-input"
+              className="void-textarea void-textarea--jd"
+              placeholder="Paste the job description you're targeting to measure alignment..."
+              value={jobDescription}
+              onChange={(e) => {
+                setJobDescription(e.target.value);
+                resetToIdle();
+              }}
+              disabled={status === 'TRANSMUTING'}
+            />
+          </div>
+        </div>
         <div className="parchment-ripples" />
       </motion.div>
 
       <div className="ritual-ignitor-container">
-        {status === 'TRANSMUTING' && (
-          <div className="pixel-health-bar">
-            <div 
-              className="health-fill" 
-              style={{ 
-                width: `${progress}%`, 
-                backgroundColor: getHealthColor(progress),
-                boxShadow: `0 0 10px ${getHealthColor(progress)}`
-              }} 
-            />
+        {status !== 'IDLE' && (
+          <div className="score-strip">
+            <div className="score-readout">
+              <span className="score-value" style={{ color: getScoreColor(scoreFill) }}>
+                {Math.round(scoreFill)}
+              </span>
+              <span className="score-label">Resonance Alignment</span>
+            </div>
+            <div className="pixel-health-bar">
+              <div
+                className="health-fill"
+                style={{
+                  width: `${scoreFill}%`,
+                  backgroundColor: getScoreColor(scoreFill),
+                  boxShadow: `0 0 10px ${getScoreColor(scoreFill)}`,
+                }}
+              />
+            </div>
           </div>
         )}
 
-        <button 
+        <button
           className="ignite-btn"
           onClick={handleIgnite}
           disabled={!content.trim() || status !== 'IDLE'}
@@ -151,20 +248,106 @@ export default function CareerPage() {
       </div>
 
       <AnimatePresence>
-        {status === 'COMPLETE' && (
-          <motion.div 
-            className="magical-affirmation"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
+        {status === 'COMPLETE' && report && (
+          <motion.div
+            className="alignment-report"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: 'easeOut' }}
           >
-            <div className="sigil-glow-pulse" />
-            <svg className="thumbs-up-sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-            </svg>
+            {!hasJd && (
+              <p className="report-note report-note--warn">
+                No job description supplied — score reflects nothing measurable. Paste a
+                target JD to see real alignment.
+              </p>
+            )}
+
+            {hasJd && (
+              <>
+                <div className="report-section">
+                  <h3 className="report-heading">
+                    Missing Keywords{' '}
+                    <span className="report-count">({report.missing.length})</span>
+                  </h3>
+                  {report.missing.length === 0 ? (
+                    <p className="report-note report-note--good">
+                      No gaps detected — your experience covers every scored JD keyword.
+                    </p>
+                  ) : (
+                    <div className="kw-chips">
+                      {report.missing.slice(0, MAX_MISSING_CHIPS).map((hit) => (
+                        <span
+                          key={hit.term}
+                          className={`kw-chip${hit.inSkillsLexicon ? ' kw-chip--skill' : ''}`}
+                          title={hit.kind === 'bigram' ? 'multi-word skill' : undefined}
+                        >
+                          {hit.term}
+                        </span>
+                      ))}
+                      {report.missing.length > MAX_MISSING_CHIPS && (
+                        <span className="kw-chip kw-chip--more">
+                          +{report.missing.length - MAX_MISSING_CHIPS} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {report.torqueConflicts.length > 0 && (
+                  <div className="report-section">
+                    <h3 className="report-heading">
+                      Preserved Literally{' '}
+                      <span className="report-count">({report.torqueConflicts.length})</span>
+                    </h3>
+                    <p className="report-note">
+                      These JD terms were kept verbatim instead of being upgraded, so the
+                      transmuter doesn&apos;t delete keywords the role asks for:
+                    </p>
+                    <div className="kw-chips">
+                      {report.torqueConflicts.map((c) => (
+                        <span key={c.torqueKey} className="kw-chip kw-chip--preserved">
+                          {c.jobTerm}
+                          <span className="kw-chip-strike"> ⇏ {c.wouldReplaceWith}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            <div className="report-section">
+              <div className="report-heading-row">
+                <h3 className="report-heading">Optimized Sigil</h3>
+                <div className="report-heading-actions">
+                  {result?.archive && (
+                    <button
+                      className="archive-link"
+                      onClick={() => {
+                        setArchiveOpen(true);
+                        triggerHapticPulse(UI_HAPTICS.TICK);
+                      }}
+                    >
+                      ⌬ Data Archive
+                    </button>
+                  )}
+                  <button className="download-btn" onClick={handleDownload}>
+                    ↓ Download .txt
+                  </button>
+                </div>
+              </div>
+              <textarea className="sigil-output" value={result?.sigil ?? ''} readOnly />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <DataArchiveDrawer
+        open={archiveOpen}
+        archive={result?.archive ?? null}
+        onClose={() => setArchiveOpen(false)}
+      />
     </div>
   );
 }

@@ -9,7 +9,7 @@
  *     reportId: string,           // PB-DIAG-v1-{timestamp}-{random4}
  *     reportVersion: string,       // Semantic version
  *     timestamp: number,           // Unix timestamp
- *     commitHash: string,          // Git commit hash
+ *     commitHash: string,          // Git commit hash (metadata; excluded from checksum)
  *     trigger: string,              // on-commit | hourly | on-test-run | manual
  *     cells: string[],             // Cell IDs that ran
  *     summary: {
@@ -62,7 +62,6 @@ export function checksumReport(report) {
   // both of which are envelope metadata per VAELRIX_LAW §6 (white paper §5.1).
   const stable = {
     reportVersion: report.reportVersion,
-    commitHash: report.commitHash,
     trigger: report.trigger,
     cells: report.cells,
     summary: {

@@ -15,15 +15,16 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { runDiagnostic } from '../../core/diagnostic/diagnostic-runner.js';
+import { createFilesystemFileSource, DEFAULT_SCAN_LIMITS } from '../../core/diagnostic/diagnostic-file-source.js';
 import {
   readReport,
-  reportPath,
   DEFAULT_REPORTS_DIR,
   timestampFromReportId,
   writeReport,
   pruneReports,
 } from '../../core/diagnostic/persistence.js';
 import { getRecoveryHintsForError } from '../../core/pixelbrain/bytecode-error.js';
+import { collabPersistence } from './collab.persistence.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,27 +53,41 @@ async function listReportIds(rootDir = ROOT) {
 /**
  * `diagnostic_trigger_full_scan` — execute a full codebase audit and persist the report.
  *
- * @param {{trigger?: string}} params
+ * @param {{trigger?: string, writeMemory?: boolean, memoryMax?: number, memoryIncludeHealth?: boolean}} params
  * @returns {Promise<object>} The generated report
  */
-export async function triggerFullScan({ trigger = 'mcp' } = {}) {
-  // We need to perform the tree walk. Since we're in the MCP process, 
-  // we can use a simplified version of the CLI's walk or just shell out to the CLI.
-  // Shelling out is safer to ensure SKIP_DIRS and other logic match the canonical CLI.
-  
-  const { execSync } = await import('node:child_process');
-  const cliPath = path.join(ROOT, 'codex/core/diagnostic/run-diagnostic.cli.js');
-  
+export async function triggerFullScan({
+  trigger = 'mcp',
+  writeMemory = true,
+  memoryMax = 32,
+  memoryIncludeHealth = false,
+} = {}) {
   try {
-    const output = execSync(`${process.execPath} ${cliPath} --trigger ${trigger}`, { 
-      cwd: ROOT,
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'] 
+    const fileSource = createFilesystemFileSource({
+      rootDir: ROOT,
+      limits: DEFAULT_SCAN_LIMITS,
     });
-    
-    // The CLI prints the report summary to stdout and writes the JSON.
-    // We'll just grab the latest report which should be the one just created.
-    return await getLatestReport();
+    const report = await runDiagnostic({
+      snapshot: { root: ROOT, timestamp: Date.now() }, // EXEMPT — envelope metadata
+      fileSource,
+      commitHash: 'mcp',
+      trigger,
+      memoryInfusion: writeMemory
+        ? {
+          enabled: true,
+          dryRun: false,
+          maxArtifacts: memoryMax,
+          includePassing: memoryIncludeHealth,
+          agentId: 'diagnostic-mcp',
+          memoryClient: {
+            set: ({ agent_id, key, value }) => collabPersistence.memories.set(agent_id, key, value),
+          },
+        }
+        : null,
+    });
+    await writeReport({ rootDir: ROOT, report });
+    await pruneReports({ rootDir: ROOT });
+    return report;
   } catch (err) {
     console.error('[diagnostic:mcp] Full scan failed:', err.message);
     throw new Error(`Failed to trigger full diagnostic scan: ${err.message}`);

@@ -39,7 +39,7 @@ export function BugLatticeMap({ bug, size = 180 }) {
         }
 
         // Draw connections
-        ctx.strokeStyle = `var(--severity-${bug.severity.toLowerCase()})`;
+        ctx.strokeStyle = `var(--severity-${String(bug.severity || 'info').toLowerCase()})`;
         ctx.globalAlpha = 0.3;
         ctx.beginPath();
         points.forEach((p, i) => {
@@ -51,7 +51,7 @@ export function BugLatticeMap({ bug, size = 180 }) {
         // Draw points
         ctx.globalAlpha = 1.0;
         points.forEach(p => {
-            ctx.fillStyle = `var(--severity-${bug.severity.toLowerCase()})`;
+            ctx.fillStyle = `var(--severity-${String(bug.severity || 'info').toLowerCase()})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
             ctx.fill();

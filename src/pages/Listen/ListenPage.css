@@ -214,10 +214,11 @@
   --hud-accent: #2ddbde;
   --hud-text: #e2e2e3;
   --hud-text-dim: rgba(226, 226, 227, 0.4);
+  --portal-size: calc(100vw - 36rem);
   
   position: relative;
-  width: 100vw;
-  height: calc(100vh - 48px);
+  width: 100%;
+  height: 100dvh;
   background: var(--bg-void);
   color: var(--hud-text);
   overflow: hidden;
@@ -374,11 +375,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Raise the whole player (radar + orb + transport + status plate are all
+     descendants) to pull the clipped transport/status rows up into view.
+     A transform keeps internal orb↔radar alignment intact. */
+  transform: translateY(-36px);
 }
 
 .core-status-plate {
   position: absolute;
-  top: -85px;
+  top: 45px;
   left: 50%;
   transform: translateX(-50%);
   width: 240px;
@@ -723,11 +728,11 @@
 /* Central arch portal */
 .alchemical-arch-portal {
   position: absolute;
-  top: 4%;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: 400px;
-  height: 400px;
+  transform: translate(-50%, -50%);
+  width: var(--portal-size);
+  height: var(--portal-size);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -737,29 +742,32 @@
 .arch-ring {
   position: absolute;
   border-radius: 50%;
-  border: 1px solid rgba(0, 68, 34, 0.4);
+  border: 1px solid rgba(45, 219, 222, 0.4);
+  box-sizing: border-box;
 }
 
 .arch-ring--outer {
-  width: 360px;
-  height: 360px;
-  border-width: 6px;
-  border-color: rgba(9, 22, 16, 1) rgba(20, 40, 26, 0.8) rgba(10, 24, 16, 0.35);
+  width: 100%;
+  height: 100%;
+  border-width: 1.5vw;
+  border-style: solid;
+  border-color: #2ddbde;
   box-shadow: 
-    0 0 45px rgba(0, 68, 34, 0.025),
-    0 0 28px rgba(0, 68, 34, 0.045),
-    0 0 14px rgba(0, 68, 34, 0.07);
+    0 0 100px rgba(45, 219, 222, 0.4),
+    0 0 50px rgba(45, 219, 222, 0.25),
+    inset 0 0 60px rgba(45, 219, 222, 0.2);
 }
 
 /* PHONEMIC BEZEL: Gilded mounting for yellow pips */
 .arch-ring--bezel {
-  width: 280px;
-  height: 280px;
-  border: 32px solid #1a160a; /* Massive 32px plate */
+  width: 78%;
+  height: 78%;
+  border: 8vw solid #1a160a; /* Massive plate that scales perfectly */
+  box-sizing: border-box;
   box-shadow: 
-    inset 0 0 10px rgba(0, 0, 0, 0.95), /* Inner shadow depth */
-    0 0 0 2px rgba(138, 114, 58, 0.4),  /* Brass highlight edge */
-    0 4px 15px rgba(0, 0, 0, 0.8);      /* Cast shadow against stone */
+    inset 0 0 20px rgba(0, 0, 0, 0.95), /* Inner shadow depth */
+    0 0 0 6px rgba(212, 175, 55, 0.7),  /* Brass highlight edge */
+    0 10px 40px rgba(45, 219, 222, 0.2); /* Outer magical ambient glow */
   background: radial-gradient(circle, transparent 65%, rgba(0, 0, 0, 0.3) 100%);
   display: flex;
   align-items: center;
@@ -769,18 +777,18 @@
 /* PHONEMIC PIPS: 8 Deep-Set Lights */
 .arch-pip-mount {
   position: absolute;
-  inset: -32px; /* Set deep into the 32px plate */
+  inset: -3vw; /* Set deep into the plate */
   border-radius: 50%;
   /* 8 lights centered in the bezel plate */
   background: 
-    radial-gradient(circle at 50% 0%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 100% 50%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 50% 100%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 0% 50%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 85% 15%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 85% 85%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 15% 85%, #ffcc44 6px, transparent 15px),
-    radial-gradient(circle at 15% 15%, #ffcc44 6px, transparent 15px);
+    radial-gradient(circle at 50% 0%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 100% 50%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 50% 100%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 0% 50%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 85% 15%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 85% 85%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 15% 85%, #ffcc44 1.5vw, transparent 3.5vw),
+    radial-gradient(circle at 15% 15%, #ffcc44 1.5vw, transparent 3.5vw);
   filter: drop-shadow(0 0 8px #ffaa00);
   /* Sync with ritual logic */
   animation: sigil-pulse-amp 10s ease-in-out 3.5s infinite;
@@ -794,23 +802,23 @@
 }
 
 .arch-ring--mid {
-  width: 280px;
-  height: 280px;
+  width: 70%;
+  height: 70%;
   opacity: 0.45;
   display: none; /* Replaced by bezel */
 }
 
 .arch-ring--inner {
-  width: 160px;
-  height: 160px;
+  width: 45%;
+  height: 45%;
   opacity: 0.3;
 }
 
 /* Pentagram (Magical Sigil) - starts horizontal, rotates with torque */
 .arch-pentagram {
   position: absolute;
-  width: 200px;
-  height: 200px;
+  width: 55%;
+  height: 55%;
   animation: sigil-unrust 15s cubic-bezier(0.7, 0, 0.15, 1) forwards,
              sigil-rotate 30s linear infinite 15s;
 }
@@ -907,13 +915,23 @@
 }
 
 @media (max-width: 1024px) {
+  .listen-chamber {
+    --portal-size: calc(100vw - 18rem);
+  }
   .hud-sidebar--right { display: none; }
   .hud-center { margin-right: 0; }
 }
 
 @media (max-width: 768px) {
+  .listen-chamber {
+    --portal-size: 100vw;
+  }
   .hud-sidebar--left { display: none; }
   .hud-center { margin-left: 0; }
+  
+  .chamber-heading {
+    display: none;
+  }
 }
 
 
@@ -922,6 +940,9 @@
   width: 100%;
   max-width: 1280px;
   margin: 0 auto;
+  /* Sizing container so the orb can track the cockpit width the same way
+     the Phaser radar does (radar geometry is a fraction of the canvas). */
+  container-type: inline-size;
 }
 
 .signal-chamber-canvas {
@@ -1975,33 +1996,28 @@
   animation: orb-ring-pulse 4s infinite ease-in-out;
 }
 
-.orb-centerpiece.is-tuning .orb-centerpiece__backing {
-  /* Deactivated opacity blocking animation */
-}
-
 @keyframes orb-ring-pulse {
   0%, 100% { transform: translate(-50%, -50%) scale(1); }
   50% { transform: translate(-50%, -50%) scale(1.05); }
 }
 
-@keyframes orb-backing-flicker {
-  from { opacity: 1; }
-  to { opacity: 1; }
-}
-
-/* Opaque backing disc — masks the entire circumference behind the sphere */
+/* Block layer — opaque disc BEHIND the orb canvas (z-index:-1).
+   Masks the Station track-matrix text that bleeds through the transparent
+   Phaser canvas / translucent orb aura. It stays behind the orb so it never
+   covers the design, while the isolated parent (z-index:10) keeps it above the
+   track list. The feathered shadow blends its edge into the station backdrop. */
 .orb-centerpiece__backing {
   position: absolute;
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: #080c16;
-  z-index: 1;
+  background: #03050a;
+  z-index: -1;
   pointer-events: none;
-  box-shadow: 0 0 60px rgba(0, 0, 0, 0.9);
+  box-shadow: 0 0 50px 14px #03050a;
 }
 
-/* Ring layer — sits between backing and sphere */
+/* Ring layer — sits behind the sphere */
 .orb-centerpiece__ring-layer {
   position: absolute;
   width: 128%; /* 540 / 420 ≈ 1.28 */
@@ -2194,8 +2210,10 @@
 /* ── TransmissionCore shell ────────────────────────────────────────────────── */
 
 .listen-console__core-shell {
-  width: 420px;
-  height: 420px;
+  /* Proportional to the cockpit (matches the Phaser radar's fractional sizing).
+     52.5cqw == 420px at the standard 800px cockpit width. */
+  width: 52.5cqw;
+  height: 52.5cqw;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -3067,7 +3085,7 @@
 
 @media (max-width: 900px) {
   .arcane-shelf { display: none; }
-  .listen-shell { max-width: 100vw; }
+  .listen-shell { max-width: 100%; }
 }
 
 
@@ -3486,7 +3504,8 @@
   position: absolute;
   top: 1rem;
   left: 50%;
-  transform: translateX(-50%);
+  /* Nudged down slightly */
+  transform: translate(-50%, 4px);
   font-size: 0.875rem;
   font-weight: 400;
   letter-spacing: 0.3em;
@@ -3496,4 +3515,97 @@
   z-index: 10;
   pointer-events: none;
   white-space: nowrap;
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Orb ↔ radar concentric alignment (all breakpoints, all schools)
+   The overlay is anchored at top:47.685% — the exact center of the Phaser
+   radar. The default translate(-50%,-50%) centers the whole console *column*,
+   which floats the orb up by half the controls' height. Centering on half the
+   orb instead (26.25cqw == half of the 52.5cqw core-shell) lands the orb dead
+   on the radar center. Placed last so it overrides every earlier/transform
+   declaration at any viewport width. Geometry is school-independent, so this
+   aligns every station at once.
+   ────────────────────────────────────────────────────────────────────────── */
+.signal-chamber-player-overlay {
+  transform: translate(-50%, -26.25cqw);
+}
+
+/* -- Studio Black Hole Button --------------------------------------- */
+.station-studio-access {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 320px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.black-hole-btn {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-decoration: none;
+  box-shadow: 
+    0 0 20px 2px rgba(0, 0, 0, 0.8),
+    inset 0 0 20px 5px rgba(0, 0, 0, 0.9);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.black-hole-horizon {
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid rgba(220, 20, 60, 0.8);
+  box-shadow: 
+    0 0 15px rgba(220, 20, 60, 0.6),
+    inset 0 0 15px rgba(220, 20, 60, 0.6);
+  pointer-events: none;
+  animation: event-horizon-pulse 4s infinite ease-in-out;
+}
+
+.black-hole-text {
+  color: rgba(255, 255, 255, 0.9);
+  font-family: var(--font-display, sans-serif);
+  font-size: 0.9rem;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  z-index: 2;
+  text-shadow: 0 0 5px rgba(220, 20, 60, 0.8);
+}
+
+.black-hole-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 
+    0 0 30px 5px rgba(0, 0, 0, 0.9),
+    inset 0 0 30px 10px rgba(0, 0, 0, 1);
+}
+
+.black-hole-btn:hover .black-hole-horizon {
+  border-color: rgba(255, 50, 50, 1);
+  box-shadow: 
+    0 0 25px rgba(255, 50, 50, 0.8),
+    inset 0 0 25px rgba(255, 50, 50, 0.8);
+  animation-duration: 2s;
+}
+
+@keyframes event-horizon-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+}
+
+@media (max-width: 1200px) {
+  .station-studio-access {
+    width: 260px;
+  }
 }

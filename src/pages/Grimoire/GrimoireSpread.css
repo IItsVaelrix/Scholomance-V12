@@ -1,0 +1,206 @@
+/*
+ * Grimoire Spread — the tome listening surface.
+ * Palette tokens wand-extracted from docs/images/concept-grimoire-spread.png
+ * (PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING §11.5).
+ */
+
+.grimoire-shell {
+  --ink-black: #110b0d;
+  --leather: #231b2b;
+  --leather-2: #321e0f;
+  --bronze: #89643e;
+  --bronze-lite: #ab8c6f;
+  --gold: #c9a55a;
+  --gold-bright: #e8c878;
+  --parchment: #dbc5a9;
+  --parchment-2: #ceb597;
+  --ink: #2a1d12;
+  --arc-magenta: #c026d3;
+  --arc-violet: #7c3aed;
+  --arc-cyan: #22d3ee;
+
+  position: relative;
+  display: flex;
+  gap: 0;
+  min-height: 100%;
+  padding: 1.5rem;
+  background:
+    radial-gradient(1200px 800px at 50% -10%, #1a1320 0%, var(--ink-black) 60%, #000 100%);
+  color: var(--ink);
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+}
+
+.grimoire-loading,
+.grimoire-error {
+  align-items: center;
+  justify-content: center;
+  color: var(--gold);
+  font-size: 1.4rem;
+  letter-spacing: 0.08em;
+}
+
+/* ── Navigation rail ──────────────────────────────────────────────── */
+.grimoire-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.1rem;
+  padding: 0.5rem 0.75rem;
+  margin-right: 0.5rem;
+}
+.rail-orb {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--bronze));
+  color: var(--ink-black);
+  font-size: 1.1rem; cursor: pointer;
+  box-shadow: 0 0 18px rgba(201, 165, 90, 0.5);
+}
+.rail-item {
+  display: flex; flex-direction: column; align-items: center; gap: 0.25rem;
+  background: none; border: none; cursor: pointer;
+  color: var(--bronze-lite);
+  font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
+}
+.rail-item .rail-dot {
+  width: 18px; height: 18px; border-radius: 4px;
+  border: 1px solid var(--bronze); opacity: 0.6;
+}
+.rail-item.is-active { color: var(--gold-bright); }
+.rail-item.is-active .rail-dot { border-color: var(--gold); opacity: 1; box-shadow: 0 0 10px var(--gold); }
+
+/* ── The book ─────────────────────────────────────────────────────── */
+.grimoire-book {
+  position: relative;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-radius: 14px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, var(--leather) 0%, var(--leather-2) 100%);
+  box-shadow: 0 30px 80px rgba(0,0,0,0.7), inset 0 0 0 2px var(--bronze);
+}
+.grimoire-book::after {
+  /* spine seam */
+  content: '';
+  position: absolute; top: 10px; bottom: 10px; left: 50%;
+  width: 2px; transform: translateX(-1px);
+  background: linear-gradient(180deg, transparent, rgba(0,0,0,0.6), transparent);
+}
+
+.page {
+  position: relative;
+  padding: 1.6rem 1.8rem 4.2rem;
+  min-height: 70vh;
+}
+.page--left {
+  background:
+    radial-gradient(120% 100% at 0% 0%, var(--parchment) 0%, var(--parchment-2) 100%);
+  border-radius: 10px 2px 2px 10px;
+}
+.page--right {
+  background:
+    radial-gradient(120% 120% at 100% 30%, #1b1430 0%, #0c0a16 70%, #07060d 100%);
+  border-radius: 2px 10px 10px 2px;
+  color: var(--parchment);
+}
+
+.page-cartouche {
+  text-align: center; letter-spacing: 0.3em; text-transform: uppercase;
+  font-size: 0.72rem; color: var(--bronze);
+  border-bottom: 1px solid rgba(137, 100, 62, 0.4);
+  padding-bottom: 0.5rem; margin-bottom: 0.9rem;
+}
+.page-cartouche--arc { color: var(--arc-cyan); border-color: rgba(34, 211, 238, 0.3); }
+
+/* ── Left page ────────────────────────────────────────────────────── */
+.song-title { font-size: 2.2rem; margin: 0; text-align: center; color: var(--ink); letter-spacing: 0.02em; }
+.song-artist { text-align: center; color: var(--bronze); letter-spacing: 0.18em; text-transform: uppercase; font-size: 0.9rem; }
+.song-album { text-align: center; font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.8rem; }
+.cover-plate {
+  width: 180px; margin: 0.4rem auto 1rem; padding: 6px;
+  border: 1px solid var(--bronze); background: var(--leather-2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+.cover-plate img { display: block; width: 100%; height: auto; }
+
+.meta-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1rem; margin-bottom: 1rem; }
+.meta-row { display: flex; justify-content: space-between; font-size: 0.85rem; padding: 2px 0; border-bottom: 1px dotted rgba(137,100,62,0.35); }
+.meta-label { color: var(--bronze); text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; }
+.meta-val { font-weight: 600; }
+.provenance .meta-head { color: var(--bronze); text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; margin-bottom: 0.3rem; }
+.prov-seal { color: #2e7d32; font-size: 0.62rem; margin-left: 0.4rem; }
+.prov-seal--warn { color: #b3541e; }
+.prov-credo { font-style: italic; font-size: 0.88rem; margin: 0.2rem 0 0.5rem; }
+.prov-row { display: flex; justify-content: space-between; font-size: 0.78rem; }
+.prov-row span { color: var(--bronze); }
+
+.lyrics { list-style: none; margin: 0.6rem 0; padding: 0; }
+.lyric-line { display: flex; gap: 0.7rem; padding: 0.18rem 0; font-size: 1.05rem; opacity: 0.78; transition: all 0.25s ease; }
+.lyric-num { color: var(--bronze-lite); font-size: 0.75rem; width: 1.4rem; text-align: right; padding-top: 0.25rem; }
+.lyric-line.is-active {
+  opacity: 1; color: var(--gold);
+  font-weight: 700; text-shadow: 0 0 12px rgba(201,165,90,0.5);
+  transform: translateX(4px);
+}
+
+.annotations { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
+.annotation { border-left: 2px solid var(--bronze); padding: 0.2rem 0.6rem; background: rgba(137,100,62,0.08); }
+.anno-head { display: flex; gap: 0.5rem; align-items: baseline; }
+.anno-line { font-size: 0.7rem; color: var(--gold); background: var(--leather-2); padding: 0 0.35rem; border-radius: 3px; }
+.anno-title { font-weight: 600; font-size: 0.9rem; }
+.anno-body { font-size: 0.82rem; margin: 0.2rem 0; max-height: 0; overflow: hidden; opacity: 0; transition: all 0.25s ease; }
+.anno-body.is-open { max-height: 200px; opacity: 0.9; }
+.anno-toggle { background: none; border: none; color: var(--bronze); font-size: 0.72rem; cursor: pointer; padding: 0; }
+
+.transport {
+  position: absolute; left: 1.8rem; right: 1.8rem; bottom: 1.1rem;
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.5rem 0.9rem; border-radius: 8px;
+  background: linear-gradient(180deg, var(--leather), var(--ink-black));
+  box-shadow: inset 0 0 0 1px var(--bronze);
+}
+.t-play {
+  width: 34px; height: 34px; flex: none;
+  border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--gold);
+  background: radial-gradient(circle at 35% 30%, var(--gold-bright), var(--bronze));
+  color: var(--ink-black); font-size: 0.9rem; line-height: 1;
+  box-shadow: 0 0 12px rgba(201,165,90,0.4);
+}
+.t-time { color: var(--gold); font-size: 0.8rem; font-variant-numeric: tabular-nums; }
+.t-scrub { flex: 1; accent-color: var(--gold); }
+
+/* ── Right page ───────────────────────────────────────────────────── */
+.arc-subtitle { text-align: center; font-size: 0.72rem; letter-spacing: 0.2em; color: var(--arc-violet); text-transform: uppercase; margin-bottom: 0.8rem; }
+.arc-body { display: grid; grid-template-columns: 0.8fr 1.6fr 0.8fr; gap: 0.8rem; align-items: start; }
+.arc-readouts { display: flex; flex-direction: column; gap: 0.8rem; }
+.readout-label { font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--arc-cyan); opacity: 0.85; }
+.readout-val { font-size: 0.82rem; color: var(--parchment); }
+.readout-val.is-mono { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.72rem; letter-spacing: 0.04em; color: var(--arc-cyan); word-break: break-all; }
+.semantic-map { list-style: none; margin: 0.3rem 0 0; padding: 0; font-size: 0.8rem; }
+.semantic-map li { display: flex; align-items: center; gap: 0.4rem; padding: 1px 0; color: var(--parchment); }
+.sm-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--arc-magenta); box-shadow: 0 0 6px var(--arc-magenta); }
+.coords { display: flex; flex-direction: column; font-family: monospace; font-size: 0.74rem; color: var(--arc-cyan); }
+
+.arc-stage { display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 0 24px rgba(192, 38, 211, 0.35)); }
+.genome-sigil { width: 100%; height: auto; max-width: 520px; }
+
+.arc-credo {
+  position: absolute; left: 0; right: 0; bottom: 1.2rem;
+  text-align: center; letter-spacing: 0.3em; text-transform: uppercase;
+  font-size: 0.68rem; color: var(--gold); opacity: 0.7;
+}
+
+/* ── Reduced motion ───────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lyric-line, .anno-body { transition: none; }
+}
+
+@media (max-width: 900px) {
+  .grimoire-book { grid-template-columns: 1fr; }
+  .grimoire-book::after { display: none; }
+  .arc-body { grid-template-columns: 1fr; }
+}

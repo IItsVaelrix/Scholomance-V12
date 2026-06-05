@@ -17,6 +17,7 @@ export const CELL_ID = 'PROCESSOR_BRIDGE';
 export const CELL_NAME = 'Processor Bridge Enforcer';
 export const CELL_DESCRIPTION = 'Detects illegal bridge crossings via import statements';
 export const CELL_SCHEDULE = 'on-commit';
+export const SCAN_CONTRACT = 'streaming-context-v1';
 
 const PARSEABLE_EXTENSIONS = /\.(m?[jt]sx?|cjs)$/;
 
@@ -83,11 +84,13 @@ function scanForBridges(content, sourcePath) {
  * @param {Array<{content: string, path: string}>} files
  * @returns {Promise<ScanResult>}
  */
-export async function scan(_snapshot, files = []) {
+export async function scan(contextOrSnapshot, files = []) {
   const errors = [];
   const health = [];
+  const codexFiles = [];
 
-  for (const { content, path } of files) {
+  for await (const { content, path } of iterateFiles(contextOrSnapshot, files)) {
+    if (path.startsWith('codex/')) codexFiles.push({ path });
     const findings = scanForBridges(content, path);
 
     for (const f of findings) {
@@ -121,7 +124,6 @@ export async function scan(_snapshot, files = []) {
   }
 
   // Health signals
-  const codexFiles = files.filter(f => f.path.startsWith('codex/'));
   if (codexFiles.length > 0) {
     const cleanFiles = codexFiles.filter(f =>
       !errors.some(e => e.context.path === f.path)
@@ -141,4 +143,15 @@ export async function scan(_snapshot, files = []) {
   }
 
   return { errors, health, skipped: [] };
+}
+
+async function* iterateFiles(contextOrSnapshot, files) {
+  if (contextOrSnapshot?.files && typeof contextOrSnapshot.files[Symbol.asyncIterator] === 'function') {
+    yield* contextOrSnapshot.files;
+    return;
+  }
+
+  for (const file of files) {
+    yield file;
+  }
 }

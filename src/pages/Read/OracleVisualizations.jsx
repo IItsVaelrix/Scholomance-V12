@@ -141,7 +141,7 @@ function splitPhonemes(pronunciation, fallbackWord) {
     .trim();
 
   if (source.includes(' ') || source.includes('.') || source.includes('·')) {
-    return source.split(/[\s.·-]+/).map(normalizePhonemeToken).filter(Boolean);
+    return source.split(/[\s.·-]+/).map(normalizePhonemeToken).filter(Boolean).slice(0, 18);
   }
 
   const compact = source || String(fallbackWord || '').trim();
@@ -272,10 +272,6 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
   );
 }
 
-// Backwards-named export for any consumer importing the old PhonemeStrip identity.
-// Behaviour is identical to ArticulationStrip; the alias prevents an import break.
-const PhonemeStrip = ArticulationStrip;
-
 export function CapabilityTruth({ word, partOfSpeech, pronunciation, echoKey, schoolTheme }) {
   const prefersReducedMotion = usePrefersReducedMotion();
   const displayWord = String(word || 'awaiting query').trim();
@@ -329,7 +325,6 @@ export function DefinitionArchive({ definitions, etymology, itemMotionProps = {}
             key={`${definition}-${index}`}
             className="oracle-definition-row"
             data-weight={rank}
-            title={etymology ? `Etymology trace: ${etymology}` : undefined}
             aria-label={`${rank} definition ${index + 1}: ${definition}`}
             {...itemMotionProps}
           >
@@ -355,7 +350,7 @@ export function ResonanceMap({ scrollContext, onJumpToLine, itemMotionProps = {}
   const schoolId = VOWEL_FAMILY_TO_SCHOOL[vowelFamily] || 'VOID';
   const maxLine = Math.max(
     1,
-    ...occurrences.map((occurrence) => Number(occurrence?.line) || 1)
+    ...occurrences.map((occurrence, index) => Number(occurrence?.line) || index + 1)
   );
   const prefersReducedMotion = usePrefersReducedMotion();
   const cacheKey = `resonance:${String(scrollContext?.queryWord || vowelFamily || 'unknown').toLowerCase()}:${occurrences.length}`;
@@ -461,7 +456,7 @@ export function ChannelConstellation({ groups, onTokenSelect, itemMotionProps = 
             <div className="oracle-constellation-field">
               {safeArray(group.words).map((word, index) => (
                 <button
-                  key={`${group.id}-${word}`}
+                  key={`${group.id}-${word}-${index}`}
                   type="button"
                   className="oracle-constellation-token"
                   data-tone={group.tone}
@@ -482,14 +477,15 @@ export function ChannelConstellation({ groups, onTokenSelect, itemMotionProps = 
 
 function StarField({ clusters }) {
   const count = clamp(safeArray(clusters).length || 0, 0, 12);
+  const starCount = Math.max(count, 1);
 
   return (
-    <div className="oracle-star-field" aria-label={`${count} astrology clusters`}>
-      {Array.from({ length: Math.max(count, 1) }).map((_, index) => (
+    <div className="oracle-star-field" aria-label={`${starCount} astrology clusters`}>
+      {Array.from({ length: starCount }).map((_, index) => (
         <span
           key={`star-${index}`}
           className="oracle-star"
-          data-star-size={scoreToBucket(null, index, Math.max(count, 1))}
+          data-star-size={scoreToBucket(null, index, starCount)}
           aria-hidden="true"
         />
       ))}
@@ -512,14 +508,14 @@ function ScoreArc({ score }) {
 export function AstrologyTrace({ astrology, onTokenSelect, itemMotionProps = {} }) {
   const matches = safeArray(astrology?.topMatches);
   const clusters = safeArray(astrology?.clusters);
-  const sign = String(astrology?.sign || 'unmarked').trim();
+  const sign = String(astrology?.sign || '').trim() || 'unmarked';
 
   return (
     <div className="oracle-astrology-trace">
       <div className="oracle-zodiac-sigil">
         <span className="oracle-zodiac-glyph" aria-hidden="true">{zodiacGlyph(sign)}</span>
         <span className="oracle-summary-key">sign</span>
-        <strong>{sign || 'unmarked'}</strong>
+        <strong>{sign}</strong>
       </div>
       <div className="oracle-cluster-field">
         <span className="oracle-summary-key">cluster count</span>

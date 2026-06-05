@@ -20,7 +20,7 @@ import { useProgression } from "../../hooks/useProgression.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 import { useWordLookup } from "../../hooks/useWordLookup.jsx";
 import { usePredictor } from "../../hooks/usePredictor.jsx";
-import { getVowelColorsForSchool, getRitualPalette } from "../../data/schoolPalettes.js";
+import { getRitualPalette } from "../../data/schoolPalettes.js";
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL, getSchoolsByUnlock } from "../../data/schools.js";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { parseBooleanEnvFlag } from "../../hooks/useCODExPipeline.jsx";
@@ -36,7 +36,6 @@ import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
 import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
 import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
 import WordTooltip from "../../components/WordTooltip.jsx";
-import VowelFamilyPanel from "../../components/VowelFamilyPanel.jsx";
 import { TruesightDebugColorPanel } from "../../components/TruesightDebugColorPanel/TruesightDebugColorPanel.jsx";
 
 import ScrollEditor from "./ScrollEditor.jsx";
@@ -665,7 +664,7 @@ export default function ReadPage() {
     addToast(`Corrected "${original}" to "${replacement}"`, "success");
   }, [editorContent, handleEditorContentChange, addToast]);
 
-  const activeVowelColors = useMemo(() => getVowelColorsForSchool(selectedSchool), [selectedSchool]);
+  const activeVowelColors = useMemo(() => ({}), [selectedSchool]);
   const lexiconSeedWord = useMemo(() => oracleWord || "", [oracleWord]);
 
   const jumpToLexiconOracle = useCallback((word) => {
@@ -1230,13 +1229,7 @@ export default function ReadPage() {
                     )}
                     {analysisMode === ANALYSIS_MODES.VOWEL && (
                       <div className="sidebar-sub-panel">
-                        <VowelFamilyPanel
-                          visible={true}
-                          families={vowelSummary?.families ?? []}
-                          totalWords={vowelSummary?.totalWords ?? 0}
-                          uniqueWords={vowelSummary?.uniqueWords ?? 0}
-                          isEmbedded={true}
-                        />
+                         <div className="vowel-family-placeholder">Vowel Analysis Offline</div>
                       </div>
                     )}
                     {isTruesight && (

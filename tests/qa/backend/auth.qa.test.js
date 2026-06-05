@@ -1,7 +1,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { captchaService } from '../../../codex/server/services/captcha.service.js';
-import { persistence } from '../../../codex/server/user.persistence.js';
+import { userPersistence as persistence } from '../../../codex/server/user.persistence.js';
 import bcrypt from 'bcrypt';
 
 describe('Auth & Security QA Suite', () => {

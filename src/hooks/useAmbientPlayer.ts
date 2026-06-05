@@ -141,9 +141,9 @@ export function useAmbientPlayer(unlockedSchools: string[] = []): any {
   const orbSkinKey = currentSchoolConfig?.orbSkinKey || null;
 
   const tuneToSchool = useCallback(
-    async (schoolId: string) => {
+    async (schoolId: string, options: Record<string, any> = {}) => {
       await service.unlockAudio();
-      return await service.setSchool(schoolId);
+      return await service.setSchool(schoolId, options);
     },
     [service]
   );

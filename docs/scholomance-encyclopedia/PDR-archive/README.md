@@ -29,6 +29,16 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`PDR-2026-05-27-VOID-ART-SCENE.md`](./PDR-2026-05-27-VOID-ART-SCENE.md) | Draft | UI + Rendering + Godot Interop + Behavioral | High |
 | [`PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md`](./PDR-2026-05-27-VOID-ARENA-GODOT-VIEWER.md) | Draft | Structural + Behavioral + Godot Interop + Tooling | High |
 | [`PDR-2026-06-03-ACCOUNTS-EMAIL-OAUTH.md`](./PDR-2026-06-03-ACCOUNTS-EMAIL-OAUTH.md) | In Progress | Auth + Backend + Security + Data Model | High |
+| [`PDR-2026-06-04-DIAGNOSTIC-SUBSYSTEM-A-GRADE-SPEC.md`](./PDR-2026-06-04-DIAGNOSTIC-SUBSYSTEM-A-GRADE-SPEC.md) | Implemented | Architectural \| QA Infrastructure \| Diagnostic Subsystem \| Determinism | High |
+| [`PDR-2026-06-04-DIAGNOSTIC-SUBSYSTEM-A-GRADE.md`](./PDR-2026-06-04-DIAGNOSTIC-SUBSYSTEM-A-GRADE.md) | Implemented | Architectural \| QA Infrastructure \| AI Observability \| Determinism | High |
+| [`PDR-2026-06-04-BYTECODE-XP-QBIT-VACCINES-SPEC.md`](./PDR-2026-06-04-BYTECODE-XP-QBIT-VACCINES-SPEC.md) | Implemented — Phase 0-5 complete | Architectural \| AI Observability \| Diagnostic Memory \| QBIT Substrate | High |
+| [`PDR-2026-06-04-BYTECODE-XP-QBIT-VACCINES.md`](./PDR-2026-06-04-BYTECODE-XP-QBIT-VACCINES.md) | Implemented — Phase 0-5 complete | Architectural \| AI Observability \| Diagnostic Memory \| QBIT Substrate | High |
+| [`PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE-SPEC.md`](./PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE-SPEC.md) | Proposed — Spike (Phase 0 docs complete) | Architectural \| Rendering Substrate \| Combat Surface \| Spike / De-Risk | High |
+| [`PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE.md`](./PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE.md) | Proposed — Spike (Phase 0 docs + Phase 1 route complete) | Architectural \| Rendering Substrate \| Combat Surface \| Spike / De-Risk | High |
+| [`PDR-2026-06-04-PHASER4-COMBAT-SPIKE-SPEC.md`](./PDR-2026-06-04-PHASER4-COMBAT-SPIKE-SPEC.md) | Implemented (2026-06-05) — whole-app migration; see VERDICT-2026-06-05-PHASER4-MIGRATION | Architectural \| Rendering Substrate \| Combat Surface \| Dependency Major Upgrade \| Spike / De-Risk | High |
+| [`PDR-2026-06-04-PHASER4-COMBAT-SPIKE.md`](./PDR-2026-06-04-PHASER4-COMBAT-SPIKE.md) | Implemented (2026-06-05) — whole-app migration; see VERDICT-2026-06-05-PHASER4-MIGRATION | Architectural \| Rendering Substrate \| Combat Surface \| Dependency Major Upgrade \| Spike / De-Risk | High |
+| [`PDR-2026-06-05-WORLD-REIFICATION-ENGINE.md`](./PDR-2026-06-05-WORLD-REIFICATION-ENGINE.md) | Draft | Architectural \| World IR \| Godot Interop \| Runtime Reconciliation \| Determinism | Critical |
+| [`PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING.md`](./PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING.md) | Draft | Architectural \| Audio Engine \| Data Model \| Commerce \| Discovery \| UI + Rendering | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |
@@ -48,6 +58,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`grimdesign_pdr.md`](./grimdesign_pdr.md) | Draft | UI + Tooling + PixelBrain + VerseIR + Developer Experience | High |
 | [`godot-side-painting-ui-pdr.md`](./godot-side-painting-ui-pdr.md) | Draft | Architectural + Tooling + PixelBrain + Godot Editor UI | High |
 | [`heartbeat_alert_identity_packet_pdr.md`](./heartbeat_alert_identity_packet_pdr.md) | Unclassified | Unclassified | Unclassified |
+| [`Keyword Gap Analysis PDR.md`](./Keyword%20Gap%20Analysis%20PDR.md) | Draft | Career + Keyword Analysis + Deterministic Matching | High |
 | [`lexical_atrium_pdr_redesign.md`](./lexical_atrium_pdr_redesign.md) | Unclassified | Unclassified | Unclassified |
 | [`lexicon_oracle_aesthetic_refinement_pdr.md`](./lexicon_oracle_aesthetic_refinement_pdr.md) | Draft | UI + Data Visualization + Animation | High |
 | [`live_website_collab_hosting_pdr.md`](./live_website_collab_hosting_pdr.md) | Implemented | Infrastructure + Security + Collaboration | High |
@@ -62,7 +73,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`postfix_integration_pdr.md`](./postfix_integration_pdr.md) | Draft | Infrastructure \| Security \| Communications | High |
 | [`prototype_systems_wiring_pdr.md`](./prototype_systems_wiring_pdr.md) | Draft | Architectural + Core Pipeline + Scoring | Critical |
 | [`render_secret_sync_pdr.md`](./render_secret_sync_pdr.md) | Implemented | Infrastructure \| DevOps \| Security | High |
-| [`rhyme_color_registry_pdr.md`](./rhyme_color_registry_pdr.md) | Ready for Implementation | Color Engine + Codex Contract + UI Wire | High |
+| [`rhyme_color_registry_pdr.ARCHIVED.md`](./rhyme_color_registry_pdr.ARCHIVED.md) | ⚰️ Superseded (built, then replaced by hash-based harmonic resonance palette) | Color Engine + Codex Contract + UI Wire | — |
 | [`rhyme_constellation_pdr.md`](./rhyme_constellation_pdr.md) | Proposed | UI Surface + Prediction + World-Law Cosmology | High (centerpiece UI) |
 | [`ritual_prediction_enhancement_pdr.md`](./ritual_prediction_enhancement_pdr.md) | Draft | Prediction + VerseIR + PixelBrain + Infrastructure | High |
 | [`scholomance_collab_console_ui_pdr.md`](./scholomance_collab_console_ui_pdr.md) | COMPLETE (Phases 1-4) | Architectural + Structural + Behavioral | Unclassified |
@@ -138,3 +149,7 @@ The audit fails if a PDR is missing from this index or if an indexed PDR no long
 ---
 
 *Last Updated: 2026-05-09 — Rebuilt as an exhaustive archive catalog.*
+
+- [`PDR-2026-05-28-GRIMOIRE-LANDING-PAGE.md`](./PDR-2026-05-28-GRIMOIRE-LANDING-PAGE.md)
+- [`Photonic Quantization Bridge PDR.md`](./Photonic%20Quantization%20Bridge%20PDR.md)
+- [`Photonic Retina PDR.md`](./Photonic%20Retina%20PDR.md)

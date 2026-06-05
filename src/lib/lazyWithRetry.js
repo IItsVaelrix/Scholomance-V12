@@ -60,15 +60,17 @@ export async function loadModuleWithRetry(importer, moduleId, options = {}) {
   }
 }
 
-/**
- * React.lazy wrapper that auto-recovers from stale chunk references once.
- * @template T
- * @param {() => Promise<T>} importer
- * @param {string} moduleId
- * @returns {import("react").LazyExoticComponent<import("react").ComponentType<any>> & { preload: () => Promise<T> }}
- */
 export function lazyWithRetry(importer, moduleId) {
-  const load = () => loadModuleWithRetry(importer, moduleId);
+  let promise = null;
+  const load = () => {
+    if (!promise) {
+      promise = loadModuleWithRetry(importer, moduleId).catch((err) => {
+        promise = null;
+        throw err;
+      });
+    }
+    return promise;
+  };
   const component = lazy(load);
   component.preload = load;
   return component;

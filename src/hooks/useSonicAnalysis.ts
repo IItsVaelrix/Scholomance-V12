@@ -5,7 +5,7 @@ import { getAmbientPlayerService } from '../lib/ambient/ambientPlayer.service.js
  * useSonicAnalysis — Centralized real-time audio detection.
  * Consumes the authoritative analysis from AmbientPlayerService.
  */
-export function useSonicAnalysis(getByteFrequencyData: (array: Uint8Array) => void, isPlaying: boolean) {
+export function useSonicAnalysis(isPlaying: boolean) {
   const [detectedSchoolId, setDetectedSchoolId] = useState<string | null>(null);
   const rafIdRef = useRef<number>();
 
@@ -16,22 +16,32 @@ export function useSonicAnalysis(getByteFrequencyData: (array: Uint8Array) => vo
     }
 
     const service = getAmbientPlayerService();
+    let cancelled = false;
 
     const analyze = async () => {
+      if (cancelled) return;
       //authoritative detection from service (locked fingerprint)
       const id = await service.getDetectedSchoolId();
-      if (id !== detectedSchoolId) {
-        setDetectedSchoolId(id);
+      if (cancelled) return;
+      setDetectedSchoolId((previousId) => {
+        // Hold the last valid detected school instead of resetting to null on every quiet frame
+        if (id) {
+          return previousId === id ? previousId : id;
+        }
+        return previousId;
+      });
+
+      if (!cancelled) {
+        rafIdRef.current = requestAnimationFrame(analyze);
       }
-      
-      rafIdRef.current = requestAnimationFrame(analyze);
     };
 
     analyze();
     return () => {
+      cancelled = true;
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [isPlaying, detectedSchoolId]);
+  }, [isPlaying]);
 
   return { detectedSchoolId };
 }

@@ -50,6 +50,10 @@ export function dequantize4BitToF32(value) {
  * @returns {number}
  */
 export function estimateInnerProduct(b1, b2, n1, n2) {
+  if (!b1 || !b2 || b1.length === 0 || b2.length === 0 || b1.length !== b2.length) {
+    return 0;
+  }
+
   let sum = 0;
   const len = b1.length;
 
@@ -61,6 +65,36 @@ export function estimateInnerProduct(b1, b2, n1, n2) {
     sum += (DEQUANT_MAP[byte1 >> 4] * DEQUANT_MAP[byte2 >> 4]) + 
            (DEQUANT_MAP[byte1 & 0x0f] * DEQUANT_MAP[byte2 & 0x0f]);
   }
+
+  // Calculate reconstructed magnitude of b1
+  let sumSq1 = 0;
+  for (let i = 0; i < len; i += 1) {
+    const byte = b1[i];
+    const val1 = DEQUANT_MAP[byte >> 4];
+    const val2 = DEQUANT_MAP[byte & 0x0f];
+    sumSq1 += val1 * val1 + val2 * val2;
+  }
+  const mag1 = Math.sqrt(sumSq1);
+
+  // Calculate reconstructed magnitude of b2
+  let sumSq2 = 0;
+  for (let i = 0; i < len; i += 1) {
+    const byte = b2[i];
+    const val1 = DEQUANT_MAP[byte >> 4];
+    const val2 = DEQUANT_MAP[byte & 0x0f];
+    sumSq2 += val1 * val1 + val2 * val2;
+  }
+  const mag2 = Math.sqrt(sumSq2);
+
+  const denom = mag1 * mag2;
+  if (denom > 0) {
+    sum /= denom;
+  } else {
+    sum = 0;
+  }
+
+  // Clamp to [-1, 1] to guarantee standard cosine similarity boundaries
+  sum = Math.max(-1, Math.min(1, sum));
 
   return sum * n1 * n2;
 }

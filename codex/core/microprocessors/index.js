@@ -1,4 +1,11 @@
 import { verseIRMicroprocessors } from './factory.js';
+import {
+  BytecodeError,
+  ERROR_CATEGORIES,
+  ERROR_SEVERITY,
+  MODULE_IDS,
+  ERROR_CODES,
+} from '../pixelbrain/bytecode-error.js';
 
 /**
  * LAZY MICROPROCESSOR REGISTRY
@@ -76,8 +83,19 @@ verseIRMicroprocessors.register('pixel.calculateRotation', async (payload, conte
 });
 
 verseIRMicroprocessors.register('amp.run', async (payload, context) => {
-  const { runAmpProcessor } = await import('./pixel/AmpRunProcessor.ts');
-  return runAmpProcessor(payload);
+  try {
+    const { runAmpProcessor } = await import('./pixel/AmpRunProcessor.ts');
+    return runAmpProcessor(payload);
+  } catch (err) {
+    if (err.code === 'ERR_UNKNOWN_FILE_EXTENSION' || err.message.includes('Unknown file extension')) {
+      throw new BytecodeError(
+        ERROR_CATEGORIES.STATE, ERROR_SEVERITY.CRIT, MODULE_IDS.CORE,
+        ERROR_CODES.INVALID_STATE,
+        { reason: 'amp.run requires TypeScript runtime support (Vite/TSX)', originalError: err.message },
+      );
+    }
+    throw err;
+  }
 });
 
 // --- Symmetry AMP Microprocessors ---
@@ -93,8 +111,19 @@ verseIRMicroprocessors.register('amp.coord-symmetry', async (payload, context) =
 
 // --- IDE Microprocessors (Lazy) ---
 verseIRMicroprocessors.register('arbiter.predict', async (payload, context) => {
-  const { predictNextRitualMove } = await import('./arbiter/predictProcessor.ts');
-  return predictNextRitualMove(payload, context);
+  try {
+    const { predictNextRitualMove } = await import('./arbiter/predictProcessor.ts');
+    return predictNextRitualMove(payload, context);
+  } catch (err) {
+    if (err.code === 'ERR_UNKNOWN_FILE_EXTENSION' || err.message.includes('Unknown file extension')) {
+      throw new BytecodeError(
+        ERROR_CATEGORIES.STATE, ERROR_SEVERITY.CRIT, MODULE_IDS.CORE,
+        ERROR_CODES.INVALID_STATE,
+        { reason: 'arbiter.predict requires TypeScript runtime support (Vite/TSX)', originalError: err.message },
+      );
+    }
+    throw err;
+  }
 });
 
 // --- Modulation / Wand Microprocessors ---

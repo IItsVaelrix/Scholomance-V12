@@ -13,9 +13,17 @@ import { createWriteQueue } from './sqliteWriteQueue.js';
  * Reads stay direct to preserve concurrency.
  */
 
-// Statements that mutate the database — used to route libsql traffic, where the
-// driver gives us no reader/writer flag the way better-sqlite3 does.
-const WRITE_SQL = /^\s*(?:INSERT|UPDATE|DELETE|REPLACE|CREATE|ALTER|DROP|TRUNCATE|VACUUM|REINDEX)\b/i;
+// Statements that read from the database safely without mutating state.
+// If a query doesn't match this, we aggressively assume it mutates state.
+const IS_SELECT = /^\s*(?:WITH\b.*?\b)?SELECT\b/i;
+const IS_READ_PRAGMA = /^\s*PRAGMA\s+[\w_]+\s*(?:;|\s*$)/i;
+
+function isReadOnly(sql) {
+    if (IS_SELECT.test(sql)) return true;
+    if (IS_READ_PRAGMA.test(sql)) return true;
+    // PRAGMA ... = ... is a write. Everything else is assumed write.
+    return false;
+}
 
 export function createDbWrapper(options) {
     const { type, config } = options;
@@ -37,7 +45,7 @@ export function createDbWrapper(options) {
                         lastInsertRowid: result.lastInsertRowid?.toString(),
                     };
                 };
-                return WRITE_SQL.test(sql) ? writeQueue.enqueue(op) : op();
+                return !isReadOnly(sql) ? writeQueue.enqueue(op) : op();
             },
             async batch(statements) {
                 return writeQueue.enqueue(() => client.batch(statements));
@@ -111,13 +119,38 @@ export function createDbWrapper(options) {
                 });
             },
             async transaction(callback) {
-                return writeQueue.enqueue(() => {
+                return writeQueue.enqueue(async () => {
                     const results = [];
-                    const tx = db.transaction(() => {
-                        results.push(callback(db));
-                    });
-                    tx();
-                    return results;
+                    const beginStmt = db.prepare('BEGIN');
+                    const commitStmt = db.prepare('COMMIT');
+                    const rollbackStmt = db.prepare('ROLLBACK');
+                    
+                    beginStmt.run();
+                    try {
+                        const txClient = {
+                            execute: async (sql, params = []) => {
+                                const stmt = db.prepare(sql);
+                                if (stmt.reader) {
+                                    const rows = stmt.all(...params);
+                                    return { rows, rowsAffected: 0 };
+                                }
+                                const result = stmt.run(...params);
+                                return {
+                                    rows: [],
+                                    rowsAffected: result.changes,
+                                    lastInsertRowid: result.lastInsertRowid?.toString(),
+                                };
+                            }
+                        };
+                        results.push(await callback(txClient));
+                        commitStmt.run();
+                        return results;
+                    } catch (err) {
+                        if (db.inTransaction) {
+                            rollbackStmt.run();
+                        }
+                        throw err;
+                    }
                 });
             },
             getWriteQueueStats() {

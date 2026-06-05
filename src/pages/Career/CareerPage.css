@@ -2,17 +2,19 @@
   --ink-void: #02040a;
   --gold-leaf: #c9a227;
   --parchment-glow: rgba(201, 162, 39, 0.08);
-  
+
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  width: 100vw;
-  height: calc(100vh - 48px);
-  padding: 2rem;
+  /* Top-aligned + scrollable: the alignment report can extend past the fold, and
+     centered overflowing flex content would clip its top out of reach. */
+  justify-content: flex-start;
+  width: 100%;
+  height: 100dvh;
+  padding: 6.5rem 2rem 3rem;
   background: radial-gradient(circle at 50% 50%, #0a0c14 0%, #010205 100%);
   position: relative;
-  overflow: hidden;
+  overflow-y: auto;
   box-sizing: border-box;
 }
 
@@ -104,33 +106,80 @@
   text-shadow: 0 0 10px rgba(201, 162, 39, 0.3);
 }
 
+/* -- Split parchment body: experience + job description ---------- */
+.parchment-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  z-index: 1;
+  position: relative;
+}
+
+.parchment-field {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1rem 2rem 0.5rem;
+}
+
+.parchment-field--resume {
+  flex: 1.4;
+}
+
+.parchment-field--jd {
+  flex: 1;
+  border-top: 1px solid rgba(201, 162, 39, 0.1);
+}
+
+.field-label {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold-leaf);
+  opacity: 0.7;
+  margin-bottom: 0.5rem;
+}
+
+.field-hint {
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.3);
+  text-transform: none;
+}
+
 .void-textarea {
   flex: 1;
   width: 100%;
   background: transparent;
   border: none;
-  padding: 2.5rem;
+  padding: 0;
   color: #d1d1d1;
   font-family: 'Spectral', serif;
-  font-size: 1.1rem;
-  line-height: 1.8;
+  font-size: 1.05rem;
+  line-height: 1.7;
   resize: none;
   outline: none;
   z-index: 1;
   position: relative;
 }
 
+.void-textarea--jd {
+  font-size: 0.95rem;
+  color: #b8b8b8;
+}
+
 .parchment-ripples {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: 
+  background:
     radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), var(--parchment-glow) 0%, transparent 40%);
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.void-textarea:focus + .parchment-ripples {
+.void-parchment-container:focus-within .parchment-ripples {
   opacity: 1;
 }
 
@@ -191,6 +240,164 @@
   cursor: not-allowed;
 }
 
+/* -- Alignment Score Strip --------------------------------------- */
+.score-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.score-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.score-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 2.6rem;
+  font-weight: 700;
+  text-shadow: 0 0 18px currentColor;
+  transition: color 0.1s linear;
+}
+
+.score-label {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 0.4rem;
+}
+
+/* -- Alignment Report -------------------------------------------- */
+.alignment-report {
+  width: min(800px, 90vw);
+  margin-top: 2.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.report-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.report-heading-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.report-heading {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold-leaf);
+  margin: 0;
+}
+
+.report-count {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.report-note {
+  font-family: 'Spectral', serif;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.55);
+  margin: 0;
+}
+
+.report-note--good {
+  color: #4ade80;
+}
+
+.report-note--warn {
+  color: #fbbf24;
+}
+
+/* -- Keyword Chips ----------------------------------------------- */
+.kw-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.kw-chip {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 2px;
+  color: #fca5a5;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.kw-chip--skill {
+  border-color: rgba(239, 68, 68, 0.6);
+  font-weight: 700;
+}
+
+.kw-chip--more {
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.4);
+  background: transparent;
+}
+
+.kw-chip--preserved {
+  border-color: rgba(74, 222, 128, 0.4);
+  color: #86efac;
+  background: rgba(74, 222, 128, 0.06);
+}
+
+.kw-chip-strike {
+  color: rgba(255, 255, 255, 0.3);
+  text-decoration: line-through;
+  margin-left: 0.25rem;
+}
+
+/* -- Sigil Output ------------------------------------------------ */
+.sigil-output {
+  width: 100%;
+  min-height: 220px;
+  background: var(--ink-void);
+  border: 1px solid rgba(201, 162, 39, 0.15);
+  border-radius: 4px;
+  padding: 1.5rem;
+  color: #d1d1d1;
+  font-family: 'Spectral', serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.download-btn {
+  background: none;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  color: var(--gold-leaf);
+  padding: 0.4rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+  background: rgba(201, 162, 39, 0.1);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.2);
+}
+
 /* -- Magical Affirmation ----------------------------------------- */
 .magical-affirmation {
   position: fixed;
@@ -236,4 +443,227 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
   opacity: 0.03;
   pointer-events: none;
+}
+
+/* ── Data Archive ────────────────────────────────────────────────────────── */
+.report-heading-actions {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.archive-link {
+  background: none;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  color: var(--gold-leaf);
+  padding: 0.4rem 1rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.archive-link:hover {
+  background: rgba(201, 162, 39, 0.12);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.25);
+}
+
+.archive-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1400;
+  background: rgba(2, 4, 10, 0.66);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.archive-drawer {
+  width: min(560px, 100%);
+  height: 100%;
+  background: var(--ink-void, #02040a);
+  border-left: 1px solid rgba(201, 162, 39, 0.4);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.archive-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.18);
+}
+
+.archive-eyebrow {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.55rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  color: rgba(201, 162, 39, 0.7);
+}
+
+.archive-title {
+  margin: 0.35rem 0 0.5rem;
+  font-family: var(--font-display, serif);
+  font-size: 1.25rem;
+  color: #f4ecd6;
+  letter-spacing: 0.01em;
+}
+
+.archive-sub {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: rgba(226, 226, 227, 0.65);
+}
+
+.archive-close {
+  flex: none;
+  background: none;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  color: var(--gold-leaf);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.archive-close:hover {
+  background: rgba(201, 162, 39, 0.14);
+}
+
+.archive-scorebar {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.12);
+}
+
+.archive-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.archive-stat-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(226, 226, 227, 0.5);
+}
+
+.archive-stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 1rem;
+  color: var(--gold-leaf);
+}
+
+.archive-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.5rem 2rem;
+}
+
+.archive-section {
+  padding: 1.1rem 0;
+  border-bottom: 1px solid rgba(201, 162, 39, 0.1);
+}
+
+.archive-section-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0 0 0.4rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-leaf);
+}
+
+.archive-section-count {
+  font-size: 0.6rem;
+  color: var(--ink-void, #02040a);
+  background: var(--gold-leaf);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
+.archive-section-summary {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: rgba(226, 226, 227, 0.8);
+}
+
+.archive-entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.archive-entry {
+  border-left: 2px solid rgba(201, 162, 39, 0.35);
+  padding: 0.4rem 0 0.4rem 0.75rem;
+}
+
+.archive-entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.archive-entry-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem;
+  color: #f4ecd6;
+}
+
+.archive-entry-detail {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  color: rgba(201, 162, 39, 0.7);
+}
+
+.archive-entry-reason {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: rgba(226, 226, 227, 0.62);
+}
+
+.archive-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-style: italic;
+  color: rgba(226, 226, 227, 0.5);
+}
+
+.archive-note--warn {
+  color: rgba(239, 162, 68, 0.8);
+  font-style: normal;
+}
+
+@media (max-width: 600px) {
+  .archive-drawer {
+    width: 100%;
+    border-left: none;
+  }
 }

@@ -808,7 +808,7 @@ function createAmbientPlayerService(options = {}) {
   const controllerFactory = options.controllerFactory;
   const dialSfxPlayer = options.dialSfxPlayer || ((settings) => defaultDialSfxPlayer(audioContextRef, settings));
   const nowFn = options.nowFn || Date.now;
-  const randomFn = typeof options.randomFn === "function" ? options.randomFn : Math.random;
+  const randomFn = typeof options.randomFn === "function" ? options.randomFn : freshRng();
   const lastResolvedTrackUrlBySchool = new Map();
   let hasPlayedDialSfx = false;
   let tuneOperationId = 0;

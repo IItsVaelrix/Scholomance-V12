@@ -14,7 +14,7 @@ export function BugTerminalHeader({ bug }) {
             <div className="terminal-header__top">
                 <span className="terminal-bug-id">BUG-{bug.id.slice(0, 8)}</span>
                 <span className="terminal-bug-title">{bug.title.toUpperCase()}</span>
-                <div className="terminal-bug-severity" style={{ color: `var(--severity-${bug.severity.toLowerCase()})` }}>
+                <div className="terminal-bug-severity" style={{ color: `var(--severity-${String(bug.severity || 'info').toLowerCase()})` }}>
                     [{bug.severity}]
                 </div>
             </div>

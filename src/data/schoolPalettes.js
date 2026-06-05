@@ -1,9 +1,8 @@
-import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL } from './schools.js';
+import { SCHOOLS } from './schools.js';
 import {
   resolveVerseIrColor,
   VERSE_IR_PALETTE_FAMILIES,
 } from '../lib/truesight/color/pcaChroma.js';
-import { normalizeVowelFamily } from '../lib/phonology/vowelFamily.js';
 
 /**
  * Universal Biophysical Teaching Palette.
@@ -26,17 +25,16 @@ function buildUniversalVowelPalette() {
 /** The authoritative 7-color phonetic rainbow. */
 const DEFAULT_VOWEL_COLORS = buildUniversalVowelPalette();
 
-/** 
- * School skins - dark mode only.
- */
-const SCHOOL_SKINS = Object.freeze(Object.fromEntries(
-  ['DEFAULT', ...Object.keys(SCHOOLS)].map(id => [id, DEFAULT_VOWEL_COLORS])
-));
-
 /**
- * Returns the vowel color map for a given school skin.
+ * Returns the universal vowel-family color map.
+ *
+ * The teaching palette is school-invariant by design — the school only skins
+ * the ritual/UI palette (see getRitualPalette), never the vowel-family colors.
+ * (Cleared per AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY / LING-0F07: the old
+ * school-keyed resolver advertised a school argument it ignored, and a dead
+ * skin map keyed every school to this same single palette.)
  */
-export function getVowelColorsForSchool(_school) {
+export function getUniversalVowelColors() {
   return DEFAULT_VOWEL_COLORS;
 }
 

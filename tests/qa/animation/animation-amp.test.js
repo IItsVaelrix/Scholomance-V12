@@ -45,7 +45,10 @@ describe('Animation AMP — Connection & Integration', () => {
     const intent = {
       version: 'v1.0',
       targetId: 'simple-box',
-      trigger: 'hover'
+      trigger: 'hover',
+      constraints: {
+        motionSafetyMode: 'off'
+      }
     };
 
     const output = await runAnimationAmp(intent);

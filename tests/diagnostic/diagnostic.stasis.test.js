@@ -14,7 +14,10 @@ import {
   encodeModuleHealth,
   checksumHealth,
   deepFreezeClone,
+  encodeArchivedHealth,
   verifyHealthDeterminism,
+  buildDiagnosticSynthesisSnapshot,
+  ARCHIVED_CODES,
   HEALTH_CODES,
 } from '../../codex/core/diagnostic/BytecodeHealth.js';
 import { parseImports as astParseImports } from '../../codex/core/diagnostic/ast-import-parser.js';
@@ -31,8 +34,15 @@ import {
   runCellById,
   getAvailableCells,
   buildSynthesisSnapshot,
+  buildSynthesisProjection,
   CELL_IDS,
 } from '../../codex/core/diagnostic/diagnostic-runner.js';
+import {
+  collectFileSource,
+  createArrayFileSource,
+} from '../../codex/core/diagnostic/diagnostic-file-source.js';
+import { CELL_IDS as SHARED_CELL_IDS } from '../../codex/core/diagnostic/diagnostic-constants.js';
+import { CELL_IDS as BROWSER_CELL_IDS } from '../../src/lib/diagnostic.adapter.js';
 
 import { scan as immunityScan } from '../../codex/core/diagnostic/cells/immunity-scan.cell.js';
 import { scan as layerBoundaryScan } from '../../codex/core/diagnostic/cells/layer-boundary.cell.js';
@@ -183,6 +193,19 @@ describe('encodeModuleHealth()', () => {
   });
 });
 
+describe('encodeArchivedHealth()', () => {
+  it('can encode each archived health code explicitly', () => {
+    for (const code of Object.values(ARCHIVED_CODES)) {
+      const h = encodeArchivedHealth('TEST_CELL', 'archived-check', {}, code);
+      expect(h.code).toBe(code);
+    }
+  });
+
+  it('rejects unknown archived health codes', () => {
+    expect(() => encodeArchivedHealth('TEST_CELL', 'archived-check', {}, 'NOPE')).toThrow('Unknown archived health code');
+  });
+});
+
 describe('checksumHealth()', () => {
   it('excludes timestamp from checksum', () => {
     const h1 = new BytecodeHealth({ code: HEALTH_CODES.IMMUNE_PASS_COORD, cellId: 'A', checkId: 'c', context: {} });
@@ -204,6 +227,23 @@ describe('verifyHealthDeterminism() — REGRESSION GUARD', () => {
     expect(result.deterministic).toBe(true);
     expect(result.iterations).toBe(100);
     expect(result.checksumDrift).toBe(0);
+  });
+});
+
+describe('buildDiagnosticSynthesisSnapshot()', () => {
+  it('returns a normalized canonical signal map', () => {
+    const snapshot = buildDiagnosticSynthesisSnapshot({
+      Z_SIGNAL: { status: 'critical' },
+      A_SIGNAL: { ok: true },
+      B_SIGNAL: 1.25,
+    });
+
+    expect(Object.keys(snapshot)).toEqual(['A_SIGNAL', 'B_SIGNAL', 'Z_SIGNAL']);
+    expect(snapshot).toEqual({
+      A_SIGNAL: 1,
+      B_SIGNAL: 1,
+      Z_SIGNAL: 0.15,
+    });
   });
 });
 
@@ -312,6 +352,22 @@ describe('verifyReport()', () => {
     expect(r1.checksum).toBe(r2.checksum);     // but checksum is stable
   });
 
+  it('treats commitHash as report metadata, not checksum input', () => {
+    const cellResults = [{
+      cellId: 'TEST',
+      errors: [],
+      health: [encodeBytecodeHealth('TEST', 'check', { foo: 'bar' })],
+      skipped: [],
+    }];
+
+    const withGit = generateDiagnosticReport({ commitHash: 'abc123', trigger: 'manual', cellResults });
+    const withoutGit = generateDiagnosticReport({ commitHash: 'unknown', trigger: 'manual', cellResults });
+
+    expect(withGit.commitHash).toBe('abc123');
+    expect(withoutGit.commitHash).toBe('unknown');
+    expect(withGit.checksum).toBe(withoutGit.checksum);
+  });
+
   it('returns invalid for tampered report', () => {
     const cellResults = [
       { cellId: 'TEST', errors: [], health: [encodeBytecodeHealth('TEST', 'c')], skipped: [] },
@@ -332,6 +388,50 @@ describe('getAvailableCells()', () => {
     expect(cells.map(c => c.id)).toContain(CELL_IDS.IMMUNITY_SCAN);
     expect(cells.map(c => c.id)).toContain(CELL_IDS.LAYER_BOUNDARY);
     expect(cells.map(c => c.id)).toContain(CELL_IDS.TEST_COVERAGE);
+  });
+
+  it('reports streaming contract metadata for migrated cells', () => {
+    const cells = getAvailableCells();
+    const byId = new Map(cells.map(cell => [cell.id, cell]));
+    expect(byId.get(CELL_IDS.FIXTURE_SHAPE).contract).toBe('streaming-context-v1');
+    expect(byId.get(CELL_IDS.PROCESSOR_BRIDGE).contract).toBe('streaming-context-v1');
+  });
+});
+
+describe('diagnostic constants', () => {
+  it('shares CELL_IDS between core and browser-safe adapter', () => {
+    expect(BROWSER_CELL_IDS).toBe(SHARED_CELL_IDS);
+    expect(CELL_IDS).toBe(SHARED_CELL_IDS);
+  });
+});
+
+describe('diagnostic file source', () => {
+  it('collects array-backed files in deterministic order', async () => {
+    const source = createArrayFileSource([
+      { path: 'b.js', content: 'export const b = 1;' },
+      { path: 'a.js', content: 'export const a = 1;' },
+    ]);
+
+    const files = await collectFileSource(source);
+    expect(files.map(file => file.path)).toEqual(['b.js', 'a.js']);
+  });
+
+  it('fails loudly when maxFiles is exceeded', async () => {
+    const source = createArrayFileSource([
+      { path: 'a.js', content: 'a' },
+      { path: 'b.js', content: 'b' },
+    ], { maxFiles: 1 });
+
+    await expect(collectFileSource(source)).rejects.toThrow('file limit exceeded');
+  });
+
+  it('fails loudly when maxTotalBytes is exceeded', async () => {
+    const source = createArrayFileSource([
+      { path: 'a.js', content: 'aaaa' },
+      { path: 'b.js', content: 'bbbb' },
+    ], { maxTotalBytes: 4 });
+
+    await expect(collectFileSource(source)).rejects.toThrow('total byte limit exceeded');
   });
 });
 
@@ -357,6 +457,56 @@ describe('runDiagnostic()', () => {
     });
 
     expect(report.cells).toEqual([CELL_IDS.TEST_COVERAGE]);
+  });
+
+  it('runs streaming-native cells from a file source without a files array', async () => {
+    const fileSource = createArrayFileSource([TEST_FILE]);
+    const report = await runDiagnostic({
+      snapshot: EMPTY_SNAPSHOT,
+      fileSource,
+      commitHash: 'stream-test',
+      trigger: 'test',
+      cellFilter: [CELL_IDS.FIXTURE_SHAPE],
+    });
+
+    expect(report.cells).toEqual([CELL_IDS.FIXTURE_SHAPE]);
+    expect(report.summary.totalErrors).toBeGreaterThan(0);
+  });
+
+  it('streams a synthetic 100k-file source through a streaming-native cell', async () => {
+    let listed = 0;
+    let read = 0;
+    const fileSource = {
+      limits: { maxFiles: 100_000, maxFileBytes: 1_000, maxTotalBytes: 100_000 },
+      async *listPaths() {
+        for (let i = 0; i < 100_000; i++) {
+          listed += 1;
+          yield { path: `src/generated/file-${i}.js`, sizeBytes: 0 };
+        }
+      },
+      async read(filePath) {
+        read += 1;
+        return { path: filePath, content: '', sizeBytes: 0 };
+      },
+      async *readRecords() {
+        for await (const listedFile of this.listPaths()) {
+          yield this.read(listedFile.path);
+        }
+      },
+    };
+
+    const report = await runDiagnostic({
+      snapshot: EMPTY_SNAPSHOT,
+      fileSource,
+      commitHash: 'stream-100k',
+      trigger: 'test',
+      cellFilter: [CELL_IDS.FIXTURE_SHAPE],
+    });
+
+    expect(report.cells).toEqual([CELL_IDS.FIXTURE_SHAPE]);
+    expect(report.summary.totalErrors).toBe(0);
+    expect(listed).toBe(100_000);
+    expect(read).toBe(100_000);
   });
 });
 
@@ -732,6 +882,21 @@ describe('buildSynthesisSnapshot()', () => {
     const snapshot = buildSynthesisSnapshot(results);
     expect(snapshot.BYTECODE_PROVENANCE_VALID).toBe(0.5);
   });
+
+  it('builds explainable synthesis projections with missing signal metadata', () => {
+    const projection = buildSynthesisProjection([
+      { cellId: 'IMMUNITY_SCAN', cellError: null, health: [{}], errors: [] },
+    ]);
+
+    expect(projection.snapshot.BYTECODE_DECODABLE).toBe(1);
+    expect(projection.projections[0]).toMatchObject({
+      signalKey: 'AUTH_SENDER_MATCH',
+      sourceCellId: 'IMMUNITY_SCAN',
+      score: 1,
+    });
+    expect(projection.projections[0].evidence).toContain('health:1');
+    expect(projection.missingSignals).toContain('BYTECODE_CHECKSUM_VALID');
+  });
 });
 
 describe('runDiagnostic() — synthesis wiring', () => {
@@ -746,6 +911,8 @@ describe('runDiagnostic() — synthesis wiring', () => {
     expect(report.synthesis).toBeDefined();
     expect(report.synthesis.enforced).toBe(false);
     expect(report.synthesis.mind).toBeDefined();
+    expect(Array.isArray(report.synthesis.projections)).toBe(true);
+    expect(Array.isArray(report.synthesis.missingSignals)).toBe(true);
     expect(typeof report.synthesis.mind.mindState).toBe('string');
     expect(typeof report.synthesis.mind.globalHealth).toBe('number');
   });
