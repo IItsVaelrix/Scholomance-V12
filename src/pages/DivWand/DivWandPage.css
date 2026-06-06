@@ -33,7 +33,7 @@
 }
 
 .dw-header-icon {
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
   flex-shrink: 0;
 }
 
@@ -41,7 +41,7 @@
   margin: 0;
   font-size: var(--text-sm);
   font-weight: 700;
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
   font-family: var(--font-display);
   letter-spacing: 0.04em;
   text-shadow: 0 0 12px rgba(201, 162, 39, 0.28);
@@ -68,7 +68,7 @@
   padding: 5px 12px;
   background: rgba(201, 162, 39, 0.08);
   border: 1px solid rgba(201, 162, 39, 0.35);
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   border-radius: 4px;
@@ -83,14 +83,14 @@
 }
 
 .dw-btn--active {
-  background: var(--divination-primary, #c9a227);
+  background: var(--divination-primary, var(--chrome-gold, #c9a227));
   color: #07090e;
-  border-color: var(--divination-primary, #c9a227);
+  border-color: var(--divination-primary, var(--chrome-gold, #c9a227));
   font-weight: 700;
 }
 
 .dw-btn--active:hover {
-  background: var(--divination-primary, #c9a227);
+  background: var(--divination-primary, var(--chrome-gold, #c9a227));
   box-shadow: 0 0 12px rgba(201, 162, 39, 0.4);
 }
 
@@ -232,7 +232,7 @@
 .dw-preset-pill--active {
   background: rgba(201, 162, 39, 0.12);
   border-color: rgba(201, 162, 39, 0.5);
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
 }
 
 /* ── EDITOR ──────────────────────────────────────────────────────────────── */
@@ -418,7 +418,7 @@
 .div-elem-title {
   font-weight: 700;
   font-size: 0.9rem;
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
 }
 
 .div-elem-subtitle {
@@ -456,7 +456,7 @@
   justify-content: center;
   width: 100%;
   height: 100%;
-  color: var(--school-color, var(--divination-primary, #c9a227));
+  color: var(--school-color, var(--divination-primary, var(--chrome-gold, #c9a227)));
 }
 
 /* ── STYLE VARIANTS ──────────────────────────────────────────────────────── */
@@ -469,7 +469,7 @@
 }
 
 .variant-neonBorder {
-  border: 1px solid var(--school-color, var(--divination-primary, #c9a227)) !important;
+  border: 1px solid var(--school-color, var(--divination-primary, var(--chrome-gold, #c9a227))) !important;
   box-shadow: 0 0 14px var(--school-glow, rgba(201, 162, 39, 0.25)) !important;
 }
 
@@ -548,7 +548,7 @@
 }
 
 .dw-zoom-btn:hover:not(:disabled) {
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
   background: rgba(201, 162, 39, 0.1);
 }
 
@@ -597,7 +597,7 @@
 }
 
 .dw-hud-id {
-  color: var(--divination-primary, #c9a227);
+  color: var(--divination-primary, var(--chrome-gold, #c9a227));
   font-weight: 700;
   letter-spacing: 0.02em;
   overflow: hidden;
@@ -631,4 +631,19 @@
 
 .dw-hud-measured {
   color: var(--necromancy-primary, #32c850) !important;
+}
+
+/* ── REDUCED MOTION ────────────────────────────────────────────────────────
+   LAW (non-negotiable): respect prefers-reduced-motion. Neutralize the
+   inspector pulse, CRT effects and transitions inside the DivWand surface.
+   Framer Motion transitions are also zeroed via usePrefersReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  .dw-container *,
+  .dw-container *::before,
+  .dw-container *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -6,36 +6,23 @@ import {
   Download,
 } from 'lucide-react';
 import { validateDivProposal } from '../../lib/engine.adapter.js';
+import { generateCatalogId } from '../../lib/catalogId.js';
 import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
 import { buildDivWandGodotExport } from '../../lib/godot-export/divwandGodotExport.js';
 import './DivWandPage.css';
 
 // ── BROWSER-SAFE CATALOG ──────────────────────────────────────────────────────
-// Mirrors div-layout-registrar.js using FNV-1a + localStorage instead of node:fs
+// Mirrors div-layout-registrar.js using the shared catalog hasher + localStorage
+// instead of node:fs. Hash helpers live in src/lib/catalogId.js (shared with Wand).
 
 const CATALOG_KEY = 'scholomance.div-catalog';
-
-function serializeDeterministic(obj) {
-  if (obj === null || typeof obj !== 'object') return JSON.stringify(obj);
-  if (Array.isArray(obj)) return '[' + obj.map(serializeDeterministic).join(',') + ']';
-  const keys = Object.keys(obj).sort();
-  return '{' + keys.map(k => `"${k}":${serializeDeterministic(obj[k])}`).join(',') + '}';
-}
-
-function fnv1a(str) {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = (h * 0x01000193) >>> 0;
-  }
-  return h.toString(16).padStart(8, '0');
-}
 
 function browserRegisterDivLayout(proposal) {
   const role       = proposal.proposedLayout.role;
   const intentHash = proposal.sourceIntentHash || '';
-  const catalogId  = `cat-div-${fnv1a(`${role}:${serializeDeterministic(proposal.proposedLayout)}:${intentHash}`)}`;
+  const catalogId  = generateCatalogId(role, proposal.proposedLayout, intentHash, 'cat-div');
 
   let existing = [];
   try { existing = JSON.parse(localStorage.getItem(CATALOG_KEY) || '[]'); } catch { existing = []; }
@@ -216,10 +203,10 @@ const PRESETS = [
 // ── LAYOUT NODE ───────────────────────────────────────────────────────────────
 
 const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, hoveredId, onHover, onLeave, rootRef }) {
+  // mouseover/mouseout bubble, so stopPropagation makes the innermost node under
+  // the cursor win without mutating the native event to dedupe handlers.
   const handleMouseEnter = useCallback((e) => {
     if (!node || !isInspectorActive) return;
-    if (e.nativeEvent && e.nativeEvent._inspectorHandled) return;
-    if (e.nativeEvent) e.nativeEvent._inspectorHandled = true;
     e.stopPropagation();
     const el = e.currentTarget;
     const rect = el.getBoundingClientRect();
@@ -241,8 +228,6 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 
   const handleMouseLeave = useCallback((e) => {
     if (!node || !isInspectorActive) return;
-    if (e.nativeEvent && e.nativeEvent._inspectorLeaveHandled) return;
-    if (e.nativeEvent) e.nativeEvent._inspectorLeaveHandled = true;
     e.stopPropagation();
     onLeave(node.id);
   }, [isInspectorActive, node, onLeave]);
@@ -278,14 +263,16 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
     opacity: node.style?.opacity,
   };
 
-  const sharedProps = { 
-    id: node.id, 
-    className, 
-    style, 
-    onMouseEnter: handleMouseEnter, 
+  const sharedProps = {
+    // NOTE: node.id is emitted as a real DOM id because the inspector QA suite
+    // (and any external selector) queries nodes by `#id`. User JSON *can* carry
+    // duplicate ids (invalid DOM), but that's an authoring-data concern, not
+    // something to fix by breaking the id selector contract.
+    id: node.id,
+    className,
+    style,
     onMouseOver: handleMouseEnter,
-    onMouseLeave: handleMouseLeave,
-    onMouseOut: handleMouseLeave 
+    onMouseOut: handleMouseLeave
   };
 
   if (node.type === 'element') {
@@ -329,6 +316,7 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 
 export default function DivWandPage() {
   const isGodotExportEnabled = useGodotExportFlag();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [selectedPreset, setSelectedPreset]     = useState(PRESETS[0]);
   const [proposalText, setProposalText]         = useState(() => JSON.stringify(PRESETS[0].proposal, null, 2));
   const [validationResult, setValidationResult] = useState({ valid: true, ok: true, errors: [] });
@@ -383,6 +371,9 @@ export default function DivWandPage() {
     const text = e.target.value;
     setProposalText(text);
     debouncedValidate(text);
+    // Manual edits diverge from the loaded preset — drop the active pill so the
+    // highlight reflects what's actually in the editor.
+    setSelectedPreset(prev => (prev && text === JSON.stringify(prev.proposal, null, 2) ? prev : null));
   }, [debouncedValidate]);
 
   const handleFormatJSON = useCallback(() => {
@@ -541,9 +532,9 @@ export default function DivWandPage() {
               {PRESETS.map(p => (
                 <button
                   key={p.id}
-                  className={`dw-preset-pill${selectedPreset.id === p.id ? ' dw-preset-pill--active' : ''}`}
+                  className={`dw-preset-pill${selectedPreset?.id === p.id ? ' dw-preset-pill--active' : ''}`}
                   onClick={() => handlePresetSelect(p)}
-                  aria-pressed={selectedPreset.id === p.id}
+                  aria-pressed={selectedPreset?.id === p.id}
                 >
                   {p.name}
                 </button>
@@ -664,10 +655,10 @@ export default function DivWandPage() {
                 className="dw-hud"
                 role="status"
                 aria-label={`Inspecting node ${hoveredNodeInfo.id}`}
-                initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                initial={prefersReducedMotion ? false : { opacity: 0, y: 8, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.97 }}
-                transition={{ duration: 0.14 }}
+                exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 8, scale: 0.97 }}
+                transition={{ duration: prefersReducedMotion ? 0 : 0.14 }}
               >
                 <div className="dw-hud-header">
                   <span className="dw-hud-id">{hoveredNodeInfo.id}</span>

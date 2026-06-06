@@ -43,7 +43,7 @@
 }
 
 .logo-sparkle {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   filter: drop-shadow(0 0 8px rgba(212, 175, 55, 0.8));
 }
 
@@ -58,7 +58,7 @@
 
 .version-tag {
   font-size: 10px;
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   border: 1px solid rgba(212, 175, 55, 0.5);
   border-radius: 4px;
   padding: 2px 6px;
@@ -138,12 +138,12 @@
 }
 
 .panel-tab:hover {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   background-color: rgba(212, 175, 55, 0.02);
 }
 
 .panel-tab.active {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   background-color: #0c0c16;
   font-weight: 700;
 }
@@ -155,7 +155,7 @@
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #d4af37;
+  background-color: var(--chrome-gold, #d4af37);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.8);
 }
 
@@ -175,11 +175,11 @@
 .parameters-tab h3,
 .raw-json-tab h3 {
   font-size: 12px;
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   margin: 0 0 12px 0;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  border-left: 2px solid #d4af37;
+  border-left: 2px solid var(--chrome-gold, #d4af37);
   padding-left: 8px;
 }
 
@@ -221,7 +221,7 @@
 
 .preset-badge {
   font-size: 9px;
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   border: 1px solid rgba(0, 245, 255, 0.3);
   padding: 1px 4px;
   border-radius: 3px;
@@ -246,13 +246,13 @@
 }
 
 .custom-preset-card .preset-badge {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   border-color: rgba(212, 175, 55, 0.3);
 }
 
 .preset-id-tag {
   font-size: 9px;
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   display: block;
   margin-top: 6px;
 }
@@ -329,7 +329,7 @@
 .input-group input:focus,
 .input-group select:focus,
 .input-group textarea:focus {
-  border-color: #d4af37;
+  border-color: var(--chrome-gold, #d4af37);
   box-shadow: 0 0 8px rgba(212, 175, 55, 0.15);
 }
 
@@ -393,14 +393,14 @@
 }
 
 .dialect-select-btn:hover {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   border-color: rgba(212, 175, 55, 0.4);
 }
 
 .dialect-select-btn.active {
   background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.02) 100%);
-  border-color: #d4af37;
-  color: #d4af37;
+  border-color: var(--chrome-gold, #d4af37);
+  color: var(--chrome-gold, #d4af37);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
 }
 
@@ -413,7 +413,7 @@
 
 .dialect-subfields h4 {
   font-size: 11px;
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   margin: 0 0 12px 0;
   text-transform: uppercase;
 }
@@ -436,7 +436,7 @@
 }
 
 .range-header span {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   font-weight: 700;
 }
 
@@ -455,7 +455,7 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #d4af37;
+  background: var(--chrome-gold, #d4af37);
   cursor: pointer;
   box-shadow: 0 0 8px rgba(212, 175, 55, 0.8);
   transition: transform 0.1s ease;
@@ -476,7 +476,7 @@
 .add-child-btn {
   background-color: rgba(0, 245, 255, 0.1);
   border: 1px solid rgba(0, 245, 255, 0.4);
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   font-family: inherit;
   font-size: 9px;
   text-transform: uppercase;
@@ -565,7 +565,7 @@
 }
 
 .json-textarea:focus {
-  border-color: #d4af37;
+  border-color: var(--chrome-gold, #d4af37);
   color: #ffffff;
   box-shadow: 0 0 12px rgba(212, 175, 55, 0.1);
 }
@@ -597,7 +597,7 @@
 }
 
 .text-gold {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
 }
 
 .preview-telemetry {
@@ -674,7 +674,7 @@
 
 .terminal-header h3 {
   font-size: 10px;
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   margin: 0;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -786,20 +786,20 @@
 }
 
 .action-btn:hover {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   border-color: rgba(212, 175, 55, 0.6);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.1);
 }
 
 .action-btn.active {
   background-color: rgba(212, 175, 55, 0.12);
-  color: #d4af37;
-  border-color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
+  border-color: var(--chrome-gold, #d4af37);
   box-shadow: 0 0 10px rgba(212, 175, 55, 0.15);
 }
 
 .persist-btn {
-  background: linear-gradient(135deg, #d4af37 0%, #aa8410 100%);
+  background: linear-gradient(135deg, var(--chrome-gold, #d4af37) 0%, #aa8410 100%);
   color: #000000;
   border: none;
   font-weight: 700;
@@ -807,7 +807,7 @@
 }
 
 .persist-btn:hover {
-  background: linear-gradient(135deg, #ffdb58 0%, #d4af37 100%);
+  background: linear-gradient(135deg, #ffdb58 0%, var(--chrome-gold, #d4af37) 100%);
   color: #000000;
   box-shadow: 0 0 15px rgba(212, 175, 55, 0.4);
 }
@@ -879,7 +879,7 @@
 .tq-telemetry-panel .telemetry-title {
   font-size: 11px;
   font-weight: 700;
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   letter-spacing: 1.5px;
   text-shadow: 0 0 8px rgba(0, 245, 255, 0.5);
 }
@@ -896,7 +896,7 @@
 
 .tq-telemetry-panel .backend-badge.wasm-active {
   background: rgba(0, 245, 255, 0.1);
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   border: 1px solid rgba(0, 245, 255, 0.3);
 }
 
@@ -914,8 +914,8 @@
 }
 
 .tq-telemetry-panel .backend-badge.wasm-active .badge-beacon {
-  background-color: #00f5ff;
-  box-shadow: 0 0 8px #00f5ff;
+  background-color: var(--school-psychic, #00f5ff);
+  box-shadow: 0 0 8px var(--school-psychic, #00f5ff);
   animation: beacon-pulse 1.5s infinite alternate;
 }
 
@@ -961,12 +961,12 @@
 }
 
 .tq-telemetry-panel .metric-value.text-glow-cyan {
-  color: #00f5ff;
+  color: var(--school-psychic, #00f5ff);
   text-shadow: 0 0 8px rgba(0, 245, 255, 0.3);
 }
 
 .tq-telemetry-panel .metric-value.text-glow-gold {
-  color: #d4af37;
+  color: var(--chrome-gold, #d4af37);
   text-shadow: 0 0 8px rgba(212, 175, 55, 0.3);
 }
 
@@ -1045,5 +1045,20 @@
 .text-glow-aurora {
   color: #a78bfa;
   text-shadow: 0 0 8px rgba(167, 139, 250, 0.3);
+}
+
+/* ── REDUCED MOTION ────────────────────────────────────────────────────────
+   LAW (non-negotiable): respect prefers-reduced-motion. Neutralize the
+   spin/pulse/scanline animations and transitions inside the Wand surface. The
+   JS temporal-shift loop is also disabled via usePrefersReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  .wand-workspace *,
+  .wand-workspace *::before,
+  .wand-workspace *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 

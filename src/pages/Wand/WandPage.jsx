@@ -6,74 +6,45 @@
  *              evaluation, role-dispatched rendering, and robust fail-closed validation.
  */
 
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
-  Terminal, 
-  Settings, 
-  Save, 
-  ShieldAlert, 
-  RefreshCw, 
-  FileCode, 
-  Play, 
-  AlertTriangle, 
-  CheckCircle, 
-  Layers, 
-  Sliders, 
-  Plus, 
-  Trash2, 
+import {
+  Sparkles,
+  Terminal,
+  Save,
+  ShieldAlert,
+  RefreshCw,
+  FileCode,
+  AlertTriangle,
+  Layers,
+  Sliders,
+  Plus,
+  Trash2,
   FolderOpen,
   Download,
 } from 'lucide-react';
 
 // Core engine imports
-import { 
-  validateProposal, 
-  evaluateFormula, 
-  snapToPixelGrid, 
+import {
+  validateProposal,
+  evaluateFormula,
+  snapToPixelGrid,
   resolvePixelGridSize,
   initializeTurboQuant,
-  quantizeFlatCoordinates,
-  isWasmActive
+  quantizeFlatCoordinates
 } from '../../lib/engine.adapter.js';
+import { generateCatalogId } from '../../lib/catalogId.js';
 import { roleDispatcher } from '../../ui/features/mysticHolistics/hero/roleDispatcher';
 import { registerBuiltInDrawers } from '../../ui/features/mysticHolistics/hero/roleDrawers';
 import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
 import { buildWandGodotExport } from '../../lib/godot-export/wandGodotExport.js';
 import { routeRetinaPacketToPhotonicBridge } from '../../lib/photonic-retina/index.js';
+import { deriveWandFillBytecode } from '../../lib/pixelbrain.adapter.js';
+import { publishWandFill } from '../../lib/wandPixelbrainBridge.js';
 
 import './WandPage.css';
-
-// ── BROWSER-SAFE DETERMINISTIC ID GENERATOR ───────────────────────────────────
-
-function serializeDeterministic(obj) {
-  if (obj === null || typeof obj !== 'object') {
-    return JSON.stringify(obj);
-  }
-  if (Array.isArray(obj)) {
-    return '[' + obj.map(serializeDeterministic).join(',') + ']';
-  }
-  const sortedKeys = Object.keys(obj).sort();
-  const parts = sortedKeys.map(k => `"${k}":${serializeDeterministic(obj[k])}`);
-  return '{' + parts.join(',') + '}';
-}
-
-function computeFNV1a(str) {
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);
-    hash = (hash * 0x01000193) >>> 0;
-  }
-  return hash.toString(16).padStart(8, '0');
-}
-
-function generateCatalogId(role, formula, sourceIntentHash = '') {
-  const formulaBytes = serializeDeterministic(formula);
-  const compositeKey = `${role}:${formulaBytes}:${sourceIntentHash}`;
-  return `cat-${computeFNV1a(compositeKey)}`;
-}
 
 // ── INITIAL PRESETS ──────────────────────────────────────────────────────────
 
@@ -293,9 +264,9 @@ const REGISTERED_DRAWER_ROLES = ["shrine.window", "shrine.moon", "shrine.cabinet
 
 export default function WandPage() {
   const isGodotExportEnabled = useGodotExportFlag();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [proposal, setProposal] = useState(INITIAL_PRESETS[0].proposal);
   const [rawJsonText, setRawJsonText] = useState(JSON.stringify(INITIAL_PRESETS[0].proposal, null, 2));
-  const [editorMode, setEditorMode] = useState('visual'); // 'visual' | 'json'
   const [customPresets, setCustomPresets] = useState([]);
   const [activeTab, setActiveTab] = useState('preset'); // 'preset' | 'params' | 'json'
   
@@ -310,12 +281,18 @@ export default function WandPage() {
 
   // Animation time
   const [time, setTime] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(true);
+  const [isAnimating, setIsAnimating] = useState(() => !prefersReducedMotion);
+
+  // Honor reduced-motion: never auto-run the temporal-shift loop when the user
+  // has asked the OS to minimize motion (LAW: usePrefersReducedMotion gates motion).
+  useEffect(() => {
+    if (prefersReducedMotion) setIsAnimating(false);
+  }, [prefersReducedMotion]);
 
   // References
   const canvasRef = useRef(null);
-  const animationFrameRef = useRef(null);
   const debounceTimerRef = useRef(null);
+  const quantThrottleRef = useRef(0);
 
   // ── TERMINAL LOGGER ──────────────────────────────────────────────────────────
   const addTerminalLog = useCallback((message, severity = 'info') => {
@@ -360,7 +337,15 @@ export default function WandPage() {
       return;
     }
 
+    // Throttle (not reset-on-every-change): while the temporal-shift loop is
+    // running, `coordinates` is replaced ~60×/s. A plain debounce would clear
+    // its timer every frame and never fire, so the telemetry panels stayed dead
+    // during animation. Cap to one recompute per ~250ms instead.
+    const elapsed = Date.now() - quantThrottleRef.current;
+    const delay = Math.max(0, 250 - elapsed);
+
     const timer = setTimeout(() => {
+      quantThrottleRef.current = Date.now();
       const targetCoords = coordinates.filter(c => c.role === 'text.vector' || c.role === 'ink.ballpoint');
       if (targetCoords.length === 0) {
         setQuantStats(null);
@@ -406,44 +391,49 @@ export default function WandPage() {
         console.error("Photonic Bridge routing error:", err);
         setPhotonicRoute(null);
       }
-    }, 50);
+    }, delay);
 
     return () => clearTimeout(timer);
   }, [coordinates]);
 
   // ── DETECT CHANGES AND RUN DEBOUNCED ENGINE ──────────────────────────────────
-  const runEvaluation = useCallback((currentProposal) => {
-    // 1. Perform schema/proposal validation
-    const validation = validateProposal(currentProposal);
-    setValidationResult(validation);
+  // `silent` is used by the animation tick: it re-evaluates geometry for the
+  // current (already-validated) proposal without re-running validation, writing
+  // diagnostics, or spamming the terminal once per frame.
+  const runEvaluation = useCallback((currentProposal, { silent = false } = {}) => {
+    // 1. Perform schema/proposal validation (skipped on silent animation ticks).
+    if (!silent) {
+      const validation = validateProposal(currentProposal);
+      setValidationResult(validation);
 
-    if (!validation.valid) {
-      setCoordinates([]);
-      setMetrics({ pointCount: 0, overflowed: false });
-      
-      const logMsg = `Validation failed: ${validation.errors[0]}`;
-      const code = validation.bytecodeError?.bytecode || "PB-ERR-UNKNOWN";
-      addTerminalLog(`[${code}] ${logMsg}`, "error");
+      if (!validation.valid) {
+        setCoordinates([]);
+        setMetrics({ pointCount: 0, overflowed: false });
 
-      // Populate diagnostics list
-      setDiagnostics([
-        {
-          type: 'FORMULA_PROPOSAL_REJECTED',
-          errors: validation.errors,
-          bytecodeError: code,
-          proposal: currentProposal
-        }
-      ]);
-      return;
+        const logMsg = `Validation failed: ${validation.errors[0]}`;
+        const code = validation.bytecodeError?.bytecode || "PB-ERR-UNKNOWN";
+        addTerminalLog(`[${code}] ${logMsg}`, "error");
+
+        // Populate diagnostics list
+        setDiagnostics([
+          {
+            type: 'FORMULA_PROPOSAL_REJECTED',
+            errors: validation.errors,
+            bytecodeError: code,
+            proposal: currentProposal
+          }
+        ]);
+        return;
+      }
+
+      // 2. Clear diagnostics on a fresh, valid user-driven evaluation.
+      setDiagnostics([]);
     }
 
-    // 2. Clear diagnostics and evaluate coordinates
-    setDiagnostics([]);
-    
     try {
       const { proposedFormula } = currentProposal;
       const rawCoords = evaluateProposalCoordinates(proposedFormula, { width: 800, height: 600 }, time);
-      
+
       const resolvedGridSize = resolvePixelGridSize({
         canvasSize: {
           width: 800,
@@ -451,27 +441,29 @@ export default function WandPage() {
           gridSize: proposedFormula.formula.cellSize ?? proposedFormula.formula.parameters?.cellSize ?? 1
         }
       });
-      
+
       const snapped = snapToPixelGrid(rawCoords, resolvedGridSize);
       const evaluated = snapped.map((coord, idx) => ({
         ...coord,
         rawX: rawCoords[idx]?.x,
         rawY: rawCoords[idx]?.y
       }));
-      
+
       let overflowed = false;
       let finalCoords = [...evaluated];
 
       if (finalCoords.length > 2000) {
         overflowed = true;
         finalCoords = finalCoords.slice(0, 2000);
-        addTerminalLog(`Warning: Evaluation generated ${rawCoords.length} points, exceeding safety cap of 2000. Clamped.`, "warning");
-        setDiagnostics([
-          {
-            type: 'FORMULA_EVAL_WARN',
-            message: `Evaluation generated ${rawCoords.length} points, exceeding 2000 point budget. Preview is truncated.`
-          }
-        ]);
+        if (!silent) {
+          addTerminalLog(`Warning: Evaluation generated ${rawCoords.length} points, exceeding safety cap of 2000. Clamped.`, "warning");
+          setDiagnostics([
+            {
+              type: 'FORMULA_EVAL_WARN',
+              message: `Evaluation generated ${rawCoords.length} points, exceeding 2000 point budget. Preview is truncated.`
+            }
+          ]);
+        }
       }
 
       setCoordinates(finalCoords);
@@ -479,13 +471,15 @@ export default function WandPage() {
         pointCount: rawCoords.length,
         overflowed
       });
-      
-      if (evaluated.length > 0) {
+
+      if (!silent && evaluated.length > 0) {
         const uniqueRoles = Array.from(new Set(finalCoords.map(c => c.role)));
         addTerminalLog(`Successfully evaluated ${finalCoords.length} points across roles: [${uniqueRoles.join(', ')}]`, "success");
       }
     } catch (e) {
-      addTerminalLog(`Runtime evaluation error: ${e.message}`, "error");
+      if (!silent) {
+        addTerminalLog(`Runtime evaluation error: ${e.message}`, "error");
+      }
       setCoordinates([]);
     }
   }, [time, addTerminalLog]);
@@ -544,11 +538,37 @@ export default function WandPage() {
         const dx = worldAnchorX - subWidth / 2;
         const dy = worldAnchorY - subHeight / 2;
 
+        let angleDeg = child.rotation ?? 0;
+        if (child.rotationSpeed) {
+          angleDeg += child.rotationSpeed * (t / 1000);
+        }
+        if (child.rotationSwingRange) {
+          const swingSpeed = child.rotationSwingSpeed ?? 1.0;
+          angleDeg += Math.sin((t / 1000) * swingSpeed) * child.rotationSwingRange;
+        }
+
+        const rotateLocal = angleDeg !== 0;
+        const rad = angleDeg * Math.PI / 180;
+        const cosVal = Math.cos(rad);
+        const sinVal = Math.sin(rad);
+        const localCenterX = subWidth / 2;
+        const localCenterY = subHeight / 2;
+
         rawCoords.forEach(c => {
+          let px = c.x;
+          let py = c.y;
+
+          if (rotateLocal) {
+            const rx = px - localCenterX;
+            const ry = py - localCenterY;
+            px = localCenterX + rx * cosVal - ry * sinVal;
+            py = localCenterY + rx * sinVal + ry * cosVal;
+          }
+
           coords.push({
             ...c,
-            x: c.x + dx,
-            y: c.y + dy,
+            x: px + dx,
+            y: py + dy,
             role: child.role,
             material: child.material || material,
             paletteChannel: child.paletteChannel !== undefined ? child.paletteChannel : proposedFormula.paletteChannel
@@ -574,16 +594,27 @@ export default function WandPage() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Pull the chamber palette from theme tokens (school-reactive) rather than
+    // hardcoding hex in the render logic. Fallbacks preserve the prior look when
+    // a token is absent (e.g. SSR / isolated test render).
+    const styles = getComputedStyle(canvas);
+    const readToken = (name, fallback) => styles.getPropertyValue(name).trim() || fallback;
+    const voidColor = readToken('--bg-void', '#0a0a14');
+    const goldColor = readToken('--chrome-gold', '#d4af37');
+    const accentColor = readToken('--active-school-color', '') || readToken('--school-psychic', '#00f5ff');
+
     let localFrame;
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       // Render parchment backing / dark chamber ambience
-      ctx.fillStyle = '#0a0a14'; // Dark mystical indigo void
+      ctx.fillStyle = voidColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Subtle atmospheric grid
-      ctx.strokeStyle = 'rgba(212, 175, 55, 0.05)';
+      // Subtle atmospheric grid (gold anchor, very low alpha)
+      ctx.save();
+      ctx.globalAlpha = 0.05;
+      ctx.strokeStyle = goldColor;
       ctx.lineWidth = 1;
       const step = 40;
       for (let x = 0; x < canvas.width; x += step) {
@@ -592,12 +623,16 @@ export default function WandPage() {
       for (let y = 0; y < canvas.height; y += step) {
         ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
       }
+      ctx.restore();
 
-      // Draw mathematical guides
-      ctx.strokeStyle = 'rgba(0, 245, 255, 0.03)';
+      // Draw mathematical guides (school accent)
+      ctx.save();
+      ctx.globalAlpha = 0.03;
+      ctx.strokeStyle = accentColor;
       ctx.beginPath();
       ctx.arc(canvas.width/2, canvas.height/2, 200, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
 
       // Dispatch coordinate roles
       try {
@@ -617,12 +652,14 @@ export default function WandPage() {
     return () => cancelAnimationFrame(localFrame);
   }, [coordinates, isAnimating]);
 
-  // Re-run evaluation when time changes to drive animation smoothly
+  // Re-run evaluation when time changes to drive animation smoothly.
+  // Silent so the per-frame tick doesn't re-validate or flood the terminal;
+  // gated on a currently-valid proposal so we never animate rejected geometry.
   useEffect(() => {
-    if (isAnimating) {
-      runEvaluation(proposal);
+    if (isAnimating && validationResult.valid) {
+      runEvaluation(proposal, { silent: true });
     }
-  }, [time, isAnimating, runEvaluation, proposal]);
+  }, [time, isAnimating, validationResult.valid, runEvaluation, proposal]);
 
   // ── REGISTRY PERSISTENCE (UNKNOWN ROLE GATING) ────────────────────────────────
   const handleSaveToCatalog = () => {
@@ -679,8 +716,37 @@ export default function WandPage() {
     }
   };
 
+  // Emit a PixelBrain fill bytecode derived from this proposal, for the
+  // template/fill pipeline to consume (replaces PixelBrain's manual dropdowns).
+  const handleSendToPixelBrain = () => {
+    try {
+      const pf = proposal?.proposedFormula || {};
+      const spec = deriveWandFillBytecode(pf);
+      const geometry = coordinates.map((c) => ({
+        x: Number(c.snappedX ?? c.x ?? 0),
+        y: Number(c.snappedY ?? c.y ?? 0),
+      }));
+      publishWandFill({
+        ...spec,
+        role: pf.role,
+        material: pf.material,
+        coordinates: geometry,
+        canvas: { width: 800, height: 600 },
+      });
+      addTerminalLog(
+        `Emitted ${spec.bytecode} + ${geometry.length} geometry points → PixelBrain (from ${spec.source}).`,
+        'success',
+      );
+    } catch (err) {
+      addTerminalLog(`PixelBrain handoff failed: ${err.message}`, 'error');
+    }
+  };
+
   const handleLoadPreset = (presetProposal, name) => {
-    handleProposalChange(presetProposal, 'visual');
+    // Deep-copy: presets are module-level constants (and saved catalog entries).
+    // Editing must never mutate the source object that every card renders from.
+    const draft = JSON.parse(JSON.stringify(presetProposal));
+    handleProposalChange(draft, 'visual');
     addTerminalLog(`Loaded preset: "${name}"`, "info");
   };
 
@@ -820,6 +886,15 @@ export default function WandPage() {
               Export Godot
             </button>
           )}
+          <button
+            className="action-btn animate-btn"
+            onClick={handleSendToPixelBrain}
+            type="button"
+            title="Derive a fill bytecode from this proposal and send it to PixelBrain's template fill"
+          >
+            <Sparkles className="btn-icon" />
+            Send → PixelBrain
+          </button>
         </div>
       </header>
 
@@ -889,9 +964,11 @@ export default function WandPage() {
                         >
                           <div className="preset-card-header">
                             <h4>{p.name}</h4>
-                            <button 
+                            <button
                               className="delete-preset-btn"
                               onClick={(e) => handleDeleteCustomPreset(p.catalogId, e)}
+                              aria-label={`Delete saved catalog ${p.name}`}
+                              title="Delete catalog"
                             >
                               <Trash2 size={12} />
                             </button>
@@ -1274,8 +1351,10 @@ export default function WandPage() {
                             <div key={idx} className="composite-child-item">
                               <div className="child-item-header">
                                 <h5>Child #{idx + 1}: {child.role}</h5>
-                                <button 
+                                <button
                                   className="remove-child-btn"
+                                  aria-label={`Remove child layer ${idx + 1}`}
+                                  title="Remove child layer"
                                   onClick={() => {
                                     const updatedChildren = [...proposal.proposedFormula.formula.children];
                                     updatedChildren.splice(idx, 1);
@@ -1303,8 +1382,9 @@ export default function WandPage() {
                                     id={`wand-child-role-${idx}`}
                                     value={child.role}
                                     onChange={(e) => {
-                                      const updatedChildren = [...proposal.proposedFormula.formula.children];
-                                      updatedChildren[idx].role = e.target.value;
+                                      const updatedChildren = proposal.proposedFormula.formula.children.map(
+                                        (c, i) => (i === idx ? { ...c, role: e.target.value } : c)
+                                      );
                                       const updated = {
                                         ...proposal,
                                         proposedFormula: {
@@ -1332,8 +1412,9 @@ export default function WandPage() {
                                       type="number" step="0.05" min="0" max="1"
                                       value={child.anchor.x}
                                       onChange={(e) => {
-                                        const updatedChildren = [...proposal.proposedFormula.formula.children];
-                                        updatedChildren[idx].anchor.x = parseFloat(e.target.value) || 0;
+                                        const updatedChildren = proposal.proposedFormula.formula.children.map(
+                                          (c, i) => (i === idx ? { ...c, anchor: { ...c.anchor, x: parseFloat(e.target.value) || 0 } } : c)
+                                        );
                                         const updated = {
                                           ...proposal,
                                           proposedFormula: {
@@ -1351,8 +1432,9 @@ export default function WandPage() {
                                       type="number" step="0.05" min="0" max="1"
                                       value={child.anchor.y}
                                       onChange={(e) => {
-                                        const updatedChildren = [...proposal.proposedFormula.formula.children];
-                                        updatedChildren[idx].anchor.y = parseFloat(e.target.value) || 0;
+                                        const updatedChildren = proposal.proposedFormula.formula.children.map(
+                                          (c, i) => (i === idx ? { ...c, anchor: { ...c.anchor, y: parseFloat(e.target.value) || 0 } } : c)
+                                        );
                                         const updated = {
                                           ...proposal,
                                           proposedFormula: {
@@ -1543,21 +1625,23 @@ export default function WandPage() {
           </div>
 
           <div className="canvas-canvas-container">
-            <canvas 
-              ref={canvasRef} 
-              width={800} 
-              height={600} 
+            <canvas
+              ref={canvasRef}
+              width={800}
+              height={600}
               className="magic-canvas"
+              role="img"
+              aria-label={`Sanctuary preview rendering ${metrics.pointCount} coordinate points for role ${proposal.proposedFormula?.role || 'unknown'}`}
             />
             {/* Real-time Telemetry Panel */}
             <AnimatePresence>
               {(quantStats || photonicRoute) && (
-                <motion.div 
+                <motion.div
                   className="tq-telemetry-panel"
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={prefersReducedMotion ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.3 }}
+                  exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+                  transition={{ duration: prefersReducedMotion ? 0 : 0.3 }}
                 >
                   <div className="crt-scanlines" />
                   <div className="telemetry-split-layout">
