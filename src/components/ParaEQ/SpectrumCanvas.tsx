@@ -6,6 +6,7 @@ interface SpectrumCanvasProps {
   getByteFrequencyData: (array: Uint8Array) => void;
   currentSchoolId: string | null;
   signalLevel: number;
+  eqNodes?: any[];
 }
 
 // Master Detection Zones (Derived from Acoustic Phonetics & Genre Mastering Curves)
@@ -53,7 +54,7 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
       ctx.fillStyle = '#0d0b06';
       ctx.fillRect(0, 0, W, H);
 
-      // 2. Logarithmic Grid
+      // 2. Logarithmic Grid & 0dB Reference Line
       ctx.strokeStyle = 'rgba(201,162,39,0.10)';
       ctx.lineWidth = 1;
       const logGrid = [100, 1000, 10000];
@@ -61,6 +62,14 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
         const x = (Math.log10(freq / 20) / Math.log10(20000 / 20)) * W;
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       });
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, H / 2);
+      ctx.lineTo(W, H / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
 
       if (isPlaying) {
         getByteFrequencyData(dataArrayRef.current);
@@ -152,6 +161,56 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
         ctx.setLineDash([]);
       }
 
+      // 6. Draw Combined EQ Response Curve
+      if (eqNodes && eqNodes.length > 0) {
+        const numSteps = W;
+        const frequencyHz = new Float32Array(numSteps);
+        for (let i = 0; i < numSteps; i++) {
+          const fraction = i / W;
+          frequencyHz[i] = 20 * Math.pow(10, fraction * Math.log10(20000 / 20));
+        }
+        
+        const combinedMagResponse = new Float32Array(numSteps);
+        combinedMagResponse.fill(1); // 0dB
+        
+        const magResponse = new Float32Array(numSteps);
+        const phaseResponse = new Float32Array(numSteps);
+        
+        for (const node of eqNodes) {
+          if (typeof node.getFrequencyResponse === 'function') {
+            node.getFrequencyResponse(frequencyHz, magResponse, phaseResponse);
+            for (let i = 0; i < numSteps; i++) {
+              combinedMagResponse[i] *= magResponse[i];
+            }
+          }
+        }
+        
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < numSteps; i++) {
+          const gainLinear = combinedMagResponse[i];
+          const gainDb = 20 * Math.log10(gainLinear || 0.0001); // avoid -Infinity
+          const rangeDb = 24; // +/- 24 dB display range
+          let yFraction = (gainDb + rangeDb) / (rangeDb * 2); 
+          yFraction = 1 - Math.max(0, Math.min(1, yFraction)); // Invert Y and clamp
+          const y = H * yFraction;
+          if (i === 0) ctx.moveTo(0, y); // Start correctly
+          else ctx.lineTo(i, y);
+        }
+        ctx.stroke();
+        
+        ctx.lineTo(W, H/2);
+        ctx.lineTo(0, H/2);
+        const gradient = ctx.createLinearGradient(0, 0, 0, H);
+        gradient.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
+        gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.02)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.fill();
+      }
+
       rafIdRef.current = requestAnimationFrame(render);
     };
 
@@ -159,7 +218,7 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [isPlaying, getByteFrequencyData, currentSchoolId, signalLevel]);
+  }, [isPlaying, getByteFrequencyData, currentSchoolId, signalLevel, eqNodes]);
 
   return (
     <canvas 

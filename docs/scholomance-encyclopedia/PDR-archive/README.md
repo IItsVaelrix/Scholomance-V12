@@ -77,6 +77,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`rhyme_constellation_pdr.md`](./rhyme_constellation_pdr.md) | Proposed | UI Surface + Prediction + World-Law Cosmology | High (centerpiece UI) |
 | [`ritual_prediction_enhancement_pdr.md`](./ritual_prediction_enhancement_pdr.md) | Draft | Prediction + VerseIR + PixelBrain + Infrastructure | High |
 | [`scholomance_collab_console_ui_pdr.md`](./scholomance_collab_console_ui_pdr.md) | COMPLETE (Phases 1-4) | Architectural + Structural + Behavioral | Unclassified |
+| [`PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md`](./PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md) | Draft | Architectural · UI + Rendering · DSP · Persistence · World-Law | High |
 | [`scholomance_rpg_lore_sheet_pdr.md`](./scholomance_rpg_lore_sheet_pdr.md) | Canon Draft 1 | Architectural + Behavioral + Lore Infrastructure | Unclassified |
 | [`thorough_ai_combat_pdr.md`](./thorough_ai_combat_pdr.md) | Implemented | Combat + AI + VerseIR + UI | Critical |
 | [`truesight_surface_remediation_pdr.md`](./truesight_surface_remediation_pdr.md) | In Progress | Rendering + Runtime + UI + Performance | Critical |

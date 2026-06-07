@@ -7,13 +7,22 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.24** | Last updated: 2026-06-04
+**Version: 1.26** | Last updated: 2026-06-07
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
 
 ---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: ScholoCandy Eq Preset V2
+- Version: 1.24 -> 1.25
+- Changed fields: Added explicit v2 `scholomance/eq-preset` schema for the ScholoCandy DSP plugin. Formalized base32/sha256/crc32 bytecode encoding in Rust and removed reliance on python generation scripts. Added new FilterTypes (`BandPass`, `AllPass`, `Tilt`).
+- Breaking: yes (Codegen removed, DSP parameters refactored)
+- Claude impact: Web interfaces building preset strings must generate valid base32 bytecodes matching the updated Rust signature.
+- Gemini impact: Must rely on Rust code for preset manipulation, do not execute old codegen python scripts.
 
 ## SCHEMA CHANGE NOTICE
 
@@ -164,6 +173,31 @@ These are the current shared shapes used across `codex/core/`, `src/types/`, and
 
 ```ts
 type BytecodeXPSourceKind = "error" | "health" | "cccb";
+
+interface ScholoCandyEqPreset {
+  version: 2;
+  schema_id: "scholomance/eq-preset";
+  name: string;
+  school: School | null;
+  output_gain_db: number;
+  bands: Array<{
+    id: string; // "band_{base32}"
+    type: "bell" | "lowShelf" | "highShelf" | "lowPass" | "highPass" | "notch" | "bandPass" | "allPass" | "tilt";
+    frequency: number;
+    gain: number;
+    Q: number;
+    channel: "left" | "right" | "stereo" | "mid" | "side";
+    oversample: "1x" | "2x" | "4x" | "8x" | "auto";
+    bypass: boolean;
+  }>;
+  oversample: "1x" | "2x" | "4x" | "8x" | "auto";
+  analyzer: {
+    enabled: boolean;
+    peak_hold_ms: number;
+  };
+  bytecode: string; // "BIT-EQ-v1-{crc32}"
+  checksum: string; // 64-char sha256
+}
 
 interface BytecodeXPVaccineArtifact {
   version: "v1";
@@ -1798,6 +1832,9 @@ Backward compatible until: [date or "immediate breaking change"]
 | 1.21 | 2026-04-04 | Added `CollabAgent` framework_origin and `CollabBugReport` experience/ledger fields | no |
 | 1.22 | 2026-04-13 | Added `WordAnalysis` and documented required `rhymeKey` support for TrueSight rhyme color registry consumers | no |
 | 1.23 | 2026-04-18 | Added the canonical ritual prediction runtime and artifact contracts and reserved `PB-PRED-v1` for future exported prediction bytecode | no |
+| 1.24 | 2026-04-22 | Added catalog audio upload ingestion data contracts | no |
+| 1.25 | 2026-05-13 | Upgraded catalog and persistence layers | no |
+| 1.26 | 2026-06-07 | Added Eq Preset V2 schema and persistence endpoints | no |
 
 ---
 

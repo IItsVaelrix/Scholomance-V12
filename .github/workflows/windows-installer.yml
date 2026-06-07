@@ -1,0 +1,36 @@
+name: Build Windows Installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Build ScholoCandy VST3 and CLAP Bundles
+        run: |
+          cd vst/scholo-candy
+          cargo run -p xtask -- bundle scholo_candy --release
+
+      - name: Compile Inno Setup Installer
+        run: |
+          cd vst/scholo-candy
+          iscc ScholoCandy.iss
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScholoCandy-Windows-Installer
+          path: vst/scholo-candy/target/installer/ScholoCandy_Installer.exe

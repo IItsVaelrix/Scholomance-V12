@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "schema_id": "scholomance/eq-preset",
+  "name": "Alchemy Transmute",
+  "school": "ALCHEMY",
+  "output_gain_db": 0.0,
+  "bands": [
+    {
+      "id": "band_alch0000000",
+      "type": "bell",
+      "frequency": 800.0,
+      "gain": 2.0,
+      "Q": 1.2,
+      "channel": "stereo",
+      "oversample": "auto",
+      "bypass": false
+    }
+  ],
+  "oversample": "1x",
+  "analyzer": {
+    "enabled": true,
+    "peak_hold_ms": 2000.0
+  },
+  "bytecode": "BIT-EQ-v1-ALCH0000",
+  "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+  "verse_ir_excerpt": "A steady transformation of frequency into gold."
+}

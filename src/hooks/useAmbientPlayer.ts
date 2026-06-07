@@ -246,6 +246,26 @@ export function useAmbientPlayer(unlockedSchools: string[] = []): any {
     await service.ensureContextRunning();
   }, [service]);
 
+  const addEqBand = useCallback((band: any) => {
+    return service.addEqBand?.(band);
+  }, [service]);
+
+  const updateEqBand = useCallback((id: string, updates: any) => {
+    service.updateEqBand?.(id, updates);
+  }, [service]);
+
+  const removeEqBand = useCallback((id: string) => {
+    service.removeEqBand?.(id);
+  }, [service]);
+
+  const setEqBands = useCallback((bands: any[]) => {
+    service.setEqBands?.(bands);
+  }, [service]);
+
+  const getEqNodes = useCallback(() => {
+    return service.getEqNodes?.() || [];
+  }, [service]);
+
   return {
     ...state,
     currentSchoolId,
@@ -284,5 +304,11 @@ export function useAmbientPlayer(unlockedSchools: string[] = []): any {
     getAnalyser,
     getByteFrequencyData,
     ensureContextRunning,
+    addEqBand,
+    updateEqBand,
+    removeEqBand,
+    setEqBands,
+    getEqNodes,
+    eqBands: state.eqBands || [],
   };
 }

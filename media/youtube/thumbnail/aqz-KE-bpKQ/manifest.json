@@ -1,0 +1,17 @@
+{
+  "schema": "PB-YTDL-MANIFEST-v1",
+  "videoId": "aqz-KE-bpKQ",
+  "url": "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+  "licenseDeclaration": "public-domain",
+  "profile": "thumbnail",
+  "files": {
+    "info": "source.info.json",
+    "thumbnail": "source.webp"
+  },
+  "createdAt": "2026-06-07T11:18:26.091Z",
+  "toolchain": {
+    "runner": "npm run yt:thumbnail",
+    "backend": "wrapper",
+    "wrapper": "youtube-dl-exec"
+  }
+}

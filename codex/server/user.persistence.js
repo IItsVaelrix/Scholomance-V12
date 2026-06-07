@@ -448,6 +448,26 @@ const USER_MIGRATIONS = [
       applyCatalogV20(database);
     },
   },
+  {
+    version: 21,
+    name: 'create_eq_presets_table',
+    up(database) {
+      database.exec(`
+        CREATE TABLE IF NOT EXISTS eq_presets (
+          id TEXT PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          name TEXT NOT NULL,
+          school TEXT,
+          bytecode TEXT NOT NULL,
+          checksum TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+        CREATE INDEX IF NOT EXISTS idx_eq_presets_user ON eq_presets(user_id);
+      `);
+    },
+  },
 ];
 
 let db;

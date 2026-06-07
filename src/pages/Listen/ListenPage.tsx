@@ -6,7 +6,7 @@ import { SignalChamberConsole } from "./SignalChamberConsole";
 import { useAmbientPlayer } from "../../hooks/useAmbientPlayer";
 import { SCHOOLS, generateSchoolColor } from "../../data/schools";
 import { useMemo, useState, useRef, useEffect, useCallback } from "react";
-import { SpectrumCanvas } from "../../components/ParaEQ/SpectrumCanvas";
+import { ScholoCandy } from "../../components/ParaEQ/ScholoCandy";
 import { useSonicAnalysis } from "../../hooks/useSonicAnalysis";
 import { MagicNamePlate } from "./MagicNamePlate";
 import { OutputDeviceSelector } from "./OutputDeviceSelector";
@@ -39,6 +39,11 @@ export default function ListenPage() {
     setOutputDevice,
     updateOutputDevices,
     trackUrl,
+    addEqBand,
+    updateEqBand,
+    removeEqBand,
+    getEqNodes,
+    eqBands,
   } = useAmbientPlayer(allSchoolIds);
 
   const { detectedSchoolId } = useSonicAnalysis(isPlaying);
@@ -292,12 +297,22 @@ export default function ListenPage() {
                     <span className="val">{isPlaying ? 'ACTIVE' : 'STANDBY'}</span>
                   </div>
                   <div className="spectrum-canvas">
-                    <SpectrumCanvas 
-                      isPlaying={isPlaying} 
-                      getByteFrequencyData={getByteFrequencyData}
-                      currentSchoolId={currentSchoolId}
-                      signalLevel={signalLevel}
-                    />
+                    {import.meta.env.VITE_SCHOLOCANDY_V2 === 'true' ? (
+                      <ScholoCandy 
+                        isPlaying={isPlaying}
+                        getByteFrequencyData={getByteFrequencyData}
+                        currentSchoolId={currentSchoolId}
+                        signalLevel={signalLevel}
+                        eqNodes={getEqNodes()}
+                        onBandsChanged={setEqBands}
+                      />
+                    ) : (
+                      <div className="legacy-eq-placeholder">
+                        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: '2rem' }}>
+                          [ LEGACY EQ UI ]
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

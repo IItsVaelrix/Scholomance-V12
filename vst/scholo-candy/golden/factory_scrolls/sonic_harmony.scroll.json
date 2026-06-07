@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "schema_id": "scholomance/eq-preset",
+  "name": "Sonic Harmony",
+  "school": "SONIC",
+  "output_gain_db": 0.0,
+  "bands": [
+    {
+      "id": "band_sonic000000",
+      "type": "bell",
+      "frequency": 1200.0,
+      "gain": 6.0,
+      "Q": 1.414,
+      "channel": "stereo",
+      "oversample": "auto",
+      "bypass": false
+    }
+  ],
+  "oversample": "1x",
+  "analyzer": {
+    "enabled": true,
+    "peak_hold_ms": 2000.0
+  },
+  "bytecode": "BIT-EQ-v1-SONIC000",
+  "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+  "verse_ir_excerpt": "A resonance cascade in the sonic aether."
+}

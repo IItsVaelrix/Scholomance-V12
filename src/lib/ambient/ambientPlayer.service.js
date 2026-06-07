@@ -371,6 +371,7 @@ async function createTrackController({
     let analyserData = null;
     let mediaSource = null;
     let outputGain = null;
+    let eqNodes = [];
     const pulseState = createPercussivePulseState();
 
     const capabilities = createProviderCapabilities({
@@ -382,6 +383,7 @@ async function createTrackController({
     const disconnectGraph = () => {
       try {
         mediaSource?.disconnect();
+        eqNodes.forEach(n => n.disconnect());
         analyser?.disconnect();
         outputGain?.disconnect();
       } catch {
@@ -391,6 +393,7 @@ async function createTrackController({
       analyser = null;
       outputGain = null;
       analyserData = null;
+      eqNodes = [];
     };
 
     let resolvedLoad = false;
@@ -489,6 +492,23 @@ async function createTrackController({
 
     let currentVolume = clamp01(volume);
 
+    const rebuildEqGraph = () => {
+      if (!mediaSource || !analyser || !outputGain) return;
+      try {
+        mediaSource.disconnect();
+        eqNodes.forEach(n => n.disconnect());
+        analyser.disconnect();
+      } catch {}
+      
+      let currentOut = mediaSource;
+      for (const eq of eqNodes) {
+        currentOut.connect(eq);
+        currentOut = eq;
+      }
+      currentOut.connect(analyser);
+      analyser.connect(outputGain);
+    };
+
     if (audioContext && typeof audioContext.createMediaElementSource === "function") {
       try {
         mediaSource = audioContext.createMediaElementSource(audio);
@@ -500,8 +520,9 @@ async function createTrackController({
         analyserData = new Uint8Array(analyser.frequencyBinCount);
         outputGain = audioContext.createGain();
         outputGain.gain.value = currentVolume;
-        mediaSource.connect(analyser);
-        analyser.connect(outputGain);
+        
+        rebuildEqGraph();
+        
         outputGain.connect(audioContext.destination);
         capabilities.canAnalyze = true;
       } catch {
@@ -566,6 +587,49 @@ async function createTrackController({
       audio, // Expose for setSinkId
       schoolId: null,
       loadPromise,
+      getEqNodes: () => eqNodes,
+      applyEqState: (eqBands) => {
+        if (!audioContext || usingSunoEmbedFallback) return;
+        const newNodes = [];
+        let nodesChanged = false;
+        for (const band of eqBands) {
+           let node = eqNodes.find(n => n._id === band.id);
+           if (!node) {
+              node = audioContext.createBiquadFilter();
+              node._id = band.id;
+              nodesChanged = true;
+           }
+           
+           // Map FilterType to BiquadFilterType
+           let biquadType = "peaking";
+           switch (band.filterType?.toLowerCase()) {
+             case 'bell': biquadType = 'peaking'; break;
+             case 'lowshelf': biquadType = 'lowshelf'; break;
+             case 'highshelf': biquadType = 'highshelf'; break;
+             case 'lowpass': biquadType = 'lowpass'; break;
+             case 'highpass': biquadType = 'highpass'; break;
+             case 'bandpass': biquadType = 'bandpass'; break;
+             case 'notch': biquadType = 'notch'; break;
+             case 'tilt': biquadType = 'peaking'; break; // WebAudio doesn't have tilt, fallback to peaking
+             default: biquadType = band.type || 'peaking';
+           }
+           
+           node.type = biquadType;
+           node.frequency.setTargetAtTime(band.freq ?? band.frequency ?? 1000, audioContext.currentTime, 0.01);
+           if (node.gain) node.gain.setTargetAtTime(band.gain || 0, audioContext.currentTime, 0.01);
+           if (node.Q) node.Q.setTargetAtTime(band.q ?? band.Q ?? 1, audioContext.currentTime, 0.01);
+           newNodes.push(node);
+        }
+        
+        if (eqNodes.length !== newNodes.length || !eqNodes.every((n, i) => n === newNodes[i])) {
+           nodesChanged = true;
+        }
+        
+        eqNodes = newNodes;
+        if (nodesChanged) {
+           rebuildEqGraph();
+        }
+      },
       getVolume: () => currentVolume,
       getByteFrequencyData: (array) => {
         if (analyser) {
@@ -730,6 +794,8 @@ async function createTrackController({
       }),
       schoolId: null,
       loadPromise: Promise.resolve(),
+      getEqNodes: () => [],
+      applyEqState: () => {},
       getVolume: () => sunoVolume,
       setVolume: (value) => {
         sunoVolume = clamp01(value);
@@ -764,6 +830,8 @@ async function createTrackController({
       supportsSeek: false,
     }),
     schoolId: null, // Not directly associated with a school for control purposes
+    getEqNodes: () => [],
+    applyEqState: () => {},
     getVolume: () => 0, // Cannot control iframe volume directly
     setVolume: () => {}, // No-op
     getSignalLevel: () => null, // Cannot get signal from iframe
@@ -812,6 +880,7 @@ function createAmbientPlayerService(options = {}) {
     bpm: BPM_TRACKING_CONFIG.defaultBPM,
     lastBeatMs: 0,
     beatIntervalMs: 667, // Default ~90 BPM
+    eqBands: [],
   };
 
   const listeners = new Set();
@@ -1565,6 +1634,9 @@ function createAmbientPlayerService(options = {}) {
     ctrl.setVolume(0);
     currentController = ctrl;
     currentTrackSchoolId = schoolId;
+    if (typeof ctrl.applyEqState === "function") {
+      ctrl.applyEqState(state.eqBands);
+    }
     setState({ trackUrl });
 
     if (ctrl.loadPromise) {
@@ -1984,6 +2056,50 @@ function createAmbientPlayerService(options = {}) {
     await applySinkId(nextSinkId);
   }
 
+  function addEqBand(band) {
+    const newBand = {
+      id: "eq_" + Math.random().toString(36).substr(2, 9),
+      type: "peaking",
+      frequency: 1000,
+      gain: 0,
+      Q: 1,
+      ...band
+    };
+    const nextBands = [...state.eqBands, newBand];
+    setState({ eqBands: nextBands });
+    if (currentController && typeof currentController.applyEqState === "function") {
+      currentController.applyEqState(nextBands);
+    }
+    return newBand.id;
+  }
+
+  function updateEqBand(id, updates) {
+    const nextBands = state.eqBands.map(b => b.id === id ? { ...b, ...updates } : b);
+    setState({ eqBands: nextBands });
+    if (currentController && typeof currentController.applyEqState === "function") {
+      currentController.applyEqState(nextBands);
+    }
+  }
+
+  function removeEqBand(id) {
+    const nextBands = state.eqBands.filter(b => b.id !== id);
+    setState({ eqBands: nextBands });
+    if (currentController && typeof currentController.applyEqState === "function") {
+      currentController.applyEqState(nextBands);
+    }
+  }
+
+  function setEqBands(bands) {
+    setState({ eqBands: bands });
+    if (currentController && typeof currentController.applyEqState === "function") {
+      currentController.applyEqState(bands);
+    }
+  }
+
+  function getEqNodes() {
+    return currentController?.getEqNodes?.() || [];
+  }
+
   function seek(offset) {
     if (currentController && typeof currentController.seek === "function") {
       currentController.seek(offset);
@@ -2043,6 +2159,11 @@ function createAmbientPlayerService(options = {}) {
     getAnalyser,
     getByteFrequencyData,
     getDetectedSchoolId,
+    addEqBand,
+    updateEqBand,
+    removeEqBand,
+    setEqBands,
+    getEqNodes,
   };
 }
 

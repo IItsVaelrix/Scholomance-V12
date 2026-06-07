@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "schema_id": "scholomance/eq-preset",
+  "name": "Psychic Schism",
+  "school": "PSYCHIC",
+  "output_gain_db": 0.0,
+  "bands": [
+    {
+      "id": "band_psyc0000000",
+      "type": "bell",
+      "frequency": 3000.0,
+      "gain": 5.0,
+      "Q": 2.0,
+      "channel": "stereo",
+      "oversample": "auto",
+      "bypass": false
+    }
+  ],
+  "oversample": "1x",
+  "analyzer": {
+    "enabled": true,
+    "peak_hold_ms": 2000.0
+  },
+  "bytecode": "BIT-EQ-v1-PSYC0000",
+  "checksum": "0000000000000000000000000000000000000000000000000000000000000000",
+  "verse_ir_excerpt": "Piercing through the mind's static."
+}

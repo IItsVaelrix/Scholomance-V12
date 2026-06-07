@@ -40,6 +40,7 @@ import { lexiconRoutes } from './routes/lexicon.routes.js';
 import { authRoutes } from './routes/auth.routes.js';
 import { oauthRoutes } from './routes/oauth.routes.js';
 import { worldRoutes } from './routes/world.routes.js';
+import { eqPresetsRoutes } from './routes/eqPresets.routes.js';
 import { isApiRoutePath, isStaticAssetPath, stripQueryFromUrl } from './notFound.utils.js';
 import { createOpsMetrics } from './observability.metrics.js';
 import { PhonemeEngine } from '../core/phonology/phoneme.engine.js';
