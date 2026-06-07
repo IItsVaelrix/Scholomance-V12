@@ -1,66 +1,38 @@
-import React, { useImperativeHandle, forwardRef, useRef } from 'react';
-import PhaserLayer from './PhaserLayer.jsx';
+import { forwardRef } from 'react';
 
 /**
  * BattleArena.jsx
  *
- * Thin container for the Phaser board layer.
- * Passes board state down and exposes playCastEffect upward.
- *
- * Phase 1: renders only the PhaserLayer.
- * Entity displays live in the right panel and bottom console — not here.
+ * Phase 5: Phaser is gone!
+ * Visuals are entirely routed to the native Godot Client.
  */
 const BattleArena = forwardRef(function BattleArena(
   { arenaSchool, tileViewModels, renderedUnits, cursorTile, onSelectCell, onReady },
   ref
 ) {
-  const phaserRef = useRef(null);
-
-  useImperativeHandle(ref, () => ({
-    playCastEffect(origin, target, school) {
-      phaserRef.current?.playCastEffect(origin, target, school);
-    },
-    animateMove(unitId, path, descriptor, onComplete) {
-      if (phaserRef.current) {
-        phaserRef.current.animateMove(unitId, path, descriptor, onComplete);
-      } else {
-        onComplete?.();
-      }
-    },
-    animateCast(unitId, target, school, descriptor, onComplete) {
-      if (phaserRef.current) {
-        phaserRef.current.animateCast(unitId, target, school, descriptor, onComplete);
-      } else {
-        onComplete?.();
-      }
-    },
-    animateHit(affectedTiles, school, descriptor, onComplete) {
-      if (phaserRef.current) {
-        phaserRef.current.animateHit(affectedTiles, school, descriptor, onComplete);
-      } else {
-        onComplete?.();
-      }
-    },
-    animateTurnShift(activeSide, descriptor, onComplete) {
-      if (phaserRef.current) {
-        phaserRef.current.animateTurnShift(activeSide, descriptor, onComplete);
-      } else {
-        onComplete?.();
-      }
-    }
-  }));
+  // We can call onReady immediately since there's no asset loading here anymore
+  if (onReady) {
+    // defer slightly to avoid set-state-during-render
+    setTimeout(onReady, 0);
+  }
 
   return (
-    <div className="arena-grid-container">
-      <PhaserLayer
-        ref={phaserRef}
-        arenaSchool={arenaSchool}
-        tileViewModels={tileViewModels}
-        renderedUnits={renderedUnits}
-        cursorTile={cursorTile}
-        onSelectCell={onSelectCell}
-        onReady={onReady}
-      />
+    <div className="arena-grid-container" style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '100%',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      color: 'var(--combat-accent)',
+      fontFamily: 'monospace',
+      textAlign: 'center',
+      border: '1px solid var(--combat-accent)'
+    }}>
+      <div>
+        <h3>NEURAL LINK ACTIVE</h3>
+        <p>Visual output routed to external Godot process.</p>
+        <p style={{ opacity: 0.5, fontSize: '0.8rem', marginTop: '1rem' }}>Run `npm run godot:combat`</p>
+      </div>
     </div>
   );
 });

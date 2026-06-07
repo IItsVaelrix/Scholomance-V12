@@ -549,7 +549,7 @@ export default function ReadPage() {
 
   useEffect(() => {
     // Initialize session for Lexicon access
-    import("../../hooks/useAuth.jsx").then(({ getCsrfToken }) => {
+    import("../../lib/csrf.js").then(({ getCsrfToken }) => {
       getCsrfToken().catch(err => console.warn("[ReadPage] Session init failed:", err));
     });
   }, []);

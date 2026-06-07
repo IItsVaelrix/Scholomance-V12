@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
  * Severe-state feedback: .is-low-hp when HP < 25%, .is-low-mp when MP < 20%.
  * Framer Motion animates bar fill changes.
  */
-export default function ScholarStatusPanel({ scholar, latestTurn = null }) {
+export default function ScholarStatusPanel({ scholar, latestTurn = null, playerTurnIndex = 0 }) {
   if (!scholar) return null;
 
   const hpPct = scholar.hp / scholar.maxHp;
@@ -15,6 +15,10 @@ export default function ScholarStatusPanel({ scholar, latestTurn = null }) {
   const isLowHp = hpPct <= 0.25;
   const isLowMp = mpPct <= 0.2;
   const statusEffects = Array.isArray(scholar.statusEffects) ? scholar.statusEffects : [];
+  const unstableTurnsLeft = scholar.unstableUntilTurn
+    ? Math.max(0, scholar.unstableUntilTurn - playerTurnIndex + 1)
+    : 0;
+  const isUnstable = unstableTurnsLeft > 0;
   const badges = Array.isArray(latestTurn?.scoreSummary?.badges)
     ? latestTurn.scoreSummary.badges.slice(0, 3)
     : [];
@@ -81,8 +85,18 @@ export default function ScholarStatusPanel({ scholar, latestTurn = null }) {
       <div className="scholar-school-badge">{scholar.school}</div>
 
       <div className="bottom-subpanel-title">STATUS EFFECTS</div>
-      {statusEffects.length > 0 ? (
+      {(statusEffects.length > 0 || isUnstable || scholar.supercharged) ? (
         <div className="status-effect-list" aria-live="polite">
+          {isUnstable && (
+            <div className="status-effect-chip is-unstable" title="Incoherent leyline extraction destabilized you. Casts may fizzle until this decays — a coherent verse reduces the risk.">
+              UNSTABLE · {unstableTurnsLeft}T
+            </div>
+          )}
+          {scholar.supercharged && (
+            <div className="status-effect-chip is-supercharged" title="Supercharged: your next cast deals double damage.">
+              SUPERCHARGED
+            </div>
+          )}
           {statusEffects.map((effect) => (
             <div key={`${effect.chainId || effect.id}-${effect.turnsRemaining}`} className="status-effect-chip">
               {effect.label || effect.id}

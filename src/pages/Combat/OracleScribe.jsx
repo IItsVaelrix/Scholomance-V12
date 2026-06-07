@@ -17,12 +17,20 @@ import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
 
 /**
  * OracleScribe.jsx
- * 
+ *
  * An IDE-enhanced battle input surface.
  * Fuses Spell Weave logic (Intent) with Oracle intelligence (Energy).
+ *
+ * The verse textarea is always rendered in Truesight mode (the typed
+ * text is visually transparent; the overlay shows phoneme-colored words
+ * underneath). On first focus, a one-time reveal hint explains the mode
+ * — otherwise first-time players see a transparent box and assume the
+ * input is broken. Dismissal persists in localStorage.
  */
 
-export default function OracleScribe({ onSubmit, isDisabled, school }) {
+const TRUESIGHT_HINT_KEY = 'scholomance.combat.truesightHintSeen.v1';
+
+export default function OracleScribe({ onSubmit, isDisabled, school, variant = 'default' }) {
   const [text, setText] = useState('');
   const [weave, setWeave] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -30,10 +38,30 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   const [intellisenseIndex, setIntellisenseIndex] = useState(0);
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0 });
   const [tooltipState, setTooltipState] = useState({ visible: false, token: null, position: { x: 0, y: 0 } });
+  const [truesightHintVisible, setTruesightHintVisible] = useState(false);
 
   const textareaRef = useRef(null);
+  const hintShownRef = useRef(false);
   const predictRequestRef = useRef(0);
   const { theme } = useTheme();
+
+  const dismissTruesightHint = useCallback(() => {
+    setTruesightHintVisible(false);
+    try { window.localStorage.setItem(TRUESIGHT_HINT_KEY, '1'); } catch { /* noop */ }
+  }, []);
+
+  const onVerseFocus = useCallback(() => {
+    setIsFocused(true);
+    if (hintShownRef.current) return;
+    let alreadySeen = false;
+    try { alreadySeen = window.localStorage.getItem(TRUESIGHT_HINT_KEY) === '1'; } catch { /* noop */ }
+    if (alreadySeen) {
+      hintShownRef.current = true;
+      return;
+    }
+    hintShownRef.current = true;
+    setTruesightHintVisible(true);
+  }, []);
   
   const {
     artifact: deepAnalysis,
@@ -107,7 +135,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
   }, [text, isFocused, predictorReady, predict]);
 
   return (
-    <div className={`oracle-scribe battle-panel ${isFocused ? 'is-focused' : ''}`}>
+    <div className={`oracle-scribe battle-panel oracle-scribe--${variant} ${isFocused ? 'is-focused' : ''}`}>
       <div className="scribe-header">
         <div className="scribe-label">ORACLE SCRIBE — {school} AFFINITY</div>
         <div className={`scribe-integrity status-${integrity.status?.toLowerCase()}`} aria-label="Syntactic integrity">
@@ -157,12 +185,41 @@ export default function OracleScribe({ onSubmit, isDisabled, school }) {
               value={text}
               onChange={handleTextChange}
               onKeyDown={handleKeyDown}
-              onFocus={() => setIsFocused(true)}
+              onFocus={onVerseFocus}
               onBlur={() => setIsFocused(false)}
               disabled={isDisabled}
               placeholder="Inscribe the living phonemes..."
               aria-label="Verse input"
             />
+            <AnimatePresence>
+              {truesightHintVisible && (
+                <motion.div
+                  className="truesight-reveal"
+                  role="status"
+                  aria-live="polite"
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.22, ease: 'easeOut' }}
+                >
+                  <div className="truesight-reveal-glyph" aria-hidden="true">✦</div>
+                  <div className="truesight-reveal-body">
+                    <div className="truesight-reveal-title">TRUESIGHT AWAKENED</div>
+                    <div className="truesight-reveal-text">
+                      Your verse is illuminated. Words glow by <em>school</em> and <em>resonance</em> as you inscribe — what you type is still being recorded.
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="truesight-reveal-dismiss"
+                    onClick={dismissTruesightHint}
+                    aria-label="Dismiss Truesight hint"
+                  >
+                    ✕
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>

@@ -30,7 +30,20 @@ const STOP_WORDS = new Set([
 const HEAL_KEYWORDS = new Set([
   'amend', 'cure', 'cleanse', 'heal', 'health', 'mend', 'mending', 'recover',
   'recovery', 'remedy', 'restore', 'restored', 'salve', 'seal', 'sew', 'soothe',
-  'stitch', 'vitalize',
+  'stitch', 'vitalize', 'close', 'closes', 'knit',
+]);
+
+const STRICT_MEDICAL_KEYWORDS = new Set([
+  'antibiotic', 'bandage', 'dose', 'dosage', 'drug', 'medicine', 'medicinal',
+  'ointment', 'pill', 'poultice', 'saline', 'splint', 'suture', 'tablet',
+  'tincture', 'tonic', 'treatment',
+]);
+
+const MYSTICAL_HEALING_KEYWORDS = new Set([
+  'anoint', 'aura', 'bless', 'blessing', 'chakra', 'divine', 'grace', 'halo',
+  'holy', 'luminous', 'mercy', 'miracle', 'mystic', 'mystical', 'prayer',
+  'radiance', 'radiant', 'sacred', 'sanctify', 'spirit', 'spiritual', 'soul',
+  'vital', 'vitality',
 ]);
 
 const BODY_KEYWORDS = new Set([
@@ -210,6 +223,8 @@ function computeKeywordRarity(keyword, corpusRanks) {
 function detectSpellIntent(tokens) {
   let healHits = 0;
   let bodyHits = 0;
+  let medicalHits = 0;
+  let mysticalHits = 0;
   let terrainHits = 0;
   let terrainVerbHits = 0;
   let buffHits = 0;
@@ -218,13 +233,27 @@ function detectSpellIntent(tokens) {
   for (const token of tokens) {
     if (HEAL_KEYWORDS.has(token)) healHits += 1;
     if (BODY_KEYWORDS.has(token)) bodyHits += 1;
+    if (STRICT_MEDICAL_KEYWORDS.has(token)) medicalHits += 1;
+    if (MYSTICAL_HEALING_KEYWORDS.has(token)) mysticalHits += 1;
     if (TERRAIN_KEYWORDS.has(token)) terrainHits += 1;
     if (TERRAIN_VERBS.has(token)) terrainVerbHits += 1;
     if (BUFF_KEYWORDS.has(token)) buffHits += 1;
     if (DEBUFF_KEYWORDS.has(token)) debuffHits += 1;
   }
 
-  const healing = healHits > 0 && (bodyHits > 0 || healHits >= 2);
+  const healing = (
+    healHits > 0 && (bodyHits > 0 || healHits >= 2)
+  ) || (
+    medicalHits > 0 && (bodyHits > 0 || medicalHits >= 2)
+  ) || (
+    mysticalHits > 0 && bodyHits > 0
+  );
+  const healingLanguage = {
+    healHits,
+    bodyHits,
+    medicalHits,
+    mysticalHits,
+  };
   const terrain = terrainHits > 0 && terrainVerbHits > 0;
   const buff = buffHits > debuffHits && buffHits > 0;
   const debuff = debuffHits >= buffHits && debuffHits > 0;
@@ -236,6 +265,7 @@ function detectSpellIntent(tokens) {
 
   return {
     healing,
+    healingLanguage,
     terrain,
     buff,
     debuff,
@@ -416,6 +446,91 @@ function amplifyStatusEffect(statusEffect, speaking) {
   };
 }
 
+function resolveHealingSyntax(tokens) {
+  const firstHealIndex = tokens.findIndex((token) => HEAL_KEYWORDS.has(token) || MYSTICAL_HEALING_KEYWORDS.has(token));
+  const firstTargetIndex = tokens.findIndex((token) => BODY_KEYWORDS.has(token));
+  if (firstHealIndex < 0 || firstTargetIndex < 0) return 0.35;
+  return firstHealIndex <= firstTargetIndex ? 1 : 0.65;
+}
+
+function createRegenerationStatusEffect({ healingProfile, speaking, rarity }) {
+  if (healingProfile?.mode !== 'REGEN') return null;
+
+  const creativity = clamp01(healingProfile.creativityScore);
+  const potency = clamp01(speaking?.severity?.potency ?? 0);
+  const tier = Math.max(1, Math.min(5, Math.ceil((creativity + potency) * 2.5)));
+  const turns = 2 + (creativity >= 0.68 ? 1 : 0) + (rarity?.ordinal >= 4 ? 1 : 0);
+
+  return {
+    school: 'ALCHEMY',
+    chainId: 'restorative_regimen',
+    label: 'Restorative Regimen',
+    tier,
+    turns,
+    turnsRemaining: turns,
+    magnitude: Number((10 + (tier * 4) + (creativity * 18)).toFixed(1)),
+    disposition: 'BUFF',
+    averageRarity: Number(creativity.toFixed(3)),
+    hitCount: healingProfile.medicalHits,
+    matchedKeywords: healingProfile.matchedMedicalTerms,
+  };
+}
+
+function resolveHealingProfile({
+  baseIntent,
+  tokens,
+  cohesionScore,
+  lexicalDiversity,
+  corpusRarity,
+  speaking,
+}) {
+  const language = baseIntent.healingLanguage || {};
+  const healHits = Number(language.healHits) || 0;
+  const bodyHits = Number(language.bodyHits) || 0;
+  const medicalHits = Number(language.medicalHits) || 0;
+  const mysticalHits = Number(language.mysticalHits) || 0;
+  const healing = baseIntent.healing || (healHits > 0 && (bodyHits > 0 || medicalHits > 0));
+
+  if (!healing) {
+    return {
+      healing: false,
+      mode: 'NONE',
+      creativityScore: 0,
+      medicalHits,
+      mysticalHits,
+      matchedMedicalTerms: [],
+    };
+  }
+
+  const syntaxScore = resolveHealingSyntax(tokens);
+  const spiritualSignal = mysticalHits > 0 ? 1 : 0;
+  const medicalSignal = medicalHits > 0 ? 1 : 0;
+  const speechAct = String(speaking?.speechAct?.primary || '');
+  const blessingSignal = speechAct === 'BLESSING' || speechAct === 'PLEA' ? 0.18 : 0;
+  const creativityScore = clamp01(
+    (spiritualSignal * 0.26)
+    + (medicalSignal * 0.18)
+    + (syntaxScore * 0.2)
+    + (cohesionScore * 0.16)
+    + (lexicalDiversity * 0.1)
+    + (corpusRarity * 0.1)
+    + blessingSignal
+  );
+
+  const strictlyMedicinal = medicalHits > 0 && mysticalHits === 0;
+  const mode = strictlyMedicinal ? 'REGEN' : 'BURST';
+
+  return {
+    healing: true,
+    mode,
+    creativityScore: Number(creativityScore.toFixed(3)),
+    syntaxScore: Number(syntaxScore.toFixed(3)),
+    medicalHits,
+    mysticalHits,
+    matchedMedicalTerms: tokens.filter((token) => STRICT_MEDICAL_KEYWORDS.has(token)),
+  };
+}
+
 function resolveDominantSchool({
   schoolDensity,
   intent,
@@ -555,9 +670,12 @@ export function buildCombatProfile({
   const abyssTrace = getScoreTrace(scoreData, 'abyssal_resonance');
   const abyssSignal = abyssTrace ? clamp01(Number(abyssTrace.rawScore) || 0) : 0.5;
   const abyssalResonanceMultiplier = rawScoreToAbyssMultiplier(abyssSignal);
-  const verseIRAmplifier = scoreData?.verseIRAmplifier && typeof scoreData.verseIRAmplifier === 'object'
-    ? scoreData.verseIRAmplifier
-    : null;
+
+  const verseIRAmplifier = resolveVerseIRAmplifier(scoreData);
+  const rhymeQuality = resolveTraceSignalScore(scoreData, 'rhyme_quality');
+  const rhymeQualityVal = Number.isFinite(Number(rhymeQuality))
+    ? clamp01(Number(rhymeQuality))
+    : undefined;
 
   const rarityScore = clamp01(
     (corpusRarity * 0.4)
@@ -578,19 +696,29 @@ export function buildCombatProfile({
     speakerType,
     speakerProfile,
   });
-  const statusEffect = amplifyStatusEffect(detectStatusEffect({
+  const semanticStatusEffect = amplifyStatusEffect(detectStatusEffect({
     tokens,
     dominantSchool: school,
     corpusRanks,
     rarity,
   }), speaking);
   const speechAct = String(speaking?.speechAct?.primary || '');
-  const healing = baseIntent.healing || (school === 'ALCHEMY' && (speechAct === 'BLESSING' || speechAct === 'PLEA'));
+  const healingProfile = resolveHealingProfile({
+    baseIntent,
+    tokens,
+    cohesionScore,
+    lexicalDiversity,
+    corpusRarity,
+    speaking,
+  });
+  const healing = healingProfile.healing || (school === 'ALCHEMY' && (speechAct === 'BLESSING' || speechAct === 'PLEA'));
   const buff = baseIntent.buff || speechAct === 'BLESSING';
   const debuff = baseIntent.debuff || speechAct === 'CURSE' || speechAct === 'BANISHMENT' || speechAct === 'THREAT' || speechAct === 'TAUNT';
+  const regenerationStatusEffect = createRegenerationStatusEffect({ healingProfile, speaking, rarity });
+  const statusEffect = regenerationStatusEffect || semanticStatusEffect;
   const failureDisposition = debuff
     ? 'DEBUFF'
-    : buff
+    : buff || regenerationStatusEffect
       ? 'BUFF'
       : baseIntent.failureDisposition;
   const commentary = buildCombatCommentary({
@@ -605,6 +733,9 @@ export function buildCombatProfile({
   const intent = {
     ...baseIntent,
     healing,
+    healingMode: healingProfile.mode,
+    healingCreativity: healingProfile.creativityScore,
+    healingProfile,
     buff,
     debuff,
     failureDisposition,
@@ -629,11 +760,13 @@ export function buildCombatProfile({
     avgWordLength,
     corpusRarity,
     cohesionScore,
+    rhymeQuality: rhymeQualityVal,
     traceSignals: {
       phonemeDensity: phonemeSignal,
       phoneticHacking: hackingSignal,
       vocabulary: vocabularySignal,
       cohesion: cohesionScore,
+      rhymeQuality: rhymeQualityVal ?? 0,
       abyssalResonance: abyssSignal,
       verseIRAmplifier: clamp01(verseIRAmplifier?.noveltySignal ?? 0),
     },
@@ -652,6 +785,29 @@ export function buildCombatProfile({
     commentary,
     intent,
   };
+}
+
+function resolveVerseIRAmplifier(scoreData) {
+  return scoreData?.verseIR?.verseIRAmplifier
+    || scoreData?.verseIRAmplifier
+    || null;
+}
+
+function resolveTraceSignalScore(scoreData, signalName) {
+  const traceSignals = scoreData?.traceSignals || scoreData?.trace || scoreData?.traces || [];
+
+  if (Array.isArray(traceSignals)) {
+    const found = traceSignals.find((signal) =>
+      signal?.id === signalName || signal?.name === signalName || signal?.heuristic === signalName
+    );
+    return found?.score ?? found?.rawScore;
+  }
+
+  if (traceSignals && typeof traceSignals === 'object') {
+    return traceSignals[signalName]?.score ?? traceSignals[signalName]?.rawScore ?? traceSignals[signalName];
+  }
+
+  return undefined;
 }
 
 export {

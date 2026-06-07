@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CrystalBallVisualizer } from './CrystalBallVisualizer';
 import { SCHOOLS } from '../../data/schools';
@@ -68,9 +68,12 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
     };
   }, [targetUrl]);
 
-  const handleBlackHoleClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (resolvedTrackId) return;
+  const handleBlackHoleClick = async (e: React.MouseEvent) => {
     e.preventDefault();
+    if (resolvedTrackId) {
+      navigate(`/grimoire/${resolvedTrackId}`);
+      return;
+    }
     if (!targetUrl) return;
     try {
       const res = await resolveTrackId(targetUrl);
@@ -157,14 +160,15 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
           </div>
  
           <div className="station-studio-access">
-             <Link
-               to={resolvedTrackId ? `/grimoire/${resolvedTrackId}` : '#'}
+             <motion.button
+               type="button"
                onClick={handleBlackHoleClick}
                className="black-hole-btn"
+               aria-label="Enter the Storm — open the grimoire for the active resonance"
              >
                <span className="black-hole-horizon"></span>
                <span className="black-hole-text">Enter the Storm</span>
-             </Link>
+             </motion.button>
           </div>
         </main>
       </div>

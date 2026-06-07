@@ -10,14 +10,14 @@
 
 import { coordToLabel } from './combatBoardUtils.js';
 import { getCrossPattern } from './combatPreviewUtils.js';
+import { getLeylinePhase } from '../../../../codex/core/leyline.engine.js';
 
 // ---------------------------------------------------------------------------
 // Board tiles
 // ---------------------------------------------------------------------------
 
 /**
- * Derive 25 BoardTileViewModels from battle state + UI state.
- * Always returns exactly 25 tiles in row-major order (y=0..4, x=0..4).
+ * Selects tactical board tiles for the current combat grid.
  *
  * @param {import('../../../hooks/useBattleSession.js').BattleState} battleState
  * @param {{ cursorTile?: {x:number,y:number}|null, selectedTile?: {x:number,y:number}|null, hoveredTile?: {x:number,y:number}|null, selectedAction?: string|null, targetingMode?: string }} uiState
@@ -28,7 +28,6 @@ export function selectBoardTiles(battleState, uiState = {}) {
     cursorTile = null, 
     selectedTile = null, 
     hoveredTile = null,
-    selectedAction = null,
     targetingMode = 'none'
   } = uiState;
   
@@ -40,9 +39,13 @@ export function selectBoardTiles(battleState, uiState = {}) {
   const gridWidth = battleState.gridWidth || 9;
   const gridHeight = battleState.gridHeight || 9;
 
+  const leylines = battleState.leylines || [];
+  const spentLeylineIds = battleState.spentLeylineIds || [];
+  const playerTurnIndex = battleState.playerTurnIndex || 1;
+
   // Phase 2/3 Preview Logic
   const reachableSet = new Set();
-  if (targetingMode === 'move' && scholar) {
+  if (targetingMode === 'move' && scholar && (Number(scholar.movesRemaining) || 0) > 0) {
     const mov = scholar.mov || 2;
     for (let y = 0; y < gridHeight; y++) {
       for (let x = 0; x < gridWidth; x++) {
@@ -83,6 +86,11 @@ export function selectBoardTiles(battleState, uiState = {}) {
       const occupantId = gridCell?.occupantId ?? null;
       const key = `${x},${y}`;
 
+      const leyline = leylines.find(ley => ley.coord.x === x && ley.coord.y === y);
+      const hasLeyline = !!leyline;
+      const leylinePhase = leyline ? getLeylinePhase(leyline, playerTurnIndex, spentLeylineIds) : null;
+      const canExtractLeyline = !!(hasLeyline && leylinePhase === 'glowing' && scholar && scholar.position.x === x && scholar.position.y === y);
+
       tiles.push({
         coord: { x, y },
         label: coordToLabel({ x, y }),
@@ -97,6 +105,13 @@ export function selectBoardTiles(battleState, uiState = {}) {
         hasHazard:    !!gridCell?.fieldEffect,
         hazardKind:   gridCell?.fieldEffect?.type ?? null,
         previewKind:  aoeSet.has(key) ? 'aoe' : (targetingMode === 'move' && reachableSet.has(key) ? 'move' : null),
+        hasLeyline,
+        leylineId: leyline?.id ?? null,
+        leylinePhase,
+        leylineAffinity: leyline?.affinity ?? null,
+        leylineStars: leyline?.stars ?? null,
+        leylineType: leyline?.type ?? null,
+        canExtractLeyline,
       });
     }
   }

@@ -1,11 +1,11 @@
-# IDE Runtime Stasis Promotion Plan (C/B → S-Tier)
+# IDE Runtime Stasis Promotion Plan (C/B → A/S)
 ## Bytecode Search Code
 `SCHOL-ENC-BYKE-IDE-STASIS-PROMOTION`
 
 ## 1. Plan Identity
-- **Plan ID:** PDR-20260521-IDE-STASIS-PROMOTION-S
+- **Plan ID:** PDR-20260521-IDE-STASIS-PROMOTION
 - **Subject:** IDE Stability Ascension (Wand / Oracle / Collab Runtime Hardening)
-- **Target Grade:** S-Tier (High-Availability, Pressure-Resistant, & Formally Hardened)
+- **Target Grade:** A/S (High-Availability & Pressure-Resistant)
 - **Author:** Antigravity (Gemini Core)
 - **Date:** 2026-05-21
 
@@ -25,7 +25,7 @@ This document maps out the comprehensive hardening spine required to transition 
                   [ Server Boot Sequence ]
                              │
                              ▼
-              [ fastify.listen() /health/live (200 OK) ]
+              [ fastify.listen() /health (DEGRADED) ]
                              │
             ┌────────────────┴────────────────┐
             ▼                                 ▼
@@ -36,25 +36,16 @@ This document maps out the comprehensive hardening spine required to transition 
                 [ Subsystems Loaded ]
                              │
                              ▼
-         [ /health/ready Status flips to 200 READY ]
+              [ Flip /health State to READY ]
 ```
 
 #### Promotion Gates:
-- **A Gate:** Fastify binds and listens on its port before executing any heavy dictionary loading or reaper cycles. Expose separate liveness and readiness probes to prevent false container restarts:
-  - `/health/live`: Returns `200 OK` immediately: `{ status: "alive" }`.
-  - `/health/ready`: Returns `200 READY` or `503 DEGRADED` depending on subsystem initialization state:
-    ```json
-    {
-      "status": "degraded",
-      "subsystems": {
-        "phonemeEngine": "loading",
-        "oracle": "warming",
-        "collab": "reaping",
-        "sqlite": "ready"
-      }
-    }
-    ```
-- **S Gate:** Gated routes (`/read`, `/wand`, and predictive endpoints) will safely return graceful "Initializing" payloads rather than throwing 500 or crashing if hit during the `Degraded` phase.
+- **A Gate:** Fastify binds and listens on its port before executing any heavy dictionary loading or reaper cycles.
+- **S Gate:** Implement a multi-state `/health` endpoint reflecting:
+  - `Alive`: Server is bound and responding to basic HTTP signals.
+  - `Degraded`: Server is up, but Oracle/PhonemeEngine or Collab service has not completed initialization.
+  - `Ready`: All dictionaries parsed, reapers completed, and full operational capacity achieved.
+  - Gated routes (`/read`, `/wand`, and predictive endpoints) will safely return a 503 or graceful "Initializing" payload rather than throwing 500 or crashing if hit during the `Degraded` phase.
 
 ---
 
@@ -76,10 +67,11 @@ This document maps out the comprehensive hardening spine required to transition 
 * **The Fix:** Establish a strict, single-gate write serialization queue.
 
 #### Promotion Gates:
-- **A Gate:** Routes all known persistence operations through an asynchronous queue (`sqliteWriteQueue.enqueue()`).
+- **A Gate:** Routes all known persistence operations through an asynchronous queue.
 - **S Gate:** 
-  - Reapers, presence logs, formula persistence, and collaborative event pipelines are strictly prohibited from calling `.run()` or `.exec()` directly.
-  - Implement a custom **AST/ESLint Rule** banning database mutation calls outside of authorized persistence layers (`collab.persistence.js`).
+  - Centralize database writes behind a single authoritative gate: `sqliteWriteQueue.enqueue()`. 
+  - Reapers, presence logs, formula persistence, and collaborative event pipelines are strictly prohibited from calling `db.prepare().run()` directly.
+  - Integrate a ESLint/AST rule or build-time scanner to ban direct write operations outside of `collab.persistence.js`.
   - Under extreme lock stress testing, the serialization queue retains execution order and prevents thread blockages by shifting transaction runs to an off-thread DB worker if necessary.
 
 ---
@@ -89,19 +81,21 @@ This document maps out the comprehensive hardening spine required to transition 
 * **The Fix:** Safe async exception mapping and React layout protection.
 
 #### Promotion Gates:
-- **A Gate (Surgery):** Refactor `useWordLookup.jsx` to intercept fetch and network failures gracefully. The hook **never throws** for normal network failure. Instead, it catches the error and returns a stable, non-crashing state payload:
-  ```javascript
-  {
-    ok: false,
-    status: "disconnected",
-    error: {
-      category: "NETWORK",
-      code: "ORACLE_DISCONNECTED",
-      severity: "WARN"
+- **A Gate:** Implement functional React Error Boundaries as a final safety net around the primary scroll view and toolbars.
+- **S Gate:** 
+  - Refactor `useWordLookup.jsx` to intercept fetch and network failures gracefully. Instead of throwing, the hook must return a stable, non-crashing state payload:
+    ```javascript
+    {
+      ok: false,
+      status: "disconnected",
+      error: {
+        category: "NETWORK",
+        code: "ORACLE_DISCONNECTED",
+        severity: "WARN"
+      }
     }
-  }
-  ```
-- **S Gate (Armor):** Wrap panels in React Error Boundaries as a final safety net, render localized, elegant "Oracle signal fading" overlays, and implement active Oracle reconnect state workflows.
+    ```
+  - The search panels recognize this state and render a localized, elegant "Oracle signal fading" overlay, preserving the rest of the workspace and keeping the page fully interactive.
 
 ---
 
@@ -129,10 +123,10 @@ This document maps out the comprehensive hardening spine required to transition 
 
 ### Pillar 6: Idempotent & Canonical Persistence
 * **The Vulnerability:** Risk of duplicate registries, memory drift, and hash collisions when parsing equivalent formulas with minor formatting variations.
-* **The Fix:** Canonical key serialization and strict FNV-1a hash determinism with unique constraints and collision fallback.
+* **The Fix:** Canonical key serialization and strict FNV-1a hash determinism.
 
 #### Promotion Gates:
-- **A Gate:** Enforce stable object stringification where keys are sorted recursively before generating the `catalogId`.
+- **A Gate:** Enforce stable object stringification where keys are sorted alphabetically before generating the `catalogId`.
 - **S Gate:** 
   - Enforce strict canonicalization of the formula model before hashing:
     ```javascript
@@ -145,66 +139,22 @@ This document maps out the comprehensive hardening spine required to transition 
       })
     )
     ```
-  - **Null Safeguard Policy:** Strip `undefined` fields and UI-only metadata. Preserve `null` values unless the schema explicitly defines `null` as non-semantic (e.g. distinguishing `{ axis: null }` from default behavior).
-  - **Collision Mitigation Policy:** Define a `UNIQUE(catalogId)` database constraint. If a calculated `catalogId` already exists:
-    * If the canonical payloads match exactly: Return the existing record.
-    * If the canonical payloads differ: Emit a `HASH_COLLISION` diagnostic warning and derive a new `catalogId` by appending a salt-based unique suffix.
+  - `canonicalizeFormula` must execute precise normalization rules:
+    - Sort all JSON object keys recursively.
+    - Normalize numerical representations (e.g., float precision `1` vs `1.0`).
+    - Strip undefined/null keys and UI-only metadata (e.g., coordinates cached on canvas).
+    - Maintain stable arrays (do not auto-sort coordinates or indices where order carries spatial weight).
   - Implement parallel-save race condition unit tests to guarantee zero duplicate registration attempts under parallel load.
 
 ---
 
-## 3. Recommended Promotion Checklist
+## 3. Regression Controls & Risk Mitigation
 
-### A Gate
-* [ ] Fastify binds before `PhonemeEngine.init()` is executed.
-* [ ] Database presence reapers run asynchronously *after* Fastify binds.
-* [ ] Separate `/health/live` and `/health/ready` endpoints are functional.
-* [ ] Dictionary parse moves off the main execution thread or is deferred safely.
-* [ ] Authoritative `sqliteWriteQueue.enqueue()` write mechanism is established.
-* [ ] All known database write queries are successfully routed through the serialization queue.
-* [ ] Hook `useWordLookup.jsx` catches fetch errors and returns a safe, structured error state payload instead of throwing.
-* [ ] Pooled persistent measurement canvas replaces all per-keystroke canvas creation instances.
-* [ ] `stableStringify` recursively and alphabetically sorts all object keys.
-
-### S Gate
-* [ ] Degraded routes gracefully return "Initializing" status payloads to the client UI.
-* [ ] Web Worker parsing crash and auto-recovery cycles are verified.
-* [ ] Direct SQLite writes outside authorized persistence files are banned via AST/ESLint rules.
-* [ ] Oracle disconnected fallback UI elegantly preserves the surrounding IDE layout.
-* [ ] QBIT pulse scheduler batches and drives cursor coordinates strictly on `requestAnimationFrame`.
-* [ ] Caret and font measurement cache invalidation triggers are thoroughly tested.
-* [ ] SQLite `catalogId` uniqueness constraint and FNV-1a hash collision salt resolution logic are in place.
-* [ ] Parallel-save integration tests prove no duplicate registry entries are made.
-* [ ] Performance profiling confirms rapid typing remains under the 16.6ms per-frame budget with TrueSight active.
-
----
-
-## 4. Regression Controls & Retest Ritual
-
-Use the following checks to verify active stasis integrity:
-
-### 1. Boot Verification
-Run the dev environment and immediately probe liveness and readiness states:
-```bash
-npm run dev
-# Probe liveness (should return 200 OK immediately)
-curl http://localhost:3000/health/live
-# Probe readiness (returns 200 READY or 503 DEGRADED depending on dict hydration)
-curl http://localhost:3000/health/ready
-```
-
-### 2. Direct Write Auditing
-Execute automated static scans to ensure no writes bypass the queue:
-```bash
-grep -R "\.run(" codex src --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx"
-grep -R "\.exec(" codex src --include="*.js" --include="*.ts" --include="*.jsx" --include="*.tsx"
-```
-
-### 3. Subsystem Stress Gauntlets
-Execute high-pressure unit and integration gauntlets:
-```bash
-npm run test -- --run sqlite       # Validates serialization write queues
-npm run test -- --run oracle       # Validates no-throw disconnections & fallback UI states
-npm run test -- --run wand         # Validates coordinates parsing bounds and rendering
-npm run test -- --run persistence  # Validates FNV-1a sorting, null safety, and collision-salting
-```
+| Risk Area | Potential Breakage | Mitigation / Retest Path |
+|-----------|--------------------|--------------------------|
+| **Deferred Boot** | Subsystems accessed before dictionary hydration is finished. | Probe `/read` and `/wand` immediately upon server boot during `Degraded` phase. |
+| **Worker Parsing** | IPC latency or worker load delay on dictionary requests. | Benchmark IPC roundtrip times and verify clean worker-recovery on thread crash. |
+| **SQLite Serialization** | Direct database writes bypassing the queue. | Run static regex checks on codebase to ensure all `better-sqlite3` runs are gated through persistence. |
+| **Oracle Resilience** | Silent failures hiding real logical bugs. | Unit test the mock network off-state and assert active `ORACLE_DISCONNECTED` bytecode logging. |
+| **QBIT Scheduling** | Cursor overlay lagging behind visual caret during fast typing. | Profiler checks with TrueSight active to ensure frame times remain under 16.6ms. |
+| **Canonical Persistence** | Hash collisions collapsing distinct formulas. | Run high-density FNV-1a collision tests with minor parameter mutations. |

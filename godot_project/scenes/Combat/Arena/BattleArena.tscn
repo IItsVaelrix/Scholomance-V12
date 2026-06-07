@@ -1,0 +1,52 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://scripts/Combat/Arena/BattleArena.gd" id="1_arena"]
+[ext_resource type="Script" path="res://scripts/Combat/Arena/ArenaBackdrop.gd" id="2_backdrop"]
+[ext_resource type="Script" path="res://scripts/Combat/Arena/ArenaGridRenderer.gd" id="3_grid"]
+[ext_resource type="Script" path="res://scripts/Combat/Arena/ArenaUnitRenderer.gd" id="4_unit"]
+[ext_resource type="Script" path="res://scripts/Combat/Arena/ArenaSpellRenderer.gd" id="5_spell"]
+[ext_resource type="Shader" path="res://scenes/Combat/Arena/ArenaBackdrop.gdshader" id="6_shader"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_arena"]
+shader = ExtResource("6_shader")
+shader_parameter/resonance = 0.55
+shader_parameter/u_palette0 = Vector3(0.788, 0.635, 0.153)
+
+[node name="BattleArena" type="SubViewportContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="."]
+handle_input_locally = false
+size = Vector2i(960, 1080)
+render_target_update_mode = 4
+
+[node name="BattleArenaRoot" type="Node2D" parent="SubViewport"]
+script = ExtResource("1_arena")
+
+[node name="ShaderBackdrop" type="ColorRect" parent="SubViewport/BattleArenaRoot"]
+material = SubResource("ShaderMaterial_arena")
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_right = 960.0
+offset_bottom = 1080.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0392157, 0.0392157, 0.0392157, 1)
+script = ExtResource("2_backdrop")
+
+[node name="GridLayer" type="TileMapLayer" parent="SubViewport/BattleArenaRoot"]
+script = ExtResource("3_grid")
+
+[node name="UnitLayer" type="Node2D" parent="SubViewport/BattleArenaRoot"]
+script = ExtResource("4_unit")
+
+[node name="SpellLayer" type="Node2D" parent="SubViewport/BattleArenaRoot"]
+script = ExtResource("5_spell")
+
+[node name="OverlayLayer" type="Node2D" parent="SubViewport/BattleArenaRoot"]

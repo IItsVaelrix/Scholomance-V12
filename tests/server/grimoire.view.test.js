@@ -80,6 +80,10 @@ describe('[Server] assembleGrimoireView (the two-page payload)', () => {
     expect(view.rightPage.baseHue).toBe(270); // VOID anchor
     expect(view.rightPage.readouts.bytecodeSeed).toBe('0xVEIL-136-Dm');
     expect(view.rightPage.readouts.semanticMap).toContain('Veil');
+    expect(view.rightPage.pipeline.rasterization.mode).toBe('SUBPIXEL_FIXED_Q16_16');
+    expect(view.rightPage.pipeline.composite.mode).toBe('VM_BYTECODE_FORMULA');
+    expect(view.rightPage.pipeline.geometry.mode).toBe('PROCEDURAL_ANALYTIC');
+    expect(view.rightPage.pipeline.fontRendering.mode).toBe('DETERMINISTIC_SDF');
     expect(view.rightPage.checksum).toMatch(/^[0-9a-f]{8}$/);
   });
 

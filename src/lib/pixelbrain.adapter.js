@@ -73,6 +73,67 @@ import {
 
 import { roundTo as codexRoundTo } from '../../codex/core/pixelbrain/shared.js';
 
+// --- NLP Morph Engine (in-place phonetic asset edit) ---
+import {
+  deriveVerseMorphTarget as codexDeriveVerseMorphTarget,
+  morphCoordinatesToward as codexMorphCoordinatesToward,
+  interpretInstruction as codexInterpretInstruction,
+} from '../../codex/core/pixelbrain/nlp-morph-engine.js';
+
+// --- Template / Fill Bridge (geometry↔fill separation) ---
+import {
+  templatize as codexTemplatize,
+  fillTemplate as codexFillTemplate,
+} from '../../codex/core/pixelbrain/template-fill-bridge.js';
+
+// --- Sketch AMP (silhouette authoring → auto-shaded template) ---
+import {
+  sketchToSilhouette as codexSketchToSilhouette,
+} from '../../codex/core/pixelbrain/sketch-amp.js';
+
+// --- WAND → Fill Bridge (proposal → fill bytecode) ---
+import {
+  deriveWandFillBytecode as codexDeriveWandFillBytecode,
+} from '../../codex/core/pixelbrain/wand-fill-bridge.js';
+
+// --- Custom Shaders System (NEW) ---
+import {
+  createShaderPacket as codexCreateShaderPacket,
+  validateShaderPacket as codexValidateShaderPacket,
+  hashShaderPacket as codexHashShaderPacket,
+  normalizeShaderSource as codexNormalizeShaderSource,
+} from '../../codex/core/pixelbrain/shader-packet.js';
+
+import {
+  resolveShaderUniforms as codexResolveShaderUniforms,
+  DEFAULT_SHADER_UNIFORMS as codexDEFAULT_SHADER_UNIFORMS,
+} from '../../codex/core/pixelbrain/shader-uniform-resolver.js';
+
+import {
+  createShaderCompileError as codexCreateShaderCompileError,
+  createShaderLinkError as codexCreateShaderLinkError,
+  createShaderContextLostError as codexCreateShaderContextLostError,
+} from '../../codex/core/pixelbrain/shader-errors.js';
+
+import {
+  compileShaderProgram as codexCompileShaderProgram,
+  parseShaderCompileLog as codexParseShaderCompileLog,
+  renderShaderFrame as codexRenderShaderFrame,
+  disposeShaderProgram as codexDisposeShaderProgram,
+  createFullscreenQuad as codexCreateFullscreenQuad,
+  disposeFullscreenQuad as codexDisposeFullscreenQuad,
+  wrapShaderSource as codexWrapShaderSource,
+  DEFAULT_FRAGMENT_SOURCE as codexDEFAULT_FRAGMENT_SOURCE,
+} from './pixelbrain/shader-webgl-preview.js';
+
+import {
+  exportToGodotShader as codexExportToGodotShader,
+} from './exporters/pixelbrainGodotShaderExport.js';
+
+import {
+  exportToPhaserPipeline as codexExportToPhaserPipeline,
+} from './exporters/pixelbrainPhaserShaderExport.js';
+
 // --- EXPORTS ---
 
 export const FORMULA_TYPES = codexFORMULA_TYPES;
@@ -85,6 +146,55 @@ export const ERROR_SEVERITY = codexERROR_SEVERITY;
 export const MODULE_IDS = codexMODULE_IDS;
 export const ERROR_CODES = codexERROR_CODES;
 export const decodeBytecodeError = codexDecodeBytecodeError;
+
+export const DEFAULT_SHADER_UNIFORMS = codexDEFAULT_SHADER_UNIFORMS;
+export const DEFAULT_FRAGMENT_SOURCE = codexDEFAULT_FRAGMENT_SOURCE;
+
+export function createShaderPacket(options) {
+  return codexCreateShaderPacket(options);
+}
+export function validateShaderPacket(packet) {
+  return codexValidateShaderPacket(packet);
+}
+export function hashShaderPacket(packet) {
+  return codexHashShaderPacket(packet);
+}
+export function normalizeShaderSource(src) {
+  return codexNormalizeShaderSource(src);
+}
+export function resolveShaderUniforms(packet, runtimeState) {
+  return codexResolveShaderUniforms(packet, runtimeState);
+}
+export function createShaderCompileError(params) {
+  return codexCreateShaderCompileError(params);
+}
+export function compileShaderProgram(gl, fsUserCode) {
+  return codexCompileShaderProgram(gl, fsUserCode);
+}
+export function parseShaderCompileLog(log) {
+  return codexParseShaderCompileLog(log);
+}
+export function renderShaderFrame(gl, program, quad, resolvedUniforms) {
+  return codexRenderShaderFrame(gl, program, quad, resolvedUniforms);
+}
+export function disposeShaderProgram(gl, program) {
+  return codexDisposeShaderProgram(gl, program);
+}
+export function createFullscreenQuad(gl) {
+  return codexCreateFullscreenQuad(gl);
+}
+export function disposeFullscreenQuad(gl, quad) {
+  return codexDisposeFullscreenQuad(gl, quad);
+}
+export function wrapShaderSource(userCode) {
+  return codexWrapShaderSource(userCode);
+}
+export function exportToGodotShader(packet) {
+  return codexExportToGodotShader(packet);
+}
+export function exportToPhaserPipeline(packet) {
+  return codexExportToPhaserPipeline(packet);
+}
 
 export function generatePixelArtFromImage(analysis, canvasSize, extension) {
   return codexGeneratePixelArtFromImage(analysis, canvasSize, extension);
@@ -152,6 +262,42 @@ export function getRotationAtTime(time, bpm) {
 
 export function roundTo(val, precision) {
   return codexRoundTo(val, precision);
+}
+
+// --- NLP MORPH ENGINE EXPORTS ---
+
+export function deriveVerseMorphTarget(versePayload) {
+  return codexDeriveVerseMorphTarget(versePayload);
+}
+
+export function morphCoordinatesToward(baseCoordinates, target, t) {
+  return codexMorphCoordinatesToward(baseCoordinates, target, t);
+}
+
+export function interpretInstruction(text) {
+  return codexInterpretInstruction(text);
+}
+
+// --- TEMPLATE / FILL BRIDGE EXPORTS ---
+
+export function templatize(coordinates, options) {
+  return codexTemplatize(coordinates, options);
+}
+
+export function fillTemplate(template, bytecode, options) {
+  return codexFillTemplate(template, bytecode, options);
+}
+
+// --- SKETCH AMP EXPORTS ---
+
+export function sketchToSilhouette(occupied, dimensions, options) {
+  return codexSketchToSilhouette(occupied, dimensions, options);
+}
+
+// --- WAND → FILL BRIDGE EXPORTS ---
+
+export function deriveWandFillBytecode(proposal) {
+  return codexDeriveWandFillBytecode(proposal);
 }
 
 function normalizePixelBrainCoordinate(coord) {

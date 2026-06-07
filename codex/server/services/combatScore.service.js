@@ -126,8 +126,26 @@ export async function createCombatScoreService(options = {}) {
       opponentId: context.opponentId || null,
     });
 
+    const publicVerseIR = verseIR ? {
+      verseIRAmplifier: verseIR.verseIRAmplifier || null,
+      tokens: Array.isArray(verseIR.tokens) ? verseIR.tokens.map(token => ({
+        id: token.id,
+        text: token.text,
+        normalized: token.normalized,
+        lineIndex: token.lineIndex,
+        syllableCount: token.syllableCount,
+        rhymeTailSignature: token.rhymeTailSignature,
+        vowelFamily: token.vowelFamily,
+      })) : [],
+      lines: Array.isArray(verseIR.lines) ? verseIR.lines.map(line => ({
+        lineIndex: line.lineIndex,
+        text: line.text,
+      })) : [],
+    } : null;
+
     return {
       ...publicResponse,
+      verseIR: publicVerseIR,
       traceId,
     };
   }

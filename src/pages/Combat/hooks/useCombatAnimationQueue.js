@@ -46,6 +46,7 @@ export function useCombatAnimationQueue() {
     const descriptor = deriveDescriptorFromSignals(
       intent.type === 'MOVE'       ? 'PHONEMIC_STEP'  :
       intent.type === 'CAST'       ? 'LEXICAL_CHARGE' :
+      intent.type === 'EXTRACT'    ? 'LEXICAL_CHARGE' :
       intent.type === 'HIT'        ? 'IMPACT_FLASH'   :
       /* TURN_SHIFT */               'TURN_SWEEP',
       intent.signals || {}
@@ -55,13 +56,22 @@ export function useCombatAnimationQueue() {
 
     switch (intent.type) {
       case 'MOVE':
-        phaserApi.animateMove(intent.unitId, intent.path, descriptor, onComplete);
+        phaserApi.animateMove(intent.unitId, intent.path, descriptor, onComplete, intent.origin, {
+          suppressDebris: Boolean(intent.suppressDebris),
+        });
         break;
       case 'CAST':
-        phaserApi.animateCast(intent.unitId, intent.target, intent.school, descriptor, onComplete);
+        phaserApi.animateCast(intent.unitId, intent.target, intent.school, descriptor, onComplete, {
+          suppressDebris: Boolean(intent.suppressDebris),
+        });
+        break;
+      case 'EXTRACT':
+        phaserApi.animateExtraction(intent.unitId, intent.target, intent.school, intent.signals, intent.stars, onComplete);
         break;
       case 'HIT':
-        phaserApi.animateHit(intent.affectedTiles, intent.school, descriptor, onComplete);
+        phaserApi.animateHit(intent.affectedTiles, intent.school, descriptor, onComplete, {
+          suppressDebris: Boolean(intent.suppressDebris),
+        });
         break;
       case 'TURN_SHIFT':
         phaserApi.animateTurnShift(intent.activeSide, descriptor, onComplete);

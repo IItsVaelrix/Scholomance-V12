@@ -4,12 +4,14 @@
  * Main page component integrating the new UI overhaul
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { usePredictor } from "../../hooks/usePredictor.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
 import { useGodotExportFlag } from "../../hooks/useGodotExportFlag.js";
 import { downloadTextFile } from "../../components/GodotExportButton/downloadTextFile.js";
+
+const ShaderForgePanel = lazy(() => import('./components/ShaderForgePanel.jsx'));
 
 // New components
 import { UploadSection } from "./components/UploadSection.jsx";
@@ -20,6 +22,7 @@ import { ExtensionSelector } from "./components/ExtensionSelector.jsx";
 import { StatusDisplay } from "./components/StatusDisplay.jsx";
 import { DuplicateSection } from "./components/DuplicateSection.jsx";
 import { LatticeCanvas } from "./components/LatticeCanvas.jsx";
+import { SketchPad } from "./components/SketchPad.jsx";
 
 import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
 
@@ -30,7 +33,15 @@ import {
   formulaToBytecode,
   processorBridge,
   buildPixelBrainPhotonicRoute,
+  deriveVerseMorphTarget,
+  morphCoordinatesToward,
+  interpretInstruction,
+  templatize,
+  fillTemplate,
+  sketchToSilhouette,
 } from "../../lib/pixelbrain.adapter.js";
+import { SCHOOLS } from "../../data/schools.js";
+import { readWandFill } from "../../lib/wandPixelbrainBridge.js";
 import { buildPixelBrainGodotExport } from "../../lib/godot-export/pixelbrainGodotExport.js";
 import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
 
@@ -55,6 +66,12 @@ const REVERSE_PARAM_MAP = Object.entries(PARAM_MAP).reduce((acc, [k, v]) => {
 
 const TOKEN_PATTERN = /[A-Za-z']+/g;
 const DEFAULT_PIXEL_CANVAS = Object.freeze({ width: 160, height: 144, gridSize: 1 });
+
+// Template/fill bytecode options (VW-SCHOOL-RARITY-EFFECT).
+const FILL_RARITIES = ['COMMON', 'RARE', 'INEXPLICABLE'];
+const FILL_EFFECTS = ['INERT', 'RESONANT', 'HARMONIC', 'TRANSCENDENT'];
+const TEMPLATE_BANDS = 4;
+const WAND_TARGET_MAX = 96; // longest sprite dimension when rescaling WAND's 800×600 geometry
 
 function extractLineTokens(line) {
   return String(line || '').match(TOKEN_PATTERN) || [];
@@ -156,14 +173,75 @@ export default function PixelBrainPage() {
   const [plsSuggestions, setPlsSuggestions] = useState([]);
   const [pixelCanvas, setPixelCanvas] = useState(DEFAULT_PIXEL_CANVAS);
   const [photonicRoute, setPhotonicRoute] = useState(null);
-  
+  const [isMorphing, setIsMorphing] = useState(false);
+  const [latticeView, setLatticeView] = useState(false);
+  const [isTemplate, setIsTemplate] = useState(false);
+  const [fillSchool, setFillSchool] = useState('WILL');
+  const [fillRarity, setFillRarity] = useState('RARE');
+  const [fillEffect, setFillEffect] = useState('HARMONIC');
+  const [wandFillSpec, setWandFillSpec] = useState(null);
+
   const canvasRef = useRef(null);
   const previousPhotonicPacketRef = useRef(null);
+  const morphRafRef = useRef(null);
 
   const bridgedPlsFeatures = synthesis?.features || null;
   const verseAmplifier = verseAnalysis?.verseIRAmplifier || null;
   const versePixelBrainPayload = verseAmplifier?.pixelBrain || null;
   const amplifierExplanation = describeVerseAmplifier(verseAmplifier);
+
+  // Plain-instruction interpretation ("make it icy blue", "darker") — drives
+  // the in-place morph without needing poetic/stable-line-ending structure.
+  const instructionTarget = useMemo(() => interpretInstruction(verseText), [verseText]);
+
+  const clockRef = useRef({ elapsedSeconds: 0 });
+
+  useEffect(() => {
+    let active = true;
+    const start = performance.now();
+    const tick = () => {
+      if (!active) return;
+      clockRef.current.elapsedSeconds = (performance.now() - start) / 1000;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    return () => { active = false; };
+  }, []);
+
+  const SCHOOL_TO_INDEX = useMemo(() => ({
+    SONIC: 0,
+    PSYCHIC: 1,
+    VOID: 2,
+    ALCHEMY: 3,
+    WILL: 4,
+  }), []);
+
+  const shaderRuntimeState = useMemo(() => {
+    const schoolIdx = SCHOOL_TO_INDEX[activeSchool] ?? 2;
+    return {
+      clock: clockRef.current,
+      canvas: { size: [160, 144] },
+      spell: { schoolIndex: schoolIdx },
+      verse: {
+        resonance: totalSyllables ? Math.min(1.0, totalSyllables / 10) : 0.5,
+        vowelDensity: 0.5,
+      },
+      palette: {
+        0: palettes[0] ? palettes[0].colors[0] : '#000000',
+      },
+    };
+  }, [activeSchool, palettes, totalSyllables, SCHOOL_TO_INDEX]);
+
+  const handleShaderDiagnostic = useCallback((err) => {
+    if (err) {
+      setError(err.message || 'Shader compile error');
+      setStatus('error');
+    } else {
+      setError(null);
+      setStatus('ready');
+    }
+  }, []);
+  const canMorph = (instructionTarget.available || Boolean(versePixelBrainPayload)) && !isMorphing;
 
   // Sync parameters state from formula
   useEffect(() => {
@@ -245,6 +323,7 @@ export default function PixelBrainPage() {
       if (requestId !== uploadRequestRef.current) return;
       setImageAnalysis(analysis);
       setPixelCanvas(DEFAULT_PIXEL_CANVAS);
+      setLatticeView(false);
       setStatus('generating');
 
       const workerResult = await processorBridge.execute('pixel.trace', {
@@ -354,6 +433,10 @@ export default function PixelBrainPage() {
 
   // Handle clear
   const handleClear = useCallback(() => {
+    if (morphRafRef.current) {
+      cancelAnimationFrame(morphRafRef.current);
+      morphRafRef.current = null;
+    }
     setReferenceImage(null);
     setImageAnalysis(null);
     setFormula(null);
@@ -363,6 +446,9 @@ export default function PixelBrainPage() {
     setPhotonicRoute(null);
     previousPhotonicPacketRef.current = null;
     setParameters({});
+    setIsMorphing(false);
+    setLatticeView(false);
+    setIsTemplate(false);
     setStatus('idle');
     setError(null);
   }, []);
@@ -384,9 +470,190 @@ export default function PixelBrainPage() {
     setCoordinates(Array.isArray(versePixelBrainPayload.coordinates) ? versePixelBrainPayload.coordinates : []);
     setPalettes(Array.isArray(versePixelBrainPayload.palettes) ? versePixelBrainPayload.palettes : []);
     setPixelCanvas(versePixelBrainPayload.canvas || DEFAULT_PIXEL_CANVAS);
+    setLatticeView(true);
     setStatus('ready');
     setError(null);
   }, [versePixelBrainPayload]);
+
+  // NLP MORPH — edit the LOADED asset in place, animated, driven by the verse.
+  // Keeps the asset's geometry; sweeps each pixel's hue toward the verse's
+  // dominant school while preserving luminance, so it morphs before your eyes.
+  const handleApplyNlpMorph = useCallback(() => {
+    // Plain instruction wins ("make it blue"); fall back to the phonetic
+    // amplifier payload only when the text carries no color/tone words.
+    const instruction = interpretInstruction(verseText);
+    const target = instruction.available
+      ? instruction
+      : deriveVerseMorphTarget(versePixelBrainPayload);
+    if (!target.available) {
+      setError('No color/tone read from that. Try “make it icy blue”, “darker”, or “vivid crimson”.');
+      setStatus('error');
+      return;
+    }
+    if (coordinates.length === 0) {
+      setError('No loaded asset to morph. Upload an asset first.');
+      setStatus('error');
+      return;
+    }
+
+    if (morphRafRef.current) cancelAnimationFrame(morphRafRef.current);
+
+    const baseCoordinates = coordinates;
+    const DURATION_MS = 900;
+    const startTime = performance.now();
+    // easeInOutCubic — settle gently at both ends of the morph.
+    const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+
+    setError(null);
+    setLatticeView(true);
+    setIsMorphing(true);
+
+    const step = (now) => {
+      const linear = Math.min(1, (now - startTime) / DURATION_MS);
+      setCoordinates(morphCoordinatesToward(baseCoordinates, target, ease(linear)));
+
+      if (linear < 1) {
+        morphRafRef.current = requestAnimationFrame(step);
+      } else {
+        morphRafRef.current = null;
+        setPalettes(Array.isArray(target.palettes) ? target.palettes : []);
+        setIsMorphing(false);
+        setStatus('ready');
+      }
+    };
+
+    morphRafRef.current = requestAnimationFrame(step);
+  }, [verseText, versePixelBrainPayload, coordinates]);
+
+  useEffect(() => () => {
+    if (morphRafRef.current) cancelAnimationFrame(morphRafRef.current);
+  }, []);
+
+  // TEMPLATIZE — strip the loaded asset to geometry + neutral role-slots,
+  // so it can be re-filled by any bytecode formula.
+  const handleTemplatize = useCallback(() => {
+    if (coordinates.length === 0) {
+      setError('No loaded asset to templatize. Upload or synthesize one first.');
+      setStatus('error');
+      return;
+    }
+    const template = templatize(coordinates, { bands: TEMPLATE_BANDS });
+    setCoordinates(template.coordinates);
+    setPalettes([]);
+    setLatticeView(true);
+    setIsTemplate(true);
+    setError(null);
+    setStatus('ready');
+  }, [coordinates]);
+
+  // FILL — resolve the template's slots to concrete colors via a bytecode
+  // formula (VW-SCHOOL-RARITY-EFFECT). Works on a raw asset too (auto-slots).
+  const fillBytecode = `VW-${fillSchool}-${fillRarity}-${fillEffect}`;
+  const handleFillAsBytecode = useCallback(() => {
+    if (coordinates.length === 0) {
+      setError('Nothing to fill. Upload, synthesize, or templatize an asset first.');
+      setStatus('error');
+      return;
+    }
+    setCoordinates(fillTemplate(coordinates, fillBytecode, { bands: TEMPLATE_BANDS }));
+    setLatticeView(true);
+    setIsTemplate(false);
+    setError(null);
+    setStatus('ready');
+  }, [coordinates, fillBytecode]);
+
+  // PULL FROM WAND — adopt the bytecode WAND emitted, populating the fill
+  // selectors. WAND's procedural proposal then drives the fill, not the dropdowns.
+  const handlePullFromWand = useCallback(() => {
+    const spec = readWandFill();
+    if (!spec) {
+      setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
+      setStatus('error');
+      return;
+    }
+    setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
+    if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
+    if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+    setWandFillSpec(spec);
+    setError(null);
+    setStatus('ready');
+  }, []);
+
+  // PULL GEOMETRY FROM WAND — load WAND's procedural shape as a silhouette,
+  // rescaled to sprite space and auto-shaded (same Sketch AMP), and adopt its
+  // bytecode. One click: WAND shape → shaded template ready to FILL.
+  const handlePullWandGeometry = useCallback(() => {
+    const spec = readWandFill();
+    if (!spec || !Array.isArray(spec.coordinates) || spec.coordinates.length === 0) {
+      setError('No WAND geometry found. In WAND, evaluate a shape then click "Send → PixelBrain".');
+      setStatus('error');
+      return;
+    }
+    if (morphRafRef.current) {
+      cancelAnimationFrame(morphRafRef.current);
+      morphRafRef.current = null;
+    }
+
+    const src = spec.canvas || { width: 800, height: 600 };
+    const scale = WAND_TARGET_MAX / Math.max(1, Math.max(src.width, src.height));
+    const width = Math.max(1, Math.round(src.width * scale));
+    const height = Math.max(1, Math.round(src.height * scale));
+
+    const seen = new Set();
+    const occupied = [];
+    for (const point of spec.coordinates) {
+      const x = Math.min(width - 1, Math.max(0, Math.round(Number(point.x) * scale)));
+      const y = Math.min(height - 1, Math.max(0, Math.round(Number(point.y) * scale)));
+      const key = `${x},${y}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      occupied.push({ x, y });
+    }
+
+    const tpl = sketchToSilhouette(occupied, { width, height }, { bands: TEMPLATE_BANDS, symmetry: 'none' });
+    setReferenceImage(null);
+    setImageAnalysis(null);
+    setFormula(null);
+    setCoordinates(tpl.coordinates);
+    setPalettes([]);
+    setPixelCanvas(tpl.dimensions);
+    setLatticeView(true);
+    setIsTemplate(true);
+    setIsMorphing(false);
+
+    setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
+    if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
+    if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+    setWandFillSpec(spec);
+    setError(null);
+    setStatus('ready');
+  }, []);
+
+  // COMMIT SKETCH — run the Sketch AMP (auto-shaded silhouette) and load the
+  // result as the active asset, ready to FILL by bytecode. No external art.
+  const handleCommitSketch = useCallback(({ occupied, dimensions, symmetry }) => {
+    if (!Array.isArray(occupied) || occupied.length === 0) {
+      setError('Sketch is empty. Paint a shape first.');
+      setStatus('error');
+      return;
+    }
+    if (morphRafRef.current) {
+      cancelAnimationFrame(morphRafRef.current);
+      morphRafRef.current = null;
+    }
+    const result = sketchToSilhouette(occupied, dimensions, { bands: TEMPLATE_BANDS, symmetry });
+    setReferenceImage(null);
+    setImageAnalysis(null);
+    setFormula(null);
+    setCoordinates(result.coordinates);
+    setPalettes([]);
+    setPixelCanvas(result.dimensions);
+    setLatticeView(true);
+    setIsTemplate(true);
+    setIsMorphing(false);
+    setError(null);
+    setStatus('ready');
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -455,7 +722,7 @@ export default function PixelBrainPage() {
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (imageAnalysis?.preview) {
+    if (imageAnalysis?.preview && !latticeView) {
       const img = new Image();
       img.onload = () => {
         ctx.drawImage(img, offsetX, offsetY, srcW * scale, srcH * scale);
@@ -488,6 +755,8 @@ export default function PixelBrainPage() {
       };
       img.src = imageAnalysis.preview;
     } else if (coordinates.length > 0) {
+      // Lattice view: render the colored coordinate reconstruction (the
+      // recolored asset itself), so the NLP morph is visible frame-by-frame.
       coordinates.forEach(coord => {
         const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
         const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
@@ -495,7 +764,7 @@ export default function PixelBrainPage() {
         ctx.fillRect(px, py, Math.max(1, scale), Math.max(1, scale));
       });
     }
-  }, [coordinates, imageAnalysis, pixelCanvas]);
+  }, [coordinates, imageAnalysis, pixelCanvas, latticeView]);
 
   const terminalAnalysisResult = imageAnalysis ? {
     ...imageAnalysis,
@@ -552,11 +821,23 @@ export default function PixelBrainPage() {
             >
               MATRIX
             </button>
-            <button 
+            <button
               className={`tab-btn ${leftTab === 'echo' ? 'active' : ''}`}
               onClick={() => setLeftTab('echo')}
             >
               ECHO
+            </button>
+            <button
+              className={`tab-btn ${leftTab === 'sketch' ? 'active' : ''}`}
+              onClick={() => setLeftTab('sketch')}
+            >
+              SKETCH
+            </button>
+            <button
+              className={`tab-btn ${leftTab === 'forge' ? 'active' : ''}`}
+              onClick={() => setLeftTab('forge')}
+            >
+              FORGE
             </button>
           </div>
 
@@ -568,15 +849,15 @@ export default function PixelBrainPage() {
                     <span className="telemetry-text">VERSEIR UPLINK</span>
                   </div>
                   <label className="section-label telemetry-text" htmlFor="pixelbrain-verse-seed">
-                    Seed verse for PLS and VerseIR amplification
+                    Seed a verse to synthesize, or a plain instruction to morph the loaded asset
                   </label>
                   <textarea
                     id="pixelbrain-verse-seed"
                     className="pixelbrain-verse-input telemetry-text"
                     value={verseText}
                     onChange={(event) => setVerseText(event.target.value)}
-                    placeholder="write the verse that should collapse into lattice..."
-                    aria-label="Verse seed input for PixelBrain"
+                    placeholder="verse → SYNTHESIZE, or “make it icy blue” / “darker, more vivid” → MORPH..."
+                    aria-label="Verse or instruction input for PixelBrain"
                   />
                   <div className="pixelbrain-verse-toolbar">
                     <button
@@ -585,6 +866,18 @@ export default function PixelBrainPage() {
                       disabled={!versePixelBrainPayload || isVerseAnalyzing}
                     >
                       {isVerseAnalyzing ? 'AMPLIFYING_VERSE...' : 'SYNTHESIZE_VERSE_LATTICE'}
+                    </button>
+                    <button
+                      className="transmute-ignite-btn pixelbrain-verse-btn"
+                      onClick={handleApplyNlpMorph}
+                      disabled={!canMorph || coordinates.length === 0}
+                      title="Edit the loaded asset in place from a plain instruction (e.g. “make it icy blue”, “darker”). Keeps its shape, morphs the color."
+                    >
+                      {isMorphing
+                        ? 'MORPHING_ASSET...'
+                        : instructionTarget.available
+                          ? `MORPH → ${instructionTarget.label.toUpperCase()}`
+                          : 'MORPH_LOADED_ASSET'}
                     </button>
                     <span className="telemetry-text pixelbrain-verse-status">
                       {amplifierExplanation}
@@ -625,79 +918,180 @@ export default function PixelBrainPage() {
               />
             )}
             {leftTab === 'echo' && (
-              <DuplicateSection 
+              <DuplicateSection
                 referenceFile={referenceImage?.file}
                 isProcessing={status === 'generating'}
                 onProcessingChange={(p) => setStatus(p ? 'generating' : 'ready')}
               />
             )}
+            {leftTab === 'sketch' && (
+              <SketchPad
+                onCommit={handleCommitSketch}
+                disabled={isMorphing}
+              />
+            )}
+            {leftTab === 'forge' && (
+              <div className="telemetry-text" style={{ padding: '16px', opacity: 0.7 }}>
+                FORGE_ACTIVE // WebGL pipeline engaged. Custom GLSL shaders mapped to spells.
+              </div>
+            )}
           </div>
         </aside>
 
-        {/* Center: Viewport */}
-        <section className="pixelbrain-panel pixelbrain-panel--center">
-          <div className="canvas-container">
-            <canvas
-              ref={canvasRef}
-              className="preview-canvas"
-              width={800}
-              height={600}
+        {leftTab === 'forge' ? (
+          <Suspense fallback={<div className="telemetry-text" style={{ padding: '24px' }}>LOADING SHADER FORGE...</div>}>
+            <ShaderForgePanel
+              runtimeState={shaderRuntimeState}
+              onDiagnosticEmit={handleShaderDiagnostic}
             />
-          </div>
+          </Suspense>
+        ) : (
+          <>
+            {/* Center: Viewport */}
+            <section className="pixelbrain-panel pixelbrain-panel--center">
+              <div className="canvas-container">
+                <canvas
+                  ref={canvasRef}
+                  className="preview-canvas"
+                  width={800}
+                  height={600}
+                />
+              </div>
 
-          <StatusDisplay
-            status={status}
-            error={error}
-          />
-        </section>
+              <StatusDisplay
+                status={status}
+                error={error}
+              />
+            </section>
 
-        {/* Right Sidebar: Telemetry & Compiler */}
-        <aside className="pixelbrain-panel pixelbrain-panel--right">
-          <div className="section-header">
-            <span className="telemetry-text">LATTICE COMPILER</span>
-          </div>
-          
-          <div className="bytecode-terminal">
-            <div className="terminal-header telemetry-text">0xF_SYNTAX_STREAM</div>
-            <textarea 
-              className="terminal-textarea telemetry-text"
-              style={{ width: '100%', height: '120px', background: '#000', border: '1px solid #333', color: '#00FF41', padding: '8px', fontSize: '12px' }}
-              value={formula ? formulaToBytecode(formula) : "AWAITING_TRANSMUTATION..."}
-              readOnly
-            />
-          </div>
+            {/* Right Sidebar: Telemetry & Compiler */}
+            <aside className="pixelbrain-panel pixelbrain-panel--right">
+              <div className="section-header">
+                <span className="telemetry-text">LATTICE COMPILER</span>
+              </div>
+              
+              <div className="bytecode-terminal">
+                <div className="terminal-header telemetry-text">0xF_SYNTAX_STREAM</div>
+                <textarea 
+                  className="terminal-textarea telemetry-text"
+                  style={{ width: '100%', height: '120px', background: '#000', border: '1px solid #333', color: '#00FF41', padding: '8px', fontSize: '12px' }}
+                  value={formula ? formulaToBytecode(formula) : "AWAITING_TRANSMUTATION..."}
+                  readOnly
+                />
+              </div>
 
-          <LatticeCanvas analysis={imageAnalysis} />
+              <LatticeCanvas analysis={imageAnalysis} />
 
-          <ParameterSliders
-            parameters={parameters}
-            onChange={handleParameterChange}
-            school={activeSchool}
-          />
-          
-          <ExtensionSelector
-            selectedExtensions={extensions}
-            onChange={setExtensions}
-          />
-          
-          <button 
-            className="transmute-ignite-btn"
-            onClick={() => handleExport('FORMULA')}
-            disabled={!formula}
-          >
-            EXECUTE_BURN_TO_LATTICE
-          </button>
-          {isGodotExportEnabled && (
-            <button
-              className="transmute-ignite-btn"
-              onClick={handleGodotArtifactExport}
-              disabled={coordinates.length === 0}
-              type="button"
-            >
-              EXPORT_GODOT_ARTIFACT
-            </button>
-          )}
-        </aside>
+              <ParameterSliders
+                parameters={parameters}
+                onChange={handleParameterChange}
+                school={activeSchool}
+              />
+              
+              <ExtensionSelector
+                selectedExtensions={extensions}
+                onChange={setExtensions}
+              />
+
+              {/* Template / Fill bridge: strip to neutral slots, refill by bytecode */}
+              <div className="section-header" style={{ marginTop: '12px' }}>
+                <span className="telemetry-text">TEMPLATE / FILL</span>
+                {isTemplate && <span className="telemetry-text" style={{ marginLeft: 'auto', color: '#888' }}>[NEUTRAL SLOTS]</span>}
+              </div>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                <button
+                  className="transmute-ignite-btn"
+                  onClick={handlePullFromWand}
+                  title="Adopt only the fill bytecode WAND emitted, populating the selectors below."
+                  type="button"
+                  style={{ flex: 1 }}
+                >
+                  PULL_BYTECODE ← WAND
+                </button>
+                <button
+                  className="transmute-ignite-btn"
+                  onClick={handlePullWandGeometry}
+                  title="Load WAND's procedural shape as a shaded silhouette template (rescaled to sprite space) and adopt its bytecode."
+                  type="button"
+                  style={{ flex: 1 }}
+                >
+                  PULL_GEOMETRY ← WAND
+                </button>
+              </div>
+              {wandFillSpec && (
+                <div className="telemetry-text" style={{ margin: '4px 0', color: '#7ab4ff', fontSize: '11px' }}>
+                  WAND: {wandFillSpec.bytecode}
+                  {wandFillSpec.material ? ` · ${String(wandFillSpec.material).toUpperCase()}` : ''}
+                </div>
+              )}
+              <button
+                className="transmute-ignite-btn"
+                onClick={handleTemplatize}
+                disabled={coordinates.length === 0}
+                title="Strip the loaded asset to geometry + neutral role-slots (grayscale relief)."
+                type="button"
+              >
+                TEMPLATIZE_ASSET
+              </button>
+              <div className="pixelbrain-fill-controls" style={{ display: 'flex', gap: '4px', margin: '8px 0' }}>
+                <select
+                  className="telemetry-text"
+                  style={{ flex: 2, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
+                  value={fillSchool}
+                  onChange={(e) => setFillSchool(e.target.value)}
+                  aria-label="Fill school"
+                >
+                  {Object.keys(SCHOOLS).map((id) => <option key={id} value={id}>{id}</option>)}
+                </select>
+                <select
+                  className="telemetry-text"
+                  style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
+                  value={fillRarity}
+                  onChange={(e) => setFillRarity(e.target.value)}
+                  aria-label="Fill rarity"
+                >
+                  {FILL_RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+                <select
+                  className="telemetry-text"
+                  style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
+                  value={fillEffect}
+                  onChange={(e) => setFillEffect(e.target.value)}
+                  aria-label="Fill effect"
+                >
+                  {FILL_EFFECTS.map((eff) => <option key={eff} value={eff}>{eff}</option>)}
+                </select>
+              </div>
+              <button
+                className="transmute-ignite-btn"
+                onClick={handleFillAsBytecode}
+                disabled={coordinates.length === 0}
+                title="Resolve every slot to a color via this bytecode formula. Re-skins the asset."
+                type="button"
+              >
+                FILL → {fillBytecode}
+              </button>
+
+              <button
+                className="transmute-ignite-btn"
+                onClick={() => handleExport('FORMULA')}
+                disabled={!formula}
+              >
+                EXECUTE_BURN_TO_LATTICE
+              </button>
+              {isGodotExportEnabled && (
+                <button
+                  className="transmute-ignite-btn"
+                  onClick={handleGodotArtifactExport}
+                  disabled={coordinates.length === 0}
+                  type="button"
+                >
+                  EXPORT_GODOT_ARTIFACT
+                </button>
+              )}
+            </aside>
+          </>
+        )}
       </div>
 
       {/* Terminal Overlay */}

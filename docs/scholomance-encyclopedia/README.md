@@ -55,6 +55,7 @@ Foundational mandates and contracts that govern agents and systems.
 - [`VAELRIX_LAW.md`](./Scholomance%20LAW/VAELRIX_LAW.md)
 - [`forensic-search.skill`](./Scholomance%20LAW/forensic-search.skill)
 - [`modular-defragmentation.md`](./Scholomance%20LAW/modular-defragmentation.md)
+- [`RESONANCE_LAW.md`](./Scholomance%20LAW/RESONANCE_LAW.md)
 
 - [`vaelrix-law-debug.skill`](./Scholomance%20LAW/vaelrix-law-debug.skill)
 - [`vaelrix-law.skill`](./Scholomance%20LAW/vaelrix-law.skill)
@@ -149,6 +150,8 @@ Deep technical analysis, operating manuals, and specialist briefs.
 - [`TURBOQUANT-SERVICE-MANUAL.md`](./Scholomance%20White%20Papers/TURBOQUANT-SERVICE-MANUAL.md)
 - [`TURBOQUANT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/TURBOQUANT_WHITE_PAPER.md)
 - [`opencode.md`](./Scholomance%20White%20Papers/opencode.md)
+- [`BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md`](./Scholomance%20White%20Papers/BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md)
+- [`SONIC_EXCHANGE_WHITE_PAPER.md`](./Scholomance%20White%20Papers/SONIC_EXCHANGE_WHITE_PAPER.md)
 
 ### Scholomance Verdicts
 

@@ -113,6 +113,7 @@ export const MODULE_IDS = Object.freeze({
   TURBO_QUANT: 'QUANT',
   IMMUNITY: 'IMMUNE',
   VECTOR: 'VECTOR',
+  SHADER: 'SHADER',
 });
 
 // ─── Error Codes (per category) ──────────────────────────────────────────────
@@ -170,6 +171,10 @@ export const ERROR_CODES = Object.freeze({
   RENDER_CONTEXT_LOST: 0x0901,
   RENDER_SIZE_INVALID: 0x0902,
   RENDER_FAILED: 0x0903,
+  SHADER_COMPILE_FAILED: 0x0910,
+  SHADER_LINK_FAILED: 0x0911,
+  SHADER_UNIFORM_INVALID: 0x0912,
+  SHADER_CONTEXT_LOST: 0x0913,
   
   // CANVAS errors
   CANVAS_NOT_FOUND: 0x0A01,
@@ -530,11 +535,21 @@ export function getRecoveryHintsForError(category, errorCode, context = {}) {
       break;
       
     case ERROR_CATEGORIES.RENDER:
-      hints.suggestions.push('Check canvas context availability');
-      hints.suggestions.push('Validate canvas dimensions before rendering');
-      hints.constraints.push('Canvas dimensions must be > 0');
-      hints.invariants.push('canvas.width > 0 && canvas.height > 0');
-      hints.solution_bytecode = encodeSolution('RENDER_GUARD');
+      if (errorCode === ERROR_CODES.SHADER_COMPILE_FAILED) {
+        hints.suggestions.push('Verify GLSL syntax correctness');
+        hints.suggestions.push('Ensure all uniform declarations match type requirements');
+        hints.constraints.push('GLSL ES 300 source must compile cleanly');
+      } else if (errorCode === ERROR_CODES.SHADER_LINK_FAILED) {
+        hints.suggestions.push('Check vertex and fragment shader interface variables matching');
+      } else if (errorCode === ERROR_CODES.SHADER_CONTEXT_LOST) {
+        hints.suggestions.push('Reinitialize WebGL canvas resources');
+      } else {
+        hints.suggestions.push('Check canvas context availability');
+        hints.suggestions.push('Validate canvas dimensions before rendering');
+        hints.constraints.push('Canvas dimensions must be > 0');
+        hints.invariants.push('canvas.width > 0 && canvas.height > 0');
+        hints.solution_bytecode = encodeSolution('RENDER_GUARD');
+      }
       break;
 
     case ERROR_CATEGORIES.CANVAS:

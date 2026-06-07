@@ -166,6 +166,10 @@
               },
               "material": { "type": "string" },
               "paletteChannel": { "type": "number" },
+              "rotation": { "type": "number" },
+              "rotationSpeed": { "type": "number" },
+              "rotationSwingRange": { "type": "number" },
+              "rotationSwingSpeed": { "type": "number" },
               "formula": { "$ref": "#" }
             },
             "additionalProperties": false

@@ -11,6 +11,7 @@ export default function OpponentDisplay({ archetype, currentHP, maxHP, phase, on
   const activeEffects = Array.isArray(archetype?.statusEffects)
     ? archetype.statusEffects.slice(0, 2)
     : [];
+  const syntacticProfile = archetype?.syntacticProfile || null;
 
   return (
     <div className="opponent-display battle-panel">
@@ -21,12 +22,20 @@ export default function OpponentDisplay({ archetype, currentHP, maxHP, phase, on
         aria-label={`View details for ${archetype?.name || 'opponent'}`}
         type="button"
       >
-        <SigilEntity 
+        <SigilEntity
           school={archetype?.school}
           effectClass={archetype?.bytecodeEffectClass}
           glowIntensity={archetype?.glowIntensity}
           size={50}
         />
+        <span
+          className="opponent-portrait-info-badge"
+          aria-hidden="true"
+          title="Click for archetype details"
+        >
+          ⓘ
+        </span>
+        <span className="opponent-portrait-info-label">DETAILS</span>
       </button>
       
       <div className="opponent-info">
@@ -72,6 +81,21 @@ export default function OpponentDisplay({ archetype, currentHP, maxHP, phase, on
       {counterTokens.length > 0 && (
         <div className="opponent-counter-tokens">
           COUNTER TOKENS: {counterTokens.join(', ')}
+        </div>
+      )}
+
+      {syntacticProfile && (
+        <div className="opponent-symbolic-structure">
+          <div className="opponent-telegraph-label">SYMBOLIC STRUCTURE</div>
+          <div className="opponent-telegraph-text">
+            Body: {syntacticProfile.symbolicBody?.slice(0, 3).join(', ') || 'unknown'}
+          </div>
+          <div className="opponent-telegraph-text">
+            Weaknesses: {syntacticProfile.weaknessFamilies?.slice(0, 3).join(', ') || '???'}
+          </div>
+          <div className="opponent-telegraph-text">
+            Resists: {syntacticProfile.resistanceFamilies?.slice(0, 2).join(', ') || '???'}
+          </div>
         </div>
       )}
 

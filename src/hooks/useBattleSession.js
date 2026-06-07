@@ -18,18 +18,29 @@ import {
 import { analyzeText } from '../../codex/core/analysis.pipeline.js';
 import { createCombatScoringEngine } from '../../codex/core/scoring.defaults.js';
 import { normalizeCombatScore } from '../../codex/core/combat.scoring.js';
+import { evaluateSyntacticalChess } from '../../codex/core/combat.syntax-chess.js';
 import {
   OPPONENT_MAX_HP,
   PLAYER_MAX_HP,
-  PLAYER_MAX_MP,
   splitCombatLines,
   upsertStatusEffect as mergeStatusEffects,
   tickStatusEffects,
   getStatusMagnitude,
 } from '../../codex/core/combat.session.js';
 import { scoreCombatScroll } from '../lib/combatApi.js';
+import {
+  BASE_MP_REGEN,
+  computeCombatManaRegen,
+} from '../../codex/core/combat.balance.js';
+import {
+  generateBattleLeylines,
+  scoreExtraction,
+  getLeylinePhase,
+  computeLinguisticCoherence,
+} from '../../codex/core/leyline.engine.js';
 
 import { useProgression } from './useProgression.jsx';
+
 
 const PLAYER_ID = 'player';
 const OPPONENT_ID = 'opponent';
@@ -58,6 +69,20 @@ function createSeededRandom(seed) {
 
 function clampBetween(value, min, max) {
   return Math.max(min, Math.min(max, value));
+}
+
+function applyPlayerTurnStartRecovery(entity, { mpDrain = 0, damage = 0 } = {}) {
+  const passiveRegen = computeCombatManaRegen(entity.lastScoreData, {
+    baseRegen: BASE_MP_REGEN,
+  });
+  const restorativeRegen = Math.round(getStatusMagnitude(entity, 'restorative_regimen'));
+
+  return {
+    ...entity,
+    hp: clampBetween(entity.hp - damage + restorativeRegen, 0, entity.maxHp),
+    mp: clampBetween(entity.mp - mpDrain + passiveRegen, 0, entity.maxMp),
+    statusEffects: tickStatusEffects(entity.statusEffects),
+  };
 }
 
 function createEffectRecord(type, school, magnitude, x, y, slot) {
@@ -148,6 +173,7 @@ function getTileResonanceMultiplier(cell) {
 
 function buildPlayerCastSummary(scoreData, verseIRAmplifier) {
   const amplifier = verseIRAmplifier || scoreData?.verseIRAmplifier || null;
+  const chessState = scoreData?.syntacticalChess?.state || null;
 
   return {
     totalScore: Number(scoreData?.totalScore) || 0,
@@ -157,6 +183,7 @@ function buildPlayerCastSummary(scoreData, verseIRAmplifier) {
     bridgeIntent: scoreData?.bridge?.intent || null,
     dominantArchetype: amplifier?.dominantArchetype?.label || null,
     dominantTier: amplifier?.dominantTier || null,
+    syntacticalChess: scoreData?.syntacticalChess || null,
     badges: buildScoreBadges({
       school: scoreData?.school,
       rarity: scoreData?.rarity?.label,
@@ -164,7 +191,11 @@ function buildPlayerCastSummary(scoreData, verseIRAmplifier) {
       bridgeIntent: scoreData?.bridge?.intent,
       dominantArchetype: amplifier?.dominantArchetype?.label,
       dominantTier: amplifier?.dominantTier,
-    }),
+    }).concat(chessState === 'advantage'
+      ? ['SYNTACTICAL ADVANTAGE']
+      : chessState === 'disadvantage'
+        ? ['SYNTACTICAL DISADVANTAGE']
+        : []),
   };
 }
 
@@ -301,21 +332,38 @@ async function resolvePlayerCombatProfile({
   weave,
   arenaSchool,
   opponentSchool,
+  opponent,
   scoringEngine,
   speakerProfile,
 }) {
   try {
-    const scoreData = await scoreCombatScroll({
+    const apiScoreData = await scoreCombatScroll({
       scrollText: verse,
       weave,
       arenaSchool,
       opponentSchool,
     });
 
+    const syntacticalChess = evaluateSyntacticalChess({
+      phrase: verse,
+      enemy: opponent,
+      verseIR: apiScoreData.verseIR || apiScoreData.verseIRAmplifier || null,
+      profile: apiScoreData,
+    });
+    const enrichedScoreData = apiScoreData?.syntacticalChess
+      ? apiScoreData
+      : {
+          ...apiScoreData,
+          damage: Math.max(1, Math.round((Number(apiScoreData.damage) || 0) * syntacticalChess.multiplier)),
+          syntacticalChess,
+          syntacticalChessMultiplier: syntacticalChess.multiplier,
+          commentary: [apiScoreData.commentary || '', ...syntacticalChess.diagnostics].filter(Boolean).join(' '),
+        };
+
     return {
       analyzedDoc: null,
-      verseIR: null,
-      scoreData,
+      verseIR: enrichedScoreData.verseIR || null,
+      scoreData: enrichedScoreData,
     };
   } catch (error) {
     console.warn('[useBattleSession] Combat score API failed, falling back to local combat scoring.', error);
@@ -323,23 +371,25 @@ async function resolvePlayerCombatProfile({
 
   const analyzedDoc = analyzeText(verse);
   const baseScoreData = await scoringEngine.calculateScore(analyzedDoc);
+  const scoreData = normalizeCombatScore(
+    baseScoreData,
+    {
+      scrollText: verse,
+      weave,
+      arenaSchool,
+      opponentSchool,
+      analyzedDoc,
+      speakerId: `combat:${PLAYER_ID}`,
+      speakerType: 'PLAYER',
+      speakerProfile,
+      defender: opponent,
+    }
+  );
 
   return {
     analyzedDoc,
-    verseIR: null,
-    scoreData: normalizeCombatScore(
-      baseScoreData,
-      {
-        scrollText: verse,
-        weave,
-        arenaSchool,
-        opponentSchool,
-        analyzedDoc,
-        speakerId: `combat:${PLAYER_ID}`,
-        speakerType: 'PLAYER',
-        speakerProfile,
-      }
-    ),
+    verseIR: scoreData?.verseIR || (scoreData?.verseIRAmplifier ? { verseIRAmplifier: scoreData.verseIRAmplifier } : null),
+    scoreData,
   };
 }
 
@@ -410,6 +460,7 @@ export function useBattleSession() {
       description: opponentData.subtitle,
       school: opponentData.school,
       doctrine: opponentData.doctrine || null,
+      syntacticProfile: opponentData.syntacticProfile || null,
       hp: 1500,
       maxHp: 1500,
       mp: 100,
@@ -453,6 +504,14 @@ export function useBattleSession() {
       ])
     );
 
+    const leylines = generateBattleLeylines({
+      battleSeed,
+      width: INITIAL_GRID_SIZE,
+      height: INITIAL_GRID_SIZE,
+      blockedCoords: [player.position, opponent.position],
+      count: 3
+    });
+
     let battleIdCounter = 0;
     setBattleState({
       id: `battle-${battleIdCounter++}`, // EXEMPT
@@ -464,6 +523,9 @@ export function useBattleSession() {
       round: 1,
       phase: 'player_writing',
       history: [],
+      leylines,
+      spentLeylineIds: [],
+      playerTurnIndex: 1,
       metadata: {
         battleSeed,
         arenaSchool,
@@ -531,6 +593,15 @@ export function useBattleSession() {
         return updated;
       });
 
+      const player = nextEntities.find(e => e.id === PLAYER_ID);
+      const opponent = nextEntities.find(e => e.id === OPPONENT_ID);
+      let phase = 'opponent_responding';
+      if (opponent && opponent.hp <= 0) {
+        phase = 'victory';
+      } else if (player && player.hp <= 0) {
+        phase = 'defeat';
+      }
+
       const nextGrid = prev.grid.map((row) => row.map((cell) => ({
         ...cell,
         occupantId: null,
@@ -543,8 +614,8 @@ export function useBattleSession() {
         ...prev,
         entities: nextEntities,
         grid: nextGrid,
-        phase: 'opponent_responding',
-        activeEntityId: OPPONENT_ID,
+        phase,
+        activeEntityId: phase === 'opponent_responding' ? OPPONENT_ID : PLAYER_ID,
         history: [...prev.history, turnResult],
       };
     });
@@ -644,28 +715,57 @@ export function useBattleSession() {
         weave,
         arenaSchool: battleState.metadata?.arenaSchool || player.school,
         opponentSchool: opponent.school,
+        opponent,
         scoringEngine: scoringEngineRef.current,
         speakerProfile: player.voiceProfile,
       });
 
       const chargeMultiplier = 1 + getStatusMagnitude(player, 'resonance_charge');
+      const superchargeMultiplier = player.supercharged ? 2 : 1;
       const cadencePenalty = getStatusMagnitude(player, 'cadence_fracture');
       const latticeCell = battleState.grid?.[player.position.y]?.[player.position.x];
       const latticeMultiplier = getTileResonanceMultiplier(latticeCell);
       const statusPenaltyMultiplier = Math.max(0.55, 1 - cadencePenalty);
-      const castMultiplier = chargeMultiplier * latticeMultiplier * statusPenaltyMultiplier;
+      const castMultiplier = chargeMultiplier * latticeMultiplier * statusPenaltyMultiplier * superchargeMultiplier;
       const adjustedDamage = Math.max(1, Math.round((Number(scoreData.damage) || 0) * castMultiplier));
-      const adjustedHealing = Math.max(0, Math.round((Number(scoreData.healing) || 0) * chargeMultiplier));
+      const adjustedHealing = Math.max(0, Math.round((Number(scoreData.healing) || 0) * chargeMultiplier * superchargeMultiplier));
+
+      // Instability fizzle: while unstable (from an incoherent leyline extraction),
+      // an incoherent cast risks collapsing. Fail chance peaks at 15% and falls
+      // toward 0 the more coherent the verse — a well-formed spell casts through.
+      // The roll is seeded on the turn (not the phrase) so it can't be re-rolled by
+      // tweaking a word; coherence is the only lever the scholar controls.
+      const castCoherence = Number.isFinite(scoreData?.cohesionScore)
+        ? clampBetween(scoreData.cohesionScore, 0, 1)
+        : computeLinguisticCoherence(verse);
+      const isUnstable = (player.unstableUntilTurn || 0) >= battleState.playerTurnIndex;
+      const fizzleChance = isUnstable ? 0.15 * (1 - castCoherence) : 0;
+      const fizzleRoll = createSeededRandom(
+        stableHash(`${battleState.metadata?.battleSeed}:fizzle:${battleState.round}:${battleState.playerTurnIndex}`)
+      )();
+      const fizzled = fizzleChance > 0 && fizzleRoll < fizzleChance;
+
       const scoreSummary = buildPlayerCastSummary(scoreData, verseIR?.verseIRAmplifier);
+      if (fizzled && scoreSummary && Array.isArray(scoreSummary.badges)) {
+        scoreSummary.badges = ['FIZZLED', ...scoreSummary.badges];
+      }
       const resolvedCells = uniqueCells(
         affectedCells.length > 0 ? affectedCells : [targetCell],
         battleState.gridWidth,
         battleState.gridHeight
       );
       const supportCast = Boolean(scoreData?.intent?.healing || adjustedHealing > 0 || scoreData?.intent?.buff);
+      const healingMode = scoreData?.intent?.healingMode || 'NONE';
+      const supportSelfTargeted = Boolean(
+        supportCast
+        && targetCell?.x === player.position.x
+        && targetCell?.y === player.position.y
+      );
       const damageMap = [];
 
       resolvedCells.forEach((cell) => {
+        if (fizzled) return; // collapsed cast deals nothing
+        if (supportCast && !supportSelfTargeted) return;
         const occupantId = battleState.grid?.[cell.y]?.[cell.x]?.occupantId;
         if (!occupantId) return;
         const target = battleState.entities.find((entity) => entity.id === occupantId);
@@ -676,14 +776,18 @@ export function useBattleSession() {
           ? 1
           : Math.max(0.45, 1 - (distance * 0.12));
 
-        if (supportCast && occupantId === PLAYER_ID) {
-          const amount = adjustedHealing > 0
+        if (supportCast && occupantId !== PLAYER_ID) {
+          return;
+        }
+
+        if (supportCast && occupantId === PLAYER_ID && healingMode !== 'REGEN') {
+          const restoredAmount = adjustedHealing > 0
             ? adjustedHealing
             : Math.max(20, Math.round(adjustedDamage * 0.35));
           damageMap.push({
             targetId: occupantId,
             targetName: target.name,
-            amount: -amount,
+            amount: -restoredAmount,
             outcomeLabel: 'RESTORED',
           });
           return;
@@ -704,9 +808,33 @@ export function useBattleSession() {
         });
       });
 
+      const damageDealt = fizzled ? 0 : damageMap.reduce((sum, d) => d.amount > 0 ? sum + d.amount : sum, 0);
+      const healingDone = fizzled ? 0 : damageMap.reduce((sum, d) => d.amount < 0 ? sum + Math.abs(d.amount) : sum, 0);
+      const rhymeQuality = scoreData?.rhymeQuality ?? 0;
+      const verseIRMultiplier = scoreData?.verseIRMultiplier ?? 1;
+      const verbalFormMultiplier = scoreData?.verbalFormMultiplier ?? 1;
+      const affinity = scoreData?.school || player.school;
+
       const turnResult = buildTurnResult({
         entityId: PLAYER_ID,
+        type: 'PLAYER_CAST',
         actionType: 'cast',
+        phrase: verse,
+        round: battleState.round,
+        turnIndex: battleState.playerTurnIndex,
+        damageDealt,
+        healingDone,
+        playerHpAtCast: player.hp,
+        playerMaxHpAtCast: player.maxHp,
+        mpCost: CAST_MP_COST,
+        wasSupercharged: player.supercharged,
+        profile: {
+          rhymeQuality,
+          verseIRMultiplier,
+          verbalFormMultiplier,
+          affinity,
+          syntacticalChess: scoreData?.syntacticalChess || null,
+        },
         origin: player.position,
         targetCell,
         affectedCells: resolvedCells,
@@ -715,7 +843,9 @@ export function useBattleSession() {
         weaveText: weave,
         text: verse,
         lines: splitCombatLines(verse),
-        narrativeLog: buildPlayerNarrative({
+        narrativeLog: fizzled
+          ? `[INSTABILITY] The unstable lattice rejects your verse — the incantation collapses before it lands. Coherent phrasing would have held it together.`
+          : buildPlayerNarrative({
           scoreData,
           damageMap,
           latticePrefix: latticeCell?.fieldEffect?.type === 'RESONANCE_BUFF'
@@ -739,6 +869,8 @@ export function useBattleSession() {
           resonance: Number((castMultiplier - 1).toFixed(3)),
           school: scoreData.school,
           collapsed: Boolean(scoreData?.bridge?.collapsed),
+          fizzled,
+          syntacticalChess: scoreData?.syntacticalChess || null,
         },
       });
 
@@ -761,12 +893,16 @@ export function useBattleSession() {
             mp: clampBetween(updated.mp - CAST_MP_COST, 0, updated.maxMp),
             voiceProfile: scoreData.nextVoiceProfile || updated.voiceProfile || null,
             lastScoreSummary: scoreSummary,
+            lastScoreData: scoreData,
+            supercharged: false,
+            // Instability is NOT consumed by casting — it decays on its own turn-index
+            // expiry (unstableUntilTurn), so every cast in the window carries risk.
             statusEffects: (updated.statusEffects || [])
               .filter((effect) => effect?.id !== RESONANCE_CHARGE_ID)
               .filter((effect) => effect?.chainId !== 'omen_mark'),
           };
 
-          if (supportCast && scoreData.statusEffect?.disposition === 'BUFF') {
+          if (supportSelfTargeted && scoreData.statusEffect?.disposition === 'BUFF') {
             updated.statusEffects = mergeStatusEffects(updated.statusEffects, scoreData.statusEffect);
           }
 
@@ -792,6 +928,101 @@ export function useBattleSession() {
       setIsResolving(false);
     }
   }, [battleState, handOffTurnToOpponent, recordWordUse]);
+
+  const submitExtraction = useCallback(async (phrase, targetTile) => {
+    if (!battleState || battleState.activeEntityId !== PLAYER_ID || isResolving) return null;
+
+    const player = battleState.entities.find((entity) => entity.id === PLAYER_ID);
+    if (!player) return null;
+
+    if (player.position.x !== targetTile.x || player.position.y !== targetTile.y) {
+      console.warn('[useBattleSession] Extraction coordinates mismatch player position.');
+      return null;
+    }
+
+    const activeLeyline = battleState.leylines.find(
+      ley => ley.coord.x === targetTile.x && ley.coord.y === targetTile.y
+    );
+
+    if (!activeLeyline) {
+      console.warn('[useBattleSession] No leyline found on occupied tile.');
+      return null;
+    }
+
+    const currentPhase = getLeylinePhase(activeLeyline, battleState.playerTurnIndex, battleState.spentLeylineIds);
+    if (currentPhase !== 'glowing') {
+      console.warn('[useBattleSession] Leyline is not active.');
+      return null;
+    }
+
+    setIsResolving(true);
+
+    try {
+      const scoringResult = scoreExtraction(phrase, activeLeyline, player);
+      const { ok, extractionScore, result, manaExtracted, instability, diagnostics } = scoringResult;
+
+      const isSupercharged = result === 'SUPERCHARGED';
+      const narrativeLog = `[LEYLINE EXTRACTION] You harvest the ${activeLeyline.affinity} Leyline (★${activeLeyline.stars}) by phrasing: "${phrase}". ${
+        ok ? `Mana gathered: +${manaExtracted} MP. ${isSupercharged ? '(SUPERCHARGED!)' : ''}` : 'The extraction attempt collapsed.'
+      } ${instability ? 'An entropic backlash destabilizes the local grid.' : ''}`;
+
+      const turnResult = buildTurnResult({
+        entityId: PLAYER_ID,
+        actionType: 'extract',
+        origin: player.position,
+        targetCell: targetTile,
+        spellText: phrase,
+        text: phrase,
+        narrativeLog,
+        commentary: diagnostics.join(' · '),
+        scoreSummary: {
+          totalScore: extractionScore,
+          school: activeLeyline.affinity,
+          badges: [
+            'EXTRACTION',
+            ok ? `+${manaExtracted} MP` : 'FAILED',
+            isSupercharged ? 'SUPERCHARGED' : null
+          ].filter(Boolean)
+        },
+        signals: {
+          extractionScore,
+          ok,
+          manaExtracted,
+          supercharged: isSupercharged,
+          instability
+        }
+      });
+
+      handOffTurnToOpponent(turnResult, (entity) => {
+        if (entity.id !== PLAYER_ID) return entity;
+        return {
+          ...entity,
+          mp: clampBetween(entity.mp + manaExtracted, 0, entity.maxMp),
+          supercharged: isSupercharged ? true : (entity.supercharged || false),
+          // Incoherent extraction leaves the scholar UNSTABLE for 2 turns: any cast in
+          // that window risks fizzling. Tracked as an expiry turn-index so it decays
+          // deterministically rather than being consumed by a single cast (see submitScroll).
+          unstableUntilTurn: instability
+            ? battleState.playerTurnIndex + 2
+            : (entity.unstableUntilTurn || 0)
+        };
+      });
+
+      setBattleState((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          spentLeylineIds: prev.spentLeylineIds.includes(activeLeyline.id)
+            ? prev.spentLeylineIds
+            : [...prev.spentLeylineIds, activeLeyline.id]
+        };
+      });
+
+      return turnResult;
+    } finally {
+      setIsResolving(false);
+    }
+  }, [battleState, isResolving, handOffTurnToOpponent]);
 
   const resolveOpponentTurn = useCallback(async () => {
     if (!battleState || battleState.activeEntityId !== OPPONENT_ID || isResolving) return;
@@ -846,8 +1077,15 @@ export function useBattleSession() {
         entityId: OPPONENT_ID,
         actionType: 'cast',
         origin: nextPosition,
+        previousPosition: { ...opponent.position },
+        destination: nextPosition,
         targetCell: { ...player.position },
         affectedCells: [{ ...player.position }],
+        motion: {
+          origin: { ...opponent.position },
+          destination: nextPosition,
+          target: { ...player.position },
+        },
         damageMap,
         spellText: opponentSpell.spell,
         text: opponentSpell.spell,
@@ -874,12 +1112,7 @@ export function useBattleSession() {
 
       const nextEntities = prev.entities.map((entity) => {
         if (entity.id === PLAYER_ID) {
-          let updated = {
-            ...entity,
-            hp: clampBetween(entity.hp - damage, 0, entity.maxHp),
-            mp: clampBetween(entity.mp - mpDrain, 0, entity.maxMp),
-            statusEffects: tickStatusEffects(entity.statusEffects),
-          };
+          let updated = applyPlayerTurnStartRecovery(entity, { mpDrain, damage });
 
           if (opponentSpell.statusEffect?.disposition === 'DEBUFF') {
             updated.statusEffects = mergeStatusEffects(updated.statusEffects, opponentSpell.statusEffect);
@@ -908,6 +1141,15 @@ export function useBattleSession() {
         return entity;
       });
 
+      const nextPlayer = nextEntities.find(e => e.id === PLAYER_ID);
+      const nextOpponent = nextEntities.find(e => e.id === OPPONENT_ID);
+      let phase = 'player_writing';
+      if (nextOpponent && nextOpponent.hp <= 0) {
+        phase = 'victory';
+      } else if (nextPlayer && nextPlayer.hp <= 0) {
+        phase = 'defeat';
+      }
+
       const nextGrid = prev.grid.map((row) => row.map((cell) => ({
         ...cell,
         occupantId: null,
@@ -920,10 +1162,11 @@ export function useBattleSession() {
         ...prev,
         entities: nextEntities,
         grid: nextGrid,
-        phase: 'player_writing',
+        phase,
         history: [...prev.history, turnResult],
         activeEntityId: PLAYER_ID,
-        round: prev.round + 1,
+        round: phase === 'player_writing' ? prev.round + 1 : prev.round,
+        playerTurnIndex: phase === 'player_writing' ? (prev.playerTurnIndex || 1) + 1 : (prev.playerTurnIndex || 1)
       };
     });
 
@@ -969,6 +1212,7 @@ export function useBattleSession() {
     battleState,
     startBattle,
     submitScroll,
+    submitExtraction,
     channelEnergy,
     waitTurn,
     moveEntity,

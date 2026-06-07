@@ -2,9 +2,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import ListenPage from "../../../src/pages/Listen/ListenPage";
-import { ProgressionProvider } from "../../../src/hooks/useProgression.jsx";
+import { ProgressionProvider } from "../../../src/context/ProgressionContext.jsx";
 import { SongProvider } from "../../../src/hooks/useCurrentSong";
-import { AuthProvider } from "../../../src/hooks/useAuth.jsx";
+import { AuthProvider } from "../../../src/context/AuthContext.jsx";
 
 global.fetch = vi.fn();
 

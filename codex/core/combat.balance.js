@@ -219,8 +219,11 @@ function getTraceRawScore(scoreData, heuristic) {
   return Number.isFinite(contribution) ? clamp01(contribution / 20) : 0;
 }
 
-function computeCombatManaRegen(scoreData, options = {}) {
+export function computeCombatManaRegen(scoreData, options = {}) {
   const baseRegen = Number(options.baseRegen) || BASE_MP_REGEN;
+  if (!scoreData) {
+    return baseRegen;
+  }
   const sonicDensity = clamp01(scoreData?.schoolDensity?.SONIC ?? 0);
   const isSonicSpell = scoreData?.school === 'SONIC' || sonicDensity >= 0.34;
   if (!isSonicSpell) {

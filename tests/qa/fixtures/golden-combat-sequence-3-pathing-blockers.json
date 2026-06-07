@@ -1,0 +1,114 @@
+{
+  "schema": "SCHOLO_COMBAT_GOLDEN_v1",
+  "scenarioId": "golden-combat-sequence-3-pathing-blockers",
+  "seed": "TEST_SEED_3",
+  "engine": {
+    "source": "js",
+    "version": 1
+  },
+  "commands": [
+    {
+      "actorId": "player",
+      "command": "MOVE 0 1"
+    },
+    {
+      "actorId": "player",
+      "command": "MOVE 0 1"
+    }
+  ],
+  "snapshots": [
+    {
+      "step": 0,
+      "round": 1,
+      "turn": "player",
+      "rngState": "1669796758",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 1,
+      "round": 1,
+      "turn": "player",
+      "rngState": "1669796758",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 4,
+          "row": 8,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 2,
+      "round": 1,
+      "turn": "player",
+      "rngState": "1669796758",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 4,
+          "row": 8,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    }
+  ]
+}

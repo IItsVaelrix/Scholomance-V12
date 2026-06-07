@@ -1,4 +1,3 @@
-import React from 'react';
 import ActionBar from './ActionBar.jsx';
 import ActionHintStrip from './ActionHintStrip.jsx';
 
@@ -11,13 +10,15 @@ import ActionHintStrip from './ActionHintStrip.jsx';
  * World-law connection: the bottom band is the ritual command threshold —
  * the point where the scholar's intent becomes a declared action.
  */
-export default function BottomCommandBand({ selectedAction, onActionSelect, isDisabled, movesRemaining }) {
+export default function BottomCommandBand({ selectedAction, onActionSelect, isDisabled, movesRemaining, canExtract, variant = 'default' }) {
   return (
-    <div className="bottom-command-band" role="region" aria-label="Command band">
+    <div className={`bottom-command-band bottom-command-band--${variant}`} role="region" aria-label="Command band">
       <ActionBar
         selectedAction={selectedAction}
         onActionSelect={onActionSelect}
         isDisabled={isDisabled}
+        canExtract={canExtract}
+        movesRemaining={movesRemaining}
       />
       <ActionHintStrip
         selectedAction={selectedAction}

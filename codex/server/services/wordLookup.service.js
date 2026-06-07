@@ -451,6 +451,26 @@ async function lookupFromManualOverrides(word) {
   return hasLexicalData(constrained) ? constrained : null;
 }
 
+/**
+ * Fetch slant (near) rhymes from Datamuse for a given word.
+ * Always returns an array; failures resolve to [] so callers can merge safely.
+ */
+async function fetchSlantRhymesFromDatamuse(word, fetchImpl, timeoutMs) {
+  try {
+    const res = await fetchWithTimeout(
+      fetchImpl,
+      `https://api.datamuse.com/words?rel_nry=${encodeURIComponent(word)}&max=${DATAMUSE_FETCH_LIMIT}`,
+      timeoutMs,
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    if (!isValidExternalApiResponse(data, 'datamuse')) return [];
+    return normalizeStringArray(data.map((row) => row?.word));
+  } catch {
+    return [];
+  }
+}
+
 function resolveScholomanceDictApiUrl(explicitUrl) {
   const raw = explicitUrl ??
     process.env.SCHOLOMANCE_DICT_API_URL ??
@@ -558,6 +578,26 @@ export function createWordLookupService(options = {}) {
       }
 
       const constrained = await constrainLexicalEntry(entry, { phonemeEngine });
+
+      // The local Scholomance dictionary does not currently supply slant rhyme
+      // data, and lookupFromExternalApis (the only Datamuse rel_nry path) is
+      // short-circuited when the local dict returns a valid entry. Without this
+      // supplement, the "Shadow Echo" channel renders its "no echoes in archive"
+      // placeholder for every word in the local dictionary. When the entry is
+      // otherwise valid but lacks slantRhymes, fetch them directly from Datamuse
+      // and re-rank so the channel surfaces real words.
+      if (hasLexicalData(constrained) && (constrained.slantRhymes?.length || 0) === 0) {
+        const supplemental = await fetchSlantRhymesFromDatamuse(word, fetchImpl, externalApiTimeoutMs);
+        if (supplemental.length > 0) {
+          constrained.slantRhymes = await rankSuggestionGroup(
+            constrained.word,
+            supplemental,
+            'slantRhymes',
+            { phonemeEngine },
+          );
+        }
+      }
+
       return hasLexicalData(constrained) ? constrained : null;
     } catch (error) {
       log?.warn?.({ err: error, word }, '[WordLookupService] Scholomance lookup failed, falling back');

@@ -210,6 +210,31 @@ export function deriveVisualGenome(input = {}) {
     ritualSync,
   };
 
+  // Deterministic rendering pipeline specification (PDR-2026-06-05 §11)
+  // Maps visual processing constraints onto virtual machine specifications.
+  const pipeline = {
+    rasterization: {
+      mode: 'SUBPIXEL_FIXED_Q16_16',
+      gridScale: 65536, // Q16.16 fixed-point math
+      snapCoordinates: true,
+    },
+    composite: {
+      mode: 'VM_BYTECODE_FORMULA',
+      formulaId: pick(rng, ['HDR_ACCUMULATE', 'GAMMA_CORRECTED_ADD', 'ANALYTIC_BLOOM_SMOOTH']),
+      vmInstructions: intBetween(rng, 12, 24),
+    },
+    geometry: {
+      mode: 'PROCEDURAL_ANALYTIC',
+      textureless: true,
+      visualAcuityLimit: 'INFINITE',
+    },
+    fontRendering: {
+      mode: 'DETERMINISTIC_SDF',
+      subpixelEdges: true,
+      outlineThickness: Math.round((0.05 + rng() * 0.15) * 100) / 100,
+    },
+  };
+
   const body = {
     genomeVersion: GENOME_VERSION,
     fingerprintId,
@@ -223,6 +248,7 @@ export function deriveVisualGenome(input = {}) {
     layerCount,
     layers,
     motion,
+    pipeline,
     readouts,
     durationMs: Number.isFinite(input.durationMs) ? Math.round(input.durationMs) : null,
   };

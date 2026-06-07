@@ -21,6 +21,7 @@ export default function EnemyDetailsModal({ isOpen, onClose, enemy, latestTurn =
     : Array.isArray(latestTurn?.counterTokens)
       ? latestTurn.counterTokens.slice(0, 4)
       : [];
+  const syntacticProfile = enemy.syntacticProfile || null;
 
   return (
     <AnimatePresence>
@@ -85,6 +86,18 @@ export default function EnemyDetailsModal({ isOpen, onClose, enemy, latestTurn =
                       )}
                     </ul>
                   </section>
+
+                  {syntacticProfile && (
+                    <section className="detail-section">
+                      <h3 className="section-title">SYMBOLIC STRUCTURE</h3>
+                      <ul className="trait-list">
+                        <li>• Body: {syntacticProfile.symbolicBody?.join(', ')}</li>
+                        <li>• Known Weaknesses: {syntacticProfile.weaknessFamilies?.join(', ')}</li>
+                        <li>• Resists: {syntacticProfile.resistanceFamilies?.join(', ')}</li>
+                        <li>• Favored Devices: {syntacticProfile.favoredDevices?.join(', ')}</li>
+                      </ul>
+                    </section>
+                  )}
 
                   <section className="detail-section">
                     <h3 className="section-title">SIGNATURE MOVES</h3>

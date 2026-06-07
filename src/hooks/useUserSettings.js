@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth, getCsrfToken, clearCsrfToken } from './useAuth.jsx';
+import { useAuth } from './useAuth.jsx';
 import { buildAuthorityUrl } from '../lib/apiUrl.js';
 
 const LOCAL_STORAGE_KEY = 'scholomance.user.settings.v1';

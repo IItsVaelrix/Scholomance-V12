@@ -47,6 +47,11 @@ describe('[Server] WordLookupService', () => {
           rhymes: [],
         });
       }
+      if (href.startsWith('https://api.datamuse.com/words?rel_nry=arcana')) {
+        // Slant-rhyme supplement: local dict omits slantRhymes, so the
+        // service fetches from Datamuse and merges.
+        return jsonResponse([]);
+      }
       throw new Error(`Unexpected URL: ${href}`);
     });
 
@@ -59,7 +64,16 @@ describe('[Server] WordLookupService', () => {
     expect(result.source).toBe('scholomance-local');
     expect(result.word).toBe('arcana');
     expect(result.data?.definition?.text).toBe('Secret knowledge');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Local dict wins; only the slant-rhyme supplement (Datamuse rel_nry) is
+    // called. The full external-API path (Free Dictionary + Datamuse rel_*
+    // triad) is NOT invoked.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls[0]).toContain('/api/lexicon/lookup/arcana');
+    expect(urls[1]).toContain('https://api.datamuse.com/words?rel_nry=arcana');
+    expect(urls.some((url) => url.includes('dictionaryapi.dev'))).toBe(false);
+    expect(urls.some((url) => url.includes('rel_rhy='))).toBe(false);
+    expect(urls.some((url) => url.includes('rel_syn='))).toBe(false);
   });
 
   it('falls back to external APIs when local misses', async () => {
@@ -182,6 +196,106 @@ describe('[Server] WordLookupService', () => {
     expect(result.data?.antonyms).toHaveLength(2);
     expect(result.data?.rhymes).toHaveLength(3);
     expect(result.data?.slantRhymes).toHaveLength(1);
+  });
+
+  it('supplements slant rhymes from Datamuse when the local dict omits them', async () => {
+    // Simulates the real Scholomance pipeline: /api/lexicon/lookup returns
+    // rhymes + synonyms but no slantRhymes key at all. The service must
+    // call Datamuse rel_nry and merge the result so the Shadow Echo channel
+    // is not perpetually empty.
+    const datamuseSlants = makeWordSeries('ember', 12);
+    const fetchMock = vi.fn(async (url) => {
+      const href = String(url);
+      if (href === 'http://dict.local/api/lexicon/lookup/ember') {
+        return jsonResponse({
+          definition: { text: 'A glowing coal', partOfSpeech: 'noun' },
+          entries: [],
+          synonyms: ['coal', 'cinder'],
+          antonyms: [],
+          rhymes: makeWordSeries('ember', 18),
+          // No slantRhymes / nearRhymes — this is the real bug surface.
+        });
+      }
+      if (href.startsWith('https://api.datamuse.com/words?rel_nry=ember')) {
+        return jsonResponse(datamuseSlants.map((word) => ({ word })));
+      }
+      throw new Error(`Unexpected URL: ${href}`);
+    });
+
+    const service = createWordLookupService({
+      fetchImpl: fetchMock,
+      scholomanceDictApiUrl: 'http://dict.local/api/lexicon',
+    });
+
+    const result = await service.lookupWord('ember');
+    expect(result.source).toBe('scholomance-local');
+    expect(result.data?.rhymes?.length).toBeGreaterThan(0);
+    expect(result.data?.slantRhymes).toEqual(expect.arrayContaining(datamuseSlants));
+    expect(result.data?.slantRhymes.length).toBeLessThanOrEqual(15);
+
+    const calledDatamuse = fetchMock.mock.calls.some(([url]) =>
+      String(url).startsWith('https://api.datamuse.com/words?rel_nry=ember')
+    );
+    expect(calledDatamuse).toBe(true);
+  });
+
+  it('keeps slantRhymes empty when both local dict and Datamuse return nothing', async () => {
+    const fetchMock = vi.fn(async (url) => {
+      const href = String(url);
+      if (href === 'http://dict.local/api/lexicon/lookup/zzzqxqv') {
+        return jsonResponse({
+          definition: { text: 'Obscure term', partOfSpeech: 'noun' },
+          entries: [],
+          synonyms: [],
+          antonyms: [],
+          rhymes: ['aabbcc', 'ddeeff'],
+        });
+      }
+      if (href.startsWith('https://api.datamuse.com/words?rel_nry=zzzqxqv')) {
+        return jsonResponse([]);
+      }
+      throw new Error(`Unexpected URL: ${href}`);
+    });
+
+    const service = createWordLookupService({
+      fetchImpl: fetchMock,
+      scholomanceDictApiUrl: 'http://dict.local/api/lexicon',
+    });
+
+    const result = await service.lookupWord('zzzqxqv');
+    expect(result.source).toBe('scholomance-local');
+    expect(result.data?.slantRhymes ?? []).toHaveLength(0);
+  });
+
+  it('preserves local-dict slantRhymes and does not call Datamuse when present', async () => {
+    const localSlants = ['orchid', 'torrid', 'horrid'];
+    const fetchMock = vi.fn(async (url) => {
+      const href = String(url);
+      if (href === 'http://dict.local/api/lexicon/lookup/orbit') {
+        return jsonResponse({
+          definition: { text: 'Path around a body', partOfSpeech: 'noun' },
+          entries: [],
+          synonyms: ['cycle'],
+          antonyms: [],
+          rhymes: ['morbid'],
+          slantRhymes: localSlants,
+        });
+      }
+      throw new Error(`Unexpected URL: ${href}`);
+    });
+
+    const service = createWordLookupService({
+      fetchImpl: fetchMock,
+      scholomanceDictApiUrl: 'http://dict.local/api/lexicon',
+    });
+
+    const result = await service.lookupWord('orbit');
+    expect(result.source).toBe('scholomance-local');
+    expect(result.data?.slantRhymes).toEqual(expect.arrayContaining(localSlants));
+    const calledDatamuse = fetchMock.mock.calls.some(([url]) =>
+      String(url).startsWith('https://api.datamuse.com/words?rel_nry=orbit')
+    );
+    expect(calledDatamuse).toBe(false);
   });
 });
 

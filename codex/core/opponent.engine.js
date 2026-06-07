@@ -11,6 +11,7 @@ import {
 import { buildCombatProfile, tokenizeCombatWords } from './combat.profile.js';
 import { createSpeakerVoiceProfile, analyzeSpeaking } from './speaking/index.js';
 import { analyzeText } from './analysis.pipeline.js';
+import { resolveSyntacticProfile } from './combat.syntax-chess.js';
 
 const SCHOOL_DISPLAY_NAMES = Object.freeze({
   SONIC: 'Sonic Thaumaturgy',
@@ -411,6 +412,7 @@ export function createCombatOpponent(options = {}) {
     subtitle,
     school,
     doctrine,
+    syntacticProfile: options.syntacticProfile || resolveSyntacticProfile({ name, school }),
     schoolName: SCHOOL_DISPLAY_NAMES[school] || school,
     int: intelligence,
     voiceProfile: options.voiceProfile || createSpeakerVoiceProfile({

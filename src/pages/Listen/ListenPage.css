@@ -3550,11 +3550,13 @@
   height: 140px;
   border-radius: 50%;
   background: #000;
+  border: none;
+  cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
   text-decoration: none;
-  box-shadow: 
+  box-shadow:
     0 0 20px 2px rgba(0, 0, 0, 0.8),
     inset 0 0 20px 5px rgba(0, 0, 0, 0.9);
   transition: transform 0.3s ease, box-shadow 0.3s ease;

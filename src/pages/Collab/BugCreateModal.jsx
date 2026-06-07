@@ -5,7 +5,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback, useEffect } from 'react';
 import { LoadingIcon, CheckIcon, ErrorIcon } from "../../components/Icons.jsx";
-import { useAuth, getCsrfToken, clearCsrfToken } from "../../hooks/useAuth.jsx";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import { isBytecode } from "../../lib/bytecode-error.adapter.js";
 
 const SOURCE_TYPES = ['human', 'runtime', 'qa', 'pipeline', 'agent'];

@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
-import { ProgressionProvider, useProgression } from '../../src/hooks/useProgression.jsx';
-import { AuthProvider } from '../../src/hooks/useAuth.jsx';
+import { ProgressionProvider } from '../../src/context/ProgressionContext.jsx';
+import { useProgression } from '../../src/hooks/useProgression.jsx';
+import { AuthProvider } from '../../src/context/AuthContext.jsx';
 import { describe, it, expect, beforeEach } from 'vitest';
 
 const wrapper = ({ children }) => (

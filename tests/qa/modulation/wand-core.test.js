@@ -666,5 +666,96 @@ describe('Wand System — Core & Validation Laws', () => {
     });
 
   });
+
+  describe('Composite Child Rotation', () => {
+    it('validates rotation properties on composite children successfully', () => {
+      const validComposite = {
+        type: 'composite',
+        children: [{
+          role: 'sigil.capsule',
+          anchor: { x: 0.5, y: 0.5 },
+          rotation: 45,
+          rotationSpeed: 90,
+          rotationSwingRange: 15,
+          rotationSwingSpeed: 2.0,
+          formula: {
+            type: 'parametric_curve',
+            parameters: { n: 10 }
+          }
+        }]
+      };
+
+      const errors = validateFormula(validComposite);
+      expect(errors.length).toBe(0);
+    });
+
+    it('rejects invalid rotation properties on composite children', () => {
+      const invalidComposite = {
+        type: 'composite',
+        children: [{
+          role: 'sigil.capsule',
+          anchor: { x: 0.5, y: 0.5 },
+          rotation: 'invalid-string', // must be a number
+          formula: {
+            type: 'parametric_curve',
+            parameters: { n: 10 }
+          }
+        }]
+      };
+
+      const errors = validateFormula(invalidComposite);
+      expect(errors.some(err => err.includes('rotation must be a number'))).toBe(true);
+    });
+
+    it('rotates child coordinates around child local center during evaluation', async () => {
+      // Setup a composite formula with one child having rotation: 90 degrees.
+      // Sub-bounds of child: width: 100, height: 100. Local center is (50, 50).
+      // Let's use edge_trace with a single point at (100, 50) relative to child canvas.
+      // (100, 50) is 50px to the right of (50, 50).
+      // Rotated 90 degrees clockwise around (50, 50), it becomes (50, 100).
+      // With world anchor at (400, 300) -> world dx = 400 - 50 = 350, dy = 300 - 50 = 250.
+      // The unrotated point would end up at x = 100 + 350 = 450, y = 50 + 250 = 300.
+      // The rotated point (50, 100) should end up at x = 50 + 350 = 400, y = 100 + 250 = 350.
+      const proposal = {
+        rationale: 'Testing composite child coordinate rotation',
+        confidence: 0.95,
+        reviewRequired: false,
+        proposedFormula: {
+          role: 'shrine.window',
+          material: 'gold',
+          formula: {
+            type: 'composite',
+            children: [
+              {
+                role: 'shrine.moon',
+                anchor: { x: 0.5, y: 0.5 },
+                size: { w: 0.125, h: 0.16666 }, // 0.125 * 800 = 100 width, 0.16666 * 600 = 100 height
+                rotation: 90,
+                formula: {
+                  type: 'edge_trace',
+                  tracePath: [{ x: 100, y: 50 }]
+                }
+              }
+            ]
+          }
+        }
+      };
+
+      const payload = { coordinates: [] };
+      const context = {
+        scene: { 'compose-formula': { formulas: [proposal] } },
+        canvasSize: { width: 800, height: 600, gridSize: 1 }, // grid size 1 for no snapping shifts
+        diagnostics: [],
+        metrics: {}
+      };
+
+      const output = await composeFormulaProcessor(payload, {}, context);
+      expect(output.coordinates).toHaveLength(1);
+      const coord = output.coordinates[0];
+      // Expected rotated coordinate is at (400, 350)
+      expect(Math.round(coord.x)).toBe(400);
+      expect(Math.round(coord.y)).toBe(350);
+    });
+  });
 });
 

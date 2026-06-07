@@ -1,0 +1,229 @@
+.shader-forge-panel {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  height: 100%;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(10, 10, 15, 0.95);
+}
+
+.editor-section {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding-right: 20px;
+}
+
+.editor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.1em;
+}
+
+.glsl-editor-textarea {
+  flex-grow: 1;
+  width: 100%;
+  background: #030305;
+  color: #00ff88;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glsl-editor-textarea:focus {
+  border-color: rgba(0, 255, 136, 0.5);
+  box-shadow: 0 0 10px rgba(0, 255, 136, 0.1);
+}
+
+.compile-status-box {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.compile-status-box.stable {
+  border-left: 4px solid #00ff88;
+}
+
+.compile-status-box.fault {
+  border-left: 4px solid #ff4444;
+  background: rgba(255, 68, 68, 0.05);
+}
+
+.status-label {
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.status-label.stable {
+  color: #00ff88;
+}
+
+.status-label.fault {
+  color: #ff4444;
+}
+
+.fault-details {
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 8px;
+}
+
+.fault-line {
+  color: #ffbb00;
+  margin-bottom: 4px;
+}
+
+.bytecode-display {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  word-break: break-all;
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  height: 100%;
+}
+
+.preview-container {
+  aspect-ratio: 160 / 144;
+  background: #000;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+}
+
+.control-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #fff;
+}
+
+.info-panel {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 16px;
+}
+
+.info-title {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.hash-value {
+  font-size: 11px;
+  color: #a3a3c2;
+  word-break: break-all;
+}
+
+.uniforms-section {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 16px;
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.uniforms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.uniform-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+  padding-bottom: 6px;
+}
+
+.uniform-name {
+  color: #8fa6cb;
+}
+
+.uniform-value {
+  color: #ffd700;
+  text-align: right;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.export-btn {
+  background: #2c2c4d;
+  color: #fff;
+  border: 1px solid #3c3c6d;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.export-btn:hover {
+  background: #3c3c6d;
+  border-color: #5c5c9d;
+  box-shadow: 0 0 10px rgba(92, 92, 157, 0.3);
+}

@@ -1,0 +1,266 @@
+{
+  "schema": "SCHOLO_COMBAT_GOLDEN_v1",
+  "scenarioId": "golden-combat-sequence-2-status-effects",
+  "seed": "TEST_SEED_2",
+  "engine": {
+    "source": "js",
+    "version": 1
+  },
+  "commands": [
+    {
+      "actorId": "player",
+      "command": "MOVE 1 0"
+    },
+    {
+      "actorId": "player",
+      "command": "CHANNEL VOID"
+    },
+    {
+      "actorId": "player",
+      "command": "CAST CURSE opponent",
+      "resolvedSpell": {
+        "spellId": "curse",
+        "school": "VOID",
+        "intent": "debuff",
+        "power": 10,
+        "cost": {
+          "mp": 10,
+          "ap": 1
+        },
+        "targeting": {
+          "mode": "unit",
+          "range": 4
+        },
+        "effects": [
+          {
+            "kind": "STATUS",
+            "type": "POISON_SNARE",
+            "magnitude": 0.5,
+            "duration": 3
+          }
+        ]
+      }
+    },
+    {
+      "actorId": "opponent",
+      "command": "END_TURN"
+    },
+    {
+      "actorId": "player",
+      "command": "END_TURN"
+    }
+  ],
+  "snapshots": [
+    {
+      "step": 0,
+      "round": 1,
+      "turn": "player",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 1,
+      "round": 1,
+      "turn": "player",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 2,
+      "round": 2,
+      "turn": "opponent",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 3,
+      "round": 3,
+      "turn": "player",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": [
+            {
+              "id": "POISON_SNARE",
+              "type": "POISON_SNARE",
+              "magnitude": 0.5,
+              "turnsRemaining": 3
+            }
+          ]
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 90,
+          "ap": 1,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 4,
+      "round": 4,
+      "turn": "opponent",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": [
+            {
+              "id": "POISON_SNARE",
+              "type": "POISON_SNARE",
+              "magnitude": 0.5,
+              "turnsRemaining": 2,
+              "tier": 1,
+              "turns": 3
+            }
+          ]
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 90,
+          "ap": 1,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 5,
+      "round": 5,
+      "turn": "player",
+      "rngState": "64562475",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": [
+            {
+              "id": "POISON_SNARE",
+              "type": "POISON_SNARE",
+              "magnitude": 0.5,
+              "turnsRemaining": 2,
+              "tier": 1,
+              "turns": 3
+            }
+          ]
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 90,
+          "ap": 1,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    }
+  ]
+}

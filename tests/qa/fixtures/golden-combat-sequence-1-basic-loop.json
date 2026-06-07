@@ -1,0 +1,226 @@
+{
+  "schema": "SCHOLO_COMBAT_GOLDEN_v1",
+  "scenarioId": "golden-combat-sequence-1-basic-loop",
+  "seed": "TEST_SEED_1",
+  "engine": {
+    "source": "js",
+    "version": 1
+  },
+  "commands": [
+    {
+      "actorId": "player",
+      "command": "MOVE 1 0"
+    },
+    {
+      "actorId": "player",
+      "command": "CHANNEL LUMEN"
+    },
+    {
+      "actorId": "player",
+      "command": "CAST MEND self",
+      "resolvedSpell": {
+        "spellId": "mend",
+        "school": "LUMEN",
+        "intent": "heal",
+        "power": 12,
+        "cost": {
+          "mp": 4,
+          "ap": 1
+        },
+        "targeting": {
+          "mode": "unit",
+          "range": 4
+        },
+        "effects": [
+          {
+            "kind": "HEAL",
+            "amount": 12,
+            "scalingBasis": "resolved_spell_power"
+          }
+        ]
+      }
+    },
+    {
+      "actorId": "opponent",
+      "command": "COUNTER BASIC_STRIKE player",
+      "resolvedSpell": {
+        "spellId": "basic_strike",
+        "school": "SONIC",
+        "intent": "damage",
+        "power": 15,
+        "cost": {
+          "mp": 5,
+          "ap": 1
+        },
+        "targeting": {
+          "mode": "unit",
+          "range": 2
+        },
+        "effects": [
+          {
+            "kind": "DAMAGE",
+            "amount": 15,
+            "scalingBasis": "resolved_spell_power"
+          }
+        ]
+      }
+    }
+  ],
+  "snapshots": [
+    {
+      "step": 0,
+      "round": 1,
+      "turn": "player",
+      "rngState": "772490951",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 1,
+      "round": 1,
+      "turn": "player",
+      "rngState": "772490951",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 2,
+      "round": 2,
+      "turn": "opponent",
+      "rngState": "772490951",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 100,
+          "ap": 0,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 3,
+      "round": 3,
+      "turn": "player",
+      "rngState": "772490951",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 100,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 1000,
+          "mp": 96,
+          "ap": 1,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    },
+    {
+      "step": 4,
+      "round": 4,
+      "turn": "opponent",
+      "rngState": "772490951",
+      "units": [
+        {
+          "id": "opponent",
+          "hp": 1500,
+          "mp": 95,
+          "ap": 1,
+          "col": 4,
+          "row": 1,
+          "statuses": []
+        },
+        {
+          "id": "player",
+          "hp": 985,
+          "mp": 96,
+          "ap": 1,
+          "col": 5,
+          "row": 7,
+          "statuses": []
+        }
+      ],
+      "grid": {
+        "cols": 9,
+        "rows": 9,
+        "blocked": []
+      }
+    }
+  ]
+}

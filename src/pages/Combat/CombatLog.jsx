@@ -1,5 +1,35 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import './CombatLog.css'; // Assuming we create a CSS file for CombatLog or just append to CombatPage.css
+
+const COMBAT_LOG_PREFIX = {
+  damage: 'DMG',
+  heal: 'HEAL',
+  cast: 'CAST',
+  move: 'MOVE',
+  extract: 'EXT',
+  wait: 'WAIT',
+  system: 'SYS',
+  error: 'ERR',
+};
+
+function resolveCombatLogPrefix(turn) {
+  // Try to derive a type from the turn data
+  let type = String(turn?.actionType || turn?.type || turn?.kind || '').toLowerCase();
+  
+  // Fallbacks if type is missing
+  if (!type) {
+    const text = String(turn?.narrativeLog || turn?.commentary || '').toLowerCase();
+    if (text.includes('damage') || text.includes('hit')) type = 'damage';
+    else if (text.includes('heal') || text.includes('restore')) type = 'heal';
+    else if (text.includes('cast') || text.includes('chant')) type = 'cast';
+    else if (text.includes('move')) type = 'move';
+    else if (text.includes('extract') || text.includes('leyline')) type = 'extract';
+    else type = 'system';
+  }
+  
+  return COMBAT_LOG_PREFIX[type] || 'LOG';
+}
 
 /**
  * CombatLog.jsx — CombatLogDrawer
@@ -14,7 +44,7 @@ import { motion, AnimatePresence } from 'framer-motion';
  * Animation sync with board events is preserved from original implementation.
  */
 
-export default function CombatLog({ history, isResolving, activeIntent, isCollapsed = false, onToggle }) {
+export default function CombatLog({ history = [], isResolving, activeIntent, isCollapsed = false, onToggle, variant = 'panel' }) {
   const [visibleHistory, setVisibleHistory] = useState([]);
   const logRef = useRef(null);
 
@@ -33,6 +63,49 @@ export default function CombatLog({ history, isResolving, activeIntent, isCollap
   const displayEntries = isCollapsed
     ? visibleHistory.slice(-2)
     : visibleHistory;
+
+  if (variant === 'mud') {
+    return (
+      <ol className="combat-mud-log" aria-live="polite" ref={logRef}>
+        {displayEntries.map((turn, index) => {
+          const prefix = resolveCombatLogPrefix(turn);
+          const text = turn?.narrativeLog || turn?.commentary || turn?.message || String(turn || '');
+
+          return (
+            <li
+              key={turn?.id || `${prefix}-${index}`}
+              className={`combat-mud-log__entry combat-mud-log__entry--${prefix.toLowerCase()}`}
+            >
+              <span className="combat-mud-log__index">
+                {String(index + 1).padStart(3, '0')}
+              </span>
+
+              <span className="combat-mud-log__prefix">
+                {prefix}
+              </span>
+
+              <span className="combat-mud-log__text">
+                {text}
+                {turn?.scoreSummary?.badges?.length > 0 && (
+                  <span className="combat-mud-log__badges"> · {turn.scoreSummary.badges.slice(0, 3).join(' · ')}</span>
+                )}
+                {turn?.damageMap?.[0]?.outcomeLabel === 'crit' && (
+                  <span className="combat-mud-log__crit"> *CRIT*</span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+        {isResolving && (
+          <li className="combat-mud-log__entry combat-mud-log__entry--system">
+             <span className="combat-mud-log__index">---</span>
+             <span className="combat-mud-log__prefix">SYS</span>
+             <span className="combat-mud-log__text">Awaiting resolution...</span>
+          </li>
+        )}
+      </ol>
+    );
+  }
 
   return (
     <div className={`combat-log battle-panel${isCollapsed ? ' is-collapsed' : ''}`}>

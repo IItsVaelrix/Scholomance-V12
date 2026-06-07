@@ -84,7 +84,16 @@ describe('[Server] wordLookup.routes', () => {
     expect(payload.data.definition.text).toBe('Secret knowledge');
     expect(payload.data.definitions).toEqual(['Secret knowledge']);
     expect(payload.data.synonyms).toEqual(['mysteries']);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    // Local dict + one Datamuse rel_nry supplement (local dict omits slantRhymes).
+    // The full external-API path (Free Dictionary + rel_syn/rel_rhy/rel_ant) is
+    // NOT invoked — local lookup is preferred.
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const urls = fetchMock.mock.calls.map(([url]) => String(url));
+    expect(urls[0]).toContain('/api/lexicon/lookup/arcana');
+    expect(urls[1]).toContain('https://api.datamuse.com/words?rel_nry=arcana');
+    expect(urls.some((url) => url.includes('dictionaryapi.dev'))).toBe(false);
+    expect(urls.some((url) => url.includes('rel_rhy='))).toBe(false);
+    expect(urls.some((url) => url.includes('rel_syn='))).toBe(false);
   });
 
   it('falls back to external APIs when local lookup misses', async () => {

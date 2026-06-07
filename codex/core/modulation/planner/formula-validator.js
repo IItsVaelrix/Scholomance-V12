@@ -308,7 +308,10 @@ export function validateFormula(formula, depth = 0) {
         }
 
         const childKeys = Object.keys(child);
-        const allowedChildKeys = ['role', 'anchor', 'size', 'material', 'paletteChannel', 'formula'];
+        const allowedChildKeys = [
+          'role', 'anchor', 'size', 'material', 'paletteChannel', 'formula',
+          'rotation', 'rotationSpeed', 'rotationSwingRange', 'rotationSwingSpeed'
+        ];
         const unknownChild = childKeys.filter(k => !allowedChildKeys.includes(k));
         if (unknownChild.length > 0) {
           errors.push(`composite.children[${index}] has unknown properties: ${unknownChild.join(', ')}`);
@@ -354,6 +357,22 @@ export function validateFormula(formula, depth = 0) {
 
         if (child.paletteChannel !== undefined && !Number.isInteger(child.paletteChannel)) {
           errors.push(`composite.children[${index}].paletteChannel must be an integer`);
+        }
+
+        if (child.rotation !== undefined && typeof child.rotation !== 'number') {
+          errors.push(`composite.children[${index}].rotation must be a number`);
+        }
+
+        if (child.rotationSpeed !== undefined && typeof child.rotationSpeed !== 'number') {
+          errors.push(`composite.children[${index}].rotationSpeed must be a number`);
+        }
+
+        if (child.rotationSwingRange !== undefined && typeof child.rotationSwingRange !== 'number') {
+          errors.push(`composite.children[${index}].rotationSwingRange must be a number`);
+        }
+
+        if (child.rotationSwingSpeed !== undefined && typeof child.rotationSwingSpeed !== 'number') {
+          errors.push(`composite.children[${index}].rotationSwingSpeed must be a number`);
         }
 
         if (child.formula === undefined) {

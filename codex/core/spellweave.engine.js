@@ -256,10 +256,7 @@ export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
   const verseTokens = uniqueTokens(verse).map((token) => token.toUpperCase());
   const alignment = evaluateSpellweaveAlignment(verseTokens, weaveTokens, dominantSchool);
 
-  const collapsed = (
-    predicates.length > 3
-    || (predicates.length === 0 && objects.length === 0)
-  );
+  const collapsed = predicates.length > 3;
 
   if (collapsed) {
     return {

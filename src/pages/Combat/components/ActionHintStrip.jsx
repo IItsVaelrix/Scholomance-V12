@@ -4,7 +4,12 @@
  * Single-line contextual metadata strip below the ActionBar.
  * Shows target type, cost, and keyboard instructions for the selected action.
  * Static lookup — no backend calls.
+ *
+ * The idle-state key range is derived from ACTION_DEFS so it can never
+ * drift from the actual keymap.
  */
+
+import { ACTION_DEFS, buildActionHotkeyFooter } from '../state/combatActions.js';
 
 const ACTION_HINTS = {
   INSCRIBE: {
@@ -17,6 +22,11 @@ const ACTION_HINTS = {
     cost: null,
     keys: 'WASD / Arrows to navigate · Enter to confirm',
   },
+  EXTRACT: {
+    meta: 'Verbal Alchemy Extraction',
+    cost: 'No MP cost',
+    keys: 'Solve the alchemical puzzle to harvest mana',
+  },
   CHANNEL: {
     meta: 'No Target',
     cost: 'Restores MP',
@@ -25,7 +35,7 @@ const ACTION_HINTS = {
   WAIT: {
     meta: 'No Target',
     cost: null,
-    keys: 'Press [4] or click to yield turn',
+    keys: null, // derived from ACTION_DEFS
   },
   FLEE: {
     meta: 'Exits Combat',
@@ -34,13 +44,26 @@ const ACTION_HINTS = {
   },
 };
 
+const _hotkeyByAction = ACTION_DEFS.reduce((acc, d) => {
+  acc[d.id] = d.hotkey;
+  return acc;
+}, {});
+
+function keysFor(actionId) {
+  if (actionId === 'WAIT') {
+    const key = _hotkeyByAction.WAIT;
+    return `Press [${key}] or click to yield turn`;
+  }
+  return ACTION_HINTS[actionId]?.keys;
+}
+
 export default function ActionHintStrip({ selectedAction, movesRemaining }) {
   if (!selectedAction) {
     return (
       <div className="action-hint-strip is-idle" aria-live="polite" aria-atomic="true">
         <span className="hint-idle">SELECT AN ACTION</span>
         <span className="hint-divider">·</span>
-        <span className="hint-keys">[1–5] hotkeys · [WASD] navigate lattice · [Esc] cancel</span>
+        <span className="hint-keys">{buildActionHotkeyFooter()} hotkeys · [WASD] navigate lattice · [Esc] cancel</span>
       </div>
     );
   }
@@ -69,7 +92,7 @@ export default function ActionHintStrip({ selectedAction, movesRemaining }) {
         </>
       )}
       <span className="hint-divider">·</span>
-      <span className="hint-keys">{hint.keys}</span>
+      <span className="hint-keys">{keysFor(selectedAction)}</span>
     </div>
   );
 }

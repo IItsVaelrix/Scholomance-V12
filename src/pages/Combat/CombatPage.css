@@ -1,3 +1,198 @@
+.combat-page--codex {
+  --combat-bg: #111111;
+  --combat-ink: #eaeaea;
+  --combat-muted: #8f8f8f;
+  --combat-faint: #3a3a3a;
+  --combat-line: rgba(234, 234, 234, 0.14);
+  --combat-line-strong: rgba(234, 234, 234, 0.28);
+  --combat-accent: #c9a227;
+  --combat-danger: #e05a47;
+  --combat-good: #77c98f;
+
+  /* Spacing rhythm — one source of truth so every gutter, gap and pad
+     lands on the same scale. "Snug" = symmetric multiples of --sp. */
+  --sp: clamp(0.5rem, 1.1vw, 1rem);          /* base unit */
+  --combat-gutter: var(--sp);                /* page edge ↔ spine */
+  --combat-frame-gap: var(--sp);             /* meta label ↔ board */
+
+  /* The codex fills exactly the space between chrome and footer — never
+     100dvh (which would push the footer off-screen). flex:1 + min-height:0
+     lets it shrink to the available band inside .battle-immersive-mode. */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--combat-bg);
+  color: var(--combat-ink);
+}
+
+.combat-book-spread {
+  /* Symmetric spread: two equal leaves mirrored about a centered spine.
+     flex:1 inside the definite-height codex gives the leaves a definite
+     height, so their height:100% descendants resolve cleanly. */
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+  width: min(100%, 1600px);
+  margin: 0 auto;
+  padding: var(--combat-gutter);
+}
+
+.combat-text-page,
+.combat-illustration-page {
+  min-width: 0;
+  min-height: 0;
+}
+
+.combat-text-page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  /* The spine: a single centered rule with equal gutters on both leaves. */
+  border-right: 1px solid var(--combat-line);
+  padding-right: var(--combat-gutter);
+}
+
+.combat-mud-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--combat-gutter);
+  padding-bottom: var(--sp);
+  border-bottom: 1px solid var(--combat-line);
+}
+
+/* Mirror the spread's spine inside the header: scholar | opponent split
+   by a centered hairline so the two status blocks read as symmetric. */
+.combat-data-block--scholar {
+  padding-right: calc(var(--combat-gutter) / 2);
+  border-right: 1px solid var(--combat-line);
+}
+
+.combat-data-block--opponent {
+  padding-left: calc(var(--combat-gutter) / 2);
+}
+
+.combat-data-block {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--combat-muted);
+}
+
+.combat-data-block :is(h1, h2, h3, h4) {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--combat-ink);
+  letter-spacing: 0.12em;
+}
+
+.combat-transcript-shell {
+  min-height: 0;
+  overflow: auto;
+  padding: var(--sp) 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--combat-faint) transparent;
+}
+
+.combat-command-dock {
+  display: grid;
+  gap: var(--sp);
+  padding-top: var(--sp);
+  border-top: 1px solid var(--combat-line-strong);
+  background: linear-gradient(
+    to bottom,
+    rgba(17, 17, 17, 0.72),
+    rgba(17, 17, 17, 1)
+  );
+}
+
+.combat-illustration-page {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  /* Mirror of the text leaf's padding-right → spine is perfectly centered. */
+  padding-left: var(--combat-gutter);
+}
+
+.combat-illustration-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: var(--sp);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--combat-muted);
+  border-bottom: 1px solid var(--combat-line);
+}
+
+.combat-illustration-frame {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+  margin-top: var(--combat-frame-gap);
+  overflow: hidden;
+  background:
+    linear-gradient(var(--combat-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--combat-line) 1px, transparent 1px);
+  background-size: 32px 32px;
+  outline: 1px solid var(--combat-line-strong);
+  outline-offset: -1px;
+}
+
+.combat-illustration-frame canvas {
+  image-rendering: pixelated;
+}
+
+@media (max-width: 980px) {
+  /* Stacked: board on top (fixed share), text leaf below (scrolls within). */
+  .combat-book-spread {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 42fr) minmax(0, 58fr);
+  }
+
+  .combat-text-page {
+    order: 2;
+    border-right: 0;
+    padding-right: 0;
+    /* Spine becomes a top divider when leaves stack vertically. */
+    border-top: 1px solid var(--combat-line);
+    padding-top: var(--sp);
+  }
+
+  .combat-illustration-page {
+    order: 1;
+    padding-left: 0;
+    padding-bottom: var(--sp);
+  }
+
+  .combat-mud-header {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .combat-page--codex *,
+  .combat-page--codex *::before,
+  .combat-page--codex *::after {
+    scroll-behavior: auto;
+    transition-duration: 0.001ms;
+    animation-duration: 0.001ms;
+    animation-iteration-count: 1;
+  }
+}
+
 .battle-page-root {
   --battle-bg-primary: #02020a;
   --battle-bg-panel: rgba(10, 10, 26, 0.85);
@@ -24,9 +219,19 @@
   overflow: hidden;
 }
 
+/* Combat is a fullscreen immersive takeover — .battle-immersive-mode covers
+   the viewport at z-index 40. The global floating brand lives at z-index 1200
+   and would otherwise punch through the top-left of the chrome, colliding with
+   the arena title. Stand it down while combat is mounted; the :has() selector
+   self-scopes, so the brand returns the moment the player navigates away. */
+body:has(.battle-immersive-mode) .nav-brand--floating {
+  display: none;
+}
+
 /* Chrome */
 .battle-chrome {
   height: 50px;
+  flex-shrink: 0;
   background: rgba(0, 0, 0, 0.9);
   border-bottom: 1px solid var(--gold);
   display: flex;
@@ -34,6 +239,87 @@
   justify-content: space-between;
   padding: 0 24px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+}
+
+/* Three balanced zones: equal-weight flanks guarantee the center cluster
+   (round · turn · timer) is mathematically centered regardless of the
+   title or flee-button widths. Symmetry by construction, not by eye. */
+.chrome-left,
+.chrome-right {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chrome-right {
+  justify-content: flex-end;
+}
+
+.chrome-center {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.school-glyph-badge {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 0.9rem;
+  line-height: 1;
+  color: var(--gold);
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  border-radius: 50%;
+  text-shadow: 0 0 6px rgba(201, 162, 39, 0.5);
+}
+
+.battle-title {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(224, 224, 224, 0.82);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.round-counter {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: rgba(144, 164, 174, 0.7);
+  white-space: nowrap;
+}
+
+.flee-button {
+  all: unset;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(224, 90, 71, 0.8);
+  border: 1px solid rgba(224, 90, 71, 0.35);
+  border-radius: 2px;
+  padding: 5px 14px;
+  transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+}
+
+.flee-button:hover {
+  color: #ff7a66;
+  border-color: rgba(224, 90, 71, 0.7);
+  background: rgba(224, 90, 71, 0.08);
+}
+
+.flee-button:focus-visible {
+  outline: 1px solid var(--gold);
+  outline-offset: 2px;
 }
 
 /* Three Panel Layout */
@@ -198,16 +484,28 @@
   caret-color: var(--battle-accent);
 }
 
+/* PixelBrain shader battle-zone atmosphere — sits behind the board */
+.shader-arena-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+  display: block;
+}
+
 /* Phaser Container */
 .arena-grid-container {
   width: 100%;
   height: 100%;
   position: relative;
+  z-index: 1;
 }
 
 .phaser-host canvas {
   display: block;
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent; /* let the shader backdrop show through the iso board */
 }
 
 /* Common */
@@ -370,6 +668,31 @@
   max-width: 60%;
 }
 
+.inspector-val.phase-glowing {
+  color: #00ffff;
+  font-weight: bold;
+  text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
+}
+
+.inspector-val.phase-charging {
+  color: #00ff00;
+  text-shadow: 0 0 4px rgba(0, 255, 0, 0.2);
+}
+
+.inspector-val.phase-fading {
+  color: #ffa500;
+  text-shadow: 0 0 4px rgba(255, 165, 0, 0.25);
+}
+
+.inspector-val.phase-spent {
+  color: #555555;
+  opacity: 0.5;
+}
+
+.inspector-val.phase-dormant {
+  color: #888888;
+}
+
 /* ─────────────────────────────────────────────────────────────────────────────
    TARGETING HELPER
 ───────────────────────────────────────────────────────────────────────────── */
@@ -416,6 +739,71 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+/* ⓘ affordance — visible on hover and always visible on touch devices
+   so mobile players discover the opponent-details modal. The label
+   appears on hover only (decorative context). */
+.opponent-portrait-info-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  line-height: 1;
+  color: var(--battle-bg-primary);
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  border-radius: 50%;
+  box-shadow: 0 0 6px rgba(201, 162, 39, 0.4);
+  opacity: 0.85;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+  pointer-events: none;
+}
+
+.opponent-portrait-info-label {
+  position: absolute;
+  bottom: calc(4px + 22px);
+  right: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  letter-spacing: 0.14em;
+  color: var(--gold);
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.85);
+  background: rgba(2, 2, 10, 0.78);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  padding: 2px 6px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 140ms ease, transform 140ms ease;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.opponent-portrait-frame:hover .opponent-portrait-info-badge,
+.opponent-portrait-frame:focus-visible .opponent-portrait-info-badge {
+  transform: scale(1.12);
+  box-shadow: 0 0 10px rgba(201, 162, 39, 0.65);
+}
+
+.opponent-portrait-frame:hover .opponent-portrait-info-label,
+.opponent-portrait-frame:focus-visible .opponent-portrait-info-label {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Touch devices — the badge is the entire affordance; the label would
+   be undiscoverable. Keep the badge always visible at full opacity. */
+@media (hover: none) {
+  .opponent-portrait-info-badge {
+    opacity: 1;
+  }
 }
 
 .opponent-name.clickable-text {
@@ -536,6 +924,7 @@
 
 .opponent-telegraph,
 .opponent-counter-tokens,
+.opponent-symbolic-structure,
 .opponent-status-strip {
   margin-top: 10px;
   font-family: var(--font-mono);
@@ -544,6 +933,11 @@
 }
 
 .opponent-telegraph {
+  padding-top: 8px;
+  border-top: 1px solid rgba(201, 162, 39, 0.12);
+}
+
+.opponent-symbolic-structure {
   padding-top: 8px;
   border-top: 1px solid rgba(201, 162, 39, 0.12);
 }
@@ -723,6 +1117,26 @@
   color: var(--gold);
 }
 
+/* Tiny "situational" annotation on action buttons whose availability
+   depends on board state (e.g. EXTRACT — only on a leyline). Lets the
+   player notice the difference between always-available and conditional
+   commands without reading the tooltip. */
+.action-btn-situational {
+  position: absolute;
+  bottom: 3px;
+  left: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.4rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(144, 164, 174, 0.45);
+  pointer-events: none;
+}
+
+.action-bar-btn.is-active .action-btn-situational {
+  color: rgba(201, 162, 39, 0.6);
+}
+
 /* ─── ActionHintStrip ─── */
 
 .action-hint-strip {
@@ -825,6 +1239,23 @@
   background: rgba(201, 162, 39, 0.06);
   color: rgba(224, 224, 224, 0.88);
   padding: 2px 6px;
+}
+
+/* Instability — incoherent extraction; next cast risks fizzling */
+.status-effect-chip.is-unstable {
+  border-color: rgba(255, 86, 86, 0.55);
+  background: rgba(255, 86, 86, 0.1);
+  color: #ff8a8a;
+  letter-spacing: 0.12em;
+  animation: low-mp-pulse 1400ms ease-in-out infinite;
+}
+
+/* Supercharged — next cast deals double damage */
+.status-effect-chip.is-supercharged {
+  border-color: rgba(101, 31, 255, 0.6);
+  background: rgba(101, 31, 255, 0.12);
+  color: #b9a3ff;
+  letter-spacing: 0.12em;
 }
 
 .status-effect-empty {
@@ -947,22 +1378,11 @@
    MODE-AWARE LAYOUT — data-combat-mode attribute selectors
 ───────────────────────────────────────────────────────────────────────────── */
 
-/* Column widths transition smoothly when mode changes */
-.battle-column-left,
-.battle-column-center,
-.battle-column-right {
-  transition: width 220ms ease-in-out;
-}
-
-/* Inscribe mode: expand left rail for composition focus */
-.battle-page-root[data-combat-mode="inscribe"] .battle-column-left  { width: 30%; }
-.battle-page-root[data-combat-mode="inscribe"] .battle-column-right { width: 22%; }
-.battle-page-root[data-combat-mode="inscribe"] .battle-column-center { width: 48%; }
-
-/* Move mode: expand center for board visibility */
-.battle-page-root[data-combat-mode="move"] .battle-column-left   { width: 20%; }
-.battle-page-root[data-combat-mode="move"] .battle-column-center  { width: 52%; }
-.battle-page-root[data-combat-mode="move"] .battle-column-right   { width: 28%; }
+/* Column widths are fixed across modes — selecting an action must NOT
+   resize/reflow the board. Previously each mode rewrote all three column
+   widths with a 220ms width transition, so every action click animated the
+   whole layout (and the iso board re-laid-out under it). Layout now holds
+   still; only content/affordances inside the columns react to mode. */
 
 /* Resolve mode: suppress inscription editor, emphasize board */
 .battle-page-root[data-combat-mode="resolve"] .oracle-scribe {
@@ -1049,4 +1469,521 @@
 .bridge-score-panel .btn,
 .bridge-victory-dialog .btn {
   margin-top: 1rem;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ALCHEMICAL EXTRACTION SCRIBE
+   Vibrant HSL colors, cyan/gold glow states, matching Scholomance physical laws
+───────────────────────────────────────────────────────────────────────────── */
+
+.alchemical-scribe-root {
+  background: linear-gradient(135deg, rgba(8, 5, 20, 0.95) 0%, rgba(2, 2, 8, 0.98) 100%) !important;
+  border: 1px solid rgba(0, 242, 254, 0.3) !important;
+  box-shadow: 0 0 20px rgba(0, 242, 254, 0.08) !important;
+}
+
+.alchemical-header {
+  border-bottom-color: rgba(0, 242, 254, 0.25) !important;
+}
+
+.alchemical-title {
+  color: #00f2fe !important;
+  text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+}
+
+.leyline-stars {
+  font-family: var(--font-mono);
+  color: var(--gold);
+  text-shadow: 0 0 5px rgba(201, 162, 39, 0.4);
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+}
+
+.alchemical-puzzle-box {
+  background: rgba(0, 242, 254, 0.03);
+  border-left: 3px solid #00f2fe;
+  padding: 10px 12px;
+  margin: 10px 12px;
+  border-radius: 0 4px 4px 0;
+}
+
+.puzzle-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.5rem;
+  color: var(--gold);
+  letter-spacing: 0.14em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.alchemical-prompt {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: rgba(224, 224, 224, 0.9);
+  line-height: 1.4;
+  margin: 0;
+  font-style: italic;
+}
+
+.alchemical-poetics-box {
+  margin: 0 12px 10px;
+  padding: 9px 10px;
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  background: rgba(201, 162, 39, 0.06);
+  border-radius: 4px;
+}
+
+.poetics-summary {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  color: rgba(224, 224, 224, 0.84);
+  margin-bottom: 7px;
+}
+
+.poetics-device-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.poetics-device-chip {
+  font-family: var(--font-mono);
+  font-size: 0.52rem;
+  line-height: 1.2;
+  color: rgba(201, 162, 39, 0.9);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  background: rgba(0, 0, 0, 0.25);
+  padding: 3px 5px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.poetics-note {
+  margin-top: 7px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  color: rgba(0, 242, 254, 0.78);
+}
+
+.alchemical-textarea {
+  border: 1px solid rgba(0, 242, 254, 0.25) !important;
+  background: rgba(0, 0, 0, 0.45) !important;
+  color: #00f2fe !important;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.4;
+  resize: none;
+  min-height: 70px;
+}
+
+.alchemical-textarea:focus {
+  border-color: #00f2fe !important;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.15) !important;
+  outline: none;
+}
+
+.alchemical-checklist-container {
+  padding: 10px 12px;
+  margin: 0 12px 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.alchemical-checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: rgba(144, 164, 174, 0.5);
+  transition: color 150ms ease;
+}
+
+.checklist-status-icon {
+  flex-shrink: 0;
+  width: 12px;
+  font-weight: bold;
+}
+
+.checklist-text {
+  line-height: 1.2;
+}
+
+.checklist-item.is-matched {
+  color: #00ff87 !important;
+}
+
+.checklist-item.is-matched .checklist-status-icon {
+  text-shadow: 0 0 4px rgba(0, 255, 135, 0.4);
+}
+
+.checklist-item.is-forbidden {
+  color: rgba(144, 164, 174, 0.5);
+}
+
+.checklist-item.is-forbidden.is-triggered {
+  color: #ff4444 !important;
+  animation: alchemical-shake 0.4s ease;
+}
+
+.checklist-item.is-forbidden.is-triggered .checklist-status-icon {
+  text-shadow: 0 0 5px rgba(255, 68, 68, 0.5);
+}
+
+.alchemical-target-bar {
+  background: rgba(0, 0, 0, 0.5) !important;
+}
+
+.alchemical-target-fill {
+  background: linear-gradient(90deg, #00f2fe, #4facfe) !important;
+  box-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+}
+
+.target-score-badge {
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: #00f2fe;
+  font-weight: bold;
+}
+
+.alchemical-harvest-btn {
+  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%) !important;
+  color: #02020a !important;
+  font-weight: bold !important;
+  text-shadow: none !important;
+  box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+  transition: transform 120ms ease, box-shadow 120ms ease !important;
+}
+
+.alchemical-harvest-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(0, 242, 254, 0.4) !important;
+}
+
+.alchemical-harvest-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.alchemical-harvest-btn:disabled {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+}
+
+@keyframes alchemical-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-3px); }
+  40%, 80% { transform: translateX(3px); }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TRUESIGHT REVEAL HINT
+   First-time-only in-world notification explaining the always-on Truesight
+   mode in the verse textarea. Dismissed via ✕; dismissal persists in
+   localStorage so the player is never re-introduced.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.truesight-reveal {
+  position: absolute;
+  inset: 4px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, rgba(8, 5, 20, 0.96) 0%, rgba(2, 2, 8, 0.98) 100%);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 18px rgba(201, 162, 39, 0.18);
+  z-index: 4;
+  pointer-events: auto;
+}
+
+.truesight-reveal-glyph {
+  font-size: 1.2rem;
+  line-height: 1;
+  color: var(--gold);
+  text-shadow: 0 0 8px rgba(201, 162, 39, 0.55);
+  flex-shrink: 0;
+  padding-top: 1px;
+}
+
+.truesight-reveal-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.truesight-reveal-title {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  text-shadow: 0 0 5px rgba(201, 162, 39, 0.4);
+  margin-bottom: 4px;
+}
+
+.truesight-reveal-text {
+  font-family: 'Spectral', serif;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: rgba(224, 224, 224, 0.88);
+}
+
+.truesight-reveal-text em {
+  color: var(--gold);
+  font-style: normal;
+  text-shadow: 0 0 4px rgba(201, 162, 39, 0.35);
+}
+
+.truesight-reveal-dismiss {
+  all: unset;
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: rgba(144, 164, 174, 0.7);
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 2px;
+  transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.truesight-reveal-dismiss:hover,
+.truesight-reveal-dismiss:focus-visible {
+  color: var(--gold);
+  border-color: var(--gold);
+  background: rgba(201, 162, 39, 0.08);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .truesight-reveal {
+    transition: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   SPELL DIALOGUE BUBBLES
+   Floating world-anchored bubbles above units when a CAST is playing.
+   The same shape is used for both player and enemy — the school's color
+   drives the glow, the side (left/right) drives the speech-tail direction.
+   ───────────────────────────────────────────────────────────────────────────── */
+
+.spell-bubbles-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+
+.spell-bubble {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  min-width: 140px;
+  max-width: 280px;
+  padding: 8px 12px 9px;
+  background: linear-gradient(160deg, rgba(8, 5, 20, 0.94) 0%, rgba(2, 2, 8, 0.98) 100%);
+  border: 1px solid var(--bubble-accent, var(--gold));
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 14px var(--bubble-glow, rgba(201, 162, 39, 0.35)),
+    0 4px 20px rgba(0, 0, 0, 0.55);
+  font-family: 'Spectral', serif;
+  color: var(--battle-text-main, #e0e0e0);
+  text-align: center;
+  pointer-events: auto;
+  will-change: transform, opacity;
+}
+
+.spell-bubble-phrase {
+  font-size: 0.92rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  line-height: 1.25;
+  color: var(--bubble-accent, var(--gold));
+  text-shadow: 0 0 6px var(--bubble-glow, rgba(201, 162, 39, 0.45));
+  word-wrap: break-word;
+}
+
+.spell-bubble-commentary {
+  margin-top: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  line-height: 1.4;
+  letter-spacing: 0.08em;
+  color: rgba(224, 224, 224, 0.78);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding-top: 4px;
+  font-style: italic;
+}
+
+/* Speech tail — points down at the unit. Direction depends on the
+   side: player bubbles tail points down-left (toward bottom-center
+   unit), enemy bubbles tail points down-right (toward top-center
+   unit). The triangle is built with a CSS border trick on a span. */
+.spell-bubble-tail {
+  position: absolute;
+  bottom: -7px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid var(--bubble-accent, var(--gold));
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.spell-bubble--player .spell-bubble-tail {
+  left: 30%;
+}
+
+.spell-bubble--opponent .spell-bubble-tail {
+  right: 30%;
+}
+
+/* A subtle inner-rim line so the bubble reads as a discrete surface
+   even against the shader backdrop's gradients. */
+.spell-bubble::before {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  pointer-events: none;
+}
+
+/* Fading state — visually muted so the HIT animation can take focus. */
+.spell-bubble--fading {
+  filter: saturate(0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spell-bubble {
+    transition: none;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MUD / PICTURE BOOK LAYOUT VARIANTS
+───────────────────────────────────────────────────────────────────────────── */
+
+.oracle-scribe--terminal {
+  background: transparent !important;
+  border: none !important;
+  border-top: 1px solid var(--combat-line-strong) !important;
+  border-radius: 0 !important;
+  padding: 1rem 0 0 0 !important;
+  margin: 0 !important;
+}
+
+.oracle-scribe--terminal .scribe-header {
+  display: none; /* Hide bulky headers in terminal mode */
+}
+
+.oracle-scribe--terminal .scribe-field {
+  background: transparent;
+  border: none;
+}
+
+.oracle-scribe--terminal .field-label {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.65rem;
+  color: var(--combat-muted);
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.oracle-scribe--terminal .scribe-textarea-container,
+.oracle-scribe--terminal .scribe-weave-textarea {
+  background: transparent !important;
+  border: none !important;
+  border-left: 2px solid var(--combat-accent) !important;
+  padding-left: 0.75rem !important;
+  border-radius: 0 !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  min-height: auto;
+}
+
+.oracle-scribe--terminal .scribe-textarea,
+.oracle-scribe--terminal .scribe-truesight-overlay {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  padding: 0 !important;
+}
+
+.oracle-scribe--terminal .scribe-footer {
+  margin-top: 0.5rem;
+  background: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.oracle-scribe--terminal .scribe-cast-btn {
+  background: transparent;
+  color: var(--combat-ink);
+  border: 1px solid var(--combat-line-strong);
+  padding: 0.4rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+.oracle-scribe--terminal .scribe-cast-btn:hover:not(:disabled) {
+  background: var(--combat-line);
+  color: var(--combat-accent);
+  border-color: var(--combat-accent);
+}
+
+.bottom-command-band--inline {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.bottom-command-band--inline .action-bar {
+  background: transparent !important;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.bottom-command-band--inline .action-bar-btn {
+  flex: none;
+  background: transparent;
+  border: 1px solid var(--combat-line);
+  border-radius: 2px;
+  padding: 0.4rem 0.8rem;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bottom-command-band--inline .action-bar-btn:hover:not(:disabled) {
+  background: var(--combat-line);
+  border-color: var(--combat-accent);
+}
+
+.bottom-command-band--inline .action-bar-btn.is-active {
+  background: rgba(201, 162, 39, 0.1);
+  border-color: var(--combat-accent);
+  color: var(--combat-accent);
+}
+
+.bottom-command-band--inline .action-btn-hotkey {
+  position: static;
+  color: var(--combat-muted);
 }

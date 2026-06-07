@@ -61,6 +61,67 @@
  */
 
 /**
+ * @typedef {Object} EnemySyntacticProfile
+ * @property {string} archetype
+ * @property {string[]} weaknessFamilies
+ * @property {string[]} resistanceFamilies
+ * @property {string[]} favoredDevices
+ * @property {string[]} punishedTerms
+ * @property {string[]} symbolicBody
+ */
+
+/**
+ * @typedef {Object} SyntacticalChessResult
+ * @property {number} score
+ * @property {number} multiplier
+ * @property {string[]} matchedWeaknessFamilies
+ * @property {string[]} resistedFamilies
+ * @property {string[]} detectedDevices
+ * @property {string[]} diagnostics
+ * @property {'advantage'|'neutral'|'disadvantage'} state
+ */
+
+/**
+ * @typedef {'dormant'|'charging'|'glowing'|'fading'|'spent'} LeylinePhase
+ */
+
+/**
+ * @typedef {Object} LeylineExtractionProfile
+ * @property {string} domain
+ * @property {string} prompt
+ * @property {string[][]} requiredTerms
+ * @property {string[][]} requiredActions
+ * @property {string[]} forbiddenTerms
+ * @property {Object|null} [literaryConstraints]
+ * @property {Object} [oracleSeed]
+ * @property {number} minScore
+ */
+
+/**
+ * @typedef {Object} LeylineRewardProfile
+ * @property {number} manaMin
+ * @property {number} manaMax
+ * @property {number} superchargeThreshold
+ * @property {number} instabilityRisk
+ */
+
+/**
+ * @typedef {Object} Leyline
+ * @property {string} id
+ * @property {string} [codexId]
+ * @property {string} [name]
+ * @property {Position} coord
+ * @property {string} affinity
+ * @property {string} type
+ * @property {number} stars
+ * @property {number} activeTurnStart
+ * @property {number} activeTurnEnd
+ * @property {LeylineExtractionProfile} extractionProfile
+ * @property {LeylineRewardProfile} rewardProfile
+ * @property {string} checksum
+ */
+
+/**
  * @typedef {Object} BattleState
  * @property {string} id - Session ID.
  * @property {number} gridWidth - Number of columns (e.g., 7).
@@ -72,7 +133,11 @@
  * @property {string} phase - 'idle' | 'planning' | 'resolving' | 'victory' | 'defeat'.
  * @property {BattleTurnResult[]} history - Chronological log of all actions.
  * @property {Object} metadata - Contextual data (arena school, atmosphere intensity).
+ * @property {Leyline[]} leylines - List of active board leylines.
+ * @property {string[]} spentLeylineIds - List of spent leylines IDs.
+ * @property {number} playerTurnIndex - Index of the player's active turns.
  */
+
 
 export const INITIAL_GRID_SIZE = 9;
 
@@ -91,7 +156,7 @@ export function createEmptyGrid(width = INITIAL_GRID_SIZE, height = INITIAL_GRID
         position: { x, y },
         school: null,
         intensity: 0,
-        fieldEffectId: null,
+        fieldEffect: null,
         occupantId: null,
       });
     }

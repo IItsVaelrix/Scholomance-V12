@@ -32,20 +32,5 @@ export function getSyntacticIntegrity(weave) {
     return { status: 'RED', label: 'SYNTACTIC COLLAPSE' };
   }
 
-  if (predicates.length === 0) {
-    return { status: 'YELLOW', label: 'NO PREDICATE' };
-  }
-
-  // Has predicate — check for object (content word after predicate)
-  const pIdx = tokens.findIndex(t => SPELL_PREDICATES.has(t));
-  const afterPredicate = tokens.slice(pIdx + 1);
-  const contentWords = afterPredicate.filter(
-    t => t.length > 2 && !CONNECTIVE_WORDS.has(t) && !SPELL_PREDICATES.has(t)
-  );
-
-  if (contentWords.length === 0) {
-    return { status: 'YELLOW', label: 'INCOMPLETE' };
-  }
-
   return { status: 'GREEN', label: 'BRIDGE STABLE' };
 }

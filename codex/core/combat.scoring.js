@@ -9,6 +9,7 @@ import {
 import { buildCombatProfile } from './combat.profile.js';
 import { buildSpeakingTraces } from './speaking/index.js';
 import { calculateSyntacticBridge } from './spellweave.engine.js';
+import { evaluateSyntacticalChess } from './combat.syntax-chess.js';
 
 const SCORE_TO_DAMAGE_MULTIPLIER = 1.1;
 const SCORE_TO_DAMAGE_OFFSET = 6;
@@ -87,13 +88,17 @@ function computeHealingAmount(profile, damage) {
   if ((!profile?.intent?.healing && !isBlessedHealing) || profile.school !== 'ALCHEMY') {
     return 0;
   }
+  if (profile?.intent?.healingMode === 'REGEN') {
+    return 0;
+  }
 
   const rarityBonus = Number(profile?.rarity?.ordinal) || 0;
   const speechBonus = isBlessedHealing ? 0.18 : 0;
   const voiceBonus = clamp01(profile?.voiceResonance ?? 0);
+  const creativityBonus = clamp01(profile?.intent?.healingCreativity ?? 0);
   return Math.max(
     0,
-    Math.round((damage * (0.75 + speechBonus)) + (profile.totalScore * 0.2) + (rarityBonus * 4) + (voiceBonus * 6))
+    Math.round((damage * (0.65 + speechBonus + (creativityBonus * 0.28))) + (profile.totalScore * 0.2) + (rarityBonus * 4) + (voiceBonus * 6))
   );
 }
 
@@ -143,6 +148,7 @@ export function calculateCombatScore({
   speakerId = 'speaker:unknown',
   speakerType = 'PLAYER',
   speakerProfile = null,
+  defender = null,
 } = {}) {
   const totalScore = getCombatTotalScore(scoreData);
   const traces = getCombatTraces(scoreData);
@@ -189,6 +195,18 @@ export function calculateCombatScore({
   const speakingTraces = buildSpeakingTraces(profile.speaking);
   const combinedTraces = [...traces, ...speakingTraces];
 
+  const rhymeMultiplier = typeof profile.rhymeQuality === 'number'
+    ? Math.max(0.92, Math.min(1.14, 0.92 + (profile.rhymeQuality * 0.22)))
+    : 1.0;
+  const verseIRMultiplier = Math.max(0.85, Math.min(1.12, Number(profile.verseIRAmplifier?.impactMultiplier) || 1.0));
+  const verbalFormMultiplier = rhymeMultiplier * verseIRMultiplier;
+  const syntacticalChess = evaluateSyntacticalChess({
+    phrase: text,
+    enemy: defender,
+    verseIR: scoreData?.verseIR || profile.verseIRAmplifier,
+    profile,
+  });
+
   const rawDamage = baseDamage
     * arenaResonanceMultiplier
     * schoolAffinityMultiplier
@@ -201,18 +219,21 @@ export function calculateCombatScore({
     * severityMultiplier
     * voiceResonanceMultiplier
     * weaveResonanceMultiplier
+    * verbalFormMultiplier
+    * syntacticalChess.multiplier
     * (profile.rarity?.totalMultiplier ?? 1)
     * (profile.abyssalResonanceMultiplier ?? 1)
     * supportPenalty;
 
   const damage = Math.max(computeDamageFloor(profile), Math.round(rawDamage));
-  const healing = computeHealingAmount(profile, damage);
+  const baseHealing = computeHealingAmount(profile, damage);
+  const healing = Math.round(baseHealing * verbalFormMultiplier);
   const failureCast = isFailureCast(profile) || bridge.collapsed;
 
   // Lore Sheet Stat Mapping
   const syntVal = clamp01((profile.cohesionScore + (profile.tokenCount / 20) + (profile.rhymeQuality || 0)) / 3);
   const metaVal = clamp01(profile.abyssalResonanceMultiplier || 0.1);
-  const mythVal = clamp01((profile.verseIRAmplifier?.totalMultiplier || 1) / 2);
+  const mythVal = clamp01(((Number(profile.verseIRAmplifier?.impactMultiplier) || 1.0) - 1.0) / 0.12);
   const visVal = clamp01(profile.literaryDeviceRichness || 0.2);
   const psycVal = clamp01(profile.emotionalResonance || 0.2);
   const codexVal = clamp01(profile.vocabularyRichness || 0.3);
@@ -225,6 +246,10 @@ export function calculateCombatScore({
     PSYC: { rating: getRatingForValue(psycVal), value: psycVal, justification: 'Trauma logic and cognitive complexity.' },
     CODEX: { rating: getRatingForValue(codexVal), value: codexVal, justification: 'Lore density and continuity weight.' },
   };
+
+  const commentary = bridge.collapsed
+    ? "Syntactic Collapse: The Weave has frayed."
+    : [profile.commentary || profile.rarity?.praise || '', ...syntacticalChess.diagnostics].filter(Boolean).join(' ');
 
   return {
     totalScore,
@@ -258,8 +283,15 @@ export function calculateCombatScore({
     nextVoiceProfile: profile.nextVoiceProfile,
     statusEffect: profile.statusEffect,
     failureCast,
-    commentary: bridge.collapsed ? "Syntactic Collapse: The Weave has frayed." : (profile.commentary || profile.rarity?.praise || ''),
+    commentary,
     loreStats,
+    rhymeMultiplier,
+    verseIRMultiplier,
+    verbalFormMultiplier,
+    syntacticalChessMultiplier: syntacticalChess.multiplier,
+    syntacticalChess,
+    rhymeQuality: profile.rhymeQuality ?? null,
+    verseIRImpactMultiplier: profile.verseIRAmplifier?.impactMultiplier ?? null,
   };
 }
 
@@ -276,6 +308,7 @@ export function normalizeCombatScore(scoreData, options = {}) {
     speakerId: options.speakerId,
     speakerType: options.speakerType,
     speakerProfile: options.speakerProfile,
+    defender: options.defender,
   });
 }
 

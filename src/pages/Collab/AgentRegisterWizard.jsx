@@ -12,7 +12,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { csrfFetch } from '../../hooks/useAuth.jsx';
+import { csrfFetch } from '../../lib/csrf.js';
 
 import './AgentRegisterWizard.css';
 

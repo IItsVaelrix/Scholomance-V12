@@ -165,12 +165,38 @@ function evaluateProposalFormula(proposedFormula, canvasSize, time) {
       const dx = worldAnchorX - subWidth / 2;
       const dy = worldAnchorY - subHeight / 2;
 
-      // Transform raw coords to parent bounds and tag them
+      // Transform raw coords to parent bounds, apply optional rotation around local center, and tag them
+      let angleDeg = child.rotation ?? 0;
+      if (child.rotationSpeed) {
+        angleDeg += child.rotationSpeed * (time / 1000);
+      }
+      if (child.rotationSwingRange) {
+        const swingSpeed = child.rotationSwingSpeed ?? 1.0;
+        angleDeg += Math.sin((time / 1000) * swingSpeed) * child.rotationSwingRange;
+      }
+
+      const rotateLocal = angleDeg !== 0;
+      const rad = angleDeg * Math.PI / 180;
+      const cosVal = Math.cos(rad);
+      const sinVal = Math.sin(rad);
+      const localCenterX = subWidth / 2;
+      const localCenterY = subHeight / 2;
+
       rawCoords.forEach(c => {
+        let px = c.x;
+        let py = c.y;
+
+        if (rotateLocal) {
+          const rx = px - localCenterX;
+          const ry = py - localCenterY;
+          px = localCenterX + rx * cosVal - ry * sinVal;
+          py = localCenterY + rx * sinVal + ry * cosVal;
+        }
+
         coords.push({
           ...c,
-          x: c.x + dx,
-          y: c.y + dy,
+          x: px + dx,
+          y: py + dy,
           role: child.role,
           material: child.material || material,
           paletteChannel: child.paletteChannel !== undefined ? child.paletteChannel : proposedFormula.paletteChannel

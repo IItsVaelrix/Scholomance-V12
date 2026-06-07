@@ -1,5 +1,5 @@
 import { lazyWithRetry } from "./lazyWithRetry.js";
-import { isAdminUser } from "../components/Navigation/Navigation.jsx";
+import { isAdminUser } from "./admin.js";
 
 export const WatchPage = lazyWithRetry(() => import("../pages/Watch/WatchPage.jsx"), "watch-page");
 export const ListenPage = lazyWithRetry(() => import("../pages/Listen/ListenPage"), "listen-page");
