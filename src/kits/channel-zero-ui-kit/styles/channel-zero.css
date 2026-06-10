@@ -145,19 +145,31 @@ svg {
 .cz-nav {
   display: flex;
   align-items: center;
-  gap: var(--cz-space-4);
+  gap: var(--cz-space-2);
   color: var(--cz-text-muted);
   font-size: var(--cz-step--1);
 }
 
 .cz-nav a {
   text-decoration: none;
-  transition: color var(--cz-duration-fast) var(--cz-ease-out);
+  transition:
+    color var(--cz-duration-fast) var(--cz-ease-out),
+    background var(--cz-duration-fast) var(--cz-ease-out);
 }
 
-.cz-nav a:hover,
-.cz-nav a:focus-visible {
+/* Text links get identical box padding so the spacing reads symmetrical and
+   shares the Subscribe button's rhythm. The button keeps its own styling. */
+.cz-nav a:not(.cz-button) {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.8rem;
+  border-radius: var(--cz-radius-sm);
+}
+
+.cz-nav a:not(.cz-button):hover,
+.cz-nav a:not(.cz-button):focus-visible {
   color: var(--cz-text);
+  background: hsl(248 22% 9% / 0.55);
 }
 
 .cz-button {

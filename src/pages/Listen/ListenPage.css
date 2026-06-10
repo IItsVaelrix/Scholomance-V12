@@ -1380,7 +1380,7 @@
 .black-hole-embed {
   position: absolute;
   top: 47.685185%;
-  left: calc(50% - 18rem - 50px);
+  left: calc(50% - 18rem - 75px);
   transform: translateY(-50%);
   z-index: 15;
 }
