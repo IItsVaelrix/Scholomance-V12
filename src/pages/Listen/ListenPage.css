@@ -1270,10 +1270,12 @@
 }
 
 .signal-core__plaque {
-  position: relative;
+  position: absolute;
   z-index: 1;
-  min-width: 58%;
-  display: inline-flex;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
   justify-content: center;
   align-items: center;
   gap: 0.7rem;
@@ -1378,10 +1380,14 @@
 
 /* Black hole button - symmetrically placed left of player */
 .black-hole-embed {
+  /* Centred in the RIGHT compartment of the orb's frame (mirrors the left side),
+     both axes. ~80% across the centred frame puts it between the circular radar
+     and the frame's right edge; translate(-50%,-50%) keeps it dead-centre there.
+     (Was `position: right` — invalid — which broke the layout entirely.) */
   position: absolute;
   top: 47.685185%;
-  left: calc(50% - 18rem - 75px);
-  transform: translateY(-50%);
+  left: 80%;
+  transform: translate(-50%, -50%);
   z-index: 15;
 }
 
