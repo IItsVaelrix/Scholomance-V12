@@ -1,0 +1,200 @@
+/**
+ * CHANNEL ZERO — GRIMDESIGN POLISH LAYER
+ *
+ * Additive enhancement over `channel-zero.css`. Scoped entirely under `.cz-grim`
+ * so it can never alter the base kit. Consumes `--cz-*` tokens; the only new
+ * palette is the GrimSignal's HARMONIC thread (WILL school, hsl 12 82% 50%),
+ * which threads a warm amber-red through the cool violet/cyan system and meets
+ * the Wand's gold-on-black luxury.
+ *
+ * Influences:
+ *   - GrimDesign: visual treatment derived from the phonemic signal, not taste.
+ *   - duck.design: bold editorial hierarchy, characterful micro-interactions,
+ *     generous craft (sheen sweeps, a drop cap, a beacon).
+ *   - Wand/DivWand: dark luxury, glow-on-lift, scanline atmosphere.
+ *   - photonic-retina: honored as the scan/grain *lineage* (pure-CSS optical
+ *     sweep), deliberately NOT imported — a blog needs the texture, not the codec.
+ *
+ * LAW: all ornamental motion is gated behind prefers-reduced-motion: no-preference.
+ */
+
+.cz-grim {
+  --grim-harmonic: hsl(12 82% 58%);
+  --grim-harmonic-soft: hsl(26 92% 66%);
+  --grim-glow: 0 0 28px hsl(12 82% 60% / 0.28);
+  --grim-sheen: hsl(39 95% 62% / 0.5); /* ties to --cz-amber */
+}
+
+/* ── HERO: harmonic eyebrow beacon + warm title + retina scan ──────────────── */
+
+.cz-grim .cz-hero__eyebrow {
+  color: var(--grim-harmonic-soft);
+}
+
+.cz-grim .cz-hero__eyebrow::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--grim-harmonic);
+  box-shadow: 0 0 10px var(--grim-harmonic);
+}
+
+.cz-grim .cz-hero__title {
+  background: linear-gradient(
+    180deg,
+    var(--cz-text) 40%,
+    color-mix(in srgb, var(--cz-text) 70%, var(--grim-harmonic-soft))
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  position: relative;
+}
+
+/* A fine optical scan line under the hero — the photonic-retina homage. */
+.cz-grim .cz-hero {
+  position: relative;
+}
+
+.cz-grim .cz-hero::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: var(--cz-space-6);
+  width: clamp(120px, 22vw, 280px);
+  height: 1px;
+  background: linear-gradient(90deg, var(--grim-harmonic), transparent);
+  opacity: 0.7;
+}
+
+/* ── CARDS: duck-style sheen sweep + kind-tinted lift ──────────────────────── */
+
+.cz-grim .cz-card {
+  overflow: hidden; /* clip the sweep */
+}
+
+/* A diagonal light sweep that crosses the card on hover. */
+.cz-grim .cz-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    var(--grim-sheen) 50%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  opacity: 0;
+}
+
+.cz-grim .cz-card:hover {
+  border-color: var(--grim-harmonic);
+  box-shadow: var(--cz-shadow-panel), var(--grim-glow);
+}
+
+/* A top accent rule that draws in from the kind color on hover. */
+.cz-grim .cz-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: linear-gradient(90deg, var(--grim-harmonic), transparent);
+  transition: transform var(--cz-duration-mid) var(--cz-ease-out);
+}
+
+.cz-grim .cz-card:hover::before {
+  transform: scaleX(1);
+}
+
+.cz-grim .cz-card[data-featured='true'] {
+  border-color: hsl(12 82% 50% / 0.4);
+}
+
+/* ── LOAD MORE + END MARKER: harmonic character ────────────────────────────── */
+
+.cz-grim .cz-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.cz-grim .cz-end-marker {
+  color: var(--grim-harmonic-soft);
+}
+
+/* ── ARTICLE: editorial drop cap (duck.design) + harmonic rails ────────────── */
+
+.cz-grim .cz-article-section:first-of-type > p:first-of-type::first-letter {
+  float: left;
+  margin: 0.04em 0.12em 0 0;
+  padding: 0 0.06em;
+  font-family: var(--cz-font-display);
+  font-size: 3.1em;
+  line-height: 0.78;
+  color: var(--grim-harmonic-soft);
+  text-shadow: 0 0 18px hsl(12 82% 60% / 0.35);
+}
+
+.cz-grim .cz-toc a[aria-current='true'],
+.cz-grim .cz-toc a:hover {
+  color: var(--grim-harmonic-soft);
+}
+
+/* ── MOTION (gated) ────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: no-preference) {
+  .cz-grim .cz-hero__eyebrow::before {
+    animation: grim-beacon 1900ms var(--cz-ease-ritual) infinite;
+  }
+
+  .cz-grim .cz-hero::after {
+    animation: grim-scan 4200ms var(--cz-ease-ritual) infinite;
+  }
+
+  .cz-grim .cz-card::after {
+    transition: transform 720ms var(--cz-ease-out), opacity 220ms var(--cz-ease-out);
+  }
+
+  .cz-grim .cz-card:hover::after {
+    transform: translateX(120%);
+    opacity: 1;
+  }
+
+  .cz-grim .cz-card[data-featured='true'] {
+    animation: grim-breathe 5200ms var(--cz-ease-ritual) infinite;
+  }
+
+  .cz-grim .cz-button::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, transparent 40%, var(--grim-sheen) 50%, transparent 60%);
+    transform: translateX(-120%);
+    transition: transform 640ms var(--cz-ease-out);
+  }
+
+  .cz-grim .cz-button:hover::after {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes grim-beacon {
+  0%, 100% { opacity: 0.45; box-shadow: 0 0 6px var(--grim-harmonic); }
+  50%      { opacity: 1;    box-shadow: 0 0 14px var(--grim-harmonic); }
+}
+
+@keyframes grim-scan {
+  0%, 100% { width: clamp(120px, 22vw, 280px); opacity: 0.7; }
+  50%      { width: clamp(160px, 30vw, 380px); opacity: 1; }
+}
+
+@keyframes grim-breathe {
+  0%, 100% { box-shadow: var(--cz-shadow-soft); }
+  50%      { box-shadow: var(--cz-shadow-panel), var(--grim-glow); }
+}

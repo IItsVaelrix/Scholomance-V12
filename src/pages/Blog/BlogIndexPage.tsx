@@ -6,6 +6,7 @@ import { ChannelHeader } from '../../kits/channel-zero-ui-kit/components/Channel
 import { ChannelShell } from '../../kits/channel-zero-ui-kit/components/ChannelShell';
 import { NewsletterSigil } from '../../kits/channel-zero-ui-kit/components/NewsletterSigil';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import './channel-zero-grim.css';
 
 interface BlogPost {
   href: string;
@@ -78,7 +79,7 @@ export default function BlogIndexPage() {
   return (
     <ChannelShell>
       <ChannelHeader />
-      <main className="cz-page">
+      <main className="cz-page cz-grim">
         <ArticleHero
           title="The Scholomance Channel: Zero"
           lede="Free doctrine for writers, engineers, musicians, and creative operators building their own instruments instead of begging the machine for permission."

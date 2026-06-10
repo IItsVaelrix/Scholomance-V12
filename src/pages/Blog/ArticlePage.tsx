@@ -7,6 +7,7 @@ import { NewsletterSigil } from '../../kits/channel-zero-ui-kit/components/Newsl
 import { SignalTag } from '../../kits/channel-zero-ui-kit/components/SignalTag';
 import { TableOfContents } from '../../kits/channel-zero-ui-kit/components/TableOfContents';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import './channel-zero-grim.css';
 
 interface TocItem {
   href: string;
@@ -85,7 +86,7 @@ export default function ArticlePage() {
   return (
     <ChannelShell>
       <ChannelHeader />
-      <main className="cz-page cz-layout-article">
+      <main className="cz-page cz-layout-article cz-grim">
         <article className="cz-article">
           <SignalTag kind="skill">Skill</SignalTag>
           <motion.h1
