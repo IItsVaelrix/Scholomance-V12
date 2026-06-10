@@ -55,7 +55,7 @@ export default function ListenPage() {
   // Derive the station currently "Painting" the UI
   // Priority: Tuning Target > Detected School (Sonic) > Station Selection (Player)
   const activeStation = useMemo(() => {
-    const id = (isTuning ? currentSchoolId : detectedSchoolId) || currentSchoolId || 'chrono';
+    const id = (isTuning ? currentSchoolId : detectedSchoolId) || currentSchoolId || 'SONIC'; // canonical base school (was non-canonical 'chrono')
     const school = (SCHOOLS as any)[id] || Object.values(SCHOOLS)[0];
     return { ...school, color: generateSchoolColor(id) };
   }, [detectedSchoolId, currentSchoolId, isTuning]);
@@ -144,7 +144,7 @@ export default function ListenPage() {
 
   const currentStation = useMemo(
     () => {
-      const id = currentSchoolId || 'chrono';
+      const id = currentSchoolId || 'SONIC'; // canonical base school (was non-canonical 'chrono')
       const school = (SCHOOLS as any)[id] || Object.values(SCHOOLS)[0];
       return { ...school, color: generateSchoolColor(id) };
     },

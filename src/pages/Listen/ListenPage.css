@@ -963,6 +963,22 @@
   pointer-events: none;
 }
 
+/* Live spectral mandala overlay — reactive audio layer composited over the orb. */
+.signal-chamber-fft {
+  position: absolute;
+  left: 50%;
+  top: 47.685185%;
+  transform: translate(-50%, -50%);
+  width: min(30rem, 42vw);
+  aspect-ratio: 1;
+  z-index: 12; /* above Phaser canvas (1-10), below the player overlay (25) */
+  pointer-events: none;
+  border-radius: 50%;
+  overflow: hidden;
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
 /* Invisible click surface for the Orb — interaction layer (below video player) */
 .orb-interaction-trigger {
   position: absolute;

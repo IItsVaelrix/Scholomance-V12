@@ -17,6 +17,8 @@ interface BytecodeVisualiserProps {
   hue?: number;          // base hue 0..360
   reducedMotion?: boolean;
   binCount?: number;
+  /** Skip the merkaba/flower geometry (for overlaying on an orb that already has it). */
+  minimal?: boolean;
 }
 
 const hsl = (h: number, s: number, l: number, a = 1) => `hsla(${h}, ${s}%, ${l}%, ${a})`;
@@ -40,6 +42,7 @@ export function BytecodeVisualiser({
   hue = 286,
   reducedMotion = false,
   binCount = 96,
+  minimal = false,
 }: BytecodeVisualiserProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -120,31 +123,34 @@ export function BytecodeVisualiser({
       }
 
       // Sacred geometry: hexagram (merkaba) + nested triangles + hexagon + square.
-      ctx.shadowBlur = 22;
-      const gr = R * 0.42 * pulse;
-      strokePolygon(ctx, gr, 3, rot, hsl(hue + 24, 92, 66, 0.85), 2.4);
-      strokePolygon(ctx, gr, 3, rot + Math.PI, hsl(hue - 30, 92, 66, 0.85), 2.4);
-      strokePolygon(ctx, gr * 0.72, 6, -rot * 0.5, hsl(hue + 8, 88, 66, 0.5), 1.8);
-      strokePolygon(ctx, gr * 0.46, 3, rot * 1.4, hsl(310, 92, 70, 0.7), 1.8);
-      strokePolygon(ctx, gr * 0.46, 3, rot * 1.4 + Math.PI, hsl(196, 92, 64, 0.7), 1.8);
-      strokePolygon(ctx, gr * 0.96, 4, rot * 0.3, hsl(hue, 72, 62, 0.4), 1.4);
+      // Skipped in minimal mode (the Phaser orb already draws its own geometry).
+      if (!minimal) {
+        ctx.shadowBlur = 22;
+        const gr = R * 0.42 * pulse;
+        strokePolygon(ctx, gr, 3, rot, hsl(hue + 24, 92, 66, 0.85), 2.4);
+        strokePolygon(ctx, gr, 3, rot + Math.PI, hsl(hue - 30, 92, 66, 0.85), 2.4);
+        strokePolygon(ctx, gr * 0.72, 6, -rot * 0.5, hsl(hue + 8, 88, 66, 0.5), 1.8);
+        strokePolygon(ctx, gr * 0.46, 3, rot * 1.4, hsl(310, 92, 70, 0.7), 1.8);
+        strokePolygon(ctx, gr * 0.46, 3, rot * 1.4 + Math.PI, hsl(196, 92, 64, 0.7), 1.8);
+        strokePolygon(ctx, gr * 0.96, 4, rot * 0.3, hsl(hue, 72, 62, 0.4), 1.4);
 
-      // Flower-of-life node ring.
-      const nodeR = R * 0.13;
-      for (let i = 0; i < 6; i += 1) {
-        const a = (i / 6) * Math.PI * 2 + rot * 0.5;
-        const nx = Math.cos(a) * R * 0.44;
-        const ny = Math.sin(a) * R * 0.44;
+        // Flower-of-life node ring.
+        const nodeR = R * 0.13;
+        for (let i = 0; i < 6; i += 1) {
+          const a = (i / 6) * Math.PI * 2 + rot * 0.5;
+          const nx = Math.cos(a) * R * 0.44;
+          const ny = Math.sin(a) * R * 0.44;
+          ctx.beginPath();
+          ctx.arc(nx, ny, nodeR, 0, Math.PI * 2);
+          ctx.strokeStyle = hsl(hue, 86, 66, 0.36 + energy * 0.2);
+          ctx.lineWidth = 1.4;
+          ctx.stroke();
+        }
         ctx.beginPath();
-        ctx.arc(nx, ny, nodeR, 0, Math.PI * 2);
-        ctx.strokeStyle = hsl(hue, 86, 66, 0.36 + energy * 0.2);
-        ctx.lineWidth = 1.4;
+        ctx.arc(0, 0, nodeR, 0, Math.PI * 2);
+        ctx.strokeStyle = hsl(hue, 86, 66, 0.42);
         ctx.stroke();
       }
-      ctx.beginPath();
-      ctx.arc(0, 0, nodeR, 0, Math.PI * 2);
-      ctx.strokeStyle = hsl(hue, 86, 66, 0.42);
-      ctx.stroke();
 
       // Glowing magenta core (the concept's central beam-source).
       const coreR = R * 0.08 * (1 + energy * 0.6);
@@ -179,7 +185,7 @@ export function BytecodeVisualiser({
       cancelAnimationFrame(raf);
       ro.disconnect();
     };
-  }, [getByteFrequencyData, bpm, hue, reducedMotion, binCount]);
+  }, [getByteFrequencyData, bpm, hue, reducedMotion, binCount, minimal]);
 
   return <canvas ref={canvasRef} className="bcv-canvas" aria-hidden="true" />;
 }
