@@ -44,6 +44,48 @@ import { PhoneticSimilarity } from "./phoneticSimilarity.js";
 import { ScholomanceDictionaryAPI } from "../shared/scholomanceDictionary.api.js";
 import { applyPhonologicalProcesses as applyOrderedPhonologicalProcesses } from "./phonologicalProcesses.js";
 import { VOWEL_FAMILY_TO_SCHOOL } from "../constants/schools.js";
+import { runG2PJury } from "./g2p/g2p.adapter.js";
+
+const FALSE_VALUES = new Set(['0', 'false', 'off', 'no']);
+const TRUE_VALUES = new Set(['1', 'true', 'on', 'yes']);
+
+function parseBooleanEnvFlag(rawValue, defaultValue = true) {
+  if (rawValue === undefined || rawValue === null || rawValue === '') {
+    return defaultValue;
+  }
+
+  const normalized = String(rawValue).trim().toLowerCase();
+  if (TRUE_VALUES.has(normalized)) return true;
+  if (FALSE_VALUES.has(normalized)) return false;
+  return defaultValue;
+}
+
+const USE_G2P_JURY = parseBooleanEnvFlag(
+  (typeof process !== 'undefined' && process.env?.VITE_USE_G2P_JURY) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_USE_G2P_JURY),
+  false
+);
+
+function isG2PJuryEnabled() {
+  return USE_G2P_JURY;
+}
+
+async function _runG2PJury(word) {
+  const outcome = await runG2PJury(word, null, { policy: USE_G2P_JURY ? 'pass' : 'off' });
+  if (outcome?.verdict?.ok) {
+    return {
+      analysis: {
+        vowelFamily: outcome.verdict.vowelFamily,
+        phonemes: outcome.verdict.phonemes,
+        coda: outcome.verdict.coda,
+        rhymeKey: outcome.verdict.rhymeKey,
+        syllableCount: outcome.verdict.syllableCount,
+      },
+      diagnostics: outcome.diagnostics,
+    };
+  }
+  return null;
+}
 
 /**
  * Targeted pronunciation overrides for high-impact words.
@@ -542,6 +584,13 @@ export const PhonemeEngine = {
         notes: ['Resolved directly from the CMU pronunciation dictionary.'],
       });
     } else {
+      // NOTE: the G2P Jury (_runG2PJury) is async and cannot run in this
+      // synchronous resolver — consumers (truesight IR compiler, phoneme-prion
+      // engine) call analyzeDeep* synchronously. To re-enable the jury without
+      // breaking that contract, run it in an async pre-warm step that populates
+      // WORD_CACHE, so sync resolution returns jury-quality phonemes on cache
+      // hit. Until that pre-warm exists, the sync fallback is the heuristic
+      // splitToPhonemes path below.
       const phonemes = this.splitToPhonemes(upper);
       const processed = this.applyPhonologicalProcesses(phonemes);
       const syllables = Syllabifier.syllabify(processed);
