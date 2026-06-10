@@ -231,7 +231,15 @@
 
 .bcv-lyrics { margin: 0 0 1.2rem; padding: 0; list-style: none; columns: 2; column-gap: 1.6rem; }
 .bcv-lyrics li { display: flex; gap: 0.5rem; break-inside: avoid; font-family: var(--bcv-display); font-size: 0.82rem; line-height: 1.7; color: var(--bcv-ink); opacity: 0.8; }
-.bcv-lyrics li.is-highlight { opacity: 1; color: var(--bcv-gold); text-shadow: 0 0 14px rgba(216, 149, 44, 0.4); }
+.bcv-lyrics.is-truesight li { opacity: 0.72; }   /* inactive lines stay quiet */
+.bcv-lyric-text { flex: 1; }
+/* Inactive content words: muted tint (30% school, 70% ivory) — a gentle hue, not neon. */
+.bcv-tsword { color: color-mix(in oklab, var(--w, currentColor) 30%, var(--bcv-ink)); transition: color 0.5s ease, text-shadow 0.5s ease; }
+.bcv-lyrics li.is-highlight { opacity: 1; background: linear-gradient(90deg, rgba(216, 149, 44, 0.16), transparent); border-radius: 4px; }
+/* The active (playing) line blooms into full school colour — colour as a spotlight. */
+.bcv-lyrics li.is-highlight .bcv-tsword { color: var(--w); text-shadow: 0 0 8px var(--w); }
+.bcv-lyrics li.is-highlight .bcv-lyric-n { color: var(--bcv-gold); }
+.bcv-lyrics:not(.is-truesight) li.is-highlight .bcv-lyric-text { color: var(--bcv-gold); text-shadow: 0 0 14px rgba(216, 149, 44, 0.4); }
 .bcv-lyric-n { color: var(--bcv-dim); font-family: var(--bcv-mono); font-size: 0.58rem; padding-top: 0.34rem; }
 
 .bcv-annotations { display: grid; gap: 0.7rem; margin-bottom: 1.4rem; }

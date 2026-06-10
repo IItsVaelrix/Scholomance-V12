@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { BytecodeVisualiser } from './BytecodeVisualiser';
 import { computeFingerprint, semanticTokens } from './bytecodeFingerprint';
+import { PhonemeEngine, VOWEL_FAMILY_TO_SCHOOL, generateSchoolColor } from '../../lib/engine.adapter.js';
 import './BytecodeVisualiser.css';
 
 const SAMPLE = {
@@ -48,6 +49,25 @@ const SAMPLE = {
 };
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+
+// Color hygiene: function words stay neutral so colour marks meaning, not noise.
+const FUNCTION_WORDS = new Set([
+  'the', 'a', 'an', 'and', 'or', 'but', 'of', 'to', 'in', 'on', 'at', 'by', 'for',
+  'with', 'from', 'into', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'it', 'its',
+  'i', 'we', 'you', 'he', 'she', 'they', 'me', 'my', 'your', 'his', 'her', 'our', 'their',
+  'this', 'that', 'these', 'those', 'where', 'what', 'when', 'who', 'all', 'no', 'not',
+  'so', 'if', 'then', 'than', 'through', 'still', 'do', 'will', 'would', 'can',
+]);
+
+/** Truesight: map a content word to its school colour via its dominant vowel family. */
+function wordColor(word: string): string | null {
+  const clean = word.replace(/[^A-Za-z]/g, '');
+  if (!clean || FUNCTION_WORDS.has(clean.toLowerCase())) return null;
+  const analysis = (PhonemeEngine as { analyzeDeep?: (w: string) => { vowelFamily?: string } | null }).analyzeDeep?.(clean);
+  const family = analysis?.vowelFamily;
+  const schoolId = (family && (VOWEL_FAMILY_TO_SCHOOL as Record<string, string>)[family]) || 'VOID';
+  return generateSchoolColor(schoolId);
+}
 
 /** A small animated synthetic waveform line (one spectral band). */
 function MiniWave({ hue, phase, reducedMotion }: { hue: number; phase: number; reducedMotion: boolean }) {
@@ -106,6 +126,33 @@ export default function BytecodeVisualiserPage() {
     return () => window.clearInterval(id);
   }, [playing, repeat]);
 
+  // Truesight: phoneme-coloured lyrics, computed once after the engine inits.
+  // Deterministic (same word -> same vowel family -> same school colour); if the
+  // engine fails to init, lyrics stay plain (graceful).
+  const [coloredLyrics, setColoredLyrics] = useState<{ word: string; color: string | null }[][] | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        await (PhonemeEngine as { init?: () => Promise<unknown> }).init?.();
+      } catch {
+        /* graceful: lyrics render plain */
+      }
+      if (cancelled) return;
+      const computed = SAMPLE.lyrics.map((line) =>
+        line.split(/(\s+)/).map((tok) => ({ word: tok, color: /\S/.test(tok) ? wordColor(tok) : null })),
+      );
+      if (!cancelled) setColoredLyrics(computed);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Beat-sync: active lyric line tracks the playhead.
+  const activeLine = Math.min(
+    SAMPLE.lyrics.length - 1,
+    Math.floor((progress / SAMPLE.duration) * SAMPLE.lyrics.length),
+  );
+
   return (
     <main className="bcv-page bcv-reader" aria-label="Grimoire reader">
       <div className="bcv-spread">
@@ -134,10 +181,23 @@ export default function BytecodeVisualiserPage() {
             <p className="bcv-prov-tools">{SAMPLE.provenance.assistance}</p>
           </section>
 
-          <ol className="bcv-lyrics">
+          <ol className={`bcv-lyrics ${coloredLyrics ? 'is-truesight' : ''}`}>
             {SAMPLE.lyrics.map((line, i) => (
-              <li key={i} className={i === SAMPLE.highlight ? 'is-highlight' : undefined}>
-                <span className="bcv-lyric-n">{String(i + 1).padStart(2, '0')}</span>{line}
+              <li
+                key={i}
+                className={i === activeLine ? 'is-highlight' : undefined}
+                aria-current={i === activeLine ? 'true' : undefined}
+              >
+                <span className="bcv-lyric-n">{String(i + 1).padStart(2, '0')}</span>
+                <span className="bcv-lyric-text">
+                  {coloredLyrics
+                    ? coloredLyrics[i].map((tok, j) =>
+                        tok.color
+                          ? <span key={j} className="bcv-tsword" style={{ '--w': tok.color } as CSSProperties}>{tok.word}</span>
+                          : <span key={j}>{tok.word}</span>,
+                      )
+                    : line}
+                </span>
               </li>
             ))}
           </ol>
