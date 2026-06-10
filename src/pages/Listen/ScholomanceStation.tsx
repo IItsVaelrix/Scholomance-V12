@@ -1,11 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { CrystalBallVisualizer } from './CrystalBallVisualizer';
 import { SCHOOLS } from '../../data/schools';
 import { getSonicStationBuckets } from '../../data/sonicStationBuckets';
 import { triggerHapticPulse, UI_HAPTICS } from '../../lib/platform/haptics';
-import { resolveTrackId } from '../../lib/catalog.api.js';
 
 function getTrackLabel(url: string, idx: number) {
   const fallback = `RESONANCE_PATH_${String(idx + 1).padStart(2, '0')}`;
@@ -42,49 +40,6 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
   onSelectTrack,
 }) => {
   const buckets = getSonicStationBuckets();
-  const targetUrl = trackUrl || (activeStation?.id ? buckets[activeStation.id.toUpperCase()]?.[0] : null) || buckets.SONIC?.[0];
-
-  const [resolvedTrackId, setResolvedTrackId] = useState<number | null>(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!targetUrl) {
-      setResolvedTrackId(null);
-      return;
-    }
-    let cancelled = false;
-    resolveTrackId(targetUrl)
-      .then((res) => {
-        if (!cancelled && res?.trackId) {
-          setResolvedTrackId(res.trackId);
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to resolve track ID for url:', targetUrl, err);
-        if (!cancelled) setResolvedTrackId(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [targetUrl]);
-
-  const handleBlackHoleClick = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (resolvedTrackId) {
-      navigate(`/grimoire/${resolvedTrackId}`);
-      return;
-    }
-    if (!targetUrl) return;
-    try {
-      const res = await resolveTrackId(targetUrl);
-      if (res?.trackId) {
-        setResolvedTrackId(res.trackId);
-        navigate(`/grimoire/${res.trackId}`);
-      }
-    } catch (err) {
-      console.error('Failed to resolve track ID on click:', err);
-    }
-  };
 
   const handleTrackSelect = (url: string, schoolId: string) => {
     triggerHapticPulse(UI_HAPTICS.LIGHT);
@@ -114,7 +69,7 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
             <p>AURAL_SELECTION_MATRIX_V11</p>
           </div>
         </header>
- 
+  
         <main className="station-focus">
           <div className="track-matrix">
             {Object.entries(buckets).map(([schoolId, tracks]) => (
@@ -139,27 +94,25 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
               </div>
             ))}
           </div>
- 
+  
           {/* Sacred Geometry Sphere — Procedurally Generated Orb */}
           <div className={`orb-centerpiece ${isPlaying ? 'is-playing' : ''} ${isTuning ? 'is-tuning' : ''}`}>
-             {/* Block layer: opaque disc BEHIND the orb (z-index:-1) — masks the
-                 track-matrix text that bleeds through the transparent canvas. */}
-             <div className="orb-centerpiece__backing" aria-hidden="true" />
-             <div className="orb-centerpiece__ring-layer">
-               <div className="orb-ring-decoration" style={{ '--accent': activeStation.color } as React.CSSProperties} />
-             </div>
-             <CrystalBallVisualizer
-                size={420}
-                schoolId={activeStation.id}
-                schoolColor={activeStation.color}
-                signalLevel={signalLevel}
-                isPlaying={isPlaying}
-                glyph={activeStation.glyph || '✦'}
-                isTuning={isTuning}
-             />
+            {/* Block layer: opaque disc BEHIND the orb (z-index:-1) — masks the
+                track-matrix text that bleeds through the transparent canvas. */}
+            <div className="orb-centerpiece__backing" aria-hidden="true" />
+            <div className="orb-centerpiece__ring-layer">
+              <div className="orb-ring-decoration" style={{ '--accent': activeStation.color } as React.CSSProperties} />
+            </div>
+            <CrystalBallVisualizer
+              size={420}
+              schoolId={activeStation.id}
+              schoolColor={activeStation.color}
+              signalLevel={signalLevel}
+              isPlaying={isPlaying}
+              glyph={activeStation.glyph || '✦'}
+              isTuning={isTuning}
+            />
           </div>
- 
-</div>
         </main>
       </div>
     </div>

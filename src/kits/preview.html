@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scholomance Channel: Zero UI Kit</title>
+  <link rel="stylesheet" href="./styles/scholomance-channel-zero.ui-kit.css" />
+  <style>
+    body { margin: 0; background: #080B12; }
+    .kit-board { padding: 72px clamp(18px, 6vw, 96px); background: #080B12; color: #F6F2E6; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+    .kit-board h2 { font-family: Cinzel, Georgia, serif; letter-spacing: .06em; text-transform: uppercase; }
+    .asset-row { display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 18px; margin: 24px 0 44px; }
+    .asset-tile { border:1px solid rgba(255,255,255,.11); border-radius:16px; background:#0C101B; padding:18px; min-height:148px; display:grid; place-items:center; }
+    .asset-tile img { max-width:110px; max-height:110px; }
+    .swatches { display:flex; flex-wrap:wrap; gap:18px; }
+    .swatch { width:120px; }
+    .swatch div { width:72px; height:72px; border-radius:50%; border:1px solid rgba(255,255,255,.22); margin-bottom:8px; }
+    .swatch code { color:#A7AEC1; }
+  </style>
+</head>
+<body>
+  <main class="scz-kit">
+    <div class="scz-noise" aria-hidden="true"></div>
+
+    <header class="scz-topbar">
+      <a class="scz-brand" href="#">Scholomance</a>
+      <div class="scz-origin">
+        <div class="scz-origin__signal">Signal Origin 00</div>
+        <div class="scz-origin__title">The Scholomance Channel: Zero</div>
+      </div>
+      <nav class="scz-nav">
+        <a href="#">Blog</a><a href="#">Skills</a><a href="#">Whitepapers</a><a href="#">Verdicts</a><a class="scz-button" href="#">Subscribe</a>
+      </nav>
+    </header>
+
+    <section class="scz-hero">
+      <div class="scz-hero__content">
+        <div class="scz-kicker">The origin feed for creative engineering doctrine</div>
+        <h1 class="scz-hero__title">The Scholomance Channel: Zero</h1>
+        <div class="scz-hero__rule"></div>
+        <p class="scz-hero__copy">Free doctrine for writers, engineers, musicians, and creative operators building their own instruments instead of begging the machine for permission.</p>
+        <a class="scz-button" href="#">Enter the Skills Index</a>
+      </div>
+      <aside class="scz-hero__art">
+        <img src="./assets/hero-side-aperture.svg" alt="" />
+      </aside>
+    </section>
+
+    <section class="scz-section">
+      <div class="scz-section__head">
+        <h2 class="scz-section__title"><span>✦</span> Latest Transmissions</h2>
+        <p class="scz-section__copy">Skills, postmortems, white papers, and verdicts from the creative operating system.</p>
+      </div>
+      <div class="scz-card-grid">
+        <article class="scz-card"><img class="scz-card__sigil" src="./assets/sigil-skill.svg" alt=""><div class="scz-card__meta">Skill</div><h3 class="scz-card__title">Signal Origin</h3><p class="scz-card__copy">Understand the source before you build.</p></article>
+        <article class="scz-card scz-card--postmortem"><img class="scz-card__sigil" src="./assets/sigil-postmortem.svg" alt=""><div class="scz-card__meta">Postmortem</div><h3 class="scz-card__title">Algorithmic Complacency</h3><p class="scz-card__copy">Why creators get lazy and how to break it.</p></article>
+        <article class="scz-card scz-card--whitepaper"><img class="scz-card__sigil" src="./assets/sigil-whitepaper.svg" alt=""><div class="scz-card__meta">White Paper</div><h3 class="scz-card__title">The Creative Operating System</h3><p class="scz-card__copy">A framework for sovereign execution.</p></article>
+        <article class="scz-card scz-card--verdict"><img class="scz-card__sigil" src="./assets/sigil-verdict.svg" alt=""><div class="scz-card__meta">Verdict</div><h3 class="scz-card__title">Human > Hype</h3><p class="scz-card__copy">Tools do not create. Operators do.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <section class="kit-board">
+    <h2>Asset Library</h2>
+    <div class="asset-row">
+      <div class="asset-tile"><img src="./assets/sigil-skill.svg" alt=""></div>
+      <div class="asset-tile"><img src="./assets/sigil-postmortem.svg" alt=""></div>
+      <div class="asset-tile"><img src="./assets/sigil-whitepaper.svg" alt=""></div>
+      <div class="asset-tile"><img src="./assets/sigil-verdict.svg" alt=""></div>
+      <div class="asset-tile"><img src="./assets/sigil-origin.svg" alt=""></div>
+      <div class="asset-tile"><img src="./assets/sigil-lexicon.svg" alt=""></div>
+    </div>
+
+    <h2>Color Tokens</h2>
+    <div class="swatches">
+      <div class="swatch"><div style="background:#080B12"></div><code>#080B12</code></div>
+      <div class="swatch"><div style="background:#111627"></div><code>#111627</code></div>
+      <div class="swatch"><div style="background:#00E0FF"></div><code>#00E0FF</code></div>
+      <div class="swatch"><div style="background:#7A42FF"></div><code>#7A42FF</code></div>
+      <div class="swatch"><div style="background:#C65BFF"></div><code>#C65BFF</code></div>
+      <div class="swatch"><div style="background:#D8952C"></div><code>#D8952C</code></div>
+      <div class="swatch"><div style="background:#F6F2E6"></div><code>#F6F2E6</code></div>
+    </div>
+  </section>
+</body>
+</html>

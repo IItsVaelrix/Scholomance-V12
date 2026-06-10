@@ -1,21 +1,22 @@
 /**
- * CHANNEL ZERO — GRIMDESIGN POLISH LAYER
+ * CHANNEL ZERO — GRIMDESIGN + UI-KIT POLISH LAYER
  *
- * Additive enhancement over `channel-zero.css`. Scoped entirely under `.cz-grim`
- * so it can never alter the base kit. Consumes `--cz-*` tokens; the only new
- * palette is the GrimSignal's HARMONIC thread (WILL school, hsl 12 82% 50%),
- * which threads a warm amber-red through the cool violet/cyan system and meets
- * the Wand's gold-on-black luxury.
+ * Additive enhancement over `channel-zero.css`, scoped under `.cz-grim` so it
+ * can never alter the base kit. Integrates the Scholomance Channel: Zero asset
+ * kit (procedural sigils, hero aperture, rune divider) and threads the
+ * GrimSignal HARMONIC accent (WILL school, hsl 12 82% 50%) through the cool
+ * violet/cyan system.
  *
- * Influences:
- *   - GrimDesign: visual treatment derived from the phonemic signal, not taste.
- *   - duck.design: bold editorial hierarchy, characterful micro-interactions,
- *     generous craft (sheen sweeps, a drop cap, a beacon).
- *   - Wand/DivWand: dark luxury, glow-on-lift, scanline atmosphere.
- *   - photonic-retina: honored as the scan/grain *lineage* (pure-CSS optical
- *     sweep), deliberately NOT imported — a blog needs the texture, not the codec.
+ * LAW (professional-ui-architect + Scholomance):
+ *   - Sigil + glow color are DATA-DRIVEN: post.kind → [data-kind] → --sigil-color
+ *     (a token), never hardcoded per component.
+ *   - Glow is static (box/drop shadow). "Special effects" are STATE-DRIVEN
+ *     (:hover / :focus-visible), with only restrained ambient crown-piece motion.
+ *   - All motion gated behind prefers-reduced-motion: no-preference.
+ *   - Tokens only: --cz-* consumed; the harmonic thread is the one new signal.
  *
- * LAW: all ornamental motion is gated behind prefers-reduced-motion: no-preference.
+ * Kit guardrails honored: aperture is hero-only; sigils are deterministic;
+ * hover lift stays small; no galaxy art on cards.
  */
 
 .cz-grim {
@@ -25,11 +26,23 @@
   --grim-sheen: hsl(39 95% 62% / 0.5); /* ties to --cz-amber */
 }
 
-/* ── HERO: harmonic eyebrow beacon + warm title + retina scan ──────────────── */
+/* ── DATA-DRIVEN KIND COLOR (drives sigil + glow) ──────────────────────────── */
 
-.cz-grim .cz-hero__eyebrow {
-  color: var(--grim-harmonic-soft);
+.cz-grim .cz-card { --sigil-color: var(--cz-cyan); }
+.cz-grim .cz-card[data-kind='featured']   { --sigil-color: var(--cz-featured); }
+.cz-grim .cz-card[data-kind='skill']      { --sigil-color: var(--cz-skill); }
+.cz-grim .cz-card[data-kind='verdict']    { --sigil-color: var(--cz-verdict); }
+.cz-grim .cz-card[data-kind='essay']      { --sigil-color: var(--cz-essay); }
+.cz-grim .cz-card[data-kind='whitepaper'] { --sigil-color: var(--cz-whitepaper); }
+
+/* ── HERO: harmonic eyebrow beacon, warm title, aperture crown, scan ───────── */
+
+.cz-grim .cz-hero {
+  position: relative;
+  isolation: isolate;
 }
+
+.cz-grim .cz-hero__eyebrow { color: var(--grim-harmonic-soft); }
 
 .cz-grim .cz-hero__eyebrow::before {
   content: '';
@@ -49,14 +62,77 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  position: relative;
+  text-shadow: 0 6px 40px hsl(240 80% 2% / 0.5);
 }
 
-/* A fine optical scan line under the hero — the photonic-retina homage. */
-.cz-grim .cz-hero {
-  position: relative;
+/* The single allowed cosmic visual: a STILL side aperture with moons orbiting
+   it. The core never rotates (a spinning disc reads as a loading spinner). */
+.cz-grim .cz-aperture {
+  position: absolute;
+  z-index: -1;
+  right: clamp(-4%, -1vw, 2%);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(46%, 460px);
+  aspect-ratio: 1;
+  pointer-events: none;
 }
 
+.cz-grim .cz-aperture__core {
+  position: absolute;
+  inset: 8%;
+  background: url('/assets/channel-zero/hero-aperture-fused.svg') center / contain no-repeat;
+  opacity: 0.9;
+  /* The asset itself is transparent now (the opaque void panel was removed from
+     the SVG), so the rings + stars composite straight onto the page — no black
+     rectangle, no blend hacks. The ellipse mask just softens the band edges. */
+  mask-image: radial-gradient(ellipse 82% 60% at 50% 50%, black 52%, transparent 92%);
+  filter: drop-shadow(0 0 36px hsl(274 82% 55% / 0.16));
+}
+
+/* Each orbit is a square wrapper that carries one moon at its top edge;
+   rotating the wrapper sweeps the moon around the still core. */
+.cz-grim .cz-aperture__orbit {
+  position: absolute;
+  transform-origin: 50% 50%;
+}
+.cz-grim .cz-aperture__orbit--1 { inset: 2%; }
+.cz-grim .cz-aperture__orbit--2 { inset: 11%; }
+.cz-grim .cz-aperture__orbit--3 { inset: 23%; }
+
+.cz-grim .cz-aperture__moon {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 11px;
+  height: 11px;
+  margin: -5.5px 0 0 -5.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--cz-text), hsl(220 30% 58%) 60%, hsl(240 26% 12%));
+  box-shadow: 0 0 16px 2px hsl(188 89% 61% / 0.55);
+}
+.cz-grim .cz-aperture__orbit--2 .cz-aperture__moon {
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  box-shadow: 0 0 14px 2px hsl(274 82% 63% / 0.55);
+}
+.cz-grim .cz-aperture__orbit--3 .cz-aperture__moon {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  box-shadow: 0 0 12px 1px hsl(12 82% 60% / 0.6);
+}
+
+@media (max-width: 860px) {
+  .cz-grim .cz-aperture {
+    opacity: 0.55;
+    width: min(64%, 340px);
+    right: -6%;
+  }
+}
+
+/* Fine optical scan line under the hero — the photonic-retina homage. */
 .cz-grim .cz-hero::after {
   content: '';
   position: absolute;
@@ -68,34 +144,33 @@
   opacity: 0.7;
 }
 
-/* ── CARDS: duck-style sheen sweep + kind-tinted lift ──────────────────────── */
+/* ── CARDS: data-driven sigils + kind-tinted glow + sheen sweep ────────────── */
 
-.cz-grim .cz-card {
-  overflow: hidden; /* clip the sweep */
+.cz-grim .cz-card { overflow: hidden; }
+
+.cz-grim .cz-card__sigil {
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--cz-space-2);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 14px color-mix(in srgb, var(--sigil-color) 45%, transparent));
+  transition:
+    transform var(--cz-duration-mid) var(--cz-ease-out),
+    filter var(--cz-duration-mid) var(--cz-ease-out);
 }
 
-/* A diagonal light sweep that crosses the card on hover. */
+/* Diagonal light sweep crossing the card on hover (duck.design micro-craft). */
 .cz-grim .cz-card::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 38%,
-    var(--grim-sheen) 50%,
-    transparent 62%
-  );
+  background: linear-gradient(115deg, transparent 38%, var(--grim-sheen) 50%, transparent 62%);
   transform: translateX(-120%);
   opacity: 0;
 }
 
-.cz-grim .cz-card:hover {
-  border-color: var(--grim-harmonic);
-  box-shadow: var(--cz-shadow-panel), var(--grim-glow);
-}
-
-/* A top accent rule that draws in from the kind color on hover. */
+/* Top accent rule that draws in from the kind color on hover. */
 .cz-grim .cz-card::before {
   content: '';
   position: absolute;
@@ -105,30 +180,60 @@
   height: 2px;
   transform: scaleX(0);
   transform-origin: left;
-  background: linear-gradient(90deg, var(--grim-harmonic), transparent);
+  background: linear-gradient(90deg, var(--sigil-color), transparent);
   transition: transform var(--cz-duration-mid) var(--cz-ease-out);
 }
 
-.cz-grim .cz-card:hover::before {
-  transform: scaleX(1);
+.cz-grim .cz-card:hover,
+.cz-grim .cz-card:focus-visible {
+  border-color: color-mix(in srgb, var(--sigil-color) 60%, transparent);
+  box-shadow:
+    var(--cz-shadow-panel),
+    0 0 36px color-mix(in srgb, var(--sigil-color) 22%, transparent);
+}
+
+.cz-grim .cz-card:hover::before,
+.cz-grim .cz-card:focus-visible::before { transform: scaleX(1); }
+
+.cz-grim .cz-card:hover .cz-card__sigil,
+.cz-grim .cz-card:focus-visible .cz-card__sigil {
+  transform: scale(1.06) rotate(-3deg);
+  filter: drop-shadow(0 0 24px color-mix(in srgb, var(--sigil-color) 72%, transparent));
 }
 
 .cz-grim .cz-card[data-featured='true'] {
   border-color: hsl(12 82% 50% / 0.4);
 }
 
-/* ── LOAD MORE + END MARKER: harmonic character ────────────────────────────── */
+.cz-grim .cz-card__footer {
+  text-shadow: 0 0 16px color-mix(in srgb, var(--sigil-color) 40%, transparent);
+}
+
+/* ── BUTTON, END MARKER, NEWSLETTER RUNE ───────────────────────────────────── */
 
 .cz-grim .cz-button {
   position: relative;
   overflow: hidden;
 }
 
-.cz-grim .cz-end-marker {
-  color: var(--grim-harmonic-soft);
+.cz-grim .cz-end-marker { color: var(--grim-harmonic-soft); }
+
+.cz-grim .cz-newsletter { position: relative; }
+
+.cz-grim .cz-newsletter::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: calc(-1 * var(--cz-space-5));
+  transform: translateX(-50%);
+  width: min(90%, 900px);
+  height: 24px;
+  background: url('/assets/channel-zero/divider-rune.svg') center / contain no-repeat;
+  opacity: 0.85;
+  pointer-events: none;
 }
 
-/* ── ARTICLE: editorial drop cap (duck.design) + harmonic rails ────────────── */
+/* ── ARTICLE: editorial drop cap + harmonic TOC ────────────────────────────── */
 
 .cz-grim .cz-article-section:first-of-type > p:first-of-type::first-letter {
   float: left;
@@ -142,32 +247,19 @@
 }
 
 .cz-grim .cz-toc a[aria-current='true'],
-.cz-grim .cz-toc a:hover {
-  color: var(--grim-harmonic-soft);
-}
+.cz-grim .cz-toc a:hover { color: var(--grim-harmonic-soft); }
 
 /* ── MOTION (gated) ────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: no-preference) {
-  .cz-grim .cz-hero__eyebrow::before {
-    animation: grim-beacon 1900ms var(--cz-ease-ritual) infinite;
-  }
-
-  .cz-grim .cz-hero::after {
-    animation: grim-scan 4200ms var(--cz-ease-ritual) infinite;
-  }
-
+  /* State-driven: sheen + sweep on hover/focus. */
   .cz-grim .cz-card::after {
     transition: transform 720ms var(--cz-ease-out), opacity 220ms var(--cz-ease-out);
   }
-
-  .cz-grim .cz-card:hover::after {
+  .cz-grim .cz-card:hover::after,
+  .cz-grim .cz-card:focus-visible::after {
     transform: translateX(120%);
     opacity: 1;
-  }
-
-  .cz-grim .cz-card[data-featured='true'] {
-    animation: grim-breathe 5200ms var(--cz-ease-ritual) infinite;
   }
 
   .cz-grim .cz-button::after {
@@ -178,15 +270,31 @@
     transform: translateX(-120%);
     transition: transform 640ms var(--cz-ease-out);
   }
+  .cz-grim .cz-button:hover::after,
+  .cz-grim .cz-button:focus-visible::after { transform: translateX(120%); }
 
-  .cz-grim .cz-button:hover::after {
-    transform: translateX(120%);
+  /* Restrained ambient crown-piece atmosphere (slow, low-amplitude). */
+  .cz-grim .cz-hero__eyebrow::before {
+    animation: grim-beacon 1900ms var(--cz-ease-ritual) infinite;
+  }
+  .cz-grim .cz-aperture__orbit--1 { animation: grim-orbit 22s linear infinite; }
+  .cz-grim .cz-aperture__orbit--2 { animation: grim-orbit 32s linear infinite reverse; }
+  .cz-grim .cz-aperture__orbit--3 { animation: grim-orbit 44s linear infinite; }
+  .cz-grim .cz-hero::after {
+    animation: grim-scan 4200ms var(--cz-ease-ritual) infinite;
+  }
+  .cz-grim .cz-card[data-featured='true'] {
+    animation: grim-breathe 5200ms var(--cz-ease-ritual) infinite;
   }
 }
 
 @keyframes grim-beacon {
   0%, 100% { opacity: 0.45; box-shadow: 0 0 6px var(--grim-harmonic); }
   50%      { opacity: 1;    box-shadow: 0 0 14px var(--grim-harmonic); }
+}
+
+@keyframes grim-orbit {
+  to { transform: rotate(360deg); }
 }
 
 @keyframes grim-scan {

@@ -81,6 +81,7 @@ export default function BlogIndexPage() {
       <ChannelHeader />
       <main className="cz-page cz-grim">
         <ArticleHero
+          aperture
           title="The Scholomance Channel: Zero"
           lede="Free doctrine for writers, engineers, musicians, and creative operators building their own instruments instead of begging the machine for permission."
         />
