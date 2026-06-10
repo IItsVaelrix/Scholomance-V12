@@ -18,6 +18,9 @@ export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandP
 export const PhotonicBridgeLab = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge");
 export const StudioUpload = lazyWithRetry(() => import("../pages/internal/Studio/StudioUpload.jsx"), "studio-upload");
 
+export const BlogIndexPage = lazyWithRetry(() => import("../pages/Blog/BlogIndexPage"), "blog-index-page");
+export const BlogArticlePage = lazyWithRetry(() => import("../pages/Blog/ArticlePage"), "blog-article-page");
+
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
 const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/internal/photonic-bridge", "/internal/studio"];
 
@@ -36,6 +39,8 @@ export const ALL_COMPONENTS = {
   "/div-wand": DivWandPage,
   "/internal/photonic-bridge": PhotonicBridgeLab,
   "/internal/studio": StudioUpload,
+  "/blog": BlogIndexPage,
+  "/blog/:slug": BlogArticlePage,
 };
 
 /**

@@ -159,17 +159,7 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
              />
           </div>
  
-          <div className="station-studio-access">
-             <motion.button
-               type="button"
-               onClick={handleBlackHoleClick}
-               className="black-hole-btn"
-               aria-label="Enter the Storm — open the grimoire for the active resonance"
-             >
-               <span className="black-hole-horizon"></span>
-               <span className="black-hole-text">Enter the Storm</span>
-             </motion.button>
-          </div>
+</div>
         </main>
       </div>
     </div>

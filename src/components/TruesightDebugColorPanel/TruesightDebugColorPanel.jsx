@@ -4,6 +4,7 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { resolveVerseIrColor } from '../../lib/truesight/color/pcaChroma.js';
 import { deltaE } from '../../lib/truesight/color/oklch.js';
 import { getVowelSimilarity } from '../../lib/phonology.adapter.js';
+import { decodeBytecodeError } from '../../lib/pixelbrain.adapter.js';
 import './TruesightDebugColorPanel.css';
 
 const PHONEMEGRAM_FAMILIES = [
@@ -38,9 +39,10 @@ function pearson(xs, ys) {
  *
  * Data consumed: analyzedWords — array of { text: string, school: string } derived
  * from committedAnalysis.analyzedWords Map at the ReadPage call site.
+ * bytecodeErrors — array of BytecodeError objects or bytecode strings for diagnostic display.
  * activeSchool: string | null — the currently selected school ID.
  */
-export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = null, showPhonemegram = false }) {
+export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = [], activeSchool = null, showPhonemegram = false }) {
   const reducedMotion = usePrefersReducedMotion();
 
   const schoolGroups = useMemo(() => {
@@ -83,7 +85,40 @@ export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = nu
     return { families, pearsonR: r, schoolKey };
   }, [showPhonemegram, activeSchool]);
 
+  // Decode bytecode errors for display
+  const decodedErrors = useMemo(() => {
+    if (!bytecodeErrors || bytecodeErrors.length === 0) return [];
+    return bytecodeErrors.map(err => {
+      if (typeof err === 'string') {
+        const decoded = decodeBytecodeError(err);
+        if (decoded && decoded.valid !== false) return decoded;
+        return {
+          valid: true,
+          bytecode: err,
+          category: 'UNKNOWN',
+          severity: 'CRIT',
+          moduleId: '?????',
+          errorCode: 0,
+          errorCodeHex: '0x0000',
+          context: { raw: err },
+        };
+      }
+      // Already decoded/error object
+      return {
+        valid: true,
+        bytecode: err.bytecode || err.toString(),
+        category: err.category || 'UNKNOWN',
+        severity: err.severity || 'CRIT',
+        moduleId: err.moduleId || '?????',
+        errorCode: err.errorCode || 0,
+        errorCodeHex: err.errorCodeHex || '0x0000',
+        context: err.context || {},
+      };
+    });
+  }, [bytecodeErrors]);
+
   const totalWords = analyzedWords.length;
+  const errorCount = decodedErrors.length;
 
   return (
     <motion.aside
@@ -178,6 +213,42 @@ export function TruesightDebugColorPanel({ analyzedWords = [], activeSchool = nu
                   aria-hidden="true"
                 />
                 <span className="truesight-debug-panel__family-label">{family}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* BYTECODE ERRORS — Pac-Man Ghost aesthetic */}
+      {errorCount > 0 && (
+        <section
+          className="truesight-debug-panel__errors"
+          aria-label="Bytecode Errors"
+        >
+          <header className="truesight-debug-panel__errors-header">
+            <span className="truesight-debug-panel__glyph" aria-hidden="true">⚠</span>
+            <h3 className="truesight-debug-panel__errors-title">Diagnostics</h3>
+            <span className="truesight-debug-panel__error-count">{errorCount}</span>
+          </header>
+          <ul className="truesight-debug-panel__errors-list">
+            {decodedErrors.map((err, i) => (
+              <li
+                key={i}
+                className="truesight-debug-panel__error-row"
+                data-severity={err.severity}
+                data-category={err.category}
+                title={err.bytecode}
+              >
+                <span className="truesight-debug-panel__error-swatch" aria-hidden="true" />
+                <span className="truesight-debug-panel__error-main">
+                  <span className="truesight-debug-panel__error-primary" title={err.bytecode}>
+                    {err.category}/{err.moduleId}
+                  </span>
+                  <span className="truesight-debug-panel__error-secondary">
+                    {err.context?.reason || err.context?.message || err.context?.path || err.context?.taskId || err.context?.bugId || 'Error detected'}
+                  </span>
+                </span>
+                <span className="truesight-debug-panel__error-code">{err.errorCodeHex}</span>
               </li>
             ))}
           </ul>

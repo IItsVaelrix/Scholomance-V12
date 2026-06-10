@@ -292,7 +292,7 @@ const SESSION_COOKIE_SAMESITE = process.env.SESSION_COOKIE_SAMESITE || 'lax';
 // Optional: set to '.scholomance.live' to share the cookie across subdomains.
 // Left undefined → host-only cookie (recommended; the SPA never reads it anyway).
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN || undefined;
-const PORT = Number(process.env.PORT ?? 8080);
+const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
 const TURSO_USER_DB_URL = process.env.TURSO_USER_DB_URL;
 const DEFAULT_API_TIMEOUT_MS = Number(process.env.API_TIMEOUT_MS ?? 5000);
@@ -652,7 +652,7 @@ fastify.register(fastifyStatic, {
 
 // Health route
 fastify.get('/health/live', async () => {
-  return getLivenessReport();
+    return getLivenessReport();
 });
 
 fastify.get('/health/ready', async (_request, reply) => {
@@ -667,6 +667,27 @@ fastify.get('/health', async () => {
     message: 'Scholomance CODEx Server is running.',
   };
 });
+
+// DEBUG (temporary): route + env smoke test for live deployments.
+// Exposes only lightweight, non-secret information.
+fastify.get('/debug/routes', async () => {
+  return {
+    ok: true,
+    env: {
+      NODE_ENV: process.env.NODE_ENV,
+      ENABLE_COLLAB_API,
+      ENABLE_RHYME_ASTROLOGY,
+    },
+    // These are the known candidate mount points in this codebase.
+    // If a key is missing, the corresponding plugin branch likely didn't run.
+    candidates: {
+      '/mcp': ENABLE_COLLAB_API ? 'expected (collab MCP HTTP route)' : 'not registered (ENABLE_COLLAB_API=false)',
+      '/collab': ENABLE_COLLAB_API ? 'expected (collab REST prefix)' : 'not registered (ENABLE_COLLAB_API=false)',
+    },
+    note: 'If /mcp is returning 404, redeploy may be running with different env or a reverse proxy is rewriting the path.',
+  };
+});
+
 
 // Pillar 1 (S-Gate): while the PhonemeEngine is still hydrating, lexical routes
 // return a graceful "initializing" payload instead of reaching into a cold

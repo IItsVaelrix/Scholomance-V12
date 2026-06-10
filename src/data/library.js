@@ -47,6 +47,7 @@ export const LINKS = [
   { id: "read",   path: "/read",   label: "Scribe" },
   { id: "combat", path: "/combat", label: "Combat" },
   { id: "nexus",  path: "/nexus",  label: "Nexus" },
+  { id: "blog",   path: "/blog",   label: "Blog" },
 ];
 
 export const INTERNAL_MODULES = [

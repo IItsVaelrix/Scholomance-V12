@@ -754,6 +754,7 @@ export function createEmptyVerseIR(options = {}) {
       }),
     }),
     metadata: Object.freeze({
+      mode: mode,
       depth: mode,
       lineBreakStyle: 'none',
       tokenCount: 0,

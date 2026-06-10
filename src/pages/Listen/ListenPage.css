@@ -1376,6 +1376,15 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
+/* Black hole button - symmetrically placed left of player */
+.black-hole-embed {
+  position: absolute;
+  top: 47.685185%;
+  left: calc(50% - 18rem - 50px);
+  transform: translateY(-50%);
+  z-index: 15;
+}
+
 .signal-core__readout {
   position: relative;
   z-index: 1;

@@ -23,7 +23,7 @@ import {
 import { usePrefersReducedMotion } from '../../../hooks/usePrefersReducedMotion.js';
 import { SCHOOL_PALETTE } from '../assets/combatAssets.js';
 
-const SCHOOL_INDEX = { SONIC: 0, PSYCHIC: 1, ALCHEMY: 2, WILL: 3, VOID: 4 };
+const SCHOOL_INDEX = { SONIC: 0, PSYCHIC: 1, VOID: 2, ALCHEMY: 3, WILL: 4, NECROMANCY: 5, ABJURATION: 6, DIVINATION: 7 };
 
 // The VOID arena: a SOLID, opaque obsidian chamber — a stone floor receding to a
 // horizon, veined with glowing amethyst fissures, a back wall, and a central

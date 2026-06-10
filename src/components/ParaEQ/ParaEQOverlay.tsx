@@ -215,16 +215,17 @@ export const ParaEQOverlay: React.FC<ParaEQOverlayProps> = ({
     const textData = e.dataTransfer.getData('text/plain');
     if (!textData) return;
 
-    // Load PhonemeEngine dynamically if needed, or assume it's loaded by the parent.
-    // It's exposed via engine.adapter.js. We can import it at the top of the file, but for now we'll do a dynamic import to avoid breaking the initial bundle if it's heavy.
+      // Load PhonemeEngine dynamically if needed, or assume it's loaded by the parent.
+    // Use the UI adapter layer (src/lib/engine.adapter.js).
     let schoolId = 'NEUTRAL';
     let targetFreq = 1000;
     let targetGain = 6.0;
     let targetQ = 1.414;
 
     try {
-      const { PhonemeEngine, VOWEL_FAMILY_TO_SCHOOL } = await import('../../../lib/engine.adapter.js');
+      const { PhonemeEngine, VOWEL_FAMILY_TO_SCHOOL } = await import('../../lib/engine.adapter.js');
       await PhonemeEngine.ensureInitialized();
+
       
       const analysis = PhonemeEngine.analyzeWord(textData.trim());
       if (analysis && analysis.vowelFamily) {

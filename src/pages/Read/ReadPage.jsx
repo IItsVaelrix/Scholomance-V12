@@ -1232,14 +1232,15 @@ export default function ReadPage() {
                          <div className="vowel-family-placeholder">Vowel Analysis Offline</div>
                       </div>
                     )}
-                    {isTruesight && (
-                      <div className="sidebar-sub-panel">
-                        <TruesightDebugColorPanel
-                          analyzedWords={truesightDebugWords}
-                          activeSchool={selectedSchool}
-                        />
-                      </div>
-                    )}
+{isTruesight && (
+                       <div className="sidebar-sub-panel">
+                         <TruesightDebugColorPanel
+                           analyzedWords={truesightDebugWords}
+                           activeSchool={selectedSchool}
+                           bytecodeErrors={analysisError ? [{ bytecode: analysisError, category: 'STATE', severity: 'CRIT', moduleId: '???', errorCode: 0x0301, errorCodeHex: '0x0301', context: { message: analysisError } }] : []}
+                         />
+                       </div>
+                     )}
                   </div>
                 )}
               </div>

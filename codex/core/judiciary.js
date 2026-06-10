@@ -30,6 +30,7 @@ const DEFAULT_LAYERS = {
   SPELLCHECK: { weight: 0.25, name: 'Spellchecker' },
   PREDICTOR: { weight: 0.20, name: 'Predictor' },
   SYNTAX: { weight: 0.15, name: 'Syntax Analyzer' },
+  G2P_JURY: { weight: 0.20, name: 'G2P Jury Table' },
 };
 
 const DEFAULT_CONSENSUS_THRESHOLD = 0.65;

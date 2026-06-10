@@ -214,6 +214,9 @@ export default function PixelBrainPage() {
     VOID: 2,
     ALCHEMY: 3,
     WILL: 4,
+    NECROMANCY: 5,
+    ABJURATION: 6,
+    DIVINATION: 7,
   }), []);
 
   const shaderRuntimeState = useMemo(() => {

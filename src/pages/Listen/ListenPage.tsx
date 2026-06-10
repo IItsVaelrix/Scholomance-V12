@@ -13,6 +13,7 @@ import { OutputDeviceSelector } from "./OutputDeviceSelector";
 import { ScholomanceStation } from "./ScholomanceStation";
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics";
 import ResonanceDebugPanel from "../../lib/ambient/resonance/ResonanceDebugPanel";
+import { resolveTrackId } from "../../lib/catalog.api.js";
 import "./ListenPage.css";
 
 /**
@@ -269,13 +270,33 @@ export default function ListenPage() {
                 </div>
               </div>
 
-              <div className={`core-mount ${isPlaying ? 'is-playing' : ''}`}>
-                <SignalChamberConsole 
-                  overrideSchoolId={activeStation.id} 
-                  onOrbClick={triggerIgnition}
-                />
-              </div>
-            </main>
+<div className={`core-mount ${isPlaying ? 'is-playing' : ''}`}>
+                 <SignalChamberConsole 
+                   overrideSchoolId={activeStation.id} 
+                   onOrbClick={triggerIgnition}
+                 />
+               </div>
+               
+               <div className="black-hole-embed">
+                 <motion.button
+                   type="button"
+                   onClick={async () => {
+                     const resolvedTrackId = trackUrl ? await resolveTrackId(trackUrl).then(r => r?.trackId).catch(() => null) : null;
+                     if (resolvedTrackId) {
+                       window.location.href = `/grimoire/${resolvedTrackId}`;
+                     } else if (trackUrl) {
+                       const res = await resolveTrackId(trackUrl).then(r => r?.trackId).catch(() => null);
+                       if (res) window.location.href = `/grimoire/${res}`;
+                     }
+                   }}
+                   className="black-hole-btn"
+                   aria-label="Enter the Storm — open the grimoire for the active resonance"
+                 >
+                   <span className="black-hole-horizon"></span>
+                   <span className="black-hole-text">Enter the Storm</span>
+                 </motion.button>
+               </div>
+               </main>
 
             {/* Right Sidebar: Parameters */}
             <motion.aside 

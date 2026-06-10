@@ -16,6 +16,7 @@ const MOBILE_ROUTE_COPY = {
   read: "Compose scrolls and inspect their hidden anatomy.",
   combat: "Cast verses into live conflict and scoring.",
   nexus: "Survey unlocked paths, schools, and progression.",
+  blog: "Read transmissions, skills, verdicts, and whitepapers.",
   pixelbrain: "Neural network visualization and metadata mapping.",
   career: "Transmute professional experience into high-acuity sigils.",
   collab: "Coordinate agent work and active pipelines.",

@@ -2058,7 +2058,7 @@ function createAmbientPlayerService(options = {}) {
 
   function addEqBand(band) {
     const newBand = {
-      id: "eq_" + Math.random().toString(36).substr(2, 9),
+      id: "eq_" + Math.random().toString(36).substr(2, 9), // EXEMPT — non-deterministic UI band id
       type: "peaking",
       frequency: 1000,
       gain: 0,

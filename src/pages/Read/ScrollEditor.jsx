@@ -1124,15 +1124,27 @@ const ScrollEditor = forwardRef(/**
     }, 120);
   }, [emitCursorChange, onContentChange, updateCompletions, isTruesight, syncOverlayToContent]);
 
+  const editorMotionProps = reducedMotion
+    ? {
+        initial: false,
+        animate: { opacity: 1 },
+        exit: { opacity: 0 },
+        transition: { duration: 0 },
+      }
+    : {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -10 },
+        transition: { duration: 0.2 },
+      };
+
   return (
     <motion.div
       ref={editorContainerRef}
       className="scroll-editor"
+      data-testid="scroll-editor-root"
       style={{ position: 'relative' }}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.2 }}
+      {...editorMotionProps}
       role="form"
       aria-label="Scroll editor"
       onFocus={(e) => {
@@ -1559,9 +1571,20 @@ const ScrollEditor = forwardRef(/**
         {hoveredMisspelling && spellcheckSuggestions.length > 0 && (
           <motion.div
             className="spellcheck-tooltip"
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 5 }}
+            data-testid="spellcheck-orb"
+            {...(reducedMotion
+              ? {
+                  initial: false,
+                  animate: { opacity: 1 },
+                  exit: { opacity: 0 },
+                  transition: { duration: 0 },
+                }
+              : {
+                  initial: { opacity: 0, y: 5 },
+                  animate: { opacity: 1, y: 0 },
+                  exit: { opacity: 0, y: 5 },
+                  transition: { duration: 0.16, ease: 'easeOut' },
+                })}
             style={{
               position: 'absolute',
               left: hoveredMisspelling.x,
@@ -1572,7 +1595,7 @@ const ScrollEditor = forwardRef(/**
               borderRadius: '4px',
               zIndex: 100,
               boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-              fontSize: '12px'
+              fontSize: '12px',
             }}
           >
             <div style={{ color: 'var(--ritual-error, #ff4d4d)', marginBottom: '4px', fontWeight: 'bold' }}>

@@ -5,6 +5,8 @@ import LandingPage from "./pages/Landing/LandingPage.jsx";
 import "./lib/config/zod.config.js";
 import App from "./App.jsx";
 import "./index.css";
+import "./kits/channel-zero-ui-kit/tokens/channel-zero.tokens.css";
+import "./kits/channel-zero-ui-kit/styles/channel-zero.css";
 import ErrorBoundary from "./components/shared/ErrorBoundary";
 import RouteErrorPage from "./components/shared/RouteErrorPage.jsx";
 import { ThemeProvider } from "./hooks/useTheme.jsx";
@@ -24,6 +26,8 @@ import {
   DivWandPage,
   PhotonicBridgeLab,
   StudioUpload,
+  BlogIndexPage,
+  BlogArticlePage,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
 
@@ -79,6 +83,8 @@ const router = createBrowserRouter([
           { path: "div-wand", element: <AdminRoute><DivWandPage /></AdminRoute> },
           { path: "internal/photonic-bridge", element: <AdminRoute><PhotonicBridgeLab /></AdminRoute> },
           { path: "internal/studio", element: <AdminRoute><StudioUpload /></AdminRoute> },
+          { path: "blog", element: <BlogIndexPage /> },
+          { path: "blog/:slug", element: <BlogArticlePage /> },
         ],
       },
     ],

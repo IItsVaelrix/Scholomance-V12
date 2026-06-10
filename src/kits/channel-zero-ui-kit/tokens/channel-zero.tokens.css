@@ -1,0 +1,115 @@
+:root,
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Core surfaces */
+  --cz-bg: hsl(240 26% 4%);
+  --cz-bg-soft: hsl(248 24% 7%);
+  --cz-surface: hsl(248 22% 9%);
+  --cz-surface-2: hsl(247 20% 12%);
+  --cz-surface-glass: hsl(248 22% 9% / 0.76);
+  --cz-border: hsl(258 20% 26%);
+  --cz-border-strong: hsl(268 42% 48%);
+
+  /* Scholomance signal palette */
+  --cz-text: hsl(220 30% 93%);
+  --cz-text-muted: hsl(226 15% 68%);
+  --cz-text-dim: hsl(229 12% 49%);
+  --cz-indigo: hsl(255 74% 58%);
+  --cz-violet: hsl(274 82% 63%);
+  --cz-cyan: hsl(188 89% 61%);
+  --cz-amber: hsl(39 95% 62%);
+  --cz-orange: hsl(6 80% 49%);
+  --cz-crimson: hsl(348 82% 45%);
+  --cz-success: hsl(162 64% 48%);
+  --cz-warning: var(--cz-amber);
+  --cz-danger: var(--cz-orange);
+
+  /* Semantic content roles */
+  --cz-featured: var(--cz-violet);
+  --cz-skill: var(--cz-cyan);
+  --cz-verdict: var(--cz-amber);
+  --cz-essay: var(--cz-indigo);
+  --cz-whitepaper: hsl(210 88% 68%);
+
+  /* Typography */
+  --cz-font-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --cz-font-body: 'Inter', 'Aptos', system-ui, sans-serif;
+  --cz-font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --cz-step--1: clamp(0.82rem, 0.78rem + 0.18vw, 0.92rem);
+  --cz-step-0: clamp(1rem, 0.96rem + 0.24vw, 1.125rem);
+  --cz-step-1: clamp(1.18rem, 1.08rem + 0.55vw, 1.5rem);
+  --cz-step-2: clamp(1.42rem, 1.2rem + 1.08vw, 2rem);
+  --cz-step-3: clamp(1.75rem, 1.34rem + 2vw, 3rem);
+  --cz-step-4: clamp(2.2rem, 1.55rem + 3.2vw, 4.6rem);
+
+  /* Layout */
+  --cz-space-1: 0.25rem;
+  --cz-space-2: 0.5rem;
+  --cz-space-3: 0.75rem;
+  --cz-space-4: 1rem;
+  --cz-space-5: 1.5rem;
+  --cz-space-6: 2rem;
+  --cz-space-7: 3rem;
+  --cz-space-8: 4rem;
+  --cz-max-page: 1180px;
+  --cz-max-copy: 72ch;
+
+  /* Shape */
+  --cz-radius-xs: 4px;
+  --cz-radius-sm: 6px;
+  --cz-radius-md: 8px;
+  --cz-radius-lg: 14px;
+  --cz-radius-xl: 22px;
+
+  /* Elevation */
+  --cz-shadow-soft: 0 16px 48px hsl(240 80% 2% / 0.42);
+  --cz-shadow-panel: 0 24px 80px hsl(240 90% 2% / 0.56);
+  --cz-glow-violet: 0 0 32px hsl(274 82% 63% / 0.24);
+  --cz-glow-cyan: 0 0 32px hsl(188 89% 61% / 0.18);
+  --cz-glow-amber: 0 0 24px hsl(39 95% 62% / 0.18);
+
+  /* Motion */
+  --cz-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --cz-ease-ritual: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --cz-duration-fast: 140ms;
+  --cz-duration-mid: 220ms;
+  --cz-duration-slow: 520ms;
+
+  /* Layer law */
+  --cz-z-base: 0;
+  --cz-z-raised: 2;
+  --cz-z-sticky: 20;
+  --cz-z-overlay: 40;
+  --cz-z-modal: 60;
+  --cz-z-toast: 80;
+}
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --cz-bg: hsl(42 30% 96%);
+  --cz-bg-soft: hsl(42 28% 93%);
+  --cz-surface: hsl(42 34% 99%);
+  --cz-surface-2: hsl(42 22% 91%);
+  --cz-surface-glass: hsl(42 34% 99% / 0.82);
+  --cz-border: hsl(250 16% 76%);
+  --cz-border-strong: hsl(262 45% 50%);
+
+  --cz-text: hsl(242 24% 12%);
+  --cz-text-muted: hsl(245 12% 36%);
+  --cz-text-dim: hsl(246 10% 52%);
+  --cz-indigo: hsl(254 62% 44%);
+  --cz-violet: hsl(274 62% 46%);
+  --cz-cyan: hsl(190 80% 36%);
+  --cz-amber: hsl(35 88% 45%);
+  --cz-orange: hsl(6 78% 44%);
+  --cz-crimson: hsl(348 76% 40%);
+
+  --cz-shadow-soft: 0 16px 42px hsl(244 28% 18% / 0.12);
+  --cz-shadow-panel: 0 24px 70px hsl(244 28% 18% / 0.16);
+  --cz-glow-violet: 0 0 26px hsl(274 62% 46% / 0.16);
+  --cz-glow-cyan: 0 0 26px hsl(190 80% 36% / 0.13);
+  --cz-glow-amber: 0 0 22px hsl(35 88% 45% / 0.14);
+}

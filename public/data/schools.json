@@ -112,7 +112,7 @@
     "name": "Abjuration",
     "color": "#06b6d4",
     "colorHsl": { "h": 180, "s": 80, "l": 68 },
-    "angle: 108,
+    "angle": 108,
     "unlockXP": 500000,
     "description": "Protective magic and negation of effects",
     "tracks": [],

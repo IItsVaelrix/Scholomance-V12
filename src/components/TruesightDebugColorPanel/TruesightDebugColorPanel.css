@@ -1,6 +1,6 @@
 /* TruesightDebugColorPanel
  * GrimDesign signal: NECROMANCY/SONIC blend — hsl(102, 82%, 55%) — RESONANT
- * Complexity: 3 (header + body + footer/meta row)
+ * Complexity: 4 (header + body + errors + footer/meta row)
  */
 
 .truesight-debug-panel {
@@ -238,6 +238,146 @@
   color: var(--grim-color-muted);
   font-variant-numeric: tabular-nums;
 }
+
+/* ── BYTECODE ERRORS ── */
+
+.truesight-debug-panel__errors {
+  border-top: var(--grim-border);
+  background: hsla(0, 0%, 12%, 0.92);
+  flex-shrink: 0;
+}
+
+.truesight-debug-panel__errors-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border-bottom: var(--grim-border);
+  background: hsla(0, 0%, 0%, 0.2);
+}
+
+.truesight-debug-panel__errors-glyph {
+  color: hsl(0, 75%, 62%);
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.truesight-debug-panel__errors-title {
+  margin: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: hsl(0, 75%, 62%);
+}
+
+.truesight-debug-panel__error-count {
+  margin-left: auto;
+  font-size: 0.62rem;
+  color: hsl(0, 75%, 62%);
+  opacity: 0.8;
+}
+
+.truesight-debug-panel__errors-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 10px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.truesight-debug-panel__error-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 6px 4px;
+  border-left: 2px solid transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.truesight-debug-panel__error-row:hover {
+  border-left-color: var(--error-severity-color, hsl(0, 75%, 62%));
+}
+
+.truesight-debug-panel__error-row[data-severity="FATAL"] { --error-severity-color: hsl(0, 85%, 65%); }
+.truesight-debug-panel__error-row[data-severity="CRIT"]  { --error-severity-color: hsl(0, 75%, 62%); }
+.truesight-debug-panel__error-row[data-severity="WARN"]  { --error-severity-color: hsl(50, 85%, 60%); }
+.truesight-debug-panel__error-row[data-severity="INFO"]  { --error-severity-color: hsl(180, 70%, 55%); }
+
+.truesight-debug-panel__error-row[data-category="TYPE"]      { --error-category-color: hsl(200, 85%, 65%); }
+.truesight-debug-panel__error-row[data-category="VALUE"]     { --error-category-color: hsl(280, 70%, 65%); }
+.truesight-debug-panel__error-row[data-category="RANGE"]     { --error-category-color: hsl(25, 85%, 60%); }
+.truesight-debug-panel__error-row[data-category="STATE"]     { --error-category-color: hsl(200, 70%, 60%); }
+.truesight-debug-panel__error-row[data-category="LINGUISTIC"] { --error-category-color: hsl(120, 75%, 55%); }
+.truesight-debug-panel__error-row[data-category="COMBAT"]    { --error-category-color: hsl(0, 85%, 60%); }
+.truesight-debug-panel__error-row[data-category="RENDER"]    { --error-category-color: hsl(25, 75%, 60%); }
+
+.truesight-debug-panel__error-swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  margin-top: 4px;
+  background: var(--error-category-color, hsl(0, 75%, 62%));
+}
+
+.truesight-debug-panel__error-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.truesight-debug-panel__error-primary {
+  font-size: 0.65rem;
+  color: var(--grim-color);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.truesight-debug-panel__error-secondary {
+  font-size: 0.6rem;
+  color: hsla(0, 0%, 70%, 0.7);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.04em;
+}
+
+.truesight-debug-panel__error-code {
+  font-size: 0.58rem;
+  color: var(--error-category-color, hsl(0, 75%, 62%));
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.06em;
+}
+
+.truesight-debug-panel__errors-empty {
+  margin: 4px 0;
+  color: hsla(102, 82%, 55%, 0.4);
+  font-size: 0.68rem;
+  font-style: italic;
+}
+
+/* Ghost-style severity badges */
+.truesight-debug-panel__error-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 18px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.truesight-debug-panel__error-ghost-body {
+  width: 100%;
+  height: 100%;
+  background: var(--ghost-color, #FF0000);
+  border-radius: 50% 50% 0 0;
+}
+
+.truesight-debug-panel__error-ghost[data-severity="FATAL"] { --ghost-color: #FF0000; }
+.truesight-debug-panel__error-ghost[data-severity="CRIT"]  { --ghost-color: #FFB800; }
+.truesight-debug-panel__error-ghost[data-severity="WARN"]  { --ghost-color: #FFD000; }
+.truesight-debug-panel__error-ghost[data-severity="INFO"]  { --ghost-color: #40ff80; }
 
 /* ── FOOTER ── */
 

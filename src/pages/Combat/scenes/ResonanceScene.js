@@ -895,8 +895,8 @@ export function buildResonanceScene(Phaser) {
           let lx = tilePx;
           let ly = tilePy;
           for (let step = 0; step < 4; step++) {
-            const dx = (Math.random() - 0.5) * 40;
-            const dy = (Math.random() - 0.5) * 20;
+            const dx = (Math.random() - 0.5) * 40; // EXEMPT — cosmetic crackle path
+            const dy = (Math.random() - 0.5) * 20; // EXEMPT — cosmetic crackle path
             lx += dx;
             ly += dy;
             crackle.lineTo(lx, ly);
