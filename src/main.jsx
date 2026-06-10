@@ -2,6 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
+import BytecodeVisualiserPage from "./pages/Visualiser/BytecodeVisualiserPage.tsx";
 import "./lib/config/zod.config.js";
 import App from "./App.jsx";
 import "./index.css";
@@ -85,6 +86,7 @@ const router = createBrowserRouter([
           { path: "internal/studio", element: <AdminRoute><StudioUpload /></AdminRoute> },
           { path: "blog", element: <BlogIndexPage /> },
           { path: "blog/:slug", element: <BlogArticlePage /> },
+          { path: "visualiser", element: <BytecodeVisualiserPage /> },
         ],
       },
     ],
