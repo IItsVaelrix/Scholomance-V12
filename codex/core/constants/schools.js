@@ -23,11 +23,17 @@ export const VOWEL_FAMILY_TO_SCHOOL = Object.freeze({
   EH: 'WILL',
   AY: 'PSYCHIC',
   OY: 'ALCHEMY',
-  OH: 'ABJURATION',
   UH: 'VOID',
-  OO: 'ABJURATION',
   ER: 'SONIC',
   UR: 'SONIC',
+  // Alias rows mirror FAMILY_IDENTITY folds (vowelWheel.js) so a raw lookup
+  // and a normalized lookup can never disagree about a family's school.
+  OH: 'ABJURATION',  // folds to OW
+  OO: 'VOID',        // folds to UH (the "book" vowel)
+  YUW: 'ABJURATION', // folds to UW
+  YOO: 'ABJURATION', // folds to UW
+  EE: 'PSYCHIC',     // folds to IY
+  IN: 'SONIC',       // folds to IH
 });
 
 export const SCHOOLS = Object.freeze({

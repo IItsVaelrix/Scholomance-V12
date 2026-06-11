@@ -1,7 +1,6 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../hooks/useTheme.jsx";
-import { useColorCodex } from "../../hooks/useColorCodex.js";
 import IntelliSense from "../../components/IntelliSense.jsx";
 import { computeAdaptiveGridTopology, buildTruesightOverlayLines } from "../../lib/truesight/compiler/adaptiveWhitespaceGrid";
 import Gutter from "./Gutter.jsx";
@@ -9,10 +8,8 @@ import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { WORD_TOKEN_REGEX } from "../../lib/wordTokenization.js";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import { decodeBytecode } from "../../lib/truesight/bytecodeRenderer.js";
-import { resolveResonanceColor, buildResonancePalette } from "../../lib/truesight/color/rhymeColorRegistry.js";
-import { VOWEL_FAMILY_TO_SCHOOL } from "../../data/schools.js";
+import { cleanVisualiserWord, wordTruesight } from "../Visualiser/truesightColor";
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
-import { resolveSonicChroma } from "../../lib/phonology.adapter.js";
 import { BytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, ERROR_CODES, MODULE_IDS } from "../../lib/pixelbrain.adapter.js";
 import { AnimatedSurface } from "../../components/AnimatedSurface";
 
@@ -21,10 +18,7 @@ const MAX_CONTENT_LENGTH = 50000;
 const DEFAULT_LINE_HEIGHT = 24;
 
 function normalizeWordToken(token) {
-  return String(token || "")
-    .trim()
-    .replace(/^[^A-Za-z']+|[^A-Za-z']+$/g, "")
-    .toUpperCase();
+  return cleanVisualiserWord(token).toUpperCase();
 }
 
 function toFiniteInt(value, fallback = -1) {
@@ -146,8 +140,9 @@ function buildWordPayloadFromToken(tokenEntry) {
 
   const rawToken = tokenEntry.token || "";
   const normalizedWord = normalizeWordToken(rawToken);
+  // school is intentionally absent: the caller sets it from wordTruesight so
+  // the payload always agrees with the rendered colour (single authority).
   const vowelFamily = tokenEntry.vowelFamily || null;
-  const school = vowelFamily ? VOWEL_FAMILY_TO_SCHOOL[normalizeVowelFamily(vowelFamily)] : null;
 
   return {
     word: rawToken,
@@ -157,7 +152,6 @@ function buildWordPayloadFromToken(tokenEntry) {
     lineNumber: toFiniteInt(tokenEntry?.lineNumber, -1),
     wordIndex: toFiniteInt(tokenEntry?.wordIndex, -1),
     vowelFamily,
-    school,
     analysis: tokenEntry.analysis || null,
     bytecode: tokenEntry.visualBytecode || tokenEntry.trueVisionBytecode || null,
   };
@@ -338,12 +332,8 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   analyzedWords?: Map<any, any>,
  *   analyzedWordsByCharStart?: Map<number, any>,
  *   analyzedWordsByIdentity?: Map<string, any>,
- *   analysisMode?: string,
- *   activeConnections?: any[],
  *   highlightedLines?: number[],
  *   pinnedLines?: number[],
- *   vowelColors?: object | null,
- *   vowelColorResolver?: ((word: string) => string) | null,
  *   predict?: ((text: string) => Promise<string[]>) | null,
  *   getCompletions?: ((prefix: string) => Promise<string[]>) | null,
  *   checkSpelling?: ((word: string) => Promise<boolean>) | null,
@@ -351,7 +341,6 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   predictorReady?: boolean,
  *   plsPhoneticFeatures?: object | null,
  *   theme?: object | null,
- *   selectedSchool?: string,
  *   forceTopology?: object | null,
  *   initialContainerWidth?: number | null,
  *   ideMode?: 'EDIT' | 'TRUESIGHT' | 'NEUTRAL',
@@ -400,12 +389,8 @@ const ScrollEditor = forwardRef(/**
   analyzedWords = new Map(),
   analyzedWordsByCharStart = new Map(),
   analyzedWordsByIdentity = new Map(),
-  analysisMode = "none",
-  activeConnections = [],
   highlightedLines = [],
   pinnedLines = [],
-  vowelColors = null,
-  vowelColorResolver = null,
   predict = null,
   getCompletions = null,
   checkSpelling = null,
@@ -413,7 +398,6 @@ const ScrollEditor = forwardRef(/**
   predictorReady = false,
   plsPhoneticFeatures = null,
   theme = null,
-  selectedSchool = "DEFAULT",
   // Test-injection seams (bug a2812103) — let JSDOM-bound tests bypass real
   // layout measurement. Production code never passes these.
   forceTopology = null,
@@ -429,13 +413,6 @@ const ScrollEditor = forwardRef(/**
   const activeIdeMode = ideMode || (propIsTruesight ? "TRUESIGHT" : (propIsEditable ? "EDIT" : "NEUTRAL"));
   const isEditable = ideMode ? (ideMode === "EDIT") : propIsEditable;
   const isTruesight = ideMode ? (ideMode === "TRUESIGHT") : propIsTruesight;
-
-  // REJUVENATION: Deterministic Resonance Palette (Law 8 + 5)
-  // Replaces the discovery-order registry with hash-based harmonic gamut colors.
-  const resonancePalette = useMemo(() => {
-    const profiles = Array.from(analyzedWordsByIdentity.values());
-    return buildResonancePalette(profiles, selectedSchool);
-  }, [analyzedWordsByIdentity, selectedSchool]);
 
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
@@ -650,23 +627,6 @@ const ScrollEditor = forwardRef(/**
     }
     return set;
   }, [highlightedLines]);
-
-  const rhymeColorRegistry = useMemo(
-    () => analyzedDocument?.rhymeColorRegistry || new Map(),
-    [analyzedDocument]
-  );
-
-  const { shouldColorWord } = useColorCodex(
-    Array.from(analyzedWordsByIdentity.values()).map((analysis) => ({
-      charStart: analysis.charStart,
-      visualBytecode: analysis.visualBytecode || analysis.trueVisionBytecode,
-      vowelFamily: analysis.vowelFamily,
-      phonemes: analysis.phonemes,
-    })),
-    activeConnections,
-    syntaxLayer,
-    { analysisMode }
-  );
 
   const getViewportNode = useCallback(() => {
     if (isReadOnlyTruesight) return wordBackgroundLayerRef.current;
@@ -968,9 +928,12 @@ const ScrollEditor = forwardRef(/**
                      derivedAnalyzedWordsByCharStart.get(tokenEntry.charStart) || 
                      (allowLegacyWordFallback ? analyzedWords.get(clean) : null);
 
+    const truesight = wordTruesight(tokenEntry.token);
     const wordPayload = {
       ...buildWordPayloadFromToken(tokenEntry),
-      analysis
+      analysis,
+      color: truesight?.color || null,
+      school: truesight?.school || null,
     };
     
     if (!wordPayload.word) return;
@@ -978,30 +941,16 @@ const ScrollEditor = forwardRef(/**
     const caretCoords = getCursorCoordsFromTextarea(caretMeasurementRef.current, textarea, mirrored, adaptiveTopology);
     const lineHeight = parseFloat(window.getComputedStyle(textarea).lineHeight) || DEFAULT_LINE_HEIGHT;
 
-    // ─── UNIFIED WORD ACTIVATION (V12 DIVORCE) ─────────────────────────────
-    // Directly signaling the activator to bypass Truesight-only listeners.
-    onWordActivate?.({
+    emitWordActivation("textarea_tap", {
       ...wordPayload,
-      trigger: 'textarea_tap',
-      charStart: tokenEntry.charStart,
-      charEnd: tokenEntry.charEnd,
       lineIndex: tokenEntry.lineNumber,
-      wordIndex: tokenEntry.wordIndex
-    });
-
-    emitWordActivation("pin", wordPayload, {
-      anchorRect: {
-        left: caretCoords.x,
-        right: caretCoords.x + 1,
-        top: caretCoords.y - lineHeight,
-        bottom: caretCoords.y,
-        width: 1,
-        height: lineHeight,
-      },
-      clientX: Number.isFinite(event.clientX) ? event.clientX : caretCoords.x,
-      clientY: Number.isFinite(event.clientY) ? event.clientY : caretCoords.y,
-      detail: event.detail,
-      source: "pointer",
+    }, {
+      left: caretCoords.x,
+      right: caretCoords.x + 1,
+      top: caretCoords.y - lineHeight,
+      bottom: caretCoords.y,
+      width: 1,
+      height: lineHeight,
     }, onWordActivate);
   }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology, activeIdeMode]);
 
@@ -1290,33 +1239,14 @@ const ScrollEditor = forwardRef(/**
                         const rhymeVowelFamily = analysis
                           ? normalizeVowelFamily(analysis?.terminalVowelFamily || analysis?.vowelFamily)
                           : null;
-                        const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
-                        const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
+                        const truesight = wordTruesight(token);
+                        const shouldColor = Boolean(truesight);
                         
                         // V12 PERFORMANCE: Use precomputed values from Synthesis Kernel
                         const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
-                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
                         
-                        const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
-                        const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
-                        const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
-                        const explicitColor = decoded?.color || bytecode?.color || null;
-                        
-                        const rhymeColor = (isRhymeSurface && identityKey)
-                          ? resonancePalette.get(identityKey)
-                          : null;
-                        
-                        const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
-                          || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
-                          || null
-                        ) : null;
-
-                        const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
+                        const color = truesight?.color || null;
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
                         const isLineHighlighted = highlightedLinesSet.has(lineIndex);
@@ -1324,7 +1254,7 @@ const ScrollEditor = forwardRef(/**
                         const wordStyle = {
                           ...commonStyle,
                           color: color || undefined,
-                          ...visemeStyle,
+                          '--w': color || undefined,
                           ...(decoded?.style || {}),
                           pointerEvents: 'auto',
                           cursor: 'pointer',
@@ -1353,14 +1283,43 @@ const ScrollEditor = forwardRef(/**
                                 ...wordStyle,
                                 '--chip-delay': `${wordIndex * 30}ms`
                               }}
-                              onClick={() => {
+                              onClick={(event) => {
                                 if (analysis) {
-                                  onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                  onWordActivate?.({
+                                    word: token,
+                                    normalizedWord: clean,
+                                    trigger: 'truesight_tap',
+                                    analysis,
+                                    charStart,
+                                    charEnd,
+                                    lineIndex,
+                                    wordIndex,
+                                    vowelFamily: wordVowelFamily,
+                                    terminalVowelFamily: rhymeVowelFamily,
+                                    school: truesight?.school || null,
+                                    color,
+                                    anchorRect: event.currentTarget.getBoundingClientRect(),
+                                  });
                                 }
                               }}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter' || e.key === ' ') {
-                                  if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                  e.preventDefault();
+                                  if (analysis) onWordActivate?.({
+                                    word: token,
+                                    normalizedWord: clean,
+                                    trigger: 'truesight_tap',
+                                    analysis,
+                                    charStart,
+                                    charEnd,
+                                    lineIndex,
+                                    wordIndex,
+                                    vowelFamily: wordVowelFamily,
+                                    terminalVowelFamily: rhymeVowelFamily,
+                                    school: truesight?.school || null,
+                                    color,
+                                    anchorRect: e.currentTarget.getBoundingClientRect(),
+                                  });
                                 }
                               }}
                             >
@@ -1489,33 +1448,14 @@ const ScrollEditor = forwardRef(/**
                         const rhymeVowelFamily = analysis
                           ? normalizeVowelFamily(analysis?.terminalVowelFamily || analysis?.vowelFamily)
                           : null;
-                        const rhymeIdentity = analysis?.rhymeTailSignature || analysis?.rhymeKey || null;
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
-                        const shouldColor = shouldColorWord(charStart, clean, wordVowelFamily);
+                        const truesight = wordTruesight(token);
+                        const shouldColor = Boolean(truesight);
                         
                         // V12 PERFORMANCE: Use precomputed values
                         const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
-                        const sonicChroma = analysis?.precomputed?.sonicChroma || null;
 
-                        const isRhymeSurface = analysisMode === "rhyme" || (analysisMode === "none" && activeConnections?.length > 0);
-                        const displayColorFamily = isRhymeSurface ? rhymeVowelFamily : wordVowelFamily;
-                        const familyData = (displayColorFamily && vowelColors) ? vowelColors[displayColorFamily] : null;
-                        const explicitColor = decoded?.color || bytecode?.color || null;
-                        
-                        const rhymeColor = (isRhymeSurface && identityKey)
-                          ? resonancePalette.get(identityKey)
-                          : null;
-                        
-                        const color = shouldColor ? (
-                          explicitColor
-                          || rhymeColor
-                          || (vowelColorResolver && displayColorFamily ? vowelColorResolver(displayColorFamily, analysis?.globalTokenIndex || 0) : null)
-                          || (typeof familyData === 'string' ? familyData : familyData?.color)
-                          || (analysis?.precomputed?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null))
-                          || null
-                        ) : null;
-                        
-                        const visemeStyle = (familyData && typeof familyData === 'object') ? (familyData.viseme || {}) : {};
+                        const color = truesight?.color || null;
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
 
                         const isMultiSyllable = (shouldColor || wordVowelFamily) && (decoded?.syllableDepth >= 2);
@@ -1536,21 +1476,50 @@ const ScrollEditor = forwardRef(/**
                               isMultiSyllable ? "word--multi-rhyme" : "",
                               isRichMultiSyllable ? "word--multi-rhyme--rich" : "",
                             ].filter(Boolean).join(" ")}
-                            style={{ 
+                            style={{
                               ...commonStyle,
-                              ...visemeStyle,
-                              color: color || undefined, 
-                              ...(decoded?.style || {}), 
+                              color: color || undefined,
+                              '--w': color || undefined,
+                              ...(decoded?.style || {}),
                               pointerEvents: 'auto',
                               cursor: 'pointer',
                               '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
                             }}
-                            onClick={() => {
-                              if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                            onClick={(event) => {
+                              if (analysis) onWordActivate?.({
+                                word: token,
+                                normalizedWord: clean,
+                                trigger: 'truesight_tap',
+                                analysis,
+                                charStart,
+                                charEnd,
+                                lineIndex: li,
+                                wordIndex,
+                                vowelFamily: wordVowelFamily,
+                                terminalVowelFamily: rhymeVowelFamily,
+                                school: truesight?.school || null,
+                                color,
+                                anchorRect: event.currentTarget.getBoundingClientRect(),
+                              });
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
-                                if (analysis) onWordActivate?.({ word: token, normalizedWord: clean, trigger: 'truesight_tap', analysis, charStart, charEnd });
+                                e.preventDefault();
+                                if (analysis) onWordActivate?.({
+                                  word: token,
+                                  normalizedWord: clean,
+                                  trigger: 'truesight_tap',
+                                  analysis,
+                                  charStart,
+                                  charEnd,
+                                  lineIndex: li,
+                                  wordIndex,
+                                  vowelFamily: wordVowelFamily,
+                                  terminalVowelFamily: rhymeVowelFamily,
+                                  school: truesight?.school || null,
+                                  color,
+                                  anchorRect: e.currentTarget.getBoundingClientRect(),
+                                });
                               }
                             }}
                           >

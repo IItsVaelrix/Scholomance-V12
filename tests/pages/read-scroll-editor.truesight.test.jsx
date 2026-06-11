@@ -120,7 +120,7 @@ describe("ScrollEditor Truesight overlay", () => {
     expect(view.getByLabelText("Scroll content: Untitled").value).toBe("");
   });
 
-  it("does not color words when no rhyme connections are active", () => {
+  it("colors content words even when no rhyme connections are active", () => {
     const content = "Alpha beta";
     const analyzedWords = new Map([
       ["ALPHA", { vowelFamily: "AE", syllables: [{}, {}] }],
@@ -140,11 +140,11 @@ describe("ScrollEditor Truesight overlay", () => {
       />
     );
 
-    const coloredWords = container.querySelectorAll(".grimoire-word");
-    expect(coloredWords.length).toBe(0);
+    const coloredWords = Array.from(container.querySelectorAll(".grimoire-word")).map((node) => node.textContent);
+    expect(coloredWords).toEqual(["Alpha", "beta"]);
   });
 
-  it("colors only words participating in rhyme connections", () => {
+  it("colors every non-function content word with Visualiser-style Truesight", () => {
     const content = "Alpha beta gamma";
     const analyzedWordsByIdentity = buildAnalyzedWordsByIdentity([
       { word: "Alpha", normalizedWord: "ALPHA", lineIndex: 0, wordIndex: 0, charStart: 0, charEnd: 5, vowelFamily: "AE" },
@@ -173,9 +173,10 @@ describe("ScrollEditor Truesight overlay", () => {
     );
 
     const coloredWords = container.querySelectorAll(".grimoire-word");
-    expect(coloredWords.length).toBe(2);
+    expect(coloredWords.length).toBe(3);
     expect(coloredWords[0]?.textContent).toBe("Alpha");
-    expect(coloredWords[1]?.textContent).toBe("gamma");
+    expect(coloredWords[1]?.textContent).toBe("beta");
+    expect(coloredWords[2]?.textContent).toBe("gamma");
   });
 
   it("substitutes excluded awkward words through active vowel families", () => {
@@ -220,7 +221,7 @@ describe("ScrollEditor Truesight overlay", () => {
     expect(coloredWords).toEqual(["tone", "meta"]);
   });
 
-  it("does not broaden to all family peers when a non-stop connected word already represents that family", () => {
+  it("keeps function words neutral while coloring same-family content peers", () => {
     const content = "the echo mellow";
     const analyzedWordsByIdentity = buildAnalyzedWordsByIdentity([
       {
@@ -259,7 +260,7 @@ describe("ScrollEditor Truesight overlay", () => {
     );
 
     const coloredWords = Array.from(container.querySelectorAll(".grimoire-word")).map((node) => node.textContent);
-    expect(coloredWords).toEqual(["echo"]);
+    expect(coloredWords).toEqual(["echo", "mellow"]);
   });
 
   it("emits stable token identity when a Truesight word is activated", () => {
@@ -303,13 +304,23 @@ describe("ScrollEditor Truesight overlay", () => {
         word: "Alpha",
         normalizedWord: "ALPHA",
         charStart: 0,
+        lineIndex: 0,
+        wordIndex: 0,
+        vowelFamily: "AE",
+        school: expect.any(String),
+        color: expect.any(String),
+        anchorRect: expect.objectContaining({
+          left: expect.any(Number),
+          top: expect.any(Number),
+        }),
       })
     );
   });
 
-  it("keeps the explicit token bytecode color authoritative for multisyllabic rhymes", () => {
+  it("uses school colors instead of explicit bytecode colors for multisyllabic rhymes", () => {
     const content = "adore core";
-    const magenta = hexToRgbString("#ff00ff");
+    const willRed = hexToRgbString("#ef4444");
+    const divinationGold = hexToRgbString("#eab308");
     const analyzedWordsByIdentity = new Map([
       [
         "0:0:0",
@@ -385,7 +396,7 @@ describe("ScrollEditor Truesight overlay", () => {
     const renderedWords = Array.from(container.querySelectorAll(".truesight-word"));
     expect(renderedWords).toHaveLength(2);
     expect(renderedWords.map((node) => node.textContent)).toEqual(["adore", "core"]);
-    expect(window.getComputedStyle(renderedWords[0]).color).toBe(magenta);
-    expect(window.getComputedStyle(renderedWords[1]).color).toBe(magenta);
+    expect(window.getComputedStyle(renderedWords[0]).color).toBe(willRed);
+    expect(window.getComputedStyle(renderedWords[1]).color).toBe(divinationGold);
   });
 });

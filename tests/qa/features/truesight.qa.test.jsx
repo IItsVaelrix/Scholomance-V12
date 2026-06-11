@@ -4,6 +4,16 @@ import { getColoredWordTexts } from "../tools/truesight.assertions.js";
 import { renderTruesightEditor } from "../tools/truesight.renderHarness.jsx";
 import { assertTrue } from "../tools/bytecode-assertions.js";
 import { ERROR_CATEGORIES, ERROR_SEVERITY } from "../../../codex/core/pixelbrain/bytecode-error.js";
+import { wordTruesight } from "../../../src/pages/Visualiser/truesightColor";
+
+function normalizeCssColor(value) {
+  const node = document.createElement("span");
+  node.style.color = value || "";
+  document.body.appendChild(node);
+  const color = window.getComputedStyle(node).color;
+  node.remove();
+  return color;
+}
 
 describe("Truesight color-coding QA", () => {
   const testContext = {
@@ -136,7 +146,7 @@ describe("Truesight color-coding QA", () => {
     });
   });
 
-  it("normalizes vowel-family aliases before palette lookup", async () => {
+  it("uses the Visualiser Truesight resolver for word color", async () => {
     const scenario = TRUESIGHT_SCENARIOS.aliasNormalization;
     const analyzedWordsByIdentity = new Map();
     
@@ -159,12 +169,12 @@ describe("Truesight color-coding QA", () => {
     const soulNode = container.querySelector(`[data-char-start="${scenario.charStart}"]`);
     assertTrue(!!soulNode, { ...testContext, testName: 'token should exist' });
     
-    const color = soulNode.style.color;
-    const isExpectedColor = ['rebeccapurple', 'rgb(102, 51, 153)'].includes(color.toLowerCase());
-    assertTrue(isExpectedColor, {
+    const color = window.getComputedStyle(soulNode).color;
+    const expectedColor = normalizeCssColor(wordTruesight("soul")?.color);
+    assertTrue(color === expectedColor, {
       ...testContext,
-      testName: 'normalizes vowel-family aliases before palette lookup',
-      expected: 'rebeccapurple',
+      testName: 'uses the Visualiser Truesight resolver for word color',
+      expected: expectedColor,
       actual: color
     });
   });
@@ -184,7 +194,7 @@ describe("ByteCode integration QA", () => {
     vi.useRealTimers();
   });
 
-  it("words in same rhyme cluster share color via bytecode", async () => {
+  it("ignores duplicate bytecode color and uses Visualiser Truesight colors", async () => {
     const analyzedWordsByIdentity = new Map();
     analyzedWordsByIdentity.set("0:0:0", { 
       charStart: 0, wordIndex: 0, lineIndex: 0,
@@ -207,17 +217,22 @@ describe("ByteCode integration QA", () => {
     const node2 = container.querySelector(`[data-char-start="4"]`);
     assertTrue(!!node1 && !!node2, { ...testContext, testName: 'nodes should exist' });
     
-    assertTrue(node1.style.color === 'rgb(255, 0, 0)', {
+    const node1Color = window.getComputedStyle(node1).color;
+    const node2Color = window.getComputedStyle(node2).color;
+    const expectedNode1Color = normalizeCssColor(wordTruesight("cat")?.color);
+    const expectedNode2Color = normalizeCssColor(wordTruesight("bet")?.color);
+
+    assertTrue(node1Color === expectedNode1Color, {
       ...testContext,
-      testName: 'words in same rhyme cluster share color via bytecode (node1)',
-      expected: 'rgb(255, 0, 0)',
-      actual: node1.style.color
+      testName: 'ignores duplicate bytecode color and uses Visualiser Truesight colors (node1)',
+      expected: expectedNode1Color,
+      actual: node1Color
     });
-    assertTrue(node2.style.color === 'rgb(255, 0, 0)', {
+    assertTrue(node2Color === expectedNode2Color, {
       ...testContext,
-      testName: 'words in same rhyme cluster share color via bytecode (node2)',
-      expected: 'rgb(255, 0, 0)',
-      actual: node2.style.color
+      testName: 'ignores duplicate bytecode color and uses Visualiser Truesight colors (node2)',
+      expected: expectedNode2Color,
+      actual: node2Color
     });
   });
 

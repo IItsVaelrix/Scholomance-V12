@@ -137,9 +137,6 @@ export default function ReadPage() {
   const [ideMode, setIdeMode] = useState("NEUTRAL");
   const prevModeRef = useRef("NEUTRAL");
 
-  const handleIdeFocus = useCallback(() => setIdeMode("EDIT"), []);
-  const handleIdeBlur = useCallback(() => setIdeMode("NEUTRAL"), []);
-
   useEffect(() => {
     if (prevModeRef.current !== ideMode) {
       const fromMode = prevModeRef.current;
@@ -169,6 +166,22 @@ export default function ReadPage() {
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
   const [highlightedLines, setHighlightedLines] = useState([]);
   const [pinnedLines, setPinnedLines] = useState([]);
+
+  const handleIdeFocus = useCallback(() => {
+    if (isTruesight && !isEditable && !isEditing) {
+      setIdeMode("TRUESIGHT");
+      return;
+    }
+    setIdeMode("EDIT");
+  }, [isEditable, isEditing, isTruesight]);
+
+  const handleIdeBlur = useCallback(() => {
+    if (isTruesight && !isEditable && !isEditing) {
+      setIdeMode("TRUESIGHT");
+      return;
+    }
+    setIdeMode("NEUTRAL");
+  }, [isEditable, isEditing, isTruesight]);
   
   const activeScroll = activeScrollId ? getScrollById(activeScrollId) : null;
 
@@ -274,11 +287,11 @@ export default function ReadPage() {
   const oracle = deepAnalysis?.oracle || null;
   const genreProfile = deepAnalysis?.genreProfile || null;
 
-  const { 
-    palette: adaptivePalette, 
-    getColor: adaptiveColorResolver,
-    blendedHsl, 
-    dominantSchool 
+  // Word colour authority is wordTruesight (school colour) inside ScrollEditor;
+  // the adaptive palette only feeds the ambient blended-HSL animation intent.
+  const {
+    blendedHsl,
+    dominantSchool
   } = useAdaptivePalette(deepAnalysis, { paused: ideMode !== "TRUESIGHT" });
 
   const { submitIntent } = useAnimationSubmitter();
@@ -527,20 +540,27 @@ export default function ReadPage() {
   }, []);
 
   const buildTooltipAnalysis = useCallback((activation) => {
-    const { word, analysis, charStart, lineIndex } = activation;
+    const { word, analysis, charStart } = activation;
     const core = analysis || {};
+    const vowelFamily = core.vowelFamily || activation.vowelFamily || null;
+    const terminalVowelFamily = core.terminalVowelFamily || activation.terminalVowelFamily || null;
+    const schoolId = activation.school || (vowelFamily ? VOWEL_FAMILY_TO_SCHOOL[normalizeVowelFamily(vowelFamily)] : null);
+    const lineIndex = Number.isInteger(activation.lineIndex) ? activation.lineIndex : activation.lineNumber;
     return {
       word,
       charStart,
       lineIndex,
       core: {
-        vowelFamily: core.vowelFamily || null,
-        terminalVowelFamily: core.terminalVowelFamily || null,
+        vowelFamily,
+        terminalVowelFamily,
         rhymeKey: core.rhymeKey || null,
         rhymeTailSignature: core.rhymeTailSignature || null,
         syllableCount: core.syllableCount || 0,
-        phonemes: core.phonemes || [],
+        phonemes: core.phonemes || activation.phonemes || [],
         stressPattern: core.stressPattern || "",
+        color: activation.color || core.color || core.precomputed?.hex || null,
+        schoolName: schoolId ? SCHOOLS[schoolId]?.name : null,
+        schoolGlyph: schoolId ? SCHOOLS[schoolId]?.glyph : null,
       }
     };
   }, []);
@@ -574,7 +594,7 @@ export default function ReadPage() {
         word: activation.word, 
         normalizedWord: activation.normalizedWord, 
         charStart: activation.charStart, 
-        lineIndex: activation.lineIndex 
+        lineIndex: Number.isInteger(activation.lineIndex) ? activation.lineIndex : activation.lineNumber
       },
       position: pos,
       localAnalysis: analysis,
@@ -664,7 +684,6 @@ export default function ReadPage() {
     addToast(`Corrected "${original}" to "${replacement}"`, "success");
   }, [editorContent, handleEditorContentChange, addToast]);
 
-  const activeVowelColors = useMemo(() => ({}), [selectedSchool]);
   const lexiconSeedWord = useMemo(() => oracleWord || "", [oracleWord]);
 
   const jumpToLexiconOracle = useCallback((word) => {
@@ -1034,13 +1053,10 @@ export default function ReadPage() {
                   analyzedWords={analyzedWords}
                   analyzedWordsByIdentity={analyzedWordsByIdentity}
                   analyzedWordsByCharStart={analyzedWordsByCharStart}
-                  activeConnections={overlayConnections}                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
+                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                   highlightedLines={effectiveHighlightedLines}
                   pinnedLines={pinnedLines}
-                  vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
-                  vowelColorResolver={isTruesight ? adaptiveColorResolver : null}
                   syntaxLayer={deepAnalysis?.syntaxSummary}
-                  analysisMode={analysisMode}
                   theme={theme}
                   onWordActivate={handleWordActivate}
                   onCursorChange={setCursorPos}
@@ -1275,14 +1291,10 @@ export default function ReadPage() {
                     analyzedWords={analyzedWords}
                     analyzedWordsByIdentity={analyzedWordsByIdentity}
                     analyzedWordsByCharStart={analyzedWordsByCharStart}
-                    activeConnections={overlayConnections}
                     lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                     highlightedLines={effectiveHighlightedLines}
                     pinnedLines={pinnedLines}
-                    vowelColors={isTruesight ? adaptivePalette : activeVowelColors}
-                    vowelColorResolver={isTruesight ? adaptiveColorResolver : null}
                     syntaxLayer={deepAnalysis?.syntaxSummary}
-                    analysisMode={analysisMode}
                     theme={theme}
                     selectedSchool={selectedSchool}
                     onWordActivate={handleWordActivate}

@@ -37,14 +37,10 @@ export async function renderTruesightEditor({
   content = "",
   isEditable = false,
   isTruesight = true,
-  analysisMode = "none",
   analyzedWords = new Map(),
   analyzedWordsByIdentity = new Map(),
   analyzedWordsByCharStart = new Map(),
-  activeConnections = [],
   highlightedLines = [],
-  vowelColors = null,
-  colorMap = null,
 } = {}) {
   let result;
   
@@ -59,11 +55,7 @@ export async function renderTruesightEditor({
           analyzedWords={analyzedWords}
           analyzedWordsByIdentity={analyzedWordsByIdentity}
           analyzedWordsByCharStart={analyzedWordsByCharStart}
-          activeConnections={activeConnections}
           highlightedLines={highlightedLines}
-          vowelColors={vowelColors}
-          colorMap={colorMap}
-          analysisMode={analysisMode}
         />
       </ThemeProvider>
     );
