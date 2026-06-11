@@ -1,26 +1,35 @@
-/* Bytecode Visualiser — holographic "deterministic visual experience" surface. */
+/* Bytecode Visualiser — "Gilt Grimoire Lab".
+   Left page: illuminated manuscript (candlelit leather, gold leaf, antique caps).
+   Right page: arcane instrument bench in the Wand/DivWand chrome language —
+   gold is the structural metal, school colours are reserved for data. */
 
 .bcv-page {
-  --bcv-ink: #f4f0e6;
+  --bcv-ink: #f1ead8;
+  --bcv-gold: var(--chrome-gold, #d4af37);
+  --bcv-gold-hot: #ffdb58;
   --bcv-cyan: #2ee6ff;
   --bcv-violet: #9a6bff;
   --bcv-magenta: #d65bff;
-  --bcv-gold: #d8952c;
-  --bcv-dim: #7d83a6;
-  --bcv-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, monospace;
+  --bcv-dim: #8a8fae;
+  --bcv-world: var(--bcv-violet); /* themed per the track's dominant school */
+  --bcv-mono: var(--font-mono, 'JetBrains Mono', ui-monospace, monospace);
   --bcv-display: 'Cinzel', 'Cormorant Garamond', Georgia, serif;
+  --bcv-antique: 'IM Fell English SC', 'Crimson Pro', Georgia, serif;
+  --bcv-scroll: var(--font-scroll, 'Crimson Pro', Georgia, serif);
 
   min-height: 100vh;
   padding: clamp(1.2rem, 3vw, 2.4rem);
   color: var(--bcv-ink);
   font-family: var(--bcv-mono);
   background:
-    radial-gradient(circle at 50% 38%, rgba(154, 107, 255, 0.14), transparent 42%),
-    radial-gradient(circle at 18% 12%, rgba(46, 230, 255, 0.08), transparent 36%),
-    radial-gradient(circle at 84% 80%, rgba(214, 91, 255, 0.1), transparent 40%),
-    radial-gradient(ellipse at 50% 50%, #0a0b16, #05060d 70%, #030309);
+    radial-gradient(circle at 50% 38%, color-mix(in oklab, var(--bcv-world) 16%, transparent), transparent 44%),
+    radial-gradient(circle at 12% 8%, rgba(212, 175, 55, 0.06), transparent 34%),
+    radial-gradient(circle at 88% 86%, rgba(46, 230, 255, 0.05), transparent 36%),
+    radial-gradient(ellipse at 50% 50%, #0a0a14, #05050b 70%, #030308);
   overflow-x: hidden;
 }
+
+/* ── Right-page masthead — lab header in the Wand register ──────────────── */
 
 .bcv-head {
   text-align: center;
@@ -34,15 +43,56 @@
   letter-spacing: 0.26em;
   text-transform: uppercase;
   color: var(--bcv-ink);
-  text-shadow: 0 0 26px rgba(154, 107, 255, 0.45);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.18), 0 0 26px rgba(212, 175, 55, 0.3);
+}
+
+.bcv-vtag {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.7rem;
+  padding: 0.16rem 0.5rem;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.06);
+  font-family: var(--bcv-mono);
+  font-size: 0.55rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--bcv-gold);
+  text-shadow: none;
 }
 
 .bcv-head p {
-  margin: 0.5rem 0 0;
-  color: var(--bcv-cyan);
-  font-size: 0.74rem;
-  letter-spacing: 0.34em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  margin: 0.55rem 0 0;
+  color: var(--bcv-dim);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
   text-transform: uppercase;
+}
+
+.bcv-beacon {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  background: transparent;
+}
+
+.bcv-beacon.is-live {
+  background: var(--bcv-gold);
+  border-color: var(--bcv-gold);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.9);
+  animation: bcv-beacon-pulse 1.5s infinite alternate;
+}
+
+@keyframes bcv-beacon-pulse {
+  0% { opacity: 0.35; transform: scale(0.9); }
+  100% { opacity: 1; transform: scale(1.15); }
 }
 
 .bcv-grid {
@@ -65,27 +115,43 @@
 .bcv-grid > *:nth-child(6) { grid-area: mat; }
 .bcv-grid > *:nth-child(7) { grid-area: ritual; }
 
-/* ── Panels ─────────────────────────────────────────────────────────────── */
+/* ── Instrument panels — Wand preset-card chrome ────────────────────────── */
 
 .bcv-panel {
-  padding: 0.9rem 1rem;
-  border: 1px solid rgba(154, 107, 255, 0.26);
-  border-radius: 12px;
-  background: linear-gradient(180deg, rgba(20, 18, 40, 0.6), rgba(8, 8, 18, 0.7));
-  box-shadow: inset 0 0 24px rgba(46, 230, 255, 0.05), 0 10px 30px rgba(0, 0, 0, 0.4);
+  padding: 0.95rem 1.05rem;
+  border: 1px solid rgba(212, 175, 55, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(18, 18, 34, 0.82), rgba(10, 10, 20, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 10px 30px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(4px);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bcv-panel:hover {
+  border-color: rgba(212, 175, 55, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 0 14px rgba(212, 175, 55, 0.12), 0 12px 32px rgba(0, 0, 0, 0.5);
+  transform: translateY(-1px);
 }
 
 .bcv-panel--right { text-align: right; }
 
 .bcv-panel h2 {
-  margin: 0 0 0.7rem;
-  font-size: 0.66rem;
+  margin: 0 0 0.75rem;
+  padding-left: 8px;
+  border-left: 2px solid var(--bcv-gold);
+  font-size: 0.64rem;
   font-weight: 700;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--bcv-cyan);
-  text-shadow: 0 0 12px rgba(46, 230, 255, 0.4);
+  color: var(--bcv-gold);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.35);
+}
+
+.bcv-panel--right h2 {
+  padding-left: 0;
+  padding-right: 8px;
+  border-left: none;
+  border-right: 2px solid var(--bcv-gold);
 }
 
 .bcv-fp {
@@ -93,8 +159,8 @@
   font-size: 1.05rem;
   font-weight: 700;
   letter-spacing: 0.14em;
-  color: var(--bcv-gold);
-  text-shadow: 0 0 14px rgba(216, 149, 44, 0.4);
+  color: var(--bcv-gold-hot);
+  text-shadow: 0 0 14px rgba(212, 175, 55, 0.4);
 }
 .bcv-fp--sm { font-size: 0.82rem; color: var(--bcv-magenta); text-shadow: 0 0 12px rgba(214, 91, 255, 0.4); }
 
@@ -104,6 +170,8 @@
 
 .bcv-coord {
   margin: 0.3rem 0;
+  padding-bottom: 0.22rem;
+  border-bottom: 1px dotted rgba(212, 175, 55, 0.16);
   font-size: 0.78rem;
   letter-spacing: 0.08em;
   color: var(--bcv-ink);
@@ -111,6 +179,7 @@
   justify-content: space-between;
   gap: 0.8rem;
 }
+.bcv-coord:last-child { border-bottom: none; padding-bottom: 0; }
 .bcv-panel--right .bcv-coord { flex-direction: row-reverse; }
 .bcv-coord span { color: var(--bcv-dim); font-size: 0.62rem; letter-spacing: 0.2em; }
 
@@ -134,11 +203,12 @@
   margin: 0 auto;
   border-radius: 50%;
   overflow: hidden;
+  border: 1px solid rgba(212, 175, 55, 0.22); /* gold instrument rim */
   /* Holographic screen edge */
   box-shadow:
-    inset 0 0 80px rgba(154, 107, 255, 0.16),
+    inset 0 0 80px color-mix(in oklab, var(--bcv-world) 18%, transparent),
     inset 0 0 4px rgba(46, 230, 255, 0.4),
-    0 0 60px rgba(154, 107, 255, 0.18);
+    0 0 60px color-mix(in oklab, var(--bcv-world) 16%, transparent);
   background: radial-gradient(circle, rgba(12, 10, 28, 0.5), rgba(4, 4, 12, 0.2));
 }
 
@@ -161,7 +231,7 @@
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--bcv-gold);
-  text-shadow: 0 0 12px rgba(216, 149, 44, 0.35);
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
 }
 
 /* ── Responsive: stack, mandala first ───────────────────────────────────── */
@@ -173,6 +243,7 @@
   }
   .bcv-grid > *:nth-child(4) { order: -1; }
   .bcv-panel--right { text-align: left; }
+  .bcv-panel--right h2 { padding-left: 8px; padding-right: 0; border-left: 2px solid var(--bcv-gold); border-right: none; }
   .bcv-panel--right .bcv-coord { flex-direction: row; }
   .bcv-semantic li { justify-content: flex-start; }
   .bcv-stage { max-height: 60vh; }
@@ -194,75 +265,285 @@
   min-width: 0;
   max-height: 100vh;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(212, 175, 55, 0.25) transparent;
 }
 
 .bcv-leftpage {
   background:
-    radial-gradient(circle at 30% 0%, rgba(216, 149, 44, 0.07), transparent 42%),
-    linear-gradient(160deg, #17111d, #0d0a12 70%, #0a0810);
-  border-right: 1px solid rgba(216, 149, 44, 0.22);
-  box-shadow: inset -24px 0 48px rgba(0, 0, 0, 0.4);
+    radial-gradient(circle at 30% 0%, rgba(212, 175, 55, 0.08), transparent 42%),
+    linear-gradient(160deg, #161019, #0d0a12 70%, #0a0810);
+  border-right: 1px solid rgba(212, 175, 55, 0.25);
+  box-shadow: inset -28px 0 56px rgba(0, 0, 0, 0.45);
 }
 
-/* Right page keeps the cosmos bg from .bcv-page; tighten its panel grid for the half-width column. */
+/* Right page: the bench. School "world" aura + faint gold graph-dot grid
+   (the DivWand bench texture), scrolling with the content. */
+.bcv-rightpage {
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in oklab, var(--bcv-world) 14%, transparent), transparent 56%),
+    radial-gradient(circle, rgba(212, 175, 55, 0.07) 1px, transparent 1px);
+  background-size: auto, 9px 9px;
+  background-attachment: local, local;
+}
 .bcv-rightpage .bcv-grid { grid-template-columns: 164px minmax(0, 1fr) 164px; }
 .bcv-rightpage .bcv-head { margin-top: 0; }
 
-/* Left-page typography */
-.bcv-eyebrow { text-align: center; margin: 0 0 0.7rem; color: var(--bcv-gold); font-size: 0.62rem; letter-spacing: 0.34em; text-transform: uppercase; }
-.bcv-tracktitle { text-align: center; margin: 0; font-family: var(--bcv-display); font-size: clamp(1.6rem, 3vw, 2.5rem); letter-spacing: 0.03em; color: var(--bcv-ink); text-shadow: 0 0 24px rgba(216, 149, 44, 0.28); }
+/* ── Left-page typography — the illuminated manuscript ──────────────────── */
+
+.bcv-eyebrow {
+  text-align: center;
+  margin: 0 0 0.7rem;
+  font-family: var(--bcv-antique);
+  font-size: 0.78rem;
+  letter-spacing: 0.3em;
+  color: var(--bcv-gold);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.3);
+}
+.bcv-tracktitle { text-align: center; margin: 0; font-family: var(--bcv-display); font-size: clamp(1.6rem, 3vw, 2.5rem); letter-spacing: 0.03em; color: var(--bcv-ink); text-shadow: 0 0 24px rgba(212, 175, 55, 0.28); }
 .bcv-artist { text-align: center; margin: 0.4rem 0 0.1rem; color: var(--bcv-gold); font-size: 0.78rem; letter-spacing: 0.22em; text-transform: uppercase; }
 .bcv-album { text-align: center; margin: 0 0 1.2rem; color: var(--bcv-dim); font-size: 0.62rem; letter-spacing: 0.16em; text-transform: uppercase; }
 
 .bcv-trackhead { display: grid; grid-template-columns: 116px 1fr; gap: 1.1rem; align-items: center; margin-bottom: 1.1rem; }
-.bcv-cover { aspect-ratio: 1; border-radius: 8px; display: grid; place-items: center; border: 1px solid rgba(216, 149, 44, 0.32); background: radial-gradient(circle at 50% 34%, rgba(154, 107, 255, 0.34), #0a0712 70%); box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6), 0 0 24px rgba(154, 107, 255, 0.14); }
-.bcv-cover span { font-size: 2.3rem; color: var(--bcv-gold); text-shadow: 0 0 18px rgba(216, 149, 44, 0.6); }
+.bcv-cover {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  outline: 1px solid rgba(212, 175, 55, 0.14); /* double gilt frame */
+  outline-offset: 3px;
+  background: radial-gradient(circle at 50% 34%, color-mix(in oklab, var(--bcv-world) 38%, transparent), #0a0712 70%);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6), 0 0 24px color-mix(in oklab, var(--bcv-world) 16%, transparent);
+}
+.bcv-cover { overflow: hidden; }
+.bcv-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.bcv-cover span { font-size: 2.3rem; color: var(--bcv-gold); text-shadow: 0 0 18px rgba(212, 175, 55, 0.6); }
 
 .bcv-meta { margin: 0; }
-.bcv-meta__row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.18rem 0; border-bottom: 1px dotted rgba(216, 149, 44, 0.16); }
+.bcv-meta__row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.18rem 0; border-bottom: 1px dotted rgba(212, 175, 55, 0.2); }
 .bcv-meta__row dt { color: var(--bcv-dim); font-size: 0.58rem; letter-spacing: 0.14em; text-transform: uppercase; }
-.bcv-meta__row dd { margin: 0; color: var(--bcv-ink); font-size: 0.72rem; text-align: right; }
+.bcv-meta__row dd { margin: 0; color: var(--bcv-ink); font-family: var(--bcv-scroll); font-size: 0.8rem; text-align: right; }
 
-.bcv-provenance { margin-bottom: 1.2rem; padding: 0.8rem 1rem; border: 1px solid rgba(46, 230, 255, 0.22); border-radius: 10px; background: rgba(18, 28, 40, 0.34); }
-.bcv-provenance h2 { margin: 0 0 0.5rem; font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--bcv-cyan); }
-.bcv-prov-statement { margin: 0 0 0.6rem; font-style: italic; font-size: 0.82rem; color: var(--bcv-ink); }
+.bcv-provenance {
+  margin-bottom: 1.2rem;
+  padding: 0.8rem 1rem;
+  border: 1px dashed rgba(212, 175, 55, 0.3);
+  border-radius: 10px;
+  background: rgba(212, 175, 55, 0.04);
+}
+.bcv-provenance h2 { margin: 0 0 0.5rem; padding-left: 8px; border-left: 2px solid var(--bcv-gold); font-size: 0.6rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--bcv-gold); }
+.bcv-prov-statement { margin: 0 0 0.6rem; font-family: var(--bcv-antique); font-size: 0.88rem; color: var(--bcv-ink); }
 .bcv-prov-label { margin: 0.4rem 0 0.1rem; font-size: 0.54rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bcv-dim); }
 .bcv-prov-tools { margin: 0; font-size: 0.74rem; color: var(--bcv-magenta); }
 
 .bcv-lyrics { margin: 0 0 1.2rem; padding: 0; list-style: none; columns: 2; column-gap: 1.6rem; }
-.bcv-lyrics li { display: flex; gap: 0.5rem; break-inside: avoid; font-family: var(--bcv-display); font-size: 0.82rem; line-height: 1.7; color: var(--bcv-ink); opacity: 0.8; }
+.bcv-lyrics li { display: flex; gap: 0.5rem; break-inside: avoid; font-family: var(--bcv-scroll); font-size: 0.95rem; line-height: 1.75; color: var(--bcv-ink); opacity: 0.8; }
 .bcv-lyrics.is-truesight li { opacity: 0.72; }   /* inactive lines stay quiet */
 .bcv-lyric-text { flex: 1; }
 /* Inactive content words: muted tint (30% school, 70% ivory) — a gentle hue, not neon. */
 .bcv-tsword { color: color-mix(in oklab, var(--w, currentColor) 30%, var(--bcv-ink)); transition: color 0.5s ease, text-shadow 0.5s ease; }
-.bcv-lyrics li.is-highlight { opacity: 1; background: linear-gradient(90deg, rgba(216, 149, 44, 0.16), transparent); border-radius: 4px; }
+.bcv-lyrics li.is-highlight {
+  opacity: 1;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.16), transparent);
+  border-radius: 4px;
+  box-shadow: inset 2px 0 0 var(--bcv-gold); /* gilt rubric bar, no layout shift */
+}
 /* The active (playing) line blooms into full school colour — colour as a spotlight. */
 .bcv-lyrics li.is-highlight .bcv-tsword { color: var(--w); text-shadow: 0 0 8px var(--w); }
 .bcv-lyrics li.is-highlight .bcv-lyric-n { color: var(--bcv-gold); }
-.bcv-lyrics:not(.is-truesight) li.is-highlight .bcv-lyric-text { color: var(--bcv-gold); text-shadow: 0 0 14px rgba(216, 149, 44, 0.4); }
-.bcv-lyric-n { color: var(--bcv-dim); font-family: var(--bcv-mono); font-size: 0.58rem; padding-top: 0.34rem; }
+.bcv-lyrics:not(.is-truesight) li.is-highlight .bcv-lyric-text { color: var(--bcv-gold-hot); text-shadow: 0 0 14px rgba(212, 175, 55, 0.4); }
+.bcv-lyric-n { color: var(--bcv-dim); font-family: var(--bcv-mono); font-size: 0.58rem; padding-top: 0.42rem; }
 
 .bcv-annotations { display: grid; gap: 0.7rem; margin-bottom: 1.4rem; }
-.bcv-annotation { padding-left: 0.8rem; border-left: 2px solid rgba(154, 107, 255, 0.4); }
-.bcv-annotation__head { margin: 0 0 0.2rem; color: var(--bcv-violet); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.bcv-annotation__body { margin: 0; color: var(--bcv-dim); font-size: 0.74rem; line-height: 1.5; }
+.bcv-annotation { padding-left: 0.8rem; border-left: 2px solid rgba(212, 175, 55, 0.4); }
+.bcv-annotation__head { margin: 0 0 0.2rem; color: var(--bcv-gold); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.bcv-annotation__body { margin: 0; color: var(--bcv-dim); font-family: var(--bcv-scroll); font-size: 0.82rem; line-height: 1.55; }
 
-.bcv-player { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.7rem; }
+/* ── Player transport — gold instrument controls ────────────────────────── */
+
+.bcv-player { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.8rem; }
 .bcv-time { font-family: var(--bcv-mono); font-size: 0.64rem; color: var(--bcv-dim); }
-.bcv-progress { flex: 1; height: 4px; border-radius: 999px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
-.bcv-progress__fill { height: 100%; background: linear-gradient(90deg, var(--bcv-gold), var(--bcv-magenta)); box-shadow: 0 0 10px rgba(216, 149, 44, 0.5); }
+.bcv-progress { flex: 1; height: 5px; border-radius: 999px; background: rgba(255, 255, 255, 0.07); box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.6); overflow: hidden; }
+.bcv-progress__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--bcv-gold), color-mix(in oklab, var(--bcv-world) 80%, white));
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+}
 
-.bcv-transport { display: flex; align-items: center; justify-content: center; gap: 0.9rem; }
-.bcv-transport button { padding: 0.3rem; border: none; border-radius: 50%; background: none; color: var(--bcv-dim); font-size: 1rem; cursor: pointer; transition: color 0.15s, transform 0.15s; }
-.bcv-transport button:hover, .bcv-transport button:focus-visible { color: var(--bcv-ink); outline: none; }
-.bcv-transport button.is-on { color: var(--bcv-gold); }
-.bcv-transport__play { width: 46px; height: 46px; border: 1px solid rgba(216, 149, 44, 0.42) !important; color: var(--bcv-gold) !important; box-shadow: 0 0 18px rgba(216, 149, 44, 0.2); font-size: 1.1rem; }
-.bcv-transport__play:hover { transform: scale(1.06); }
+.bcv-transport { display: flex; align-items: center; justify-content: center; gap: 0.7rem; }
+.bcv-transport button,
+.bcv-transport .bcv-transport__link {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid rgba(212, 175, 55, 0.22);
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.04);
+  color: var(--bcv-dim);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.bcv-transport .bcv-transport__link { text-decoration: none; }
+.bcv-transport button:hover,
+.bcv-transport button:focus-visible,
+.bcv-transport .bcv-transport__link:hover,
+.bcv-transport .bcv-transport__link:focus-visible {
+  color: var(--bcv-gold);
+  border-color: rgba(212, 175, 55, 0.6);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.18);
+  outline: none;
+}
+.bcv-transport button.is-on {
+  color: var(--bcv-gold);
+  border-color: var(--bcv-gold);
+  background: rgba(212, 175, 55, 0.12);
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.22);
+}
+.bcv-transport .bcv-transport__play {
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: linear-gradient(135deg, var(--bcv-gold) 0%, #aa8410 100%);
+  color: #1a1206;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
+}
+.bcv-transport .bcv-transport__play:hover,
+.bcv-transport .bcv-transport__play:focus-visible {
+  background: linear-gradient(135deg, var(--bcv-gold-hot) 0%, var(--bcv-gold) 100%);
+  color: #1a1206;
+  box-shadow: 0 0 26px rgba(212, 175, 55, 0.5);
+  transform: scale(1.06);
+}
 
 @media (max-width: 1000px) {
   .bcv-spread { grid-template-columns: 1fr; }
-  .bcv-leftpage { max-height: none; border-right: none; border-bottom: 1px solid rgba(216, 149, 44, 0.22); box-shadow: none; }
+  .bcv-leftpage { max-height: none; border-right: none; border-bottom: 1px solid rgba(212, 175, 55, 0.25); box-shadow: none; }
   .bcv-rightpage { max-height: none; }
   .bcv-rightpage .bcv-grid { grid-template-columns: minmax(210px, 280px) 1fr minmax(210px, 280px); }
   .bcv-lyrics { columns: 1; }
+}
+
+/* ── Shareable Resonance Card ────────────────────────────────────────────── */
+
+.rcard-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 2rem;
+  background: radial-gradient(ellipse at 50% 40%, #0a0b16, #05060d 70%, #030309);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+.rcard {
+  --bcv-ink: #f4f0e6;
+  --bcv-gold: #d8952c;
+  --bcv-cyan: #2ee6ff;
+  --bcv-dim: #7d83a6;
+  width: min(92vw, 380px);
+  padding: 1.6rem 1.4rem 1.4rem;
+  border: 1px solid color-mix(in oklab, var(--w, #9a6bff) 40%, transparent);
+  border-radius: 18px;
+  text-align: center;
+  color: var(--bcv-ink);
+  background: linear-gradient(180deg, rgba(18, 16, 40, 0.7), rgba(6, 7, 14, 0.85));
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5), 0 0 50px color-mix(in oklab, var(--w, #9a6bff) 18%, transparent);
+}
+
+.rcard__brand { margin: 0 0 1rem; color: var(--bcv-cyan); font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; }
+.rcard__mandala { position: relative; aspect-ratio: 1; border-radius: 50%; overflow: hidden; margin-bottom: 1.1rem; box-shadow: inset 0 0 50px color-mix(in oklab, var(--w, #9a6bff) 18%, transparent), inset 0 0 3px var(--bcv-cyan); }
+.rcard__title { margin: 0; font-family: 'Cinzel', 'Cormorant Garamond', Georgia, serif; font-size: 1.5rem; letter-spacing: 0.02em; }
+.rcard__artist { margin: 0.2rem 0 0.9rem; color: var(--bcv-gold); font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; }
+.rcard__fp { margin: 0 0 0.7rem; color: var(--bcv-gold); font-size: 1rem; font-weight: 700; letter-spacing: 0.12em; text-shadow: 0 0 14px rgba(216, 149, 44, 0.4); }
+.rcard__tokens { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.4rem; margin: 0 0 1rem; padding: 0; list-style: none; }
+.rcard__tokens li { padding: 0.18rem 0.55rem; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px; font-size: 0.62rem; letter-spacing: 0.06em; color: var(--bcv-dim); }
+.rcard__tag { margin: 0 0 1.1rem; color: var(--bcv-dim); font-size: 0.56rem; letter-spacing: 0.22em; text-transform: uppercase; }
+.rcard__dl { width: 100%; min-height: 44px; border: 1px solid color-mix(in oklab, var(--w, #9a6bff) 50%, transparent); border-radius: 10px; background: color-mix(in oklab, var(--w, #9a6bff) 14%, transparent); color: var(--bcv-ink); font: inherit; font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; transition: background 0.18s, box-shadow 0.18s; }
+.rcard__dl:hover, .rcard__dl:focus-visible { background: color-mix(in oklab, var(--w, #9a6bff) 24%, transparent); box-shadow: 0 0 22px color-mix(in oklab, var(--w, #9a6bff) 30%, transparent); outline: none; }
+
+/* ── REDUCED MOTION ────────────────────────────────────────────────────────
+   LAW (non-negotiable): respect prefers-reduced-motion. Neutralize the beacon
+   pulse, hover lifts and transitions inside the Visualiser surface. The canvas
+   animation loops are already disabled via usePrefersReducedMotion. */
+@media (prefers-reduced-motion: reduce) {
+  .bcv-page *,
+  .bcv-page *::before,
+  .bcv-page *::after,
+  .rcard-page *,
+  .rcard-page *::before,
+  .rcard-page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Karaoke (forced alignment) ────────────────────────────────────────────
+   The word being sung gets a luminance lift only — hue stays the school's.
+   Colour marks meaning, brightness marks time (colour hygiene). */
+.bcv-lyrics .bcv-lyric-text span[data-sung='true'] {
+  filter: brightness(1.45);
+  text-shadow: 0 0 14px currentColor;
+}
+
+/* ── Library shelf ─────────────────────────────────────────────────────── */
+.bcv-library {
+  max-width: 1180px;
+  margin: 1.5rem auto 2.5rem;
+  padding: 0 1rem;
+}
+.bcv-library__head {
+  font-size: 0.85rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  text-align: center;
+  margin-bottom: 0.9rem;
+}
+.bcv-library__shelf {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+  justify-content: center;
+}
+.bcv-library__tile {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.7rem;
+  align-items: center;
+  text-align: left;
+  width: min(20rem, 100%);
+  padding: 0.6rem 0.8rem;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--bcv-world, #c9a) 35%, transparent);
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.bcv-library__tile:hover { border-color: var(--bcv-world, #c9a); }
+.bcv-library__tile[aria-pressed='true'] {
+  border-color: var(--bcv-world, #c9a);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--bcv-world, #c9a) 35%, transparent);
+}
+.bcv-library__cover {
+  grid-row: 1 / span 2;
+  width: 56px;
+  height: 56px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bcv-world, #c9a) 12%, transparent);
+}
+.bcv-library__cover img { width: 100%; height: 100%; object-fit: cover; }
+.bcv-library__title { font-weight: 600; }
+.bcv-library__style {
+  font-size: 0.72rem;
+  opacity: 0.65;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

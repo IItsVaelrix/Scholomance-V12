@@ -209,7 +209,6 @@ export default function BytecodeVisualiserPage() {
     url.searchParams.set('track', track.id);
     window.history.replaceState(null, '', url);
   };
-  void selectTrack;
 
   // Sync duration when track changes.
   useEffect(() => { setDuration(activeTrack.duration); }, [activeTrack]);
@@ -597,6 +596,28 @@ export default function BytecodeVisualiserPage() {
           <footer className="bcv-foot">The Pattern Is Law · The Sound Is Code</footer>
         </section>
       </div>
+
+      {/* ── LIBRARY: the grimoire shelf ─────────────────────────────────── */}
+      <section className="bcv-library" aria-label="Library">
+        <h2 className="bcv-library__head">✦ Library ✦</h2>
+        <div className="bcv-library__shelf">
+          {GRIMOIRE_TRACKS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              className="bcv-library__tile"
+              aria-pressed={t.id === activeTrack.id}
+              onClick={() => selectTrack(t)}
+            >
+              <span className="bcv-library__cover">
+                <img src={t.coverUrl} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+              </span>
+              <span className="bcv-library__title">{t.title}</span>
+              <span className="bcv-library__style">{t.meta.find(([k]) => k === 'Style')?.[1] ?? t.artist}</span>
+            </button>
+          ))}
+        </div>
+      </section>
     </main>
   );
 }
