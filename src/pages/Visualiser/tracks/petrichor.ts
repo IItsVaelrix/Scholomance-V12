@@ -118,7 +118,7 @@ export const PETRICHOR: GrimoireTrack = {
   annotations: [
     { n: 66, title: 'Willow Tree', body: 'The whispering threshold — grief spoken under branches that bend but hold.' },
     { n: 68, title: 'Will o Wisp', body: 'A faint wandering light, easy to lose in a crowd. The self at low luminance.' },
-    { n: 85, title: 'Petrichor', body: 'The scent of rain on dry earth — the title\'s namesake. Memory carried by weather.' },
+    { n: 85, title: 'Petrichor', body: 'The scent of rain on dry earth — the title’s namesake. Memory carried by weather.' },
   ],
   pacing: {
     // Tempo estimated offline from the published MP3 (onset-envelope
