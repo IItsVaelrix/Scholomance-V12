@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BytecodeVisualiserPage from '../../src/pages/Visualiser/BytecodeVisualiserPage';
 
@@ -34,5 +34,17 @@ describe('library shelf', () => {
     window.history.replaceState(null, '', '/?track=eaba93dc-bf75-4319-a67e-ddcedafc1c43');
     render(<BytecodeVisualiserPage />);
     expect(screen.getByRole('heading', { level: 1, name: /Big Father/i })).toBeTruthy();
+  });
+
+  it('switches back to Petrichor after Big Father truesight colours are ready', async () => {
+    const { container } = render(<BytecodeVisualiserPage />);
+    await waitFor(() => expect(container.querySelector('.bcv-lyrics.is-truesight')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: /Big Father/i }));
+    expect(screen.getByRole('heading', { level: 1, name: /Big Father/i })).toBeTruthy();
+    await waitFor(() => expect(container.querySelector('.bcv-lyrics.is-truesight')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: /Petrichor/i }));
+    expect(screen.getByRole('heading', { level: 1, name: /Petrichor/i })).toBeTruthy();
   });
 });

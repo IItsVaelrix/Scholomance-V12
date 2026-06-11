@@ -2,11 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { BytecodeVisualiser } from './BytecodeVisualiser';
 import { computeFingerprint, semanticTokens } from './bytecodeFingerprint';
-import { PhonemeEngine, VOWEL_FAMILY_TO_SCHOOL, generateSchoolColor } from '../../lib/engine.adapter.js';
+import { PhonemeEngine, generateSchoolColor } from '../../lib/engine.adapter.js';
 import { alignPhonemes } from '../../lib/phonology/phonemeAlignment.js';
 import { useLyricAlignment } from '../../kits/scholomance-visualizer-kit/hooks/useLyricAlignment';
 import { lineAtTime, wordAtTime } from '../../kits/scholomance-visualizer-kit/utils/lyricAlignment';
 import { GRIMOIRE_TRACKS, DEFAULT_PACING, type GrimoireTrack, type TrackPacing } from './tracks';
+import { wordTruesight } from './truesightColor';
 import './BytecodeVisualiser.css';
 
 /** Fallback syllable estimate (pre-engine): vowel groups + silent-e. */
@@ -68,25 +69,6 @@ function lyricLineAt(progress: number, duration: number, lineBeats: number[], pa
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
-
-// Color hygiene: function words stay neutral so colour marks meaning, not noise.
-const FUNCTION_WORDS = new Set([
-  'the', 'a', 'an', 'and', 'or', 'but', 'of', 'to', 'in', 'on', 'at', 'by', 'for',
-  'with', 'from', 'into', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'it', 'its',
-  'i', 'we', 'you', 'he', 'she', 'they', 'me', 'my', 'your', 'his', 'her', 'our', 'their',
-  'this', 'that', 'these', 'those', 'where', 'what', 'when', 'who', 'all', 'no', 'not',
-  'so', 'if', 'then', 'than', 'through', 'still', 'do', 'will', 'would', 'can',
-]);
-
-/** Truesight: a content word's dominant vowel family -> school -> colour. */
-function wordTruesight(word: string): { color: string; school: string } | null {
-  const clean = word.replace(/[^A-Za-z]/g, '');
-  if (!clean || FUNCTION_WORDS.has(clean.toLowerCase())) return null;
-  const analysis = (PhonemeEngine as { analyzeDeep?: (w: string) => { vowelFamily?: string } | null }).analyzeDeep?.(clean);
-  const family = analysis?.vowelFamily;
-  const school = (family && (VOWEL_FAMILY_TO_SCHOOL as Record<string, string>)[family]) || 'VOID';
-  return { color: generateSchoolColor(school), school };
-}
 
 /** Extract an HSL hue (0..360) from a hex/hsl colour string. */
 function colorToHue(color: string | undefined, fallback = 286): number {
@@ -323,16 +305,16 @@ export default function BytecodeVisualiserPage() {
 
       // Engine-backed pacing: syllabifier counts (every word, function words
       // included) + concatenated ARPAbet sequence per line for couplet checks.
-      const analyzeDeep = (PhonemeEngine as {
+      const engine = PhonemeEngine as {
         analyzeDeep?: (w: string) => { phonemes?: string[]; syllableCount?: number } | null;
-      }).analyzeDeep;
+      };
       const lines = activeTrack.lyrics.map((line, i) => {
         let syl = 0;
         const phonemes: string[] = [];
         for (const tok of line.split(/\s+/)) {
           const clean = tok.replace(/[^A-Za-z]/g, '');
           if (!clean) continue;
-          const a = analyzeDeep?.(clean) ?? null;
+          const a = engine.analyzeDeep?.(clean) ?? null;
           syl += (a?.syllableCount || syllableCountHeuristic(clean)) + melismaBonus(tok);
           if (a?.phonemes?.length) phonemes.push(...a.phonemes);
         }
@@ -361,7 +343,7 @@ export default function BytecodeVisualiserPage() {
       }
     })();
     return () => { cancelled = true; };
-  }, [activeTrack]);
+  }, [activeTrack, pacing]);
 
   // The track's "world" — themed to its dominant phonemic school.
   const worldColor = generateSchoolColor(dominantSchool);
@@ -392,6 +374,7 @@ export default function BytecodeVisualiserPage() {
     analyserRef.current?.getByteFrequencyData(a as Uint8Array<ArrayBuffer>);
   }, []);
   const getFFT = fftReady ? readFFT : undefined;
+  const visibleColoredLyrics = coloredLyrics?.length === activeTrack.lyrics.length ? coloredLyrics : null;
 
   return (
     <main
@@ -451,7 +434,7 @@ export default function BytecodeVisualiserPage() {
             <p className="bcv-prov-tools">{activeTrack.provenance.assistance}</p>
           </section>
 
-          <ol ref={lyricsRef} className={`bcv-lyrics ${coloredLyrics ? 'is-truesight' : ''}`}>
+          <ol ref={lyricsRef} className={`bcv-lyrics ${visibleColoredLyrics ? 'is-truesight' : ''}`}>
             {activeTrack.lyrics.map((line, i) => (
               <li
                 key={i}
@@ -460,19 +443,23 @@ export default function BytecodeVisualiserPage() {
               >
                 <span className="bcv-lyric-n">{String(i + 1).padStart(2, '0')}</span>
                 <span className="bcv-lyric-text">
-                  {coloredLyrics
+                  {visibleColoredLyrics
                     ? (() => {
                         let w = -1;
-                        return coloredLyrics[i].map((tok, j) => {
+                        return visibleColoredLyrics[i].map((tok, j) => {
                           const isWord = /[A-Za-z]/.test(tok.word);
                           if (isWord) w += 1;
-                          const sung = isWord && sungWord !== null && sungWord.line === i && sungWord.word === w;
+                          // Text equality guards against registry lyrics drifting from
+                          // the lyrics the artifact was aligned against — a stale
+                          // artifact must not highlight the wrong word.
+                          const sung = isWord && sungWord !== null && sungWord.line === i
+                            && sungWord.word === w && sungWord.text === tok.word;
                           return (
                             <span
                               key={j}
                               className={tok.color ? 'bcv-tsword' : undefined}
                               style={tok.color ? ({ '--w': tok.color } as CSSProperties) : undefined}
-                              data-sung={sung ? 'true' : undefined}
+                              data-sung={sung ? (sungWord?.backing ? 'backing' : 'true') : undefined}
                             >{tok.word}</span>
                           );
                         });

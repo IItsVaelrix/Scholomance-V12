@@ -1,0 +1,97 @@
+:root {
+  /* =========================
+     Core M3-Compatible Colors
+     ========================= */
+  --scholo-surface: #0b0a10;
+  --scholo-surface-veil: #100d17;
+  --scholo-surface-container: #161320;
+  --scholo-surface-container-high: #211b2f;
+  --scholo-surface-glass: rgba(22, 19, 32, 0.72);
+  --scholo-outline: #3d3855;
+  --scholo-outline-soft: rgba(117, 102, 156, 0.24);
+  --scholo-divider: rgba(0, 229, 255, 0.16);
+  --scholo-primary: #d926a9;
+  --scholo-primary-soft: rgba(217, 38, 169, 0.18);
+  --scholo-primary-glow: rgba(217, 38, 169, 0.42);
+  --scholo-secondary: #00e5ff;
+  --scholo-secondary-soft: rgba(0, 229, 255, 0.16);
+  --scholo-secondary-glow: rgba(0, 229, 255, 0.38);
+  --scholo-tertiary: #ffb300;
+  --scholo-tertiary-soft: rgba(255, 179, 0, 0.16);
+  --scholo-tertiary-glow: rgba(255, 179, 0, 0.36);
+  --scholo-danger: #ff4d7d;
+  --scholo-success: #6df7c1;
+  --scholo-on-surface: #ffffff;
+  --scholo-on-surface-high: #f6f0ff;
+  --scholo-on-surface-medium: #8a869d;
+  --scholo-on-surface-low: #5f5a72;
+  --scholo-on-primary: #ffffff;
+
+  /* =========================
+     Typography
+     ========================= */
+  --scholo-font-display: "Cinzel", "Playfair Display", Georgia, serif;
+  --scholo-font-mono: "Fira Code", "Roboto Mono", "IBM Plex Mono", monospace;
+  --scholo-font-ui: Inter, system-ui, sans-serif;
+  --scholo-display-xl: clamp(2.75rem, 5vw, 5.25rem);
+  --scholo-display-lg: clamp(2rem, 3vw, 3.75rem);
+  --scholo-title-lg: clamp(1.5rem, 2vw, 2.4rem);
+  --scholo-title-md: 1.1rem;
+  --scholo-body: 0.92rem;
+  --scholo-caption: 0.72rem;
+  --scholo-micro: 0.62rem;
+  --scholo-letter-display: 0.16em;
+  --scholo-letter-overline: 0.28em;
+  --scholo-letter-mono: 0.08em;
+
+  /* =========================
+     Spacing
+     ========================= */
+  --scholo-space-1: 0.25rem;
+  --scholo-space-2: 0.5rem;
+  --scholo-space-3: 0.75rem;
+  --scholo-space-4: 1rem;
+  --scholo-space-5: 1.25rem;
+  --scholo-space-6: 1.5rem;
+  --scholo-space-8: 2rem;
+  --scholo-space-10: 2.5rem;
+  --scholo-space-12: 3rem;
+
+  /* =========================
+     Radius + Elevation
+     ========================= */
+  --scholo-radius-xs: 4px;
+  --scholo-radius-sm: 8px;
+  --scholo-radius-md: 12px;
+  --scholo-radius-lg: 18px;
+  --scholo-radius-pill: 999px;
+  --scholo-shadow-card:
+    0 0 0 1px var(--scholo-outline-soft),
+    0 20px 60px rgba(0, 0, 0, 0.34);
+  --scholo-shadow-primary:
+    0 0 18px var(--scholo-primary-glow),
+    0 0 48px rgba(217, 38, 169, 0.16);
+  --scholo-shadow-secondary:
+    0 0 18px var(--scholo-secondary-glow),
+    0 0 48px rgba(0, 229, 255, 0.12);
+  --scholo-shadow-tertiary:
+    0 0 16px var(--scholo-tertiary-glow),
+    0 0 42px rgba(255, 179, 0, 0.12);
+
+  /* =========================
+     Motion
+     ========================= */
+  --scholo-ease-ritual: cubic-bezier(0.19, 1, 0.22, 1);
+  --scholo-ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --scholo-duration-fast: 140ms;
+  --scholo-duration-medium: 260ms;
+  --scholo-duration-slow: 680ms;
+
+  /* =========================
+     Layout
+     ========================= */
+  --scholo-shell-max: 1920px;
+  --scholo-panel-min: 420px;
+  --scholo-card-padding: clamp(1rem, 1.6vw, 1.5rem);
+  --scholo-player-height: 88px;
+}

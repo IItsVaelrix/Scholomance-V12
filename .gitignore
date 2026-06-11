@@ -116,3 +116,7 @@ scripts/pb-sani/output/
 
 .aider*
 diagnostic_report.json
+
+# forced-alignment pipeline (scripts/align_lyrics.py)
+.venv-align/
+tmp/

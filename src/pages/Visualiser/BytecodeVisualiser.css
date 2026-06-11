@@ -488,6 +488,12 @@
   filter: brightness(1.45);
   text-shadow: 0 0 14px currentColor;
 }
+/* Backing vocals (parentheticals) sing softer: a haze, not a spotlight. */
+.bcv-lyrics .bcv-lyric-text span[data-sung='backing'] {
+  filter: brightness(1.2);
+  text-shadow: 0 0 8px currentColor;
+  font-style: italic;
+}
 
 /* ── Library shelf ─────────────────────────────────────────────────────── */
 .bcv-library {
@@ -531,6 +537,7 @@
   box-shadow: 0 0 14px color-mix(in srgb, var(--bcv-world, #c9a) 35%, transparent);
 }
 .bcv-library__cover {
+  position: relative;
   grid-row: 1 / span 2;
   width: 56px;
   height: 56px;
@@ -538,7 +545,16 @@
   border-radius: 4px;
   background: color-mix(in srgb, var(--bcv-world, #c9a) 12%, transparent);
 }
-.bcv-library__cover img { width: 100%; height: 100%; object-fit: cover; }
+.bcv-library__cover::before {
+  content: '◈';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--bcv-gold);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.45);
+}
+.bcv-library__cover img { position: relative; width: 100%; height: 100%; object-fit: cover; }
 .bcv-library__title { font-weight: 600; }
 .bcv-library__style {
   font-size: 0.72rem;

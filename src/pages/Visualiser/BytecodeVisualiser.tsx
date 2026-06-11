@@ -75,10 +75,10 @@ export function BytecodeVisualiser({
         getByteFrequencyData(data);
       } else {
         // Deterministic synthetic spectrum: decays with frequency, pulses to "beat".
-        const pulse = 0.6 + 0.4 * Math.sin(t * (bpm / 60) * Math.PI);
+        const synthPulse = 0.6 + 0.4 * Math.sin(t * (bpm / 60) * Math.PI);
         for (let i = 0; i < data.length; i += 1) {
           const env = Math.max(0, 1 - i / data.length);
-          data[i] = Math.round(Math.max(0, (0.5 + 0.5 * Math.sin(t * 2.1 + i * 0.21)) * 210 * env * pulse));
+          data[i] = Math.round(Math.max(0, (0.5 + 0.5 * Math.sin(t * 2.1 + i * 0.21)) * 210 * env * synthPulse));
         }
       }
 

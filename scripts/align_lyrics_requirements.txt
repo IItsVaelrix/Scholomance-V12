@@ -1,0 +1,6 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch>=2.6
+torchaudio>=2.6
+demucs>=4.0.1
+soundfile>=0.12
+torchcodec>=0.14
