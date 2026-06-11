@@ -82,6 +82,7 @@ const WordTooltip = ({
   sessionHistory = [],
   sessionIndex = -1,
   onSessionNavigate = () => {},
+  isEmbedded = false,
 }) => {
   const { theme } = useTheme();
   const vowelPalette  = getUniversalVowelColors();
@@ -395,8 +396,8 @@ const WordTooltip = ({
     const hasSuggestions      = synonyms.length > 0 || antonyms.length > 0 || rhymes.length > 0 || slantRhymes.length > 0;
 
     return (
-      <div className={`word-card word-card--${rarity}`} data-school={schoolId}>
-        <div className="card-frame" onPointerDown={handleDragStart}>
+      <div className={`word-card word-card--${rarity}`} data-school={schoolId} style={isEmbedded ? { border: 'none', background: 'transparent' } : {}}>
+        <div className="card-frame" onPointerDown={!isEmbedded ? handleDragStart : undefined}>
           <button
             className="card-close-btn"
             onClick={() => onClose({ restoreFocus: false })}
@@ -627,12 +628,12 @@ const WordTooltip = ({
           <div className="card-resize-handle card-resize-handle--nw" onPointerDown={handleResizeStart("nw")} aria-hidden="true" />
           <div
             className="card-resize-handle card-resize-handle--se"
-            onPointerDown={handleResizeStart("se")}
+            onPointerDown={!isEmbedded ? handleResizeStart("se") : undefined}
             role="separator"
             aria-label="Resize card"
             aria-valuenow={size.width}
           />
-          <div className="card-resize-handle card-resize-handle--sw" onPointerDown={handleResizeStart("sw")} aria-hidden="true" />
+          {!isEmbedded && <div className="card-resize-handle card-resize-handle--sw" onPointerDown={handleResizeStart("sw")} aria-hidden="true" />}
         </div>
       </div>
     );
@@ -689,7 +690,12 @@ const WordTooltip = ({
       aria-modal="true"
       tabIndex="-1"
       className={`word-tooltip-container ${isInteracting ? "is-interacting" : ""}`}
-      style={{
+      style={isEmbedded ? {
+        position: "relative",
+        width: "100%",
+        height: "540px",
+        zIndex: 1,
+      } : {
         position: "fixed",
         top: pos.y,
         left: pos.x,
@@ -777,6 +783,7 @@ WordTooltip.propTypes = {
   ),
   sessionIndex: PropTypes.number,
   onSessionNavigate: PropTypes.func,
+  isEmbedded: PropTypes.bool,
 };
 
 export default WordTooltip;

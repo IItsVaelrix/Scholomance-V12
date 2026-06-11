@@ -4,6 +4,8 @@
 
 **Goal:** Add "Big Father" as a second grimoire track and a library shelf section that switches the Bytecode Visualiser between registry tracks.
 
+**Finalization audit (2026-06-11):** Implementation is present in the workspace and the targeted suites pass. Remaining open gates are human listen approval for the Big Father alignment review page, a live browser/dev-server check, and commits (not performed in this pass). Full `tsc --noEmit -p .` still fails in unrelated pre-existing areas outside `src/pages/Visualiser/` (`ParaEQ`, `Grimoire`, `Listen`, `pixel-lotus`).
+
 **Architecture:** A typed track registry (`src/pages/Visualiser/tracks/`) replaces the page's hardcoded `TRACK` constant and Petrichor-specific module pacing constants. The page renders an `activeTrack` state (deep-linkable via `?track=`), and a shelf section under the spread switches tracks. Big Father gets a forced-alignment artifact from the existing pipeline (`--model base` on this machine).
 
 **Tech Stack:** TypeScript/React, vitest (+jsdom), existing Python alignment pipeline.
@@ -42,7 +44,7 @@ Pre-existing facts the engineer needs:
 - Create: `src/pages/Visualiser/tracks/index.ts`
 - Test: `tests/core/grimoireTracks.test.js`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/core/grimoireTracks.test.js`:
 
@@ -87,12 +89,12 @@ describe('GRIMOIRE_TRACKS registry', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/core/grimoireTracks.test.js`
 Expected: FAIL — cannot resolve `../../src/pages/Visualiser/tracks`.
 
-- [ ] **Step 3: Create `types.ts`**
+- [x] **Step 3: Create `types.ts`**
 
 ```ts
 /** Heuristic-pacing parameters for the syllable/BPM fallback sync. Only
@@ -140,7 +142,7 @@ export const DEFAULT_PACING: TrackPacing = {
 };
 ```
 
-- [ ] **Step 4: Create `petrichor.ts` (verbatim move)**
+- [x] **Step 4: Create `petrichor.ts` (verbatim move)**
 
 Structure below; the `meta`, `provenance`, `lyrics` (all 88 lines), and `annotations`
 fields are **moved verbatim, unmodified**, from the `TRACK` constant currently at the
@@ -185,7 +187,7 @@ export const PETRICHOR: GrimoireTrack = {
 (The `/* moved verbatim */` markers above are move instructions for this step, not
 content to type — the data already exists in the page file.)
 
-- [ ] **Step 5: Create `bigFather.ts` (complete content)**
+- [x] **Step 5: Create `bigFather.ts` (complete content)**
 
 ```ts
 import type { GrimoireTrack } from './types';
@@ -286,7 +288,7 @@ export const BIG_FATHER: GrimoireTrack = {
 
 (57 lyric lines. Verify count: `node -e` step below.)
 
-- [ ] **Step 6: Create `index.ts`**
+- [x] **Step 6: Create `index.ts`**
 
 ```ts
 export type { GrimoireTrack, TrackPacing } from './types';
@@ -302,12 +304,12 @@ import { BIG_FATHER } from './bigFather';
 export const GRIMOIRE_TRACKS: GrimoireTrack[] = [PETRICHOR, BIG_FATHER];
 ```
 
-- [ ] **Step 7: Run the test to verify it passes**
+- [x] **Step 7: Run the test to verify it passes**
 
 Run: `npx vitest run tests/core/grimoireTracks.test.js`
 Expected: PASS. (The page still compiles unchanged — it hasn't been touched yet.)
 
-- [ ] **Step 8: Commit**
+- [ ] **Step 8: Commit** _(not performed in this finalization pass)_
 
 ```bash
 git add src/pages/Visualiser/tracks tests/core/grimoireTracks.test.js
@@ -325,7 +327,7 @@ Read the file before editing — line numbers have drifted across recent karaoke
 The refactor below is mechanical: every `TRACK.` becomes `activeTrack.`, every pacing
 module-constant becomes a field of `pacing` (a `useMemo` of `activeTrack.pacing ?? DEFAULT_PACING`).
 
-- [ ] **Step 1: Replace the data block with registry imports**
+- [x] **Step 1: Replace the data block with registry imports**
 
 Delete the entire `const TRACK = {…}` constant and the module constants `TRACK_BPM`,
 `LYRIC_LEAD_IN_S`, `LYRIC_TAIL_S`, `CHORUS_START_LINE`, `VERSE_SYL_PER_BEAT`,
@@ -336,7 +338,7 @@ Delete the entire `const TRACK = {…}` constant and the module constants `TRACK
 import { GRIMOIRE_TRACKS, DEFAULT_PACING, type GrimoireTrack, type TrackPacing } from './tracks';
 ```
 
-- [ ] **Step 2: Make the pacing helpers parametric**
+- [x] **Step 2: Make the pacing helpers parametric**
 
 Replace the deleted module-level pacing machinery with parametric versions (same
 math, pacing passed in):
@@ -378,7 +380,7 @@ function lyricLineAt(progress: number, duration: number, lineBeats: number[], pa
 
 (`syllableCountHeuristic` and `melismaBonus` stay as they are.)
 
-- [ ] **Step 3: Track state in the component**
+- [x] **Step 3: Track state in the component**
 
 At the top of `BytecodeVisualiserPage()`:
 
@@ -424,14 +426,14 @@ Then the mechanical pass:
 - `setAudioOk(true)` and `setCoverOk(true)` reset inside `selectTrack` (a new
   track's stream/cover deserves a fresh chance).
 
-- [ ] **Step 4: Verify against the existing suites**
+- [x] **Step 4: Verify against the existing suites**
 
 Run: `npx tsc --noEmit -p . 2>&1 | grep -i visualiser` (ignore the known unrelated
 `applyFormat` failure elsewhere; expect no Visualiser errors), then
 `npm run test:qa:stasis` and `npx vitest run tests/core/grimoireTracks.test.js`.
 Expected: all PASS — the default render is still Petrichor.
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Commit** _(not performed in this finalization pass)_
 
 ```bash
 git add src/pages/Visualiser/BytecodeVisualiserPage.tsx
@@ -447,7 +449,7 @@ git commit -m "refactor(visualiser): track-parametric page driven by the grimoir
 - Modify: `src/pages/Visualiser/BytecodeVisualiser.css` (append)
 - Test: `tests/components/libraryShelf.test.jsx`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `tests/components/libraryShelf.test.jsx`:
 
@@ -492,12 +494,12 @@ describe('library shelf', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `npx vitest run tests/components/libraryShelf.test.jsx`
 Expected: FAIL — no region named "library" yet (test 1), no Big Father button (tests 2–3; test 3 may pass already from Task 2's `?track=` support — that's fine, the shelf tests fail).
 
-- [ ] **Step 3: Add the shelf JSX**
+- [x] **Step 3: Add the shelf JSX**
 
 In `BytecodeVisualiserPage`'s return, directly after the closing `</div>` of
 `.bcv-spread` (still inside `<main>`):
@@ -526,7 +528,7 @@ In `BytecodeVisualiserPage`'s return, directly after the closing `</div>` of
       </section>
 ```
 
-- [ ] **Step 4: Append shelf styles**
+- [x] **Step 4: Append shelf styles**
 
 Append to `src/pages/Visualiser/BytecodeVisualiser.css`:
 
@@ -594,12 +596,12 @@ Append to `src/pages/Visualiser/BytecodeVisualiser.css`:
 (Match the file's existing custom-property names when appending — if the world
 colour variable differs from `--bcv-world`, use the file's actual name.)
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `npx vitest run tests/components/libraryShelf.test.jsx && npm run test:qa:stasis`
 Expected: all PASS.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Commit** _(not performed in this finalization pass)_
 
 ```bash
 git add src/pages/Visualiser/BytecodeVisualiserPage.tsx src/pages/Visualiser/BytecodeVisualiser.css tests/components/libraryShelf.test.jsx
@@ -618,7 +620,7 @@ Machine constraints (see project memory `forced-alignment-karaoke`): use
 `--model base` (MMS gets earlyoom-killed); exit 143 = memory-pressure kill, not a
 code bug — free RAM and retry.
 
-- [ ] **Step 1: Generate the lyrics file from the registry (single source of truth)**
+- [x] **Step 1: Generate the lyrics file from the registry (single source of truth)**
 
 ```bash
 node -e "
@@ -635,7 +637,7 @@ console.log(arr.length + ' lines written');
 
 Expected: `57 lines written`.
 
-- [ ] **Step 2: Download and verify the audio**
+- [x] **Step 2: Download and verify the audio**
 
 ```bash
 curl -L -o tmp/bigfather.mp3 https://cdn1.suno.ai/eaba93dc-bf75-4319-a67e-ddcedafc1c43.mp3
@@ -644,7 +646,7 @@ ffprobe -v error -show_entries format=duration tmp/bigfather.mp3
 
 Expected: duration ≈ 206.6.
 
-- [ ] **Step 3: Run the pipeline**
+- [x] **Step 3: Run the pipeline**
 
 ```bash
 PYTHONUNBUFFERED=1 .venv-align/bin/python scripts/align_lyrics.py \
@@ -663,7 +665,7 @@ correct `source.separator` to `"htdemucs"` in the artifact, as was done for
 Petrichor). If exit 1 with failed lines: inspect those lyric lines, fix, re-run —
 never commit a failing artifact.
 
-- [ ] **Step 4: Sanity-check the artifact (fabrication markers)**
+- [x] **Step 4: Sanity-check the artifact (fabrication markers)**
 
 ```bash
 node -e "
@@ -676,13 +678,13 @@ console.log('OK:', a.words.length, 'words,', confs.size, 'distinct confidences,'
 "
 ```
 
-- [ ] **Step 5: Listen gate (human)**
+- [ ] **Step 5: Listen gate (human)** _(still required before committing the alignment artifact)_
 
 Open `public/data/alignment/eaba93dc-….alignment-v1.review.html`, play, spot-check:
 first sung word, one chorus line, the final "Typhoon." **Stop and ask the user to
 confirm sync quality before committing.**
 
-- [ ] **Step 6: Commit (after user approval)**
+- [ ] **Step 6: Commit (after user approval)** _(blocked on listen gate)_
 
 ```bash
 git add scripts/big-father.lyrics.txt public/data/alignment/eaba93dc-bf75-4319-a67e-ddcedafc1c43.alignment-v1.json
@@ -693,7 +695,7 @@ git commit -m "feat(visualiser): Big Father forced-alignment timing artifact"
 
 ### Task 5: End-to-end verification
 
-- [ ] **Step 1: Full targeted sweep**
+- [x] **Step 1: Full targeted sweep**
 
 ```bash
 npx vitest run tests/core/grimoireTracks.test.js tests/core/lyricAlignment.test.js \
@@ -703,7 +705,7 @@ npx vitest run tests/core/grimoireTracks.test.js tests/core/lyricAlignment.test.
 
 Expected: all PASS.
 
-- [ ] **Step 2: Live check**
+- [ ] **Step 2: Live check** _(not run in this finalization pass)_
 
 `npm run dev` → open the visualiser route: Petrichor renders by default; shelf shows
 both tiles; clicking Big Father swaps the spread, plays the CDN stream, meta shows

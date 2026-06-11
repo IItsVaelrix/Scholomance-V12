@@ -1,8 +1,10 @@
 .photonic-bridge-lab {
   padding: 2rem;
-  color: var(--text-color);
+  color: var(--text-primary, #e2e8f0);
   max-width: 1200px;
   margin: 0 auto;
+  height: calc(100dvh - var(--nav-rail-height, 48px));
+  overflow-y: auto;
 }
 
 .photonic-bridge-lab h1 {

@@ -1,3 +1,6 @@
+import { POLICY_OFF } from '../../codex/core/phonology/g2p/schemas.js';
+import { JudiciaryEngine } from '../../codex/core/judiciary.js';
+
 export function checkPolicyRouting(policy, verdict) {
   const expectedPolicy = policy === POLICY_OFF ? POLICY_OFF : verdict?.policy;
 

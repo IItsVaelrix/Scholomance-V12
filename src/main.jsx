@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
 import BytecodeVisualiserPage from "./pages/Visualiser/BytecodeVisualiserPage.tsx";
+import ResonanceCardPage from "./pages/Visualiser/ResonanceCard.tsx";
 import "./lib/config/zod.config.js";
 import App from "./App.jsx";
 import "./index.css";
@@ -27,8 +28,11 @@ import {
   DivWandPage,
   PhotonicBridgeLab,
   StudioUpload,
+  ActorForgeLab,
+  IsoMapSandbox,
   BlogIndexPage,
   BlogArticlePage,
+  VisualizerReleasePage,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
 
@@ -84,9 +88,13 @@ const router = createBrowserRouter([
           { path: "div-wand", element: <AdminRoute><DivWandPage /></AdminRoute> },
           { path: "internal/photonic-bridge", element: <AdminRoute><PhotonicBridgeLab /></AdminRoute> },
           { path: "internal/studio", element: <AdminRoute><StudioUpload /></AdminRoute> },
+          { path: "internal/pixel-lotus/actor-forge", element: <AdminRoute><ActorForgeLab /></AdminRoute> },
+          { path: "internal/pixel-lotus/iso-map-sandbox", element: <AdminRoute><IsoMapSandbox /></AdminRoute> },
           { path: "blog", element: <BlogIndexPage /> },
           { path: "blog/:slug", element: <BlogArticlePage /> },
           { path: "visualiser", element: <BytecodeVisualiserPage /> },
+          { path: "card", element: <ResonanceCardPage /> },
+          { path: "release", element: <VisualizerReleasePage /> },
         ],
       },
     ],

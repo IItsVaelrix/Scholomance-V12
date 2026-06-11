@@ -317,6 +317,132 @@ describe("ScrollEditor Truesight overlay", () => {
     );
   });
 
+  it("opens a Truesight word activation even before analysis is available", () => {
+    const onWordActivate = vi.fn();
+
+    const { container } = renderWithProviders(
+      <ScrollEditor
+        title="Lookup before analysis"
+        content="dragon"
+        isEditable={false}
+        isTruesight={true}
+        analysisMode="none"
+        analyzedWordsByIdentity={new Map()}
+        activeConnections={[]}
+        highlightedLines={[]}
+        onWordActivate={onWordActivate}
+      />
+    );
+
+    const clickableWord = container.querySelector(".grimoire-word");
+    expect(clickableWord).toBeTruthy();
+
+    fireEvent.click(clickableWord);
+
+    expect(onWordActivate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: "truesight_tap",
+        word: "dragon",
+        normalizedWord: "DRAGON",
+        analysis: null,
+        charStart: 0,
+        anchorRect: expect.objectContaining({
+          left: expect.any(Number),
+          top: expect.any(Number),
+        }),
+      })
+    );
+  });
+
+  it("draws one pixel-aligned annotation box for each Truesight word", () => {
+    const { container } = renderWithProviders(
+      <ScrollEditor
+        title="Annotation layer"
+        content="Alpha beta"
+        isEditable={false}
+        isTruesight={true}
+        analysisMode="none"
+        analyzedWordsByIdentity={new Map()}
+        activeConnections={[]}
+        highlightedLines={[]}
+        initialContainerWidth={800}
+        forceTopology={{
+          baseCellWidth: 10,
+          baseCellHeight: 24,
+          originX: 20,
+          originY: 16,
+          totalWidth: 800,
+        }}
+      />
+    );
+
+    const words = Array.from(container.querySelectorAll(".truesight-word"));
+    const boxes = Array.from(container.querySelectorAll(".truesight-annotation-box"));
+
+    expect(words.map((node) => node.textContent)).toEqual(["Alpha", "beta"]);
+    expect(boxes).toHaveLength(words.length);
+    expect(boxes.map((node) => node.getAttribute("data-char-start"))).toEqual(["0", "6"]);
+    // The box is a child of its pixel-positioned word shell and fills it via
+    // inset — inline left/width here would double-offset it inside the shell.
+    boxes.forEach((box) => {
+      expect(box.style.position).toBe("absolute");
+      expect(box.style.inset).toBe("0");
+      expect(box.style.left).toBe("");
+      expect(box.style.width).toBe("");
+    });
+    // The shells carry the pixel positions; the boxes inherit them via inset
+    expect(words[0].style.left).toMatch(/^\d+(\.\d+)?px$/);
+    expect(words[1].style.left).toMatch(/^\d+(\.\d+)?px$/);
+    expect(parseFloat(words[1].style.left)).toBeGreaterThan(parseFloat(words[0].style.left));
+  });
+
+  it.each([
+    ["EDIT", true],
+    ["NEUTRAL", false],
+  ])("keeps Truesight word activation reachable when ideMode is %s", (ideMode, isEditable) => {
+    const onWordActivate = vi.fn();
+
+    const { container } = renderWithProviders(
+      <ScrollEditor
+        title="Mode hierarchy"
+        content="dragon"
+        isEditable={isEditable}
+        isTruesight={true}
+        ideMode={ideMode}
+        analysisMode="none"
+        analyzedWordsByIdentity={new Map()}
+        activeConnections={[]}
+        highlightedLines={[]}
+        initialContainerWidth={800}
+        forceTopology={{
+          baseCellWidth: 10,
+          baseCellHeight: 24,
+          originX: 20,
+          originY: 16,
+          totalWidth: 800,
+        }}
+        onWordActivate={onWordActivate}
+      />
+    );
+
+    const overlay = container.querySelector(".word-background-layer");
+    const clickableWord = container.querySelector(".grimoire-word");
+    expect(overlay).toBeTruthy();
+    expect(clickableWord).toBeTruthy();
+
+    fireEvent.click(clickableWord);
+
+    expect(onWordActivate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        trigger: "truesight_tap",
+        word: "dragon",
+        normalizedWord: "DRAGON",
+        analysis: null,
+        charStart: 0,
+      })
+    );
+  });
+
   it("uses school colors instead of explicit bytecode colors for multisyllabic rhymes", () => {
     const content = "adore core";
     const willRed = hexToRgbString("#ef4444");

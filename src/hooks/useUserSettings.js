@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth.jsx';
 import { buildAuthorityUrl } from '../lib/apiUrl.js';
 
-const LOCAL_STORAGE_KEY = 'scholomance.user.settings.v1';
+export const LOCAL_STORAGE_KEY = 'scholomance.user.settings.v1';
 
 function getSettingsEndpoint() {
   return buildAuthorityUrl('/api/settings');

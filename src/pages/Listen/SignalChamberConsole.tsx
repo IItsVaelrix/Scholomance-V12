@@ -20,7 +20,16 @@ import { SCHOOLS, generateSchoolColor } from '../../data/schools';
 import { useAmbientPlayer } from '../../hooks/useAmbientPlayer';
 import { getSharedPhaserGame } from './AlchemicalLabBackground';
 import { getSchoolAudioConfig } from '../../lib/ambient/schoolAudio.config';
-import type { SignalChamberScene as SignalChamberSceneType } from './scenes/SignalChamberScene';
+// The scene class is created inside buildSignalChamberScene(Phaser), so there
+// is no exported class to import — this structural type is the console's
+// contract with the scene instance.
+type SignalChamberSceneType = {
+  onPlayPause?: () => void;
+  onVolumeChange?: (volume: number) => void;
+  onStationSelect?: (schoolId: string) => void;
+  onOrbClick?: () => void;
+  updateState: (state: Record<string, unknown>) => void;
+};
 import HolographicEmbed from './HolographicEmbed.jsx';
 import { BytecodeVisualiser } from '../Visualiser/BytecodeVisualiser';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
@@ -181,7 +190,7 @@ export const SignalChamberConsole: React.FC<SignalChamberConsoleProps> = ({
     };
 
     const onGameReady = (game: Phaser.Game) => {
-      const scene = game.scene.getScene('SignalChamberScene') as SignalChamberSceneType;
+      const scene = game.scene.getScene('SignalChamberScene') as unknown as SignalChamberSceneType;
       if (!scene) return;
 
       sceneRef.current = scene;

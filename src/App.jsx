@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef } from "react";
+import React, { Suspense, useEffect } from "react";
 import { useOutlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Navigation from "./components/Navigation/Navigation.jsx";
@@ -46,7 +46,6 @@ export default function App() {
   const prefersReducedMotion = usePrefersReducedMotion();
   const shouldReduceMotion = prefersReducedMotion;
   const pageVariants = shouldReduceMotion ? reducedMotionVariants : fullMotionVariants;
-  const pageContainerRef = useRef(null);
 
   useEffect(() => {
     const main = document.getElementById("main-content");
@@ -77,27 +76,29 @@ export default function App() {
                 </>
               )}
 
-              <div className="page-container" ref={pageContainerRef}>
+              <div className="page-container">
                 <a href="#main-content" className="skip-link">
                   Skip to main content
                 </a>
                 <Navigation />
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.main
-                    key={location.pathname}
-                    id="main-content"
-                    className="page-content"
-                    variants={pageVariants}
-                    initial="initial"
-                    animate="animate"
-                    exit="exit"
-                    transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
-                  >
-                    <Suspense fallback={null}>
-                      {currentOutlet && React.cloneElement(currentOutlet, { key: location.pathname })}
-                    </Suspense>
-                  </motion.main>
-                </AnimatePresence>
+                <div className="page-body">
+                  <AnimatePresence mode="wait" initial={false}>
+                    <motion.main
+                      key={location.pathname}
+                      id="main-content"
+                      className="page-content"
+                      variants={pageVariants}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: [0.23, 1, 0.32, 1] }}
+                    >
+                      <Suspense fallback={null}>
+                        {currentOutlet && React.cloneElement(currentOutlet, { key: location.pathname })}
+                      </Suspense>
+                    </motion.main>
+                  </AnimatePresence>
+                </div>
               </div>
             </SongProvider>
           </AuthScopedProviders>

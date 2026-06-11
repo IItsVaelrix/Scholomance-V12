@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion';
 import { BytecodeVisualiser } from './BytecodeVisualiser';
+import { DiscographyNav } from './DiscographyNav';
 import { computeFingerprint, semanticTokens } from './bytecodeFingerprint';
 import { PhonemeEngine, generateSchoolColor } from '../../lib/engine.adapter.js';
 import { alignPhonemes } from '../../lib/phonology/phonemeAlignment.js';
@@ -9,6 +11,11 @@ import { lineAtTime, wordAtTime } from '../../kits/scholomance-visualizer-kit/ut
 import { GRIMOIRE_TRACKS, DEFAULT_PACING, type GrimoireTrack, type TrackPacing } from './tracks';
 import { wordTruesight } from './truesightColor';
 import './BytecodeVisualiser.css';
+
+interface PhonemeEngineAPI {
+  init?: () => Promise<unknown>;
+  analyzeDeep?: (w: string) => { phonemes?: string[]; syllableCount?: number } | null;
+}
 
 /** Fallback syllable estimate (pre-engine): vowel groups + silent-e. */
 function syllableCountHeuristic(word: string): number {
@@ -174,6 +181,7 @@ export default function BytecodeVisualiserPage() {
   const [playing, setPlaying] = useState(false);
   const [repeat, setRepeat] = useState(false);
   const [coverOk, setCoverOk] = useState(true);
+  const [audioBlocked, setAudioBlocked] = useState(false);
 
   const selectTrack = (track: GrimoireTrack) => {
     if (track.id === activeTrack.id) return;
@@ -181,6 +189,7 @@ export default function BytecodeVisualiserPage() {
     setProgress(0);
     setPlaying(false);
     setAudioOk(true);
+    setAudioBlocked(false);
     setCoverOk(true);
     // New <audio> element (key change) -> the Web Audio graph must rebuild.
     analyserRef.current = null;
@@ -232,7 +241,10 @@ export default function BytecodeVisualiserPage() {
     if (el.paused) {
       ensureAnalyser();
       audioCtxRef.current?.resume().catch(() => {});
-      el.play().catch(() => setAudioOk(false));
+      el.play().catch(() => {
+        setAudioOk(false);
+        setAudioBlocked(true);
+      });
     } else {
       el.pause();
     }
@@ -277,7 +289,8 @@ export default function BytecodeVisualiserPage() {
   // Truesight: phoneme-coloured lyrics, computed once after the engine inits.
   // Deterministic (same word -> same vowel family -> same school colour); if the
   // engine fails to init, lyrics stay plain (graceful).
-  const [coloredLyrics, setColoredLyrics] = useState<{ word: string; color: string | null }[][] | null>(null);
+  const [coloredLyrics, setColoredLyrics] = useState<{ word: string; color: string | null; school: string | null; analysis: any }[][] | null>(null);
+  const [hoveredWord, setHoveredWord] = useState<{ word: string; color: string; school: string; line: number; analysis: any } | null>(null);
   const [dominantSchool, setDominantSchool] = useState<string>('SONIC');
   const [lineBeats, setLineBeats] = useState<number[]>(() => heuristicLineBeats(activeTrack, pacing));
   useEffect(() => {
@@ -288,7 +301,8 @@ export default function BytecodeVisualiserPage() {
     let cancelled = false;
     (async () => {
       try {
-        await (PhonemeEngine as { init?: () => Promise<unknown> }).init?.();
+        const initEngine = PhonemeEngine as PhonemeEngineAPI;
+        await initEngine.init?.();
       } catch {
         /* graceful: lyrics render plain, pacing keeps the heuristic beats */
       }
@@ -298,16 +312,14 @@ export default function BytecodeVisualiserPage() {
         line.split(/(\s+)/).map((tok) => {
           const ts = /\S/.test(tok) ? wordTruesight(tok) : null;
           if (ts) counts[ts.school] = (counts[ts.school] || 0) + 1;
-          return { word: tok, color: ts?.color ?? null };
+          return { word: tok, color: ts?.color ?? null, school: ts?.school ?? null, analysis: ts?.analysis ?? null };
         }),
       );
       const dom = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'SONIC';
 
       // Engine-backed pacing: syllabifier counts (every word, function words
       // included) + concatenated ARPAbet sequence per line for couplet checks.
-      const engine = PhonemeEngine as {
-        analyzeDeep?: (w: string) => { phonemes?: string[]; syllableCount?: number } | null;
-      };
+      const engine = PhonemeEngine as PhonemeEngineAPI;
       const lines = activeTrack.lyrics.map((line, i) => {
         let syl = 0;
         const phonemes: string[] = [];
@@ -460,6 +472,8 @@ export default function BytecodeVisualiserPage() {
                               className={tok.color ? 'bcv-tsword' : undefined}
                               style={tok.color ? ({ '--w': tok.color } as CSSProperties) : undefined}
                               data-sung={sung ? (sungWord?.backing ? 'backing' : 'true') : undefined}
+                              onMouseEnter={tok.color ? () => setHoveredWord({ word: tok.word, color: tok.color!, school: tok.school!, line: i, analysis: tok.analysis }) : undefined}
+                              onMouseLeave={tok.color ? () => setHoveredWord(null) : undefined}
                             >{tok.word}</span>
                           );
                         });
@@ -470,14 +484,72 @@ export default function BytecodeVisualiserPage() {
             ))}
           </ol>
 
-          <div className="bcv-annotations">
-            {activeTrack.annotations.map((a) => (
-              <div className="bcv-annotation" key={a.n}>
-                <p className="bcv-annotation__head">{String(a.n).padStart(2, '0')} · {a.title}</p>
-                <p className="bcv-annotation__body">{a.body}</p>
-              </div>
-            ))}
-          </div>
+          <section className="bcv-annotations-layer" aria-labelledby="annotations-heading">
+            <h2 id="annotations-heading" className="sr-only">Truesight Annotations</h2>
+            <div className="bcv-annotations-grid">
+              <AnimatePresence mode="wait">
+                {hoveredWord && (
+                  <motion.div
+                    key={`word-${hoveredWord.word}-${hoveredWord.line}`}
+                    className="bcv-panel bcv-panel--annotation"
+                    initial={reducedMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                    role="article"
+                    style={{ borderLeftColor: hoveredWord.color }}
+                  >
+                    <header className="bcv-annotation__header">
+                      <span className="bcv-annotation__id" style={{ color: hoveredWord.color, textShadow: `0 0 10px ${hoveredWord.color}66` }}>
+                        {hoveredWord.school}
+                      </span>
+                      <h3 className="bcv-annotation__title" style={{ color: hoveredWord.color }}>{hoveredWord.word}</h3>
+                      {hoveredWord.analysis?.syllableCount && (
+                         <span style={{ marginLeft: 'auto', fontSize: '0.65rem', color: 'var(--bcv-dim)' }}>
+                           DEPTH: {hoveredWord.analysis.syllableCount}
+                         </span>
+                      )}
+                    </header>
+                    <div className="bcv-annotation__content">
+                      <p className="bcv-annotation__body">
+                        {hoveredWord.analysis?.rhymeKey && `Echo Key: ${hoveredWord.analysis.rhymeKey} · `}
+                        {hoveredWord.analysis?.vowelFamily && `Vowel Family: ${hoveredWord.analysis.vowelFamily}`}
+                        {!hoveredWord.analysis?.rhymeKey && !hoveredWord.analysis?.vowelFamily && `Arcane structural token mapped to the ${hoveredWord.school} school.`}
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+                
+                {hoveredWord && activeTrack.annotations.filter(a => a.n === hoveredWord.line).map((a, idx) => (
+                  <motion.div
+                    key={a.n}
+                    className="bcv-panel bcv-panel--annotation"
+                    initial={reducedMotion ? false : { opacity: 0, y: 12, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.25, delay: reducedMotion ? 0 : 0.05, ease: 'easeOut' }}
+                    role="article"
+                  >
+                    <header className="bcv-annotation__header">
+                      <span className="bcv-annotation__id">
+                        {String(a.n).padStart(2, '0')}
+                      </span>
+                      <h3 className="bcv-annotation__title">{a.title}</h3>
+                    </header>
+                    <div className="bcv-annotation__content">
+                      <p className="bcv-annotation__body">{a.body}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </section>
+
+          {audioBlocked && (
+            <div className="bcv-audio-warning" style={{ color: 'hsl(0 90% 70%)', fontSize: '0.85rem', marginBottom: '8px', padding: '8px', background: 'hsl(0 90% 10%)', borderRadius: '4px', border: '1px solid hsl(0 90% 20%)' }}>
+              ⚠️ Audio Blocked — Please interact with the page or check your browser settings to allow playback.
+            </div>
+          )}
 
           {/* Player transport — every control state-driven (architect law). */}
           <div className="bcv-player">
@@ -566,7 +638,7 @@ export default function BytecodeVisualiserPage() {
                     const x = 12 + c * 16 + (r % 2) * 8;
                     const y = 12 + r * 16;
                     const on = (fp.hash >> (r * 7 + c)) & 1;
-                    return <circle key={`${r}-${c}`} cx={x} cy={y} r={on ? 3.2 : 1.6} fill={on ? 'hsl(196 90% 62%)' : 'hsl(43 32% 30%)'} />;
+                    return <circle key={`${r}-${c}`} cx={x} cy={y} r={on ? 3.2 : 1.6} fill={on ? `hsl(${worldHue} 90% 62%)` : `hsl(${worldHue} 32% 15%)`} />;
                   })
                 )}
               </svg>
@@ -584,27 +656,9 @@ export default function BytecodeVisualiserPage() {
         </section>
       </div>
 
-      {/* ── LIBRARY: the grimoire shelf ─────────────────────────────────── */}
-      <section className="bcv-library" aria-label="Library">
-        <h2 className="bcv-library__head">✦ Library ✦</h2>
-        <div className="bcv-library__shelf">
-          {GRIMOIRE_TRACKS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className="bcv-library__tile"
-              aria-pressed={t.id === activeTrack.id}
-              onClick={() => selectTrack(t)}
-            >
-              <span className="bcv-library__cover">
-                <img src={t.coverUrl} alt="" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
-              </span>
-              <span className="bcv-library__title">{t.title}</span>
-              <span className="bcv-library__style">{t.meta.find(([k]) => k === 'Style')?.[1] ?? t.artist}</span>
-            </button>
-          ))}
-        </div>
-      </section>
+      {import.meta.env.VITE_ENABLE_DISCOGRAPHY !== 'false' && (
+        <DiscographyNav activeTrackId={activeTrack.id} onSelectTrack={selectTrack} />
+      )}
     </main>
   );
 }

@@ -1,0 +1,54 @@
+.iso-map-sandbox {
+  min-height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-color);
+  padding: 1rem;
+}
+
+.sandbox-header {
+  margin-bottom: 1.5rem;
+}
+
+.sandbox-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.25rem 0;
+  background: linear-gradient(90deg, var(--school-psychic), var(--school-alchemy));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sandbox-subtitle {
+  color: var(--text-muted);
+  margin: 0 0 1rem 0;
+  font-family: JetBrains Mono, monospace;
+}
+
+.debug-toggle {
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: var(--school-sonic);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.debug-toggle:hover {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+.debug-toggle[aria-pressed="true"] {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #86efac;
+}
+
+.sandbox-content {
+  position: relative;
+}
+
+.iso-map-canvas {
+  display: block;
+  margin: 0 auto;
+  background: #0a0a0f;
+}

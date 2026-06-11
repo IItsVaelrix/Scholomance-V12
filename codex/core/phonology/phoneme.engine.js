@@ -66,8 +66,17 @@ const USE_G2P_JURY = parseBooleanEnvFlag(
   false
 );
 
+const NASAL_CODA_PHONEMES = new Set(['M', 'N', 'NG']);
+
 function isG2PJuryEnabled() {
   return USE_G2P_JURY;
+}
+
+function isSingleNasalCodaSubstitution(codaA, codaB) {
+  if (!Array.isArray(codaA) || !Array.isArray(codaB)) return false;
+  if (codaA.length !== 1 || codaB.length !== 1) return false;
+  if (codaA[0] === codaB[0]) return false;
+  return NASAL_CODA_PHONEMES.has(codaA[0]) && NASAL_CODA_PHONEMES.has(codaB[0]);
 }
 
 async function _runG2PJury(word) {
@@ -830,6 +839,8 @@ export const PhonemeEngine = {
       const sA = revA[i], sB = revB[i];
       const vowelScore = PhoneticSimilarity.getVowelSimilarity(sA.vowel, sB.vowel);
       const codaScore = PhoneticSimilarity.getArraySimilarity(sA.codaPhonemes, sB.codaPhonemes);
+
+      const stressMatch = (sA.stress > 0) === (sB.stress > 0);
       
       // Strict gate on the first (final) syllable coda
       if (i === 0) {
@@ -837,13 +848,26 @@ export const PhonemeEngine = {
           const hasCodaB = sB.codaPhonemes.length > 0;
           
           if ((hasCodaA || hasCodaB) && codaScore < CODA_MIN_SCORE) {
+              // Lever 3: rescue classic nasal-coda slants without promoting pure assonance.
+              if (vowelScore >= 0.85 && isSingleNasalCodaSubstitution(sA.codaPhonemes, sB.codaPhonemes)) {
+                  const slantScore = Math.max(vowelScore * 0.60, 0.72);
+                  return { syllablesMatched: 1, score: slantScore, type: 'masculine' };
+              }
               break;
           }
       }
 
-      const s = (vowelScore * 0.60) + (codaScore * 0.40);
-      if (s < 0.60) break;
-      matched++; totalScore += s;
+      // Lever 2: open-open coda credit conditional on stress compatibility
+      let effectiveCodaScore = codaScore;
+      if (sA.codaPhonemes.length === 0 && sB.codaPhonemes.length === 0 && !stressMatch) {
+          effectiveCodaScore = 0.0;
+      }
+
+      // Lever 1: stress agreement factor — mismatch caps well below perfect
+      const s = (vowelScore * 0.60) + (effectiveCodaScore * 0.40);
+      const finalS = stressMatch ? s : Math.min(s, 0.55);
+      if (finalS < 0.60) break;
+      matched++; totalScore += finalS;
     }
     const score = matched > 0 ? totalScore / matched : 0;
     if (score < 0.60) return { syllablesMatched: 0, score: 0, type: 'none' };

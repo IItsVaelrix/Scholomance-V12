@@ -202,7 +202,7 @@ export function evaluateGridProjection(formula, canvasSize, time = 0) {
             z: 0,
             emphasis: clamp01(0.3 + 0.7 * Math.sin((x + y) * 0.05)),
             source: 'grid_hex',
-            gridCell: { col: Math.round(x / safeCellSize), row: hexRow },
+            gridCell: { col: Math.round((x - xOffset) / safeCellSize), row: hexRow },
           });
         }
         hexRow++;

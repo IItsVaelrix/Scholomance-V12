@@ -10,7 +10,7 @@
      centered overflowing flex content would clip its top out of reach. */
   justify-content: flex-start;
   width: 100%;
-  height: 100dvh;
+  height: calc(100dvh - var(--nav-rail-height, 48px));
   padding: 6.5rem 2rem 3rem;
   background: radial-gradient(circle at 50% 50%, #0a0c14 0%, #010205 100%);
   position: relative;

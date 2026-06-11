@@ -5,7 +5,7 @@
  * Ensures UI files don't violate architectural boundaries.
  */
 
-import { processorBridge, hslToHex } from './engine.adapter.js';
+import { processorBridge } from './engine.adapter.js';
 import { routeRetinaPacketToPhotonicBridge } from './photonic-retina/index.js';
 
 // --- Coordinate & Formula Logic ---
@@ -40,8 +40,13 @@ import {
   createTemplateGrid as codexCreateTemplateGrid,
   clearCell as codexClearCell,
   exportToAseprite as codexExportToAseprite,
+  importFromAseprite as codexImportFromAseprite,
   generateGridPreview as codexGenerateGridPreview,
   getCellAtPosition as codexGetCellAtPosition,
+  getCellOrigin as codexGetCellOrigin,
+  getGridMetrics as codexGetGridMetrics,
+  snapToGrid as codexSnapToGrid,
+  applySymmetry as codexApplySymmetry,
   floodFill as codexFloodFill,
   GRID_TYPES as codexGRID_TYPES,
   setCell as codexSetCell,
@@ -111,8 +116,6 @@ import {
 
 import {
   createShaderCompileError as codexCreateShaderCompileError,
-  createShaderLinkError as codexCreateShaderLinkError,
-  createShaderContextLostError as codexCreateShaderContextLostError,
 } from '../../codex/core/pixelbrain/shader-errors.js';
 
 import {
@@ -242,6 +245,26 @@ export function generateGridPreview(grid) {
 
 export function getCellAtPosition(grid, x, y) {
   return codexGetCellAtPosition(grid, x, y);
+}
+
+export function getCellOrigin(grid, col, row) {
+  return codexGetCellOrigin(grid, col, row);
+}
+
+export function getGridMetrics(grid) {
+  return codexGetGridMetrics(grid);
+}
+
+export function snapToGrid(x, y, grid) {
+  return codexSnapToGrid(x, y, grid);
+}
+
+export function applySymmetry(coordinates, grid) {
+  return codexApplySymmetry(coordinates, grid);
+}
+
+export function importFromAseprite(data) {
+  return codexImportFromAseprite(data);
 }
 
 export function floodFill(grid, layer, x, y, color) {

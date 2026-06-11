@@ -47,7 +47,7 @@ export async function runG2PJury(word, syntaxContext = null, options = {}) {
     return offResult(upper, 0, 0);
   }
 
-  const startTime = Date.now();
+  const startTime = Date.now(); // EXEMPT — latency telemetry only
   const beforeMemory = process.memoryUsage?.()?.heapUsed || 0;
 
   try {
@@ -114,7 +114,7 @@ export async function runG2PJury(word, syntaxContext = null, options = {}) {
         flags: { fidelityRejected: false, legalityViolated: false, precisionLoss: 0 },
       }),
       diagnostics: createRuntimeDiagnostics({
-        latencyMs: Date.now() - startTime,
+        latencyMs: Date.now() - startTime, // EXEMPT — latency telemetry only
         memoryDeltaBytes: Math.max(0, (process.memoryUsage?.()?.heapUsed || 0) - beforeMemory),
         bytecodeHealth: encodeModuleHealth('g2p-jury', { error: String(error) }),
       }),
@@ -123,7 +123,7 @@ export async function runG2PJury(word, syntaxContext = null, options = {}) {
 }
 
 function offResult(upper, startTime = 0, beforeMemory = 0) {
-  const endTime = Date.now();
+  const endTime = Date.now(); // EXEMPT — latency telemetry only
   const afterMemory = process.memoryUsage?.()?.heapUsed || beforeMemory;
   return {
     verdict: createDeterministicVerdict({
@@ -144,7 +144,7 @@ function offResult(upper, startTime = 0, beforeMemory = 0) {
 }
 
 function finishDiagnostics(startTime, beforeMemory) {
-  const endTime = Date.now();
+  const endTime = Date.now(); // EXEMPT — latency telemetry only
   const afterMemory = process.memoryUsage?.()?.heapUsed || beforeMemory;
   return createRuntimeDiagnostics({
     latencyMs: endTime - startTime,

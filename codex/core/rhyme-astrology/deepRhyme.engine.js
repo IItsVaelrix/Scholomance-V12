@@ -32,6 +32,17 @@ const STRESSED_ASSONANCE_SCORE = 0.62;
 const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
 const TRUESIGHT_RHYME_TYPES = new Set(['perfect', 'near', 'slant', 'identity']);
 const IGNORE_IDENTICAL_WORD_RHYMES = true;
+const FUNCTION_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'than',
+  'i', 'me', 'my', 'mine', 'you', 'your', 'yours', 'we', 'our', 'ours',
+  'he', 'him', 'his', 'she', 'her', 'hers', 'they', 'them', 'their', 'theirs',
+  'it', 'its', 'this', 'that', 'these', 'those',
+  'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+  'do', 'does', 'did', 'have', 'has', 'had', 'done',
+  'to', 'of', 'in', 'on', 'at', 'for', 'from', 'with', 'by', 'as',
+  'not', 'no', 'so', 'too', 'very', 'just', 'can', 'could', 'would', 'should',
+  'will', 'shall', 'might', 'may', 'must',
+]);
 const SYNTAX_GATES = Object.freeze({
   ALLOW: 'allow',
   ALLOW_WEAK: 'allow_weak',
@@ -341,6 +352,9 @@ export class DeepRhymeEngine {
   pushConnectionIfValid(wordA, wordB, out, seenPairs = new Set()) {
     if (!wordA?.analysis || !wordB?.analysis) return;
     if (this.shouldSkipLexicalRepetition(wordA, wordB)) return;
+    const normA = this.normalizeWord(wordA.word);
+    const normB = this.normalizeWord(wordB.word);
+    if (normA && normB && FUNCTION_WORDS.has(normA) && FUNCTION_WORDS.has(normB)) return;
     const pairKey = this.getPairKey(wordA, wordB);
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);

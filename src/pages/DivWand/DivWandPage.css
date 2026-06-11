@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  height: calc(100dvh - 16px);
+  height: calc(100dvh - var(--nav-rail-height, 48px));
   background: var(--surface-void, #07090e);
   font-family: var(--font-sans);
   color: var(--text-primary, #e2e8f0);

@@ -1,4 +1,6 @@
 @import './lib/css/generated/school-styles.css';
+@import './kits/scholomance-visualizer-kit/tokens/scholomance-visualizer.tokens.css';
+@import './kits/scholomance-visualizer-kit/styles/scholomance-visualizer.base.css';
 @import './animations.css';
 
 /* ========================================
@@ -229,6 +231,7 @@ body::before {
 
   /* Page Layout */
   --page-gutter: clamp(1rem, 3vw, 2rem);
+  --nav-rail-height: 48px;
 
   /* Border Radius */
   --radius-sm: 0.25rem;
@@ -619,50 +622,235 @@ body::after {
   will-change: opacity;
 }
 
-/* === PRIMARY NAV (Minimal IDE Style) === */
-/* Floating navigation button (top-left) — the nav bar has been removed; this
-   button is the sole entry point into the fullscreen navigation overlay. */
-.nav-brand {
+/* === PRIMARY NAV — Persistent Rail === */
+/* Horizontal rail at top of every page. Glass morphism, school-reactive,
+   token-driven. Z-index Layer 4 (Interactive Chrome): 1200. */
+
+.scholomance-rail {
+  position: relative;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-rail-height);
+  padding: 0 var(--space-4);
+  background: rgba(9, 9, 22, 0.72);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid var(--border-subtle);
+  box-shadow:
+    inset 0 -1px 0 rgba(255, 255, 255, 0.04),
+    0 1px 8px rgba(0, 0, 0, 0.3),
+    0 1px calc(var(--is-music-active, 0) * 8px) var(--active-school-glow);
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+
+.rail-left,
+.rail-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.rail-center {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.rail-center::-webkit-scrollbar {
+  display: none;
+}
+
+/* Brand button */
+.rail-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
   font-family: var(--font-display);
   font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-primary);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.rail-brand:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-soft);
+  box-shadow: 0 0 12px var(--chrome-gold-glow);
+}
+
+.rail-brand-glyph {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--chrome-gold), var(--chrome-gold-dim));
+  color: var(--bg-void);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
-.nav-brand--floating {
-  position: fixed;
-  top: 0; /* Flush with ceiling */
-  left: var(--space-4);
-  z-index: 1200;
-  padding: var(--space-3) var(--space-4);
+.rail-brand-label {
+  white-space: nowrap;
+}
+
+/* Breadcrumb */
+.rail-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-breadcrumb-sep {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.rail-breadcrumb-label {
+  color: var(--chrome-gold-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Rail links */
+.rail-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.rail-link:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border-subtle);
+}
+
+.rail-link--active {
+  color: var(--active-school-color, var(--chrome-gold));
+  background: color-mix(in srgb, var(--active-school-color, var(--chrome-gold)) 8%, transparent);
+  border-color: color-mix(in srgb, var(--active-school-color, var(--chrome-gold)) 20%, transparent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--active-school-color, var(--chrome-gold)) 12%, transparent);
+}
+
+.rail-link--loading {
+  opacity: 0.6;
+}
+
+.rail-link-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* User link */
+.rail-link--user {
+  padding: var(--space-1);
+  border-radius: var(--radius-full);
+}
+
+/* Menu button */
+.rail-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border: 1px solid var(--border-subtle);
-  border-top: none; /* Removed top border so it blends with edge */
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg); /* Rounded bottom only */
-  background: rgba(10, 11, 30, 0.45);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  box-shadow: 
-    inset 0 -1px 0 rgba(255, 255, 255, 0.05), /* Subtle inner lip */
-    0 4px 16px rgba(0, 0, 0, 0.4), /* Drop shadow */
-    0 1px calc(var(--is-music-active, 0) * 12px) var(--active-school-glow);
-  transition: box-shadow 0.8s ease, background var(--transition-base), padding var(--transition-base);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
-.nav-brand--floating:hover {
-  background: rgba(10, 11, 30, 0.85);
-  padding-bottom: calc(var(--space-3) + 4px); /* Slight 'pull down' effect on hover */
+.rail-menu-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-soft);
 }
 
+/* Responsive: hide labels on narrow viewports */
 @media (max-width: 767px) {
-  .nav-brand--floating {
-    font-size: var(--text-base);
+  .scholomance-rail {
+    padding: 0 var(--space-3);
+    gap: var(--space-1);
+  }
+
+  .rail-brand-label {
+    display: none;
+  }
+
+  .rail-breadcrumb {
+    display: none;
+  }
+
+  .rail-center {
+    gap: 0;
+  }
+
+  .rail-link {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .rail-link-label {
+    display: none;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .rail-link-label {
+    font-size: var(--text-2xs);
   }
 }
 
@@ -1372,7 +1560,7 @@ h6 { font-size: var(--text-base); }
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  padding: calc(48px + var(--space-4)) var(--space-4) max(var(--space-4), var(--safe-area-bottom));
+  padding: calc(var(--nav-rail-height) + var(--space-4)) var(--space-4) max(var(--space-4), var(--safe-area-bottom));
   overflow-y: auto;
 }
 
@@ -1576,16 +1764,29 @@ h6 { font-size: var(--text-base); }
 
 /* === PAGE TRANSITIONS === */
 
-/* Page Container */
+/* Page Container — flex column: rail + body */
 .page-container {
   min-height: 100vh;
   min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Page Body — fills remaining space below the nav rail */
+.page-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   position: relative;
 }
 
 .page-content {
   position: relative;
   z-index: 1;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Transition Wrapper */

@@ -261,7 +261,7 @@ export function buildSignalChamberScene(Phaser) {
     const sx = this._sx, sy = this._sy, ms = this._ms, bx = BTN_PLAY.x * sx, by = BTN_PLAY.y * sy, br = BTN_PLAY.r * ms;
     const playZone = this.add.zone(bx, by, br * 2, br * 2).setInteractive({ useHandCursor: true }).setDepth(133);
     playZone.on('pointerdown', () => this.onPlayPause?.());
-    const radarZone = this.add.zone(RADAR.x * sx, RADAR.y * sy, RADAR.r * 2 * ms, RADAR.r * 2 * ms).setCircle(RADAR.r * ms).setInteractive({ useHandCursor: true }).setDepth(133);
+    const radarZone = this.add.zone(RADAR.x * sx, RADAR.y * sy, RADAR.r * 2 * ms, RADAR.r * 2 * ms).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Circle(0, 0, RADAR.r * ms), hitAreaCallback: Phaser.Geom.Circle.Contains }).setDepth(133);
     radarZone.on('pointerdown', () => this.onOrbClick?.());
   }
 

@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { YTDL_CONFIG } from './ytdl.config.js';
 
 export function checkBinary(name, args = ['--version']) {

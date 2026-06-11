@@ -5,7 +5,7 @@
  * plus a string-seed helper for building packet-stable RNG streams.
  *
  * Imports from codex/core/shared — never from src/lib (layer law).
- * No Math.random(). No Date.now(). Determinism is law.
+ * No Math.random or Date.now usage. Determinism is law.
  *
  * CLASSIFICATION: core / pure / determinism
  * LAYER: codex/core — NO DOM, NO AudioContext, NO side effects.

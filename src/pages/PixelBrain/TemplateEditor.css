@@ -536,6 +536,58 @@
   box-shadow: 0 4px 12px rgba(45, 219, 222, 0.4);
 }
 
+/* ── Status line / interactive canvas / import ───────────────────────────── */
+
+.editor-canvas--interactive {
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.editor-canvas--interactive:focus-visible {
+  outline: 2px solid #2ddbde;
+  outline-offset: 2px;
+}
+
+.editor-status-line {
+  padding: 0.5rem;
+  background: #1a1a1a;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: #c9a227;
+  letter-spacing: 0.05em;
+}
+
+.import-label {
+  display: block;
+  padding: 0.75rem;
+  background: #222;
+  border: 1px dashed #444;
+  color: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.import-label:hover {
+  background: #333;
+  border-color: #2ddbde;
+}
+
+.import-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 
 @media (max-width: 1024px) {

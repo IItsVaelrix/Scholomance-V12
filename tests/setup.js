@@ -156,6 +156,8 @@ if (typeof document !== 'undefined') {
       moveTo: vi.fn(),
       lineTo: vi.fn(),
       stroke: vi.fn(),
+      strokeRect: vi.fn(),
+      setLineDash: vi.fn(),
       arc: vi.fn(),
       fill: vi.fn(),
       closePath: vi.fn(),

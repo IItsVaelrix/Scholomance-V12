@@ -220,11 +220,11 @@
 }
 
 /* Combat is a fullscreen immersive takeover — .battle-immersive-mode covers
-   the viewport at z-index 40. The global floating brand lives at z-index 1200
-   and would otherwise punch through the top-left of the chrome, colliding with
+   the viewport at z-index 40. The global nav rail lives at z-index 1200
+   and would otherwise punch through the top of the chrome, colliding with
    the arena title. Stand it down while combat is mounted; the :has() selector
-   self-scopes, so the brand returns the moment the player navigates away. */
-body:has(.battle-immersive-mode) .nav-brand--floating {
+   self-scopes, so the rail returns the moment the player navigates away. */
+body:has(.battle-immersive-mode) .scholomance-rail {
   display: none;
 }
 

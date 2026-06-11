@@ -105,21 +105,21 @@ export default function StudioUpload() {
       {!uploadResult ? (
         <form onSubmit={handleUpload} className="studio-form card">
           <h2>1. Upload Audio</h2>
-          <label>
+          <label htmlFor="upload-release-id">
             Release ID (must own):
-            <input type="text" inputMode="numeric" value={releaseId} onChange={(e) => setReleaseId(e.target.value)} required />
+            <input id="upload-release-id" type="text" inputMode="numeric" value={releaseId} onChange={(e) => setReleaseId(e.target.value)} required />
           </label>
-          <label>
+          <label htmlFor="upload-title">
             Track Title:
-            <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Leave blank for Untitled" />
+            <input id="upload-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Leave blank for Untitled" />
           </label>
-          <label>
+          <label htmlFor="upload-position">
             Track Position:
-            <input type="number" value={position} onChange={(e) => setPosition(e.target.value)} />
+            <input id="upload-position" type="number" value={position} onChange={(e) => setPosition(e.target.value)} />
           </label>
-          <label>
+          <label htmlFor="upload-track-id">
             Existing Track ID (optional):
-            <input type="text" inputMode="numeric" value={trackId} onChange={(e) => setTrackId(e.target.value)} placeholder="Updates existing if provided" />
+            <input id="upload-track-id" type="text" inputMode="numeric" value={trackId} onChange={(e) => setTrackId(e.target.value)} placeholder="Updates existing if provided" />
           </label>
           
           <div 
@@ -127,6 +127,9 @@ export default function StudioUpload() {
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleFileDrop}
             onClick={() => fileInputRef.current.click()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current.click(); } }}
+            role="button"
+            tabIndex={0}
           >
             {file ? file.name : "Drag and drop audio file here or click to browse"}
             <input 
@@ -151,36 +154,38 @@ export default function StudioUpload() {
           
           <div className="audio-preview">
             <h3>Preview</h3>
-            <audio controls src={uploadResult.streamUrl} />
+            <audio controls src={uploadResult.streamUrl}>
+              <track kind="captions" src="" label="No captions available" />
+            </audio>
           </div>
 
           <form onSubmit={handleSaveProvenance} className="studio-form mt-4">
             <h2>2. Provenance Ledger</h2>
-            <label>
+            <label htmlFor="provenance-origin">
               Origin:
-              <select value={origin} onChange={(e) => setOrigin(e.target.value)}>
+              <select id="provenance-origin" value={origin} onChange={(e) => setOrigin(e.target.value)}>
                 <option value="human">Human</option>
                 <option value="ai">AI</option>
                 <option value="hybrid">Hybrid</option>
               </select>
             </label>
             {origin !== "human" && (
-              <label>
+              <label htmlFor="provenance-model">
                 Model (e.g., Suno, Udio):
-                <input type="text" value={model} onChange={(e) => setModel(e.target.value)} required={origin !== "human"} />
+                <input id="provenance-model" type="text" value={model} onChange={(e) => setModel(e.target.value)} required={origin !== "human"} />
               </label>
             )}
-            <label>
+            <label htmlFor="provenance-ratio">
               Human Edit Ratio (%):
-              <input type="number" min="0" max="100" value={humanEditRatio} onChange={(e) => setHumanEditRatio(e.target.value)} />
+              <input id="provenance-ratio" type="number" min="0" max="100" value={humanEditRatio} onChange={(e) => setHumanEditRatio(e.target.value)} />
             </label>
-            <label>
-              <input type="checkbox" checked={stemsAvailable} onChange={(e) => setStemsAvailable(e.target.checked)} />
+            <label htmlFor="provenance-stems">
+              <input id="provenance-stems" type="checkbox" checked={stemsAvailable} onChange={(e) => setStemsAvailable(e.target.checked)} />
               Stems Available?
             </label>
-            <label>
+            <label htmlFor="provenance-license">
               License:
-              <select value={license} onChange={(e) => setLicense(e.target.value)}>
+              <select id="provenance-license" value={license} onChange={(e) => setLicense(e.target.value)}>
                 <option value="all-rights-reserved">All Rights Reserved</option>
                 <option value="cc-by">CC-BY</option>
                 <option value="cc-by-nc">CC-BY-NC</option>

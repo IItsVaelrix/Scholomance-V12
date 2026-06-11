@@ -39,10 +39,16 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`PDR-2026-06-04-PHASER4-COMBAT-SPIKE.md`](./PDR-2026-06-04-PHASER4-COMBAT-SPIKE.md) | Implemented (2026-06-05) — whole-app migration; see VERDICT-2026-06-05-PHASER4-MIGRATION | Architectural \| Rendering Substrate \| Combat Surface \| Dependency Major Upgrade \| Spike / De-Risk | High |
 | [`PDR-2026-06-05-WORLD-REIFICATION-ENGINE.md`](./PDR-2026-06-05-WORLD-REIFICATION-ENGINE.md) | Draft | Architectural \| World IR \| Godot Interop \| Runtime Reconciliation \| Determinism | Critical |
 | [`PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING.md`](./PDR-2026-06-05-SONIC-EXCHANGE-NATIVE-LISTENING.md) | Draft | Architectural \| Audio Engine \| Data Model \| Commerce \| Discovery \| UI + Rendering | High |
+| [`2026-06-07-quaver-eq-oracle-pdr.md`](./2026-06-07-quaver-eq-oracle-pdr.md) | Draft | Audio + Oracle + UI | High |
+| [`2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md`](./2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md) | Draft | Pixel Lotus + Actor Forge + Combat Runtime | High |
+| [`2026-06-11-chromatic-transmutation-amp-pdr.md`](./2026-06-11-chromatic-transmutation-amp-pdr.md) | Implemented | Architectural + Rendering + PixelBrain + Behavioral | High |
+| [`Animation-Audit-PDR-6-10-2026.md`](./Animation-Audit-PDR-6-10-2026.md) | Draft | Animation Audit + UI Runtime | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |
+| [`PDR Prompt.md`](./PDR%20Prompt.md) | Template | PDR Authoring Prompt | Unclassified |
 | [`bug-report-ui-pdr.md`](./bug-report-ui-pdr.md) | Unclassified | Unclassified | Unclassified |
+| [`bandcamp-sweetener-pdr.md`](./bandcamp-sweetener-pdr.md) | Draft | Audio + Distribution + UI | High |
 | [`bytecode_blueprint_bridge_pdr.md`](./bytecode_blueprint_bridge_pdr.md) | Draft for implementation | Architectural | Critical |
 | [`cell_wall_infrastructure_pdr.md`](./cell_wall_infrastructure_pdr.md) | RATIFIED — Completed by Gemini 2026-05-09 | Architectural \| Preventative \| High Priority | High |
 | [`diagnostic_cell_infrastructure_pdr.md`](./diagnostic_cell_infrastructure_pdr.md) | Draft | Architectural \| QA Infrastructure \| AI Observability | High |
@@ -50,6 +56,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`collab_control_plane_mcp_convergence_pdr.md`](./collab_control_plane_mcp_convergence_pdr.md) | Draft | Unclassified | High |
 | [`collab_ui_polish_v2_pdr.md`](./collab_ui_polish_v2_pdr.md) | Draft | UI + Collaboration + Operational Trust | High |
 | [`collab_vscode_experience_pdr.md`](./collab_vscode_experience_pdr.md) | Draft | UI + Collaboration + VS Code Integration | High |
+| [`channel-zero-bandcamp-obliterator-pdr.md`](./channel-zero-bandcamp-obliterator-pdr.md) | Draft | Channel Zero + Bandcamp + Distribution | High |
 | [`combat-ui-modernization-pdr.md`](./combat-ui-modernization-pdr.md) | Archived placeholder | UI + Combat Surface + Visualization | Medium |
 | [`combat_component_pdr.md`](./combat_component_pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`combat_grid_component_pdr.md`](./combat_grid_component_pdr.md) | Unclassified | Unclassified | Unclassified |
@@ -71,6 +78,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`pixelbrain_font_audit_bytecode_pdr.md`](./pixelbrain_font_audit_bytecode_pdr.md) | Draft for implementation | Architectural + Rendering Systems + Measurement Infrastructure | Critical |
 | [`pixelbrain_wand_divwand_godot_bridge_pdr.md`](./pixelbrain_wand_divwand_godot_bridge_pdr.md) | Implemented | Architectural + Tooling + PixelBrain + Godot Interop | High |
 | [`postfix_integration_pdr.md`](./postfix_integration_pdr.md) | Draft | Infrastructure \| Security \| Communications | High |
+| [`project-lotus.md`](./project-lotus.md) | Draft | Project Lotus | High |
 | [`prototype_systems_wiring_pdr.md`](./prototype_systems_wiring_pdr.md) | Draft | Architectural + Core Pipeline + Scoring | Critical |
 | [`render_secret_sync_pdr.md`](./render_secret_sync_pdr.md) | Implemented | Infrastructure \| DevOps \| Security | High |
 | [`rhyme_color_registry_pdr.ARCHIVED.md`](./rhyme_color_registry_pdr.ARCHIVED.md) | ⚰️ Superseded (built, then replaced by hash-based harmonic resonance palette) | Color Engine + Codex Contract + UI Wire | — |
@@ -78,11 +86,13 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`ritual_prediction_enhancement_pdr.md`](./ritual_prediction_enhancement_pdr.md) | Draft | Prediction + VerseIR + PixelBrain + Infrastructure | High |
 | [`scholomance_collab_console_ui_pdr.md`](./scholomance_collab_console_ui_pdr.md) | COMPLETE (Phases 1-4) | Architectural + Structural + Behavioral | Unclassified |
 | [`PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md`](./PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md) | Draft | Architectural · UI + Rendering · DSP · Persistence · World-Law | High |
+| [`2026-06-11-super-depth-analysis-channel-pdr.md`](./2026-06-11-super-depth-analysis-channel-pdr.md) | Draft | UI + Analysis Workflow + Privacy Boundary + Runtime Orchestration | High |
 | [`scholomance_rpg_lore_sheet_pdr.md`](./scholomance_rpg_lore_sheet_pdr.md) | Canon Draft 1 | Architectural + Behavioral + Lore Infrastructure | Unclassified |
 | [`thorough_ai_combat_pdr.md`](./thorough_ai_combat_pdr.md) | Implemented | Combat + AI + VerseIR + UI | Critical |
 | [`truesight_surface_remediation_pdr.md`](./truesight_surface_remediation_pdr.md) | In Progress | Rendering + Runtime + UI + Performance | Critical |
 | [`turboquant_integration_bridge_pdr.md`](./turboquant_integration_bridge_pdr.md) | Implemented | Architectural + Prediction + Infrastructure | High |
 | [`zero_cost_infrastructure_pdr.md`](./zero_cost_infrastructure_pdr.md) | Finalized | Infrastructure + DevOps + Database + Cost Optimization | High |
+| [`2026-06-11-discography-nav-bandcamp-pdr.md`](./2026-06-11-discography-nav-bandcamp-pdr.md) | Draft | Architectural \| UI \| Behavioral | High |
 
 ---
 

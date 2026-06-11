@@ -9,7 +9,7 @@
 .wand-workspace {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100dvh - var(--nav-rail-height, 48px));
   background-color: #05050b;
   color: #e2e8f0;
   font-family: 'Space Mono', monospace;

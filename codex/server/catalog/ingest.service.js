@@ -13,6 +13,7 @@
 
 import { computeAudioFingerprint } from './audio.fingerprint.js';
 import { compileSidecar } from './sidecar.compiler.js';
+import { PhonemeEngine } from '../../../src/lib/engine.adapter.js';
 
 /**
  * @typedef {object} IngestStorage
@@ -62,6 +63,18 @@ export async function ingestTrackAudio({ api, trackId, bytes, storage, durationM
     frameIntervalMs,
   });
 
+  // [Phase 4] Scholomance Special: Auto-generate the visualizer seed / dominant school
+  let truesightData = 'SONIC'; // default
+  try {
+    await PhonemeEngine.init?.();
+    const phonemeData = PhonemeEngine.analyzeDeep?.(Buffer.from(bytes).toString('base64')); // text-based engine adapter for now
+    if (phonemeData?.dominantSchool) {
+      truesightData = phonemeData.dominantSchool;
+    }
+  } catch (e) {
+    // Graceful fallback if phoneme engine fails on audio
+  }
+
   // 4. Store the sidecar JSON → sidecar URL.
   const sidecarAsset = await storage.putSidecar({
     fingerprintId: fingerprint.fingerprintId,
@@ -74,6 +87,7 @@ export async function ingestTrackAudio({ api, trackId, bytes, storage, durationM
   await api.tracks.setAssets(trackId, {
     streamUrl: audio.url,
     durationMs: sidecar.sourceDurationMs,
+    school: truesightData,
   });
   await api.resonance.register({
     fingerprintId: fingerprint.fingerprintId,
@@ -96,5 +110,6 @@ export async function ingestTrackAudio({ api, trackId, bytes, storage, durationM
     analysisSource: source,
     durationMs: sidecar.sourceDurationMs,
     frameCount: sidecar.frames.length,
+    truesightData,
   };
 }

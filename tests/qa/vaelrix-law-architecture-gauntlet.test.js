@@ -183,7 +183,9 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
         const activeDirs = criticalDirs.filter(d => fs.existsSync(d));
         if (activeDirs.length === 0) continue;
 
-        const grepCommand = `grep -F -r "${pattern}" ${activeDirs.join(' ')} --exclude-dir=tests || true`;
+        // immunity is excluded for the same reason as in the randomness scan:
+        // its prion fixtures model forbidden patterns on purpose
+        const grepCommand = `grep -F -r "${pattern}" ${activeDirs.join(' ')} --exclude-dir={tests,immunity} || true`;
         const output = execSync(grepCommand).toString().trim();
         
         if (output) {

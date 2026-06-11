@@ -44,6 +44,8 @@ Foundational mandates and contracts that govern agents and systems.
 
 - [`AGENTS.md`](./Scholomance%20LAW/AGENTS.md)
 - [`ARCH_CONTRACT_OVERLAY_INTEGRITY.md`](./Scholomance%20LAW/ARCH_CONTRACT_OVERLAY_INTEGRITY.md)
+- [`Bar Exam Skill.txt`](./Scholomance%20LAW/Bar%20Exam%20Skill.txt)
+- [`Bar Exam Study Guide.txt`](./Scholomance%20LAW/Bar%20Exam%20Study%20Guide.txt)
 - [`CLAUDE.md`](./Scholomance%20LAW/CLAUDE.md)
 - [`CODEX.md`](./Scholomance%20LAW/CODEX.md)
 - [`CURSOR.md`](./Scholomance%20LAW/CURSOR.md)
@@ -56,7 +58,10 @@ Foundational mandates and contracts that govern agents and systems.
 - [`forensic-search.skill`](./Scholomance%20LAW/forensic-search.skill)
 - [`modular-defragmentation.md`](./Scholomance%20LAW/modular-defragmentation.md)
 - [`RESONANCE_LAW.md`](./Scholomance%20LAW/RESONANCE_LAW.md)
-
+- [`animation-archeology-skill.md`](./Scholomance%20LAW/animation-archeology-skill.md)
+- [`law-enforcer-skill.md`](./Scholomance%20LAW/law-enforcer-skill.md)
+- [`professional-ui-architect-skill.md`](./Scholomance%20LAW/professional-ui-architect-skill.md)
+- [`school-completeness-guard-skill.md`](./Scholomance%20LAW/school-completeness-guard-skill.md)
 - [`vaelrix-law-debug.skill`](./Scholomance%20LAW/vaelrix-law-debug.skill)
 - [`vaelrix-law.skill`](./Scholomance%20LAW/vaelrix-law.skill)
 
@@ -120,6 +125,21 @@ Reality after implementation.
 - [`PIR-20260604-VECTOR-AMP-SAVAGE-AUDIT-FIXES.md`](./post-implementation-reports/PIR-20260604-VECTOR-AMP-SAVAGE-AUDIT-FIXES.md)
 - [`PIR-20260604-LISTEN-SAVAGE-AUDIT-FIXES.md`](./post-implementation-reports/PIR-20260604-LISTEN-SAVAGE-AUDIT-FIXES.md)
 - [`PIR-20260604-WAND-PHOTONIC-BRIDGE-INTEGRATION.md`](./post-implementation-reports/PIR-20260604-WAND-PHOTONIC-BRIDGE-INTEGRATION.md)
+- [`PIR-20260606-COMBAT-COHERENCE-PATCH.md`](./post-implementation-reports/PIR-20260606-COMBAT-COHERENCE-PATCH.md)
+- [`PIR-20260606-COMPOSITE-CHILD-ROTATION.md`](./post-implementation-reports/PIR-20260606-COMPOSITE-CHILD-ROTATION.md)
+- [`PIR-20260606-SHADER_FORGE.md`](./post-implementation-reports/PIR-20260606-SHADER_FORGE.md)
+- [`PIR-20260606-VERSEIR-COMBAT-CONNECTION.md`](./post-implementation-reports/PIR-20260606-VERSEIR-COMBAT-CONNECTION.md)
+- [`PIR-20260611-ASSONANCE-COLOR-HYGIENE.md`](./post-implementation-reports/PIR-20260611-ASSONANCE-COLOR-HYGIENE.md)
+- [`PIR-20260611-CHROMATIC-TRANSMUTATION-AMP.md`](./post-implementation-reports/PIR-20260611-CHROMATIC-TRANSMUTATION-AMP.md)
+- [`PIR-20260611-GRIMOIRE-LIBRARY-FINALIZATION.md`](./post-implementation-reports/PIR-20260611-GRIMOIRE-LIBRARY-FINALIZATION.md)
+- [`PIR-20260611-IDE-TRUESIGHT-VISUALISER-COLOR.md`](./post-implementation-reports/PIR-20260611-IDE-TRUESIGHT-VISUALISER-COLOR.md)
+- [`PIR-20260611-LATTICE-GRID-FEATURE.md`](./post-implementation-reports/PIR-20260611-LATTICE-GRID-FEATURE.md)
+- [`PIR-20260611-PIXELBRAIN-TEMPLATE-LATTICE.md`](./post-implementation-reports/PIR-20260611-PIXELBRAIN-TEMPLATE-LATTICE.md)
+- [`PIR-20260611-SCROLL-SAVE-AUTOSAVE.md`](./post-implementation-reports/PIR-20260611-SCROLL-SAVE-AUTOSAVE.md)
+- [`PIR-20260611-TRUESIGHT-ANNOTATION-LAYER.md`](./post-implementation-reports/PIR-20260611-TRUESIGHT-ANNOTATION-LAYER.md)
+- [`PIR-20260611-TRUESIGHT-PUNCTUATION-WHITE.md`](./post-implementation-reports/PIR-20260611-TRUESIGHT-PUNCTUATION-WHITE.md)
+- [`PIR-20260611-TRUESIGHT-WORDTOOLTIP-HIERARCHY.md`](./post-implementation-reports/PIR-20260611-TRUESIGHT-WORDTOOLTIP-HIERARCHY.md)
+- [`PIR-20260611-embedded-truesight-tooltips.md`](./post-implementation-reports/PIR-20260611-embedded-truesight-tooltips.md)
 - [`dead-code.md`](./post-implementation-reports/dead-code.md)
 - [`Wand_RAID_UX_Audit_Report.md`](./Wand_RAID_UX_Audit_Report.md)
 - [`UX Report/Scrying_Orb_Landing_UX_Report.md`](./UX%20Report/Scrying_Orb_Landing_UX_Report.md)
@@ -146,12 +166,15 @@ Deep technical analysis, operating manuals, and specialist briefs.
 - [`IMMUNE-SYSTEM-WHITE-PAPER.md`](./Scholomance%20White%20Papers/IMMUNE-SYSTEM-WHITE-PAPER.md)
 - [`CAREER_RESONANCE_ALIGNMENT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/CAREER_RESONANCE_ALIGNMENT_WHITE_PAPER.md)
 - [`MCP_INTEGRATION_GUIDE.md`](./Scholomance%20White%20Papers/MCP_INTEGRATION_GUIDE.md)
-- [`PARAEQ_PLUGIN.md`](./Scholomance%20White%20Papers/PARAEQ_PLUGIN.md)
 - [`TURBOQUANT-SERVICE-MANUAL.md`](./Scholomance%20White%20Papers/TURBOQUANT-SERVICE-MANUAL.md)
 - [`TURBOQUANT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/TURBOQUANT_WHITE_PAPER.md)
 - [`opencode.md`](./Scholomance%20White%20Papers/opencode.md)
 - [`BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md`](./Scholomance%20White%20Papers/BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md)
+- [`SHADER_FORGE_WHITE_PAPER.md`](./Scholomance%20White%20Papers/SHADER_FORGE_WHITE_PAPER.md)
 - [`SONIC_EXCHANGE_WHITE_PAPER.md`](./Scholomance%20White%20Papers/SONIC_EXCHANGE_WHITE_PAPER.md)
+- [`TRUESIGHT_ROBUSTNESS_LAW_AUDIT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/TRUESIGHT_ROBUSTNESS_LAW_AUDIT_WHITE_PAPER.md)
+- [`Screenshot_20260606_144816.png`](./Scholomance%20White%20Papers/Screenshot_20260606_144816.png)
+- [`Screenshot_20260606_163127.png`](./Scholomance%20White%20Papers/Screenshot_20260606_163127.png)
 
 ### Scholomance Verdicts
 
@@ -174,6 +197,15 @@ Structured product reviews and judgment of ratified canon.
 ### Studies
 
 - [`study1.md`](./study1.md)
+
+### Skills and Manuals
+
+- [`BLUEPRINT-AMP-OPERATING-MANUAL.md`](./BLUEPRINT-AMP-OPERATING-MANUAL.md)
+- [`SKILL.md`](./SKILL.md)
+
+### UX Reports
+
+- [`2026-06-10-toolchain-field-report.md`](./UX%20Report/2026-06-10-toolchain-field-report.md)
 
 ### Scholomance Bible
 

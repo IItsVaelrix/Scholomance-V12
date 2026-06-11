@@ -15,3 +15,13 @@ dict_data
 *.png
 *.bmp
 nul
+.venv-align/
+vst/
+vst-sdk/
+target/
+tmp/
+__pycache__/
+*.pyc
+*.so
+*.rlib
+*.rmeta

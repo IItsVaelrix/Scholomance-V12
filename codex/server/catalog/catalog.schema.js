@@ -140,3 +140,18 @@ export function applyCatalogV20(database) {
   database.exec(SOCIAL_ANALYTICS_SCHEMA_SQL);
 }
 
+export const DISCOGRAPHY_NAV_ALTERS = Object.freeze([
+  'ALTER TABLE releases ADD COLUMN liner_notes TEXT',
+  'ALTER TABLE releases ADD COLUMN truesight_hue REAL',
+  'ALTER TABLE tracks ADD COLUMN isrc TEXT',
+]);
+
+export function applyCatalogV22(database) {
+  for (const alter of DISCOGRAPHY_NAV_ALTERS) {
+    try {
+      database.exec(alter);
+    } catch (err) {
+      if (!/duplicate column name/i.test(err?.message || '')) throw err;
+    }
+  }
+}

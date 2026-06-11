@@ -9,7 +9,7 @@ content = content.replace(
 );
 
 content = content.replace(
-  /  function resolveTrackUrlForSchool[\s\S]*?return resolvedTrackUrl;\n  }\n/m,
+  / {2}function resolveTrackUrlForSchool[\s\S]*?return resolvedTrackUrl;\n {2}}\n/m,
   ''
 );
 

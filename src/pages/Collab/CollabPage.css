@@ -41,7 +41,7 @@
 .collab-page {
     display: flex;
     flex-direction: column;
-    height: 100vh;
+    height: calc(100dvh - var(--nav-rail-height, 48px));
     background: var(--color-collab-void);
     color: var(--color-collab-text);
     font-family: var(--font-collab-sans);
@@ -2010,10 +2010,10 @@
 
 .task-detail-drawer {
     position: fixed;
-    top: 0;
+    top: var(--nav-rail-height, 48px);
     right: 0;
     width: 480px;
-    height: 100vh;
+    height: calc(100dvh - var(--nav-rail-height, 48px));
     background: var(--color-collab-surface);
     border-left: var(--border-collab-chrome);
     z-index: 1000;
@@ -3851,10 +3851,10 @@
 
 .bug-detail-drawer {
     position: fixed;
-    top: 0;
+    top: var(--nav-rail-height, 48px);
     right: 0;
     width: 480px;
-    height: 100vh;
+    height: calc(100dvh - var(--nav-rail-height, 48px));
     background: var(--color-collab-surface);
     border-left: 1px solid var(--border-collab-chrome);
     z-index: 1001;

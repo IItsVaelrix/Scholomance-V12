@@ -17,14 +17,15 @@ export function cleanVisualiserWord(word: string): string {
  * School resolution goes through the engine's own resolver, which normalizes
  * alias families (OO -> UH, YUW -> UW, ...) before the school lookup — a raw
  * map hit would silently disagree with every normalized consumer. */
-export function wordTruesight(word: string): { color: string; school: string } | null {
+export function wordTruesight(word: string): { color: string; school: string; analysis: any } | null {
   const clean = cleanVisualiserWord(word);
   if (!clean || VISUALISER_FUNCTION_WORDS.has(clean.toLowerCase())) return null;
   const engine = PhonemeEngine as {
-    analyzeDeep?: (w: string) => { vowelFamily?: string } | null;
+    analyzeDeep?: (w: string) => any | null;
     getSchoolFromVowelFamily?: (f: string) => string | null;
   };
-  const family = engine.analyzeDeep?.(clean)?.vowelFamily;
+  const analysis = engine.analyzeDeep?.(clean) || null;
+  const family = analysis?.vowelFamily;
   const school = (family && engine.getSchoolFromVowelFamily?.(family)) || 'VOID';
-  return { color: generateSchoolColor(school), school };
+  return { color: generateSchoolColor(school), school, analysis };
 }

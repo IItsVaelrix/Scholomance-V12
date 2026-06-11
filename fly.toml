@@ -6,13 +6,13 @@ primary_region = "ord"
 
 [env]
   NODE_ENV = "production"
-  HOST = "::"
+  HOST = "0.0.0.0"
   PORT = "8080"
   TRUST_PROXY = "true"
   ENABLE_COLLAB_API = "true"
-  SCHOLOMANCE_DICT_PATH = "/app/data/scholomance_dict.sqlite"
-  SCHOLOMANCE_CORPUS_PATH = "/app/data/scholomance_corpus.sqlite"
-  RHYME_ASTROLOGY_OUTPUT_DIR = "/app/data/rhyme-astrology"
+  SCHOLOMANCE_DICT_PATH = "/var/data/scholomance_dict.sqlite"
+  SCHOLOMANCE_CORPUS_PATH = "/var/data/scholomance_corpus.sqlite"
+  RHYME_ASTROLOGY_OUTPUT_DIR = "/var/data/rhyme-astrology"
   ENABLE_TURBOQUANT = "true"
 
 [http_service]
@@ -23,11 +23,11 @@ primary_region = "ord"
   min_machines_running = 1
 
   [[http_service.checks]]
-    grace_period = "15s"
-    interval = "15s"
+    grace_period = "30s"
+    interval = "30s"
     method = "GET"
-    path = "/health"
-    timeout = "5s"
+    path = "/health/live"
+    timeout = "10s"
     type = "http"
 
 [[vm]]
@@ -36,4 +36,4 @@ primary_region = "ord"
 
 [mounts]
   source = "scholomance_scratch"
-  destination = "/app/scratch"
+  destination = "/var/data"

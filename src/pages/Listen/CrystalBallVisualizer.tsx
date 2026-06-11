@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+// eslint-disable-next-line no-restricted-imports -- type-only import removed at compile time
 import type Phaser from 'phaser';
 import { buildCrystalBallScene } from './scenes/CrystalBallScene.js';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
@@ -62,7 +63,8 @@ export const CrystalBallVisualizer: React.FC<CrystalBallVisualizerProps> = ({
       game.scene.stop('CrystalBallScene');
       game.scene.start('CrystalBallScene', { reducedMotion: prefersReducedMotion });
       
-      const scene = game.scene.getScene('CrystalBallScene');
+      const scene = game.scene.getScene('CrystalBallScene') as
+        (Phaser.Scene & { updateState?: (state: Record<string, unknown>) => void }) | null;
       sceneRef.current = scene;
       
       // We push initial state

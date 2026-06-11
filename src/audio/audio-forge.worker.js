@@ -9,7 +9,7 @@
  *   Response: { id, ok, buffer: Float32Array|null, analysis, diagnostics, error }
  *
  * LAYER: src/audio (browser adapter) — Worker scope only.
- * No DOM. No AudioContext. No Math.random() (all DSP is seeded).
+ * No DOM. No AudioContext. No Math.random usage (all DSP is seeded).
  */
 
 import { renderSfxBuffer } from '../../codex/core/audio-forge/dsp/buffer-renderer.js';

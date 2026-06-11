@@ -1,4 +1,5 @@
 import { performance } from 'node:perf_hooks';
+import process from 'node:process';
 
 export async function measureLatency(verdictFactory, word, iterations = 1000) {
   const durations = [];

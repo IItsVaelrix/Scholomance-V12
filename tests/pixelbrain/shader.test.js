@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  PB_SHADER_PACKET_VERSION,
   createShaderPacket,
   validateShaderPacket,
   hashShaderPacket,

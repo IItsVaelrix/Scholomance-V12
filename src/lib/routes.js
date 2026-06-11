@@ -17,12 +17,15 @@ export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandP
 
 export const PhotonicBridgeLab = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge");
 export const StudioUpload = lazyWithRetry(() => import("../pages/internal/Studio/StudioUpload.jsx"), "studio-upload");
+export const ActorForgeLab = lazyWithRetry(() => import("../pages/internal/pixel-lotus/ActorForgeLab.tsx"), "actor-forge-lab");
+export const IsoMapSandbox = lazyWithRetry(() => import("../pages/internal/pixel-lotus/IsoMapSandbox.tsx"), "iso-map-sandbox");
 
 export const BlogIndexPage = lazyWithRetry(() => import("../pages/Blog/BlogIndexPage"), "blog-index-page");
 export const BlogArticlePage = lazyWithRetry(() => import("../pages/Blog/ArticlePage"), "blog-article-page");
+export const VisualizerReleasePage = lazyWithRetry(() => import("../pages/VisualizerRelease/VisualizerReleasePage"), "visualizer-release-page");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
-const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/internal/photonic-bridge", "/internal/studio"];
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox"];
 
 export const ALL_COMPONENTS = {
   "/watch": WatchPage,
@@ -39,8 +42,11 @@ export const ALL_COMPONENTS = {
   "/div-wand": DivWandPage,
   "/internal/photonic-bridge": PhotonicBridgeLab,
   "/internal/studio": StudioUpload,
+  "/internal/pixel-lotus/actor-forge": ActorForgeLab,
+  "/internal/pixel-lotus/iso-map-sandbox": IsoMapSandbox,
   "/blog": BlogIndexPage,
   "/blog/:slug": BlogArticlePage,
+  "/release": VisualizerReleasePage,
 };
 
 /**

@@ -18,7 +18,7 @@ export function loadPhaserRuntime() {
  * @param {Function[]} args.buildScenes - Array of scene factory functions `(Phaser) => Phaser.Scene`
  * @param {Object} args.config - Phaser game config overrides
  * @param {AbortSignal} args.signal - React lifecycle cancellation signal
- * @returns {Promise<{ game: Phaser.Game, destroy: Function } | null>}
+ * @returns {Promise<{ game: Phaser.Game, destroy: () => void } | null>}
  */
 export async function mountPhaserGame({
   parent,

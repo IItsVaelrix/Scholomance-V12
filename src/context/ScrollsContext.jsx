@@ -234,9 +234,16 @@ export function ScrollsProvider({ children }) {
   }, [user, isAuthLoading, fetchScrolls]);
 
   const saveScroll = useCallback(async (scrollData) => {
-    const isNew = !scrollData.id || !UUID_REGEX.test(scrollData.id);
-    const id = isNew ? generateId() : scrollData.id;
-    const legacyId = scrollData.id && scrollData.id !== id ? scrollData.id : null;
+    const sourceId = scrollData.id || null;
+    const forceNew = Boolean(scrollData.forceNew);
+    const isNew = forceNew || !sourceId || !UUID_REGEX.test(sourceId);
+    const id = isNew ? generateId() : sourceId;
+    const replaceId = scrollData.replaceId || null;
+    const legacyId = replaceId && replaceId !== id
+      ? replaceId
+      : sourceId && sourceId !== id
+        ? sourceId
+        : null;
     const now = new Date().toISOString();
     const submit = Boolean(scrollData.submit);
     const submittedAt = scrollData?.submittedAt || (submit ? now : null);
@@ -261,6 +268,17 @@ export function ScrollsProvider({ children }) {
       const normalizedServerScroll = withDerivedFields(parsed.data) || localScroll;
       setScrolls((prev) => upsertByRecency(prev, normalizedServerScroll, legacyId));
       upsertLocalScroll(normalizedServerScroll);
+      if (legacyId) {
+        try {
+          const deleteResponse = await fetch(buildAuthorityUrl(`/api/scrolls/${legacyId}`), {
+            method: 'DELETE', credentials: "include",
+            headers: { [CSRF_HEADER]: csrfToken },
+          });
+          if (!deleteResponse.ok && deleteResponse.status === 403) clearCsrfToken();
+        } catch (deleteError) {
+          console.error("Failed to delete replaced draft from server.", deleteError);
+        }
+      }
       return normalizedServerScroll;
     } catch (e) { console.error("Save failed, using local copy.", e); return localScroll; }
   }, [user, getCsrfToken]);

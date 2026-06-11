@@ -63,7 +63,7 @@ describe('ParaEQOverlay', () => {
           id: '1',
           enabled: true,
           filterType: 'Bell',
-          channel: 'stereo',
+          channel: 'Stereo',
           freq: 1000,
           gain: 0,
           q: 1,

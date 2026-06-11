@@ -35,8 +35,9 @@ export const ConjureBand: React.FC<ConjureBandProps> = ({ band, onClose, onUpdat
       </h3>
       
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Filter Type</label>
+        <label htmlFor="conjure-filter-type" style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Filter Type</label>
         <select 
+          id="conjure-filter-type"
           value={band.filterType} 
           onChange={(e) => onUpdate({ filterType: e.target.value as FilterType })}
           style={{ width: '100%', background: '#000', color: '#c9a227', border: '1px solid #333', padding: '4px' }}
@@ -46,8 +47,9 @@ export const ConjureBand: React.FC<ConjureBandProps> = ({ band, onClose, onUpdat
       </div>
 
       <div style={{ marginBottom: '12px' }}>
-        <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Channel</label>
+        <label htmlFor="conjure-channel" style={{ display: 'block', marginBottom: '4px', fontSize: '12px' }}>Channel</label>
         <select 
+          id="conjure-channel"
           value={band.channel} 
           onChange={(e) => onUpdate({ channel: e.target.value as ChannelKind })}
           style={{ width: '100%', background: '#000', color: '#c9a227', border: '1px solid #333', padding: '4px' }}

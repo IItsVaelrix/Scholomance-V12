@@ -4,7 +4,7 @@ import {
   ToolsIcon,
   SettingsIcon,
 } from "../../components/Icons.jsx";
-import { useUserSettings } from "../../hooks/useUserSettings.js";
+import { useUserSettings, LOCAL_STORAGE_KEY as SETTINGS_STORAGE_KEY } from "../../hooks/useUserSettings.js";
 import { useState, useCallback, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import {
   Group as PanelGroup,
@@ -114,6 +114,21 @@ function applyMatchCase(sourceWord, replacement) {
   return nextWord;
 }
 
+// Reads useUserSettings' persisted store directly so toggles can hydrate
+// synchronously (before the settings hook resolves) without a visible flash.
+function readPersistedBooleanSetting(key) {
+  try {
+    const saved = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (typeof parsed[key] === 'boolean') return parsed[key];
+    }
+  } catch {
+    // Fall through to the settings hook's value
+  }
+  return null;
+}
+
 
 export default function ReadPage() {
   const { theme } = useTheme();
@@ -149,18 +164,12 @@ export default function ReadPage() {
   }, [ideMode]);
 
   // Use settings for initial state if available
-  const [isTruesight, setIsTruesight] = useState(() => {
-    try {
-      const saved = localStorage.getItem('scholomance.user.settings.v1');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (typeof parsed.truesightEnabled === 'boolean') return parsed.truesightEnabled;
-      }
-    } catch {
-      // Use settings fallback if localStorage fails
-    }
-    return settings?.truesightEnabled ?? false;
-  });
+  const [isTruesight, setIsTruesight] = useState(
+    () => readPersistedBooleanSetting('truesightEnabled') ?? settings?.truesightEnabled ?? false
+  );
+  const [isLatticeGrid, setIsLatticeGrid] = useState(
+    () => readPersistedBooleanSetting('latticeGridEnabled') ?? settings?.latticeGridEnabled ?? false
+  );
   const [isPredictive, setIsPredictive] = useState(true);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
@@ -335,6 +344,14 @@ export default function ReadPage() {
     });
   }, [updateSettings]);
 
+  const handleToggleLatticeGrid = useCallback(() => {
+    setIsLatticeGrid((prev) => {
+      const next = !prev;
+      updateSettings({ latticeGridEnabled: next });
+      return next;
+    });
+  }, [updateSettings]);
+
   const handleModeChange = useCallback((nextMode) => {
     setAnalysisMode((prev) => {
       const resolvedMode = prev === nextMode ? ANALYSIS_MODES.NONE : nextMode;
@@ -362,6 +379,8 @@ export default function ReadPage() {
   const handleInfoBeamClick = useCallback((label) => {
     setInfoBeamFamily(label);
   }, []);
+
+  const { lookup, data: lookupData, isLoading: isLookupLoading, error: lookupError, reset: resetWordLookup } = useWordLookup();
 
   const infoBeamConnections = useMemo(() => {
     if (!infoBeamEnabled || !infoBeamFamily) return [];
@@ -392,14 +411,17 @@ export default function ReadPage() {
   const handleSaveScroll = useCallback(
     async (title, content) => {
       bumpAutosaveContext(activeScrollId, title, content);
-      const isUpdate = Boolean(activeScrollId);
       const wasSubmitted = Boolean(activeScroll?.submittedAt);
+      const saveAsNewSubmission = Boolean(activeScrollId && !wasSubmitted);
+      const isUpdate = Boolean(activeScrollId && !saveAsNewSubmission);
       const savedScroll = await saveScroll({
         id: isUpdate ? activeScrollId : undefined,
+        forceNew: saveAsNewSubmission,
+        replaceId: saveAsNewSubmission ? activeScrollId : undefined,
         title,
         content,
         submit: true,
-        submittedAt: activeScroll?.submittedAt || null,
+        submittedAt: isUpdate ? activeScroll?.submittedAt || null : null,
       });
       if (!savedScroll) {
         addToast("Failed to save scroll", "error");
@@ -430,6 +452,7 @@ export default function ReadPage() {
 
       setEditorTitle(savedScroll.title);
       setActiveScrollId(savedScroll.id);
+      bumpAutosaveContext(savedScroll.id, savedScroll.title, savedScroll.content);
       setIsEditing(true);
     },
     [activeScrollId, activeScroll?.submittedAt, saveScroll, addXP, addToast, scoreData, bumpAutosaveContext, setActiveScrollId]
@@ -459,7 +482,12 @@ export default function ReadPage() {
     setIsEditable(true);
     setHighlightedLines([]);
     setIdeMode("EDIT");
-  }, [bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
+    setTooltipState({ token: null, position: { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN }, localAnalysis: null, pinned: false });
+    setSessionWords([]);
+    setSessionIndex(-1);
+    setLookupOverride(null);
+    if (typeof resetWordLookup === 'function') resetWordLookup();
+  }, [bumpAutosaveContext, issueEditorDocumentIdentity, resetWordLookup, setActiveScrollId]);
 
   const handleEditScroll = useCallback(() => {
     bumpAutosaveContext(activeScrollId, activeScroll?.title, activeScrollContent);
@@ -565,8 +593,6 @@ export default function ReadPage() {
     };
   }, []);
 
-  const { lookup, data: lookupData, isLoading: isLookupLoading, error: lookupError, reset: resetWordLookup } = useWordLookup();
-
   useEffect(() => {
     // Initialize session for Lexicon access
     import("../../lib/csrf.js").then(({ getCsrfToken }) => {
@@ -586,6 +612,10 @@ export default function ReadPage() {
       if (sameToken) return;
     }
 
+    if (tooltipState.token && tooltipState.token.normalizedWord === activation.normalizedWord) {
+      return;
+    }
+
     const pos = resolveTooltipPosition(activation.anchorRect);
     const analysis = buildTooltipAnalysis(activation);
 
@@ -603,6 +633,7 @@ export default function ReadPage() {
 
     if (activation.normalizedWord) {
       setSessionWords((prev) => {
+        if (prev.length > 0 && prev[prev.length - 1] === activation.normalizedWord) return prev;
         const next = [...prev, activation.normalizedWord].slice(-20);
         setSessionIndex(next.length - 1);
         return next;
@@ -611,7 +642,7 @@ export default function ReadPage() {
       resetWordLookup();
       lookup(activation.normalizedWord);
     }
-  }, [buildTooltipAnalysis, lookup, resetWordLookup, resolveTooltipPosition]);
+  }, [buildTooltipAnalysis, lookup, resetWordLookup, resolveTooltipPosition, tooltipState]);
 
   const handleCloseTooltip = useCallback(() => {
     handleWordActivate(null);
@@ -782,6 +813,8 @@ export default function ReadPage() {
     <ToolsSidebar
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
+      isLatticeGrid={isLatticeGrid}
+      onToggleLatticeGrid={handleToggleLatticeGrid}
       isPredictive={isPredictive}
       onTogglePredictive={handleTogglePredictive}
       mirrored={mirrored}
@@ -817,25 +850,6 @@ export default function ReadPage() {
 
   const commonUI = (
     <>
-      <AnimatePresence>
-        {tooltipState.token && (
-          <WordTooltip
-            key="word-card"
-            wordData={tooltipWordData}
-            analysis={tooltipState.localAnalysis}
-            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-            error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
-            x={tooltipState.position.x}
-            y={tooltipState.position.y}
-            onDrag={handleTooltipDrag}
-            onClose={handleCloseTooltip}
-            onSuggestionClick={handleSuggestionClick}
-            sessionHistory={sessionWords}
-            sessionIndex={sessionIndex}
-            onSessionNavigate={handleSessionNavigate}
-          />
-        )}
-      </AnimatePresence>
 
       {misspellings.length > 0 && (
         <FloatingPanel
@@ -935,6 +949,17 @@ export default function ReadPage() {
                     onClick={handleToggleMirrored}
                   >
                     {mirrored ? 'On' : 'Off'}
+                  </button>
+                </div>
+                <div className="settings-panel-row">
+                  <span>Lattice Grid</span>
+                  <button
+                    type="button"
+                    className={`settings-toggle${isLatticeGrid ? ' settings-toggle--on' : ''}`}
+                    aria-pressed={isLatticeGrid}
+                    onClick={handleToggleLatticeGrid}
+                  >
+                    {isLatticeGrid ? 'On' : 'Off'}
                   </button>
                 </div>
               </div>
@@ -1041,6 +1066,7 @@ export default function ReadPage() {
                   isEditable={isEditable}
                   disabled={false}
                   isTruesight={isTruesight}
+                  isLatticeGrid={isLatticeGrid}
                   isPredictive={isPredictive}
                   predict={predict}
                   getCompletions={getCompletions}
@@ -1212,6 +1238,8 @@ export default function ReadPage() {
                     <ToolsSidebar
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
+                      isLatticeGrid={isLatticeGrid}
+                      onToggleLatticeGrid={handleToggleLatticeGrid}
                       isPredictive={isPredictive}
                       onTogglePredictive={handleTogglePredictive}
                       mirrored={mirrored}
@@ -1279,6 +1307,7 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
+                    isLatticeGrid={isLatticeGrid}
                     isPredictive={isPredictive}
                     predict={predict}
                     getCompletions={getCompletions}
@@ -1342,6 +1371,38 @@ export default function ReadPage() {
                           visible={true}
                           isEmbedded={true}
                         />
+                      </div>
+                    )}
+
+                    {tooltipState.token && (
+                      <div className="right-panel-section">
+                        <div className="right-panel-section-header">
+                          <span className="right-panel-section-title">Word Insight</span>
+                          <button
+                            type="button"
+                            className="right-panel-close"
+                            onClick={handleCloseTooltip}
+                            aria-label="Close Word Insight"
+                          >×</button>
+                        </div>
+                        <AnimatePresence>
+                          <WordTooltip
+                            key="word-card"
+                            wordData={tooltipWordData}
+                            analysis={tooltipState.localAnalysis}
+                            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
+                            error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
+                            x={0}
+                            y={0}
+                            onDrag={() => {}}
+                            onClose={handleCloseTooltip}
+                            onSuggestionClick={handleSuggestionClick}
+                            sessionHistory={sessionWords}
+                            sessionIndex={sessionIndex}
+                            onSessionNavigate={handleSessionNavigate}
+                            isEmbedded={true}
+                          />
+                        </AnimatePresence>
                       </div>
                     )}
 
@@ -1489,6 +1550,28 @@ export default function ReadPage() {
         serverAnalysisActive={USE_SERVER_ANALYSIS}
       />
       
+      {/* Mobile bottom sheet for word insight on narrow viewports */}
+      {isNarrowViewport && tooltipState.token && (
+        <AnimatePresence>
+          <WordTooltip
+            key="word-card-mobile"
+            wordData={tooltipWordData}
+            analysis={tooltipState.localAnalysis}
+            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
+            error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
+            x={0}
+            y={0}
+            onDrag={() => {}}
+            onClose={handleCloseTooltip}
+            onSuggestionClick={handleSuggestionClick}
+            sessionHistory={sessionWords}
+            sessionIndex={sessionIndex}
+            onSessionNavigate={handleSessionNavigate}
+            isEmbedded={true}
+          />
+        </AnimatePresence>
+      )}
+
       {/* Floating panel fallback for narrow viewports only */}
       {isNarrowViewport && showOraclePanel && (
         <FloatingPanel

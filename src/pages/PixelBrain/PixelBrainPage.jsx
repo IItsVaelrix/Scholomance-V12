@@ -12,6 +12,7 @@ import { useGodotExportFlag } from "../../hooks/useGodotExportFlag.js";
 import { downloadTextFile } from "../../components/GodotExportButton/downloadTextFile.js";
 
 const ShaderForgePanel = lazy(() => import('./components/ShaderForgePanel.jsx'));
+const TemplateEditor = lazy(() => import('./components/TemplateEditor.jsx'));
 
 // New components
 import { UploadSection } from "./components/UploadSection.jsx";
@@ -23,6 +24,11 @@ import { StatusDisplay } from "./components/StatusDisplay.jsx";
 import { DuplicateSection } from "./components/DuplicateSection.jsx";
 import { LatticeCanvas } from "./components/LatticeCanvas.jsx";
 import { SketchPad } from "./components/SketchPad.jsx";
+import {
+  CHROMATIC_MATERIAL_OPTIONS,
+  SOURCE_MATERIAL,
+  buildChromaticTransmutationPayload,
+} from "./amps/chromaticTransmutationAmp.js";
 
 import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
 
@@ -180,6 +186,7 @@ export default function PixelBrainPage() {
   const [fillRarity, setFillRarity] = useState('RARE');
   const [fillEffect, setFillEffect] = useState('HARMONIC');
   const [wandFillSpec, setWandFillSpec] = useState(null);
+  const [chromaticMaterial, setChromaticMaterial] = useState(SOURCE_MATERIAL);
 
   const canvasRef = useRef(null);
   const previousPhotonicPacketRef = useRef(null);
@@ -193,6 +200,17 @@ export default function PixelBrainPage() {
   // Plain-instruction interpretation ("make it icy blue", "darker") — drives
   // the in-place morph without needing poetic/stable-line-ending structure.
   const instructionTarget = useMemo(() => interpretInstruction(verseText), [verseText]);
+  const chromaticPayload = useMemo(() => buildChromaticTransmutationPayload({
+    sourcePalettes: palettes,
+    sourceCoordinates: coordinates,
+    material: chromaticMaterial,
+    intent: chromaticMaterial === SOURCE_MATERIAL
+      ? 'preserve_source_palette'
+      : `transmute_to_${chromaticMaterial}`,
+  }), [chromaticMaterial, coordinates, palettes]);
+
+  const renderCoordinates = chromaticPayload.outputCoordinates;
+  const renderPalettes = chromaticPayload.outputPalettes;
 
   const clockRef = useRef({ elapsedSeconds: 0 });
 
@@ -230,10 +248,10 @@ export default function PixelBrainPage() {
         vowelDensity: 0.5,
       },
       palette: {
-        0: palettes[0] ? palettes[0].colors[0] : '#000000',
+        0: renderPalettes[0] ? renderPalettes[0].colors[0] : '#000000',
       },
     };
-  }, [activeSchool, palettes, totalSyllables, SCHOOL_TO_INDEX]);
+  }, [activeSchool, renderPalettes, totalSyllables, SCHOOL_TO_INDEX]);
 
   const handleShaderDiagnostic = useCallback((err) => {
     if (err) {
@@ -382,7 +400,12 @@ export default function PixelBrainPage() {
       }[presetKey];
 
       if (preset.format === 'json') {
-        const data = JSON.stringify({ formula, coordinates, palettes }, null, 2);
+        const data = JSON.stringify({
+          formula,
+          coordinates: renderCoordinates,
+          palettes: renderPalettes,
+          chromaticTransmutation: chromaticPayload,
+        }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
@@ -397,7 +420,7 @@ export default function PixelBrainPage() {
         exportCanvas.height = 144 * scale;
         const ectx = exportCanvas.getContext('2d');
         ectx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-        coordinates.forEach(coord => {
+        renderCoordinates.forEach(coord => {
           ectx.fillStyle = coord.color;
           const px = Math.round(coord.x * scale);
           const py = Math.round(coord.y * scale);
@@ -414,14 +437,14 @@ export default function PixelBrainPage() {
       setError(err.message || 'Export failed');
       setStatus('error');
     }
-  }, [coordinates, palettes, formula, activeSchool]);
+  }, [activeSchool, chromaticPayload, formula, renderCoordinates, renderPalettes]);
 
   const handleGodotArtifactExport = useCallback(() => {
     try {
       const artifactText = buildPixelBrainGodotExport({
         canvas: pixelCanvas,
-        palettes,
-        coordinates,
+        palettes: renderPalettes,
+        coordinates: renderCoordinates,
         formula,
       });
 
@@ -432,7 +455,7 @@ export default function PixelBrainPage() {
       setError(err.message || 'Godot artifact export failed');
       setStatus('error');
     }
-  }, [activeSchool, coordinates, formula, palettes, pixelCanvas]);
+  }, [activeSchool, formula, pixelCanvas, renderCoordinates, renderPalettes]);
 
   // Handle clear
   const handleClear = useCallback(() => {
@@ -448,6 +471,7 @@ export default function PixelBrainPage() {
     setPixelCanvas(DEFAULT_PIXEL_CANVAS);
     setPhotonicRoute(null);
     previousPhotonicPacketRef.current = null;
+    setChromaticMaterial(SOURCE_MATERIAL);
     setParameters({});
     setIsMorphing(false);
     setLatticeView(false);
@@ -685,7 +709,7 @@ export default function PixelBrainPage() {
   }, [bridgedPlsFeatures, getCompletions, isPredictiveReady, verseAnalysis, verseText]);
 
   useEffect(() => {
-    if (coordinates.length === 0 || status !== 'ready') {
+    if (renderCoordinates.length === 0 || status !== 'ready') {
       setPhotonicRoute(null);
       previousPhotonicPacketRef.current = null;
       return;
@@ -693,8 +717,8 @@ export default function PixelBrainPage() {
 
     const route = buildPixelBrainPhotonicRoute(
       {
-        coordinates,
-        palettes,
+        coordinates: renderCoordinates,
+        palettes: renderPalettes,
         canvas: pixelCanvas,
       },
       {
@@ -707,7 +731,7 @@ export default function PixelBrainPage() {
     if (route?.packet) {
       previousPhotonicPacketRef.current = route.packet;
     }
-  }, [coordinates, palettes, pixelCanvas, status]);
+  }, [pixelCanvas, renderCoordinates, renderPalettes, status]);
 
   // Render canvas preview — flat 2D only, no Z transforms
   useEffect(() => {
@@ -725,7 +749,7 @@ export default function PixelBrainPage() {
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (imageAnalysis?.preview && !latticeView) {
+    if (imageAnalysis?.preview && !latticeView && chromaticPayload.material === SOURCE_MATERIAL) {
       const img = new Image();
       img.onload = () => {
         ctx.drawImage(img, offsetX, offsetY, srcW * scale, srcH * scale);
@@ -745,8 +769,8 @@ export default function PixelBrainPage() {
           ctx.lineTo(offsetX + srcW * scale, py);
           ctx.stroke();
         }
-        if (coordinates.length > 0) {
-          coordinates.forEach(coord => {
+        if (renderCoordinates.length > 0) {
+          renderCoordinates.forEach(coord => {
             const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
             const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
             ctx.fillStyle = '#ffffff';
@@ -757,34 +781,36 @@ export default function PixelBrainPage() {
         }
       };
       img.src = imageAnalysis.preview;
-    } else if (coordinates.length > 0) {
+    } else if (renderCoordinates.length > 0) {
       // Lattice view: render the colored coordinate reconstruction (the
       // recolored asset itself), so the NLP morph is visible frame-by-frame.
-      coordinates.forEach(coord => {
+      renderCoordinates.forEach(coord => {
         const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
         const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
         ctx.fillStyle = coord.color || '#a0a0c0';
         ctx.fillRect(px, py, Math.max(1, scale), Math.max(1, scale));
       });
     }
-  }, [coordinates, imageAnalysis, pixelCanvas, latticeView]);
+  }, [chromaticPayload.material, imageAnalysis, latticeView, pixelCanvas, renderCoordinates]);
 
   const terminalAnalysisResult = imageAnalysis ? {
     ...imageAnalysis,
-    coordinates,
-    palettes,
+    coordinates: renderCoordinates,
+    palettes: renderPalettes,
     formula,
     canvas: { width: 160, height: 144, gridSize: 1 },
     referenceImage,
     photonicRoute,
+    chromaticTransmutation: chromaticPayload,
   } : versePixelBrainPayload ? {
     ...versePixelBrainPayload,
-    coordinates,
-    palettes,
+    coordinates: renderCoordinates,
+    palettes: renderPalettes,
     formula,
     canvas: pixelCanvas,
     referenceImage: null,
     photonicRoute,
+    chromaticTransmutation: chromaticPayload,
   } : null;
 
   return (
@@ -841,6 +867,12 @@ export default function PixelBrainPage() {
               onClick={() => setLeftTab('forge')}
             >
               FORGE
+            </button>
+            <button
+              className={`tab-btn ${leftTab === 'lattice' ? 'active' : ''}`}
+              onClick={() => setLeftTab('lattice')}
+            >
+              LATTICE
             </button>
           </div>
 
@@ -938,6 +970,12 @@ export default function PixelBrainPage() {
                 FORGE_ACTIVE // WebGL pipeline engaged. Custom GLSL shaders mapped to spells.
               </div>
             )}
+            {leftTab === 'lattice' && (
+              <div className="telemetry-text" style={{ padding: '16px', opacity: 0.7 }}>
+                LATTICE_ACTIVE // Template grid engaged. Paint glyph cells on the
+                rectangular, isometric, hexagonal, circular or fibonacci lattice.
+              </div>
+            )}
           </div>
         </aside>
 
@@ -947,6 +985,10 @@ export default function PixelBrainPage() {
               runtimeState={shaderRuntimeState}
               onDiagnosticEmit={handleShaderDiagnostic}
             />
+          </Suspense>
+        ) : leftTab === 'lattice' ? (
+          <Suspense fallback={<div className="telemetry-text" style={{ padding: '24px' }}>FORGING_LATTICE...</div>}>
+            <TemplateEditor />
           </Suspense>
         ) : (
           <>
@@ -995,6 +1037,33 @@ export default function PixelBrainPage() {
                 selectedExtensions={extensions}
                 onChange={setExtensions}
               />
+
+              <div className="section-header" style={{ marginTop: '12px' }}>
+                <span className="telemetry-text">CHROMATIC AMP</span>
+              </div>
+              <div className="pixelbrain-chromatic-controls">
+                <label className="section-label telemetry-text" htmlFor="pixelbrain-chromatic-material">
+                  Material transmutation
+                </label>
+                <select
+                  id="pixelbrain-chromatic-material"
+                  className="telemetry-text pixelbrain-chromatic-select"
+                  value={chromaticMaterial}
+                  onChange={(event) => setChromaticMaterial(event.target.value)}
+                  aria-label="Chromatic transmutation material"
+                >
+                  {CHROMATIC_MATERIAL_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+                <div className="telemetry-text pixelbrain-chromatic-status">
+                  {chromaticPayload.material === SOURCE_MATERIAL
+                    ? 'SOURCE PALETTE BYPASS'
+                    : `${chromaticPayload.amp.toUpperCase()} · ${chromaticPayload.outputPalette.length} ANCHORS`}
+                </div>
+              </div>
 
               {/* Template / Fill bridge: strip to neutral slots, refill by bytecode */}
               <div className="section-header" style={{ marginTop: '12px' }}>

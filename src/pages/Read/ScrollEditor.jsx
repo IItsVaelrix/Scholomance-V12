@@ -318,6 +318,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   title?: string,
  *   isEditable?: boolean,
  *   isTruesight?: boolean,
+ *   isLatticeGrid?: boolean,
  *   isPredictive?: boolean,
  *   disabled?: boolean,
  *   onContentChange?: (content: string) => void,
@@ -375,6 +376,7 @@ const ScrollEditor = forwardRef(/**
   title: initialTitle = "",
   isEditable: propIsEditable = false,
   isTruesight: propIsTruesight = false,
+  isLatticeGrid = false,
   isPredictive = false,
   disabled = false,
   onContentChange,
@@ -411,8 +413,8 @@ const ScrollEditor = forwardRef(/**
   const { theme: activeTheme } = useTheme();
 
   const activeIdeMode = ideMode || (propIsTruesight ? "TRUESIGHT" : (propIsEditable ? "EDIT" : "NEUTRAL"));
-  const isEditable = ideMode ? (ideMode === "EDIT") : propIsEditable;
-  const isTruesight = ideMode ? (ideMode === "TRUESIGHT") : propIsTruesight;
+  const isEditable = propIsEditable;
+  const isTruesight = propIsTruesight;
 
   const [content, setContent] = useState(initialContent);
   const [contentForOverlay, setContentForOverlay] = useState(initialContent);
@@ -914,7 +916,7 @@ const ScrollEditor = forwardRef(/**
     // Sync scroll if overlay is active
     handleTextareaScroll(event);
 
-    if (activeIdeMode === "EDIT") return;
+    if (activeIdeMode === "EDIT" && !isTruesight) return;
     if (!onWordActivate || textarea.selectionStart !== textarea.selectionEnd) return;
     
     const cursorOffset = textarea.selectionStart;
@@ -952,7 +954,7 @@ const ScrollEditor = forwardRef(/**
       width: 1,
       height: lineHeight,
     }, onWordActivate);
-  }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology, activeIdeMode]);
+  }, [emitCursorChange, handleTextareaScroll, onWordActivate, content, syntaxLayer, analyzedWordsByIdentity, derivedAnalyzedWordsByCharStart, allowLegacyWordFallback, analyzedWords, mirrored, adaptiveTopology, activeIdeMode, isTruesight]);
 
   const updateCompletions = useCallback(async (value, pos) => {
     if (!isPredictive || !getCompletions || !predictorReady) {
@@ -1215,6 +1217,7 @@ const ScrollEditor = forwardRef(/**
 
                         const pixelX = tokenX || 0;
                         const pixelWidth = tokenWidth || null;
+                        const annotationWidth = Math.max(1, pixelWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
 
                         const commonStyle = {
                           position: 'absolute',
@@ -1224,10 +1227,16 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
+                          const isPunctuation = !isWhitespace;
                           return (
-                            <span 
-                              key={localStart} 
-                              style={{ ...commonStyle, pointerEvents: 'none', opacity: isWhitespace ? 0 : 0.4 }}
+                            <span
+                              key={localStart}
+                              className={(isPunctuation && isLatticeGrid) ? 'truesight-puncta--lattice' : undefined}
+                              style={{
+                                ...commonStyle,
+                                pointerEvents: 'none',
+                                opacity: isWhitespace ? 0 : 0.4,
+                              }}
                               data-char-start={charStart}
                             >
                               {token}
@@ -1264,63 +1273,119 @@ const ScrollEditor = forwardRef(/**
                         const isMisspelled = localMisspellings.has(charStart);
 
                         return (
-                          <span key={`word-${charStart}`} style={{ position: 'relative' }}>
+                          <span
+                            key={`word-${charStart}`}
+                            className="truesight-word-shell truesight-word"
+                            role="button"
+                            tabIndex={0}
+                            aria-label={token}
+                            data-char-start={charStart}
+                            style={{
+                              ...wordStyle,
+                              position: 'absolute',
+                              left: `${pixelX}px`,
+                              width: `${annotationWidth}px`,
+                              height: `${lineHeightPx}px`,
+                              cursor: 'pointer',
+                              display: 'inline-block',
+                            }}
+                            onMouseDown={(event) => {
+                              event.preventDefault();
+                            }}
+                            onClick={(event) => {
+                              onWordActivate?.({
+                                word: token,
+                                normalizedWord: clean,
+                                trigger: 'truesight_tap',
+                                analysis: analysis || null,
+                                charStart,
+                                charEnd,
+                                lineIndex,
+                                wordIndex,
+                                vowelFamily: wordVowelFamily,
+                                terminalVowelFamily: rhymeVowelFamily,
+                                school: truesight?.school || null,
+                                color,
+                                anchorRect: event.currentTarget.getBoundingClientRect(),
+                              });
+                            }}
+                            onMouseEnter={(event) => {
+                              onWordActivate?.({
+                                word: token,
+                                normalizedWord: clean,
+                                trigger: 'truesight_hover',
+                                analysis: analysis || null,
+                                charStart,
+                                charEnd,
+                                lineIndex,
+                                wordIndex,
+                                vowelFamily: wordVowelFamily,
+                                terminalVowelFamily: rhymeVowelFamily,
+                                school: truesight?.school || null,
+                                color,
+                                anchorRect: event.currentTarget.getBoundingClientRect(),
+                              });
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                onWordActivate?.({
+                                  word: token,
+                                  normalizedWord: clean,
+                                  trigger: 'truesight_tap',
+                                  analysis: analysis || null,
+                                  charStart,
+                                  charEnd,
+                                  lineIndex,
+                                  wordIndex,
+                                  vowelFamily: wordVowelFamily,
+                                  terminalVowelFamily: rhymeVowelFamily,
+                                  school: truesight?.school || null,
+                                  color,
+                                  anchorRect: e.currentTarget.getBoundingClientRect(),
+                                });
+                              }
+                            }}
+                          >
+                            <span
+                              className={[
+                                'truesight-annotation-box',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : 'truesight-annotation-box--hidden',
+                                shouldColor ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
+                                isLineHighlighted ? 'truesight-annotation-box--highlighted' : '',
+                                isMisspelled ? 'truesight-annotation-box--misspelled' : '',
+                              ].filter(Boolean).join(' ')}
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                '--w': color || undefined,
+                              }}
+                              data-char-start={charStart}
+                              aria-hidden="true"
+                            />
                             <AnimatedSurface
                               as="span"
                               signal={animationSignal}
-                              role="button"
-                              tabIndex={0}
-                              data-char-start={charStart}
+                              aria-hidden="true"
                               className={[
-                                'truesight-word',
-                                'pixel-brain-chip',
+                               'truesight-word-inner',
+                               'pixel-brain-chip',
                                 shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
                                 decoded?.className || '',
                                 isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
                                 isMisspelled ? 'grimoire-word--misspelled' : '',
                               ].filter(Boolean).join(' ')}
                               style={{
-                                ...wordStyle,
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: color || undefined,
+                                '--w': color || undefined,
+                                ...(decoded?.style || {}),
+                                pointerEvents: 'none',
                                 '--chip-delay': `${wordIndex * 30}ms`
-                              }}
-                              onClick={(event) => {
-                                if (analysis) {
-                                  onWordActivate?.({
-                                    word: token,
-                                    normalizedWord: clean,
-                                    trigger: 'truesight_tap',
-                                    analysis,
-                                    charStart,
-                                    charEnd,
-                                    lineIndex,
-                                    wordIndex,
-                                    vowelFamily: wordVowelFamily,
-                                    terminalVowelFamily: rhymeVowelFamily,
-                                    school: truesight?.school || null,
-                                    color,
-                                    anchorRect: event.currentTarget.getBoundingClientRect(),
-                                  });
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  if (analysis) onWordActivate?.({
-                                    word: token,
-                                    normalizedWord: clean,
-                                    trigger: 'truesight_tap',
-                                    analysis,
-                                    charStart,
-                                    charEnd,
-                                    lineIndex,
-                                    wordIndex,
-                                    vowelFamily: wordVowelFamily,
-                                    terminalVowelFamily: rhymeVowelFamily,
-                                    school: truesight?.school || null,
-                                    color,
-                                    anchorRect: e.currentTarget.getBoundingClientRect(),
-                                  });
-                                }
                               }}
                             >
                               {token}
@@ -1457,40 +1522,53 @@ const ScrollEditor = forwardRef(/**
 
                         const color = truesight?.color || null;
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
+                        const annotationWidth = Math.max(1, tokenWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
 
                         const isMultiSyllable = (shouldColor || wordVowelFamily) && (decoded?.syllableDepth >= 2);
                         const isRichMultiSyllable = (shouldColor || wordVowelFamily) && (decoded?.syllableDepth >= 3);
 
                         return (
-                          <AnimatedSurface
+                          <span
                             key={`ghost-word-${charStart}`}
-                            as="span"
-                            signal={animationSignal}
+                            className="truesight-word-shell truesight-word"
                             role="button"
                             tabIndex={0}
-                            className={[
-                              "truesight-word",
-                              "pixel-brain-chip",
-                              (shouldColor || wordVowelFamily) ? "grimoire-word" : "grimoire-word--grey",
-                              decoded?.className || "",
-                              isMultiSyllable ? "word--multi-rhyme" : "",
-                              isRichMultiSyllable ? "word--multi-rhyme--rich" : "",
-                            ].filter(Boolean).join(" ")}
+                            aria-label={token}
+                            data-char-start={charStart}
                             style={{
-                              ...commonStyle,
-                              color: color || undefined,
-                              '--w': color || undefined,
-                              ...(decoded?.style || {}),
-                              pointerEvents: 'auto',
+                              position: 'absolute',
+                              left: `${tokenX}px`,
+                              width: `${annotationWidth}px`,
+                              height: `${lineHeightPx}px`,
                               cursor: 'pointer',
-                              '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
+                              display: 'inline-block',
+                            }}
+                            onMouseDown={(event) => {
+                              event.preventDefault();
                             }}
                             onClick={(event) => {
-                              if (analysis) onWordActivate?.({
+                              onWordActivate?.({
                                 word: token,
                                 normalizedWord: clean,
                                 trigger: 'truesight_tap',
-                                analysis,
+                                analysis: analysis || null,
+                                charStart,
+                                charEnd,
+                                lineIndex: li,
+                                wordIndex,
+                                vowelFamily: wordVowelFamily,
+                                terminalVowelFamily: rhymeVowelFamily,
+                                school: truesight?.school || null,
+                                color,
+                                anchorRect: event.currentTarget.getBoundingClientRect(),
+                              });
+                            }}
+                            onMouseEnter={(event) => {
+                              onWordActivate?.({
+                                word: token,
+                                normalizedWord: clean,
+                                trigger: 'truesight_hover',
+                                analysis: analysis || null,
                                 charStart,
                                 charEnd,
                                 lineIndex: li,
@@ -1505,11 +1583,11 @@ const ScrollEditor = forwardRef(/**
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
                                 e.preventDefault();
-                                if (analysis) onWordActivate?.({
+                                onWordActivate?.({
                                   word: token,
                                   normalizedWord: clean,
                                   trigger: 'truesight_tap',
-                                  analysis,
+                                  analysis: analysis || null,
                                   charStart,
                                   charEnd,
                                   lineIndex: li,
@@ -1523,8 +1601,48 @@ const ScrollEditor = forwardRef(/**
                               }
                             }}
                           >
-                            {token}
-                          </AnimatedSurface>
+                            <span
+                              className={[
+                                'truesight-annotation-box',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : 'truesight-annotation-box--hidden',
+                                (shouldColor || wordVowelFamily) ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
+                              ].filter(Boolean).join(' ')}
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                '--w': color || undefined,
+                              }}
+                              data-char-start={charStart}
+                              aria-hidden="true"
+                            />
+                            <AnimatedSurface
+                              as="span"
+                              signal={animationSignal}
+                              aria-hidden="true"
+                              className={[
+                                "truesight-word-inner",
+                                "pixel-brain-chip",
+                                (shouldColor || wordVowelFamily) ? "grimoire-word" : "grimoire-word--grey",
+                                decoded?.className || "",
+                                isMultiSyllable ? "word--multi-rhyme" : "",
+                                isRichMultiSyllable ? "word--multi-rhyme--rich" : "",
+                              ].filter(Boolean).join(" ")}
+                              style={{
+                                position: 'absolute',
+                                inset: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: color || undefined,
+                                '--w': color || undefined,
+                                ...(decoded?.style || {}),
+                                pointerEvents: 'none',
+                                '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
+                              }}
+                            >
+                              {token}
+                            </AnimatedSurface>
+                          </span>
                         );
                       })}
                     </motion.div>

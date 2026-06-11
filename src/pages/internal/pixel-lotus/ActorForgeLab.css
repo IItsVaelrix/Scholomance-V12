@@ -1,0 +1,216 @@
+.actor-forge-lab {
+  padding: 2rem;
+  color: var(--text-color);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.lab-header {
+  margin-bottom: 2rem;
+}
+
+.lab-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  background: linear-gradient(90deg, var(--school-psychic), var(--school-alchemy));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.lab-subtitle {
+  color: var(--text-muted);
+  font-family: JetBrains Mono, monospace;
+}
+
+.lab-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .lab-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.control-group {
+  margin-bottom: 1rem;
+}
+
+.control-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #a1a1aa;
+}
+
+.control-group select {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+}
+
+.control-group select:focus {
+  outline: none;
+  border-color: var(--school-sonic);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.layer-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.layer-toggle {
+  background: rgba(96, 165, 250, 0.1);
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  color: var(--school-sonic);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+}
+
+.layer-toggle:hover {
+  background: rgba(96, 165, 250, 0.2);
+}
+
+.layer-toggle.visible {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.5);
+  color: #86efac;
+}
+
+.layer-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.provenance-toggle {
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: var(--school-alchemy);
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.actor-preview {
+  aspect-ratio: 1;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.actor-preview[data-school="psychic"] {
+  background: radial-gradient(circle at center, rgba(59, 130, 246, 0.2) 0%, transparent 70%);
+}
+
+.actor-preview[data-school="sonic"] {
+  background: radial-gradient(circle at center, rgba(26, 180, 168, 0.2) 0%, transparent 70%);
+}
+
+.actor-sprite-preview {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actor-direction-indicator {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.facing-label {
+  font-size: 4rem;
+  font-weight: bold;
+  color: rgba(255, 255, 255, 0.1);
+  font-family: JetBrains Mono, monospace;
+}
+
+.actor-animation-label {
+  position: absolute;
+  bottom: 1rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--school-alchemy);
+}
+
+.actor-layer-keys {
+  position: absolute;
+  top: 1rem;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.layer-key {
+  padding: 0.125rem 0.375rem;
+  background: rgba(96, 165, 250, 0.2);
+  border-radius: 2px;
+  font-size: 0.625rem;
+  color: var(--school-sonic);
+}
+
+.manifest-display {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  overflow: auto;
+  max-height: 200px;
+}
+
+.provenance-panel {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: rgba(167, 139, 250, 0.05);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 4px;
+}
+
+.provenance-panel h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--school-alchemy);
+}
+
+.provenance-source,
+.provenance-status {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.mono {
+  font-family: JetBrains Mono, monospace;
+}

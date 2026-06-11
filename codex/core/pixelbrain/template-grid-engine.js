@@ -18,6 +18,56 @@ export const GRID_TYPES = {
   FIBONACCI: 'fibonacci',
 };
 
+const SQRT3 = Math.sqrt(3);
+
+/**
+ * Hexagonal lattice metrics (pointy-top, odd-r offset rows).
+ *
+ * Centres sit `cellSize` apart horizontally with odd rows shifted right by
+ * half a cell; row pitch is cellSize·√3/2. A pointy-top hexagon of
+ * circumradius cellSize/√3 tiles exactly that lattice, so snap, preview and
+ * hit-testing all derive from these two numbers.
+ */
+function hexMetrics(cellSize) {
+  return {
+    rowPitch: cellSize * SQRT3 / 2,
+    radius: cellSize / SQRT3,
+  };
+}
+
+function hexRowOffset(row, cellSize) {
+  return (((row % 2) + 2) % 2) * cellSize / 2;
+}
+
+function hexCenter(col, row, cellSize) {
+  return {
+    x: col * cellSize + hexRowOffset(row, cellSize),
+    y: row * hexMetrics(cellSize).rowPitch,
+  };
+}
+
+/**
+ * Nearest hex centre to a point — the single authority every hexagonal
+ * code path (snap, hit-test, fill) resolves through.
+ */
+function nearestHexCell(x, y, cellSize) {
+  const { rowPitch } = hexMetrics(cellSize);
+  const baseRow = Math.round(y / rowPitch);
+  let best = null;
+
+  for (let row = baseRow - 1; row <= baseRow + 1; row++) {
+    const offset = hexRowOffset(row, cellSize);
+    const col = Math.round((x - offset) / cellSize);
+    const center = hexCenter(col, row, cellSize);
+    const d = (x - center.x) ** 2 + (y - center.y) ** 2;
+    if (!best || d < best.d) {
+      best = { d, col, row, x: center.x, y: center.y };
+    }
+  }
+
+  return best;
+}
+
 /**
  * Create a new template grid
  *
@@ -33,9 +83,12 @@ export function createTemplateGrid(options = {}) {
     snapStrength = 0.85,
   } = options;
 
-  // Calculate grid dimensions
+  // Calculate grid dimensions (hex rows are √3/2·cellSize apart)
+  const rowPitch = gridType === GRID_TYPES.HEXAGONAL
+    ? hexMetrics(cellSize).rowPitch
+    : cellSize;
   const cols = Math.ceil(width / cellSize);
-  const rows = Math.ceil(height / cellSize);
+  const rows = Math.ceil(height / rowPitch);
 
   // Generate anchor points
   const anchorPoints = generateDefaultAnchorPoints(width, height, gridType);
@@ -202,11 +255,10 @@ export function snapToGrid(x, y, grid) {
     }
 
     case GRID_TYPES.HEXAGONAL: {
-      // Hexagonal snapping
-      const hexHeight = cellSize * Math.sqrt(3) / 2;
-      const hexWidth = cellSize;
-      snappedX = Math.round(x / hexWidth) * hexWidth;
-      snappedY = Math.round(y / hexHeight) * hexHeight;
+      // Snap to the nearest hex centre (odd rows are offset half a cell)
+      const cell = nearestHexCell(x, y, cellSize);
+      snappedX = cell.x;
+      snappedY = cell.y;
       break;
     }
 
@@ -289,9 +341,11 @@ export function applySymmetry(coordinates, grid) {
         mirroredCoord.y = grid.height - coord.y;
         mirroredCoord.source = 'mirror_h';
       } else if (axis === 'diagonal') {
+        // Anti-diagonal mirror, scale-normalized so non-square grids map
+        // onto themselves (reduces to height−y / width−x when square)
         const temp = mirroredCoord.x;
-        mirroredCoord.x = grid.height - coord.y;
-        mirroredCoord.y = grid.width - temp;
+        mirroredCoord.x = (1 - coord.y / grid.height) * grid.width;
+        mirroredCoord.y = (1 - temp / grid.width) * grid.height;
         mirroredCoord.source = 'mirror_d';
       }
 
@@ -433,6 +487,7 @@ export function exportToAseprite(grid) {
     height: grid.height,
     cellSize: grid.cellSize,
     gridType: grid.gridType,
+    snapStrength: grid.snapStrength,
     frames,
     anchorPoints: grid.anchorPoints,
     symmetryAxes: grid.symmetryAxes,
@@ -448,12 +503,16 @@ export function importFromAseprite(data) {
     height: data.height,
     cellSize: data.cellSize,
     gridType: data.gridType,
+    snapStrength: data.snapStrength,
   });
 
   grid.anchorPoints = data.anchorPoints || [];
   grid.symmetryAxes = data.symmetryAxes || [];
 
-  data.frames.forEach(frameData => {
+  // The imported document replaces the seed frame entirely
+  grid.frames = [];
+
+  (data.frames || []).forEach(frameData => {
     const frame = createFrame();
     frame.duration = frameData.duration;
 
@@ -469,6 +528,14 @@ export function importFromAseprite(data) {
 
     grid.frames.push(frame);
   });
+
+  if (grid.frames.length === 0) {
+    const frame = createFrame();
+    frame.layers.push(createLayer('Base Layer'));
+    grid.frames.push(frame);
+  }
+
+  grid.layers = grid.frames[0].layers;
 
   return grid;
 }
@@ -527,25 +594,30 @@ export function generateGridPreview(grid) {
     }
 
     case GRID_TYPES.HEXAGONAL: {
-      const hexHeight = cellSize * Math.sqrt(3) / 2;
-      let row = 0;
-      for (let y = 0; y <= height; y += hexHeight) {
-        const xOffset = (row % 2) * cellSize / 2;
-        for (let x = xOffset; x <= width; x += cellSize) {
-          // Draw hexagon
+      // Pointy-top hexagons of circumradius cellSize/√3 tile the snap
+      // lattice exactly; shared edges are emitted once.
+      const { rowPitch, radius } = hexMetrics(cellSize);
+      const seenEdges = new Set();
+      for (let row = 0; row * rowPitch <= height; row++) {
+        const cy = row * rowPitch;
+        for (let cx = hexRowOffset(row, cellSize); cx <= width; cx += cellSize) {
           for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
-            const nextAngle = ((i + 1) / 6) * Math.PI * 2;
-            lines.push({
-              x1: x + Math.cos(angle) * cellSize / 2,
-              y1: y + Math.sin(angle) * hexHeight / 2,
-              x2: x + Math.cos(nextAngle) * cellSize / 2,
-              y2: y + Math.sin(nextAngle) * hexHeight / 2,
-              type: 'hex',
-            });
+            // Vertices every 60°, starting at 30° (pointy-top orientation)
+            const a1 = Math.PI / 6 + (i / 6) * Math.PI * 2;
+            const a2 = Math.PI / 6 + ((i + 1) / 6) * Math.PI * 2;
+            const x1 = cx + Math.cos(a1) * radius;
+            const y1 = cy + Math.sin(a1) * radius;
+            const x2 = cx + Math.cos(a2) * radius;
+            const y2 = cy + Math.sin(a2) * radius;
+            const key = [
+              `${x1.toFixed(2)},${y1.toFixed(2)}`,
+              `${x2.toFixed(2)},${y2.toFixed(2)}`,
+            ].sort().join('|');
+            if (seenEdges.has(key)) continue;
+            seenEdges.add(key);
+            lines.push({ x1, y1, x2, y2, type: 'hex' });
           }
         }
-        row++;
       }
       break;
     }
@@ -605,13 +677,9 @@ export function getCellAtPosition(grid, screenX, screenY) {
     }
 
     case GRID_TYPES.HEXAGONAL: {
-      const hexHeight = cellSize * Math.sqrt(3) / 2;
-      return {
-        col: Math.floor(screenX / cellSize),
-        row: Math.floor(screenY / hexHeight),
-        x: Math.floor(screenX / cellSize) * cellSize,
-        y: Math.floor(screenY / hexHeight) * hexHeight,
-      };
+      // Hex cells are addressed by centre, not top-left corner
+      const cell = nearestHexCell(screenX, screenY, cellSize);
+      return { col: cell.col, row: cell.row, x: cell.x, y: cell.y };
     }
 
     case GRID_TYPES.FIBONACCI: {
@@ -636,30 +704,92 @@ export function getCellAtPosition(grid, screenX, screenY) {
 }
 
 /**
+ * Resolve a cell address back to its canvas anchor point — the inverse of
+ * getCellAtPosition. Rectangular/isometric cells anchor at their top-left
+ * corner; hexagonal cells are addressed by centre.
+ */
+export function getCellOrigin(grid, col, row) {
+  const { cellSize, gridType } = grid;
+
+  switch (gridType) {
+    case GRID_TYPES.HEXAGONAL:
+      return hexCenter(col, row, cellSize);
+
+    case GRID_TYPES.ISOMETRIC: {
+      const isoHalf = cellSize / 2;
+      return { x: col * isoHalf, y: row * isoHalf };
+    }
+
+    default:
+      return { x: col * cellSize, y: row * cellSize };
+  }
+}
+
+/**
+ * Renderer-facing lattice metrics, so UI surfaces never re-derive the
+ * geometry the engine owns. hexRadius is null for non-hex grids.
+ */
+export function getGridMetrics(grid) {
+  const { cellSize, gridType } = grid;
+
+  if (gridType === GRID_TYPES.HEXAGONAL) {
+    const { rowPitch, radius } = hexMetrics(cellSize);
+    return { cellSize, rowPitch, hexRadius: radius };
+  }
+
+  return { cellSize, rowPitch: cellSize, hexRadius: null };
+}
+
+/**
  * Flood fill cells (for bucket tool)
  */
 export function floodFill(grid, layer, startX, startY, color) {
-  const { cellSize } = grid;
+  const { cellSize, gridType } = grid;
   if (!Number.isFinite(cellSize) || cellSize <= 0) return;
 
+  const isHex = gridType === GRID_TYPES.HEXAGONAL;
+  const rowPitch = isHex ? hexMetrics(cellSize).rowPitch : cellSize;
+
   const maxCols = Math.ceil((grid.cols ?? grid.width / cellSize) || 0);
-  const maxRows = Math.ceil((grid.rows ?? grid.height / cellSize) || 0);
-  const startCol = Math.floor(startX / cellSize);
-  const startRow = Math.floor(startY / cellSize);
+  const maxRows = Math.ceil((grid.rows ?? grid.height / rowPitch) || 0);
+
+  const cellPoint = (col, row) =>
+    isHex ? hexCenter(col, row, cellSize) : { x: col * cellSize, y: row * cellSize };
+
+  const start = isHex
+    ? nearestHexCell(startX, startY, cellSize)
+    : { col: Math.floor(startX / cellSize), row: Math.floor(startY / cellSize) };
 
   const isInBounds = (col, row) =>
     col >= 0 && row >= 0 && col < maxCols && row < maxRows;
 
-  if (!isInBounds(startCol, startRow)) return;
+  if (!isInBounds(start.col, start.row)) return;
 
-  // Get target color
-  const targetCell = getCell(layer, startCol * cellSize, startRow * cellSize);
-  const targetColor = targetCell?.color || null;
+  // Get target color (null = empty cell)
+  const startPoint = cellPoint(start.col, start.row);
+  const targetCell = getCell(layer, startPoint.x, startPoint.y);
+  const targetColor = targetCell ? targetCell.color : null;
 
   if (targetColor === color) return; // Same color, nothing to do
 
+  const neighborsOf = (col, row) => {
+    if (!isHex) {
+      return [
+        { col: col + 1, row }, { col: col - 1, row },
+        { col, row: row + 1 }, { col, row: row - 1 },
+      ];
+    }
+    // odd-r offset layout: 6 neighbours; diagonal columns depend on row parity
+    const shift = hexRowOffset(row, cellSize) === 0 ? -1 : 0;
+    return [
+      { col: col + 1, row }, { col: col - 1, row },
+      { col: col + shift, row: row - 1 }, { col: col + shift + 1, row: row - 1 },
+      { col: col + shift, row: row + 1 }, { col: col + shift + 1, row: row + 1 },
+    ];
+  };
+
   // BFS flood fill
-  const queue = [{ col: startCol, row: startRow }];
+  const queue = [{ col: start.col, row: start.row }];
   const visited = new Set();
 
   for (let cursor = 0; cursor < queue.length; cursor++) {
@@ -669,19 +799,15 @@ export function floodFill(grid, layer, startX, startY, color) {
     if (!isInBounds(col, row) || visited.has(key)) continue;
     visited.add(key);
 
-    const x = col * cellSize;
-    const y = row * cellSize;
-    const cell = getCell(layer, x, y);
+    const point = cellPoint(col, row);
+    const cell = getCell(layer, point.x, point.y);
+    const cellColor = cell ? cell.color : null;
 
-    // Check if cell matches target color (or is empty)
-    if (!cell || cell.color === targetColor) {
-      setCell(layer, x, y, color);
-
-      // Add neighbors
-      queue.push({ col: col + 1, row });
-      queue.push({ col: col - 1, row });
-      queue.push({ col, row: row + 1 });
-      queue.push({ col, row: row - 1 });
+    // Fill only cells that exactly match the start cell's colour —
+    // an empty cell matches only an empty start
+    if (cellColor === targetColor) {
+      setCell(layer, point.x, point.y, color);
+      queue.push(...neighborsOf(col, row));
     }
   }
 }

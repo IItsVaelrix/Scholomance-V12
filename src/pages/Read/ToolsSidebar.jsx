@@ -1,6 +1,6 @@
 // @ts-check
 import { ANALYSIS_MODES } from '../../lib/truesight/compiler/analysisModes';
-import { EyeIcon, SparkleIcon, MetricsIcon, AnalyzeIcon, RhymeIcon, AstrologyIcon } from '../../components/Icons.jsx';
+import { EyeIcon, SparkleIcon, MetricsIcon, AnalyzeIcon, AstrologyIcon } from '../../components/Icons.jsx';
 import GrimDesignPanel from './GrimDesignPanel.jsx';
 import './IDE.css';
 
@@ -8,6 +8,8 @@ import './IDE.css';
  * @typedef {{
  *   isTruesight: boolean,
  *   onToggleTruesight: () => void,
+ *   isLatticeGrid?: boolean,
+ *   onToggleLatticeGrid?: () => void,
  *   isPredictive: boolean,
  *   onTogglePredictive: () => void,
  *   mirrored: boolean,
@@ -29,6 +31,8 @@ import './IDE.css';
 export default function ToolsSidebar({
   isTruesight,
   onToggleTruesight,
+  isLatticeGrid = false,
+  onToggleLatticeGrid,
   isPredictive,
   onTogglePredictive,
   mirrored,
@@ -72,7 +76,9 @@ export default function ToolsSidebar({
           Core Analysis
         </h3>
         <button
+          type="button"
           className={`sidebar-tool-btn ${isTruesight ? 'active' : ''}`}
+          aria-pressed={isTruesight}
           onClick={onToggleTruesight}
         >
           <span className="tool-icon"><EyeIcon /></span>
@@ -80,7 +86,29 @@ export default function ToolsSidebar({
           <span className={`status-dot ${isTruesight ? 'on' : 'off'}`} aria-hidden="true" />
         </button>
         <button
+          type="button"
+          className={`sidebar-tool-btn ${isLatticeGrid ? 'active' : ''}`}
+          aria-pressed={isLatticeGrid}
+          disabled={!isTruesight}
+          title={isTruesight ? undefined : 'Requires Truesight — the lattice annotates the Truesight overlay'}
+          onClick={onToggleLatticeGrid}
+        >
+          <span className="tool-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M9 3v18" />
+              <path d="M15 3v18" />
+              <path d="M3 9h18" />
+              <path d="M3 15h18" />
+            </svg>
+          </span>
+          <span className="tool-label">Lattice Grid</span>
+          <span className={`status-dot ${isLatticeGrid ? 'on' : 'off'}`} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
           className={`sidebar-tool-btn ${mirrored ? 'active' : ''}`}
+          aria-pressed={mirrored}
           onClick={onToggleMirrored}
         >
           <span className="tool-icon">
@@ -95,7 +123,9 @@ export default function ToolsSidebar({
           <span className={`status-dot ${mirrored ? 'on' : 'off'}`} aria-hidden="true" />
         </button>
         <button
+          type="button"
           className={`sidebar-tool-btn ${isPredictive ? 'active' : ''}`}
+          aria-pressed={isPredictive}
           onClick={onTogglePredictive}
         >
           <span className="tool-icon"><SparkleIcon /></span>
@@ -103,7 +133,9 @@ export default function ToolsSidebar({
           <span className={`status-dot ${isPredictive ? 'on' : 'off'}`} aria-hidden="true" />
         </button>
         <button
+          type="button"
           className={`sidebar-tool-btn ${showScorePanel ? 'active' : ''}`}
+          aria-pressed={showScorePanel}
           onClick={onToggleScorePanel}
         >
           <span className="tool-icon"><MetricsIcon /></span>

@@ -79,7 +79,7 @@ export function assertCIResults(results) {
     const messages = results.failures.map((f) => `${f.word}: ${f.error || 'determinism/runtime check failed'}`);
     throw new Error(`G2P Determinism CI failed:\n${messages.join('\n')}`);
   }
-  console.log(`G2P Determinism CI passed: ${results.passedWords}/${results.totalWords} words × ${iterations || 100} iterations`);
+  console.log(`G2P Determinism CI passed: ${results.passedWords}/${results.totalWords} words × ${results.iterations || 100} iterations`);
 }
 
 export function printCIResults(results) {

@@ -48,10 +48,14 @@ export function useAutoSave(inputs, options = {}) {
     const normalizedDraft = {
       context: draft.context,
       id: draft.id || autosaveScrollIdRef.current || undefined,
-      title: String(draft.title || "").trim() || "Untitled Scroll",
+      title: String(draft.title || "").trim(),
       content: String(draft.content || ""),
       submittedAt: draft.submittedAt || null,
     };
+
+    if (!normalizedDraft.title) {
+      return;
+    }
 
     const draftFingerprint = `${normalizedDraft.id || "new"}|${normalizedDraft.title}|${normalizedDraft.content}`;
     
@@ -113,8 +117,14 @@ export function useAutoSave(inputs, options = {}) {
     const currentTitle = String(title || "").trim();
     const hasExistingDraft = Boolean(id || autosaveScrollIdRef.current);
 
+    // Autosave must not create or mutate drafts into generated titles. Blank
+    // titles are saved only by the explicit Save Scroll action.
+    if (!currentTitle) {
+      return;
+    }
+
     // Prevent saving pure voids
-    if (!hasExistingDraft && !currentContent.trim() && !currentTitle) {
+    if (!hasExistingDraft && !currentContent.trim()) {
       return;
     }
 

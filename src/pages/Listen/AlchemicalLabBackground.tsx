@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+// eslint-disable-next-line no-restricted-imports -- type-only import removed at compile time
 import type Phaser from 'phaser';
 import { cacheBackground } from '../../lib/cache/backgroundCache';
 import { getAmbientPlayerService } from '../../lib/ambient/ambientPlayer.service.js';

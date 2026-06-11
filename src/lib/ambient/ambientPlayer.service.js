@@ -498,7 +498,7 @@ async function createTrackController({
         mediaSource.disconnect();
         eqNodes.forEach(n => n.disconnect());
         analyser.disconnect();
-      } catch {}
+      } catch { /* no-op */ }
       
       let currentOut = mediaSource;
       for (const eq of eqNodes) {

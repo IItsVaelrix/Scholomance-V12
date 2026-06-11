@@ -99,7 +99,7 @@ export const ParaEQOverlay: React.FC<ParaEQOverlayProps> = ({
   useEffect(() => {
     if (!containerRef.current) return;
     const observer = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         setDimensions({
           width: entry.contentRect.width,
           height: entry.contentRect.height,
@@ -161,7 +161,7 @@ export const ParaEQOverlay: React.FC<ParaEQOverlayProps> = ({
     e.currentTarget.setPointerCapture(e.pointerId);
     setActiveBandId(id);
     
-    let currentId = id;
+    const currentId = id;
     
     const handlePointerMove = (moveEv: PointerEvent) => {
       if (!containerRef.current || dimensions.width === 0) return;
@@ -219,7 +219,7 @@ export const ParaEQOverlay: React.FC<ParaEQOverlayProps> = ({
     // Use the UI adapter layer (src/lib/engine.adapter.js).
     let schoolId = 'NEUTRAL';
     let targetFreq = 1000;
-    let targetGain = 6.0;
+    const targetGain = 6.0;
     let targetQ = 1.414;
 
     try {
@@ -229,7 +229,8 @@ export const ParaEQOverlay: React.FC<ParaEQOverlayProps> = ({
       
       const analysis = PhonemeEngine.analyzeWord(textData.trim());
       if (analysis && analysis.vowelFamily) {
-        schoolId = VOWEL_FAMILY_TO_SCHOOL[analysis.vowelFamily] || 'NEUTRAL';
+        const vowelFamily = String(analysis.vowelFamily) as keyof typeof VOWEL_FAMILY_TO_SCHOOL;
+        schoolId = VOWEL_FAMILY_TO_SCHOOL[vowelFamily] || 'NEUTRAL';
       }
 
       // Simple mapping of School to typical Hz centroids

@@ -355,10 +355,51 @@
 .bcv-lyrics:not(.is-truesight) li.is-highlight .bcv-lyric-text { color: var(--bcv-gold-hot); text-shadow: 0 0 14px rgba(212, 175, 55, 0.4); }
 .bcv-lyric-n { color: var(--bcv-dim); font-family: var(--bcv-mono); font-size: 0.58rem; padding-top: 0.42rem; }
 
-.bcv-annotations { display: grid; gap: 0.7rem; margin-bottom: 1.4rem; }
-.bcv-annotation { padding-left: 0.8rem; border-left: 2px solid rgba(212, 175, 55, 0.4); }
-.bcv-annotation__head { margin: 0 0 0.2rem; color: var(--bcv-gold); font-size: 0.64rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.bcv-annotation__body { margin: 0; color: var(--bcv-dim); font-family: var(--bcv-scroll); font-size: 0.82rem; line-height: 1.55; }
+.bcv-annotations-layer { margin-bottom: 2rem; }
+.bcv-annotations-grid { display: flex; flex-direction: column; gap: 0.85rem; }
+
+.bcv-panel--annotation {
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-align: left;
+  border-left: 2px solid var(--bcv-gold);
+}
+
+.bcv-annotation__header { display: flex; align-items: baseline; gap: 0.5rem; }
+.bcv-annotation__id {
+  font-family: var(--bcv-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--bcv-magenta);
+  text-shadow: 0 0 10px rgba(214, 91, 255, 0.4);
+}
+.bcv-annotation__title {
+  margin: 0;
+  font-family: var(--bcv-display);
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bcv-gold);
+  text-shadow: 0 0 12px rgba(212, 175, 55, 0.35);
+}
+
+.bcv-annotation__content {
+  margin-left: 1.5rem;
+}
+.bcv-annotation__body {
+  margin: 0;
+  color: var(--bcv-ink);
+  font-family: var(--bcv-scroll);
+  font-size: 0.88rem;
+  line-height: 1.6;
+  opacity: 0.85;
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border-width: 0;
+}
 
 /* ── Player transport — gold instrument controls ────────────────────────── */
 

@@ -98,7 +98,7 @@ function playFallbackTone(packet, audioContext, mixer) {
     osc.start(startAt);
     osc.stop(stopAt);
     osc.onended = () => {
-      try { osc.disconnect(); gain.disconnect(); panner.disconnect(); } catch {}
+      try { osc.disconnect(); gain.disconnect(); panner.disconnect(); } catch { /* no-op */ }
     };
   } catch {
     // Fallback tone also failed — silently eat it
@@ -222,6 +222,6 @@ export async function schedulePacket({ packet, audioContext, worker, mixer }) {
 
   source.start(audioContext.currentTime);
   source.onended = () => {
-    try { source.disconnect(); panner.disconnect(); } catch {}
+    try { source.disconnect(); panner.disconnect(); } catch { /* no-op */ }
   };
 }

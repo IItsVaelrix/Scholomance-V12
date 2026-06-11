@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applySqlitePragmas, runSqliteMigrations, runAsyncMigrations } from './db/sqlite.migrations.js';
 import { createDbWrapper } from './db/persistence.wrapper.js';
-import { applyCatalogV18, applyCatalogV19, applyCatalogV20 } from './catalog/catalog.schema.js';
+import { applyCatalogV18, applyCatalogV19, applyCatalogV20, applyCatalogV22 } from './catalog/catalog.schema.js';
 import {
   DEFAULT_WORLD_ENTITIES,
   DEFAULT_WORLD_ROOMS,
@@ -103,8 +103,8 @@ const USER_MIGRATIONS = [
     name: 'add_email_verification',
     up(database) {
       // Helper for migration runner (synchronous)
-      const hasColumn = (db, table, col) => {
-        return db.prepare(`PRAGMA table_info("${table}")`).all().some(c => c.name === col);
+      const hasColumn = (dbConn, table, col) => {
+        return dbConn.prepare(`PRAGMA table_info("${table}")`).all().some(c => c.name === col);
       };
       if (!hasColumn(database, 'users', 'verified')) {
         database.exec('ALTER TABLE users ADD COLUMN verified INTEGER DEFAULT 0');
@@ -177,8 +177,8 @@ const USER_MIGRATIONS = [
     version: 9,
     name: 'add_scroll_submission_timestamp',
     up(database) {
-      const hasColumn = (db, table, col) => {
-        return db.prepare(`PRAGMA table_info("${table}")`).all().some(c => c.name === col);
+      const hasColumn = (dbConn, table, col) => {
+        return dbConn.prepare(`PRAGMA table_info("${table}")`).all().some(c => c.name === col);
       };
       if (!hasColumn(database, 'scrolls', 'submittedAt')) {
         database.exec('ALTER TABLE scrolls ADD COLUMN submittedAt DATETIME');
@@ -468,6 +468,13 @@ const USER_MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 22,
+    name: 'discography_nav_schema',
+    up(database) {
+      applyCatalogV22(database);
+    },
+  },
 ];
 
 let db;
@@ -567,7 +574,7 @@ async function ensureWorldSeedData(database) {
   }
 }
 
-async function ensureCatalogSeedData(database) {
+async function ensureCatalogSeedData(_database) {
   try {
     const { catalogPersistence: catalogApi } = await import('./catalog.persistence.js');
     const { seedCatalog: runSeed } = await import('./catalog/catalog.seed.js');

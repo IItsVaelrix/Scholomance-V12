@@ -27,6 +27,7 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
   getByteFrequencyData,
   currentSchoolId,
   signalLevel,
+  eqNodes,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(1024));

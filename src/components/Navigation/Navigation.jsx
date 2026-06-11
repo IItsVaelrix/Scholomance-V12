@@ -1,16 +1,32 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import {
+  Eye,
+  Headphones,
+  BookOpen,
+  Swords,
+  Compass,
+  Menu,
+  ChevronRight,
+  User,
+} from "lucide-react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import { preloadRoute } from "../../lib/routes.js";
-
 import { triggerHapticPulse, UI_HAPTICS } from "../../lib/platform/haptics.js";
-
 import { isAdminUser } from "../../lib/admin.js";
 
-const MOBILE_ROUTE_COPY = {
+const ICON_MAP = {
+  watch: Eye,
+  listen: Headphones,
+  read: BookOpen,
+  combat: Swords,
+  nexus: Compass,
+};
+
+const ROUTE_COPY = {
   watch: "Witness the live arena and current ritual signal.",
   listen: "Tune stations, broadcasts, and ambient transmission.",
   read: "Compose scrolls and inspect their hidden anatomy.",
@@ -39,17 +55,35 @@ export default function Navigation() {
   const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
   const isInternalAdmin = isAdminUser(user);
 
-  const navLinks = [
+  const allNavLinks = useMemo(() => [
     ...LINKS,
-    // Add internal modules if not in PROD, OR if user is admin in PROD
     ...(!IS_PROD || isInternalAdmin ? INTERNAL_MODULES : []),
-  ];
+  ], [IS_PROD, isInternalAdmin]);
 
-  // Prefetch only warms the route's code chunk. Page data is owned by the
-  // Scrolls/Progression providers (loaded once, kept in context across
-  // navigation), so prefetching on hover securely speeds up navigation
-  // without triggering redundant API calls.
-  // A 75ms intentionality delay prevents "swipe-across" network congestion.
+  const primaryLinks = useMemo(
+    () => LINKS.filter((l) => ICON_MAP[l.id]),
+    [],
+  );
+
+  const allLinks = useMemo(() => [
+    ...allNavLinks,
+    {
+      id: user ? "profile" : "auth",
+      path: user ? "/profile" : "/auth",
+      label: user ? user.username : "Portal",
+    },
+  ], [allNavLinks, user]);
+
+  const currentPage = useMemo(
+    () => allLinks.find((l) => location.pathname === l.path || location.pathname.startsWith(l.path + "/")),
+    [allLinks, location.pathname],
+  );
+
+  const isActiveLink = useCallback(
+    (path) => location.pathname === path || location.pathname.startsWith(path + "/"),
+    [location.pathname],
+  );
+
   const handlePrefetchStart = useCallback((path) => {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     hoverTimeoutRef.current = setTimeout(() => {
@@ -61,32 +95,18 @@ export default function Navigation() {
     if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
   }, []);
 
-  const allLinks = [
-    ...navLinks,
-    {
-      id: user ? "profile" : "auth",
-      path: user ? "/profile" : "/auth",
-      label: user ? user.username : "Portal",
-    },
-  ];
-
   const handleNav = useCallback(async (path) => {
     if (location.pathname === path) {
       setIsMenuOpen(false);
       setNavigatingPath(null);
       return;
     }
-
     setNavigatingPath(path);
-
-    // Wait for the chunk to load BEFORE navigating, ensuring the target page
-    // won't hit a Suspense fallback boundary during the exit/enter animation.
     try {
       await preloadRoute(path);
     } catch (error) {
       console.error("Failed to preload route:", error);
     }
-
     if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
     navigate(path);
   }, [navigate, location.pathname]);
@@ -96,6 +116,7 @@ export default function Navigation() {
     setNavigatingPath(null);
     setIsMenuOpen(false);
   }, [location.pathname]);
+
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = "hidden";
@@ -104,21 +125,33 @@ export default function Navigation() {
     }
     return () => { document.body.style.overflow = ""; };
   }, [isMenuOpen]);
+
   useEffect(() => {
-    return () => { 
-      if (navTimeoutRef.current) clearTimeout(navTimeoutRef.current);
-      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    const navTimeout = navTimeoutRef.current;
+    const hoverTimeout = hoverTimeoutRef.current;
+    return () => {
+      if (navTimeout) clearTimeout(navTimeout);
+      if (hoverTimeout) clearTimeout(hoverTimeout);
     };
   }, []);
+
   const handleToggle = useCallback(() => {
     triggerHapticPulse(UI_HAPTICS.MEDIUM);
     setIsMenuOpen((prev) => !prev);
     setNavigatingPath(null);
   }, []);
+
+  const handleRailNavClick = useCallback((e, linkPath) => {
+    e.preventDefault();
+    triggerHapticPulse(UI_HAPTICS.TICK);
+    if (navigatingPath) return;
+    handleNav(linkPath);
+  }, [navigatingPath, handleNav]);
+
   const handleMobileNavClick = useCallback((e, linkPath) => {
     e.preventDefault();
     triggerHapticPulse(UI_HAPTICS.TICK);
-    if (navigatingPath) return; // already transitioning
+    if (navigatingPath) return;
     handleNav(linkPath);
   }, [navigatingPath, handleNav]);
 
@@ -128,26 +161,73 @@ export default function Navigation() {
 
   return (
     <>
-      {/* Floating navigation button (top-left) — opens the fullscreen menu */}
-      <motion.button
-        className="nav-brand nav-brand--floating font-bold"
-        aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
-        aria-expanded={isMenuOpen}
-        aria-controls="nav-mobile-menu"
-        onClick={handleToggle}
-        whileTap={{ scale: 0.96 }}
-        drag="x"
-        animate={{
-          textShadow: isMenuOpen
-            ? "0 0 20px var(--active-school-color)"
-            : "0 0 0px var(--active-school-color)"
-        }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-      >
-        SCHOLOMANCE
-      </motion.button>
+      <nav className="scholomance-rail" role="navigation" aria-label="Primary navigation">
+        <div className="rail-left">
+          <button
+            className="rail-brand"
+            onClick={handleToggle}
+            aria-label={isMenuOpen ? "Close navigation" : "Open navigation"}
+            aria-expanded={isMenuOpen}
+            aria-controls="nav-mobile-menu"
+            type="button"
+          >
+            <span className="rail-brand-glyph" aria-hidden="true">S</span>
+            <span className="rail-brand-label">Scholomance</span>
+          </button>
 
-      {/* Fullscreen navigation overlay */}
+          {currentPage && (
+            <div className="rail-breadcrumb" aria-label="Current page">
+              <ChevronRight size={12} aria-hidden="true" className="rail-breadcrumb-sep" />
+              <span className="rail-breadcrumb-label">{currentPage.label}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="rail-center">
+          {primaryLinks.map((link) => {
+            const Icon = ICON_MAP[link.id];
+            const active = isActiveLink(link.path);
+            const isSelected = navigatingPath === link.path;
+            return (
+              <NavLink
+                key={link.id}
+                to={link.path}
+                onClick={(e) => handleRailNavClick(e, link.path)}
+                onMouseEnter={() => handlePrefetchStart(link.path)}
+                onMouseLeave={handlePrefetchCancel}
+                className={`rail-link${active ? " rail-link--active" : ""}${isSelected ? " rail-link--loading" : ""}`}
+                aria-current={active ? "page" : undefined}
+              >
+                <Icon size={15} aria-hidden="true" />
+                <span className="rail-link-label">{link.label}</span>
+              </NavLink>
+            );
+          })}
+        </div>
+
+        <div className="rail-right">
+          <NavLink
+            to={user ? "/profile" : "/auth"}
+            onClick={(e) => handleRailNavClick(e, user ? "/profile" : "/auth")}
+            className={`rail-link rail-link--user${isActiveLink(user ? "/profile" : "/auth") ? " rail-link--active" : ""}`}
+            aria-label={user ? `Profile: ${user.username}` : "Sign in"}
+          >
+            <User size={15} aria-hidden="true" />
+          </NavLink>
+
+          <button
+            className="rail-menu-btn"
+            onClick={handleToggle}
+            aria-label={isMenuOpen ? "Close navigation" : "Open all chambers"}
+            aria-expanded={isMenuOpen}
+            aria-controls="nav-mobile-menu"
+            type="button"
+          >
+            <Menu size={16} aria-hidden="true" />
+          </button>
+        </div>
+      </nav>
+
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
@@ -177,7 +257,7 @@ export default function Navigation() {
                 {allLinks.map((l, i) => {
                   const isSelected = navigatingPath === l.path;
                   const isOther = navigatingPath && !isSelected;
-                  const isActive = location.pathname === l.path;
+                  const isActive = isActiveLink(l.path);
                   return (
                     <motion.div
                       key={l.id}
@@ -207,7 +287,7 @@ export default function Navigation() {
                         <span className="nav-mobile-link-copy">
                           <span className="nav-mobile-link-label">{l.label}</span>
                           <span className="nav-mobile-link-meta">
-                            {MOBILE_ROUTE_COPY[l.id] || "Open chamber."}
+                            {ROUTE_COPY[l.id] || "Open chamber."}
                           </span>
                         </span>
                         <span className="nav-mobile-link-state">

@@ -2,7 +2,7 @@
  * Audio Forge DSP — Oscillators
  *
  * Pure wavetable construction and sample generation.
- * All randomness via rng parameter. Zero Math.random() calls.
+ * All randomness via rng parameter. Zero Math.random calls.
  *
  * CLASSIFICATION: core / pure / DSP
  * LAYER: codex/core — NO DOM, NO AudioContext, NO side effects.

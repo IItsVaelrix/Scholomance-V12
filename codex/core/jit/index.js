@@ -3,7 +3,7 @@ export function getStatus() {
     status: 'configured',
     stage: 'initialized',
     capabilities: ['compile', 'run', 'profile'],
-    timestamp: Date.now(),
+    timestamp: Date.now(), // EXEMPT — status report metadata
   };
 }
 

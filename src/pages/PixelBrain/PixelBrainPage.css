@@ -23,7 +23,7 @@
 .pixelbrain-page {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: calc(100dvh - var(--nav-rail-height, 48px));
   background: var(--color-matrix-void);
   color: var(--color-matrix-chrome-light);
   font-family: var(--font-matrix-data);
@@ -175,6 +175,31 @@
 
 .pixelbrain-pls-chip:hover {
   background: rgba(0, 255, 65, 0.14);
+}
+
+.pixelbrain-chromatic-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  background: rgba(2, 7, 10, 0.72);
+}
+
+.pixelbrain-chromatic-select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(125, 211, 252, 0.42);
+  background: #000;
+  color: var(--color-matrix-green);
+  padding: 4px 6px;
+  font-size: 14px;
+}
+
+.pixelbrain-chromatic-status {
+  min-height: 18px;
+  color: #7DD3FC;
+  font-size: 13px;
 }
 
 .transmute-ignite-btn {

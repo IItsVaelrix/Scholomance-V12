@@ -43,6 +43,7 @@ export default function ListenPage() {
     addEqBand,
     updateEqBand,
     removeEqBand,
+    setEqBands,
     getEqNodes,
     eqBands,
   } = useAmbientPlayer(allSchoolIds);
@@ -280,20 +281,14 @@ export default function ListenPage() {
               <div className="black-hole-embed">
                 <motion.button
                   type="button"
-                  onClick={async () => {
-                    const resolvedTrackId = trackUrl ? await resolveTrackId(trackUrl).then(r => r?.trackId).catch(() => null) : null;
-                    if (resolvedTrackId) {
-                      window.location.href = `/grimoire/${resolvedTrackId}`;
-                    } else if (trackUrl) {
-                      const res = await resolveTrackId(trackUrl).then(r => r?.trackId).catch(() => null);
-                      if (res) window.location.href = `/grimoire/${res}`;
-                    }
+                  onClick={() => {
+                    window.location.href = "/visualiser";
                   }}
                   className="black-hole-btn"
-                  aria-label="Enter the Storm — open the grimoire for the active resonance"
+                  aria-label="Enter the Visualiser — explore the resonance field"
                 >
                   <span className="black-hole-horizon"></span>
-                  <span className="black-hole-text">Enter the Storm</span>
+                  <span className="black-hole-text">Enter the Visualiser</span>
                 </motion.button>
               </div>
             </main>
