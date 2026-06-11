@@ -42,6 +42,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-07-quaver-eq-oracle-pdr.md`](./2026-06-07-quaver-eq-oracle-pdr.md) | Draft | Audio + Oracle + UI | High |
 | [`2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md`](./2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md) | Draft | Pixel Lotus + Actor Forge + Combat Runtime | High |
 | [`2026-06-11-chromatic-transmutation-amp-pdr.md`](./2026-06-11-chromatic-transmutation-amp-pdr.md) | Implemented | Architectural + Rendering + PixelBrain + Behavioral | High |
+| [`2026-06-11-known-color-microprocessors-pdr.md`](./2026-06-11-known-color-microprocessors-pdr.md) | Implemented | Architectural + Color Engine + Microprocessors + PixelBrain | High |
 | [`Animation-Audit-PDR-6-10-2026.md`](./Animation-Audit-PDR-6-10-2026.md) | Draft | Animation Audit + UI Runtime | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |

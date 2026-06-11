@@ -6,6 +6,7 @@ import {
   MODULE_IDS,
   ERROR_CODES,
 } from '../pixelbrain/bytecode-error.js';
+import { getKnownColorNames } from './color/named-color-registry.js';
 
 /**
  * LAZY MICROPROCESSOR REGISTRY
@@ -43,6 +44,19 @@ verseIRMicroprocessors.register('nlu.synthesizeVerse', async (payload, context) 
 verseIRMicroprocessors.register('pls.index', async (payload, context) => {
   const { buildPlsIndex } = await import('./nlu/plsIndexProcessor.js');
   return buildPlsIndex(payload);
+});
+
+// --- Color Microprocessors (Lazy) ---
+verseIRMicroprocessors.register('color.resolve', async (payload, context) => {
+  const { resolveKnownColor } = await import('./color/ColorResolver.js');
+  return resolveKnownColor(payload, context);
+});
+
+getKnownColorNames().forEach((colorName) => {
+  verseIRMicroprocessors.register(`color.resolve.${colorName}`, async (payload, context) => {
+    const { createColorResolverProcessor } = await import('./color/ColorResolver.js');
+    return createColorResolverProcessor(colorName)(payload, context);
+  });
 });
 
 // --- Pixel Microprocessors (Lazy) ---
