@@ -41,6 +41,7 @@ import {
   clearCell as codexClearCell,
   exportToAseprite as codexExportToAseprite,
   importFromAseprite as codexImportFromAseprite,
+  validateAsepriteImportPayload as codexValidateAsepriteImportPayload,
   generateGridPreview as codexGenerateGridPreview,
   getCellAtPosition as codexGetCellAtPosition,
   getCellOrigin as codexGetCellOrigin,
@@ -96,6 +97,27 @@ import {
   sketchToSilhouette as codexSketchToSilhouette,
 } from '../../codex/core/pixelbrain/sketch-amp.js';
 
+// --- Asset Packet / Connective Tissue ---
+import {
+  createPixelBrainAssetPacket as codexCreatePixelBrainAssetPacket,
+  normalizePixelBrainAssetPacket as codexNormalizePixelBrainAssetPacket,
+  derivePixelBrainRenderPacket as codexDerivePixelBrainRenderPacket,
+  derivePixelBrainExportPacket as codexDerivePixelBrainExportPacket,
+} from '../../codex/core/pixelbrain/pixelbrain-asset-packet.js';
+
+import {
+  resolvePixelBrainPaletteAuthority as codexResolvePixelBrainPaletteAuthority,
+} from '../../codex/core/pixelbrain/palette-authority-bridge.js';
+
+import {
+  templateGridToPixelBrainAssetPacket as codexTemplateGridToPixelBrainAssetPacket,
+} from '../../codex/core/pixelbrain/template-grid-asset-bridge.js';
+
+import {
+  registerPixelBrainShaderUniformProvider as codexRegisterPixelBrainShaderUniformProvider,
+  resolvePixelBrainShaderUniforms as codexResolvePixelBrainShaderUniforms,
+} from '../../codex/core/pixelbrain/pixelbrain-shader-uniform-providers.js';
+
 // --- WAND → Fill Bridge (proposal → fill bytecode) ---
 import {
   deriveWandFillBytecode as codexDeriveWandFillBytecode,
@@ -113,6 +135,12 @@ import {
   resolveShaderUniforms as codexResolveShaderUniforms,
   DEFAULT_SHADER_UNIFORMS as codexDEFAULT_SHADER_UNIFORMS,
 } from '../../codex/core/pixelbrain/shader-uniform-resolver.js';
+
+import {
+  registerUniformProvider as codexRegisterUniformProvider,
+  getUniformProviders as codexGetUniformProviders,
+  clearUniformRegistry as codexClearUniformRegistry,
+} from '../../codex/core/pixelbrain/shader-uniform-registry.js';
 
 import {
   createShaderCompileError as codexCreateShaderCompileError,
@@ -263,8 +291,12 @@ export function applySymmetry(coordinates, grid) {
   return codexApplySymmetry(coordinates, grid);
 }
 
-export function importFromAseprite(data) {
-  return codexImportFromAseprite(data);
+export function importFromAseprite(data, options = {}) {
+  return codexImportFromAseprite(data, options);
+}
+
+export function validateAsepriteImportPayload(data, options = {}) {
+  return codexValidateAsepriteImportPayload(data, options);
 }
 
 export function floodFill(grid, layer, x, y, color) {
@@ -315,6 +347,44 @@ export function fillTemplate(template, bytecode, options) {
 
 export function sketchToSilhouette(occupied, dimensions, options) {
   return codexSketchToSilhouette(occupied, dimensions, options);
+}
+
+// --- ASSET PACKET / CONNECTIVE TISSUE EXPORTS ---
+
+export function createPixelBrainAssetPacket(input) {
+  return codexCreatePixelBrainAssetPacket(input);
+}
+
+export function normalizePixelBrainAssetPacket(packet) {
+  return codexNormalizePixelBrainAssetPacket(packet);
+}
+
+export function derivePixelBrainRenderPacket(packet, options) {
+  return codexDerivePixelBrainRenderPacket(packet, options);
+}
+
+export function derivePixelBrainExportPacket(packet, target, options) {
+  return codexDerivePixelBrainExportPacket(packet, target, options);
+}
+
+export function resolvePixelBrainPaletteAuthority(input) {
+  return codexResolvePixelBrainPaletteAuthority(input);
+}
+
+export function templateGridToPixelBrainAssetPacket(grid, options) {
+  return codexTemplateGridToPixelBrainAssetPacket(grid, options);
+}
+
+export function registerPixelBrainShaderUniformProvider() {
+  return codexRegisterPixelBrainShaderUniformProvider();
+}
+
+export function resolvePixelBrainShaderUniforms(context) {
+  return codexResolvePixelBrainShaderUniforms(context);
+}
+
+export function runPixelBrainPipeline(input, context) {
+  return processorBridge.execute('pixelbrain.pipeline.run', input, context);
 }
 
 // --- WAND → FILL BRIDGE EXPORTS ---
@@ -438,6 +508,18 @@ export function runSymmetryAmpProcessor(input) {
  */
 export function runCoordSymmetryAmp(input) {
   return processorBridge.execute('amp.coord-symmetry', input);
+}
+
+export function registerUniformProvider(providerId, provider) {
+  return codexRegisterUniformProvider(providerId, provider);
+}
+
+export function getUniformProviders() {
+  return codexGetUniformProviders();
+}
+
+export function clearUniformRegistry() {
+  return codexClearUniformRegistry();
 }
 
 // Re-export transform functions for testing

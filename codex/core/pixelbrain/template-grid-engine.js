@@ -6,6 +6,14 @@
  */
 
 import { GOLDEN_RATIO, roundTo } from './shared.js';
+import {
+  BytecodeError,
+  ERROR_CATEGORIES,
+  ERROR_SEVERITY,
+  MODULE_IDS,
+  ERROR_CODES,
+} from './bytecode-error.js';
+
 
 /**
  * Grid types
@@ -68,6 +76,26 @@ function nearestHexCell(x, y, cellSize) {
   return best;
 }
 
+export const PIXELBRAIN_GRID_LIMITS = Object.freeze({
+  safeWidth: 160,
+  safeHeight: 144,
+  warningWidth: 512,
+  warningHeight: 512,
+  hardMaxWidth: 1024,
+  hardMaxHeight: 1024,
+  maxCells: 1048576,
+  maxFillCells: 262144,
+  maxTraceCoordinates: 262144
+});
+
+export const ASEPRITE_IMPORT_LIMITS = Object.freeze({
+  maxWidth: 512,
+  maxHeight: 512,
+  maxFrames: 256,
+  maxLayers: 64,
+  maxCells: 262144
+});
+
 /**
  * Create a new template grid
  *
@@ -83,12 +111,41 @@ export function createTemplateGrid(options = {}) {
     snapStrength = 0.85,
   } = options;
 
+  // Hard bounds check
+  if (width > PIXELBRAIN_GRID_LIMITS.hardMaxWidth || height > PIXELBRAIN_GRID_LIMITS.hardMaxHeight) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.RANGE,
+      ERROR_SEVERITY.FATAL,
+      MODULE_IDS.TEMPLATE,
+      ERROR_CODES.EXCEEDS_MAX,
+      { width, height, limit: PIXELBRAIN_GRID_LIMITS.hardMaxWidth }
+    );
+  }
+
   // Calculate grid dimensions (hex rows are √3/2·cellSize apart)
   const rowPitch = gridType === GRID_TYPES.HEXAGONAL
     ? hexMetrics(cellSize).rowPitch
     : cellSize;
   const cols = Math.ceil(width / cellSize);
   const rows = Math.ceil(height / rowPitch);
+  const cellCount = cols * rows;
+
+  // Max cells check
+  if (cellCount > PIXELBRAIN_GRID_LIMITS.maxCells) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.RANGE,
+      ERROR_SEVERITY.FATAL,
+      MODULE_IDS.TEMPLATE,
+      ERROR_CODES.EXCEEDS_MAX,
+      { cellCount, limit: PIXELBRAIN_GRID_LIMITS.maxCells }
+    );
+  }
+
+  // Generate warning if over safe bounds
+  const warnings = [];
+  if (width > PIXELBRAIN_GRID_LIMITS.warningWidth || height > PIXELBRAIN_GRID_LIMITS.warningHeight) {
+    warnings.push(`Grid dimensions exceed warning limits (${PIXELBRAIN_GRID_LIMITS.warningWidth}x${PIXELBRAIN_GRID_LIMITS.warningHeight})`);
+  }
 
   // Generate anchor points
   const anchorPoints = generateDefaultAnchorPoints(width, height, gridType);
@@ -110,6 +167,7 @@ export function createTemplateGrid(options = {}) {
     frames: [],
     currentFrame: 0,
     currentLayer: 0,
+    warnings,
   };
 
   // Initialize with default frame and layer
@@ -121,6 +179,7 @@ export function createTemplateGrid(options = {}) {
 
   return grid;
 }
+
 
 /**
  * Generate default anchor points for a grid
@@ -228,57 +287,177 @@ export function toggleSymmetryAxis(grid, axis) {
 }
 
 /**
+ * Generate recursive Fibonacci regions for golden subdivision
+ *
+ * @param {number} width - Canvas width
+ * @param {number} height - Canvas height
+ * @returns {Array} List of region boundaries and centroids
+ */
+export function getFibonacciRegions(width, height) {
+  const regions = [];
+  let x = 0, y = 0, w = width, h = height;
+  let side = 0; // 0: left, 1: bottom, 2: right, 3: top
+
+  // Generate 12 levels of recursive subdivision
+  for (let i = 0; i < 12; i++) {
+    const size = side % 2 === 0 ? w / GOLDEN_RATIO : h / GOLDEN_RATIO;
+    let rx = x, ry = y, rw = w, rh = h;
+    if (side === 0) { rw = size; }
+    else if (side === 1) { rh = size; }
+    else if (side === 2) { rx = x + w - size; rw = size; }
+    else { ry = y + h - size; rh = size; }
+
+    regions.push({
+      id: `fib_cell_${i}`,
+      x1: rx,
+      y1: ry,
+      x2: rx + rw,
+      y2: ry + rh,
+      cx: rx + rw / 2,
+      cy: ry + rh / 2,
+    });
+
+    if (side === 0) { x += size; w -= size; }
+    else if (side === 1) { y += size; h -= size; }
+    else if (side === 2) { w -= size; }
+    else { h -= size; }
+    side = (side + 1) % 4;
+  }
+
+  // Final remaining rectangle
+  regions.push({
+    id: 'fib_cell_final',
+    x1: x,
+    y1: y,
+    x2: x + w,
+    y2: y + h,
+    cx: x + w / 2,
+    cy: y + h / 2,
+  });
+
+  return regions;
+}
+
+/**
  * Snap coordinate to grid
  *
  * @param {number} x - X coordinate
  * @param {number} y - Y coordinate
  * @param {Object} grid - Template grid
- * @returns {Object} Snapped coordinates
+ * @returns {Object} Snapped coordinates matching contract
  */
 export function snapToGrid(x, y, grid) {
   const { cellSize, gridType, snapStrength } = grid;
 
   let snappedX, snappedY;
+  let cellId = '';
+  let confidence = 1.0;
+  let tieBreakReason = 'nearest_centroid';
 
   switch (gridType) {
     case GRID_TYPES.RECTANGULAR:
       snappedX = Math.round(x / cellSize) * cellSize;
       snappedY = Math.round(y / cellSize) * cellSize;
+      cellId = `rect_${Math.round(x / cellSize)}_${Math.round(y / cellSize)}`;
       break;
 
     case GRID_TYPES.ISOMETRIC: {
-      // Isometric snapping (diamond grid)
       const isoHalf = cellSize / 2;
       snappedX = Math.round(x / isoHalf) * isoHalf;
       snappedY = Math.round(y / isoHalf) * isoHalf;
+      cellId = `iso_${Math.round(x / isoHalf)}_${Math.round(y / isoHalf)}`;
       break;
     }
 
     case GRID_TYPES.HEXAGONAL: {
-      // Snap to the nearest hex centre (odd rows are offset half a cell)
       const cell = nearestHexCell(x, y, cellSize);
       snappedX = cell.x;
       snappedY = cell.y;
+      cellId = `hex_${cell.col}_${cell.row}`;
       break;
     }
 
     case GRID_TYPES.CIRCULAR: {
-      // Circular snapping (radial grid)
       const centerX = grid.width / 2;
       const centerY = grid.height / 2;
+      const ringStep = cellSize;
+      const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+      const ringCount = Math.ceil(maxRadius / ringStep) + 1;
+      const segmentCount = 24;
+      const segmentAngle = (2 * Math.PI) / segmentCount;
+
       const dx = x - centerX;
       const dy = y - centerY;
-      const angle = Math.atan2(dy, dx);
       const radius = Math.sqrt(dx * dx + dy * dy);
-      const snappedRadius = Math.round(radius / cellSize) * cellSize;
-      snappedX = centerX + Math.cos(angle) * snappedRadius;
-      snappedY = centerY + Math.sin(angle) * snappedRadius;
+      const theta = Math.atan2(dy, dx);
+
+      const ringIndex = Math.max(0, Math.min(Math.round(radius / ringStep), ringCount - 1));
+      const segmentIndex = ((Math.round(theta / segmentAngle) % segmentCount) + segmentCount) % segmentCount;
+
+      const segmentTheta = segmentIndex * segmentAngle;
+      const ringRadius = ringIndex * ringStep;
+
+      snappedX = centerX + Math.cos(segmentTheta) * ringRadius;
+      snappedY = centerY + Math.sin(segmentTheta) * ringRadius;
+      cellId = `circ_${segmentIndex}_${ringIndex}`;
+      break;
+    }
+
+    case GRID_TYPES.FIBONACCI: {
+      const regions = getFibonacciRegions(grid.width, grid.height);
+      const BUCKET_ROWS = 4;
+      const BUCKET_COLS = 4;
+      const bucketW = grid.width / BUCKET_COLS;
+      const bucketH = grid.height / BUCKET_ROWS;
+
+      const bx = Math.max(0, Math.min(Math.floor(x / bucketW), BUCKET_COLS - 1));
+      const by = Math.max(0, Math.min(Math.floor(y / bucketH), BUCKET_ROWS - 1));
+
+      const buckets = Array.from({ length: BUCKET_ROWS * BUCKET_COLS }, () => []);
+      for (const region of regions) {
+        const startCol = Math.max(0, Math.min(Math.floor(region.x1 / bucketW), BUCKET_COLS - 1));
+        const endCol = Math.max(0, Math.min(Math.floor(region.x2 / bucketW), BUCKET_COLS - 1));
+        const startRow = Math.max(0, Math.min(Math.floor(region.y1 / bucketH), BUCKET_ROWS - 1));
+        const endRow = Math.max(0, Math.min(Math.floor(region.y2 / bucketH), BUCKET_ROWS - 1));
+
+        for (let r = startRow; r <= endRow; r++) {
+          for (let c = startCol; c <= endCol; c++) {
+            buckets[r * BUCKET_COLS + c].push(region);
+          }
+        }
+      }
+
+      const candidateRegions = buckets[by * BUCKET_COLS + bx];
+      const searchList = candidateRegions && candidateRegions.length > 0 ? candidateRegions : regions;
+
+      let minD = Infinity;
+      let best = null;
+
+      for (const region of searchList) {
+        const dx = region.cx - x;
+        const dy = region.cy - y;
+        const d = dx * dx + dy * dy;
+        if (d < minD) {
+          minD = d;
+          best = region;
+        } else if (Math.abs(d - minD) < 1e-5) {
+          if (best && region.id < best.id) {
+            best = region;
+            tieBreakReason = 'stable_id_alphanumeric';
+          }
+        }
+      }
+
+      snappedX = best ? best.cx : x;
+      snappedY = best ? best.cy : y;
+      cellId = best ? best.id : 'fib_cell_final';
       break;
     }
 
     default:
       snappedX = Math.round(x / cellSize) * cellSize;
       snappedY = Math.round(y / cellSize) * cellSize;
+      cellId = `rect_${Math.round(x / cellSize)}_${Math.round(y / cellSize)}`;
   }
 
   // Blend with original based on snapStrength
@@ -290,6 +469,13 @@ export function snapToGrid(x, y, grid) {
     y: roundTo(blendY, 1),
     snappedX: roundTo(snappedX, 1),
     snappedY: roundTo(snappedY, 1),
+    cellId,
+    dialect: gridType,
+    centerX: snappedX,
+    centerY: snappedY,
+    distance: Math.sqrt((x - snappedX) ** 2 + (y - snappedY) ** 2),
+    confidence,
+    tieBreakReason,
   };
 }
 
@@ -495,9 +681,268 @@ export function exportToAseprite(grid) {
 }
 
 /**
+ * Validate Aseprite-compatible JSON payload
+ *
+ * @param {Object} payload - Aseprite-compatible JSON payload
+ * @param {Object} options - Validation options
+ * @returns {Object} Validation result { ok, normalizedPayload, warnings, error, details }
+ */
+export function validateAsepriteImportPayload(payload, options = {}) {
+  const warnings = [];
+  const details = [];
+
+  if (!payload || typeof payload !== 'object') {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['Payload must be an object'],
+    };
+  }
+
+  // Check unknown critical vs optional fields
+  const knownFields = new Set([
+    'width',
+    'height',
+    'cellSize',
+    'gridType',
+    'snapStrength',
+    'frames',
+    'anchorPoints',
+    'symmetryAxes',
+    'version',
+    'meta',
+    'palette',
+  ]);
+
+  for (const key of Object.keys(payload)) {
+    if (!knownFields.has(key)) {
+      if (key.toLowerCase().includes('critical')) {
+        return {
+          ok: false,
+          error: 'INVALID_SCHEMA',
+          details: [`Unknown critical field: ${key}`],
+        };
+      } else {
+        warnings.push(`Unknown optional field: ${key}`);
+      }
+    }
+  }
+
+  // Schema version check (basic existence check)
+  if (payload.version !== undefined && typeof payload.version !== 'string' && typeof payload.version !== 'number') {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['Invalid schema version format'],
+    };
+  }
+
+  // Basic check for required fields
+  const required = ['width', 'height', 'cellSize', 'gridType', 'frames'];
+  for (const req of required) {
+    if (!(req in payload)) {
+      return {
+        ok: false,
+        error: 'INVALID_SCHEMA',
+        details: [`Missing required field: ${req}`],
+      };
+    }
+  }
+
+  // Type checks
+  if (typeof payload.width !== 'number' || typeof payload.height !== 'number' || typeof payload.cellSize !== 'number') {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['width, height, and cellSize must be numbers'],
+    };
+  }
+
+  // GridType checks
+  if (typeof payload.gridType !== 'string' || !Object.values(GRID_TYPES).includes(payload.gridType)) {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: [`Invalid gridType: ${payload.gridType}`],
+    };
+  }
+
+  // Canvas size bounds
+  if (
+    payload.width <= 0 ||
+    payload.height <= 0 ||
+    payload.width > ASEPRITE_IMPORT_LIMITS.maxWidth ||
+    payload.height > ASEPRITE_IMPORT_LIMITS.maxHeight
+  ) {
+    return {
+      ok: false,
+      error: 'DIMENSIONS_OUT_OF_BOUNDS',
+      details: [
+        `Dimensions must be between 1x1 and ${ASEPRITE_IMPORT_LIMITS.maxWidth}x${ASEPRITE_IMPORT_LIMITS.maxHeight}`,
+      ],
+    };
+  }
+
+  // Frames check
+  if (!Array.isArray(payload.frames)) {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['frames must be an array'],
+    };
+  }
+
+  if (payload.frames.length === 0 || payload.frames.length > ASEPRITE_IMPORT_LIMITS.maxFrames) {
+    return {
+      ok: false,
+      error: 'TOO_MANY_FRAMES',
+      details: [`Frame count must be between 1 and ${ASEPRITE_IMPORT_LIMITS.maxFrames}`],
+    };
+  }
+
+  // Metadata check
+  if (payload.meta !== undefined && (payload.meta === null || typeof payload.meta !== 'object')) {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['meta must be an object'],
+    };
+  }
+
+  // Palette check
+  if (payload.palette !== undefined && (payload.palette === null || typeof payload.palette !== 'object')) {
+    return {
+      ok: false,
+      error: 'INVALID_SCHEMA',
+      details: ['palette must be an object or array'],
+    };
+  }
+
+  let totalCellCount = 0;
+  for (let f = 0; f < payload.frames.length; f++) {
+    const frame = payload.frames[f];
+    if (!frame || typeof frame !== 'object') {
+      return {
+        ok: false,
+        error: 'INVALID_SCHEMA',
+        details: [`Frame at index ${f} must be an object`],
+      };
+    }
+
+    if (frame.duration !== undefined && (typeof frame.duration !== 'number' || frame.duration <= 0)) {
+      return {
+        ok: false,
+        error: 'INVALID_SCHEMA',
+        details: [`Frame duration at index ${f} must be a positive number`],
+      };
+    }
+
+    if (!Array.isArray(frame.layers)) {
+      return {
+        ok: false,
+        error: 'INVALID_SCHEMA',
+        details: [`Frame layers at index ${f} must be an array`],
+      };
+    }
+
+    if (frame.layers.length > ASEPRITE_IMPORT_LIMITS.maxLayers) {
+      return {
+        ok: false,
+        error: 'INVALID_SCHEMA',
+        details: [`Layer count in frame ${f} exceeds ${ASEPRITE_IMPORT_LIMITS.maxLayers}`],
+      };
+    }
+
+    for (let l = 0; l < frame.layers.length; l++) {
+      const layer = frame.layers[l];
+      if (!layer || typeof layer !== 'object') {
+        return {
+          ok: false,
+          error: 'INVALID_SCHEMA',
+          details: [`Layer at index ${l} in frame ${f} must be an object`],
+        };
+      }
+
+      if (layer.name !== undefined && typeof layer.name !== 'string') {
+        return {
+          ok: false,
+          error: 'INVALID_SCHEMA',
+          details: [`Layer name at index ${l} in frame ${f} must be a string`],
+        };
+      }
+
+      if (!Array.isArray(layer.cells)) {
+        return {
+          ok: false,
+          error: 'INVALID_SCHEMA',
+          details: [`Layer cells at index ${l} in frame ${f} must be an array`],
+        };
+      }
+
+      totalCellCount += layer.cells.length;
+      if (totalCellCount > ASEPRITE_IMPORT_LIMITS.maxCells) {
+        return {
+          ok: false,
+          error: 'INVALID_SCHEMA',
+          details: [`Total cell count exceeds limit of ${ASEPRITE_IMPORT_LIMITS.maxCells}`],
+        };
+      }
+
+      for (let c = 0; c < layer.cells.length; c++) {
+        const cell = layer.cells[c];
+        if (!cell || typeof cell !== 'object') {
+          return {
+            ok: false,
+            error: 'INVALID_SCHEMA',
+            details: [`Cell at index ${c} in layer ${l} in frame ${f} must be an object`],
+          };
+        }
+
+        if (typeof cell.x !== 'number' || typeof cell.y !== 'number') {
+          return {
+            ok: false,
+            error: 'INVALID_SCHEMA',
+            details: [
+              `Cell coordinates at index ${c} in layer ${l} in frame ${f} must be numbers`,
+            ],
+          };
+        }
+
+        // Validate cell coordinate bounds
+        if (cell.x < 0 || cell.x > payload.width || cell.y < 0 || cell.y > payload.height) {
+          return {
+            ok: false,
+            error: 'CELL_OUT_OF_BOUNDS',
+            details: [
+              `Cell coordinates (${cell.x}, ${cell.y}) exceed canvas dimensions ${payload.width}x${payload.height}`,
+            ],
+          };
+        }
+      }
+    }
+  }
+
+  return {
+    ok: true,
+    normalizedPayload: payload,
+    warnings,
+  };
+}
+
+/**
  * Import grid from Aseprite-compatible JSON
  */
-export function importFromAseprite(data) {
+export function importFromAseprite(data, options = {}) {
+  const val = validateAsepriteImportPayload(data, options);
+  if (!val.ok) {
+    return {
+      ok: false,
+      error: val.error,
+      details: val.details,
+      coordinates: [],
+    };
+  }
+
   const grid = createTemplateGrid({
     width: data.width,
     height: data.height,
@@ -512,14 +957,14 @@ export function importFromAseprite(data) {
   // The imported document replaces the seed frame entirely
   grid.frames = [];
 
-  (data.frames || []).forEach(frameData => {
+  (data.frames || []).forEach((frameData) => {
     const frame = createFrame();
     frame.duration = frameData.duration;
 
-    frameData.layers.forEach(layerData => {
+    frameData.layers.forEach((layerData) => {
       const layer = createLayer(layerData.name);
 
-      layerData.cells.forEach(cell => {
+      layerData.cells.forEach((cell) => {
         setCell(layer, cell.x, cell.y, cell.color, cell.emphasis);
       });
 
@@ -537,8 +982,14 @@ export function importFromAseprite(data) {
 
   grid.layers = grid.frames[0].layers;
 
+  // Decorate grid with new contract properties
+  grid.ok = true;
+  grid.template = grid;
+  grid.warnings = val.warnings;
+
   return grid;
 }
+
 
 /**
  * Generate grid preview coordinates (for rendering)
@@ -622,6 +1073,46 @@ export function generateGridPreview(grid) {
       break;
     }
 
+    case GRID_TYPES.CIRCULAR: {
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const ringStep = cellSize;
+      const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+      const ringCount = Math.ceil(maxRadius / ringStep) + 1;
+      const segmentCount = 24;
+      const segmentAngle = (2 * Math.PI) / segmentCount;
+
+      // Draw rings (circles approximated by segments)
+      for (let r = 1; r < ringCount; r++) {
+        const radius = r * ringStep;
+        for (let s = 0; s < segmentCount; s++) {
+          const a1 = s * segmentAngle;
+          const a2 = (s + 1) * segmentAngle;
+          lines.push({
+            x1: centerX + Math.cos(a1) * radius,
+            y1: centerY + Math.sin(a1) * radius,
+            x2: centerX + Math.cos(a2) * radius,
+            y2: centerY + Math.sin(a2) * radius,
+            type: 'circular-ring',
+          });
+        }
+      }
+
+      // Draw radial lines (spokes)
+      for (let s = 0; s < segmentCount; s++) {
+        const theta = s * segmentAngle;
+        const outerRadius = (ringCount - 1) * ringStep;
+        lines.push({
+          x1: centerX,
+          y1: centerY,
+          x2: centerX + Math.cos(theta) * outerRadius,
+          y2: centerY + Math.sin(theta) * outerRadius,
+          type: 'circular-spoke',
+        });
+      }
+      break;
+    }
+
     case GRID_TYPES.FIBONACCI: {
       // Recursive golden subdivision lines
       let fx = 0, fy = 0, fw = width, fh = height;
@@ -682,15 +1173,89 @@ export function getCellAtPosition(grid, screenX, screenY) {
       return { col: cell.col, row: cell.row, x: cell.x, y: cell.y };
     }
 
+    case GRID_TYPES.CIRCULAR: {
+      const centerX = grid.width / 2;
+      const centerY = grid.height / 2;
+      const ringStep = cellSize;
+      const maxRadius = Math.sqrt(centerX * centerX + centerY * centerY);
+      const ringCount = Math.ceil(maxRadius / ringStep) + 1;
+      const segmentCount = 24;
+      const segmentAngle = (2 * Math.PI) / segmentCount;
+
+      const dx = screenX - centerX;
+      const dy = screenY - centerY;
+      const radius = Math.sqrt(dx * dx + dy * dy);
+      const theta = Math.atan2(dy, dx);
+
+      const ringIndex = Math.max(0, Math.min(Math.round(radius / ringStep), ringCount - 1));
+      const segmentIndex = ((Math.round(theta / segmentAngle) % segmentCount) + segmentCount) % segmentCount;
+
+      const segmentTheta = segmentIndex * segmentAngle;
+      const ringRadius = ringIndex * ringStep;
+
+      return {
+        col: segmentIndex,
+        row: ringIndex,
+        x: centerX + Math.cos(segmentTheta) * ringRadius,
+        y: centerY + Math.sin(segmentTheta) * ringRadius,
+      };
+    }
+
     case GRID_TYPES.FIBONACCI: {
-      // Nearest phi-point snapping
+      const regions = getFibonacciRegions(grid.width, grid.height);
+      const BUCKET_ROWS = 4;
+      const BUCKET_COLS = 4;
+      const bucketW = grid.width / BUCKET_COLS;
+      const bucketH = grid.height / BUCKET_ROWS;
+
+      const bx = Math.max(0, Math.min(Math.floor(screenX / bucketW), BUCKET_COLS - 1));
+      const by = Math.max(0, Math.min(Math.floor(screenY / bucketH), BUCKET_ROWS - 1));
+
+      const buckets = Array.from({ length: BUCKET_ROWS * BUCKET_COLS }, () => []);
+      for (const region of regions) {
+        const startCol = Math.max(0, Math.min(Math.floor(region.x1 / bucketW), BUCKET_COLS - 1));
+        const endCol = Math.max(0, Math.min(Math.floor(region.x2 / bucketW), BUCKET_COLS - 1));
+        const startRow = Math.max(0, Math.min(Math.floor(region.y1 / bucketH), BUCKET_ROWS - 1));
+        const endRow = Math.max(0, Math.min(Math.floor(region.y2 / bucketH), BUCKET_ROWS - 1));
+
+        for (let r = startRow; r <= endRow; r++) {
+          for (let c = startCol; c <= endCol; c++) {
+            buckets[r * BUCKET_COLS + c].push(region);
+          }
+        }
+      }
+
+      const candidateRegions = buckets[by * BUCKET_COLS + bx];
+      const searchList = candidateRegions && candidateRegions.length > 0 ? candidateRegions : regions;
+
       let minD = Infinity;
-      let nearest = { x: screenX, y: screenY, col: 0, row: 0 };
-      (grid.anchorPoints || []).filter(p => p.label.startsWith('phi')).forEach(p => {
-        const d = Math.sqrt((p.x - screenX)**2 + (p.y - screenY)**2);
-        if (d < minD) { minD = d; nearest = { x: p.x, y: p.y, col: 0, row: 0 }; }
-      });
-      return nearest;
+      let best = null;
+
+      for (const region of searchList) {
+        const dx = region.cx - screenX;
+        const dy = region.cy - screenY;
+        const d = dx * dx + dy * dy;
+        if (d < minD) {
+          minD = d;
+          best = region;
+        } else if (Math.abs(d - minD) < 1e-5) {
+          if (best && region.id < best.id) {
+            best = region;
+          }
+        }
+      }
+
+      const snappedX = best ? best.cx : screenX;
+      const snappedY = best ? best.cy : screenY;
+      const cellId = best ? best.id : 'fib_cell_final';
+
+      return {
+        col: best ? regions.indexOf(best) : regions.length - 1,
+        row: 0,
+        x: snappedX,
+        y: snappedY,
+        cellId
+      };
     }
 
     default:
@@ -718,6 +1283,31 @@ export function getCellOrigin(grid, col, row) {
     case GRID_TYPES.ISOMETRIC: {
       const isoHalf = cellSize / 2;
       return { x: col * isoHalf, y: row * isoHalf };
+    }
+
+    case GRID_TYPES.CIRCULAR: {
+      const centerX = grid.width / 2;
+      const centerY = grid.height / 2;
+      const ringStep = cellSize;
+      const segmentCount = 24;
+      const segmentAngle = (2 * Math.PI) / segmentCount;
+
+      const segmentTheta = col * segmentAngle;
+      const ringRadius = row * ringStep;
+
+      return {
+        x: centerX + Math.cos(segmentTheta) * ringRadius,
+        y: centerY + Math.sin(segmentTheta) * ringRadius,
+      };
+    }
+
+    case GRID_TYPES.FIBONACCI: {
+      const regions = getFibonacciRegions(grid.width, grid.height);
+      const region = regions[col] || regions[regions.length - 1];
+      return {
+        x: region.cx,
+        y: region.cy,
+      };
     }
 
     default:

@@ -9,6 +9,8 @@ import {
   createExtensionError,
   createHookError,
 } from './bytecode-error.js';
+import { PHYSICS_EXTENSIONS } from './extensions/physics-extensions.js';
+import { STYLE_EXTENSIONS } from './extensions/style-extensions.js';
 
 const EXTENSION_TYPES = new Set(['PHYSICS', 'STYLE', 'CUSTOM_PROP']);
 const HOOK_PROPERTY_TO_TYPE = Object.freeze({
@@ -48,10 +50,10 @@ function toPublicExtensionRecord(extension) {
 }
 
 function validateExtension(extension) {
-  if (!extension || typeof extension !== 'object') {
+  if (!extension || (typeof extension !== 'object' && typeof extension !== 'function')) {
     throw createExtensionError(MODULE_IDS.EXT_REGISTRY, 'INVALID_OBJECT', null, {
       providedValue: extension,
-      expectedType: 'object',
+      expectedType: 'object or function',
     });
   }
 
@@ -174,18 +176,60 @@ export function createExtensionRegistry(options = {}) {
 
   function applyHooks(type, payload, context = {}) {
     const normalizedType = normalizeHookType(type);
-    const queue = hooks.get(normalizedType)
+    let queue = hooks.get(normalizedType)
       .slice()
       .sort(compareHookRecords);
 
-    return queue.reduce((currentPayload, entry) => {
-      const nextPayload = entry.hook.call(entry.extension, currentPayload, Object.freeze({
-        ...context,
-        extensionId: entry.extension.id,
-        extensionType: entry.extension.type,
-      }));
-      return nextPayload === undefined ? currentPayload : nextPayload;
-    }, payload);
+    if (Array.isArray(context.selectedExtensionIds)) {
+      queue = queue.filter(entry => context.selectedExtensionIds.includes(entry.extension.id));
+    }
+
+    const appliedHooks = [];
+    let currentPayload = payload;
+
+    const clonePayload = (val) => {
+      if (Array.isArray(val)) {
+        return [...val];
+      } else if (val instanceof Uint8ClampedArray) {
+        return new Uint8ClampedArray(val);
+      } else if (val instanceof Float32Array) {
+        return new Float32Array(val);
+      } else if (val && typeof val === 'object') {
+        return { ...val };
+      }
+      return val;
+    };
+
+    try {
+      for (const entry of queue) {
+        const nextPayload = entry.hook.call(entry.extension, currentPayload, Object.freeze({
+          ...context,
+          extensionId: entry.extension.id,
+          extensionType: entry.extension.type,
+        }));
+        appliedHooks.push(entry.extension.id);
+        currentPayload = nextPayload === undefined ? currentPayload : nextPayload;
+      }
+    } catch (err) {
+      const failedHook = queue[appliedHooks.length]?.extension.id || 'unknown';
+      const failResult = clonePayload(payload);
+      if (failResult && typeof failResult === 'object') {
+        failResult.ok = false;
+        failResult.error = 'EXTENSION_HOOK_FAILED';
+        failResult.failedHook = failedHook;
+        failResult.coordinates = payload;
+      }
+      return failResult;
+    }
+
+    const successResult = clonePayload(currentPayload);
+    if (successResult && typeof successResult === 'object') {
+      successResult.ok = true;
+      successResult.coordinates = currentPayload;
+      successResult.appliedHooks = appliedHooks;
+      successResult.warnings = [];
+    }
+    return successResult;
   }
 
   const initialExtensions = Array.isArray(options?.extensions) ? options.extensions : [];
@@ -226,3 +270,7 @@ export function createExtensionRegistry(options = {}) {
     },
   });
 }
+
+export const extensionRegistry = createExtensionRegistry({
+  extensions: [...PHYSICS_EXTENSIONS, ...STYLE_EXTENSIONS],
+});

@@ -32,6 +32,7 @@ import {
   applySymmetry,
   exportToAseprite,
   importFromAseprite,
+  templateGridToPixelBrainAssetPacket,
   GRID_TYPES,
 } from '../../../lib/pixelbrain.adapter.js';
 import '../TemplateEditor.css';
@@ -67,7 +68,7 @@ function traceHexPath(ctx, cx, cy, radius) {
   ctx.closePath();
 }
 
-export function TemplateEditor() {
+export function TemplateEditor({ onCommitAsset } = {}) {
   const canvasRef = useRef(null);
   const gridRef = useRef(null);
   const paintingRef = useRef(false);
@@ -307,6 +308,23 @@ export function TemplateEditor() {
     URL.revokeObjectURL(url);
   }, []);
 
+  const handleCommitAsset = useCallback(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    try {
+      const packet = templateGridToPixelBrainAssetPacket(grid, {
+        sourceId: `${grid.gridType}-${grid.cellSize}`,
+        label: `${grid.gridType} lattice template`,
+      });
+      setFault(null);
+      if (typeof onCommitAsset === 'function') {
+        onCommitAsset(packet);
+      }
+    } catch (err) {
+      setFault(`PACKET_FAULT: ${err.message}`);
+    }
+  }, [onCommitAsset]);
+
   const handleImportFile = useCallback((e) => {
     const file = e.target.files?.[0];
     e.target.value = '';
@@ -315,16 +333,12 @@ export function TemplateEditor() {
     reader.onload = () => {
       try {
         const data = JSON.parse(String(reader.result));
-        // Allow-list validation before the engine sees it
-        if (!GRID_TYPE_OPTIONS.includes(data.gridType)) {
-          throw new Error('unknown gridType');
+        const result = importFromAseprite(data);
+        if (!result.ok) {
+          setFault(`IMPORT_FAULT: ${result.error || 'INVALID_IMPORT'}`);
+          return;
         }
-        if (!Number.isFinite(data.width) || !Number.isFinite(data.height)
-          || data.width <= 0 || data.height <= 0
-          || data.width > MAX_IMPORT_DIM || data.height > MAX_IMPORT_DIM) {
-          throw new Error('dimensions out of range');
-        }
-        const grid = importFromAseprite(data);
+        const grid = result.template;
         gridRef.current = grid;
         setGridType(grid.gridType);
         setCellSize(grid.cellSize);
@@ -446,6 +460,9 @@ export function TemplateEditor() {
 
         <button type="button" className="export-btn" onClick={handleExport}>
           EXPORT_TEMPLATE_JSON
+        </button>
+        <button type="button" className="export-btn" onClick={handleCommitAsset}>
+          COMMIT_AS_ASSET_PACKET
         </button>
         <label className="import-label" htmlFor="template-import-input">
           IMPORT_TEMPLATE_JSON

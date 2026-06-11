@@ -45,6 +45,9 @@ import {
   templatize,
   fillTemplate,
   sketchToSilhouette,
+  createPixelBrainAssetPacket,
+  derivePixelBrainRenderPacket,
+  registerPixelBrainShaderUniformProvider,
 } from "../../lib/pixelbrain.adapter.js";
 import { SCHOOLS } from "../../data/schools.js";
 import { readWandFill } from "../../lib/wandPixelbrainBridge.js";
@@ -200,19 +203,84 @@ export default function PixelBrainPage() {
   // Plain-instruction interpretation ("make it icy blue", "darker") — drives
   // the in-place morph without needing poetic/stable-line-ending structure.
   const instructionTarget = useMemo(() => interpretInstruction(verseText), [verseText]);
+  const fillBytecode = `VW-${fillSchool}-${fillRarity}-${fillEffect}`;
+  const activeBytecode = useMemo(() => {
+    if (!formula) return coordinates.length > 0 ? fillBytecode : '';
+    try {
+      return formulaToBytecode(formula);
+    } catch {
+      return coordinates.length > 0 ? fillBytecode : '';
+    }
+  }, [coordinates.length, fillBytecode, formula]);
+
+  const assetPacket = useMemo(() => createPixelBrainAssetPacket({
+    source: {
+      kind: imageAnalysis ? 'image-analysis' : versePixelBrainPayload ? 'verseir' : isTemplate ? 'template' : 'manual',
+      id: referenceImage?.file?.name || null,
+      label: referenceImage?.file?.name || 'PixelBrain Asset',
+    },
+    canvas: pixelCanvas,
+    coordinates,
+    palettes,
+    formula,
+    bytecode: activeBytecode,
+    template: {
+      gridType: isTemplate ? 'coordinate-template' : null,
+      fillState: {
+        bytecode: fillBytecode,
+        school: fillSchool,
+        rarity: fillRarity,
+        effect: fillEffect,
+        source: wandFillSpec ? 'wand' : 'pixelbrain',
+      },
+    },
+    material: SOURCE_MATERIAL,
+    chromatic: { transformId: chromaticMaterial },
+    metadata: {
+      tags: [activeSchool.toLowerCase()],
+      compatibility: { pdr: 'pixelbrain-connective-tissue-seven-systems' },
+    },
+  }), [
+    activeBytecode,
+    activeSchool,
+    chromaticMaterial,
+    coordinates,
+    fillBytecode,
+    fillEffect,
+    fillRarity,
+    fillSchool,
+    formula,
+    imageAnalysis,
+    isTemplate,
+    palettes,
+    pixelCanvas,
+    referenceImage,
+    versePixelBrainPayload,
+    wandFillSpec,
+  ]);
+
+  const pixelBrainRenderPacket = useMemo(
+    () => derivePixelBrainRenderPacket(assetPacket, { material: chromaticMaterial }),
+    [assetPacket, chromaticMaterial]
+  );
+
   const chromaticPayload = useMemo(() => buildChromaticTransmutationPayload({
-    sourcePalettes: palettes,
-    sourceCoordinates: coordinates,
+    sourcePalettes: assetPacket.palette.sourcePalette,
+    sourceCoordinates: assetPacket.geometry.coordinates,
     material: chromaticMaterial,
     intent: chromaticMaterial === SOURCE_MATERIAL
       ? 'preserve_source_palette'
       : `transmute_to_${chromaticMaterial}`,
-  }), [chromaticMaterial, coordinates, palettes]);
+  }), [assetPacket, chromaticMaterial]);
 
-  const renderCoordinates = chromaticPayload.outputCoordinates;
-  const renderPalettes = chromaticPayload.outputPalettes;
+  const renderCoordinates = pixelBrainRenderPacket.coordinates;
+  const renderPalettes = pixelBrainRenderPacket.palettes;
 
   const clockRef = useRef({ elapsedSeconds: 0 });
+
+  useEffect(() => {
+    registerPixelBrainShaderUniformProvider();
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -250,8 +318,13 @@ export default function PixelBrainPage() {
       palette: {
         0: renderPalettes[0] ? renderPalettes[0].colors[0] : '#000000',
       },
+      packet: assetPacket,
+      assetPacket,
+      renderPacket: pixelBrainRenderPacket,
+      wandFillSpec,
+      photonicRoute,
     };
-  }, [activeSchool, renderPalettes, totalSyllables, SCHOOL_TO_INDEX]);
+  }, [SCHOOL_TO_INDEX, activeSchool, assetPacket, photonicRoute, pixelBrainRenderPacket, renderPalettes, totalSyllables, wandFillSpec]);
 
   const handleShaderDiagnostic = useCallback((err) => {
     if (err) {
@@ -405,6 +478,8 @@ export default function PixelBrainPage() {
           coordinates: renderCoordinates,
           palettes: renderPalettes,
           chromaticTransmutation: chromaticPayload,
+          pixelBrainAssetPacket: assetPacket,
+          pixelBrainRenderPacket,
         }, null, 2);
         const blob = new Blob([data], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
@@ -437,7 +512,7 @@ export default function PixelBrainPage() {
       setError(err.message || 'Export failed');
       setStatus('error');
     }
-  }, [activeSchool, chromaticPayload, formula, renderCoordinates, renderPalettes]);
+  }, [activeSchool, assetPacket, chromaticPayload, formula, pixelBrainRenderPacket, renderCoordinates, renderPalettes]);
 
   const handleGodotArtifactExport = useCallback(() => {
     try {
@@ -575,7 +650,6 @@ export default function PixelBrainPage() {
 
   // FILL — resolve the template's slots to concrete colors via a bytecode
   // formula (VW-SCHOOL-RARITY-EFFECT). Works on a raw asset too (auto-slots).
-  const fillBytecode = `VW-${fillSchool}-${fillRarity}-${fillEffect}`;
   const handleFillAsBytecode = useCallback(() => {
     if (coordinates.length === 0) {
       setError('Nothing to fill. Upload, synthesize, or templatize an asset first.');
@@ -592,68 +666,78 @@ export default function PixelBrainPage() {
   // PULL FROM WAND — adopt the bytecode WAND emitted, populating the fill
   // selectors. WAND's procedural proposal then drives the fill, not the dropdowns.
   const handlePullFromWand = useCallback(() => {
-    const spec = readWandFill();
-    if (!spec) {
-      setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
+    try {
+      const spec = readWandFill();
+      if (!spec) {
+        setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
+        setStatus('error');
+        return;
+      }
+      setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
+      if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
+      if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+      setWandFillSpec(spec);
+      setError(null);
+      setStatus('ready');
+    } catch (err) {
+      setError(err.message || 'Failed to read WAND fill spec');
       setStatus('error');
-      return;
     }
-    setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
-    if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
-    if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
-    setWandFillSpec(spec);
-    setError(null);
-    setStatus('ready');
   }, []);
 
   // PULL GEOMETRY FROM WAND — load WAND's procedural shape as a silhouette,
   // rescaled to sprite space and auto-shaded (same Sketch AMP), and adopt its
   // bytecode. One click: WAND shape → shaded template ready to FILL.
   const handlePullWandGeometry = useCallback(() => {
-    const spec = readWandFill();
-    if (!spec || !Array.isArray(spec.coordinates) || spec.coordinates.length === 0) {
-      setError('No WAND geometry found. In WAND, evaluate a shape then click "Send → PixelBrain".');
+    try {
+      const spec = readWandFill();
+      if (!spec || !Array.isArray(spec.coordinates) || spec.coordinates.length === 0) {
+        setError('No WAND geometry found. In WAND, evaluate a shape then click "Send → PixelBrain".');
+        setStatus('error');
+        return;
+      }
+      if (morphRafRef.current) {
+        cancelAnimationFrame(morphRafRef.current);
+        morphRafRef.current = null;
+      }
+
+      const src = spec.canvas || { width: 800, height: 600 };
+      const scale = WAND_TARGET_MAX / Math.max(1, Math.max(src.width, src.height));
+      const width = Math.max(1, Math.round(src.width * scale));
+      const height = Math.max(1, Math.round(src.height * scale));
+
+      const seen = new Set();
+      const occupied = [];
+      for (const point of spec.coordinates) {
+        const x = Math.min(width - 1, Math.max(0, Math.round(Number(point.x) * scale)));
+        const y = Math.min(height - 1, Math.max(0, Math.round(Number(point.y) * scale)));
+        const key = `${x},${y}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        occupied.push({ x, y });
+      }
+
+      const tpl = sketchToSilhouette(occupied, { width, height }, { bands: TEMPLATE_BANDS, symmetry: 'none' });
+      setReferenceImage(null);
+      setImageAnalysis(null);
+      setFormula(null);
+      setCoordinates(tpl.coordinates);
+      setPalettes([]);
+      setPixelCanvas(tpl.dimensions);
+      setLatticeView(true);
+      setIsTemplate(true);
+      setIsMorphing(false);
+
+      setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
+      if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
+      if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+      setWandFillSpec(spec);
+      setError(null);
+      setStatus('ready');
+    } catch (err) {
+      setError(err.message || 'Failed to read WAND geometry');
       setStatus('error');
-      return;
     }
-    if (morphRafRef.current) {
-      cancelAnimationFrame(morphRafRef.current);
-      morphRafRef.current = null;
-    }
-
-    const src = spec.canvas || { width: 800, height: 600 };
-    const scale = WAND_TARGET_MAX / Math.max(1, Math.max(src.width, src.height));
-    const width = Math.max(1, Math.round(src.width * scale));
-    const height = Math.max(1, Math.round(src.height * scale));
-
-    const seen = new Set();
-    const occupied = [];
-    for (const point of spec.coordinates) {
-      const x = Math.min(width - 1, Math.max(0, Math.round(Number(point.x) * scale)));
-      const y = Math.min(height - 1, Math.max(0, Math.round(Number(point.y) * scale)));
-      const key = `${x},${y}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      occupied.push({ x, y });
-    }
-
-    const tpl = sketchToSilhouette(occupied, { width, height }, { bands: TEMPLATE_BANDS, symmetry: 'none' });
-    setReferenceImage(null);
-    setImageAnalysis(null);
-    setFormula(null);
-    setCoordinates(tpl.coordinates);
-    setPalettes([]);
-    setPixelCanvas(tpl.dimensions);
-    setLatticeView(true);
-    setIsTemplate(true);
-    setIsMorphing(false);
-
-    setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
-    if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
-    if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
-    setWandFillSpec(spec);
-    setError(null);
-    setStatus('ready');
   }, []);
 
   // COMMIT SKETCH — run the Sketch AMP (auto-shaded silhouette) and load the
@@ -677,6 +761,31 @@ export default function PixelBrainPage() {
     setPixelCanvas(result.dimensions);
     setLatticeView(true);
     setIsTemplate(true);
+    setIsMorphing(false);
+    setError(null);
+    setStatus('ready');
+  }, []);
+
+  const handleTemplateAssetCommit = useCallback((packet) => {
+    if (!packet || packet.kind !== 'pixelbrain.asset.v1') {
+      setError('Template editor did not emit a valid PixelBrain asset packet.');
+      setStatus('error');
+      return;
+    }
+
+    if (morphRafRef.current) {
+      cancelAnimationFrame(morphRafRef.current);
+      morphRafRef.current = null;
+    }
+
+    setReferenceImage(null);
+    setImageAnalysis(null);
+    setFormula(packet.formula || null);
+    setCoordinates(Array.isArray(packet.geometry?.coordinates) ? packet.geometry.coordinates : []);
+    setPalettes(Array.isArray(packet.palette?.sourcePalette) ? packet.palette.sourcePalette : []);
+    setPixelCanvas(packet.canvas || DEFAULT_PIXEL_CANVAS);
+    setLatticeView(true);
+    setIsTemplate(packet.geometry?.mode === 'template-grid');
     setIsMorphing(false);
     setError(null);
     setStatus('ready');
@@ -802,6 +911,8 @@ export default function PixelBrainPage() {
     referenceImage,
     photonicRoute,
     chromaticTransmutation: chromaticPayload,
+    pixelBrainAssetPacket: assetPacket,
+    pixelBrainRenderPacket,
   } : versePixelBrainPayload ? {
     ...versePixelBrainPayload,
     coordinates: renderCoordinates,
@@ -811,6 +922,18 @@ export default function PixelBrainPage() {
     referenceImage: null,
     photonicRoute,
     chromaticTransmutation: chromaticPayload,
+    pixelBrainAssetPacket: assetPacket,
+    pixelBrainRenderPacket,
+  } : coordinates.length > 0 ? {
+    coordinates: renderCoordinates,
+    palettes: renderPalettes,
+    formula,
+    canvas: pixelCanvas,
+    referenceImage: null,
+    photonicRoute,
+    chromaticTransmutation: chromaticPayload,
+    pixelBrainAssetPacket: assetPacket,
+    pixelBrainRenderPacket,
   } : null;
 
   return (
@@ -988,7 +1111,7 @@ export default function PixelBrainPage() {
           </Suspense>
         ) : leftTab === 'lattice' ? (
           <Suspense fallback={<div className="telemetry-text" style={{ padding: '24px' }}>FORGING_LATTICE...</div>}>
-            <TemplateEditor />
+            <TemplateEditor onCommitAsset={handleTemplateAssetCommit} />
           </Suspense>
         ) : (
           <>

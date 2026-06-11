@@ -22,22 +22,58 @@ export const DEFAULT_FRAGMENT_SOURCE = `vec4 pbMain(vec2 uv, float time, float r
   return vec4(color, mask * 0.8);
 }`;
 
+import { getUniformProviders } from '../../../codex/core/pixelbrain/shader-uniform-registry.js';
+
 /**
  * Wraps the user's custom pbMain function in a valid WebGL2 GLSL fragment shader.
  */
 export function wrapShaderSource(userCode) {
   const safeCode = String(userCode || DEFAULT_FRAGMENT_SOURCE).trim();
+  
+  // Collect all uniforms from providers and default uniforms
+  const allUniformNames = new Set([
+    'u_time',
+    'u_resolution',
+    'u_resonance',
+    'u_school',
+    'u_vowel_density',
+    'u_palette0'
+  ]);
+
+  try {
+    const providers = getUniformProviders();
+    for (const provider of providers) {
+      if (Array.isArray(provider.uniforms)) {
+        for (const name of provider.uniforms) {
+          allUniformNames.add(name);
+        }
+      }
+    }
+  } catch (e) {
+    // Fail-safe if registry is not loaded or throws
+  }
+
+  const UNIFORM_TYPE_MAP = {
+    u_time: 'float',
+    u_resolution: 'vec2',
+    u_resonance: 'float',
+    u_school: 'int',
+    u_vowel_density: 'float',
+    u_palette0: 'vec3',
+    u_spellIntensity: 'float',
+  };
+
+  const declarations = Array.from(allUniformNames).map(name => {
+    const type = UNIFORM_TYPE_MAP[name] || 'float';
+    return `uniform ${type} ${name};`;
+  }).join('\n');
+
   return `#version 300 es
 precision highp float;
 
 out vec4 fragColor;
 
-uniform float u_time;
-uniform vec2 u_resolution;
-uniform float u_resonance;
-uniform int u_school;
-uniform float u_vowel_density;
-uniform vec3 u_palette0;
+${declarations}
 
 ${safeCode}
 

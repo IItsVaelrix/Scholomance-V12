@@ -8,6 +8,7 @@
 import { snapToPixelGrid } from './anti-alias-control.js';
 import { analyzeImageToFormula, formulaToBytecode } from './image-to-bytecode-formula.js';
 import { verseIRMicroprocessors } from '../microprocessors/index.js';
+import { extensionRegistry } from './extension-registry.js';
 
 /**
  * @typedef {Object} ImageAnalysis
@@ -54,7 +55,22 @@ export async function generatePixelArtFromImage(imageAnalysis, canvasSize, exten
   // Apply extension if specified
   let processedCoordinates = finalCoordinates;
   if (extension) {
-    processedCoordinates = applyExtensionToCoordinates(finalCoordinates, extension, canvasSize);
+    const hookContext = {
+      source: 'image-trace',
+      canvasSize,
+      gridMetrics: {
+        cellSize: canvasSize.gridSize || 1,
+        rowPitch: canvasSize.gridSize || 1,
+        hexRadius: null,
+      },
+      dialect: composition?.dialect || canvasSize.gridType || 'rectangular',
+      palette: colors,
+      seed: composition?.seed || 0,
+      time: composition?.time || 0,
+      selectedExtensionIds: [extension],
+      metadata: _semanticParams || {},
+    };
+    processedCoordinates = extensionRegistry.applyHooks('coordinate-map', finalCoordinates, hookContext);
   }
   
   return {
@@ -136,17 +152,7 @@ function buildPaletteFromImageColors(colors) {
   }];
 }
 
-function applyExtensionToCoordinates(coordinates, extensionId, canvasSize) {
-  // Simple extension routing for now
-  if (extensionId === 'physics-gravity') {
-    return coordinates.map(c => ({
-      ...c,
-      y: Math.min(canvasSize.height, c.y + 10),
-      emphasis: c.emphasis * 0.8
-    }));
-  }
-  return coordinates;
-}
+// Removed hardcoded applyExtensionToCoordinates in favor of extensionRegistry
 
 /**
  * Generate a silhouette (outline) from image analysis
@@ -208,45 +214,148 @@ export function generateSilhouetteFromImage(imageAnalysis, canvasSize) {
 }
 
 /**
- * Fills a shape defined by a silhouette with a target color
+ * Scanline even-odd winding fill algorithm
+ *
+ * @param {Array} outlineCoordinates - Silhouette/outline coordinates
+ * @param {Object} gridMetrics - Grid dimension settings
+ * @param {Object} options - Option parameters
+ * @returns {Object} Result of even-odd winding fill
  */
-export function fillShape(silhouette, canvasSize, colorHex) {
-  if (!silhouette || silhouette.length === 0) return [];
+export function fillShapeWithEvenOddWinding(outlineCoordinates, gridMetrics, options = {}) {
+  const preserveBoundary = options.preserveBoundary !== false;
+  const maxFillCells = options.maxFillCells || 262144;
 
-  // Simple bounding box fill for interior points
-  const minX = Math.min(...silhouette.map(c => c.snappedX));
-  const maxX = Math.max(...silhouette.map(c => c.snappedX));
-  const minY = Math.min(...silhouette.map(c => c.snappedY));
-  const maxY = Math.max(...silhouette.map(c => c.snappedY));
+  if (!outlineCoordinates || outlineCoordinates.length === 0) {
+    return {
+      ok: false,
+      error: 'EMPTY_OUTLINE',
+      coordinates: [],
+    };
+  }
 
-  const filled = [];
-  const gridSize = canvasSize.gridSize || 1;
+  const gridSize = gridMetrics.gridSize || gridMetrics.cellSize || 1;
 
-  for (let y = minY; y <= maxY; y += gridSize) {
-    for (let x = minX; x <= maxX; x += gridSize) {
-      // Basic check: is it inside the horizontal bounds of the silhouette for this row?
-      const rowPoints = silhouette.filter(c => Math.abs(c.snappedY - y) < gridSize / 2);
-      if (rowPoints.length < 2) continue;
-
-      const rowMinX = Math.min(...rowPoints.map(c => c.snappedX));
-      const rowMaxX = Math.max(...rowPoints.map(c => c.snappedX));
-
-      if (x >= rowMinX && x <= rowMaxX) {
-        filled.push({
-          x,
-          y,
-          z: 0,
-          color: colorHex,
-          emphasis: 0.5,
-          source: 'fill',
-          snappedX: x,
-          snappedY: y,
-        });
-      }
+  // Group outline coordinates by snapped grid position to avoid duplicates/floating precision issues
+  const outlineSet = new Set();
+  const uniqueOutline = [];
+  
+  for (const pt of outlineCoordinates) {
+    const sx = Math.round((pt.snappedX ?? pt.x) / gridSize) * gridSize;
+    const sy = Math.round((pt.snappedY ?? pt.y) / gridSize) * gridSize;
+    const key = `${sx},${sy}`;
+    if (!outlineSet.has(key)) {
+      outlineSet.add(key);
+      uniqueOutline.push({ x: sx, y: sy, original: pt });
     }
   }
 
-  return filled;
+  if (uniqueOutline.length === 0) {
+    return {
+      ok: false,
+      error: 'EMPTY_OUTLINE',
+      coordinates: [],
+    };
+  }
+
+  // Find boundaries
+  const ys = uniqueOutline.map((pt) => pt.y);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+
+  const filled = [];
+  let preservedHoles = false;
+
+  for (let y = minY; y <= maxY; y += gridSize) {
+    const rowPoints = uniqueOutline.filter((pt) => Math.abs(pt.y - y) < gridSize / 2);
+    if (rowPoints.length === 0) continue;
+
+    rowPoints.sort((a, b) => a.x - b.x);
+
+    const runs = [];
+    let currentRun = null;
+
+    for (const pt of rowPoints) {
+      if (!currentRun) {
+        currentRun = { startX: pt.x, endX: pt.x };
+      } else if (Math.abs(pt.x - (currentRun.endX + gridSize)) < 1e-5) {
+        currentRun.endX = pt.x;
+      } else if (pt.x > currentRun.endX + gridSize) {
+        runs.push(currentRun);
+        currentRun = { startX: pt.x, endX: pt.x };
+      }
+    }
+    if (currentRun) {
+      runs.push(currentRun);
+    }
+
+    if (runs.length > 2) {
+      preservedHoles = true;
+    }
+
+    for (let i = 0; i < runs.length; i++) {
+      const run = runs[i];
+
+      if (preserveBoundary) {
+        for (let x = run.startX; x <= run.endX; x += gridSize) {
+          filled.push({ x, y });
+        }
+      }
+
+      if (i % 2 === 0 && i + 1 < runs.length) {
+        const nextRun = runs[i + 1];
+        for (let x = run.endX + gridSize; x < nextRun.startX; x += gridSize) {
+          filled.push({ x, y });
+        }
+      }
+    }
+
+    if (filled.length > maxFillCells) {
+      return {
+        ok: false,
+        error: 'FILL_TOO_LARGE',
+        coordinates: [],
+      };
+    }
+  }
+
+  filled.sort((a, b) => {
+    if (Math.abs(a.y - b.y) > 1e-5) {
+      return a.y - b.y;
+    }
+    return a.x - b.x;
+  });
+
+  return {
+    ok: true,
+    coordinates: filled,
+    fillMode: 'even-odd-winding',
+    preservedHoles,
+  };
+}
+
+/**
+ * Fills a shape defined by a silhouette with a target color
+ */
+export function fillShape(silhouette, canvasSize, colorHex) {
+  const result = fillShapeWithEvenOddWinding(silhouette, canvasSize, {
+    preserveBoundary: true,
+    maxFillCells: 262144,
+  });
+
+  if (!result.ok) {
+    return [];
+  }
+
+  return result.coordinates.map((c) => ({
+    x: c.x,
+    y: c.y,
+    z: 0,
+    color: colorHex,
+    emphasis: 0.5,
+    source: 'fill',
+    snappedX: c.x,
+    snappedY: c.y,
+  }));
 }
 
 function rgbToHex(r, g, b) {

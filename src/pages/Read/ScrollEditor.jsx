@@ -12,6 +12,7 @@ import { cleanVisualiserWord, wordTruesight } from "../Visualiser/truesightColor
 import { resolvePlsVerseIRState } from "../../lib/pls/verseIRBridge.js";
 import { BytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, ERROR_CODES, MODULE_IDS } from "../../lib/pixelbrain.adapter.js";
 import { AnimatedSurface } from "../../components/AnimatedSurface";
+import { resolveOverlayPlacement } from "../../lib/truesight/overlay-placement.js";
 
 
 const MAX_CONTENT_LENGTH = 50000;
@@ -698,6 +699,43 @@ const ScrollEditor = forwardRef(/**
 
   const [hoveredMisspelling, setHoveredMisspelling] = useState(null);
   const [spellcheckSuggestions, setSpellcheckSuggestions] = useState([]);
+  const spellcheckTooltipRef = useRef(null);
+  const [tooltipPlacement, setTooltipPlacement] = useState({ x: 0, y: 0 });
+
+  useLayoutEffect(() => {
+    if (hoveredMisspelling) {
+      setTooltipPlacement({ x: hoveredMisspelling.x, y: hoveredMisspelling.y + 4 });
+    }
+  }, [hoveredMisspelling]);
+
+  useLayoutEffect(() => {
+    if (!hoveredMisspelling || !spellcheckTooltipRef.current) return;
+    const tooltipEl = spellcheckTooltipRef.current;
+    const containerEl = editorContainerRef.current;
+    if (!containerEl) return;
+
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    const containerRect = containerEl.getBoundingClientRect();
+
+    const anchorX = hoveredMisspelling.x + containerRect.left;
+    const anchorY = hoveredMisspelling.y + containerRect.top;
+    const anchorRect = { left: anchorX, top: anchorY, width: 0, height: 0, right: anchorX, bottom: anchorY };
+
+    const overlayRect = { width: tooltipRect.width || 240, height: tooltipRect.height || 100 };
+    const viewportRect = { left: containerRect.left, top: containerRect.top, width: containerRect.width, height: containerRect.height };
+
+    const placement = resolveOverlayPlacement(
+      anchorRect,
+      overlayRect,
+      viewportRect,
+      { placement: 'bottom', flip: true, clamp: true }
+    );
+
+    setTooltipPlacement({
+      x: placement.x - containerRect.left,
+      y: placement.y - containerRect.top
+    });
+  }, [hoveredMisspelling, spellcheckSuggestions]);
 
   useEffect(() => {
     if (!hoveredMisspelling || !getSpellingSuggestions) {
@@ -1657,6 +1695,7 @@ const ScrollEditor = forwardRef(/**
       <AnimatePresence>
         {hoveredMisspelling && spellcheckSuggestions.length > 0 && (
           <motion.div
+            ref={spellcheckTooltipRef}
             className="spellcheck-tooltip"
             data-testid="spellcheck-orb"
             {...(reducedMotion
@@ -1674,8 +1713,8 @@ const ScrollEditor = forwardRef(/**
                 })}
             style={{
               position: 'absolute',
-              left: hoveredMisspelling.x,
-              top: hoveredMisspelling.y + 4,
+              left: tooltipPlacement.x,
+              top: tooltipPlacement.y,
               backgroundColor: 'var(--ritual-panel, #1a1a2e)',
               border: '1px solid var(--ritual-error, #ff4d4d)',
               padding: '8px',

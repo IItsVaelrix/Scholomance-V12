@@ -1,13 +1,46 @@
 # Dead Code Report
 
-Generated at: 2026-06-06T19:54:56.547Z
+Generated at: 2026-06-11T22:08:40.167Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
+- [ ] src/audio/audio-forge.scheduler.js
+- [ ] src/audio/audio-forge.worker.js
+- [ ] src/audio/audio-forge.worklet.js
+- [ ] src/audio/audio-mixer.js
+- [ ] src/audio/pixelbrain-audio-forge.js
+- [ ] src/audio/sfx-intent-resolver.js
+- [ ] src/combat/combat-sfx.events.js
+- [ ] src/combat/combat-sfx.mapping.js
+- [ ] src/components/ParaEQ/presets/factoryScrolls.ts
+- [ ] src/game/iso/contracts/index.ts
+- [ ] src/game/iso/contracts/isoActor.schema.ts
+- [ ] src/game/iso/contracts/isoTile.schema.ts
+- [ ] src/game/iso/math/isoHitTest.ts
+- [ ] src/hooks/useAudioForge.js
+- [ ] src/hooks/useColorCodex.js
+- [ ] src/kits/channel-zero-ui-kit/components/SkillArticleTemplate.tsx
+- [ ] src/kits/channel-zero-ui-kit/examples/ArticlePage.tsx
+- [ ] src/kits/channel-zero-ui-kit/examples/BlogIndexPage.tsx
 - [ ] src/lib/animation-types.js
+- [ ] src/lib/config/flags.js
 - [ ] src/lib/css/schoolStyles.js
+- [ ] src/lib/godot/frame-printer/adapters/toGodotRuntimeJson.ts
+- [ ] src/lib/godot/frame-printer/constants.ts
+- [ ] src/lib/godot/frame-printer/deterministicHash.ts
+- [ ] src/lib/godot/frame-printer/diffFrameState.ts
+- [ ] src/lib/godot/frame-printer/index.ts
+- [ ] src/lib/godot/frame-printer/printFrameTimeline.ts
+- [ ] src/lib/godot/frame-printer/shadowPrintGodotFrameTimeline.ts
+- [ ] src/lib/godot/frame-printer/stableId.ts
+- [ ] src/lib/godot/frame-printer/types.ts
+- [ ] src/lib/godot/frame-printer/validateFramePacket.ts
 - [ ] src/lib/godot-export/shadowFrameTimeline.ts
+- [ ] src/lib/godot-export/voidArenaConstants.ts
+- [ ] src/lib/godot-export/voidArenaFissures.ts
+- [ ] src/lib/godot-export/voidArenaScene.ts
+- [ ] src/lib/godot-export/voidSingularityTrigger.ts
 - [ ] src/lib/literaryClassifier.js
 - [ ] src/lib/math/safe.js
 - [ ] src/lib/photonic-quantization/photonic-errors.js
@@ -16,9 +49,26 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/render-engine.js
 - [ ] src/lib/truesight/color/visemeMapping.js
 - [ ] src/lib/truesight/compiler/verseIRSerialization.js
-- [ ] src/pages/Combat/components/WordToolTip.jsx
+- [ ] src/pages/Combat/combatGoldenHarness.js
+- [ ] src/pages/Combat/hooks/useCombatAnimationQueue.js
+- [ ] src/pages/Combat/hooks/useSpellBubbles.js
+- [ ] src/pages/Combat/render/motionDescriptors.js
+- [ ] src/pages/Combat/scenes/ResonanceScene.js
 - [ ] src/pages/Landing/storm/dbm.js
 - [ ] src/pages/Landing/storm/dbm.worker.js
+- [ ] src/pixel-lotus/actor-forge/index.ts
+- [ ] src/pixel-lotus/actor-forge/pixelLotusActorLayer.schema.ts
+- [ ] src/pixel-lotus/importers/lpc/index.ts
+- [ ] src/pixel-lotus/importers/lpc/lpcImportManifest.schema.ts
+- [ ] src/tools/youtube-downloader/ytdl.command-map.js
+- [ ] src/tools/youtube-downloader/ytdl.config.js
+- [ ] src/tools/youtube-downloader/ytdl.doctor.js
+- [ ] src/tools/youtube-downloader/ytdl.errors.js
+- [ ] src/tools/youtube-downloader/ytdl.executor.js
+- [ ] src/tools/youtube-downloader/ytdl.manifest.js
+- [ ] src/tools/youtube-downloader/ytdl.paths.js
+- [ ] src/tools/youtube-downloader/ytdl.policy.js
+- [ ] src/tools/youtube-downloader/ytdl.url.js
 - [ ] src/types/animation.d.ts
 - [ ] src/types/core/analysis.ts
 - [ ] src/types/core/combat.ts
@@ -36,19 +86,37 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
 - [ ] src/vite-env.d.ts
 - [ ] codex/core/archive/truesight/color/visemeMapping.ARCHIVED.js
-- [ ] codex/core/combat.exegesis.js
+- [ ] codex/core/audio-forge/affinity-audio-profiles.js
+- [ ] codex/core/audio-forge/audio-bytecode-error.js
+- [ ] codex/core/audio-forge/dsp/buffer-renderer.js
+- [ ] codex/core/audio-forge/dsp/envelopes.js
+- [ ] codex/core/audio-forge/dsp/noise.js
+- [ ] codex/core/audio-forge/dsp/oscillators.js
+- [ ] codex/core/audio-forge/dsp/parametric-eq.js
+- [ ] codex/core/audio-forge/dsp/seeded-rng-bridge.js
+- [ ] codex/core/audio-forge/pb-sfx.checksum.js
+- [ ] codex/core/audio-forge/pb-sfx.schema.js
+- [ ] codex/core/audio-forge/sfx-event-mappings.js
 - [ ] codex/core/diagnostic/QbitProbeEnrichment.js
 - [ ] codex/core/diagnostic/index.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
 - [ ] codex/core/immunity/clerical-raid.substrate.js
+- [ ] codex/core/immunity/harkov-mutation.engine.js
 - [ ] codex/core/immunity/memory-infusion.engine.js
+- [ ] codex/core/immunity/phoneme-prion.engine.js
 - [ ] codex/core/immunity/protein-probe.engine.js
+- [ ] codex/core/immunity/semantic-editor.js
+- [ ] codex/core/immunity/syntax-tokenizer.js
+- [ ] codex/core/jit/acquisition-matrix.js
+- [ ] codex/core/jit/g2p.js
+- [ ] codex/core/jit/index.js
+- [ ] codex/core/jit/pipeline.js
+- [ ] codex/core/jit/router.js
 - [ ] codex/core/modulation/planner/div-layout-registrar.js
 - [ ] codex/core/modulation/planner/formula-registrar.js
 - [ ] codex/core/phonology/dictionary.web-worker.js
 - [ ] codex/core/phonology/dictionary.worker.js
-- [ ] codex/core/pixelbrain/extensions/physics-extensions.js
-- [ ] codex/core/pixelbrain/extensions/style-extensions.js
+- [ ] codex/core/phonology/prosodic-metronome.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
 - [ ] codex/core/shared/workers/microprocessor.worker.js
@@ -60,11 +128,23 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
 
+- [ ] `createMonoAudioBuffer` in `src/audio/audio-forge.scheduler.js`
+- [ ] `onLeylineExtracted` in `src/combat/combat-sfx.events.js`
+- [ ] `onLeylineFailure` in `src/combat/combat-sfx.events.js`
+- [ ] `onCodexBurstDiscovery` in `src/combat/combat-sfx.events.js`
+- [ ] `onSyntaxChessAdvantage` in `src/combat/combat-sfx.events.js`
+- [ ] `onOracleMarginalia` in `src/combat/combat-sfx.events.js`
+- [ ] `onNexusUnlock` in `src/combat/combat-sfx.events.js`
+- [ ] `COMBAT_SFX_DEFAULTS` in `src/combat/combat-sfx.mapping.js`
 - [ ] `BookIcon` in `src/components/Icons.jsx`
+- [ ] `RhymeIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsRightIcon` in `src/components/Icons.jsx`
 - [ ] `ChevronsLeftIcon` in `src/components/Icons.jsx`
 - [ ] `RefreshIcon` in `src/components/Icons.jsx`
 - [ ] `DownloadIcon` in `src/components/Icons.jsx`
+- [ ] `EqPresetV2` in `src/components/ParaEQ/hooks/useEqPreset.ts`
+- [ ] `FACTORY_SCROLLS` in `src/components/ParaEQ/presets/factoryScrolls.ts`
+- [ ] `getFactoryScrolls` in `src/components/ParaEQ/presets/factoryScrolls.ts`
 - [ ] `XP_SOURCES` in `src/data/progression_constants.js`
 - [ ] `getSchoolById` in `src/data/schools.js`
 - [ ] `isSchoolUnlocked` in `src/data/schools.js`
@@ -74,9 +154,31 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSchoolBadgeClass` in `src/data/schools.js`
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
+- [ ] `createIsoActorState` in `src/game/iso/contracts/isoActor.schema.ts`
+- [ ] `TERRAIN_TYPES` in `src/game/iso/contracts/isoTile.schema.ts`
+- [ ] `createIsoTile` in `src/game/iso/contracts/isoTile.schema.ts`
+- [ ] `screenPointToTile` in `src/game/iso/math/isoHitTest.ts`
+- [ ] `screenPointToActor` in `src/game/iso/math/isoHitTest.ts`
+- [ ] `screenPointToProp` in `src/game/iso/math/isoHitTest.ts`
+- [ ] `hitTestScreenPoint` in `src/game/iso/math/isoHitTest.ts`
+- [ ] `resolveIsoTileAtScreenPoint` in `src/game/iso/math/isoProjection.ts`
+- [ ] `isActorMoving` in `src/game/iso/math/isoProjection.ts`
+- [ ] `useColorCodex` in `src/hooks/useColorCodex.js`
 - [ ] `setGodotExportFlag` in `src/hooks/useGodotExportFlag.js`
 - [ ] `GODOT_EXPORT_FLAG_CHANGED_EVENT` in `src/hooks/useGodotExportFlag.js`
 - [ ] `GODOT_EXPORT_FLAG_KEY` in `src/hooks/useGodotExportFlag.js`
+- [ ] `ArticleCardProps` in `src/kits/channel-zero-ui-kit/components/ArticleCard.tsx`
+- [ ] `ArticleHeroProps` in `src/kits/channel-zero-ui-kit/components/ArticleHero.tsx`
+- [ ] `ChannelNavItem` in `src/kits/channel-zero-ui-kit/components/ChannelHeader.tsx`
+- [ ] `ChannelHeaderProps` in `src/kits/channel-zero-ui-kit/components/ChannelHeader.tsx`
+- [ ] `ChannelShellProps` in `src/kits/channel-zero-ui-kit/components/ChannelShell.tsx`
+- [ ] `CodeRuneBlockProps` in `src/kits/channel-zero-ui-kit/components/CodeRuneBlock.tsx`
+- [ ] `GlyphButtonProps` in `src/kits/channel-zero-ui-kit/components/GlyphButton.tsx`
+- [ ] `NewsletterSigilProps` in `src/kits/channel-zero-ui-kit/components/NewsletterSigil.tsx`
+- [ ] `SignalTagProps` in `src/kits/channel-zero-ui-kit/components/SignalTag.tsx`
+- [ ] `SkillArticleTemplateProps` in `src/kits/channel-zero-ui-kit/components/SkillArticleTemplate.tsx`
+- [ ] `SkillArticleTemplate` in `src/kits/channel-zero-ui-kit/components/SkillArticleTemplate.tsx`
+- [ ] `TableOfContentsProps` in `src/kits/channel-zero-ui-kit/components/TableOfContents.tsx`
 - [ ] `RESONANCE_DURATION_TOLERANCE_MS` in `src/lib/ambient/resonance/resonanceSchema.js`
 - [ ] `emitBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `emitStasisBytecodeError` in `src/lib/bytecode-error.adapter.js`
@@ -87,6 +189,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `canGenerateSigilFile` in `src/lib/career/transmuter.js`
 - [ ] `fetchArtist` in `src/lib/catalog.api.js`
 - [ ] `fetchRelease` in `src/lib/catalog.api.js`
+- [ ] `FEATURE_FLAGS` in `src/lib/config/flags.js`
+- [ ] `getFeatureFlag` in `src/lib/config/flags.js`
 - [ ] `configureZodForCsp` in `src/lib/config/zod.config.js`
 - [ ] `generateLockedSchoolStyles` in `src/lib/css/schoolStyles.js`
 - [ ] `BrowserBytecodeHealth` in `src/lib/diagnostic.adapter.js`
@@ -110,7 +214,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `VOID_TICK_DAMAGE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_TICK_COUNT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_MAX_EXPOSURE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
+- [ ] `buildVoidArenaRestingScene` in `src/lib/godot-export/voidArenaScene.ts`
 - [ ] `buildSingularityTriggerFrames` in `src/lib/godot-export/voidSingularityTrigger.ts`
+- [ ] `buildSingularityTriggerTimeline` in `src/lib/godot-export/voidSingularityTrigger.ts`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
 - [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
@@ -132,7 +238,14 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildPillarTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `coordsToPath` in `src/pages/Combat/assets/wandSvg.js`
 - [ ] `svgToDataUri` in `src/pages/Combat/assets/wandSvg.js`
+- [ ] `serializeStateForGodot` in `src/pages/Combat/combatBridge.js`
+- [ ] `createInitialCombatState` in `src/pages/Combat/combatGoldenHarness.js`
+- [ ] `applyCombatCommand` in `src/pages/Combat/combatGoldenHarness.js`
+- [ ] `canonicalizeCombatState` in `src/pages/Combat/combatGoldenHarness.js`
+- [ ] `useCombatAnimationQueue` in `src/pages/Combat/hooks/useCombatAnimationQueue.js`
+- [ ] `useSpellBubbles` in `src/pages/Combat/hooks/useSpellBubbles.js`
 - [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
+- [ ] `buildResonanceScene` in `src/pages/Combat/scenes/ResonanceScene.js`
 - [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `keyToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `getEuclideanDistance` in `src/pages/Combat/state/combatBoardUtils.js`
@@ -148,9 +261,17 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `GenomeLayer` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `SigilRing` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `SigilSpoke` in `src/pages/Grimoire/genomeGeometry.ts`
-- [ ] `SigilGlyph` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `SigilModel` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `createPacketNoise` in `src/pages/Landing/storm/photonicBolt.js`
+- [ ] `MATERIAL_PALETTES` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `transmutePaletteColor` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `transmutePixelBrainPalette` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `transmutePixelBrainPalettes` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `buildChromaticColorMap` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `transmutePixelBrainCoordinates` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `TrackSeed` in `src/pages/Visualiser/bytecodeFingerprint.ts`
+- [ ] `VISUALISER_FUNCTION_WORDS` in `src/pages/Visualiser/truesightColor.ts`
+- [ ] `checkBinary` in `src/tools/youtube-downloader/ytdl.doctor.js`
 - [ ] `DocumentStats` in `src/types/core/analysis.ts`
 - [ ] `DocumentParsed` in `src/types/core/analysis.ts`
 - [ ] `JudiciaryLayer` in `src/types/core/judiciary.ts`
@@ -248,14 +369,35 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `anchorProcessor` in `codex/core/animation/processors/transform/transformProcessors.ts`
 - [ ] `MOTION_COSINE_DEVIATION_THRESHOLD` in `codex/core/animation/processors/vector/TurboQuantMotionProcessor.ts`
 - [ ] `MOTION_ARCHETYPE_MATCH_THRESHOLD` in `codex/core/animation/processors/vector/TurboQuantMotionProcessor.ts`
+- [ ] `AFFINITY_AUDIO_PROFILE` in `codex/core/audio-forge/affinity-audio-profiles.js`
+- [ ] `FALLBACK_AUDIO_PROFILE` in `codex/core/audio-forge/affinity-audio-profiles.js`
+- [ ] `AUDIO_FORGE_MODULE_ID` in `codex/core/audio-forge/audio-bytecode-error.js`
+- [ ] `AUDIO_ERROR_CODES` in `codex/core/audio-forge/audio-bytecode-error.js`
+- [ ] `createNanSampleError` in `codex/core/audio-forge/audio-bytecode-error.js`
+- [ ] `buildAdsrCurve` in `codex/core/audio-forge/dsp/envelopes.js`
+- [ ] `buildPluckCurve` in `codex/core/audio-forge/dsp/envelopes.js`
+- [ ] `buildBurstCurve` in `codex/core/audio-forge/dsp/envelopes.js`
+- [ ] `buildWhiteNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildPinkNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildBrownNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildCrackleNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildDustNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildSparkNoise` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `buildVoidStatic` in `codex/core/audio-forge/dsp/noise.js`
+- [ ] `sampleWavetable` in `codex/core/audio-forge/dsp/oscillators.js`
+- [ ] `computeBiquadCoefficients` in `codex/core/audio-forge/dsp/parametric-eq.js`
+- [ ] `applyBiquadFilter` in `codex/core/audio-forge/dsp/parametric-eq.js`
+- [ ] `EFFECT_TYPES` in `codex/core/audio-forge/pb-sfx.schema.js`
 - [ ] `runAtsHmmPass` in `codex/core/career/ats-hmm/index.js`
 - [ ] `COMBAT_RARITY_TIERS` in `codex/core/combat.balance.js`
 - [ ] `getFailureCastModifier` in `codex/core/combat.balance.js`
 - [ ] `computeVerseEfficiency` in `codex/core/combat.balance.js`
-- [ ] `buildCombatRundown` in `codex/core/combat.exegesis.js`
 - [ ] `getCombatTotalScore` in `codex/core/combat.scoring.js`
 - [ ] `getCombatTraces` in `codex/core/combat.scoring.js`
 - [ ] `calculateCombatScore` in `codex/core/combat.scoring.js`
+- [ ] `PLAYER_MAX_MP` in `codex/core/combat.session.js`
+- [ ] `SYNTACTIC_ARCHETYPE_PROFILES` in `codex/core/combat.syntax-chess.js`
+- [ ] `createNeutralSyntacticalChessResult` in `codex/core/combat.syntax-chess.js`
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
 - [ ] `TEMPLATE_VOCAB` in `codex/core/commentary/phrase-bank.js`
 - [ ] `MODEL_CORPUS` in `codex/core/commentary/phrase-bank.js`
@@ -284,16 +426,39 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `detectLayer` in `codex/core/immunity/clerical-raid.vector.js`
 - [ ] `detectLawViolations` in `codex/core/immunity/clerical-raid.vector.js`
 - [ ] `assignAgent` in `codex/core/immunity/clerical-raid.vector.js`
+- [ ] `trainTransitionModel` in `codex/core/immunity/harkov-mutation.engine.js`
+- [ ] `transitionProbability` in `codex/core/immunity/harkov-mutation.engine.js`
+- [ ] `sequenceLogLikelihood` in `codex/core/immunity/harkov-mutation.engine.js`
 - [ ] `emitApoptosisSignal` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `extractMemoryAntigens` in `codex/core/immunity/memory-infusion.engine.js`
 - [ ] `validatePrivacy` in `codex/core/immunity/memory-infusion.engine.js`
+- [ ] `PRION_SIGNATURES` in `codex/core/immunity/phoneme-prion.engine.js`
 - [ ] `PROTOCOL_ALLOW_LIST` in `codex/core/immunity/protocol.scanner.js`
 - [ ] `REPAIR_RECOMMENDATIONS` in `codex/core/immunity/repair.recommendations.js`
+- [ ] `MEANING_RULES` in `codex/core/immunity/semantic-editor.js`
+- [ ] `inferContextTags` in `codex/core/immunity/semantic-editor.js`
+- [ ] `editCode` in `codex/core/immunity/semantic-editor.js`
+- [ ] `tokenizeToStates` in `codex/core/immunity/syntax-tokenizer.js`
+- [ ] `createAcquisitionMatrix` in `codex/core/jit/acquisition-matrix.js`
+- [ ] `createG2PCompatibilityChecker` in `codex/core/jit/g2p.js`
+- [ ] `createLaboratory` in `codex/core/jit/index.js`
+- [ ] `createVerificationRouter` in `codex/core/jit/index.js`
+- [ ] `createReferenceAlgorithmBattery` in `codex/core/jit/index.js`
+- [ ] `runPipeline` in `codex/core/jit/pipeline.js`
+- [ ] `createBuiltinsRouter` in `codex/core/jit/router.js`
 - [ ] `JudiciaryEngine` in `codex/core/judiciary.js`
 - [ ] `normalizeAbyssWord` in `codex/core/lexicon.abyss.js`
+- [ ] `diagnoseLinguisticCoherence` in `codex/core/leyline.engine.js`
+- [ ] `scoreLiteraryConstraints` in `codex/core/leyline.engine.js`
+- [ ] `LEYLINE_PUZZLE_CODEX` in `codex/core/leyline.engine.js`
+- [ ] `CSS_NAMED_COLORS` in `codex/core/microprocessors/color/named-color-registry.js`
+- [ ] `SCHOOL_NAMED_COLORS` in `codex/core/microprocessors/color/named-color-registry.js`
+- [ ] `COLOR_ALIASES` in `codex/core/microprocessors/color/named-color-registry.js`
+- [ ] `KNOWN_COLOR_HEX` in `codex/core/microprocessors/color/named-color-registry.js`
+- [ ] `getKnownColorProcessorIds` in `codex/core/microprocessors/color/named-color-registry.js`
 - [ ] `createMicroprocessorFactory` in `codex/core/microprocessors/factory.js`
 - [ ] `registerDivLayout` in `codex/core/modulation/planner/div-layout-registrar.js`
 - [ ] `MAX_LAYOUT_DEPTH` in `codex/core/modulation/planner/div-layout-validator.js`
@@ -310,8 +475,20 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getUnlockedSynergies` in `codex/core/nexus.registry.js`
 - [ ] `DOCTRINES` in `codex/core/opponent.engine.js`
 - [ ] `PhoneticMatcher` in `codex/core/phonetic_matcher.js`
+- [ ] `createVectorNNPhonemeSignature` in `codex/core/phonology/g2p/candidates/vector-nn.candidate.generator.js`
+- [ ] `POLICY_WEIGHTS` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `VECTOR_NN_SEED` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `EMISSION_TYPES` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `DEFAULT_DIAGNOSTICS` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `serializeDeterministicVerdictForHash` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `verdictHash` in `codex/core/phonology/g2p/schemas.js`
+- [ ] `isValidVerdict` in `codex/core/phonology/g2p/schemas.js`
 - [ ] `ARPABET_CONSONANTS` in `codex/core/phonology/phoneme.constants.js`
 - [ ] `PHONOLOGICAL_PROCESS_RULES` in `codex/core/phonology/phonologicalProcesses.js`
+- [ ] `STRESS_SHIFT_HOMOGRAPHS` in `codex/core/phonology/prosodic-metronome.js`
+- [ ] `isStressShiftHomograph` in `codex/core/phonology/prosodic-metronome.js`
+- [ ] `readMeter` in `codex/core/phonology/prosodic-metronome.js`
+- [ ] `pronounceWithMeter` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
 - [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/anti-alias-control.js`
 - [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/anti-alias-control.js`
@@ -343,12 +520,10 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `physicsStretchSquash` in `codex/core/pixelbrain/extensions/physics-extensions.js`
 - [ ] `physicsGravity` in `codex/core/pixelbrain/extensions/physics-extensions.js`
 - [ ] `physicsBounce` in `codex/core/pixelbrain/extensions/physics-extensions.js`
-- [ ] `PHYSICS_EXTENSIONS` in `codex/core/pixelbrain/extensions/physics-extensions.js`
 - [ ] `styleGameBoy` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `style8Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `style16Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `styleCRT` in `codex/core/pixelbrain/extensions/style-extensions.js`
-- [ ] `STYLE_EXTENSIONS` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `evaluateFibonacciGrid` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateParametricCurve` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateGridProjection` in `codex/core/pixelbrain/formula-to-coordinates.js`
@@ -375,6 +550,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `generateTemplateFromFormula` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateIdleAnimationConfig` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateSilhouetteFromImage` in `codex/core/pixelbrain/image-to-pixel-art.js`
+- [ ] `fillShapeWithEvenOddWinding` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `fillShape` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `imageToPixelBrainParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `mergeImageAndNLUParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
@@ -385,19 +561,22 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `perlin2D` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `getTexturePalette` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `createShaderUniformError` in `codex/core/pixelbrain/shader-errors.js`
+- [ ] `createShaderContextLostError` in `codex/core/pixelbrain/shader-errors.js`
 - [ ] `PB_SHADER_PACKET_VERSION` in `codex/core/pixelbrain/shader-packet.js`
 - [ ] `getNestedProperty` in `codex/core/pixelbrain/shader-uniform-resolver.js`
 - [ ] `hexToRgb01` in `codex/core/pixelbrain/shader-uniform-resolver.js`
 - [ ] `cropToOpaqueRegion` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `emitSymmetryBytecode` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `SymmetryProcessor` in `codex/core/pixelbrain/symmetry-amp.js`
+- [ ] `PIXELBRAIN_GRID_LIMITS` in `codex/core/pixelbrain/template-grid-engine.js`
+- [ ] `ASEPRITE_IMPORT_LIMITS` in `codex/core/pixelbrain/template-grid-engine.js`
+- [ ] `getFibonacciRegions` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `addAnchorPoint` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `removeAnchorPoint` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `createLayer` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getCell` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `createFrame` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getOnionSkins` in `codex/core/pixelbrain/template-grid-engine.js`
-- [ ] `importFromAseprite` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `mapVowelFamilyToSchoolId` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `calculateRarityFromPhonemes` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `determineEffectFromToken` in `codex/core/pixelbrain/token-to-bytecode.js`
@@ -494,6 +673,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `TRACK_ANNOTATIONS_SQL` in `codex/server/catalog/catalog.schema.js`
 - [ ] `COMMERCE_SCHEMA_SQL` in `codex/server/catalog/catalog.schema.js`
 - [ ] `SOCIAL_ANALYTICS_SCHEMA_SQL` in `codex/server/catalog/catalog.schema.js`
+- [ ] `DISCOGRAPHY_NAV_ALTERS` in `codex/server/catalog/catalog.schema.js`
 - [ ] `trackLabelFromUrl` in `codex/server/catalog/catalog.seed.js`
 - [ ] `buildSeedPlan` in `codex/server/catalog/catalog.seed.js`
 - [ ] `fftRadix2` in `codex/server/catalog/fft.js`

@@ -1,4 +1,2 @@
-import { pickRandomSonicStationTrack } from './codex/core/constants/data/sonicStationBuckets.js';
-console.log("VOID:", pickRandomSonicStationTrack({ schoolId: 'VOID' }));
-console.log("PSYCHIC:", pickRandomSonicStationTrack({ schoolId: 'PSYCHIC' }));
-console.log("ALCHEMY:", pickRandomSonicStationTrack({ schoolId: 'ALCHEMY' }));
+import { extensionRegistry } from './codex/core/pixelbrain/extension-registry.js';
+console.log('extensionRegistry initialized:', !!extensionRegistry);

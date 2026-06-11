@@ -8,6 +8,7 @@ import { normalizeVowelFamily } from "../lib/phonology/vowelFamily.js";
 import { resolveSonicColor } from "../lib/truesight/color/pcaChroma.js";
 import SigilChamber from "./SigilChamber.jsx";
 import { STACKING_TIERS } from '../data/stacking_tiers';
+import { resolveOverlayPlacement } from "../lib/truesight/overlay-placement.js";
 import "./WordTooltip.css";
 
 /* ── Ink transitions — content fades in like ink soaking into parchment ── */
@@ -114,11 +115,36 @@ const WordTooltip = ({
   useLayoutEffect(() => {
     if (posInitialized.current) return;
     posInitialized.current = true;
-    const nextPos = { x, y };
+    const placementResult = resolveOverlayPlacement(
+      { left: x, top: y, width: 0, height: 0, right: x, bottom: y },
+      { width: size.width, height: size.height },
+      { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
+      { placement: 'bottom', flip: true, clamp: true }
+    );
+    const nextPos = { x: placementResult.x, y: placementResult.y };
     posRef.current = nextPos;
     setPos(nextPos);
     applyLivePosition(nextPos);
-  }, [x, y]);
+  }, [x, y, size.width, size.height]);
+
+  /* Keep tooltip contained during window resize */
+  useEffect(() => {
+    const handleResize = () => {
+      const placementResult = resolveOverlayPlacement(
+        { left: posRef.current.x, top: posRef.current.y, width: 0, height: 0, right: posRef.current.x, bottom: posRef.current.y },
+        { width: size.width, height: size.height },
+        { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
+        { placement: 'bottom', flip: false, clamp: true }
+      );
+      const nextPos = { x: placementResult.x, y: placementResult.y };
+      posRef.current = nextPos;
+      setPos(nextPos);
+      applyLivePosition(nextPos);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [size.width, size.height]);
 
   /* Reset card history when session entry changes */
   const prevSessionIndexRef = useRef(sessionIndex);
@@ -188,10 +214,16 @@ const WordTooltip = ({
     const handlePointerMove = (moveEvent) => {
       if (typeof pointerId === "number" && moveEvent.pointerId !== pointerId) return;
       if (moveEvent.cancelable) moveEvent.preventDefault();
-      latestPos = {
-        x: startPos.x + (moveEvent.clientX - startPointerX),
-        y: startPos.y + (moveEvent.clientY - startPointerY),
-      };
+      const rawX = startPos.x + (moveEvent.clientX - startPointerX);
+      const rawY = startPos.y + (moveEvent.clientY - startPointerY);
+
+      const placementResult = resolveOverlayPlacement(
+        { left: rawX, top: rawY, width: 0, height: 0, right: rawX, bottom: rawY },
+        { width: size.width, height: size.height },
+        { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
+        { placement: 'bottom', flip: false, clamp: true }
+      );
+      latestPos = { x: placementResult.x, y: placementResult.y };
       posRef.current = latestPos;
       applyLivePosition(latestPos);
     };
@@ -245,9 +277,17 @@ const WordTooltip = ({
       if (direction.includes("s")) newH = Math.min(TOOLTIP_MAX_HEIGHT, Math.max(TOOLTIP_MIN_HEIGHT, startH + dy));
       if (direction.includes("n")) { newH = Math.min(TOOLTIP_MAX_HEIGHT, Math.max(TOOLTIP_MIN_HEIGHT, startH - dy)); newPosY = startPosY + (startH - newH); }
 
-      latestResizePos = { x: newPosX, y: newPosY };
+      const placementResult = resolveOverlayPlacement(
+        { left: newPosX, top: newPosY, width: 0, height: 0, right: newPosX, bottom: newPosY },
+        { width: newW, height: newH },
+        { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight },
+        { placement: 'bottom', flip: false, clamp: true }
+      );
+
+      latestResizePos = { x: placementResult.x, y: placementResult.y };
       setSize({ width: newW, height: newH });
       setTooltipPos(latestResizePos);
+      applyLivePosition(latestResizePos);
     };
 
     const handlePointerUp = () => {

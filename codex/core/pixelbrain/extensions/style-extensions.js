@@ -247,13 +247,18 @@ export const style16Bit = {
   
   hooks: {
     onCoordinateMap(coords, _context) {
-      const { mode7, rotation, resolution } = this.config;
+      const { mode7, rotation: baseRotation, resolution, rotationSpeed = 45 } = this.config;
       const centerX = resolution.width / 2;
       const centerY = resolution.height / 2;
       
       if (!mode7) return coords;
       
-      const rad = (rotation * Math.PI) / 180;
+      let currentRotation = baseRotation;
+      if (_context && typeof _context.time === 'number') {
+        currentRotation = (_context.time * rotationSpeed + baseRotation) % 360;
+      }
+      
+      const rad = (currentRotation * Math.PI) / 180;
       const cos = Math.cos(rad);
       const sin = Math.sin(rad);
       

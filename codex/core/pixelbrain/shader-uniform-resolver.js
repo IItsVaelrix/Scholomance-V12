@@ -5,6 +5,8 @@
  * declaratively from authoritative game states (clock, spells, palettes).
  */
 
+import { resolveShaderUniforms as registryResolveShaderUniforms } from './shader-uniform-registry.js';
+
 export const DEFAULT_SHADER_UNIFORMS = Object.freeze({
   u_time: {
     type: 'float',
@@ -74,17 +76,50 @@ export function hexToRgb01(hex) {
  */
 export function resolveShaderUniforms(packet, runtimeState = {}) {
   const resolved = {};
+
+  // Resolve registry uniforms first
+  let registryUniforms = {};
+  try {
+    const registryResult = registryResolveShaderUniforms(runtimeState);
+    if (registryResult.ok) {
+      registryUniforms = registryResult.uniforms;
+    }
+  } catch (e) {
+    // Fail-safe if registry is not loaded
+  }
+
   const declaredUniforms = {
     ...DEFAULT_SHADER_UNIFORMS,
     ...(packet?.uniforms || {}),
   };
+
+  // Add any registry uniforms to declaredUniforms if not already present
+  for (const name of Object.keys(registryUniforms)) {
+    if (!(name in declaredUniforms)) {
+      const UNIFORM_TYPE_MAP = {
+        u_time: 'float',
+        u_resolution: 'vec2',
+        u_resonance: 'float',
+        u_school: 'int',
+        u_vowel_density: 'float',
+        u_palette0: 'vec3',
+        u_spellIntensity: 'float',
+      };
+      declaredUniforms[name] = {
+        type: UNIFORM_TYPE_MAP[name] || 'float',
+        default: 0,
+      };
+    }
+  }
 
   for (const [name, config] of Object.entries(declaredUniforms)) {
     const type = config.type || 'float';
     const source = config.source;
     let rawValue = undefined;
 
-    if (source) {
+    if (name in registryUniforms) {
+      rawValue = registryUniforms[name];
+    } else if (source) {
       rawValue = getNestedProperty(runtimeState, source);
     }
 
