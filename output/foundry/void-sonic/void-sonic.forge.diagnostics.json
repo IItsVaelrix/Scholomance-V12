@@ -1,0 +1,47 @@
+{
+  "label": "Void Sonic Shield",
+  "slots": {
+    "shell": "onyx",
+    "rim": "black_steel",
+    "rimEdge": "gold",
+    "core": "darksteel",
+    "sonicRings": "amethyst",
+    "separators": "darksteel",
+    "glyph": "gold",
+    "glyphBack": "gold"
+  },
+  "spec": {
+    "id": "voidshield.hd.v2",
+    "hash": "fnv1a_75f216b6"
+  },
+  "cells": 1789,
+  "heraldry": [
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "glyph",
+      "mark": "eye",
+      "effect": "inlay",
+      "cells": 62,
+      "coverage": 0.2952,
+      "contrast": 0.7317,
+      "color": "#F0D86E",
+      "autoContrasted": false,
+      "warnings": []
+    },
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "glyphBack",
+      "mark": "eye",
+      "effect": "inlay",
+      "cells": 43,
+      "coverage": 0.2251,
+      "contrast": 0.3242,
+      "color": "#8A6D1F",
+      "autoContrasted": false,
+      "warnings": []
+    }
+  ],
+  "fillHash": "fnv1a_54643cc4"
+}

@@ -1,0 +1,15 @@
+{
+  "spec": {
+    "file": "/home/deck/Desktop/Scholomance-V12-main/specs/scimitar.hd.v1.json",
+    "id": "scimitar.hd.v1",
+    "hash": "fnv1a_7cde379c"
+  },
+  "shader": {
+    "id": "item.scimitar.hd.v1.blade.energize",
+    "hash": "fnv1a_FC53ECBB"
+  },
+  "cells": 596,
+  "motifCells": 17,
+  "fillHash": "fnv1a_d9e75704",
+  "assetPacketId": "pbasset_057a6af1"
+}

@@ -1,0 +1,23 @@
+{
+  "spec": {
+    "id": "voidshield.hd.v1",
+    "hash": "fnv1a_385e6f2e"
+  },
+  "cells": 1789,
+  "heraldry": [
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "emblem",
+      "mark": "eye",
+      "effect": "inlay",
+      "cells": 62,
+      "coverage": 0.0511,
+      "contrast": 0.6538,
+      "color": "#F0D86E",
+      "autoContrasted": false,
+      "warnings": []
+    }
+  ],
+  "fillHash": "fnv1a_e3a45b02"
+}

@@ -1,0 +1,29 @@
+{
+  "summary": {
+    "silhouetteOccupied": 596,
+    "templateCoordinates": 596,
+    "templateBands": 6,
+    "filledCoordinates": 596,
+    "engravingCells": 55,
+    "sharpnessEnabled": true,
+    "sharpnessChangedCount": 536,
+    "finalCoordinates": 596,
+    "bytecode": "VW-VOID-INEXPLICABLE-TRANSCENDENT",
+    "material": "source",
+    "canvas": {
+      "width": 48,
+      "height": 96,
+      "gridSize": 1
+    },
+    "shader": {
+      "id": "scimitar-lightning-engraving",
+      "hash": "fnv1a_B5A5599F",
+      "uniformCount": 14
+    }
+  },
+  "sharpnessDiagnostics": {
+    "coordinateCount": 596,
+    "changedCount": 536,
+    "enabled": true
+  }
+}

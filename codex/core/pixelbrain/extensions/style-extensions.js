@@ -186,6 +186,7 @@ export const style8Bit = Object.assign(
           x: Math.round((coord.x || 0) / scale) * scale,
           y: Math.round((coord.y || 0) / scale) * scale,
           z: coord.z,
+          emphasis: Math.round((Number(coord.emphasis) || 0) * 4) / 4,
         }));
       },
       

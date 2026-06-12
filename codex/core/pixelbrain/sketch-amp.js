@@ -20,6 +20,7 @@
  */
 
 import { clampNumber, hslToHex } from './shared.js';
+import { estimateNormals } from './normal-estimation.js';
 
 const DEFAULT_BANDS = 4;
 const MIN_BANDS = 2;
@@ -107,14 +108,58 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
     if (grid[i] && dist[i] > maxDist) maxDist = dist[i];
   }
 
+  const hasLight = options.light != null;
+  const lightAngle = options.light?.angle ?? (Math.PI * 1.25); // Default top-left
+  const Lx = Math.cos(lightAngle);
+  const Ly = Math.sin(lightAngle);
+  const ambient = options.light?.ambient ?? 0.3;
+  const normals = hasLight ? estimateNormals(dist, width, height) : null;
+
   const coordinates = [];
   const lastSlot = Math.max(1, bands - 1);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
       const i = y * width + x;
       if (!grid[i]) continue;
+      
       const norm = maxDist > 0 ? dist[i] / maxDist : 0; // 0 = rim, 1 = core
-      const slot = Math.min(lastSlot, Math.max(0, Math.round(norm * lastSlot)));
+      let slot;
+      let shadingClass = 'core';
+
+      if (hasLight) {
+        const { nx, ny } = normals[i];
+        // Dot product of normal and light vector
+        const dot = nx * Lx + ny * Ly;
+        const illum = ambient + (1 - ambient) * Math.max(0, dot);
+        
+        // Slot is quantized illuminated depth
+        slot = Math.min(lastSlot, Math.max(0, Math.round(illum * norm * lastSlot)));
+
+        // Classify shading
+        if (norm === 0) {
+          // Rim/silhouette cell
+          if (dot > 0.8) { // Tight cone for specular
+            shadingClass = 'specular-edge';
+            slot = lastSlot; // Pin to high anchor
+          } else if (dot > 0) {
+            shadingClass = 'lit';
+          } else {
+            shadingClass = 'shadow';
+          }
+        } else {
+          if (dot > 0.3) {
+            shadingClass = 'lit';
+          } else if (dot < -0.3) {
+            shadingClass = 'shadow';
+          } else {
+            shadingClass = 'core';
+          }
+        }
+      } else {
+        // Legacy radial shading
+        slot = Math.min(lastSlot, Math.max(0, Math.round(norm * lastSlot)));
+      }
+
       coordinates.push({
         x,
         y,
@@ -125,6 +170,9 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
         emphasis: slot / lastSlot,
         color: slotToNeutralGrey(slot, bands),
         source: 'sketch',
+        shading: shadingClass,
+        nx: hasLight ? normals[i].nx : 0,
+        ny: hasLight ? normals[i].ny : 0,
       });
     }
   }

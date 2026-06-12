@@ -1,0 +1,92 @@
+{
+  "packet": {
+    "contract": "PB-SHADER-v1",
+    "id": "scimitar-lightning-engraving",
+    "label": "Scimitar Lightning Engraving",
+    "dialect": "glsl-es-300",
+    "target": "fragment",
+    "canvas": {
+      "width": 48,
+      "height": 96
+    },
+    "fragmentSource": "// HD Scimitar — lightning engraving energize overlay.\n// Deterministic: all motion derives from u_time / u_resonance.\nconst vec3 BOLT_TINT = vec3(0.1137, 0.3725, 0.8392); // sapphire #1D5FD6\nconst float ENGRAVING_DENSITY = 0.0923; // engraved cells / total cells\n\nfloat pbHash(vec2 p) {\n  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);\n}\n\n// Blade sweep centerline in UV space — mirrors bladeCenterX() in\n// generate-pixelbrain-scimitar.mjs (blade spans v in [0, 0.615]).\nfloat bladeCenter(float v) {\n  float t = clamp((0.615 - v) / 0.615, 0.0, 1.0);\n  return 0.333 + 0.542 * t * t;\n}\n\nvec4 pbMain(vec2 uv, float time, float resonance) {\n  float v = uv.y;\n  float blade = step(v, 0.615);\n  float cx = bladeCenter(v);\n\n  // Zigzag jitter per engraving segment (9 waypoints down the blade).\n  float seg = floor(v * 9.0);\n  float jitter = (pbHash(vec2(seg, 7.0)) - 0.5) * 0.10;\n  float d = abs(uv.x - (cx + jitter));\n\n  // Strobe: quantized time flicker, charged by verse resonance.\n  float strobe = pbHash(vec2(floor(time * 8.0), seg));\n  float charge = 0.35 + 0.65 * resonance;\n  float flicker = smoothstep(0.55, 1.0, strobe) * charge;\n\n  float core = smoothstep(0.035, 0.0, d);\n  float halo = smoothstep(0.16, 0.0, d) * 0.45;\n  float energy = blade * (core + halo) * flicker;\n\n  vec3 tint = mix(BOLT_TINT, u_palette0, 0.25);\n  vec3 color = mix(tint, vec3(1.0), core * 0.85) * energy;\n  float alpha = clamp(energy * (0.5 + ENGRAVING_DENSITY * 4.0), 0.0, 1.0);\n  return vec4(color, alpha);\n}",
+    "uniforms": {},
+    "deterministicSeed": 1337
+  },
+  "hash": "fnv1a_B5A5599F",
+  "resolvedUniforms": {
+    "u_time": {
+      "type": "float",
+      "value": 0
+    },
+    "u_resolution": {
+      "type": "vec2",
+      "value": [
+        48,
+        96
+      ]
+    },
+    "u_school": {
+      "type": "int",
+      "value": 0
+    },
+    "u_resonance": {
+      "type": "float",
+      "value": 0.85
+    },
+    "u_vowel_density": {
+      "type": "float",
+      "value": 0.5
+    },
+    "u_palette0": {
+      "type": "vec3",
+      "value": [
+        0.11372549019607843,
+        0.37254901960784315,
+        0.8392156862745098
+      ]
+    },
+    "u_pixelbrain_material": {
+      "type": "float",
+      "value": 0
+    },
+    "u_pixelbrain_palette_count": {
+      "type": "float",
+      "value": 0
+    },
+    "u_pixelbrain_is_template": {
+      "type": "float",
+      "value": 1
+    },
+    "u_pixelbrain_wand_present": {
+      "type": "float",
+      "value": 0
+    },
+    "u_pixelbrain_photonic_ready": {
+      "type": "float",
+      "value": 0
+    },
+    "u_pixelbrain_fill_school": {
+      "type": "float",
+      "value": 0
+    },
+    "u_pixelbrain_fill_rarity": {
+      "type": "float",
+      "value": 12
+    },
+    "u_pixelbrain_fill_effect": {
+      "type": "float",
+      "value": 12
+    }
+  },
+  "resolutionContext": {
+    "clock": {
+      "elapsedSeconds": 0
+    },
+    "verse": {
+      "resonance": 0.85,
+      "vowelDensity": 0.5
+    },
+    "note": "baseline snapshot — runtime hosts re-resolve per frame"
+  }
+}

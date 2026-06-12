@@ -118,10 +118,19 @@ import {
   resolvePixelBrainShaderUniforms as codexResolvePixelBrainShaderUniforms,
 } from '../../codex/core/pixelbrain/pixelbrain-shader-uniform-providers.js';
 
+import {
+  enhanceSquaresForRender as codexEnhanceSquaresForRender,
+  buildSquareSharpnessContrastPayload as codexBuildSquareSharpnessContrastPayload,
+} from '../../codex/core/pixelbrain/square-sharpness-contrast-amp.js';
+
 // --- WAND → Fill Bridge (proposal → fill bytecode) ---
 import {
   deriveWandFillBytecode as codexDeriveWandFillBytecode,
 } from '../../codex/core/pixelbrain/wand-fill-bridge.js';
+
+import {
+  buildColorIntensityPayload as codexBuildColorIntensityPayload,
+} from '../../codex/core/pixelbrain/color-intensity-rating-microprocessor.js';
 
 // --- Custom Shaders System (NEW) ---
 import {
@@ -385,6 +394,18 @@ export function resolvePixelBrainShaderUniforms(context) {
 
 export function runPixelBrainPipeline(input, context) {
   return processorBridge.execute('pixelbrain.pipeline.run', input, context);
+}
+
+export function enhanceSquaresForRender(coordinates, options) {
+  return codexEnhanceSquaresForRender(coordinates, options);
+}
+
+export function buildSquareSharpnessContrastPayload(input) {
+  return codexBuildSquareSharpnessContrastPayload(input);
+}
+
+export function buildColorIntensityPayload(input) {
+  return codexBuildColorIntensityPayload(input);
 }
 
 // --- WAND → FILL BRIDGE EXPORTS ---

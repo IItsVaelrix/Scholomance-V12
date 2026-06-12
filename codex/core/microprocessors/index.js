@@ -90,6 +90,11 @@ verseIRMicroprocessors.register('pixelbrain.pipeline.run', async (payload, conte
   return runPixelBrainOperationPipeline(payload, context);
 });
 
+verseIRMicroprocessors.register('pixelbrain.colorIntensity.rate', async (payload, context) => {
+  const { runColorIntensityProcessor } = await import('../pixelbrain/color-intensity-rating-microprocessor.js');
+  return runColorIntensityProcessor(payload, context);
+});
+
 // --- Animation Microprocessors (Lazy) ---
 verseIRMicroprocessors.register('pixel.compileAnimation', async (payload, context) => {
   const { compileAnimation } = await import('./pixel/AnimationProcessor.js');

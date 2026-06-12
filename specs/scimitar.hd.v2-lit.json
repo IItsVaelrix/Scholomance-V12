@@ -1,0 +1,91 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "scimitar.hd.v2-lit",
+  "class": "weapon",
+  "archetype": "scimitar",
+  "canvas": {
+    "width": 48,
+    "height": 96,
+    "gridSize": 1
+  },
+  "seed": 1337,
+  "bytecode": "VW-VOID-INEXPLICABLE-TRANSCENDENT",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "blade",
+      "profile": "blade.curved",
+      "params": {
+        "cx": 16,
+        "sweep": 0.54,
+        "span": [
+          0,
+          59
+        ]
+      },
+      "fill": {
+        "material": "black_steel"
+      },
+      "outline": {
+        "material": "sapphire"
+      },
+      "motif": {
+        "kind": "bolt",
+        "fork": true,
+        "core": {
+          "material": "diamond",
+          "anchor": "whiteCore"
+        },
+        "glow": {
+          "material": "sapphire",
+          "anchor": "deep"
+        }
+      }
+    },
+    {
+      "id": "bezel",
+      "profile": "guard.marquise",
+      "attach": {
+        "parent": "blade",
+        "at": "base"
+      },
+      "fill": {
+        "material": "diamond"
+      },
+      "shading": "faceted"
+    },
+    {
+      "id": "grip",
+      "profile": "grip.wrapped",
+      "attach": {
+        "parent": "bezel",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "black_steel"
+      }
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.gem",
+      "attach": {
+        "parent": "grip",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "sapphire"
+      },
+      "outline": {
+        "material": "diamond",
+        "anchor": "spectral"
+      }
+    }
+  ],
+  "shader": {
+    "kind": "motif-energize"
+  },
+  "light": {
+    "angle": 3.9269908169872414,
+    "ambient": 0.3
+  }
+}

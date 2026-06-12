@@ -1,0 +1,23 @@
+{
+  "summary": {
+    "silhouetteOccupied": 1026,
+    "templateCoordinates": 1026,
+    "templateBands": 8,
+    "filledCoordinates": 1026,
+    "sharpnessEnabled": true,
+    "sharpnessChangedCount": 1026,
+    "finalCoordinates": 1026,
+    "bytecode": "VW-ABJURATION-INEXPLICABLE-HARMONIC",
+    "material": "icy_fire",
+    "canvas": {
+      "width": 32,
+      "height": 128,
+      "gridSize": 1
+    }
+  },
+  "sharpnessDiagnostics": {
+    "coordinateCount": 1026,
+    "changedCount": 1026,
+    "enabled": true
+  }
+}

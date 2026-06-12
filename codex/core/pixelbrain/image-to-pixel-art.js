@@ -10,6 +10,8 @@ import { analyzeImageToFormula, formulaToBytecode } from './image-to-bytecode-fo
 import { verseIRMicroprocessors } from '../microprocessors/index.js';
 import { extensionRegistry } from './extension-registry.js';
 
+const HIGH_FIDELITY_SOURCE_PIXEL_LIMIT = 96 * 96;
+
 /**
  * @typedef {Object} ImageAnalysis
  * @property {Array} colors - Dominant colors
@@ -36,11 +38,16 @@ export async function generatePixelArtFromImage(imageAnalysis, canvasSize, exten
   // 2. Build palette from image colors
   const palettes = buildPaletteFromImageColors(colors);
   
-  // 3. Generate coordinates from image features
-  // FIX: If coordinates were already extracted (e.g. by a WebWorker), use them!
-  const coordinates = Array.isArray(imageAnalysis.coordinates) && imageAnalysis.coordinates.length > 0
-    ? imageAnalysis.coordinates
-    : (await verseIRMicroprocessors.execute('pixel.trace', { pixelData, dimensions, composition, canvasSize })).coordinates;
+  // 3. Generate coordinates from image features. Small pixel-art references
+  // need source-scale transcription; edge/landmark tracing loses flat cores
+  // and subtle material shading even after luminance sampling.
+  const coordinates = await resolveImageCoordinates(imageAnalysis, {
+    pixelData,
+    dimensions,
+    composition,
+    canvasSize,
+    extension,
+  });
   
   // Snap all coordinates to pixel grid
   const finalCoordinates = coordinates.map(coord => {
@@ -82,6 +89,123 @@ export async function generatePixelArtFromImage(imageAnalysis, canvasSize, exten
     dominantAxis: composition?.dominantAxis || 'horizontal',
     dominantSymmetry: composition?.hasSymmetry ? (composition?.symmetryType || 'none') : 'none',
   };
+}
+
+async function resolveImageCoordinates(imageAnalysis, context) {
+  if (Array.isArray(imageAnalysis.coordinates) && imageAnalysis.coordinates.length > 0) {
+    return imageAnalysis.coordinates;
+  }
+
+  if (shouldUseSourceTranscription(imageAnalysis, context.extension)) {
+    const transcribed = transcribeSourcePixelData(context.pixelData, context.dimensions);
+    if (transcribed.length > 0) return transcribed;
+  }
+
+  return (await verseIRMicroprocessors.execute('pixel.trace', {
+    pixelData: context.pixelData,
+    dimensions: context.dimensions,
+    composition: context.composition,
+    canvasSize: context.canvasSize,
+  })).coordinates;
+}
+
+function shouldUseSourceTranscription(imageAnalysis, extension) {
+  if (extension) return false;
+  const width = Number(imageAnalysis?.dimensions?.width);
+  const height = Number(imageAnalysis?.dimensions?.height);
+  const pixelCount = width * height;
+  return Boolean(
+    imageAnalysis?.pixelData
+      && Number.isFinite(pixelCount)
+      && pixelCount > 0
+      && pixelCount <= HIGH_FIDELITY_SOURCE_PIXEL_LIMIT
+  );
+}
+
+export function transcribeSourcePixelData(pixelData, dimensions, options = {}) {
+  const srcWidth = Number(dimensions?.width);
+  const srcHeight = Number(dimensions?.height);
+  const alphaThreshold = Number(options.alphaThreshold ?? 128);
+  const backgroundTolerance = Number(options.backgroundTolerance ?? 18);
+  const coordinates = [];
+
+  if (!Number.isFinite(srcWidth) || !Number.isFinite(srcHeight) || srcWidth <= 0 || srcHeight <= 0) {
+    return coordinates;
+  }
+
+  const background = detectOpaqueBorderBackground(pixelData, srcWidth, srcHeight, alphaThreshold);
+
+  for (let y = 0; y < srcHeight; y++) {
+    for (let x = 0; x < srcWidth; x++) {
+      const idx = (y * srcWidth + x) * 4;
+      const alpha = Number(pixelData[idx + 3]) || 0;
+      if (alpha < alphaThreshold) continue;
+
+      const r = pixelData[idx];
+      const g = pixelData[idx + 1];
+      const b = pixelData[idx + 2];
+      if (background && colorDistance({ r, g, b }, background) <= backgroundTolerance) continue;
+
+      const brightness = (r + g + b) / 3;
+
+      coordinates.push({
+        x,
+        y,
+        snappedX: x,
+        snappedY: y,
+        z: 0,
+        color: rgbToHex(r, g, b),
+        emphasis: Math.max(0.08, Math.min(1, alpha / 255 || brightness / 255)),
+        alpha,
+        source: 'source_pixel_transcription',
+      });
+    }
+  }
+
+  return coordinates;
+}
+
+function detectOpaqueBorderBackground(pixelData, width, height, alphaThreshold) {
+  const samples = [];
+  for (let x = 0; x < width; x++) {
+    samples.push(readRgb(pixelData, width, x, 0));
+    samples.push(readRgb(pixelData, width, x, height - 1));
+  }
+  for (let y = 1; y < height - 1; y++) {
+    samples.push(readRgb(pixelData, width, 0, y));
+    samples.push(readRgb(pixelData, width, width - 1, y));
+  }
+
+  const opaque = samples.filter((sample) => sample.a >= alphaThreshold);
+  if (opaque.length < samples.length * 0.9) return null;
+
+  const avg = opaque.reduce((acc, sample) => ({
+    r: acc.r + sample.r,
+    g: acc.g + sample.g,
+    b: acc.b + sample.b,
+  }), { r: 0, g: 0, b: 0 });
+  const background = {
+    r: avg.r / opaque.length,
+    g: avg.g / opaque.length,
+    b: avg.b / opaque.length,
+  };
+
+  const maxDistance = opaque.reduce((max, sample) => Math.max(max, colorDistance(sample, background)), 0);
+  return maxDistance <= 24 ? background : null;
+}
+
+function readRgb(pixelData, width, x, y) {
+  const idx = (y * width + x) * 4;
+  return {
+    r: Number(pixelData[idx]) || 0,
+    g: Number(pixelData[idx + 1]) || 0,
+    b: Number(pixelData[idx + 2]) || 0,
+    a: Number(pixelData[idx + 3]) || 0,
+  };
+}
+
+function colorDistance(a, b) {
+  return Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b);
 }
 
 /**

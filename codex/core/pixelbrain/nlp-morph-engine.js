@@ -124,11 +124,59 @@ export function deriveVerseMorphTarget(versePayload) {
   };
 }
 
+// ─── SHAPE-TOPOLOGY HELPERS ─────────────────────────────────────────────────
+// Reused pattern from square-sharpness-contrast-amp and vector-amp.
+// Classifies each pixel as isolated / edge / interior so the morph can
+// apply topology-aware luminance rules instead of blindly preserving
+// every pixel's original value (which turns flame tips into dark blobs).
+
+function toFiniteNumber(value, fallback = 0) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+}
+
+function buildCoordinateMap(coords) {
+  const map = new Map();
+  for (const coord of coords) {
+    if (!coord) continue;
+    const x = Math.round(toFiniteNumber(coord.snappedX ?? coord.x, 0));
+    const y = Math.round(toFiniteNumber(coord.snappedY ?? coord.y, 0));
+    map.set(`${x},${y}`, coord);
+  }
+  return map;
+}
+
+function getCardinalNeighborStats(coord, coordinateMap) {
+  const x = Math.round(toFiniteNumber(coord.snappedX ?? coord.x, 0));
+  const y = Math.round(toFiniteNumber(coord.snappedY ?? coord.y, 0));
+  const hasLeft = coordinateMap.has(`${x - 1},${y}`);
+  const hasRight = coordinateMap.has(`${x + 1},${y}`);
+  const hasUp = coordinateMap.has(`${x},${y - 1}`);
+  const hasDown = coordinateMap.has(`${x},${y + 1}`);
+  const present = (hasLeft ? 1 : 0) + (hasRight ? 1 : 0) + (hasUp ? 1 : 0) + (hasDown ? 1 : 0);
+  const missing = 4 - present;
+
+  const neighborLumas = [];
+  if (hasLeft) { const c = coordinateMap.get(`${x - 1},${y}`); const h = hexToHsl(c?.color); if (h) neighborLumas.push(h.l / 100); }
+  if (hasRight) { const c = coordinateMap.get(`${x + 1},${y}`); const h = hexToHsl(c?.color); if (h) neighborLumas.push(h.l / 100); }
+  if (hasUp) { const c = coordinateMap.get(`${x},${y - 1}`); const h = hexToHsl(c?.color); if (h) neighborLumas.push(h.l / 100); }
+  if (hasDown) { const c = coordinateMap.get(`${x},${y + 1}`); const h = hexToHsl(c?.color); if (h) neighborLumas.push(h.l / 100); }
+  const avgNeighborLuma = neighborLumas.length ? neighborLumas.reduce((s, v) => s + v, 0) / neighborLumas.length : null;
+
+  return { present, missing, hasLeft, hasRight, hasUp, hasDown, avgNeighborLuma };
+}
+
 /**
  * Recolor a loaded asset's coordinates toward a morph target by factor t.
  * Geometry (x/y/snapped/emphasis/source) is preserved; only `color` changes.
- * Each pixel keeps its own luminance UNLESS the target carries a lightDelta,
- * so the silhouette and shading survive a pure re-hue.
+ *
+ * SHAPE-AWARE LUMINANCE:
+ *   Each pixel's topology is classified via cardinal-neighbor probing:
+ *     - Interior (4/4 neighbors): preserve original luminance (existing behavior)
+ *     - Edge (1-3 neighbors): shift low-luminance pixels toward avg neighbor
+ *       luminance so dark silhouette edges don't become solid dark blobs
+ *     - Isolated (0 neighbors): boost luminance toward highlight band so
+ *       sparks/embers/tips become bright points instead of dark specks
  *
  * Target fields (all optional except `available`):
  *   hue        - absolute target hue [0,360); omit to preserve each pixel's hue
@@ -155,17 +203,46 @@ export function morphCoordinatesToward(baseCoordinates, target, t) {
   const satDelta = Number(target.satDelta) || 0;
   const lightDelta = Number(target.lightDelta) || 0;
 
+  // Build topology map once — O(n) instead of O(n²) per-pixel probing.
+  const coordinateMap = buildCoordinateMap(coords);
+
   return coords.map((coord) => {
     const hsl = hexToHsl(coord?.color);
     if (!hsl) {
-      // No legible source color — adopt the target at a neutral mid lightness.
       return { ...coord, color: hslToHex(targetHue, hasSatTarget ? targetSat : 50, 50) };
     }
 
     const finalHue = hasHue ? lerpHue(hsl.h, targetHue, amount) : hsl.h;
     let finalSat = hasSatTarget ? hsl.s + (targetSat - hsl.s) * amount : hsl.s;
     finalSat = clampNumber(finalSat + satDelta * amount, 0, 100);
-    const finalLight = clampNumber(hsl.l + lightDelta * amount, 0, 100);
+
+    // ── Shape-aware luminance ─────────────────────────────────────────
+    const stats = getCardinalNeighborStats(coord, coordinateMap);
+    const srcLuma = hsl.l / 100; // [0,1]
+
+    let topologyLightBoost = 0; // additive lightness shift in [0,100]
+
+    if (stats.present === 0) {
+      // ISOLATED pixel — spark / ember / tip.
+      // Dark isolated pixels are almost always wrong after morph;
+      // boost them toward the highlight band so they read as bright tips.
+      if (srcLuma < 0.5) {
+        const targetLuma = Math.max(0.7, stats.avgNeighborLuma ?? 0.8);
+        topologyLightBoost = (targetLuma - srcLuma) * 100 * amount;
+      }
+    } else if (stats.missing > 0) {
+      // EDGE pixel — silhouette boundary.
+      // If this pixel is significantly darker than its neighbors, it
+      // will become a harsh dark blob after hue shift. Smooth it toward
+      // the neighbor average so the edge reads as a gradient, not a cliff.
+      if (stats.avgNeighborLuma !== null && srcLuma < stats.avgNeighborLuma - 0.15) {
+        const targetLuma = stats.avgNeighborLuma - 0.05;
+        topologyLightBoost = (targetLuma - srcLuma) * 100 * amount;
+      }
+    }
+    // Interior (stats.present === 4): no boost — preserve original luminance.
+
+    const finalLight = clampNumber(hsl.l + lightDelta * amount + topologyLightBoost, 0, 100);
     return { ...coord, color: hslToHex(finalHue, finalSat, finalLight) };
   });
 }

@@ -1,0 +1,22 @@
+{
+  "summary": {
+    "silhouetteOccupied": 3070,
+    "templateCoordinates": 3070,
+    "templateBands": 8,
+    "filledCoordinates": 3070,
+    "sharpnessChangedCount": 3070,
+    "finalCoordinates": 3070,
+    "bytecode": "VW-WILL-INEXPLICABLE-TRANSCENDENT",
+    "material": "shadow_fire",
+    "canvas": {
+      "width": 96,
+      "height": 96,
+      "gridSize": 1
+    }
+  },
+  "sharpnessDiagnostics": {
+    "coordinateCount": 3070,
+    "changedCount": 3070,
+    "enabled": true
+  }
+}

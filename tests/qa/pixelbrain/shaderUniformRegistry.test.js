@@ -16,6 +16,20 @@ describe('PixelBrain — Shader Uniform Registry', () => {
     expect(providers.some(p => p.id === 'core-time')).toBe(true);
   });
 
+  it('core-time abstains when context carries no time signal', () => {
+    const res = resolveShaderUniforms({});
+    expect(res.ok).toBe(true);
+    // No fabricated u_time: 0 — downstream resolvers own the default, and a
+    // fabricated value would shadow declared dot-notation sources.
+    expect('u_time' in res.uniforms).toBe(false);
+  });
+
+  it('core-time contributes the context time when present', () => {
+    const res = resolveShaderUniforms({ time: 1.5 });
+    expect(res.ok).toBe(true);
+    expect(res.uniforms.u_time).toBe(1.5);
+  });
+
   it('custom provider registers and resolves successfully', () => {
     registerUniformProvider('spelling-state', {
       uniforms: ['u_spellIntensity'],

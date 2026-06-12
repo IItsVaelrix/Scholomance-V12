@@ -43,7 +43,12 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md`](./2026-06-10-pixel-lotus-actor-forge-iso-combat-runtime-pdr.md) | Draft | Pixel Lotus + Actor Forge + Combat Runtime | High |
 | [`2026-06-11-chromatic-transmutation-amp-pdr.md`](./2026-06-11-chromatic-transmutation-amp-pdr.md) | Implemented | Architectural + Rendering + PixelBrain + Behavioral | High |
 | [`2026-06-11-known-color-microprocessors-pdr.md`](./2026-06-11-known-color-microprocessors-pdr.md) | Implemented | Architectural + Color Engine + Microprocessors + PixelBrain | High |
+| [`2026-06-11-pixelbrain-color-intensity-rating-microprocessor-pdr.md`](./2026-06-11-pixelbrain-color-intensity-rating-microprocessor-pdr.md) | Draft | PixelBrain + Rendering + Microprocessors + Color Engine | High |
 | [`2026-06-11-pixelbrain-connective-tissue-seven-systems-pdr.md`](./2026-06-11-pixelbrain-connective-tissue-seven-systems-pdr.md) | Implemented | Architectural + PixelBrain + Rendering + Microprocessors + Interop | Critical |
+| [`2026-06-11-pixelbrain-directional-light-finish-pdr.md`](./2026-06-11-pixelbrain-directional-light-finish-pdr.md) | Draft | PixelBrain + Rendering + AMP + Visual Fidelity | High |
+| [`2026-06-11-pixelbrain-item-foundry-pdr.md`](./2026-06-11-pixelbrain-item-foundry-pdr.md) | Draft | Architectural + PixelBrain + Procedural Generation + Asset Pipeline | High |
+| [`2026-06-11-pixelbrain-render-fidelity-pipeline-pdr.md`](./2026-06-11-pixelbrain-render-fidelity-pipeline-pdr.md) | Implemented | Behavioral render-stage AMPs / Pipeline Orchestration | High |
+| [`2026-06-11-pixelbrain-square-sharpness-contrast-amp-pdr.md`](./2026-06-11-pixelbrain-square-sharpness-contrast-amp-pdr.md) | Implemented | PixelBrain + Rendering + AMP + Visual Fidelity | High |
 | [`Animation-Audit-PDR-6-10-2026.md`](./Animation-Audit-PDR-6-10-2026.md) | Draft | Animation Audit + UI Runtime | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |

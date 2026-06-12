@@ -48,11 +48,21 @@ import {
   createPixelBrainAssetPacket,
   derivePixelBrainRenderPacket,
   registerPixelBrainShaderUniformProvider,
+  buildColorIntensityPayload,
+  buildSquareSharpnessContrastPayload,
 } from "../../lib/pixelbrain.adapter.js";
 import { SCHOOLS } from "../../data/schools.js";
 import { readWandFill } from "../../lib/wandPixelbrainBridge.js";
 import { buildPixelBrainGodotExport } from "../../lib/godot-export/pixelbrainGodotExport.js";
 import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
+import {
+  ensureValidWandFillSpec,
+  FILL_SCHOOLS,
+  FILL_RARITIES,
+  FILL_EFFECTS,
+  FILL_RARITY_OPTIONS,
+  FILL_EFFECT_OPTIONS,
+} from "./utils/wandFillValidation.js";
 
 import "./PixelBrainPage.css";
 
@@ -77,8 +87,9 @@ const TOKEN_PATTERN = /[A-Za-z']+/g;
 const DEFAULT_PIXEL_CANVAS = Object.freeze({ width: 160, height: 144, gridSize: 1 });
 
 // Template/fill bytecode options (VW-SCHOOL-RARITY-EFFECT).
-const FILL_RARITIES = ['COMMON', 'RARE', 'INEXPLICABLE'];
-const FILL_EFFECTS = ['INERT', 'RESONANT', 'HARMONIC', 'TRANSCENDENT'];
+// Enum membership checks use FILL_RARITIES / FILL_EFFECTS / FILL_SCHOOLS Sets
+// (from ./utils/wandFillValidation.js); FILL_RARITY_OPTIONS / FILL_EFFECT_OPTIONS
+// are the spread-array views for <select> rendering.
 const TEMPLATE_BANDS = 4;
 const WAND_TARGET_MAX = 96; // longest sprite dimension when rescaling WAND's 800×600 geometry
 
@@ -273,8 +284,24 @@ export default function PixelBrainPage() {
       : `transmute_to_${chromaticMaterial}`,
   }), [assetPacket, chromaticMaterial]);
 
-  const renderCoordinates = pixelBrainRenderPacket.coordinates;
+  const rawRenderCoordinates = pixelBrainRenderPacket.coordinates;
   const renderPalettes = pixelBrainRenderPacket.palettes;
+  
+  const colorIntensityPayload = useMemo(() => buildColorIntensityPayload({
+    coordinates: rawRenderCoordinates,
+    options: { neighborRadius: 1 }
+  }), [rawRenderCoordinates]);
+  const annotatedRenderCoordinates = colorIntensityPayload.outputCoordinates;
+
+  const squareRenderPayload = useMemo(() => buildSquareSharpnessContrastPayload({
+    coordinates: annotatedRenderCoordinates,
+    material: chromaticMaterial,
+    canvas: pixelCanvas,
+    options: {
+      enabled: true,
+    },
+  }), [chromaticMaterial, pixelCanvas, annotatedRenderCoordinates]);
+  const renderCoordinates = squareRenderPayload.outputCoordinates;
 
   const clockRef = useRef({ elapsedSeconds: 0 });
 
@@ -321,10 +348,11 @@ export default function PixelBrainPage() {
       packet: assetPacket,
       assetPacket,
       renderPacket: pixelBrainRenderPacket,
+      squareRenderPayload,
       wandFillSpec,
       photonicRoute,
     };
-  }, [SCHOOL_TO_INDEX, activeSchool, assetPacket, photonicRoute, pixelBrainRenderPacket, renderPalettes, totalSyllables, wandFillSpec]);
+  }, [SCHOOL_TO_INDEX, activeSchool, assetPacket, photonicRoute, pixelBrainRenderPacket, renderPalettes, squareRenderPayload, totalSyllables, wandFillSpec]);
 
   const handleShaderDiagnostic = useCallback((err) => {
     if (err) {
@@ -478,6 +506,7 @@ export default function PixelBrainPage() {
           coordinates: renderCoordinates,
           palettes: renderPalettes,
           chromaticTransmutation: chromaticPayload,
+          squareSharpnessContrast: squareRenderPayload,
           pixelBrainAssetPacket: assetPacket,
           pixelBrainRenderPacket,
         }, null, 2);
@@ -512,7 +541,7 @@ export default function PixelBrainPage() {
       setError(err.message || 'Export failed');
       setStatus('error');
     }
-  }, [activeSchool, assetPacket, chromaticPayload, formula, pixelBrainRenderPacket, renderCoordinates, renderPalettes]);
+  }, [activeSchool, assetPacket, chromaticPayload, formula, pixelBrainRenderPacket, renderCoordinates, renderPalettes, squareRenderPayload]);
 
   const handleGodotArtifactExport = useCallback(() => {
     try {
@@ -667,15 +696,16 @@ export default function PixelBrainPage() {
   // selectors. WAND's procedural proposal then drives the fill, not the dropdowns.
   const handlePullFromWand = useCallback(() => {
     try {
-      const spec = readWandFill();
-      if (!spec) {
+      const raw = readWandFill();
+      if (!raw) {
         setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
         setStatus('error');
         return;
       }
-      setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
-      if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
-      if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+      const spec = ensureValidWandFillSpec(raw);
+      setFillSchool(FILL_SCHOOLS.has(spec.schoolId) ? spec.schoolId : 'VOID');
+      if (FILL_RARITIES.has(spec.rarity)) setFillRarity(spec.rarity);
+      if (FILL_EFFECTS.has(spec.effect)) setFillEffect(spec.effect);
       setWandFillSpec(spec);
       setError(null);
       setStatus('ready');
@@ -690,12 +720,18 @@ export default function PixelBrainPage() {
   // bytecode. One click: WAND shape → shaded template ready to FILL.
   const handlePullWandGeometry = useCallback(() => {
     try {
-      const spec = readWandFill();
-      if (!spec || !Array.isArray(spec.coordinates) || spec.coordinates.length === 0) {
+      const raw = readWandFill();
+      if (!raw) {
+        setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
+        setStatus('error');
+        return;
+      }
+      if (!Array.isArray(raw.coordinates) || raw.coordinates.length === 0) {
         setError('No WAND geometry found. In WAND, evaluate a shape then click "Send → PixelBrain".');
         setStatus('error');
         return;
       }
+      const spec = ensureValidWandFillSpec(raw);
       if (morphRafRef.current) {
         cancelAnimationFrame(morphRafRef.current);
         morphRafRef.current = null;
@@ -728,9 +764,9 @@ export default function PixelBrainPage() {
       setIsTemplate(true);
       setIsMorphing(false);
 
-      setFillSchool(SCHOOLS[spec.schoolId] ? spec.schoolId : 'VOID');
-      if (FILL_RARITIES.includes(spec.rarity)) setFillRarity(spec.rarity);
-      if (FILL_EFFECTS.includes(spec.effect)) setFillEffect(spec.effect);
+      setFillSchool(FILL_SCHOOLS.has(spec.schoolId) ? spec.schoolId : 'VOID');
+      if (FILL_RARITIES.has(spec.rarity)) setFillRarity(spec.rarity);
+      if (FILL_EFFECTS.has(spec.effect)) setFillEffect(spec.effect);
       setWandFillSpec(spec);
       setError(null);
       setStatus('ready');
@@ -911,6 +947,7 @@ export default function PixelBrainPage() {
     referenceImage,
     photonicRoute,
     chromaticTransmutation: chromaticPayload,
+    squareSharpnessContrast: squareRenderPayload,
     pixelBrainAssetPacket: assetPacket,
     pixelBrainRenderPacket,
   } : versePixelBrainPayload ? {
@@ -922,6 +959,7 @@ export default function PixelBrainPage() {
     referenceImage: null,
     photonicRoute,
     chromaticTransmutation: chromaticPayload,
+    squareSharpnessContrast: squareRenderPayload,
     pixelBrainAssetPacket: assetPacket,
     pixelBrainRenderPacket,
   } : coordinates.length > 0 ? {
@@ -932,6 +970,7 @@ export default function PixelBrainPage() {
     referenceImage: null,
     photonicRoute,
     chromaticTransmutation: chromaticPayload,
+    squareSharpnessContrast: squareRenderPayload,
     pixelBrainAssetPacket: assetPacket,
     pixelBrainRenderPacket,
   } : null;
@@ -1245,7 +1284,7 @@ export default function PixelBrainPage() {
                   onChange={(e) => setFillRarity(e.target.value)}
                   aria-label="Fill rarity"
                 >
-                  {FILL_RARITIES.map((r) => <option key={r} value={r}>{r}</option>)}
+                  {FILL_RARITY_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
                 <select
                   className="telemetry-text"
@@ -1254,7 +1293,7 @@ export default function PixelBrainPage() {
                   onChange={(e) => setFillEffect(e.target.value)}
                   aria-label="Fill effect"
                 >
-                  {FILL_EFFECTS.map((eff) => <option key={eff} value={eff}>{eff}</option>)}
+                  {FILL_EFFECT_OPTIONS.map((eff) => <option key={eff} value={eff}>{eff}</option>)}
                 </select>
               </div>
               <button

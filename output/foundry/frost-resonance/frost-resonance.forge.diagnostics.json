@@ -1,0 +1,47 @@
+{
+  "label": "Frost Resonance Buckler",
+  "slots": {
+    "shell": "silver",
+    "rim": "black_steel",
+    "rimEdge": "diamond",
+    "core": "sapphire",
+    "sonicRings": "icy_fire",
+    "separators": "black_steel",
+    "glyph": "diamond",
+    "glyphBack": "sapphire"
+  },
+  "spec": {
+    "id": "frostbuckler.hd.v1",
+    "hash": "fnv1a_1f55e453"
+  },
+  "cells": 1009,
+  "heraldry": [
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "glyph",
+      "mark": "moon",
+      "effect": "inlay",
+      "cells": 40,
+      "coverage": 0.315,
+      "contrast": 0.6318,
+      "color": "#E4EEF5",
+      "autoContrasted": false,
+      "warnings": []
+    },
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "glyphBack",
+      "mark": "moon",
+      "effect": "inlay",
+      "cells": 22,
+      "coverage": 0.2018,
+      "contrast": 0.6663,
+      "color": "#EFF6FF",
+      "autoContrasted": true,
+      "warnings": []
+    }
+  ],
+  "fillHash": "fnv1a_3c9b0bdf"
+}

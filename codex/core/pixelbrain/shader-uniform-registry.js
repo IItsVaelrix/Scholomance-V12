@@ -94,9 +94,12 @@ function registerDefaultProviders() {
   registerUniformProvider('core-time', {
     uniforms: ['u_time'],
     resolve(context) {
-      return {
-        u_time: typeof context.time === 'number' ? context.time : (context.u_time !== undefined ? context.u_time : 0),
-      };
+      // Abstain when the context carries no time signal: a fabricated 0 would
+      // shadow declared dot-notation sources (e.g. clock.elapsedSeconds) in
+      // downstream resolvers, which own the default-value fallback.
+      if (typeof context.time === 'number') return { u_time: context.time };
+      if (context.u_time !== undefined) return { u_time: context.u_time };
+      return {};
     },
   });
 }
