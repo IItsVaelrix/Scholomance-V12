@@ -126,6 +126,11 @@ describe('characterToSVG', () => {
     expect(() => characterToSVG(emptyFills, MOCK_SPEC, {})).not.toThrow();
   });
 
+  it('stroke-width is in cell units — 1.5px stroke at scale 8 emits stroke-width ~0.1875', () => {
+    const svg = characterToSVG(MOCK_FILLS, MOCK_SPEC, { scale: 8, smooth: false, shaderEffects: false });
+    expect(svg).toContain('stroke-width="0.1875"');
+  });
+
   it('renders accessory and detail profile classes through illustrated forge output', () => {
     const result = forgeCharacter({
       contract: 'CHARACTER-SPEC-v1',

@@ -246,7 +246,7 @@ export function characterToSVG(fills, spec, options = {}) {
         scale,
         fill: 'none',
         stroke: rimColor,
-        strokeWidth,
+        strokeWidth: strokeWidth / scale,
         className: 'pb-outline',
         filter: shaderEffects ? 'url(#pb-shader-ink-shadow)' : null,
     });
