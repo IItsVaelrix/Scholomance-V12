@@ -3,7 +3,7 @@
  * Converts applyCharacterFills() output into a styled SVG string.
  *
  * Input fills shape:
- *   { coordinates: [{ x, y, color, partId, isOutline }], palette, partColors, diagnostics }
+ *   { coordinates: [{ x, y, color, partId, isRim }], palette, partColors, diagnostics }
  *
  * Layers (bottom to top):
  *   1. pb-fills    — one <path> per partId, base fill color
@@ -83,8 +83,51 @@ function cellsToKeySet(cells) {
  * Get the fill color for a part — prefer non-outline cells, fall back to any cell.
  */
 function getFillColor(cells) {
-  const nonOutline = cells.find((c) => !c.isOutline);
-  return (nonOutline ?? cells[0])?.color ?? '#888888';
+  const nonRim = cells.find((c) => !c.isRim);
+  return (nonRim ?? cells[0])?.color ?? '#888888';
+}
+
+function buildContourPathElements(trace, pathOptions) {
+  const contours = trace?.contours?.length ? trace.contours : [trace];
+  return contours
+    .map((contour) => buildPath(contour, { smooth: pathOptions.smooth, scale: pathOptions.scale }))
+    .filter(Boolean)
+    .map((d) => buildPathElement({ ...pathOptions, d }));
+}
+
+function buildShaderDefs(enabled) {
+  if (!enabled) return '';
+  return [
+    '<filter id="pb-shader-ink-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">',
+    '<feDropShadow dx="0.9" dy="1.2" stdDeviation="0.65" flood-color="#05060a" flood-opacity="0.72"/>',
+    '</filter>',
+    '<filter id="pb-shader-ice-glow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">',
+    '<feGaussianBlur in="SourceAlpha" stdDeviation="1.35" result="blur"/>',
+    '<feFlood flood-color="#42d9ff" flood-opacity="0.72" result="glowColor"/>',
+    '<feComposite in="glowColor" in2="blur" operator="in" result="glow"/>',
+    '<feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>',
+    '</filter>',
+    '<filter id="pb-shader-crystal-rim" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">',
+    '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="14" result="noise"/>',
+    '<feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.82 0 0 0 0 0.96 0 0 0 0 1 0 0 0 0.38 0" result="spark"/>',
+    '<feBlend in="SourceGraphic" in2="spark" mode="screen"/>',
+    '</filter>',
+    '<filter id="pb-shader-melt-field" x="-50%" y="-20%" width="200%" height="160%" color-interpolation-filters="sRGB">',
+    '<feTurbulence type="fractalNoise" baseFrequency="0.045 0.18" numOctaves="2" seed="26" result="meltNoise"/>',
+    '<feDisplacementMap in="SourceGraphic" in2="meltNoise" scale="1.65" xChannelSelector="R" yChannelSelector="G"/>',
+    '</filter>',
+  ].join('');
+}
+
+function shaderForPart(partId, enabled) {
+  if (!enabled) return null;
+  if (['eyeGlow', 'halo', 'wings', 'hairShine', 'cheekSigil'].includes(partId)) {
+    return 'url(#pb-shader-ice-glow)';
+  }
+  if (['crown', 'pendant', 'robeTrim', 'mantle'].includes(partId)) {
+    return 'url(#pb-shader-crystal-rim)';
+  }
+  return null;
 }
 
 /**
@@ -97,10 +140,11 @@ function getFillColor(cells) {
  * @param {boolean} [options.twoTone=true]    — render shadow fringe
  * @param {number} [options.strokeWidth=1.5]  — outline stroke width
  * @param {boolean} [options.smooth=true]     — Catmull-Rom smoothing
+ * @param {boolean} [options.shaderEffects=true] — emit SVG filter shaders
  * @returns {string}  Complete SVG markup
  */
 export function characterToSVG(fills, spec, options = {}) {
-  const { scale = 8, twoTone = true, strokeWidth = 1.5, smooth = true } = options;
+  const { scale = 8, twoTone = true, strokeWidth = 1.5, smooth = true, shaderEffects = true } = options;
 
   // Compute SVG dimensions
   const svgWidth = (spec?.canvas?.width ?? 32) * scale;
@@ -110,19 +154,19 @@ export function characterToSVG(fills, spec, options = {}) {
   const school = spec?.combatProfile?.school?.toLowerCase() ?? 'unknown';
 
   // Group coordinates by partId and collect all outline cells
-  const partAllCells = new Map(); // partId → all cells (incl. outline)
-  const partOutlineCells = new Map(); // partId → outline cells only
-  const allOutlineCells = [];
+  const partAllCells = new Map();  // partId → all cells (incl. rim)
+  const partRimCells = new Map();  // partId → rim cells only
+  const allRimCells = [];
 
   for (const cell of fills.coordinates || []) {
     if (!partAllCells.has(cell.partId)) {
       partAllCells.set(cell.partId, []);
-      partOutlineCells.set(cell.partId, []);
+      partRimCells.set(cell.partId, []);
     }
     partAllCells.get(cell.partId).push(cell);
-    if (cell.isOutline) {
-      partOutlineCells.get(cell.partId).push(cell);
-      allOutlineCells.push(cell);
+    if (cell.isRim) {
+      partRimCells.get(cell.partId).push(cell);
+      allRimCells.push(cell);
     }
   }
 
@@ -133,28 +177,29 @@ export function characterToSVG(fills, spec, options = {}) {
     const fillColor = getFillColor(cells);
     const keySet = cellsToKeySet(cells);
     const trace = traceBoundary(keySet, { smooth });
-    const d = buildPath(trace, { smooth, scale });
-    if (d) {
-      fillPaths.push(
-        buildPathElement({ d, fill: fillColor, className: `pb-part-${partId}` })
-      );
-    }
+    fillPaths.push(...buildContourPathElements(trace, {
+      smooth,
+      scale,
+      fill: fillColor,
+      className: `pb-part-${partId}`,
+      filter: shaderForPart(partId, shaderEffects),
+    }));
   }
 
   // ── Layer 2: shadow fringe (cells adjacent to outline, inside the shape) ──
   const shadowPaths = [];
   if (twoTone) {
     for (const [partId, cells] of partAllCells) {
-      const outlineCells = partOutlineCells.get(partId) || [];
-      if (outlineCells.length === 0) continue;
+      const rimCells = partRimCells.get(partId) || [];
+      if (rimCells.length === 0) continue;
 
       const allKeySet = cellsToKeySet(cells);
-      const outlineKeySet = cellsToKeySet(outlineCells);
+      const rimKeySet = cellsToKeySet(rimCells);
       const fillColor = getFillColor(cells);
 
       // Collect cells that are NOT outline but ARE adjacent to an outline cell
       const shadowKeys = new Set();
-      for (const key of outlineKeySet) {
+      for (const key of rimKeySet) {
         const [x, y] = key.split(',').map(Number);
         // Check 4-adjacency (up, down, left, right)
         for (const [dx, dy] of [
@@ -164,7 +209,7 @@ export function characterToSVG(fills, spec, options = {}) {
           [0, -1],
         ]) {
           const nk = `${x + dx},${y + dy}`;
-          if (allKeySet.has(nk) && !outlineKeySet.has(nk)) {
+          if (allKeySet.has(nk) && !rimKeySet.has(nk)) {
             shadowKeys.add(nk);
           }
         }
@@ -174,31 +219,31 @@ export function characterToSVG(fills, spec, options = {}) {
 
       const shadowColor = darkenHex(fillColor, 0.28);
       const trace = traceBoundary(shadowKeys, { smooth });
-      const d = buildPath(trace, { smooth, scale });
-      if (d) {
-        shadowPaths.push(
-          buildPathElement({ d, fill: shadowColor, className: `pb-part-${partId}-shadow` })
-        );
-      }
+      shadowPaths.push(...buildContourPathElements(trace, {
+        smooth,
+        scale,
+        fill: shadowColor,
+        className: `pb-part-${partId}-shadow`,
+        filter: shaderEffects ? 'url(#pb-shader-melt-field)' : null,
+      }));
     }
   }
 
   // ── Layer 3: ink outline (all outline cells as one path) ──────────────
-  let outlineLayerPath = '';
-  if (allOutlineCells.length > 0) {
-    const outlineColor = allOutlineCells[0]?.color ?? '#1a1a20';
-    const outlineKeySet = cellsToKeySet(allOutlineCells);
-    const trace = traceBoundary(outlineKeySet, { smooth });
-    const d = buildPath(trace, { smooth, scale });
-    if (d) {
-      outlineLayerPath = buildPathElement({
-        d,
+  let outlineLayerPaths = [];
+  if (allRimCells.length > 0) {
+    const rimColor = allRimCells[0]?.color ?? '#1a1a20';
+    const rimKeySet = cellsToKeySet(allRimCells);
+    const trace = traceBoundary(rimKeySet, { smooth });
+    outlineLayerPaths = buildContourPathElements(trace, {
+        smooth,
+        scale,
         fill: 'none',
-        stroke: outlineColor,
+        stroke: rimColor,
         strokeWidth,
         className: 'pb-outline',
-      });
-    }
+        filter: shaderEffects ? 'url(#pb-shader-ink-shadow)' : null,
+    });
   }
 
   // ── Assemble ─────────────────────────────────────────────────────────
@@ -213,7 +258,7 @@ export function characterToSVG(fills, spec, options = {}) {
         )
       : '';
 
-  const outlineLayer = buildSVGElement('g', { class: 'pb-outlines' }, outlineLayerPath);
+  const outlineLayer = buildSVGElement('g', { class: 'pb-outlines' }, outlineLayerPaths.join(''));
 
   return buildSVGElement(
     'svg',
@@ -224,6 +269,6 @@ export function characterToSVG(fills, spec, options = {}) {
       height: svgHeight,
       class: `pb-character school-${school}`,
     },
-    fillLayer + shadowLayer + outlineLayer
+    buildShaderDefs(shaderEffects) + fillLayer + shadowLayer + outlineLayer
   );
 }

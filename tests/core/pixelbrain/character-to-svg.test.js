@@ -6,9 +6,9 @@ import { forgeCharacter } from '../../../codex/core/pixelbrain/character-foundry
 // A 3-cell "body" region: two interior cells + one outline cell.
 const MOCK_FILLS = {
   coordinates: [
-    { x: 1, y: 1, partId: 'body', color: '#aaaaaa', isOutline: false },
-    { x: 1, y: 2, partId: 'body', color: '#aaaaaa', isOutline: false },
-    { x: 1, y: 3, partId: 'body', color: '#1a1a20', isOutline: true  },
+    { x: 1, y: 1, partId: 'body', color: '#aaaaaa', isRim: false },
+    { x: 1, y: 2, partId: 'body', color: '#aaaaaa', isRim: false },
+    { x: 1, y: 3, partId: 'body', color: '#1a1a20', isRim: true  },
   ],
   palette: ['#1a1a20', '#aaaaaa'],
   partColors: { body: '#aaaaaa' },
@@ -69,9 +69,9 @@ describe('characterToSVG', () => {
     const shaderFills = {
       ...MOCK_FILLS,
       coordinates: [
-        { x: 1, y: 1, partId: 'halo', color: '#dff6ff', isOutline: false },
-        { x: 3, y: 1, partId: 'halo', color: '#dff6ff', isOutline: false },
-        { x: 2, y: 3, partId: 'body', color: '#1a1a20', isOutline: true },
+        { x: 1, y: 1, partId: 'halo', color: '#dff6ff', isRim: false },
+        { x: 3, y: 1, partId: 'halo', color: '#dff6ff', isRim: false },
+        { x: 2, y: 3, partId: 'body', color: '#1a1a20', isRim: true },
       ],
     };
 
@@ -89,8 +89,8 @@ describe('characterToSVG', () => {
     const disconnectedFills = {
       ...MOCK_FILLS,
       coordinates: [
-        { x: 1, y: 1, partId: 'halo', color: '#dff6ff', isOutline: false },
-        { x: 4, y: 1, partId: 'halo', color: '#dff6ff', isOutline: false },
+        { x: 1, y: 1, partId: 'halo', color: '#dff6ff', isRim: false },
+        { x: 4, y: 1, partId: 'halo', color: '#dff6ff', isRim: false },
       ],
     };
 
