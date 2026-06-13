@@ -168,6 +168,18 @@ export default function ActorForgeLab() {
     return sheet ? pngToDataUrl(sheet) : null;
   }, [forge]);
 
+  const svgPreviewUrl = useMemo(() => {
+    if (!forge.character) return null;
+    try {
+      const spec = { ...forge.character.spec, directions: ['south'] };
+      const result = forgeCharacter(spec, { renderer: 'illustrated', scale: 8 } as any) as any;
+      if (!result.svg) return null;
+      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(result.svg)));
+    } catch {
+      return null;
+    }
+  }, [forge.character]);
+
   const facingOptions: IsoFacing[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
   const handleForgeAndEnhance = async () => {
@@ -268,6 +280,17 @@ export default function ActorForgeLab() {
             <div className="sheet-strip">
               <span className="sheet-strip-label mono">S / E / N / W</span>
               <img src={sheetUrl} alt="4-direction spritesheet" />
+            </div>
+          )}
+          {svgPreviewUrl && (
+            <div className="svg-preview-panel">
+              <div className="svg-preview-label">Illustrated ✦</div>
+              <img
+                src={svgPreviewUrl}
+                alt="Illustrated character preview"
+                className="svg-preview-img"
+                style={{ imageRendering: 'auto' }}
+              />
             </div>
           )}
         </div>

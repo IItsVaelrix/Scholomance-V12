@@ -443,3 +443,27 @@
   border-radius: 4px;
   margin-bottom: 0.5rem;
 }
+
+.svg-preview-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.svg-preview-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--school-accent, #c9a84c);
+  opacity: 0.8;
+}
+
+.svg-preview-img {
+  width: 128px;
+  height: auto;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+}
+}
