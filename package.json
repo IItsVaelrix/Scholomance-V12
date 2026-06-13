@@ -87,6 +87,7 @@
     "polish:ci": "node scripts/production-polish.js full --ci"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
     "@aws-sdk/client-s3": "^3.758.0",
     "@aws-sdk/s3-request-presigner": "^3.758.0",
     "@babel/parser": "^7.29.3",
