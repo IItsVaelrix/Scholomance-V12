@@ -21,6 +21,20 @@
 
 import { getPartProfile } from './part-profile-library.js';
 
+// Shift all primitive centers in an SDF descriptor by (dx, dy) so that a
+// profile's local-coord SDF aligns with the globally-placed cells after
+// silhouette-composer applies its attachment offset.
+function translateSDF(sdf, dx, dy) {
+  if (!sdf || (dx === 0 && dy === 0)) return sdf;
+  return {
+    ...sdf,
+    primitives: sdf.primitives.map(prim => {
+      const t = prim.transform?.translate ?? { x: 0, y: 0 };
+      return { ...prim, transform: { ...prim.transform, translate: { x: t.x + dx, y: t.y + dy } } };
+    }),
+  };
+}
+
 function err(reason, context) {
   const e = new Error(`silhouette-composer: ${reason}`);
   e.cause = context;
@@ -276,7 +290,7 @@ export function composeSilhouette(spec, constructionHints = null) {
       anchorIn: parentAnchor,
       anchorOut: placedAnchors,
       aabb: partLocalAABB(partLocal.map((c) => ({ x: c.x + dx, y: c.y + dy }))),
-      sdf: lastRes?.sdf ?? null,
+      sdf: lastRes?.sdf ? translateSDF(lastRes.sdf, dx, dy) : null,
     });
   }
 

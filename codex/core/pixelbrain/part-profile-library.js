@@ -631,6 +631,11 @@ registerPartProfile('armor.pauldron.round', (params = {}, options = {}) => {
       leftShoulder: { x: cx, y: cy + r - 1 },
       rightShoulder: { x: cx, y: cy + r - 1 },
     },
+    sdf: {
+      contract: 'PB-SDF-v1',
+      primitives: [{ type: 'circle', params: { center: { x: cx, y: cy }, radius: r } }],
+      operations: [],
+    },
   };
 });
 
@@ -669,6 +674,11 @@ registerPartProfile('armor.pauldron.angular_royal', (params = {}, options = {}) 
       rightShoulder: { x: cx, y: cy + 5 },
       outer: { x: cx + 13, y: cy },
     },
+    sdf: {
+      contract: 'PB-SDF-v1',
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + 0.5 }, size: { x: 26, y: 10 } } }],
+      operations: [],
+    },
   };
 });
 
@@ -705,6 +715,11 @@ registerPartProfile('armor.pauldron.angular_human', (params = {}, options = {}) 
       leftShoulder: { x: cx, y: cy + 4 },
       rightShoulder: { x: cx, y: cy + 4 },
       outer: { x: cx + (side === 'right' ? 9 : -9), y: cy },
+    },
+    sdf: {
+      contract: 'PB-SDF-v1',
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + 0.5 }, size: { x: 16, y: 8 } } }],
+      operations: [],
     },
   };
 });
@@ -743,6 +758,11 @@ registerPartProfile('armor.pauldron.void_reference_human', (params = {}, options
       leftShoulder: { x: cx, y: cy + 4 },
       rightShoulder: { x: cx, y: cy + 4 },
       outer: { x: cx + (outward * 12), y: cy },
+    },
+    sdf: {
+      contract: 'PB-SDF-v1',
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy }, size: { x: 24, y: 9 } } }],
+      operations: [],
     },
   };
 });
