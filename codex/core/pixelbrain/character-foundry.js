@@ -3,6 +3,7 @@ import { createCharacterSkeleton, hashCharacterSkeleton, validateCharacterSkelet
 import { normalizeCharacterSpec, validateCharacterSpec, hashCharacterSpec } from './character-spec.js';
 import { MATERIAL_PALETTES, resolveMaterialId } from './material-registry.js';
 import { hashString } from './shared.js';
+import { getRenderer } from './renderer-registry.js';
 
 import './character-body-profiles.js';
 import './character-face-profiles.js';
@@ -378,6 +379,16 @@ export function forgeCharacter(rawSpec, opts = {}) {
   }
 
   const spritesheet = assembleSpritesheet(dirRgbas, canvas.width, canvas.height, pngScale);
+
+  const rendererName = opts?.renderer ?? 'pixelart';
+  const { render, outputType } = getRenderer(rendererName);
+
+  if (outputType === 'svg') {
+    const primaryDir = directions[0];
+    const primaryFills = filledResults[primaryDir];
+    const svgString = render(primaryFills, spec, opts);
+    return Object.freeze({ svg: svgString, spec, specHash, canvas, fills: filledResults });
+  }
 
   const character = Object.freeze({
     spec,
