@@ -4,6 +4,7 @@ import { normalizeCharacterSpec, validateCharacterSpec, hashCharacterSpec } from
 import { MATERIAL_PALETTES, resolveMaterialId } from './material-registry.js';
 import { hashString } from './shared.js';
 import { getRenderer } from './renderer-registry.js';
+import { applyXBR2x } from './pixel-scale-amp.js';
 
 import './character-body-profiles.js';
 import './character-face-profiles.js';
@@ -57,40 +58,117 @@ function isRimCell(x, y, cellKeySet) {
   return false;
 }
 
+function getMaterialRamp(materialName, defaultColor = '#808080') {
+  if (!materialName) return { void: defaultColor, deep: defaultColor, body: defaultColor, frost: defaultColor };
+  const id = resolveMaterialId(materialName);
+  const def = MATERIAL_PALETTES[id];
+  if (!def || !def.anchors) return { void: defaultColor, deep: defaultColor, body: defaultColor, frost: defaultColor };
+  return {
+    void: def.anchors.void || def.anchors.shadow || defaultColor,
+    deep: def.anchors.deep || def.anchors.shadow || defaultColor,
+    body: def.anchors.body || defaultColor,
+    frost: def.anchors.frost || def.anchors.body || defaultColor,
+  };
+}
+
 function applyCharacterFills({ silhouette, spec, direction } = {}) {
   const canvas = spec?.canvas || CHARACTER_DEFAULTS.canvas;
   const cells = [];
   const colors = new Set();
   const mat = materialFromSpec(spec);
 
-  const partColors = {
-    'body': resolveCharacterMaterial(mat.skin),
-    'hair': resolveCharacterMaterial(mat.hair),
-    'leftEye': resolveCharacterMaterial(mat.eyes),
-    'rightEye': resolveCharacterMaterial(mat.eyes),
-    'nose': resolveCharacterMaterial(mat.skin),
-    'mouth': resolveCharacterMaterial(mat.skin),
-    'leftEar': resolveCharacterMaterial(mat.skin),
-    'rightEar': resolveCharacterMaterial(mat.skin),
-    'top': resolveCharacterMaterial('cloth_linen', '#C8C0B0'),
-    'bottom': resolveCharacterMaterial('cloth_wool', '#807870'),
-    'shoes': resolveCharacterMaterial('leather_brown', '#6A4030'),
+  const partRamps = {
+    'body': getMaterialRamp(mat.skin, '#F5D0A9'),
+    'hair': getMaterialRamp(mat.hair, '#4A3828'),
+    'leftEye': getMaterialRamp(mat.eyes, '#3A2010'),
+    'rightEye': getMaterialRamp(mat.eyes, '#3A2010'),
+    'nose': getMaterialRamp(mat.skin, '#F5D0A9'),
+    'mouth': getMaterialRamp(mat.skin, '#F5D0A9'),
+    'leftEar': getMaterialRamp(mat.skin, '#F5D0A9'),
+    'rightEar': getMaterialRamp(mat.skin, '#F5D0A9'),
+    'top': getMaterialRamp('cloth_linen', '#C8C0B0'),
+    'bottom': getMaterialRamp('cloth_wool', '#807870'),
+    'shoes': getMaterialRamp('leather_brown', '#6A4030'),
   };
-
-  const outlineColor = '#1A1A20';
 
   // Build Set once — O(n) not O(n²)
   const cellKeySet = new Set(silhouette.cells.map(c => `${c.x},${c.y}`));
 
+  const isSubRimCell = (x, y) => {
+    if (isRimCell(x, y, cellKeySet)) return false;
+    for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+      if (isRimCell(x+dx, y+dy, cellKeySet)) return true;
+    }
+    return false;
+  };
+
+  const subRimCache = new Set();
+  for (const c of silhouette.cells) {
+    if (isSubRimCell(c.x, c.y)) {
+      subRimCache.add(`${c.x},${c.y}`);
+    }
+  }
+
+  // Per-part y-bounds for form-shading gradient (top-lit, bottom-shadowed volume)
+  const partYBounds = new Map();
+  for (const c of silhouette.cells) {
+    const pid = silhouette.partOf.get(`${c.x},${c.y}`) || 'body';
+    const b = partYBounds.get(pid);
+    if (!b) {
+      partYBounds.set(pid, { minY: c.y, maxY: c.y });
+    } else {
+      if (c.y < b.minY) b.minY = c.y;
+      if (c.y > b.maxY) b.maxY = c.y;
+    }
+  }
+
   for (const c of silhouette.cells) {
     const partId = silhouette.partOf.get(`${c.x},${c.y}`) || 'body';
     const rawExplicitColor = silhouette.colorOf?.get(`${c.x},${c.y}`);
-    const explicitColor = rawExplicitColor ? resolveCharacterMaterial(rawExplicitColor, rawExplicitColor) : null;
-    let color = explicitColor || partColors[partId] || partColors.body;
+    const explicitRamp = rawExplicitColor ? getMaterialRamp(rawExplicitColor, rawExplicitColor) : null;
+    const ramp = explicitRamp || partRamps[partId] || partRamps.body;
 
     const isRim = isRimCell(c.x, c.y, cellKeySet);
-    if (isRim && !explicitColor) {
-      color = outlineColor;
+    let color = ramp.body;
+
+    if (isRim) {
+      color = ramp.void;
+    } else if (subRimCache.has(`${c.x},${c.y}`)) {
+      color = ramp.deep;
+    } else {
+      // Interior. Top-left light source + y-gradient form pass for volume.
+      const isTopLeft =
+        subRimCache.has(`${c.x-1},${c.y}`) ||
+        subRimCache.has(`${c.x},${c.y-1}`) ||
+        subRimCache.has(`${c.x-1},${c.y-1}`);
+
+      // Right/bottom-right adjacency: cast shadow from top-left light source
+      const isBottomRight =
+        subRimCache.has(`${c.x+1},${c.y}`) ||
+        subRimCache.has(`${c.x},${c.y+1}`) ||
+        subRimCache.has(`${c.x+1},${c.y+1}`);
+
+      const bounds = partYBounds.get(partId) || { minY: c.y, maxY: c.y };
+      const yRange = bounds.maxY - bounds.minY;
+      if (yRange >= 6) {
+        // Only apply gradient to parts tall enough to show form
+        const yT = (c.y - bounds.minY) / yRange;
+        if (yT < 0.28) {
+          color = ramp.frost;                              // Top zone: lit from above
+        } else if (yT > 0.75 && !isTopLeft) {
+          color = ramp.deep;                               // Bottom zone: form shadow
+        } else if (isTopLeft) {
+          color = ramp.frost;                              // Top-left adjacency highlight
+        } else if (isBottomRight && !isTopLeft) {
+          color = ramp.deep;                               // Bottom-right adjacency shadow
+        } else {
+          color = ramp.body;
+        }
+      } else {
+        if (isTopLeft) color = ramp.frost;
+        else if (isBottomRight) color = ramp.deep;
+        else color = ramp.body;
+      }
     }
 
     colors.add(color);
@@ -102,7 +180,7 @@ function applyCharacterFills({ silhouette, spec, direction } = {}) {
   return {
     coordinates: Object.freeze(cells),
     palette: Object.freeze(palette),
-    partColors,
+    partColors: Object.fromEntries(Object.entries(partRamps).map(([k, v]) => [k, v.body])),
     diagnostics: {
       totalCells: cells.length,
       uniqueColors: palette.length,
@@ -373,16 +451,18 @@ export function forgeCharacter(rawSpec, opts = {}) {
     const fills = applyCharacterFills({ silhouette, spec, direction: dir });
     filledResults[dir] = fills;
 
-    const rgba = rasterizeCells(fills.coordinates, canvas.width, canvas.height, pngScale);
+    let rgba = rasterizeCells(fills.coordinates, canvas.width, canvas.height, 1);
+    rgba = applyXBR2x(rgba, canvas.width,     canvas.height);
+    rgba = applyXBR2x(rgba, canvas.width * 2, canvas.height * 2);
     dirRgbas[dir] = rgba;
-    dirPngs[dir] = encodePng(canvas.width * pngScale, canvas.height * pngScale, rgba);
+    dirPngs[dir] = encodePng(canvas.width * 4, canvas.height * 4, rgba);
 
     for (const c of fills.coordinates) {
       allCells.push({ ...c, direction: dir });
     }
   }
 
-  const spritesheet = assembleSpritesheet(dirRgbas, canvas.width, canvas.height, pngScale);
+  const spritesheet = assembleSpritesheet(dirRgbas, canvas.width, canvas.height, 4);
 
   const rendererName = opts?.renderer ?? 'pixelart';
   const { render, outputType } = getRenderer(rendererName);
