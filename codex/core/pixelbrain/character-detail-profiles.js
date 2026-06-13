@@ -1,4 +1,6 @@
 import { registerPartProfile } from './part-profile-library.js';
+// When adding a profile with shader metadata, also update PART_SHADER_FALLBACK in character-to-svg.js
+// if the part's slot name (spec.details[].id) differs from its profile key.
 
 function roundInt(value) {
   return Math.round(Number(value) || 0);

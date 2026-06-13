@@ -129,6 +129,12 @@ const SHADER_FILTERS = {
   'crystal-rim': 'url(#pb-shader-crystal-rim)',
 };
 
+// Fallback shader map keyed by part slot name (e.g. 'halo', 'eyeGlow').
+// This is the active resolver because cells carry partId = slot name, not full profile key.
+// getPartProfileMeta() below is forward-looking: it fires when a spec uses the full profile
+// key as part.id (e.g. { id: 'character.accessory.halo.ice' }). Until a profileOf map
+// bridges slot name → profile key, keep this table in sync with metadata registrations
+// in character-accessory-profiles.js and character-detail-profiles.js.
 const PART_SHADER_FALLBACK = {
   eyeGlow: 'ice-glow', halo: 'ice-glow', wings: 'ice-glow', hairShine: 'ice-glow', cheekSigil: 'ice-glow',
   crown: 'crystal-rim', pendant: 'crystal-rim', robeTrim: 'crystal-rim', mantle: 'crystal-rim',
