@@ -65,9 +65,14 @@ describe('compileEffectsBytecode', () => {
     const { u_eyeColor } = compileEffectsBytecode(spec);
     expect(Array.isArray(u_eyeColor)).toBe(true);
     expect(u_eyeColor).toHaveLength(3);
+    u_eyeColor.forEach(c => {
+      expect(typeof c).toBe('number');
+      expect(c).toBeGreaterThanOrEqual(0);
+      expect(c).toBeLessThanOrEqual(1);
+    });
   });
 
-  it('unknown school falls back to SONIC defaults without throwing', () => {
+  it('unknown school falls back without throwing; intensity defaults to 0.5', () => {
     const spec = { ...MINIMAL_SPEC, combatProfile: { school: 'UNKNOWN_SCHOOL' } };
     expect(() => compileEffectsBytecode(spec)).not.toThrow();
     const { u_glowIntensity } = compileEffectsBytecode(spec);

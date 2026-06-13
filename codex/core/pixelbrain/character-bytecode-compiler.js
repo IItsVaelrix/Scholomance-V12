@@ -28,7 +28,8 @@ const SCHOOL_PALETTE = {
 };
 
 function hexToVec3(hex) {
-  const h = hex.replace('#', '');
+  const h = (hex ?? '').replace('#', '');
+  if (h.length < 6) return [0, 0, 0];
   return [
     parseInt(h.slice(0, 2), 16) / 255,
     parseInt(h.slice(2, 4), 16) / 255,
