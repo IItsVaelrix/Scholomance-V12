@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PixelBrain SVG Renderer — Design</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0a0a0f;
+    color: #e8e0d0;
+    font-family: 'Georgia', serif;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+
+  h1 { font-size: 1.6rem; color: #c9a84c; letter-spacing: 0.1em; margin-bottom: 0.3rem; }
+  h2 { font-size: 1rem; color: #8ba4c0; letter-spacing: 0.08em; margin: 2rem 0 0.8rem; text-transform: uppercase; }
+  p  { color: #9a9080; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1rem; }
+  .subtitle { color: #6a8060; font-size: 0.85rem; margin-bottom: 2rem; }
+
+  /* ── Architecture diagram ── */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 1.5rem;
+    background: #0f0f1a;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+  }
+  .pipe-node {
+    flex: 0 0 auto;
+    background: #1a1a2e;
+    border: 1px solid #3a3a5a;
+    border-radius: 6px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.72rem;
+    text-align: center;
+    color: #d0c8b8;
+    min-width: 110px;
+  }
+  .pipe-node.existing { border-color: #4a4a2a; background: #1a1a0e; color: #c0b870; }
+  .pipe-node.new      { border-color: #2a4a2a; background: #0e1a0e; color: #80c070; }
+  .pipe-node.key      { border-color: #4a2a4a; background: #1a0e1a; color: #c070c0; font-weight: bold; }
+  .pipe-node .label   { font-size: 0.6rem; color: #6a6a8a; margin-top: 2px; }
+  .pipe-arrow {
+    flex: 0 0 auto;
+    color: #3a3a5a;
+    font-size: 1.2rem;
+    padding: 0 4px;
+  }
+  .pipe-fork {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+  }
+  .pipe-fork::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 50%;
+    width: 8px;
+    height: 1px;
+    background: #3a3a5a;
+  }
+
+  /* ── School palette ── */
+  .schools {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .school-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .school-name {
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  /* ── Render style comparison ── */
+  .style-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .style-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    background: #0f0f1a;
+    border: 1px solid #2a2a3a;
+    border-radius: 8px;
+    padding: 1rem;
+  }
+  .style-label {
+    font-size: 0.7rem;
+    color: #6a8060;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .style-sublabel {
+    font-size: 0.65rem;
+    color: #4a5040;
+    text-align: center;
+  }
+
+  /* ── Component table ── */
+  .comp-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    margin-bottom: 2rem;
+  }
+  .comp-table th {
+    text-align: left;
+    color: #8ba4c0;
+    border-bottom: 1px solid #2a2a3a;
+    padding: 0.5rem 0.8rem;
+    font-weight: normal;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+  }
+  .comp-table td {
+    padding: 0.6rem 0.8rem;
+    border-bottom: 1px solid #1a1a2a;
+    color: #c0b8a8;
+    vertical-align: top;
+  }
+  .comp-table td:first-child { color: #80c070; font-family: 'Courier New', monospace; font-size: 0.75rem; }
+  .comp-table tr.existing td:first-child { color: #c0b870; }
+  .badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    vertical-align: middle;
+    margin-left: 4px;
+    letter-spacing: 0.05em;
+  }
+  .badge.new { background: #1a3a1a; color: #60a050; border: 1px solid #2a5a2a; }
+  .badge.mod { background: #3a2a0a; color: #c09040; border: 1px solid #5a4a1a; }
+
+  /* ── SVG character mock (FFTA2 style) ── */
+  .char-demo {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .demo-label {
+    font-size: 0.7rem;
+    color: #5a5a7a;
+    letter-spacing: 0.08em;
+  }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.72rem;
+    color: #8a8070;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+
+<h1>PixelBrain SVG Renderer</h1>
+<p class="subtitle">Same math. New output layer. Infinite resolution.</p>
+
+<!-- ── Pipeline ── -->
+<h2>Architecture — What Changes</h2>
+
+<div class="pipeline">
+  <div class="pipe-node existing">CHARACTER-SPEC-v1<div class="label">JSON input</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-node existing">AMP Pipeline<div class="label">SDF → DT → normals → fills</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-node existing">region-fill-amp<div class="label">per-part colors + rim</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-node key">Renderer Registry<div class="label">NEW branch point</div></div>
+  <div class="pipe-arrow">→</div>
+  <div class="pipe-fork">
+    <div class="pipe-node existing" style="font-size:0.65rem">rasterizeCells()<div class="label">current → PNG</div></div>
+    <div class="pipe-node new" style="font-size:0.65rem">characterToSVG()<div class="label">new → SVG string</div></div>
+  </div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#4a4a2a;border:1px solid #c0b870"></div> Existing (unchanged)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#2a4a2a;border:1px solid #80c070"></div> New code</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4a2a4a;border:1px solid #c070c0"></div> New branch point</div>
+</div>
+
+<p>The entire AMP pipeline runs identically. <strong>Only the final 50 lines change.</strong> Existing pixel art output is unaffected.</p>
+
+<!-- ── Style comparison ── -->
+<h2>Four Output Styles from One Spec</h2>
+
+<div class="style-grid">
+
+  <!-- Style 1: Pixel Art (current) -->
+  <div class="style-card">
+    <svg width="64" height="96" viewBox="0 0 16 24" style="image-rendering:pixelated">
+      <!-- Pixelated character silhouette -->
+      <rect x="6" y="1" width="4" height="4" fill="#c4a882"/>
+      <rect x="5" y="1" width="1" height="3" fill="#c4a882"/>
+      <rect x="10" y="1" width="1" height="3" fill="#c4a882"/>
+      <rect x="6" y="5" width="4" height="1" fill="#c4a882"/>
+      <!-- hair -->
+      <rect x="5" y="0" width="6" height="2" fill="#1a0a30"/>
+      <rect x="6" y="0" width="4" height="1" fill="#1a0a30"/>
+      <!-- eye -->
+      <rect x="7" y="3" width="1" height="1" fill="#2040a0"/>
+      <rect x="9" y="3" width="1" height="1" fill="#2040a0"/>
+      <!-- torso/robe -->
+      <rect x="5" y="6" width="6" height="8" fill="#2d1b4e"/>
+      <rect x="4" y="6" width="1" height="6" fill="#2d1b4e"/>
+      <rect x="11" y="6" width="1" height="6" fill="#2d1b4e"/>
+      <!-- legs -->
+      <rect x="5" y="14" width="2" height="7" fill="#1a1230"/>
+      <rect x="9" y="14" width="2" height="7" fill="#1a1230"/>
+      <!-- feet -->
+      <rect x="4" y="20" width="3" height="3" fill="#0a0820"/>
+      <rect x="9" y="20" width="3" height="3" fill="#0a0820"/>
+      <!-- robe shading -->
+      <rect x="5" y="6" width="1" height="8" fill="#1a0a30" opacity="0.5"/>
+      <rect x="10" y="6" width="1" height="8" fill="#1a0a30" opacity="0.5"/>
+    </svg>
+    <div class="style-label">Pixel Art</div>
+    <div class="style-sublabel">Current — 4px cells<br/>128×192px PNG</div>
+  </div>
+
+  <!-- Style 2: High-Res Cell (quick win) -->
+  <div class="style-card">
+    <svg width="64" height="96" viewBox="0 0 64 96">
+      <!-- Same data, 4px cells → scaled up 4× -->
+      <!-- Head skin -->
+      <rect x="24" y="4" width="16" height="16" fill="#c4a882"/>
+      <rect x="20" y="4" width="4" height="12" fill="#c4a882"/>
+      <rect x="40" y="4" width="4" height="12" fill="#c4a882"/>
+      <!-- hair -->
+      <rect x="20" y="0" width="24" height="8" fill="#1a0a30"/>
+      <rect x="24" y="0" width="16" height="4" fill="#1a0a30"/>
+      <!-- eyes -->
+      <rect x="28" y="12" width="4" height="4" fill="#2040a0"/>
+      <rect x="36" y="12" width="4" height="4" fill="#2040a0"/>
+      <!-- torso -->
+      <rect x="20" y="24" width="24" height="32" fill="#2d1b4e"/>
+      <rect x="16" y="24" width="4" height="24" fill="#2d1b4e"/>
+      <rect x="44" y="24" width="4" height="24" fill="#2d1b4e"/>
+      <!-- robe shading -->
+      <rect x="20" y="24" width="4" height="32" fill="#1a0a30" opacity="0.4"/>
+      <rect x="40" y="24" width="4" height="32" fill="#1a0a30" opacity="0.4"/>
+      <!-- legs -->
+      <rect x="20" y="56" width="8" height="28" fill="#1a1230"/>
+      <rect x="36" y="56" width="8" height="28" fill="#1a1230"/>
+      <!-- feet -->
+      <rect x="16" y="80" width="12" height="12" fill="#0a0820"/>
+      <rect x="36" y="80" width="12" height="12" fill="#0a0820"/>
+    </svg>
+    <div class="style-label">High-Res Grid</div>
+    <div class="style-sublabel">16× scale, same data<br/>512×768px PNG</div>
+  </div>
+
+  <!-- Style 3: Illustrated SVG (FFTA2) -->
+  <div class="style-card">
+    <svg width="64" height="96" viewBox="0 0 64 96">
+      <!-- Smooth paths traced from cell boundaries -->
+      <!-- Fill layer -->
+      <!-- Skin: face + neck + hands -->
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#c4a882"/>
+      <!-- Hair top -->
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#1a0a30"/>
+      <!-- Robe/torso -->
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#2d1b4e"/>
+      <!-- Robe shadow side -->
+      <path d="M18,24 Q16,28 16,48 L20,56 L26,56 L24,24 Z" fill="#1a0a30" opacity="0.5"/>
+      <!-- Left arm -->
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#2d1b4e"/>
+      <!-- Right arm -->
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#2d1b4e"/>
+      <!-- Legs -->
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#1a1230"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#1a1230"/>
+      <!-- Boots -->
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#0d0820"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#0d0820"/>
+      <!-- Eyes -->
+      <ellipse cx="28" cy="13" rx="2" ry="2.5" fill="#2040a0"/>
+      <ellipse cx="36" cy="13" rx="2" ry="2.5" fill="#2040a0"/>
+      <ellipse cx="28" cy="13" rx="1" ry="1.5" fill="#4060d0"/>
+      <ellipse cx="36" cy="13" rx="1" ry="1.5" fill="#4060d0"/>
+      <!-- Outline — single clean ink pass -->
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="none" stroke="#0a0618" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="none" stroke="#0a0618" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="none" stroke="#0a0618" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="none" stroke="#0a0618" stroke-width="1.5"/>
+    </svg>
+    <div class="style-label">Illustrated SVG ✦</div>
+    <div class="style-sublabel">Smooth paths, ink outline<br/>infinite resolution</div>
+  </div>
+
+  <!-- Style 4: Cel-Shaded -->
+  <div class="style-card">
+    <svg width="64" height="96" viewBox="0 0 64 96">
+      <!-- Same paths with 3-tone cel shading -->
+      <!-- Base layer (mid tone) -->
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#c4a882"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#2a1445"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#3d2460"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#3d2460"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#3d2460"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#251840"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#251840"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#100c20"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#100c20"/>
+      <!-- Shadow zones (lit from top-left) -->
+      <path d="M36,4 Q40,4 42,8 L40,20 Q36,22 32,22 L32,4 Z" fill="#a07860" opacity="0.7"/>
+      <path d="M40,24 Q46,28 48,48 L44,56 L36,56 L36,24 Z" fill="#1a0a30" opacity="0.6"/>
+      <path d="M36,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#120a20" opacity="0.5"/>
+      <!-- Highlight zones -->
+      <path d="M24,6 Q26,3 30,4 L30,12 Q26,14 24,12 Z" fill="#e0c8a0" opacity="0.6"/>
+      <path d="M20,26 Q18,30 18,40 L22,40 L22,26 Z" fill="#5a3a80" opacity="0.5"/>
+      <!-- Eyes -->
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#1030a0"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#1030a0"/>
+      <ellipse cx="27.5" cy="12.5" rx="1" ry="1" fill="#8090ff"/>
+      <ellipse cx="35.5" cy="12.5" rx="1" ry="1" fill="#8090ff"/>
+      <!-- Outline -->
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="none" stroke="#08040f" stroke-width="1.5"/>
+    </svg>
+    <div class="style-label">Cel-Shaded</div>
+    <div class="style-sublabel">3-tone DT bands<br/>anime/FF shading</div>
+  </div>
+
+</div>
+
+<!-- ── School variations ── -->
+<h2>Same Spec — 5 Schools — Zero Re-baking</h2>
+<p>Material anchor ramps already parameterized per school. SVG uses CSS classes — school theme changes without touching the character spec.</p>
+
+<div class="schools">
+
+  <!-- VOID -->
+  <div class="school-card">
+    <svg width="52" height="78" viewBox="0 0 64 96">
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#7a6888"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#0a0018"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#1a0830"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#1a0830"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#1a0830"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#100820"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#100820"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#080410"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#080410"/>
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#8040c0"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#8040c0"/>
+      <ellipse cx="28" cy="13" rx="1.2" ry="1.2" fill="#c080ff"/>
+      <ellipse cx="36" cy="13" rx="1.2" ry="1.2" fill="#c080ff"/>
+      <!-- void glow on eyes -->
+      <ellipse cx="28" cy="13" rx="3.5" ry="3.5" fill="none" stroke="#8040c0" stroke-width="0.5" opacity="0.5"/>
+      <ellipse cx="36" cy="13" rx="3.5" ry="3.5" fill="none" stroke="#8040c0" stroke-width="0.5" opacity="0.5"/>
+      <g fill="none" stroke="#0a0414" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z"/>
+        <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z"/>
+        <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z"/>
+        <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z"/>
+        <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z"/>
+        <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z"/>
+        <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z"/>
+      </g>
+    </svg>
+    <div class="school-name" style="color:#c080ff">VOID</div>
+  </div>
+
+  <!-- PSYCHIC -->
+  <div class="school-card">
+    <svg width="52" height="78" viewBox="0 0 64 96">
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#e8d8c8"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#1a1a1a"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#1a3050"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#1a3050"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#1a3050"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#102030"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#102030"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#080c14"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#080c14"/>
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#2080c0"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#2080c0"/>
+      <ellipse cx="28" cy="13" rx="1.2" ry="1.2" fill="#80d0ff"/>
+      <ellipse cx="36" cy="13" rx="1.2" ry="1.2" fill="#80d0ff"/>
+      <g fill="none" stroke="#080810" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z"/>
+        <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z"/>
+        <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z"/>
+        <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z"/>
+        <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z"/>
+        <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z"/>
+        <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z"/>
+      </g>
+    </svg>
+    <div class="school-name" style="color:#80d0ff">PSYCHIC</div>
+  </div>
+
+  <!-- SONIC -->
+  <div class="school-card">
+    <svg width="52" height="78" viewBox="0 0 64 96">
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#c8a880"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#3d2010"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#4a2a10"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#4a2a10"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#4a2a10"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#301a08"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#301a08"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#180e04"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#180e04"/>
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#406020"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#406020"/>
+      <ellipse cx="28" cy="13" rx="1.2" ry="1.2" fill="#80c040"/>
+      <ellipse cx="36" cy="13" rx="1.2" ry="1.2" fill="#80c040"/>
+      <g fill="none" stroke="#100804" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z"/>
+        <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z"/>
+        <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z"/>
+        <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z"/>
+        <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z"/>
+        <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z"/>
+        <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z"/>
+      </g>
+    </svg>
+    <div class="school-name" style="color:#80c040">SONIC</div>
+  </div>
+
+  <!-- ALCHEMY -->
+  <div class="school-card">
+    <svg width="52" height="78" viewBox="0 0 64 96">
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#a87840"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#600800"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#401408"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#401408"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#401408"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#280c04"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#280c04"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#140602"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#140602"/>
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#804010"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#804010"/>
+      <ellipse cx="28" cy="13" rx="1.2" ry="1.2" fill="#e08040"/>
+      <ellipse cx="36" cy="13" rx="1.2" ry="1.2" fill="#e08040"/>
+      <g fill="none" stroke="#0f0402" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z"/>
+        <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z"/>
+        <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z"/>
+        <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z"/>
+        <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z"/>
+        <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z"/>
+        <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z"/>
+      </g>
+    </svg>
+    <div class="school-name" style="color:#e08040">ALCHEMY</div>
+  </div>
+
+  <!-- WILL -->
+  <div class="school-card">
+    <svg width="52" height="78" viewBox="0 0 64 96">
+      <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z" fill="#ead8b0"/>
+      <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z" fill="#c8a020"/>
+      <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z" fill="#503808"/>
+      <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z" fill="#503808"/>
+      <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z" fill="#503808"/>
+      <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z" fill="#302004"/>
+      <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z" fill="#302004"/>
+      <path d="M20,80 Q17,82 16,88 Q18,92 28,92 Q30,88 28,80 Z" fill="#181002"/>
+      <path d="M44,80 Q47,82 48,88 Q46,92 36,92 Q34,88 36,80 Z" fill="#181002"/>
+      <ellipse cx="28" cy="13" rx="2.5" ry="2.5" fill="#806010"/>
+      <ellipse cx="36" cy="13" rx="2.5" ry="2.5" fill="#806010"/>
+      <ellipse cx="28" cy="13" rx="1.2" ry="1.2" fill="#f0c040"/>
+      <ellipse cx="36" cy="13" rx="1.2" ry="1.2" fill="#f0c040"/>
+      <g fill="none" stroke="#100a01" stroke-width="1.5" stroke-linejoin="round">
+        <path d="M24,4 Q32,2 40,4 L42,8 Q44,12 42,20 Q38,22 32,22 Q26,22 22,20 Q20,12 22,8 Z"/>
+        <path d="M20,8 Q18,4 22,1 Q32,-1 42,1 Q46,4 44,8 Q40,3 32,3 Q24,3 20,8 Z"/>
+        <path d="M18,24 Q16,28 16,48 L20,56 L44,56 L48,48 Q48,28 46,24 Q38,22 32,22 Q26,22 18,24 Z"/>
+        <path d="M16,24 Q12,28 12,44 Q14,46 18,44 Q20,30 20,24 Z"/>
+        <path d="M48,24 Q52,28 52,44 Q50,46 46,44 Q44,30 44,24 Z"/>
+        <path d="M20,56 L24,84 Q26,88 28,84 L28,56 Z"/>
+        <path d="M44,56 L40,84 Q38,88 36,84 L36,56 Z"/>
+      </g>
+    </svg>
+    <div class="school-name" style="color:#f0c040">WILL</div>
+  </div>
+
+</div>
+
+<!-- ── Components ── -->
+<h2>Components — What Gets Built</h2>
+
+<table class="comp-table">
+  <thead>
+    <tr>
+      <th>File</th>
+      <th>Status</th>
+      <th>Responsibility</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr class="new">
+      <td>codex/core/pixelbrain/cell-boundary-tracer.js</td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Cell occupancy set → ordered boundary polygon vertices. Catmull-Rom smoothing to eliminate staircase jaggies. Per-part isolation (traces each body region separately).</td>
+    </tr>
+    <tr class="new">
+      <td>codex/core/pixelbrain/svg-path-builder.js</td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Polygon vertices → SVG <code>d</code> attribute string. Handles closed paths, smooth curves, stroke vs fill mode. School outline color via darkened fill anchor.</td>
+    </tr>
+    <tr class="new">
+      <td>codex/core/pixelbrain/character-to-svg.js</td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Full character SVG assembly. Takes region-fill-amp output, groups by partId, stacks fills → shade zones → ink outline. Returns <code>&lt;svg&gt;</code> string with CSS classes for school theming.</td>
+    </tr>
+    <tr class="new">
+      <td>codex/core/pixelbrain/renderer-registry.js</td>
+      <td><span class="badge new">NEW</span></td>
+      <td>Registry mapping renderer name → render function. <code>'pixelart'</code> (current) and <code>'illustrated'</code> (new). Pluggable — future renderers register here.</td>
+    </tr>
+    <tr>
+      <td>codex/core/pixelbrain/character-foundry.js</td>
+      <td><span class="badge mod">MODIFY</span></td>
+      <td>Accept <code>{ renderer: 'illustrated' }</code> option. Route to SVG path when requested. Default unchanged → existing PNG output unaffected.</td>
+    </tr>
+    <tr>
+      <td>src/pages/Combat/scenes/CharacterShaderRenderer.js</td>
+      <td><span class="badge mod">MODIFY</span></td>
+      <td><code>bake()</code> detects SVG output → encodes as <code>data:image/svg+xml;base64,…</code> → loads via existing addBase64 path. Optional: load at combat scale (64×96) vs portrait scale (512×768).</td>
+    </tr>
+    <tr>
+      <td>src/pages/internal/pixel-lotus/ActorForgeLab.tsx</td>
+      <td><span class="badge mod">MODIFY</span></td>
+      <td>Before/after panel shows SVG preview inline (<code>&lt;img src="data:image/svg+xml;…"&gt;</code>). Infinite resolution — no PNG decode artifacts in the preview.</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ── Key invariants ── -->
+<h2>Invariants</h2>
+<p style="color:#7a9060">No new math. No AMP changes. Same region-fill-amp output feeds both renderers.</p>
+<p style="color:#7a9060">forgeCharacter(spec, {}) → PNG bytes (unchanged). forgeCharacter(spec, { renderer: 'illustrated' }) → SVG string (new).</p>
+<p style="color:#7a9060">All existing pixel art tests remain green. SVG renderer is an additive path.</p>
+<p style="color:#9a7060">School variation is zero-cost — the material registry already parameterizes fills per material. Point a school's character profile at its material anchors and the SVG inherits the right colors.</p>
+
+<h2>The CSS Superpower</h2>
+<p>Because the SVG emits semantic CSS classes (<code>.pb-part-robe</code>, <code>.pb-part-skin</code>, <code>.school-void</code>), school theming works without a single re-render:</p>
+<pre style="background:#0f0f1a;border:1px solid #2a2a3a;padding:1rem;border-radius:6px;font-size:0.75rem;color:#80c070;overflow-x:auto">.school-void .pb-part-robe  { fill: var(--void-robe-color);  }
+.school-void .pb-outline    { stroke: var(--void-ink-color); }
+.school-psychic .pb-part-robe { fill: var(--psychic-robe-color); }
+/* Combat scene: apply class to the SVG element when school changes */
+characterSvgElement.className = `pb-character school-${combatProfile.school.toLowerCase()}`;</pre>
+
+</body>
+</html>
