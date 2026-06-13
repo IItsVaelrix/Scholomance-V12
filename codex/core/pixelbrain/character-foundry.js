@@ -9,6 +9,8 @@ import './character-body-profiles.js';
 import './character-face-profiles.js';
 import './character-hair-profiles.js';
 import './character-clothing-profiles.js';
+import './character-accessory-profiles.js';
+import './character-detail-profiles.js';
 
 const CHARACTER_DEFAULTS = {
   canvas: { width: 32, height: 48 },
@@ -47,6 +49,14 @@ function materialFromSpec(spec) {
   };
 }
 
+function isRimCell(x, y, cellKeySet) {
+  if (!cellKeySet.has(`${x},${y}`)) return false;
+  for (const [dx, dy] of [[1,0],[-1,0],[0,1],[0,-1]]) {
+    if (!cellKeySet.has(`${x+dx},${y+dy}`)) return true;
+  }
+  return false;
+}
+
 function applyCharacterFills({ silhouette, spec, direction } = {}) {
   const canvas = spec?.canvas || CHARACTER_DEFAULTS.canvas;
   const cells = [];
@@ -69,17 +79,22 @@ function applyCharacterFills({ silhouette, spec, direction } = {}) {
 
   const outlineColor = '#1A1A20';
 
+  // Build Set once — O(n) not O(n²)
+  const cellKeySet = new Set(silhouette.cells.map(c => `${c.x},${c.y}`));
+
   for (const c of silhouette.cells) {
     const partId = silhouette.partOf.get(`${c.x},${c.y}`) || 'body';
-    let color = partColors[partId] || partColors.body;
+    const rawExplicitColor = silhouette.colorOf?.get(`${c.x},${c.y}`);
+    const explicitColor = rawExplicitColor ? resolveCharacterMaterial(rawExplicitColor, rawExplicitColor) : null;
+    let color = explicitColor || partColors[partId] || partColors.body;
 
-    const isOutline = isOutlineCell(c.x, c.y, silhouette);
-    if (isOutline) {
+    const isRim = isRimCell(c.x, c.y, cellKeySet);
+    if (isRim && !explicitColor) {
       color = outlineColor;
     }
 
     colors.add(color);
-    cells.push({ x: c.x, y: c.y, color, partId, isOutline });
+    cells.push({ x: c.x, y: c.y, color, partId, isRim });
   }
 
   const palette = [...colors].sort();
@@ -91,20 +106,9 @@ function applyCharacterFills({ silhouette, spec, direction } = {}) {
     diagnostics: {
       totalCells: cells.length,
       uniqueColors: palette.length,
-      rimCells: cells.filter(c => c.isOutline).length,
+      rimCells: cells.filter(c => c.isRim).length,
     },
   };
-}
-
-function isOutlineCell(x, y, silhouette) {
-  const set = new Set(silhouette.cells.map(c => `${c.x},${c.y}`));
-  const key = `${x},${y}`;
-  if (!set.has(key)) return false;
-  const neighbors = [[1,0],[-1,0],[0,1],[0,-1]];
-  for (const [dx, dy] of neighbors) {
-    if (!set.has(`${x + dx},${y + dy}`)) return true;
-  }
-  return false;
 }
 
 function concatBytes(arrays) {
