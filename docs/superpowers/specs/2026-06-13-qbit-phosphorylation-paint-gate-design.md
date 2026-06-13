@@ -42,33 +42,32 @@ phosphorylate(lattice, col, row, kinase, options)
   → { committed: boolean, color?: string, confidence: number, reason?: string }
 ```
 
-The kinase is a **closure** constructed by the caller (ActorForgeLab) with the active material already bound. Its signature is:
+The kinase is a **`KinaseDescriptor` object** constructed by `buildKinase(material, sdfContext)` at material-selection time. This is not a bare function — it carries metadata that `phosphorylate()` needs without receiving `material` directly.
 
 ```js
-kinase({ sdfValue, normal }) → { color, confidence }
+// KinaseDescriptor shape
+{
+  valid: boolean,          // false if material was null/missing at build time
+  reason: string | null,   // 'MISSING_SUBSTRATE' if !valid, else null
+  threshold: number | undefined, // material.phosphorylationThreshold if defined
+  call: ({ sdfValue, normal }) => ({ color, confidence }) // null if !valid
+}
 ```
 
-The material is pre-baked into the kinase — not looked up per-cell. This keeps the gate logic pure: it only derives position-dependent inputs from the lattice.
+`buildKinase(material, sdfContext)` is a first-class module export from `qbit-phosphorylation.js`. It validates the material at construction time and returns a null descriptor if material is missing — so the gate never needs to inspect material itself.
 
 **Gate logic (in order):**
 
-1. Sample SDF at `(col, row)` via `sdfEvaluator` — if missing → `{ committed: false, reason: 'MISSING_SUBSTRATE' }`
-2. Read normal from the lattice cell via `normal-estimation.js` — if degenerate or missing → `{ committed: false, reason: 'MISSING_SUBSTRATE' }`
-3. Call `kinase({ sdfValue, normal })` — if it throws or returns an invalid color → `{ committed: false, reason: 'INVALID_REACTION' }`
-4. Resolve collapse threshold (see Threshold Resolution below) — if `confidence < threshold` → `{ committed: false, reason: 'LOW_CONFIDENCE', confidence }`
-5. If valid → call `paintCell(lattice, col, row, color)` internally, return `{ committed: true, color, confidence }`
+1. If `!kinase.valid` → `{ committed: false, reason: kinase.reason }`
+2. Sample SDF at `(col, row)` via `sdfEvaluator` — if missing → `{ committed: false, reason: 'MISSING_SUBSTRATE' }`
+3. Read normal from the lattice cell via `normal-estimation.js` — if degenerate or missing → `{ committed: false, reason: 'MISSING_SUBSTRATE' }`
+4. Call `kinase.call({ sdfValue, normal })` — if it throws or returns an invalid color → `{ committed: false, reason: 'INVALID_REACTION' }`
+5. Resolve threshold: `options.threshold ?? kinase.threshold ?? COLLAPSE_THRESHOLD` — if `confidence < threshold` → `{ committed: false, reason: 'LOW_CONFIDENCE', confidence }`
+6. If valid → call `paintCell(lattice, col, row, color)` internally, return `{ committed: true, color, confidence }`
 
 `paintCell` remains the low-level primitive. Phosphorylation is the only path the interactive editor uses for user-driven strokes.
 
-**Threshold resolution order:**
-
-```
-options.threshold
-  ?? material.phosphorylationThreshold
-  ?? COLLAPSE_THRESHOLD (default: 0.5)
-```
-
-`COLLAPSE_THRESHOLD` is an exported constant. Per-material override lives on the material spec. Per-call override via `options.threshold` takes highest precedence.
+`COLLAPSE_THRESHOLD` is an exported constant, default `0.5`.
 
 ---
 
@@ -151,7 +150,7 @@ Tests live in `tests/core/pixelbrain/qbit-phosphorylation.test.js`.
 |------|----------|
 | Valid SDF, material, normal, confidence ≥ threshold | Commits and calls `paintCell` |
 | Missing SDF | Rejects with `MISSING_SUBSTRATE` |
-| Missing material (kinase built with null material) | Rejects with `MISSING_SUBSTRATE` |
+| `buildKinase(null, ctx)` → descriptor passed to phosphorylate | Rejects with `MISSING_SUBSTRATE` via `kinase.valid === false` |
 | Missing or degenerate normal | Rejects with `MISSING_SUBSTRATE` |
 | Confidence below threshold | Rejects with `LOW_CONFIDENCE` |
 | Kinase throws | Rejects with `INVALID_REACTION` |
@@ -183,7 +182,7 @@ The gate is structural, not procedural. There is no code path through the intera
 
 | File | Change |
 |------|--------|
-| `codex/core/pixelbrain/qbit-phosphorylation.js` | **New** — `phosphorylate()`, `COLLAPSE_THRESHOLD`, threshold resolution |
+| `codex/core/pixelbrain/qbit-phosphorylation.js` | **New** — `phosphorylate()`, `buildKinase()`, `COLLAPSE_THRESHOLD`, threshold resolution |
 | `codex/core/pixelbrain/editor-command-stack.js` | **Add** `PhosphorylationCommand` + `createPhosphorylationCommand` factory |
 | `src/pages/internal/pixel-lotus/ActorForgeLab.tsx` | **Wire** brush stroke to `PhosphorylationCommand`, dampened rejection UI |
 | `tests/core/pixelbrain/qbit-phosphorylation.test.js` | **New** — all 10 QA checklist cases |
