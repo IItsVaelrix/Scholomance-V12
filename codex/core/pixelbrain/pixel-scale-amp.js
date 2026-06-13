@@ -31,7 +31,7 @@ function blend75(e, n) {
 
 function putPixel(out, outW, x, y, c) {
   const off = (y * outW + x) * 4;
-  out[off] = c[0]; out[off + 1] = c[1]; out[off + 2] = c[2]; out[off + 3] = 255;
+  out[off] = c[0]; out[off + 1] = c[1]; out[off + 2] = c[2]; out[off + 3] = 255; // opaque pixel art only
 }
 
 /**
@@ -55,6 +55,9 @@ export function applyXBR2x(rgba, width, height) {
   const p = (x, y) => getPixel(rgba, width, height, x, y);
   const d = colorDist;
 
+  // 30 YUV units: tight threshold appropriate for clean pixel art with distinct palette colours.
+  // At Y-weight 48, this is ~0.6 luma steps — enough to group identical source pixels while
+  // keeping every intentional colour boundary sharp.
   const EQ = 30;
   const eq = (a, b) => d(a, b) < EQ;
   const ne = (a, b) => !eq(a, b);
@@ -71,7 +74,7 @@ export function applyXBR2x(rgba, width, height) {
       const e0 = (eq(D,B) && ne(D,H) && ne(B,F)) ? blend75(E,A) : E;
       const e1 = (eq(B,F) && ne(B,D) && ne(F,H)) ? blend75(E,C) : E;
       const e2 = (eq(D,H) && ne(D,B) && ne(H,F)) ? blend75(E,G) : E;
-      const e3 = (eq(H,F) && ne(H,B) && ne(D,F)) ? blend75(E,I) : E;
+      const e3 = (eq(H,F) && ne(H,B) && ne(D,H)) ? blend75(E,I) : E; // SE → I
 
       putPixel(out, outW, x*2,   y*2,   e0);
       putPixel(out, outW, x*2+1, y*2,   e1);
