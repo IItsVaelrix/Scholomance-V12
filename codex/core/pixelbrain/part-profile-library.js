@@ -666,6 +666,9 @@ registerPartProfile('armor.pauldron.angular_royal', (params = {}, options = {}) 
       cells.push({ x: cx + dx + crown * Math.sign(outerBias), y: cy + y });
     }
   }
+  const _yKeys = Object.keys(halfAt).map(Number);
+  const _sdfMinY = Math.min(..._yKeys), _sdfMaxY = Math.max(..._yKeys);
+  const _sdfMaxHalf = Math.max(...Object.values(halfAt).map(Number));
   return {
     cells,
     anchors: {
@@ -676,7 +679,7 @@ registerPartProfile('armor.pauldron.angular_royal', (params = {}, options = {}) 
     },
     sdf: {
       contract: 'PB-SDF-v1',
-      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + 0.5 }, size: { x: 26, y: 10 } } }],
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + (_sdfMinY + _sdfMaxY) / 2 }, size: { x: _sdfMaxHalf * 2, y: _sdfMaxY - _sdfMinY + 1 } } }],
       operations: [],
     },
   };
@@ -708,6 +711,9 @@ registerPartProfile('armor.pauldron.angular_human', (params = {}, options = {}) 
       cells.push({ x: cx + dx + (shoulderSlope * outward), y: cy + y });
     }
   }
+  const _yKeys2 = Object.keys(halfAt).map(Number);
+  const _sdfMinY2 = Math.min(..._yKeys2), _sdfMaxY2 = Math.max(..._yKeys2);
+  const _sdfMaxHalf2 = Math.max(...Object.values(halfAt).map(Number));
   return {
     cells,
     anchors: {
@@ -718,7 +724,7 @@ registerPartProfile('armor.pauldron.angular_human', (params = {}, options = {}) 
     },
     sdf: {
       contract: 'PB-SDF-v1',
-      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + 0.5 }, size: { x: 16, y: 8 } } }],
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + (_sdfMinY2 + _sdfMaxY2) / 2 }, size: { x: _sdfMaxHalf2 * 2, y: _sdfMaxY2 - _sdfMinY2 + 1 } } }],
       operations: [],
     },
   };
@@ -751,6 +757,9 @@ registerPartProfile('armor.pauldron.void_reference_human', (params = {}, options
       cells.push({ x: cx + dx + (sweep * outward), y: cy + y });
     }
   }
+  const _yKeys3 = Object.keys(halfAt).map(Number);
+  const _sdfMinY3 = Math.min(..._yKeys3), _sdfMaxY3 = Math.max(..._yKeys3);
+  const _sdfMaxHalf3 = Math.max(...Object.values(halfAt).map(Number));
   return {
     cells,
     anchors: {
@@ -761,7 +770,7 @@ registerPartProfile('armor.pauldron.void_reference_human', (params = {}, options
     },
     sdf: {
       contract: 'PB-SDF-v1',
-      primitives: [{ type: 'box', params: { center: { x: cx, y: cy }, size: { x: 24, y: 9 } } }],
+      primitives: [{ type: 'box', params: { center: { x: cx, y: cy + (_sdfMinY3 + _sdfMaxY3) / 2 }, size: { x: _sdfMaxHalf3 * 2, y: _sdfMaxY3 - _sdfMinY3 + 1 } } }],
       operations: [],
     },
   };

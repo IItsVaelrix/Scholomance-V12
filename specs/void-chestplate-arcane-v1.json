@@ -1,0 +1,89 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "void.chestplate.arcane.v1",
+  "class": "armor",
+  "archetype": "chestplate",
+  "canvas": { "width": 64, "height": 80, "gridSize": 1 },
+  "seed": 1701,
+  "bytecode": "VW-ARCANE-GEMHEART-SOVEREIGN",
+  "bands": 8,
+  "parts": [
+    {
+      "id": "body",
+      "profile": "armor.chestplate.void_royal_human",
+      "params": {
+        "cx": 32,
+        "shoulderWidth": 42,
+        "chestWidth": 36,
+        "waistWidth": 22,
+        "torsoHeight": 52,
+        "topY": 18,
+        "neckWidth": 10,
+        "neckDepth": 6
+      },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "left_pauldron",
+      "profile": "armor.pauldron.angular_royal",
+      "params": {
+        "side": "left",
+        "halfAt": {
+          "-16": 1, "-15": 3, "-14": 6, "-13": 9, "-12": 12,
+          "-11": 14, "-10": 15, "-9": 16, "-8": 16, "-7": 15,
+          "-6": 14, "-5": 12, "-4": 10, "-3": 8, "-2": 6,
+          "-1": 4, "0": 2, "1": 1
+        }
+      },
+      "attach": { "parent": "body", "at": "leftShoulder" },
+      "fill": { "material": "sapphire" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "right_pauldron",
+      "profile": "armor.pauldron.angular_royal",
+      "params": {
+        "side": "right",
+        "halfAt": {
+          "-16": 1, "-15": 3, "-14": 6, "-13": 9, "-12": 12,
+          "-11": 14, "-10": 15, "-9": 16, "-8": 16, "-7": 15,
+          "-6": 14, "-5": 12, "-4": 10, "-3": 8, "-2": 6,
+          "-1": 4, "0": 2, "1": 1
+        }
+      },
+      "attach": { "parent": "body", "at": "rightShoulder" },
+      "fill": { "material": "sapphire" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "harness",
+      "profile": "armor.panel.void_reference_harness",
+      "attach": { "parent": "body", "at": "centerChest" },
+      "fill": { "material": "amethyst_resonance" },
+      "outline": { "material": "void_gold", "anchor": "body" },
+      "motif": {
+        "kind": "bolt",
+        "fork": true,
+        "segments": 7,
+        "core": { "material": "void_core", "anchor": "whiteCore" },
+        "glow": { "material": "amethyst_resonance", "anchor": "spectral" }
+      }
+    },
+    {
+      "id": "sigils",
+      "profile": "armor.panel.void_reference_harness",
+      "attach": { "parent": "body", "at": "safeZoneUpperLower" },
+      "fill": { "material": "void_cloth" },
+      "outline": { "material": "amethyst_resonance", "anchor": "body" },
+      "motif": {
+        "kind": "rune-row",
+        "count": 4,
+        "core": { "material": "amethyst_resonance", "anchor": "body" },
+        "glow": { "material": "void_rune_glow", "anchor": "spectral" }
+      }
+    }
+  ],
+  "proportions": { "profile": "ceremonial_exaggerated" },
+  "shader": { "kind": "motif-energize", "resonanceDefault": 0.9 }
+}
