@@ -598,6 +598,19 @@ registerPartProfile('armor.chestplate.void_royal_human', (params = {}, options =
       waist: { x: cx, y: topY + Math.floor(torsoHeight * 0.7) },
       bottom: { x: cx, y: topY + torsoHeight - 1 },
     },
+    sdf: {
+      contract: 'PB-SDF-v1',
+      primitives: [
+        {
+          type: 'box',
+          params: {
+            center: { x: cx, y: topY + torsoHeight / 2 },
+            size: { x: chestWidth, y: torsoHeight },
+          },
+        },
+      ],
+      operations: [],
+    },
   };
 });
 

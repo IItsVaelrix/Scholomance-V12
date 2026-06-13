@@ -117,4 +117,16 @@ export function sdfInside(sdf, x, y) {
   return evaluateSDF(sdf, x, y) <= 0;
 }
 
-export default { evaluateSDF, sdfInside };
+/**
+ * Numerical gradient of the SDF at (px, py) via central finite differences.
+ * Returns a unit normal vector pointing outward (away from interior).
+ * Safe at d≈0 (rim cells): clamps magnitude to avoid NaN.
+ */
+export function sdfGradient(sdf, px, py, eps = 0.5) {
+  const dx = (evaluateSDF(sdf, px + eps, py) - evaluateSDF(sdf, px - eps, py)) / (2 * eps);
+  const dy = (evaluateSDF(sdf, px, py + eps) - evaluateSDF(sdf, px, py - eps)) / (2 * eps);
+  const len = Math.hypot(dx, dy) || 1;
+  return { nx: dx / len, ny: dy / len };
+}
+
+export default { evaluateSDF, sdfInside, sdfGradient };

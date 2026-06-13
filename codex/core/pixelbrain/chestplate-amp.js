@@ -1,3 +1,5 @@
+import { evaluateSDF, sdfGradient } from './sdf-evaluator.js';
+
 /**
  * chestplate-amp.js
  * Template pre-processor for chestplate / torso armor (ChestplateAMP per PDR).
@@ -68,9 +70,20 @@ export function applyChestplateTemplate(template, silhouette, spec, construction
       const rw = Math.max(1, (maxX - minX) / 2);
       const rh = Math.max(1, (maxY - minY) / 2);
 
+      // Find SDF for this part if available
+      const bodyPartReport = silhouette.parts?.find(p => p.id === bodyPart.id);
+      const bodyPartSDF = bodyPartReport?.sdf ?? null;
+
       bodyCells.forEach(({ c, idx }) => {
-        const nx = (c.x - cx) / rw;
-        const ny = (c.y - cy) / rh;
+        let nx, ny;
+        if (bodyPartSDF) {
+          const grad = sdfGradient(bodyPartSDF, c.x + 0.5, c.y + 0.5);
+          nx = grad.nx;
+          ny = grad.ny;
+        } else {
+          nx = (c.x - cx) / rw;
+          ny = (c.y - cy) / rh;
+        }
         const dist = Math.hypot(nx, ny);
 
         let slotMod = 0;
@@ -124,9 +137,19 @@ export function applyChestplateTemplate(template, silhouette, spec, construction
     const rw = Math.max(1, (maxX - minX) / 2);
     const rh = Math.max(1, (maxY - minY) / 2);
 
+    const pauldronReport = silhouette.parts?.find(p => p.id === pauldron.id);
+    const pauldronSDF = pauldronReport?.sdf ?? null;
+
     pCells.forEach(({ c, idx }) => {
-      const nx = (c.x - cx) / rw;
-      const ny = (c.y - cy) / rh;
+      let nx, ny;
+      if (pauldronSDF) {
+        const grad = sdfGradient(pauldronSDF, c.x + 0.5, c.y + 0.5);
+        nx = grad.nx;
+        ny = grad.ny;
+      } else {
+        nx = (c.x - cx) / rw;
+        ny = (c.y - cy) / rh;
+      }
       let slotMod = 1; // base pauldron lift
 
       if (Math.abs(nx) > 0.6) slotMod -= 1; // outer edge shadow

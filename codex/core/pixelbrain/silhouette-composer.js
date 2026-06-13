@@ -113,6 +113,7 @@ export function composeSilhouette(spec, constructionHints = null) {
   const occupied = [];
   const anchors = new Map();
   const partReports = [];
+  let lastRes = null;
 
   // Emergent Harmonic Boon: If constructionHints provide harmonic (golden + symmetry),
   // use them to influence anchor placement and initial symmetry for parts.
@@ -140,6 +141,7 @@ export function composeSilhouette(spec, constructionHints = null) {
       });
       partLocal = res.cells || [];
       partAnchors = res.anchors || {};
+      lastRes = res;
     } else if (part.mirrorOf) {
       // mirrored parts get their geometry from the mirror pass after the main loop
       partLocal = [];
@@ -274,6 +276,7 @@ export function composeSilhouette(spec, constructionHints = null) {
       anchorIn: parentAnchor,
       anchorOut: placedAnchors,
       aabb: partLocalAABB(partLocal.map((c) => ({ x: c.x + dx, y: c.y + dy }))),
+      sdf: lastRes?.sdf ?? null,
     });
   }
 
