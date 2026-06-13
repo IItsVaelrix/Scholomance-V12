@@ -28,9 +28,18 @@ describe('characterToSVG', () => {
     expect(svg.trimStart()).toMatch(/^<svg/);
   });
 
-  it('viewBox matches canvas dimensions × scale', () => {
+  it('viewBox uses canvas cell dimensions (scale-independent)', () => {
     const svg = characterToSVG(MOCK_FILLS, MOCK_SPEC, { scale: 1 });
     expect(svg).toContain('viewBox="0 0 4 6"');
+  });
+
+  it('viewBox uses cell dimensions regardless of scale — pixel size is width/height only', () => {
+    const svg = characterToSVG(MOCK_FILLS, MOCK_SPEC, { scale: 8 });
+    // Cell dims are 4×6 (from MOCK_SPEC.canvas). At scale=8, viewBox stays 4×6.
+    expect(svg).toContain('viewBox="0 0 4 6"');
+    // But rendered pixel size scales correctly.
+    expect(svg).toContain('width="32"');
+    expect(svg).toContain('height="48"');
   });
 
   it('width and height attributes match canvas × scale', () => {

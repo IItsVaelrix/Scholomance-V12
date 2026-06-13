@@ -90,32 +90,36 @@ function getFillColor(cells) {
 function buildContourPathElements(trace, pathOptions) {
   const contours = trace?.contours?.length ? trace.contours : [trace];
   return contours
-    .map((contour) => buildPath(contour, { smooth: pathOptions.smooth, scale: pathOptions.scale }))
+    .map((contour) => buildPath(contour, { smooth: pathOptions.smooth, scale: 1 }))
     .filter(Boolean)
     .map((d) => buildPathElement({ ...pathOptions, d }));
 }
 
-function buildShaderDefs(enabled) {
+function buildShaderDefs(enabled, scale = 1) {
   if (!enabled) return '';
+  // Filter primitive values are in user-coordinate space (cell units after viewBox fix).
+  // Divide pixel-magnitude values by scale so visual output is equivalent at any render size.
+  // Turbulence baseFrequency scales inversely — multiply by scale for equivalent texture density.
+  const s = scale;
   return [
-    '<filter id="pb-shader-ink-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">',
-    '<feDropShadow dx="0.9" dy="1.2" stdDeviation="0.65" flood-color="#05060a" flood-opacity="0.72"/>',
-    '</filter>',
-    '<filter id="pb-shader-ice-glow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">',
-    '<feGaussianBlur in="SourceAlpha" stdDeviation="1.35" result="blur"/>',
-    '<feFlood flood-color="#42d9ff" flood-opacity="0.72" result="glowColor"/>',
-    '<feComposite in="glowColor" in2="blur" operator="in" result="glow"/>',
-    '<feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>',
-    '</filter>',
-    '<filter id="pb-shader-crystal-rim" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">',
-    '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="14" result="noise"/>',
-    '<feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.82 0 0 0 0 0.96 0 0 0 0 1 0 0 0 0.38 0" result="spark"/>',
-    '<feBlend in="SourceGraphic" in2="spark" mode="screen"/>',
-    '</filter>',
-    '<filter id="pb-shader-melt-field" x="-50%" y="-20%" width="200%" height="160%" color-interpolation-filters="sRGB">',
-    '<feTurbulence type="fractalNoise" baseFrequency="0.045 0.18" numOctaves="2" seed="26" result="meltNoise"/>',
-    '<feDisplacementMap in="SourceGraphic" in2="meltNoise" scale="1.65" xChannelSelector="R" yChannelSelector="G"/>',
-    '</filter>',
+    `<filter id="pb-shader-ink-shadow" x="-35%" y="-35%" width="170%" height="170%" color-interpolation-filters="sRGB">`,
+    `<feDropShadow dx="${(0.9/s).toFixed(4)}" dy="${(1.2/s).toFixed(4)}" stdDeviation="${(0.65/s).toFixed(4)}" flood-color="#05060a" flood-opacity="0.72"/>`,
+    `</filter>`,
+    `<filter id="pb-shader-ice-glow" x="-80%" y="-80%" width="260%" height="260%" color-interpolation-filters="sRGB">`,
+    `<feGaussianBlur in="SourceAlpha" stdDeviation="${(1.35/s).toFixed(4)}" result="blur"/>`,
+    `<feFlood flood-color="#42d9ff" flood-opacity="0.72" result="glowColor"/>`,
+    `<feComposite in="glowColor" in2="blur" operator="in" result="glow"/>`,
+    `<feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>`,
+    `</filter>`,
+    `<filter id="pb-shader-crystal-rim" x="-45%" y="-45%" width="190%" height="190%" color-interpolation-filters="sRGB">`,
+    `<feTurbulence type="fractalNoise" baseFrequency="${(0.9*s).toFixed(4)}" numOctaves="2" seed="14" result="noise"/>`,
+    `<feColorMatrix in="noise" type="matrix" values="0 0 0 0 0.82 0 0 0 0 0.96 0 0 0 0 1 0 0 0 0.38 0" result="spark"/>`,
+    `<feBlend in="SourceGraphic" in2="spark" mode="screen"/>`,
+    `</filter>`,
+    `<filter id="pb-shader-melt-field" x="-50%" y="-20%" width="200%" height="160%" color-interpolation-filters="sRGB">`,
+    `<feTurbulence type="fractalNoise" baseFrequency="${(0.045*s).toFixed(4)} ${(0.18*s).toFixed(4)}" numOctaves="2" seed="26" result="meltNoise"/>`,
+    `<feDisplacementMap in="SourceGraphic" in2="meltNoise" scale="${(1.65/s).toFixed(4)}" xChannelSelector="R" yChannelSelector="G"/>`,
+    `</filter>`,
   ].join('');
 }
 
@@ -146,9 +150,11 @@ function shaderForPart(partId, enabled) {
 export function characterToSVG(fills, spec, options = {}) {
   const { scale = 8, twoTone = true, strokeWidth = 1.5, smooth = true, shaderEffects = true } = options;
 
-  // Compute SVG dimensions
-  const svgWidth = (spec?.canvas?.width ?? 32) * scale;
-  const svgHeight = (spec?.canvas?.height ?? 48) * scale;
+  // Canvas dimensions in cell units; pixel output size = cell dims × scale
+  const canvasW  = spec?.canvas?.width  ?? 32;
+  const canvasH  = spec?.canvas?.height ?? 48;
+  const svgWidth  = canvasW * scale;
+  const svgHeight = canvasH * scale;
 
   // School class (e.g., "school-void", "school-sonic")
   const school = spec?.combatProfile?.school?.toLowerCase() ?? 'unknown';
@@ -264,11 +270,11 @@ export function characterToSVG(fills, spec, options = {}) {
     'svg',
     {
       xmlns: 'http://www.w3.org/2000/svg',
-      viewBox: `0 0 ${svgWidth} ${svgHeight}`,
+      viewBox: `0 0 ${canvasW} ${canvasH}`,
       width: svgWidth,
       height: svgHeight,
       class: `pb-character school-${school}`,
     },
-    buildShaderDefs(shaderEffects) + fillLayer + shadowLayer + outlineLayer
+    buildShaderDefs(shaderEffects, scale) + fillLayer + shadowLayer + outlineLayer
   );
 }
