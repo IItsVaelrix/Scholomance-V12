@@ -22,8 +22,9 @@
 import { hashString, GOLDEN_RATIO } from './shared.js';
 
 const REGISTRY = Object.create(null);
+const METADATA_REGISTRY = Object.create(null);
 
-export function registerPartProfile(id, profile) {
+export function registerPartProfile(id, profile, metadata = {}) {
   if (typeof id !== 'string' || !id) {
     throw new Error('registerPartProfile: id must be a non-empty string');
   }
@@ -31,6 +32,9 @@ export function registerPartProfile(id, profile) {
     throw new Error('registerPartProfile: profile must be a function');
   }
   REGISTRY[id] = profile;
+  if (Object.keys(metadata).length > 0) {
+    METADATA_REGISTRY[id] = metadata;
+  }
   return REGISTRY[id];
 }
 
@@ -53,6 +57,10 @@ export function profileSupportsSDF(profileFn) {
 
 export function listPartProfiles() {
   return Object.freeze(Object.keys(REGISTRY));
+}
+
+export function getPartProfileMeta(id) {
+  return METADATA_REGISTRY[id] ?? null;
 }
 
 function roundInt(value) {

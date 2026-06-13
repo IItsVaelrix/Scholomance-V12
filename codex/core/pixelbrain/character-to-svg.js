@@ -13,6 +13,7 @@
 
 import { traceBoundary } from './cell-boundary-tracer.js';
 import { buildPath, buildPathElement, buildSVGElement } from './svg-path-builder.js';
+import { getPartProfileMeta } from './part-profile-library.js';
 
 /**
  * Convert hex color to RGB, then to HSL, darken the lightness, and back to hex.
@@ -123,15 +124,21 @@ function buildShaderDefs(enabled, scale = 1) {
   ].join('');
 }
 
+const SHADER_FILTERS = {
+  'ice-glow':    'url(#pb-shader-ice-glow)',
+  'crystal-rim': 'url(#pb-shader-crystal-rim)',
+};
+
+const PART_SHADER_FALLBACK = {
+  eyeGlow: 'ice-glow', halo: 'ice-glow', wings: 'ice-glow', hairShine: 'ice-glow', cheekSigil: 'ice-glow',
+  crown: 'crystal-rim', pendant: 'crystal-rim', robeTrim: 'crystal-rim', mantle: 'crystal-rim',
+};
+
 function shaderForPart(partId, enabled) {
   if (!enabled) return null;
-  if (['eyeGlow', 'halo', 'wings', 'hairShine', 'cheekSigil'].includes(partId)) {
-    return 'url(#pb-shader-ice-glow)';
-  }
-  if (['crown', 'pendant', 'robeTrim', 'mantle'].includes(partId)) {
-    return 'url(#pb-shader-crystal-rim)';
-  }
-  return null;
+  const meta = getPartProfileMeta(partId);
+  const shaderKey = meta?.shader ?? PART_SHADER_FALLBACK[partId];
+  return SHADER_FILTERS[shaderKey] ?? null;
 }
 
 /**
