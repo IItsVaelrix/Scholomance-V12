@@ -1,6 +1,5 @@
 import { forgeCharacter } from '../../../lib/pixelbrain.adapter.js';
 import { compileEffectsBytecode } from '../../../../codex/core/pixelbrain/character-bytecode-compiler.js';
-import { SCHOOL_PALETTE } from '../assets/combatAssets.js';
 
 // Convert [r, g, b] float vec3 to Phaser integer colour (0xRRGGBB).
 function vec3ToInt([r, g, b]) {
