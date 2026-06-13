@@ -51,3 +51,155 @@ export function rasterPath(points, emit) {
     rasterLine(p1[0], p1[1], p2[0], p2[1], emit);
   }
 }
+
+/**
+ * Precise integer midpoint circle algorithm (Bresenham-style) for perfect 8-way symmetry.
+ * Critical for concentric construction rings without 1px drift.
+ */
+export function rasterCircleMidpoint(cx, cy, radius, emit) {
+  let x = 0;
+  let y = Math.round(radius);
+  let d = 3 - 2 * y;
+
+  const plot = (px, py) => {
+    emit(Math.round(cx) + px, Math.round(cy) + py);
+    emit(Math.round(cx) - px, Math.round(cy) + py);
+    emit(Math.round(cx) + px, Math.round(cy) - py);
+    emit(Math.round(cx) - px, Math.round(cy) - py);
+    emit(Math.round(cx) + py, Math.round(cy) + px);
+    emit(Math.round(cx) - py, Math.round(cy) + px);
+    emit(Math.round(cx) + py, Math.round(cy) - px);
+    emit(Math.round(cx) - py, Math.round(cy) - px);
+  };
+
+  plot(x, y);
+
+  while (y >= x) {
+    x++;
+    if (d > 0) {
+      y--;
+      d = d + 4 * (x - y) + 10;
+    } else {
+      d = d + 4 * x + 6;
+    }
+    plot(x, y);
+  }
+}
+
+/**
+ * Draw multiple concentric rings using the precise midpoint method.
+ * Returns array of emitted points for further tagging.
+ */
+export function rasterConcentricRings(cx, cy, radii, emit) {
+  const points = [];
+  const wrappedEmit = (x, y) => {
+    points.push({ x: Math.round(x), y: Math.round(y) });
+    emit(x, y);
+  };
+  for (const r of (radii || [])) {
+    const rr = Math.max(1, Math.round(r));
+    rasterCircleMidpoint(cx, cy, rr, wrappedEmit);
+  }
+  return points;
+}
+
+/**
+ * Draw radial spokes from center to a given radius (or per-ring).
+ * count: number of spokes (even for symmetry).
+ * offset: starting angle in degrees.
+ */
+export function rasterRadials(cx, cy, count, maxRadius, emit, offsetDeg = 0) {
+  if (!count || count < 1) return [];
+  const points = [];
+  const wrapped = (x, y) => {
+    points.push({ x: Math.round(x), y: Math.round(y) });
+    emit(x, y);
+  };
+  const step = (Math.PI * 2) / count;
+  const off = (offsetDeg * Math.PI) / 180;
+  for (let i = 0; i < count; i++) {
+    const a = off + i * step;
+    const ex = cx + Math.cos(a) * maxRadius;
+    const ey = cy + Math.sin(a) * maxRadius;
+    rasterLine(cx, cy, ex, ey, wrapped);
+  }
+  return points;
+}
+
+/**
+ * Draw cardinal + optional diagonal axes through center.
+ */
+export function rasterAxes(cx, cy, maxRadius, emit, includeDiagonals = true) {
+  const axes = [
+    [cx - maxRadius, cy, cx + maxRadius, cy], // horizontal
+    [cx, cy - maxRadius, cx, cy + maxRadius], // vertical
+  ];
+  if (includeDiagonals) {
+    const diag = maxRadius * 0.7071;
+    axes.push(
+      [cx - diag, cy - diag, cx + diag, cy + diag],
+      [cx - diag, cy + diag, cx + diag, cy - diag]
+    );
+  }
+  const points = [];
+  const wrapped = (x, y) => { points.push({x:Math.round(x),y:Math.round(y)}); emit(x,y); };
+  for (const [x0,y0,x1,y1] of axes) {
+    rasterLine(x0, y0, x1, y1, wrapped);
+  }
+  return points;
+}
+
+/**
+ * High-level: raster all construction guides for a spec.
+ * Emits via provided function. Returns collected guide points.
+ * spec: { center:{x,y}, rings?: [{radius}], radials?: {count, offsetDegrees?}, axes?: boolean, bounds? }
+ */
+export function rasterConstructionGuides(spec, emit) {
+  const cx = Math.round(spec?.center?.x ?? 0);
+  const cy = Math.round(spec?.center?.y ?? 0);
+  const allPoints = [];
+
+  const wEmit = (x, y) => {
+    const p = { x: Math.round(x), y: Math.round(y) };
+    allPoints.push(p);
+    emit(x, y);
+  };
+
+  // Center marker (small cross)
+  rasterLine(cx - 2, cy, cx + 2, cy, wEmit);
+  rasterLine(cx, cy - 2, cx, cy + 2, wEmit);
+
+  // Rings
+  if (Array.isArray(spec?.rings)) {
+    const radii = spec.rings.map(r => (typeof r === 'number' ? r : r.radius || r.r)).filter(Boolean);
+    rasterConcentricRings(cx, cy, radii, wEmit);
+  } else if (Array.isArray(spec?.radii)) {
+    rasterConcentricRings(cx, cy, spec.radii, wEmit);
+  }
+
+  // Radials / spokes
+  const radialCfg = spec?.radials || spec?.spokes;
+  if (radialCfg && radialCfg.count > 0) {
+    const maxR = Math.max(...(spec.rings || []).map(r => r.radius || r.r || 0), spec.bounds?.radius || 24);
+    rasterRadials(cx, cy, radialCfg.count, maxR, wEmit, radialCfg.offsetDegrees || radialCfg.offset || 0);
+  }
+
+  // Axes
+  if (spec?.axes !== false) {
+    const maxR = Math.max(16, ...(spec.rings || []).map(r => (r.radius || r.r || 0)));
+    rasterAxes(cx, cy, maxR, wEmit, spec.axes === true || spec.axes === undefined);
+  }
+
+  // Optional outer bounds ellipse (simple for now)
+  if (spec?.bounds) {
+    const bw = spec.bounds.width || spec.bounds.radius * 2 || 0;
+    const bh = spec.bounds.height || spec.bounds.radius * 2 || 0;
+    if (bw && bh) {
+      // Approximate with circle if near square, else lines for box
+      const br = Math.round(Math.max(bw, bh) / 2);
+      rasterCircleMidpoint(cx, cy, br, wEmit);
+    }
+  }
+
+  return allPoints;
+}

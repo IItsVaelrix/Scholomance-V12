@@ -1,0 +1,106 @@
+<h2>Three Approaches — Mathematical Visual Bytecode</h2>
+<p class="subtitle">All three replace PNG/SVG asset files with GPU-rendered characters. The difference is how much of the pipeline is pure math vs. PixelBrain lattice.</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.25rem;min-height:180px;display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#93c5fd;font-family:monospace;white-space:nowrap">CHARACTER-SPEC-v1</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.9rem">→</div>
+        <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#6ee7b7;font-family:monospace;white-space:nowrap">setUniform()</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.9rem">→</div>
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#c4b5fd;font-family:monospace;white-space:nowrap">GLSL shader</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.9rem">→</div>
+        <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#fdba74;font-family:monospace;white-space:nowrap">Phaser.Shader GO</div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.3);font-family:monospace;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:4px;line-height:1.6">
+        // character.frag.glsl (sketch)<br>
+        uniform vec3 u_skinColor; // from material-registry<br>
+        uniform vec3 u_schoolGlow; // PSYCHIC = #00e5ff<br>
+        uniform float u_hairLength; // longStraight = 0.8<br>
+        float head = sdEllipse(uv, vec2(0.16, 0.19));<br>
+        float body = sdCapsule(uv, p1, p2, 0.14);<br>
+        col = mix(col, u_skinColor, smoothstep(0.,0.01,head));
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Pure SDF Shader</h3>
+      <p>Every character part is a mathematical SDF shape in GLSL (ellipses, capsules, SDF noise for hair). CHARACTER-SPEC-v1 params map directly to shader uniforms — no PixelBrain lattice in the loop. Fully GPU-side. Phaser <code>Shader</code> game object renders each combatant.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Zero files, zero memory footprint</li><li>Truly infinite scale + resolution</li><li>Single draw call per character</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>GLSL must encode all part shapes</li><li>Loses PixelBrain lattice granularity</li><li>Pixel-art look requires careful shader design</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.25rem;min-height:180px;display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap">
+        <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#93c5fd;font-family:monospace;white-space:nowrap">Lattice cells</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.9rem">→</div>
+        <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#6ee7b7;font-family:monospace;white-space:nowrap">DynamicTexture.draw()</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.9rem">+</div>
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;padding:5px 8px;font-size:9px;color:#c4b5fd;font-family:monospace;white-space:nowrap">Shader glow overlay</div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.3);font-family:monospace;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:4px;line-height:1.6">
+        // CharacterShaderRenderer.js (sketch)<br>
+        const dt = scene.textures.addDynamicTexture(key, 128, 192);<br>
+        for (const cell of lattice.coordinates) {<br>
+        &nbsp;&nbsp;dt.drawFrame('pixels', cell.color, cell.x*4, cell.y*4);<br>
+        }<br>
+        // Shader game object overlaid at same position<br>
+        const glow = scene.add.shader('char-glow', x, y, w, h);
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — DynamicTexture + Shader Glow</h3>
+      <p>PixelBrain lattice cells are painted to a <code>DynamicTexture</code> at runtime (no PNG file — generated each session). A <code>Phaser.Shader</code> game object sits on top, rendering school glow, eye shine, and aura from uniforms. Two composited layers.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>Preserves pixel-art cell-level identity</li><li>PixelBrain lattice stays canonical</li><li>Shader only handles effects (simpler GLSL)</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>DynamicTexture draw loop — not pure GPU for body</li><li>Two render objects per combatant</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.25rem;min-height:180px;display:flex;flex-direction:column;gap:0.75rem;justify-content:center">
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+        <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#93c5fd;font-family:monospace">CHARACTER-SPEC-v1</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.8rem">→</div>
+        <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#6ee7b7;font-family:monospace">BytecodeCompiler</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.8rem">→</div>
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#c4b5fd;font-family:monospace">uniforms{}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-top:0.25rem">
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#c4b5fd;font-family:monospace">uniforms{}</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.8rem">→</div>
+        <div style="background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#f9a8d4;font-family:monospace">char.frag.glsl</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.8rem">→</div>
+        <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#fdba74;font-family:monospace">DynamicTexture bake</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:0.8rem">→</div>
+        <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:4px 7px;font-size:9px;color:#6ee7b7;font-family:monospace">SpriteGPULayer</div>
+      </div>
+      <div style="font-size:9px;color:rgba(255,255,255,0.3);font-family:monospace;padding:6px 8px;background:rgba(255,255,255,0.04);border-radius:4px;line-height:1.6;margin-top:0.25rem">
+        // AI Enhancement flow<br>
+        dt.snapshot(img =&gt; {<br>
+        &nbsp;&nbsp;const enhanced = await claudeEnhance(img.src);<br>
+        &nbsp;&nbsp;// enhanced = { glowIntensity:0.8, rimColor:'#a78bfa', ... }<br>
+        &nbsp;&nbsp;actor.shaderEnhancements = enhanced; // stored<br>
+        &nbsp;&nbsp;shader.setUniform('u_glowIntensity', enhanced.glowIntensity);<br>
+        });
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — Unified Shader Bytecode + AI Bake ⭐ Recommended</h3>
+      <p>A <code>CharacterBytecodeCompiler</code> converts CHARACTER-SPEC-v1 into a flat uniform object. One GLSL shader renders SDF body + noise-cloth + PixelBrain color ramps as uniform arrays. Output baked to <code>DynamicTexture</code>, fed to <code>SpriteGPULayer</code>. AI enhancement pass: snapshot → Claude Haiku (vision) → JSON of uniform tweaks stored in actor record, reapplied each session.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pros</h4><ul><li>True zero-file mathematical bytecode</li><li>PixelBrain palette ramps survive as uniform arrays</li><li>AI enhancement has clean bounded scope</li><li>SpriteGPULayer = hundreds of units, one draw call</li></ul></div>
+        <div class="cons"><h4>Cons</h4><ul><li>Needs Claude API key + @anthropic-ai/sdk</li><li>Character GLSL shader is the main authoring effort</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">I recommend <strong>C</strong> — it's the fullest realisation of your mathematical bytecode vision and is the only approach where every piece of the existing stack (PixelBrain color ramps, CHARACTER-SPEC-v1, Phaser 4, SpriteGPULayer) earns its role. A and B are valid if you want simpler scope. Click or reply in the terminal.</p>

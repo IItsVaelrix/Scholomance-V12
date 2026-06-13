@@ -14,6 +14,16 @@
 import { describe, it, expect } from 'vitest';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  createTemplateGrid,
+  exportToPixelPerfectAseprite,
+  GRID_TYPES,
+  setCell,
+} from '../../../codex/core/pixelbrain/template-grid-engine.js';
+import {
+  decodeAsepriteBinary,
+  encodeAsepriteBinary,
+} from '../../../codex/core/pixelbrain/aseprite-binary-codec.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -476,6 +486,58 @@ describe('PixelBrain Aseprite Export QA', () => {
         expect(tag.from).toBeLessThanOrEqual(tag.to);
         expect(['forward', 'reverse', 'pingpong']).toContain(tag.direction);
       }
+    });
+
+    it('exports a 1:1 pixel-perfect native Aseprite payload from an imported asset grid', () => {
+      const grid = createTemplateGrid({
+        width: 4,
+        height: 3,
+        cellSize: 1,
+        gridType: GRID_TYPES.RECTANGULAR,
+        snapStrength: 1,
+      });
+      const layer = grid.layers[0];
+      setCell(layer, 1, 1, '#FF0000', 1);
+      setCell(layer, 2, 1, '#00FF00', 1);
+
+      const payload = exportToPixelPerfectAseprite(grid, { id: 'qa-asset' });
+
+      expect(payload.width).toBe(4);
+      expect(payload.height).toBe(3);
+      expect(payload.cellSize).toBe(1);
+      expect(payload.meta.pixelPerfect).toBe(true);
+      expect(payload.meta.oneToOne).toBe(true);
+      expect(payload.frames[0].layers).toHaveLength(1);
+      expect(payload.frames[0].layers[0].cells).toEqual([
+        { x: 1, y: 1, color: '#FF0000', emphasis: 1 },
+        { x: 2, y: 1, color: '#00FF00', emphasis: 1 },
+      ]);
+    });
+
+    it('encodes and decodes the 1:1 native Aseprite payload without moving pixels', () => {
+      const grid = createTemplateGrid({
+        width: 4,
+        height: 3,
+        cellSize: 1,
+        gridType: GRID_TYPES.RECTANGULAR,
+        snapStrength: 1,
+      });
+      setCell(grid.layers[0], 0, 0, '#0000FF', 1);
+      setCell(grid.layers[0], 3, 2, '#FFFFFF', 1);
+
+      const payload = exportToPixelPerfectAseprite(grid, { id: 'qa-binary' });
+      const binary = encodeAsepriteBinary(payload);
+      const decoded = decodeAsepriteBinary(binary);
+      const cells = decoded.frames[0].layers
+        .flatMap((layer) => layer.cells)
+        .sort((a, b) => a.y - b.y || a.x - b.x);
+
+      expect(decoded.width).toBe(4);
+      expect(decoded.height).toBe(3);
+      expect(cells).toEqual([
+        expect.objectContaining({ x: 0, y: 0, color: '#0000FF' }),
+        expect.objectContaining({ x: 3, y: 2, color: '#FFFFFF' }),
+      ]);
     });
   });
 

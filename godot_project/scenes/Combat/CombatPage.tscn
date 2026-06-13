@@ -1,10 +1,10 @@
 [gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/Combat/CombatPage.gd" id="1_cpage"]
-[ext_resource type="PackedScene" uid="uid://cmudlog" path="res://scenes/Combat/UI/MudLog.tscn" id="2_mudlog"]
-[ext_resource type="PackedScene" uid="uid://cscribe" path="res://scenes/Combat/UI/TerminalScribe.tscn" id="3_scribe"]
-[ext_resource type="PackedScene" uid="uid://cband" path="res://scenes/Combat/UI/CommandBand.tscn" id="4_band"]
-[ext_resource type="PackedScene" uid="uid://carena" path="res://scenes/Combat/Arena/BattleArena.tscn" id="5_arena"]
+[ext_resource type="PackedScene" path="res://scenes/Combat/UI/MudLog.tscn" id="2_mudlog"]
+[ext_resource type="PackedScene" path="res://scenes/Combat/UI/TerminalScribe.tscn" id="3_scribe"]
+[ext_resource type="PackedScene" path="res://scenes/Combat/UI/CommandBand.tscn" id="4_band"]
+[ext_resource type="PackedScene" path="res://scenes/Combat/Arena/BattleArena.tscn" id="5_arena"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bg"]
 bg_color = Color(0.0392157, 0.0392157, 0.0392157, 1)
@@ -23,73 +23,16 @@ script = ExtResource("1_cpage")
 
 [node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_left = 64
-theme_override_constants/margin_top = 48
-theme_override_constants/margin_right = 64
-theme_override_constants/margin_bottom = 48
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 8
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 8
+theme_override_constants/margin_bottom = 8
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 48
 
-[node name="LeftPage" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="BattleArena" parent="MarginContainer" instance=ExtResource("5_arena")]
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 24
-
-[node name="CombatTitle" type="Label" parent="MarginContainer/HBoxContainer/LeftPage"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.952941, 0.917647, 0.843137, 1)
-theme_override_font_sizes/font_size = 28
-text = "SCHOLOMANCE COMBAT"
-uppercase = true
-
-[node name="MudLog" parent="MarginContainer/HBoxContainer/LeftPage" instance=ExtResource("2_mudlog")]
-layout_mode = 2
-
-[node name="TerminalHeader" type="Label" parent="MarginContainer/HBoxContainer/LeftPage"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.623529, 0.572549, 0.498039, 1)
-theme_override_fonts/font = SubResource("SystemFont_mono")
-theme_override_font_sizes/font_size = 12
-text = "RITUAL INPUT --------------------------------------------"
-
-[node name="ScribeStack" type="VBoxContainer" parent="MarginContainer/HBoxContainer/LeftPage"]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="OracleScribe" parent="MarginContainer/HBoxContainer/LeftPage/ScribeStack" instance=ExtResource("3_scribe")]
-layout_mode = 2
-placeholder_text = "Oracle >"
-
-[node name="ExtractionScribe" parent="MarginContainer/HBoxContainer/LeftPage/ScribeStack" instance=ExtResource("3_scribe")]
-layout_mode = 2
-placeholder_text = "Extraction >"
-
-[node name="CommandBand" parent="MarginContainer/HBoxContainer/LeftPage" instance=ExtResource("4_band")]
-layout_mode = 2
-
-[node name="PageGutter" type="ColorRect" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(1, 0)
-layout_mode = 2
-color = Color(0.12549, 0.12549, 0.12549, 1)
-
-[node name="RightPage" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 16
-
-[node name="ArenaFrame" type="PanelContainer" parent="MarginContainer/HBoxContainer/RightPage"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_styles/panel = SubResource("StyleBoxFlat_bg")
-
-[node name="BattleArena" parent="MarginContainer/HBoxContainer/RightPage/ArenaFrame" instance=ExtResource("5_arena")]
-layout_mode = 2
-
-[node name="ArenaCaption" type="RichTextLabel" parent="MarginContainer/HBoxContainer/RightPage"]
-layout_mode = 2
-theme_override_colors/default_color = Color(0.623529, 0.572549, 0.498039, 1)
-text = "[center][i]Arena deterministic view[/i][/center]"
-fit_content = true
-bbcode_enabled = true

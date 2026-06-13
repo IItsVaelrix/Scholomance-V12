@@ -36,12 +36,12 @@ function findStart(cellSet) {
   return `${sx},${sy}`; // top-left corner of topmost-leftmost cell
 }
 
-function walkChain(adj, startKey) {
+function walkChain(adj, startKey, visited) {
   const vertices = [];
-  const visited = new Set();
   let current = startKey;
   let prev = null;
 
+  // Max 4 edges per vertex in a rectilinear grid
   for (let i = 0; i < adj.size * 4; i++) {
     if (visited.has(current)) break;
     visited.add(current);
@@ -49,8 +49,14 @@ function walkChain(adj, startKey) {
     vertices.push([x, y]);
 
     const neighbors = adj.get(current) || [];
-    // Prefer not backtracking; among valid choices pick lowest key for determinism
-    const candidates = neighbors.filter(n => n !== prev).sort();
+    // Prefer not backtracking; among valid choices pick by numeric coordinates for determinism
+    const candidates = neighbors
+      .filter(n => n !== prev)
+      .sort((a, b) => {
+        const [ax, ay] = a.split(',').map(Number);
+        const [bx, by] = b.split(',').map(Number);
+        return ay - by || ax - bx;
+      });
     const next = candidates[0];
     if (!next) break;
     prev = current;
@@ -115,6 +121,9 @@ function catmullRomSegments(vertices, tension) {
 /**
  * Trace the outer boundary of an occupied cell set.
  *
+ * NOTE: Handles disconnected islands (outer contours) by walking all unvisited
+ * vertices. Inner holes are not supported by this edge-adjacency approach.
+ *
  * @param {Set<string>} cellSet   — Set of "x,y" cell keys
  * @param {object}      [options]
  * @param {boolean}     [options.smooth=true]    — emit Catmull-Rom segments
@@ -130,12 +139,24 @@ export function traceBoundary(cellSet, options = {}) {
   if (adj.size === 0) return { vertices: [], segments: [] };
 
   const startKey = findStart(cellSet);
-  let vertices = walkChain(adj, startKey);
-  vertices = simplifyPolygon(vertices);
+  const visited = new Set();
+  let allVertices = walkChain(adj, startKey, visited);
 
-  const segments = smooth && vertices.length >= 3
-    ? catmullRomSegments(vertices, tension)
+  // Walk any disconnected islands (remaining unvisited vertices)
+  for (const key of adj.keys()) {
+    if (!visited.has(key)) {
+      const extraVertices = walkChain(adj, key, visited);
+      if (extraVertices.length >= 3) {
+        allVertices = allVertices.concat(extraVertices);
+      }
+    }
+  }
+
+  allVertices = simplifyPolygon(allVertices);
+
+  const segments = smooth && allVertices.length >= 3
+    ? catmullRomSegments(allVertices, tension)
     : [];
 
-  return { vertices, segments };
+  return { vertices: allVertices, segments };
 }

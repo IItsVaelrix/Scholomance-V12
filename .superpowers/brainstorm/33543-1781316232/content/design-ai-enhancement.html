@@ -1,0 +1,126 @@
+<h2>Design — Section 4: AI Enhancement Flow</h2>
+<p class="subtitle">One-time bake. Claude Haiku looks at the finished character and tunes the 3 effects that matter most for that specific palette. Result stored permanently in the actor record.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Full flow — triggered once by "Forge & Enhance" button</div>
+  <div class="mockup-body" style="padding:1.5rem;font-family:monospace;font-size:11px;line-height:2.4">
+
+    <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap">
+      <div style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.5);border-radius:4px;padding:3px 10px;color:#93c5fd">Actor Forge Lab</div>
+      <span style="color:rgba(255,255,255,0.3)">→</span>
+      <div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);border-radius:4px;padding:3px 10px;color:#6ee7b7">bake(spec)</div>
+      <span style="color:rgba(255,255,255,0.3)">→</span>
+      <div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);border-radius:4px;padding:3px 10px;color:#6ee7b7">finalDT.snapshot()</div>
+      <span style="color:rgba(255,255,255,0.3)">→</span>
+      <div style="background:rgba(244,114,182,0.15);border:1px solid rgba(244,114,182,0.5);border-radius:4px;padding:3px 10px;color:#f9a8d4">base64 PNG</div>
+    </div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="color:rgba(244,114,182,0.8)">▼  POST /api/character/enhance</div>
+
+    <div style="display:flex;gap:0;margin-bottom:0.25rem">
+      <div style="width:3px;background:rgba(244,114,182,0.25);border-radius:2px;margin-left:0.9rem;margin-right:0.75rem"></div>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1">
+        <div style="color:rgba(255,255,255,0.4)">body: { imageDataUrl, schoolName, characterName }</div>
+        <div style="color:rgba(255,255,255,0.25)">— API key stays server-side (matches existing /api/combat/score pattern)</div>
+      </div>
+    </div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="color:rgba(167,139,250,0.8)">▼  server/routes/character-enhance.js → Anthropic SDK → Claude Haiku</div>
+
+    <div style="display:flex;gap:0;margin-bottom:0.25rem">
+      <div style="width:3px;background:rgba(167,139,250,0.25);border-radius:2px;margin-left:0.9rem;margin-right:0.75rem"></div>
+      <div style="display:flex;flex-direction:column;gap:0.3rem;flex:1">
+        <div style="color:rgba(255,255,255,0.4)">model: claude-haiku-4-5-20251001  (vision, fast, cheap)</div>
+        <div style="color:rgba(255,255,255,0.4)">max_tokens: 128  (JSON only, no prose)</div>
+        <div style="color:rgba(255,255,255,0.4)">system: "Return only a JSON object matching the schema. No explanation."</div>
+        <div style="color:rgba(255,255,255,0.4)">message: [image, "Enhance effects for this {school} character sprite."]</div>
+      </div>
+    </div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="color:rgba(52,211,153,0.8)">▼  { glowIntensity, rimColor, atmosphereOpacity }  ← validated + clamped</div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="color:rgba(96,165,250,0.8)">▼  pixelLotusActor.shaderEnhancements = result  (localStorage)</div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="color:rgba(251,146,60,0.8)">▼  re-bake with enhanced uniforms merged → preview updated</div>
+
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.25rem">
+
+  <div class="mockup">
+    <div class="mockup-header">AI output schema (3 values)</div>
+    <div class="mockup-body" style="padding:1.25rem">
+      <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+        <thead>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.15)">
+            <th style="padding:5px 8px;text-align:left;color:#f9a8d4">Field</th>
+            <th style="padding:5px 8px;text-align:left;color:#f9a8d4">Type</th>
+            <th style="padding:5px 8px;text-align:left;color:#f9a8d4">Clamp</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+            <td style="padding:5px 8px;color:#f9a8d4">glowIntensity</td>
+            <td style="padding:5px 8px;color:#93c5fd">float</td>
+            <td style="padding:5px 8px;color:rgba(255,255,255,0.4)">0.3 – 1.5</td>
+          </tr>
+          <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+            <td style="padding:5px 8px;color:#f9a8d4">rimColor</td>
+            <td style="padding:5px 8px;color:#93c5fd">"#rrggbb"</td>
+            <td style="padding:5px 8px;color:rgba(255,255,255,0.4)">valid hex, fallback to school primary</td>
+          </tr>
+          <tr>
+            <td style="padding:5px 8px;color:#f9a8d4">atmosphereOpacity</td>
+            <td style="padding:5px 8px;color:#93c5fd">float</td>
+            <td style="padding:5px 8px;color:rgba(255,255,255,0.4)">0.0 – 0.8</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:0.75rem;font-size:10px;color:rgba(255,255,255,0.35);line-height:1.7">
+        Kept at 3 values (not 5) — the effects shader only exposes 3 tuneable knobs. rimColor overrides u_rimColor; the other two override their matching uniforms directly.
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">What Haiku actually sees + decides</div>
+    <div class="mockup-body" style="padding:1.25rem;font-size:10px;color:rgba(255,255,255,0.5);font-family:monospace;line-height:1.8">
+      <div style="color:#f9a8d4;margin-bottom:0.5rem">Example: dark-robed Void school character</div>
+      <div>→ dark clothing, very dark bg</div>
+      <div style="color:#6ee7b7">→ glowIntensity: 1.2  (push hard, needs contrast)</div>
+      <div style="color:#6ee7b7">→ rimColor: "#a78bfa"  (purple rim fits void palette)</div>
+      <div style="color:#6ee7b7">→ atmosphereOpacity: 0.5  (prominent aura)</div>
+      <div style="margin-top:0.75rem;color:#f9a8d4">Example: light-robed Psychic school character</div>
+      <div>→ pale clothing, bright skin</div>
+      <div style="color:#6ee7b7">→ glowIntensity: 0.6  (subtle, won't wash out)</div>
+      <div style="color:#6ee7b7">→ rimColor: "#67e8f9"  (cyan stays readable)</div>
+      <div style="color:#6ee7b7">→ atmosphereOpacity: 0.25  (light touch)</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:1.25rem">
+  <h3>Stored in actor record — applied every combat session</h3>
+  <div style="font-size:11px;font-family:monospace;background:rgba(255,255,255,0.04);border-radius:4px;padding:0.75rem;line-height:1.8;color:rgba(255,255,255,0.5)">
+    <span style="color:#93c5fd">// localStorage key: pixelLotusActor</span><br>
+    {<br>
+    &nbsp;&nbsp;<span style="color:#6ee7b7">spec</span>: { ... },&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.25)">// CHARACTER-SPEC-v1</span><br>
+    &nbsp;&nbsp;<span style="color:#6ee7b7">displayName</span>: "Lyria",<br>
+    &nbsp;&nbsp;<span style="color:#f9a8d4">shaderEnhancements</span>: {&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:rgba(255,255,255,0.25)">// null until Forge & Enhance runs</span><br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f9a8d4">glowIntensity</span>: 1.2,<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f9a8d4">rimColor</span>: "#a78bfa",<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#f9a8d4">atmosphereOpacity</span>: 0.5<br>
+    &nbsp;&nbsp;}<br>
+    }
+  </div>
+  <p style="font-size:10px;color:rgba(255,255,255,0.3);margin-top:0.5rem">If shaderEnhancements is null, base effects uniforms (derived from school palette) are used as-is. Re-runnable: user can re-enhance any time, new result overwrites.</p>
+</div>
+
+<p class="subtitle">Good? Next is Section 5: combat integration — how CharacterShaderRenderer wires into ResonanceScene and replaces combatAssets.js.</p>

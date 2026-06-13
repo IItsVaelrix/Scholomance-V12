@@ -15,8 +15,9 @@
  *     canvas        { width, height, gridSize? }
  *     seed          integer for deterministic jitter
  *     bytecode      canonical bytecode string (e.g. "VW-VOID-INEXPLICABLE-TRANSCENDENT")
+ *     symmetry?     optional deterministic symmetry request
  *     bands         shading bands passed to sketchToSilhouette (default 6)
- *     parts         ordered list of { id, profile, params, attach, fill, outline?, motif?, wrap? }
+ *     parts         ordered list of { id, profile, params, attach, fill, trim?, outline?, motif?, wrap? }
  *     shader?       { kind, ...kind-specific params } — enables the FORGE pass
  *
  * Region identity is part-of (each cell carries the part id that placed it).
@@ -34,7 +35,7 @@ import { HERALDRY_MARKS } from './heraldry-library.js';
 
 export const ITEM_SPEC_VERSION = 'ITEM-SPEC-v1';
 
-const ITEM_CLASSES = Object.freeze(['weapon', 'ring', 'amulet']);
+const ITEM_CLASSES = Object.freeze(['weapon', 'ring', 'amulet', 'armor']);
 const REQUIRED_TOP_KEYS = Object.freeze([
   'contract', 'id', 'class', 'archetype', 'canvas', 'seed', 'bytecode', 'parts',
 ]);
@@ -107,6 +108,13 @@ export function normalizeItemSpec(input = {}) {
   const shader = input.shader ? normalizeShader(input.shader) : null;
   const light = input.light != null ? normalizeLight(input.light) : null;
   const heraldry = input.heraldry != null ? normalizeHeraldry(input.heraldry, parts) : null;
+  const symmetry = input.symmetry != null ? normalizeSymmetry(input.symmetry) : null;
+  const proportions = input.proportions != null ? normalizeProportions(input.proportions) : null;
+  const fidelity = input.fidelity != null ? normalizeFidelity(input.fidelity) : null;
+
+  // Construction (SketchAMP + Construction Line Microprocessor)
+  // Optional for radial / shield-like / energy assets. See 2026-06-12 PDR.
+  const construction = input.construction != null ? normalizeConstruction(input.construction) : null;
 
   const spec = {
     contract: ITEM_SPEC_VERSION,
@@ -121,11 +129,79 @@ export function normalizeItemSpec(input = {}) {
     shader,
     // Hash back-compat: specs that never declare a light must keep their
     // pre-light hash, so the key is only present when declared. Same for
-    // heraldry below.
+    // heraldry/symmetry below.
     ...(light ? { light } : {}),
     ...(heraldry && heraldry.length ? { heraldry } : {}),
+    ...(symmetry ? { symmetry } : {}),
+    ...(proportions ? { proportions } : {}),
+    ...(fidelity ? { fidelity } : {}),
+    ...(construction ? { construction } : {}),
   };
   return deepFreeze(spec);
+}
+
+const SYMMETRY_AXES = Object.freeze(['vertical', 'horizontal']);
+const SYMMETRY_MODES = Object.freeze(['strict', 'loose']);
+
+const PROPORTION_PROFILES = Object.freeze(['human_regular', 'ceremonial_exaggerated']);
+const QUALITY_TARGETS = Object.freeze(['pro_game_icon', 'reference', 'shipping']);
+const NOISE_FLOORS = Object.freeze(['none', 'low']);
+
+function normalizeSymmetry(raw) {
+  if (!raw || typeof raw !== 'object') throw err('symmetry must be an object', { raw });
+  const axis = String(raw.axis || '').trim();
+  const mode = String(raw.mode || '').trim();
+  if (!SYMMETRY_AXES.includes(axis)) {
+    throw err(`symmetry.axis must be one of: ${SYMMETRY_AXES.join(', ')}`, { axis: raw.axis });
+  }
+  if (!SYMMETRY_MODES.includes(mode)) {
+    throw err(`symmetry.mode must be one of: ${SYMMETRY_MODES.join(', ')}`, { mode: raw.mode });
+  }
+  return Object.freeze({ axis, mode });
+}
+
+function normalizeProportions(raw) {
+  if (!raw || typeof raw !== 'object') throw err('proportions must be an object', { raw });
+  const profile = String(raw.profile || 'human_regular').trim();
+  if (!PROPORTION_PROFILES.includes(profile)) {
+    throw err(`proportions.profile must be one of: ${PROPORTION_PROFILES.join(', ')}`, { profile });
+  }
+  const allowOversizedPauldrons = Boolean(raw.allowOversizedPauldrons);
+  if (profile === 'human_regular' && allowOversizedPauldrons) {
+    throw err('human_regular proportions cannot allow oversized pauldrons', { raw });
+  }
+  return Object.freeze({
+    profile,
+    shoulderScale: clampNumber(raw.shoulderScale, 0.6, 1.6, 1),
+    pauldronScale: clampNumber(raw.pauldronScale, 0.6, 1.6, 1),
+    waistTaper: clampNumber(raw.waistTaper, 0.5, 0.9, 0.68),
+    allowOversizedPauldrons,
+  });
+}
+
+function normalizeFidelity(raw) {
+  if (!raw || typeof raw !== 'object') throw err('fidelity must be an object', { raw });
+  const qualityTarget = String(raw.qualityTarget || 'pro_game_icon').trim();
+  if (!QUALITY_TARGETS.includes(qualityTarget)) {
+    throw err(`fidelity.qualityTarget must be one of: ${QUALITY_TARGETS.join(', ')}`, { qualityTarget });
+  }
+  const noiseFloor = String(raw.noiseFloor || 'none').trim();
+  if (!NOISE_FLOORS.includes(noiseFloor)) {
+    throw err(`fidelity.noiseFloor must be one of: ${NOISE_FLOORS.join(', ')}`, { noiseFloor });
+  }
+  return Object.freeze({
+    qualityTarget,
+    paletteBudget: Math.max(8, Math.min(128, Math.round(toFiniteNumber(raw.paletteBudget, 64)))),
+    bevelStrength: clampNumber(raw.bevelStrength, 0, 1, 0.72),
+    rimContrast: clampNumber(raw.rimContrast, 0, 1, 0.82),
+    centralGlowContainment: clampNumber(raw.centralGlowContainment, 0, 1, 0.88),
+    noiseFloor,
+  });
+}
+
+function clampNumber(value, min, max, fallback) {
+  const numeric = toFiniteNumber(value, fallback);
+  return Math.max(min, Math.min(max, numeric));
 }
 
 const HERALDRY_EFFECTS = Object.freeze(['emboss', 'engrave', 'inlay', 'outline', 'emit']);
@@ -176,10 +252,65 @@ function normalizeHeraldry(raw, parts) {
       ...(target ? { target } : {}),
       ...(entry.placement ? { placement: { ...entry.placement } } : {}),
       ...(scale !== undefined ? { scale } : {}),
+      ...(entry.required === false ? { required: false } : {}),
       ...(entry.symmetry !== undefined ? { symmetry: entry.symmetry } : {}),
       ...(style ? { style } : {}),
     });
   }));
+}
+
+// ── Construction (SketchAMP + Construction Line Microprocessor per 2026-06-12 PDR) ──
+
+const CONSTRUCTION_VERSION = 'construction-v1';
+
+function normalizeConstruction(raw) {
+  if (!raw || typeof raw !== 'object') throw err('construction must be an object', { raw });
+  const version = String(raw.version || CONSTRUCTION_VERSION);
+  if (version !== CONSTRUCTION_VERSION) {
+    throw err(`construction.version must be "${CONSTRUCTION_VERSION}"`, { version });
+  }
+
+  const center = raw.center && typeof raw.center === 'object' ? {
+    x: Math.round(toFiniteNumber(raw.center.x, 32)),
+    y: Math.round(toFiniteNumber(raw.center.y, 32)),
+  } : null;
+  if (!center) throw err('construction.center {x,y} is required');
+
+  let rings = [];
+  if (Array.isArray(raw.rings)) {
+    rings = raw.rings.map((r, i) => {
+      const radius = toPositiveInt(typeof r === 'number' ? r : r?.radius ?? r?.r, 4 + i * 5);
+      const role = (r && r.role) ? String(r.role) : `ring-${i}`;
+      return Object.freeze({ radius, role });
+    });
+  } else if (Array.isArray(raw.radii)) {
+    rings = raw.radii.map((rad, i) => ({ radius: toPositiveInt(rad, 4 + i * 5), role: `ring-${i}` }));
+  }
+
+  const radRaw = raw.radials || raw.spokes || null;
+  let radials = null;
+  if (radRaw && (radRaw.count || radRaw.num)) {
+    radials = Object.freeze({
+      count: toPositiveInt(radRaw.count || radRaw.num, 8),
+      offsetDegrees: toFiniteNumber(radRaw.offsetDegrees ?? radRaw.offset ?? 0),
+    });
+  }
+
+  const bounds = raw.bounds ? Object.freeze({
+    width: toPositiveInt(raw.bounds.width || (raw.bounds.radius ? raw.bounds.radius * 2 : 48), 48),
+    height: toPositiveInt(raw.bounds.height || (raw.bounds.radius ? raw.bounds.radius * 2 : 48), 48),
+    shape: String(raw.bounds.shape || 'ellipse'),
+  }) : null;
+
+  return Object.freeze({
+    version: CONSTRUCTION_VERSION,
+    center: Object.freeze(center),
+    rings: Object.freeze(rings),
+    ...(radials ? { radials } : {}),
+    ...(bounds ? { bounds } : {}),
+    ...(raw.axes !== undefined ? { axes: !!raw.axes } : {}),
+    ...(raw.style ? { style: Object.freeze({ ...raw.style }) } : {}),
+  });
 }
 
 const SHADING_MODES = Object.freeze(['faceted']);
@@ -222,8 +353,8 @@ function normalizeParts(rawParts, canvas) {
   // earlier part, and the graph must be a tree rooted at index 0.
   for (let i = 0; i < parts.length; i += 1) {
     const p = parts[i];
-    if (i > 0 && !p.attach) {
-      throw err('every part after the first must declare an attach', { partId: p.id });
+    if (i > 0 && !p.attach && !p.mirrorOf) {
+      throw err('every part after the first must declare an attach (or use mirrorOf for symmetric armor)', { partId: p.id });
     }
     if (p.attach) {
       if (!parts.slice(0, i).some((earlier) => earlier.id === p.attach.parent)) {
@@ -245,14 +376,17 @@ function normalizePart(raw, index, canvas, seen) {
   seen.add(id);
 
   const profile = String(raw.profile || '').trim();
-  if (!profile) throw err('part.profile is required', { partId: id });
+  const mirrorOf = raw.mirrorOf ? String(raw.mirrorOf).trim() : null;
+  if (!profile && !mirrorOf) throw err('part.profile is required (or mirrorOf for mirrored armor parts)', { partId: id });
 
   const params = raw.params && typeof raw.params === 'object' ? deepFreeze({ ...raw.params }) : Object.freeze({});
   const attach = raw.attach ? deepFreeze({ ...raw.attach }) : null;
   const fill = raw.fill ? deepFreeze({ ...raw.fill }) : null;
+  const trim = raw.trim ? deepFreeze({ ...raw.trim }) : null;
   const outline = raw.outline ? deepFreeze({ ...raw.outline }) : null;
   const motif = raw.motif ? deepFreeze({ ...raw.motif }) : null;
   const wrap = raw.wrap ? deepFreeze({ ...raw.wrap }) : null;
+  const glow = raw.glow ? deepFreeze({ ...raw.glow }) : null;
 
   if (raw.shading !== undefined && !SHADING_MODES.includes(raw.shading)) {
     throw err(`part.shading must be one of: ${SHADING_MODES.join(', ')}`, {
@@ -261,20 +395,25 @@ function normalizePart(raw, index, canvas, seen) {
   }
 
   if (fill) validateMaterialAnchor('fill', fill, id);
+  if (trim) validateMaterialAnchor('trim', trim, id);
   if (outline) validateMaterialAnchor('outline', outline, id);
   if (motif?.core) validateMaterialAnchor('motif.core', motif.core, id);
   if (motif?.glow) validateMaterialAnchor('motif.glow', motif.glow, id);
   if (wrap) validateMaterialAnchor('wrap', wrap, id);
+  if (glow) validateMaterialAnchor('glow', glow, id);
 
   return Object.freeze({
     id,
     profile,
+    ...(mirrorOf ? { mirrorOf } : {}),
     params,
     attach,
     fill,
+    ...(trim ? { trim } : {}),
     outline,
     motif,
     wrap,
+    ...(glow ? { glow } : {}),
     // Hash back-compat: only present when declared (see normalizeLight note).
     ...(raw.shading !== undefined ? { shading: raw.shading } : {}),
   });
@@ -337,6 +476,7 @@ export function validateItemSpec(spec) {
 function collectMaterials(part) {
   const out = [];
   if (part.fill?.material) out.push({ material: part.fill.material });
+  if (part.trim?.material) out.push({ material: part.trim.material });
   if (part.outline?.material) out.push({ material: part.outline.material });
   if (part.motif?.core?.material) out.push({ material: part.motif.core.material });
   if (part.motif?.glow?.material) out.push({ material: part.motif.glow.material });

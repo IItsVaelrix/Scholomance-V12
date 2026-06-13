@@ -1,0 +1,17 @@
+{
+  "label": "Void Sonic Plate — helm",
+  "slots": {
+    "shell": "onyx",
+    "plate": "black_steel",
+    "trim": "gold",
+    "energy": "amethyst",
+    "core": "darksteel",
+    "glyph": "gold"
+  },
+  "spec": {
+    "id": "voidplate.hd.helm.v1",
+    "hash": "fnv1a_c9997dc8"
+  },
+  "cells": 648,
+  "heraldry": null
+}

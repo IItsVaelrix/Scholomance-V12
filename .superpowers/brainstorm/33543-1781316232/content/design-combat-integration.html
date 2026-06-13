@@ -1,0 +1,104 @@
+<h2>Design — Section 5: Combat Integration</h2>
+<p class="subtitle">How CharacterShaderRenderer wires into ResonanceScene and replaces the two texture-builder functions in combatAssets.js.</p>
+
+<div class="mockup">
+  <div class="mockup-header">What changes in combatAssets.js</div>
+  <div class="mockup-body" style="padding:1.25rem;display:grid;grid-template-columns:1fr 1fr;gap:1rem;font-family:monospace;font-size:10px">
+
+    <div>
+      <div style="color:rgba(255,255,255,0.3);margin-bottom:0.5rem">BEFORE</div>
+      <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:0.75rem;line-height:1.8;color:rgba(255,255,255,0.45)">
+        <span style="color:#fca5a5">// combatAssets.js</span><br>
+        export function buildScholarTexture(scene) {<br>
+        &nbsp;&nbsp;const uri = wandSvg.renderWandSvgUri(...);<br>
+        &nbsp;&nbsp;return scene.textures.addBase64(...);<br>
+        }<br><br>
+        export function buildWraithTexture(scene) {<br>
+        &nbsp;&nbsp;const uri = wandSvg.renderWandSvgUri(...);<br>
+        &nbsp;&nbsp;return scene.textures.addBase64(...);<br>
+        }
+      </div>
+    </div>
+
+    <div>
+      <div style="color:rgba(255,255,255,0.3);margin-bottom:0.5rem">AFTER</div>
+      <div style="background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:0.75rem;line-height:1.8;color:rgba(255,255,255,0.45)">
+        <span style="color:#6ee7b7">// combatAssets.js</span><br>
+        export async function buildCharacterTextures(<br>
+        &nbsp;&nbsp;actors, scene<br>
+        ) {<br>
+        &nbsp;&nbsp;return CharacterShaderRenderer<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;.bakeAll(actors, scene);<br>
+        }<br><br>
+        <span style="color:rgba(255,255,255,0.25)">// returns Map&lt;actorId, textureKey&gt;</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:1rem">
+  <div class="mockup-header">CharacterShaderRenderer.bakeAll(actors, scene)</div>
+  <div class="mockup-body" style="padding:1.25rem;font-family:monospace;font-size:10px;line-height:1.9;color:rgba(255,255,255,0.5)">
+    <div style="display:flex;flex-direction:column;gap:0.25rem">
+      <div><span style="color:rgba(255,255,255,0.25)">for each actor in actors:</span></div>
+      <div style="margin-left:1rem">① resolve spec — <span style="color:#93c5fd">pixelLotusActor.spec</span> (player) or <span style="color:#93c5fd">npcSpec(actor.school)</span> (enemy)</div>
+      <div style="margin-left:1rem">② <span style="color:#6ee7b7">forgeCharacter(spec)</span> → south-facing RGBA</div>
+      <div style="margin-left:1rem">③ <span style="color:#6ee7b7">addDynamicTexture</span>(actor.id + '_base', 128, 192) → stamp RGBA pixels</div>
+      <div style="margin-left:1rem">④ <span style="color:#a78bfa">compileEffectsBytecode(spec)</span> → base effects uniforms</div>
+      <div style="margin-left:1rem">⑤ merge <span style="color:#f9a8d4">shaderEnhancements</span> if present (player only)</div>
+      <div style="margin-left:1rem">⑥ <span style="color:#a78bfa">scene.add.shader</span>('char-effects', merged uniforms) → bake to finalDT</div>
+      <div style="margin-left:1rem">⑦ textureMap.set(actor.id, finalDT.key)</div>
+      <div style="margin-top:0.5rem"><span style="color:rgba(255,255,255,0.25)">return textureMap</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:1rem">
+  <div class="mockup-header">ResonanceScene.js — what changes</div>
+  <div class="mockup-body" style="padding:1.25rem;font-family:monospace;font-size:10px;line-height:1.9;color:rgba(255,255,255,0.5)">
+    <div style="color:rgba(255,255,255,0.25);margin-bottom:0.4rem">in preload() or create():</div>
+    <div style="background:rgba(255,255,255,0.04);border-radius:4px;padding:0.65rem;line-height:1.8">
+      <span style="color:#6ee7b7">const textureMap = await</span> buildCharacterTextures(combatActors, this);<br><br>
+      <span style="color:#6ee7b7">const layer = this.add.spriteGPULayer</span>();<br>
+      <span style="color:rgba(255,255,255,0.3)">for (const actor of combatActors) {</span><br>
+      &nbsp;&nbsp;layer.add(actor.x, actor.y, <span style="color:#93c5fd">textureMap.get(actor.id)</span>);<br>
+      <span style="color:rgba(255,255,255,0.3)">}</span><br><br>
+      <span style="color:rgba(255,255,255,0.25)">// wandSvg texture calls removed</span>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem">
+
+  <div class="section">
+    <h3>NPC / enemy characters</h3>
+    <p style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.7">
+      No CHARACTER-SPEC-v1 spec needed for enemies. <code>npcSpec(school)</code> generates a minimal spec from school name — uses default body profile, school-matching material colors, no shaderEnhancements. Gives every enemy a distinct silhouette per school without manual authoring.
+    </p>
+  </div>
+
+  <div class="section">
+    <h3>4-direction sprites — phase 2</h3>
+    <p style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.7">
+      First pass bakes south-facing only. Direction swapping (north/east/west) added later by baking all 4 RGBAs and keying as <code>actorId_south</code>, <code>actorId_north</code>, etc. Combat movement handler swaps texture key on direction change. Out of scope for this spec.
+    </p>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:0.5rem">
+  <h3>Files touched</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+      <td style="padding:5px 8px;color:#fdba74">src/pages/Combat/assets/combatAssets.js</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.4)">Replace buildScholarTexture/buildWraithTexture with buildCharacterTextures</td>
+    </tr>
+    <tr>
+      <td style="padding:5px 8px;color:#fdba74">src/pages/Combat/scenes/ResonanceScene.js</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.4)">Await buildCharacterTextures, feed textureMap to SpriteGPULayer</td>
+    </tr>
+  </table>
+</div>
+
+<p class="subtitle">Does this integration look right? One more section — Section 6: Actor Forge Lab changes (the "Forge & Enhance" button flow) — then we write the spec doc.</p>

@@ -422,9 +422,20 @@ export function useBattleSession() {
     const battleSeed = stableHash(`${archetypeId}:${opponentData.name}:${opponentData.school}`);
     const arenaSchool = opponentData.school || 'SONIC';
 
+    let playerName = 'Scholar';
+    try {
+      const actorData = localStorage.getItem('scholomance_active_actor');
+      if (actorData) {
+        const parsed = JSON.parse(actorData);
+        if (parsed?.displayName) playerName = parsed.displayName;
+      }
+    } catch (e) {
+      // ignore
+    }
+
     const player = {
       id: PLAYER_ID,
-      name: 'Scholar',
+      name: playerName,
       school: 'SONIC',
       hp: 1000,
       maxHp: 1000,

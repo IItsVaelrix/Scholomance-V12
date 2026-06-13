@@ -1,4 +1,5 @@
 extends Node
+class_name CombatBridge
 
 signal state_patch_received(packet: Dictionary)
 signal init_received(packet: Dictionary)

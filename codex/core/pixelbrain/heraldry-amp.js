@@ -140,6 +140,7 @@ export function applyHeraldryTemplate(template, silhouette, spec) {
     const targetPartId = entry.id || 'emblem';
     const effect = entry.style?.effect || 'emboss';
     const embossMod = effect === 'engrave' ? -2 : effect === 'emboss' ? 2 : 0;
+    let stampedCells = 0;
 
     for (const key of collectMarkCells(entry, cx, cy)) {
       const idx = coordMap.get(key);
@@ -148,6 +149,7 @@ export function applyHeraldryTemplate(template, silhouette, spec) {
       if (entry.target && silhouette.partOf.get(key) !== entry.target) continue; // containment
 
       silhouette.partOf.set(key, targetPartId);
+      stampedCells += 1;
       if (embossMod !== 0) {
         const baseSlot = updatedCoords[idx].slot;
         // Emboss height/engrave depth so the emblem catches light naturally
@@ -159,6 +161,9 @@ export function applyHeraldryTemplate(template, silhouette, spec) {
           ny: -1,
         };
       }
+    }
+    if (stampedCells === 0 && entry.required !== false) {
+      throw new Error(`heraldry-amp: required emblem "${targetPartId}" stamped zero cells`);
     }
   }
 

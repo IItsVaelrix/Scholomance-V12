@@ -1,22 +1,18 @@
 /**
- * SKETCH AMP — Silhouette Authoring → Auto-Shaded Template
+ * SKETCH AMP — Silhouette Authoring → Auto-Shaded Template + Construction Geometry
  *
- * Closes the front of the pipeline: lets a flat hand-painted silhouette become
- * a shaded, re-skinnable template with zero external art. Given the occupied
- * cells of a sketch it:
- *   1. rasterizes occupancy,
- *   2. optionally mirrors it (symmetry) into a full sprite,
- *   3. runs a chamfer DISTANCE TRANSFORM so interior pixels sit further from the
- *      edge than rim pixels,
- *   4. quantizes that distance into value `slot`s — rim = dark (slot 0),
- *      core = light — so the shape reads as a rounded, shaded form.
+ * Two related but distinct sketch responsibilities:
+ * 1. Legacy silhouette path (hand-painted → distance-transform shaded template).
+ * 2. Artist/reference construction geometry (SketchAMP proper): precise guides
+ *    for radial/shield assets (center, rings, radials) that feed 00_Reference.
  *
- * Output is already a template ({ coordinates with slots, neutral grey }), so it
- * feeds straight into `fillTemplate(result, bytecode)` for a shaded re-skin.
+ * The construction side is powered by the Construction Line Microprocessor.
+ * This module now acts as the SketchAMP facade (per 2026-06-12 PDR).
  *
- *   sketch ──sketchToSilhouette()──▶ template ──fillTemplate(bytecode)──▶ sprite
+ *   ITEM-SPEC (with construction) ──runSketchAMP──▶ referenceCells + hints
+ *        └── used by item-foundry + foundry-aseprite-bridge (00_Reference)
  *
- * Pure + deterministic. Lives under the pixelbrain Cell Wall.
+ * Pure + deterministic.
  */
 
 import { clampNumber, hslToHex } from './shared.js';
@@ -168,6 +164,7 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
         snappedY: y,
         slot,
         emphasis: slot / lastSlot,
+        isRim: slot === 0,
         color: slotToNeutralGrey(slot, bands),
         source: 'sketch',
         shading: shadingClass,
@@ -184,3 +181,71 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
     dimensions: { width, height, gridSize: 1 },
   };
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SketchAMP + Construction Line facade (new in SketchAMP evolution)
+// Re-exports the microprocessor API under the SketchAMP namespace for the PDR contract.
+// -----------------------------------------------------------------------------
+
+import {
+  applyConstructionLines,
+  renderConstructionGuides,
+  extractConstructionFromReference,
+  validateConstructionAgainstSpec,
+  buildConstructionPayload,
+  runConstructionLineProcessor,
+  normalizeConstructionSpec,
+  normalizeConstructionSpec as parseConstructionSpec,
+  CONSTRUCTION_LINE_MICROPROCESSOR_ID,
+  CONSTRUCTION_VERSION,
+} from './construction-line-microprocessor.js';
+
+/**
+ * Primary SketchAMP entrypoint.
+ * If the (normalized) spec contains a `construction` section (or top-level construction),
+ * runs the Construction Line Microprocessor and returns reference geometry + hints.
+ * Otherwise falls back gracefully (for silhouette path compatibility).
+ *
+ * @param {Object} spec - ITEM-SPEC-v1 or partial containing .construction
+ * @param {Object} [options]
+ * @returns {{ referenceCells?, constructionHints?, spec?, isConstruction: boolean, ...silhouette? }}
+ */
+export function runSketchAMP(spec = {}, options = {}) {
+  const constructionRaw = spec?.construction || spec;
+  const hasConstruction = !!(constructionRaw && (constructionRaw.rings || constructionRaw.radii || constructionRaw.center || constructionRaw.radials));
+
+  if (hasConstruction) {
+    const result = applyConstructionLines([], constructionRaw, options);
+    return Object.freeze({
+      ...result,
+      isConstruction: true,
+      amp: CONSTRUCTION_LINE_MICROPROCESSOR_ID,
+      version: CONSTRUCTION_VERSION,
+      harmonic: result.constructionHints?.harmonic || false,
+      symmetricGuides: result.constructionHints?.symmetricGuides || false,
+    });
+  }
+
+  // Legacy silhouette path (no construction) — return the silhouette result shape for compatibility
+  // (caller usually already called sketchToSilhouette separately)
+  return Object.freeze({
+    isConstruction: false,
+    isTemplate: false,
+    note: 'no construction section; use sketchToSilhouette for silhouette path',
+  });
+}
+
+// Re-export the microprocessor surface so callers can use either:
+//   import { runSketchAMP, applyConstructionLines } from './sketch-amp.js'
+export {
+  applyConstructionLines,
+  renderConstructionGuides,
+  extractConstructionFromReference,
+  validateConstructionAgainstSpec,
+  buildConstructionPayload,
+  runConstructionLineProcessor,
+  parseConstructionSpec,
+  normalizeConstructionSpec,
+  CONSTRUCTION_LINE_MICROPROCESSOR_ID,
+  CONSTRUCTION_VERSION,
+};

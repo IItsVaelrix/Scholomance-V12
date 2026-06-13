@@ -1,0 +1,905 @@
+{
+  "title": "Empty Dreams",
+  "beats": [
+    {
+      "time": 13.2,
+      "label": "Injury",
+      "energy": 0.6,
+      "style": "kinetic"
+    },
+    {
+      "time": 14.2,
+      "label": "in",
+      "energy": 0.76,
+      "style": "kinetic"
+    },
+    {
+      "time": 14.8,
+      "label": "a",
+      "energy": 0.85,
+      "style": "kinetic"
+    },
+    {
+      "time": 15.2,
+      "label": "melody",
+      "energy": 0.82,
+      "style": "kinetic"
+    },
+    {
+      "time": 15.6,
+      "label": "imagery",
+      "energy": 0.86,
+      "style": "kinetic"
+    },
+    {
+      "time": 16.4,
+      "label": "weaved",
+      "energy": 0.86,
+      "style": "kinetic"
+    },
+    {
+      "time": 16.8,
+      "label": "in",
+      "energy": 0.84,
+      "style": "kinetic"
+    },
+    {
+      "time": 17.2,
+      "label": "symphonies",
+      "energy": 0.82,
+      "style": "kinetic"
+    },
+    {
+      "time": 17.6,
+      "label": "wicked",
+      "energy": 0.79,
+      "style": "kinetic"
+    },
+    {
+      "time": 18.6,
+      "label": "schemes",
+      "energy": 0.7,
+      "style": "kinetic"
+    },
+    {
+      "time": 19.0,
+      "label": "drip",
+      "energy": 0.69,
+      "style": "kinetic"
+    },
+    {
+      "time": 35.2,
+      "label": "acidic",
+      "energy": 0.48,
+      "style": "kinetic"
+    },
+    {
+      "time": 41.0,
+      "label": "heat",
+      "energy": 0.54,
+      "style": "kinetic"
+    },
+    {
+      "time": 41.4,
+      "label": "let",
+      "energy": 0.65,
+      "style": "kinetic"
+    },
+    {
+      "time": 41.8,
+      "label": "it",
+      "energy": 0.5,
+      "style": "kinetic"
+    },
+    {
+      "time": 44.4,
+      "label": "be,",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 47.6,
+      "label": "let",
+      "energy": 0.64,
+      "style": "kinetic"
+    },
+    {
+      "time": 53.6,
+      "label": "it",
+      "energy": 0.61,
+      "style": "kinetic"
+    },
+    {
+      "time": 54.0,
+      "label": "be...",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 54.8,
+      "label": "Monotony",
+      "energy": 0.48,
+      "style": "kinetic"
+    },
+    {
+      "time": 55.2,
+      "label": "turns",
+      "energy": 0.47,
+      "style": "kinetic"
+    },
+    {
+      "time": 56.4,
+      "label": "economy",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 57.0,
+      "label": "prophecy",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 57.6,
+      "label": "seen",
+      "energy": 0.49,
+      "style": "kinetic"
+    },
+    {
+      "time": 58.6,
+      "label": "as",
+      "energy": 0.48,
+      "style": "kinetic"
+    },
+    {
+      "time": 59.6,
+      "label": "comedy",
+      "energy": 0.77,
+      "style": "kinetic"
+    },
+    {
+      "time": 63.0,
+      "label": "Logically,",
+      "energy": 0.52,
+      "style": "kinetic"
+    },
+    {
+      "time": 64.0,
+      "label": "I",
+      "energy": 0.66,
+      "style": "kinetic"
+    },
+    {
+      "time": 64.6,
+      "label": "just",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 65.2,
+      "label": "got",
+      "energy": 0.73,
+      "style": "kinetic"
+    },
+    {
+      "time": 65.8,
+      "label": "to",
+      "energy": 0.68,
+      "style": "kinetic"
+    },
+    {
+      "time": 66.6,
+      "label": "be.",
+      "energy": 0.47,
+      "style": "kinetic"
+    },
+    {
+      "time": 67.6,
+      "label": "Let",
+      "energy": 0.54,
+      "style": "kinetic"
+    },
+    {
+      "time": 68.0,
+      "label": "it",
+      "energy": 0.68,
+      "style": "kinetic"
+    },
+    {
+      "time": 68.6,
+      "label": "be,",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 69.0,
+      "label": "let",
+      "energy": 0.48,
+      "style": "kinetic"
+    },
+    {
+      "time": 70.4,
+      "label": "it",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 71.0,
+      "label": "be.",
+      "energy": 0.7,
+      "style": "kinetic"
+    },
+    {
+      "time": 71.4,
+      "label": "Emptiness",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 72.2,
+      "label": "is",
+      "energy": 0.5,
+      "style": "kinetic"
+    },
+    {
+      "time": 72.8,
+      "label": "serenity",
+      "energy": 0.48,
+      "style": "kinetic"
+    },
+    {
+      "time": 75.8,
+      "label": "maybe",
+      "energy": 0.5,
+      "style": "kinetic"
+    },
+    {
+      "time": 76.6,
+      "label": "this",
+      "energy": 0.74,
+      "style": "kinetic"
+    },
+    {
+      "time": 77.4,
+      "label": "is",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 77.8,
+      "label": "the",
+      "energy": 0.51,
+      "style": "kinetic"
+    },
+    {
+      "time": 78.4,
+      "label": "remedy",
+      "energy": 0.51,
+      "style": "kinetic"
+    },
+    {
+      "time": 78.8,
+      "label": "the",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 79.6,
+      "label": "abyss",
+      "energy": 0.52,
+      "style": "kinetic"
+    },
+    {
+      "time": 80.2,
+      "label": "and",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 81.0,
+      "label": "the",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 81.6,
+      "label": "entropy",
+      "energy": 0.53,
+      "style": "kinetic"
+    },
+    {
+      "time": 82.4,
+      "label": "let",
+      "energy": 0.71,
+      "style": "kinetic"
+    },
+    {
+      "time": 82.8,
+      "label": "me",
+      "energy": 0.61,
+      "style": "kinetic"
+    },
+    {
+      "time": 83.2,
+      "label": "see,",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 83.8,
+      "label": "let",
+      "energy": 0.5,
+      "style": "kinetic"
+    },
+    {
+      "time": 84.2,
+      "label": "me",
+      "energy": 0.5,
+      "style": "kinetic"
+    },
+    {
+      "time": 85.0,
+      "label": "see...",
+      "energy": 0.51,
+      "style": "kinetic"
+    },
+    {
+      "time": 85.8,
+      "label": "The",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 87.2,
+      "label": "void",
+      "energy": 0.59,
+      "style": "kinetic"
+    },
+    {
+      "time": 88.0,
+      "label": "is",
+      "energy": 0.65,
+      "style": "kinetic"
+    },
+    {
+      "time": 88.4,
+      "label": "an",
+      "energy": 0.65,
+      "style": "kinetic"
+    },
+    {
+      "time": 89.4,
+      "label": "energy",
+      "energy": 0.68,
+      "style": "kinetic"
+    },
+    {
+      "time": 89.8,
+      "label": "avoid",
+      "energy": 0.68,
+      "style": "kinetic"
+    },
+    {
+      "time": 90.6,
+      "label": "is",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 91.6,
+      "label": "the",
+      "energy": 0.54,
+      "style": "kinetic"
+    },
+    {
+      "time": 92.0,
+      "label": "tendency",
+      "energy": 0.53,
+      "style": "kinetic"
+    },
+    {
+      "time": 92.4,
+      "label": "enjoy",
+      "energy": 0.54,
+      "style": "kinetic"
+    },
+    {
+      "time": 93.0,
+      "label": "making",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 94.2,
+      "label": "enemies",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 94.8,
+      "label": "let",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 95.8,
+      "label": "them",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 96.8,
+      "label": "bleed,",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 97.6,
+      "label": "let",
+      "energy": 0.51,
+      "style": "kinetic"
+    },
+    {
+      "time": 98.8,
+      "label": "them",
+      "energy": 0.6,
+      "style": "kinetic"
+    },
+    {
+      "time": 99.6,
+      "label": "bleed",
+      "energy": 0.6,
+      "style": "kinetic"
+    },
+    {
+      "time": 100.2,
+      "label": "Sorrow",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 100.8,
+      "label": "stained,",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 101.4,
+      "label": "so",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 102.0,
+      "label": "it's",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 102.4,
+      "label": "rest",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 103.2,
+      "label": "in",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 103.8,
+      "label": "peace",
+      "energy": 0.55,
+      "style": "kinetic"
+    },
+    {
+      "time": 105.0,
+      "label": "bottles",
+      "energy": 0.51,
+      "style": "kinetic"
+    },
+    {
+      "time": 105.6,
+      "label": "came,",
+      "energy": 0.54,
+      "style": "kinetic"
+    },
+    {
+      "time": 106.4,
+      "label": "now",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 106.8,
+      "label": "identity",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 107.6,
+      "label": "split",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 108.0,
+      "label": "in",
+      "energy": 0.58,
+      "style": "kinetic"
+    },
+    {
+      "time": 108.4,
+      "label": "half",
+      "energy": 0.59,
+      "style": "kinetic"
+    },
+    {
+      "time": 109.2,
+      "label": "and",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 109.8,
+      "label": "the",
+      "energy": 0.69,
+      "style": "kinetic"
+    },
+    {
+      "time": 110.2,
+      "label": "rest",
+      "energy": 0.76,
+      "style": "kinetic"
+    },
+    {
+      "time": 111.4,
+      "label": "of",
+      "energy": 0.61,
+      "style": "kinetic"
+    },
+    {
+      "time": 112.2,
+      "label": "me",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 113.2,
+      "label": "empty",
+      "energy": 0.77,
+      "style": "kinetic"
+    },
+    {
+      "time": 114.2,
+      "label": "dreams,",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 114.8,
+      "label": "empty",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 115.2,
+      "label": "dreams.",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 116.0,
+      "label": "Let",
+      "energy": 0.77,
+      "style": "kinetic"
+    },
+    {
+      "time": 117.0,
+      "label": "it",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 117.4,
+      "label": "be,",
+      "energy": 0.59,
+      "style": "kinetic"
+    },
+    {
+      "time": 118.2,
+      "label": "Let",
+      "energy": 0.56,
+      "style": "kinetic"
+    },
+    {
+      "time": 118.6,
+      "label": "it",
+      "energy": 0.61,
+      "style": "kinetic"
+    },
+    {
+      "time": 119.2,
+      "label": "be,",
+      "energy": 0.59,
+      "style": "kinetic"
+    },
+    {
+      "time": 119.6,
+      "label": "Let",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 120.6,
+      "label": "it",
+      "energy": 0.62,
+      "style": "kinetic"
+    },
+    {
+      "time": 121.8,
+      "label": "be,",
+      "energy": 0.94,
+      "style": "kinetic"
+    },
+    {
+      "time": 123.4,
+      "label": "Let",
+      "energy": 0.72,
+      "style": "kinetic"
+    },
+    {
+      "time": 124.2,
+      "label": "it",
+      "energy": 0.73,
+      "style": "kinetic"
+    },
+    {
+      "time": 124.6,
+      "label": "be,",
+      "energy": 1.0,
+      "style": "kinetic"
+    },
+    {
+      "time": 125.4,
+      "label": "Let",
+      "energy": 0.71,
+      "style": "kinetic"
+    },
+    {
+      "time": 126.0,
+      "label": "me",
+      "energy": 0.7,
+      "style": "kinetic"
+    },
+    {
+      "time": 126.4,
+      "label": "see,",
+      "energy": 0.71,
+      "style": "kinetic"
+    },
+    {
+      "time": 127.0,
+      "label": "let",
+      "energy": 0.72,
+      "style": "kinetic"
+    },
+    {
+      "time": 127.4,
+      "label": "me",
+      "energy": 0.95,
+      "style": "kinetic"
+    },
+    {
+      "time": 129.6,
+      "label": "see,",
+      "energy": 0.71,
+      "style": "kinetic"
+    },
+    {
+      "time": 130.4,
+      "label": "empty",
+      "energy": 0.92,
+      "style": "kinetic"
+    },
+    {
+      "time": 131.2,
+      "label": "dreams,",
+      "energy": 0.77,
+      "style": "kinetic"
+    },
+    {
+      "time": 131.8,
+      "label": "empty",
+      "energy": 0.76,
+      "style": "kinetic"
+    },
+    {
+      "time": 132.6,
+      "label": "dreams.",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 133.2,
+      "label": "Let",
+      "energy": 0.94,
+      "style": "kinetic"
+    },
+    {
+      "time": 134.4,
+      "label": "it",
+      "energy": 0.73,
+      "style": "kinetic"
+    },
+    {
+      "time": 134.8,
+      "label": "be,",
+      "energy": 0.7,
+      "style": "kinetic"
+    },
+    {
+      "time": 135.6,
+      "label": "Let",
+      "energy": 0.83,
+      "style": "kinetic"
+    },
+    {
+      "time": 136.0,
+      "label": "it",
+      "energy": 0.97,
+      "style": "kinetic"
+    },
+    {
+      "time": 137.6,
+      "label": "be,",
+      "energy": 0.74,
+      "style": "kinetic"
+    },
+    {
+      "time": 138.0,
+      "label": "Let",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 139.0,
+      "label": "it",
+      "energy": 0.9,
+      "style": "kinetic"
+    },
+    {
+      "time": 139.6,
+      "label": "be,",
+      "energy": 0.72,
+      "style": "kinetic"
+    },
+    {
+      "time": 140.4,
+      "label": "Let",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 141.0,
+      "label": "it",
+      "energy": 0.9,
+      "style": "kinetic"
+    },
+    {
+      "time": 141.8,
+      "label": "be,",
+      "energy": 0.93,
+      "style": "kinetic"
+    },
+    {
+      "time": 142.4,
+      "label": "Let",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 142.8,
+      "label": "me",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 143.2,
+      "label": "see,",
+      "energy": 0.75,
+      "style": "kinetic"
+    },
+    {
+      "time": 143.6,
+      "label": "let",
+      "energy": 0.72,
+      "style": "kinetic"
+    },
+    {
+      "time": 153.0,
+      "label": "me",
+      "energy": 0.86,
+      "style": "kinetic"
+    },
+    {
+      "time": 154.8,
+      "label": "see,",
+      "energy": 0.57,
+      "style": "kinetic"
+    },
+    {
+      "time": 155.8,
+      "label": "empty",
+      "energy": 0.84,
+      "style": "kinetic"
+    },
+    {
+      "time": 157.0,
+      "label": "dreams,",
+      "energy": 0.65,
+      "style": "kinetic"
+    },
+    {
+      "time": 157.6,
+      "label": "empty",
+      "energy": 0.63,
+      "style": "kinetic"
+    },
+    {
+      "time": 158.6,
+      "label": "dreams.",
+      "energy": 0.82,
+      "style": "kinetic"
+    },
+    {
+      "time": 159.4,
+      "label": "empty",
+      "energy": 0.82,
+      "style": "kinetic"
+    },
+    {
+      "time": 160.0,
+      "label": "dreams,",
+      "energy": 0.85,
+      "style": "kinetic"
+    },
+    {
+      "time": 160.8,
+      "label": "empty",
+      "energy": 0.81,
+      "style": "kinetic"
+    },
+    {
+      "time": 161.4,
+      "label": "dreams.",
+      "energy": 0.87,
+      "style": "kinetic"
+    },
+    {
+      "time": 164.2,
+      "label": "empty",
+      "energy": 0.85,
+      "style": "kinetic"
+    },
+    {
+      "time": 165.2,
+      "label": "dreams,",
+      "energy": 0.82,
+      "style": "kinetic"
+    },
+    {
+      "time": 165.6,
+      "label": "empty",
+      "energy": 0.81,
+      "style": "kinetic"
+    },
+    {
+      "time": 166.0,
+      "label": "dreams.",
+      "energy": 0.75,
+      "style": "kinetic"
+    }
+  ]
+}

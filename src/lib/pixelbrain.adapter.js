@@ -41,6 +41,8 @@ import {
   clearCell as codexClearCell,
   exportToAseprite as codexExportToAseprite,
   importFromAseprite as codexImportFromAseprite,
+  importFromPixelBrainAssetPacket as codexImportFromPixelBrainAssetPacket,
+  exportToPixelPerfectAseprite as codexExportToPixelPerfectAseprite,
   validateAsepriteImportPayload as codexValidateAsepriteImportPayload,
   generateGridPreview as codexGenerateGridPreview,
   getCellAtPosition as codexGetCellAtPosition,
@@ -51,8 +53,43 @@ import {
   floodFill as codexFloodFill,
   GRID_TYPES as codexGRID_TYPES,
   setCell as codexSetCell,
+  getCell as codexGetCell,
   toggleSymmetryAxis as codexToggleSymmetryAxis,
+  // New editor extensions (PDR systems 1-8)
+  createLayer as codexCreateLayer,
+  setLayerOpacity as codexSetLayerOpacity,
+  setLayerVisible as codexSetLayerVisible,
+  setLayerLocked as codexSetLayerLocked,
+  reorderLayers as codexReorderLayers,
+  getFlattenedPreviewCells as codexGetFlattenedPreviewCells,
+  createReferenceLayer as codexCreateReferenceLayer,
+  attachAnnotation as codexAttachAnnotation,
+  getCellAnnotations as codexGetCellAnnotations,
+  selectRect as codexSelectRect,
+  clearSelection as codexClearSelection,
+  getSelectionCells as codexGetSelectionCells,
+  transformCells as codexTransformCells,
+  transformSelection as codexTransformSelection,
+  applyAMPToCells as codexApplyAMPToCells,
+  applyAMPToLayer as codexApplyAMPToLayer,
 } from '../../codex/core/pixelbrain/template-grid-engine.js';
+
+import {
+  encodeAsepriteBinary as codexEncodeAsepriteBinary,
+} from '../../codex/core/pixelbrain/aseprite-binary-codec.js';
+
+// --- Character Creator (PDR 2026-06-12) ---
+import {
+  forgeCharacter as codexForgeCharacter,
+  normalizeCharacterSpec as codexNormalizeCharacterSpec,
+  validateCharacterSpec as codexValidateCharacterSpec,
+  hashCharacterSpec as codexHashCharacterSpec,
+  composeCharacterSilhouette as codexComposeCharacterSilhouette,
+  createCharacterSkeleton as codexCreateCharacterSkeleton,
+  exportCharacterToPhaserPipeline as codexExportCharacterToPhaserPipeline,
+  exportCharacterToGodotScene as codexExportCharacterToGodotScene,
+  exportCharacterToPixelLotusActor as codexExportCharacterToPixelLotusActor,
+} from '../../codex/core/pixelbrain/character-foundry.js';
 
 // --- Lattice Grid Engine (NEW) ---
 import {
@@ -114,6 +151,28 @@ import {
 } from '../../codex/core/pixelbrain/template-grid-asset-bridge.js';
 
 import {
+  exportFoundryToAseprite as codexExportFoundryToAseprite,
+  exportFoundryToAsepriteBinary as codexExportFoundryToAsepriteBinary,
+  decodeFoundryAsepriteBinary as codexDecodeFoundryAsepriteBinary,
+  importAsepriteToFoundryAsset as codexImportAsepriteToFoundryAsset,
+  importAsepriteBinaryToFoundryAsset as codexImportAsepriteBinaryToFoundryAsset,
+} from '../../codex/core/pixelbrain/foundry-aseprite-bridge.js';
+
+// Editor Command Stack (System 7) + new editor primitives
+import {
+  createCommandStack as codexCreateCommandStack,
+  Command as codexCommand,
+  createPaintCommand as codexCreatePaintCommand,
+  createFillCommand as codexCreateFillCommand,
+  LayerOpCommand,
+  rehydrateEditorCommand,
+} from '../../codex/core/pixelbrain/editor-command-stack.js';
+
+import {
+  buildConstructionGuideCells as codexBuildConstructionGuideCells,
+} from '../../codex/core/pixelbrain/construction-guides.js';
+
+import {
   registerPixelBrainShaderUniformProvider as codexRegisterPixelBrainShaderUniformProvider,
   resolvePixelBrainShaderUniforms as codexResolvePixelBrainShaderUniforms,
 } from '../../codex/core/pixelbrain/pixelbrain-shader-uniform-providers.js';
@@ -122,6 +181,24 @@ import {
   enhanceSquaresForRender as codexEnhanceSquaresForRender,
   buildSquareSharpnessContrastPayload as codexBuildSquareSharpnessContrastPayload,
 } from '../../codex/core/pixelbrain/square-sharpness-contrast-amp.js';
+
+// --- SDF & Coherent Noise AMPs (full PDR 2026-06-12 integration for editor + foundry) ---
+import {
+  SDFShapeAMP as codexSDFShapeAMP,
+  SDF_SHAPE_AMP_ID as codexSDF_ID,
+  SDF_SHAPE_AMP_SEAM as codexSDF_SEAM,
+} from '../../codex/core/pixelbrain/sdf-shape-amp.js';
+
+import {
+  NoiseFillAMP as codexNoiseFillAMP,
+  NOISE_FILL_AMP_ID as codexNOISE_ID,
+  NOISE_FILL_AMP_SEAM as codexNOISE_SEAM,
+} from '../../codex/core/pixelbrain/noise-fill-amp.js';
+
+import {
+  normalizePB_SDF_v1 as codexNormalizePB_SDF_v1,
+  normalizePB_NOISE_v1 as codexNormalizePB_NOISE_v1,
+} from '../../codex/core/pixelbrain/pixelbrain-asset-packet.js';
 
 // --- WAND → Fill Bridge (proposal → fill bytecode) ---
 import {
@@ -304,6 +381,18 @@ export function importFromAseprite(data, options = {}) {
   return codexImportFromAseprite(data, options);
 }
 
+export function importFromPixelBrainAssetPacket(packet, options = {}) {
+  return codexImportFromPixelBrainAssetPacket(packet, options);
+}
+
+export function exportToPixelPerfectAseprite(grid, options = {}) {
+  return codexExportToPixelPerfectAseprite(grid, options);
+}
+
+export function exportToPixelPerfectAsepriteBinary(grid, options = {}) {
+  return codexEncodeAsepriteBinary(codexExportToPixelPerfectAseprite(grid, options));
+}
+
 export function validateAsepriteImportPayload(data, options = {}) {
   return codexValidateAsepriteImportPayload(data, options);
 }
@@ -314,6 +403,10 @@ export function floodFill(grid, layer, x, y, color) {
 
 export function setCell(layer, x, y, color, emphasis) {
   return codexSetCell(layer, x, y, color, emphasis);
+}
+
+export function getCell(layer, x, y) {
+  return codexGetCell(layer, x, y);
 }
 
 export function toggleSymmetryAxis(grid, axis) {
@@ -382,6 +475,26 @@ export function resolvePixelBrainPaletteAuthority(input) {
 
 export function templateGridToPixelBrainAssetPacket(grid, options) {
   return codexTemplateGridToPixelBrainAssetPacket(grid, options);
+}
+
+export function exportFoundryToAseprite(foundry, options) {
+  return codexExportFoundryToAseprite(foundry, options);
+}
+
+export function exportFoundryToAsepriteBinary(foundry, options) {
+  return codexExportFoundryToAsepriteBinary(foundry, options);
+}
+
+export function decodeFoundryAsepriteBinary(buffer) {
+  return codexDecodeFoundryAsepriteBinary(buffer);
+}
+
+export function importAsepriteToFoundryAsset(payload, options) {
+  return codexImportAsepriteToFoundryAsset(payload, options);
+}
+
+export function importAsepriteBinaryToFoundryAsset(buffer, options) {
+  return codexImportAsepriteBinaryToFoundryAsset(buffer, options);
 }
 
 export function registerPixelBrainShaderUniformProvider() {
@@ -550,3 +663,222 @@ export {
   radialRotate,
   diagonalMirror,
 } from '../../codex/core/pixelbrain/coord-symmetry-amp.js';
+
+// ═══════════════════════════════════════════════════════════════════════
+// EDITOR SYSTEMS (full implementation of the 8 Aseprite-rival features + AMP-Aware)
+// All UI code must use these (via the adapter).
+// ═══════════════════════════════════════════════════════════════════════
+
+// Command Stack (System 7)
+export const createCommandStack = codexCreateCommandStack;
+export const Command = codexCommand;
+export const createPaintCommand = codexCreatePaintCommand; // convenience re-export, aliased to avoid duplicate declaration in this barrel module scope
+export const createFillCommand = codexCreateFillCommand;
+export { LayerOpCommand, rehydrateEditorCommand };
+
+// Construction guides (00_Reference geometry for shields / radials)
+export const buildConstructionGuideCells = codexBuildConstructionGuideCells;
+
+// Layer Stack (System 2)
+export const createLayer = codexCreateLayer;
+export const setLayerOpacity = codexSetLayerOpacity;
+export const setLayerVisible = codexSetLayerVisible;
+export const setLayerLocked = codexSetLayerLocked;
+export const reorderLayers = codexReorderLayers;
+export const getFlattenedPreviewCells = codexGetFlattenedPreviewCells;
+
+// Reference / Annotation Layer (System 8)
+export const createReferenceLayer = codexCreateReferenceLayer;
+export const attachAnnotation = codexAttachAnnotation;
+export const getCellAnnotations = codexGetCellAnnotations;
+
+// Selection + Transform (System 6)
+export const selectRect = codexSelectRect;
+export const clearSelection = codexClearSelection;
+export const getSelectionCells = codexGetSelectionCells;
+export const transformCells = codexTransformCells;
+export const transformSelection = codexTransformSelection;
+
+// AMP-Aware Editing (System 5) - the differentiator
+export const applyAMPToCells = codexApplyAMPToCells;
+export const applyAMPToLayer = codexApplyAMPToLayer;
+
+// Capability registry (disparity reconciliation boon — makes previously orphaned AMPs and processors discoverable by UI surfaces without hard-coding).
+export const PIXELBRAIN_REGISTERED_AMPS = Object.freeze([
+  { id: 'square-sharpness-contrast', label: 'Sharpness / Contrast', ampName: 'squareSharpness' },
+  { id: 'chromatic-transmutation', label: 'Chromatic Transmutation', ampName: 'chromatic' },
+  { id: 'color-intensity', label: 'Color Intensity Rating', ampName: 'intensity' },
+  { id: 'symmetry', label: 'Symmetry', ampName: 'symmetry' },
+  // PDR 2026-06-12: SDF + coherent noise now first-class in editor AMP cockpit (lattice only, deterministic, construction-guided)
+  { id: 'sdf-shape', label: 'SDF Shape (PDR)', ampName: 'sdfShape' },
+  { id: 'noise-fill', label: 'Noise Fill (PDR)', ampName: 'noiseFill' },
+]);
+
+export function getRegisteredAMPs() {
+  return PIXELBRAIN_REGISTERED_AMPS;
+}
+
+// Editor-friendly wrappers so SDF/Noise fit the (cells, options) => processedCells contract used by applyAMPTo* + command stack.
+// SDF is generative (builds silhouette from descriptor); Noise modulates existing without removing required cells.
+function makeDefaultSDFDescriptor() {
+  return codexNormalizePB_SDF_v1({
+    contract: 'PB-SDF-v1',
+    id: 'editor-sdf-capsule',
+    primitives: [
+      { type: 'capsule', params: { p1: { x: 32, y: 12 }, p2: { x: 32, y: 68 }, radius: 7.5 } }
+    ],
+    operations: []
+  });
+}
+function makeDefaultNoiseDescriptor() {
+  return codexNormalizePB_NOISE_v1({
+    contract: 'PB-NOISE-v1',
+    id: 'editor-noise-fbm',
+    type: 'fbm',
+    seed: 0xC0DEFEED,
+    frequency: 0.12,
+    octaves: 3,
+    amplitude: 0.55
+  });
+}
+
+export function sdfShapeEditorAmp(cells = [], options = {}) {
+  let sdf = options.sdf ? codexNormalizePB_SDF_v1(options.sdf) : makeDefaultSDFDescriptor();
+
+  // Improve bounds: if caller passed cells (from current layer/selection), compute tight domain + small padding.
+  // This prevents the AMP from flooding the entire canvas and makes the result respect where the user is working (PDR construction-guided spirit for editor use).
+  if (Array.isArray(cells) && cells.length > 0) {
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    cells.forEach(c => {
+      const x = Number(c.x || c.snappedX || 0);
+      const y = Number(c.y || c.snappedY || 0);
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    });
+    const pad = 4;
+    const domain = {
+      min: { x: Math.max(0, Math.floor(minX - pad)), y: Math.max(0, Math.floor(minY - pad)) },
+      max: { x: Math.ceil(maxX + pad), y: Math.ceil(maxY + pad) }
+    };
+    sdf = codexNormalizePB_SDF_v1({ ...sdf, domain });
+  }
+
+  const res = codexSDFShapeAMP({ }, { sdf, partId: options.partId || 'sdf-editor', defaultColor: options.color || '#D4D4D4', minCells: 1, feather: options.feather || 0 });
+  return (res.partCells || []).map(c => ({
+    x: c.x, y: c.y,
+    color: options.color || c.color || '#D4D4D4',
+    emphasis: 1
+  }));
+}
+
+export function noiseFillEditorAmp(cells = [], options = {}) {
+  const noise = options.noise || makeDefaultNoiseDescriptor();
+  const res = codexNoiseFillAMP(cells, noise, options);
+  const fills = res.fills || cells;
+  return fills.map(cell => {
+    const i = (typeof cell.intensity === 'number') ? cell.intensity : 0.7;
+    const col = String(cell.color || '#AAAAAA');
+    const r = parseInt(col.slice(1,3), 16) || 180;
+    const g = parseInt(col.slice(3,5), 16) || 180;
+    const b = parseInt(col.slice(5,7), 16) || 180;
+    const f = 0.6 + 0.4 * i;
+    const nr = Math.max(0, Math.min(255, Math.floor(r * f)));
+    const ng = Math.max(0, Math.min(255, Math.floor(g * f)));
+    const nb = Math.max(0, Math.min(255, Math.floor(b * f)));
+    const newCol = '#' + [nr, ng, nb].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    return { ...cell, color: newCol, emphasis: Math.round(i * 10) / 10 };
+  });
+}
+
+// Raw + seam + normalizer re-exports for advanced use (page or foundry consumers via adapter only)
+export const SDFShapeAMP = codexSDFShapeAMP;
+export const NoiseFillAMP = codexNoiseFillAMP;
+export const SDF_SHAPE_AMP_ID = codexSDF_ID;
+export const NOISE_FILL_AMP_ID = codexNOISE_ID;
+export const SDF_SHAPE_AMP_SEAM = codexSDF_SEAM;
+export const NOISE_FILL_AMP_SEAM = codexNOISE_SEAM;
+export const normalizePB_SDF_v1 = codexNormalizePB_SDF_v1;
+export const normalizePB_NOISE_v1 = codexNormalizePB_NOISE_v1;
+
+// --- CHARACTER CREATOR EXPORTS ---
+
+export function forgeCharacter(spec, opts) {
+  return codexForgeCharacter(spec, opts);
+}
+
+export function normalizeCharacterSpec(spec) {
+  return codexNormalizeCharacterSpec(spec);
+}
+
+export function validateCharacterSpec(spec) {
+  return codexValidateCharacterSpec(spec);
+}
+
+export function hashCharacterSpec(spec) {
+  return codexHashCharacterSpec(spec);
+}
+
+export function composeCharacterSilhouette(spec, options) {
+  return codexComposeCharacterSilhouette(spec, options);
+}
+
+export function createCharacterSkeleton(bodyResult, direction) {
+  return codexCreateCharacterSkeleton(bodyResult, direction);
+}
+
+export function exportCharacterToPhaserPipeline(character) {
+  return codexExportCharacterToPhaserPipeline(character);
+}
+
+export function exportCharacterToGodotScene(character) {
+  return codexExportCharacterToGodotScene(character);
+}
+
+export function exportCharacterToPixelLotusActor(character) {
+  return codexExportCharacterToPixelLotusActor(character);
+}
+
+// Note: setCell, clearCell, floodFill, snapToGrid, applySymmetry, etc. already exported above.
+
+// PixelBrain Edit Compiler (the missing system: deltas, importer, semantic verbs, sessions, profiles)
+import {
+  importPolishedRasterToPacket,
+  applyPolishDelta,
+  validatePixelBrainEdit,
+  widenPauldrons,
+  moveCore,
+  remapTrimMaterial,
+  attachMasks,
+  transformRelativeToAnchor,
+  createEditableAssetSession,
+  POLISH_DELTA_KINDS,
+} from '../../codex/core/pixelbrain/edit-compiler.js';
+
+import {
+  VOID_CHESTPLATE_PARTS,
+  VOID_CHESTPLATE_ANCHORS,
+  VOID_CHESTPLATE_MASKS,
+  VAELRIX_VOID_ARMOR_POLISH_PROFILE,
+  rehydrateVoidChestplateCells,
+} from '../../codex/core/pixelbrain/void-chestplate-profile.js';
+
+export {
+  importPolishedRasterToPacket,
+  applyPolishDelta,
+  validatePixelBrainEdit,
+  widenPauldrons,
+  moveCore,
+  remapTrimMaterial,
+  attachMasks,
+  transformRelativeToAnchor,
+  createEditableAssetSession,
+  POLISH_DELTA_KINDS,
+  VOID_CHESTPLATE_PARTS,
+  VOID_CHESTPLATE_ANCHORS,
+  VOID_CHESTPLATE_MASKS,
+  VAELRIX_VOID_ARMOR_POLISH_PROFILE,
+  rehydrateVoidChestplateCells,
+};
+

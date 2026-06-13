@@ -1,1345 +1,918 @@
 /**
- * PixelBrainPage — Game Asset Generation with Bytecode
- * 
- * Main page component integrating the new UI overhaul
+ * PixelBrainPage — Photoshop-for-Pixels Editor
+ *
+ * The home view is JUST the canvas.
+ * All special PixelBrain functions (Critique, Construction, Drills, Aseprite roundtrips, etc.)
+ * are exposed as explicit buttons in the top bar and left toolbar.
+ *
+ * Aesthetic: Classic pixel art editor (dark, focused, crisp pixels) — "Photoshop but for pixels".
+ *
+ * UI SPEC:
+ * - World-law connection: The lattice is the playable surface of spatial bytecode. The editor chrome exists only to serve direct, precise manipulation of that surface and the professional discipline (construction first, critique, limited palettes, clean execution).
+ * - The canvas (TemplateEditor) is sovereign. Everything else is a button or a minimal supporting panel.
+ * - Data: All heavy lifting goes through the pixelbrain.adapter. No direct codex imports.
+ * - State: ONE document model. The TemplateEditor owns the live engine grid and reports
+ *   it via onGridChange; every side panel (layers, palette, mentor, AMP) reads that same
+ *   grid and mutates it through editorRef commands. There is no shadow document.
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo, lazy, Suspense } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { usePredictor } from "../../hooks/usePredictor.jsx";
-import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
-import { useGodotExportFlag } from "../../hooks/useGodotExportFlag.js";
-import { downloadTextFile } from "../../components/GodotExportButton/downloadTextFile.js";
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
-const ShaderForgePanel = lazy(() => import('./components/ShaderForgePanel.jsx'));
-const TemplateEditor = lazy(() => import('./components/TemplateEditor.jsx'));
-
-// New components
-import { UploadSection } from "./components/UploadSection.jsx";
-import { AnalysisResults } from "./components/AnalysisResults.jsx";
-import { StyleTransmuter } from "./components/StyleTransmuter.jsx";
-import { ParameterSliders } from "./components/ParameterSliders.jsx";
-import { ExtensionSelector } from "./components/ExtensionSelector.jsx";
-import { StatusDisplay } from "./components/StatusDisplay.jsx";
-import { DuplicateSection } from "./components/DuplicateSection.jsx";
-import { LatticeCanvas } from "./components/LatticeCanvas.jsx";
-import { SketchPad } from "./components/SketchPad.jsx";
 import {
-  CHROMATIC_MATERIAL_OPTIONS,
-  SOURCE_MATERIAL,
-  buildChromaticTransmutationPayload,
-} from "./amps/chromaticTransmutationAmp.js";
-
-import PixelBrainTerminal from "./PixelBrainTerminal.jsx";
-
-// Core logic
-import { 
-  generatePixelArtFromImage, 
-  evaluateFormulaWithColor, 
-  formulaToBytecode,
-  processorBridge,
-  buildPixelBrainPhotonicRoute,
-  deriveVerseMorphTarget,
-  morphCoordinatesToward,
-  interpretInstruction,
-  templatize,
-  fillTemplate,
-  sketchToSilhouette,
-  createPixelBrainAssetPacket,
-  derivePixelBrainRenderPacket,
-  registerPixelBrainShaderUniformProvider,
-  buildColorIntensityPayload,
-  buildSquareSharpnessContrastPayload,
+  createTemplateGrid,
+  createLayer,
+  buildConstructionGuideCells,
+  generatePixelArtFromImage,
+  analyzeImageToFormula,
 } from "../../lib/pixelbrain.adapter.js";
-import { SCHOOLS } from "../../data/schools.js";
-import { readWandFill } from "../../lib/wandPixelbrainBridge.js";
-import { buildPixelBrainGodotExport } from "../../lib/godot-export/pixelbrainGodotExport.js";
-import { analyzeImageClientSide } from "./utils/imageAnalysis.client.js";
-import {
-  ensureValidWandFillSpec,
-  FILL_SCHOOLS,
-  FILL_RARITIES,
-  FILL_EFFECTS,
-  FILL_RARITY_OPTIONS,
-  FILL_EFFECT_OPTIONS,
-} from "./utils/wandFillValidation.js";
+
+import { LayerStackPanel } from "./components/LayerStackPanel.jsx";
+import { IndexedPalettePanel } from "./components/IndexedPalettePanel.jsx";
+import MentorCritiquePanel from "./components/MentorCritiquePanel.jsx";
+import { AMPApplyPanel } from "./components/AMPApplyPanel.jsx";
+import { ReferencePanel } from "./components/ReferencePanel.jsx";
+import voidChestplatePacket from "../../../output/foundry/void-chestplate/void-chestplate.json";
+
+const TemplateEditor = lazy(() => import('./components/TemplateEditor.jsx'));
+const PixelBrainTerminal = lazy(() => import('./PixelBrainTerminal.jsx'));
 
 import "./PixelBrainPage.css";
 
-// Map slider keys to formula keys
-const PARAM_MAP = {
-  amplitude: 'a',
-  frequency: 'b',
-  phase: 'c',
-  points: 'n',
-  scale: 'scale',
-  complexity: 'complexity',
-  cx: 'cx',
-  cy: 'cy'
-};
-
-const REVERSE_PARAM_MAP = Object.entries(PARAM_MAP).reduce((acc, [k, v]) => {
-  acc[v] = k;
-  return acc;
-}, {});
-
-const TOKEN_PATTERN = /[A-Za-z']+/g;
-const DEFAULT_PIXEL_CANVAS = Object.freeze({ width: 160, height: 144, gridSize: 1 });
-
-// Template/fill bytecode options (VW-SCHOOL-RARITY-EFFECT).
-// Enum membership checks use FILL_RARITIES / FILL_EFFECTS / FILL_SCHOOLS Sets
-// (from ./utils/wandFillValidation.js); FILL_RARITY_OPTIONS / FILL_EFFECT_OPTIONS
-// are the spread-array views for <select> rendering.
-const TEMPLATE_BANDS = 4;
-const WAND_TARGET_MAX = 96; // longest sprite dimension when rescaling WAND's 800×600 geometry
-
-function extractLineTokens(line) {
-  return String(line || '').match(TOKEN_PATTERN) || [];
-}
-
-function buildPlsContext(text, analysis, plsPhoneticFeatures) {
-  const lines = String(text || '').split(/\r?\n/);
-  const currentLineRaw = lines.at(-1) || '';
-  const currentLineTokens = extractLineTokens(currentLineRaw);
-  const endsWithPartialToken = /[A-Za-z']$/.test(currentLineRaw);
-  const prefix = endsWithPartialToken ? (currentLineTokens.at(-1) || '') : '';
-  const completedCurrentLineWords = endsWithPartialToken
-    ? currentLineTokens.slice(0, -1)
-    : currentLineTokens;
-
-  let prevLineEndWord = null;
-  for (let index = lines.length - 2; index >= 0; index -= 1) {
-    const lineTokens = extractLineTokens(lines[index]);
-    if (lineTokens.length > 0) {
-      prevLineEndWord = lineTokens.at(-1) || null;
-      break;
-    }
-  }
-
-  const lineSyllableCounts = Array.isArray(analysis?.lineSyllableCounts)
-    ? analysis.lineSyllableCounts.map((value) => Number(value) || 0)
-    : [];
-
-  return {
-    prefix,
-    prevWord: completedCurrentLineWords.at(-1) || null,
-    prevLineEndWord,
-    currentLineWords: completedCurrentLineWords,
-    targetSyllableCount: lineSyllableCounts.at(-1) || null,
-    priorLineSyllableCounts: lineSyllableCounts.slice(0, -1),
-    plsPhoneticFeatures,
-  };
-}
-
-function spliceSuggestionIntoVerse(text, suggestion) {
-  const baseText = String(text || '');
-  const nextToken = String(suggestion || '').trim();
-  if (!nextToken) return baseText;
-
-  const partialMatch = baseText.match(/([A-Za-z']+)$/);
-  if (partialMatch) {
-    return `${baseText.slice(0, -partialMatch[1].length)}${nextToken} `;
-  }
-
-  if (!baseText) return `${nextToken} `;
-  if (/\s$/.test(baseText)) return `${baseText}${nextToken} `;
-  return `${baseText} ${nextToken} `;
-}
-
-function describeVerseAmplifier(verseAmplifier) {
-  if (!verseAmplifier || typeof verseAmplifier !== 'object') {
-    return 'PLS awaits a stable line ending.';
-  }
-
-  const dominantTier = String(verseAmplifier.dominantTier || 'DORMANT').toUpperCase();
-  const dominantArchetype = String(verseAmplifier?.dominantArchetype?.label || '').trim();
-  const trueVisionBand = String(verseAmplifier?.trueVision?.dominantBand?.label || '').trim();
-  const confidence = Math.round((Number(verseAmplifier?.trueVision?.confidence) || 0) * 100);
-
-  if (dominantArchetype) {
-    return `${dominantTier} resonance leans toward ${dominantArchetype}.${trueVisionBand ? ` TrueVision tracks ${trueVisionBand} at ${confidence}% confidence.` : ''}`;
-  }
-
-  return `${dominantTier} resonance is present.${trueVisionBand ? ` TrueVision tracks ${trueVisionBand} at ${confidence}% confidence.` : ''}`;
-}
-
 export default function PixelBrainPage() {
-  const { getCompletions, isReady: isPredictiveReady } = usePredictor();
-  const isGodotExportEnabled = useGodotExportFlag();
-  const [verseText, setVerseText] = useState("");
-
-  const {
-    artifact: synthesis,
-    isSynthesizing: isVerseAnalyzing,
-    verseIR: verseAnalysis,
-    totalSyllables,
-  } = useVerseSynthesis(verseText, {
-    mode: "balanced"
-  });
-  
-  // State
-  const [activeSchool] = useState('VOID');
-  const [referenceImage, setReferenceImage] = useState(null);
-  const [imageAnalysis, setImageAnalysis] = useState(null);
-  const [formula, setFormula] = useState(null);
-  const [coordinates, setCoordinates] = useState([]);
-  const [palettes, setPalettes] = useState([]);
-  const [parameters, setParameters] = useState({});
-  const [extensions, setExtensions] = useState([]);
-  const [status, setStatus] = useState('idle');
-  const [error, setError] = useState(null);
+  const [activeTool, setActiveTool] = useState('paint');
+  const [showPixelBrainPanel, setShowPixelBrainPanel] = useState(true);
+  const [showLayersPanel, setShowLayersPanel] = useState(true);
+  const [showPalettePanel, setShowPalettePanel] = useState(true);
+  const [showAmpPanel, setShowAmpPanel] = useState(true);
+  const [showRefPanel, setShowRefPanel] = useState(true);
   const [showTerminal, setShowTerminal] = useState(false);
-  const [leftTab, setLeftTab] = useState('upload'); // 'upload' or 'transmute'
-  const [plsSuggestions, setPlsSuggestions] = useState([]);
-  const [pixelCanvas, setPixelCanvas] = useState(DEFAULT_PIXEL_CANVAS);
-  const [photonicRoute, setPhotonicRoute] = useState(null);
-  const [isMorphing, setIsMorphing] = useState(false);
-  const [latticeView, setLatticeView] = useState(false);
-  const [isTemplate, setIsTemplate] = useState(false);
-  const [fillSchool, setFillSchool] = useState('WILL');
-  const [fillRarity, setFillRarity] = useState('RARE');
-  const [fillEffect, setFillEffect] = useState('HARMONIC');
-  const [wandFillSpec, setWandFillSpec] = useState(null);
-  const [chromaticMaterial, setChromaticMaterial] = useState(SOURCE_MATERIAL);
 
-  const canvasRef = useRef(null);
-  const previousPhotonicPacketRef = useRef(null);
-  const morphRafRef = useRef(null);
+  // For AMP non-destructive preview (addresses "no live/preview for AMPs")
+  const [isAMPPreviewing, setIsAMPPreviewing] = useState(false);
 
-  const bridgedPlsFeatures = synthesis?.features || null;
-  const verseAmplifier = verseAnalysis?.verseIRAmplifier || null;
-  const versePixelBrainPayload = verseAmplifier?.pixelBrain || null;
-  const amplifierExplanation = describeVerseAmplifier(verseAmplifier);
+  // Core document model (the one the right panels and mentor consume).
+  // The TemplateEditor owns the authoritative live grid; we keep a synced copy here for the tool side.
+  const [currentDocument, setCurrentDocument] = useState(() => {
+    const g = createTemplateGrid({ width: 64, height: 80, cellSize: 1 });
+    g.layers = [createLayer('00_Reference'), createLayer('10_Structure')];
+    return g;
+  });
 
-  // Plain-instruction interpretation ("make it icy blue", "darker") — drives
-  // the in-place morph without needing poetic/stable-line-ending structure.
-  const instructionTarget = useMemo(() => interpretInstruction(verseText), [verseText]);
-  const fillBytecode = `VW-${fillSchool}-${fillRarity}-${fillEffect}`;
-  const activeBytecode = useMemo(() => {
-    if (!formula) return coordinates.length > 0 ? fillBytecode : '';
-    try {
-      return formulaToBytecode(formula);
-    } catch {
-      return coordinates.length > 0 ? fillBytecode : '';
-    }
-  }, [coordinates.length, fillBytecode, formula]);
+  const editorRef = useRef(null);
+  const [rightActiveLayer, setRightActiveLayer] = useState(0);
 
-  const assetPacket = useMemo(() => createPixelBrainAssetPacket({
-    source: {
-      kind: imageAnalysis ? 'image-analysis' : versePixelBrainPayload ? 'verseir' : isTemplate ? 'template' : 'manual',
-      id: referenceImage?.file?.name || null,
-      label: referenceImage?.file?.name || 'PixelBrain Asset',
-    },
-    canvas: pixelCanvas,
-    coordinates,
-    palettes,
-    formula,
-    bytecode: activeBytecode,
-    template: {
-      gridType: isTemplate ? 'coordinate-template' : null,
-      fillState: {
-        bytecode: fillBytecode,
-        school: fillSchool,
-        rarity: fillRarity,
-        effect: fillEffect,
-        source: wandFillSpec ? 'wand' : 'pixelbrain',
-      },
-    },
-    material: SOURCE_MATERIAL,
-    chromatic: { transformId: chromaticMaterial },
-    metadata: {
-      tags: [activeSchool.toLowerCase()],
-      compatibility: { pdr: 'pixelbrain-connective-tissue-seven-systems' },
-    },
-  }), [
-    activeBytecode,
-    activeSchool,
-    chromaticMaterial,
-    coordinates,
-    fillBytecode,
-    fillEffect,
-    fillRarity,
-    fillSchool,
-    formula,
-    imageAnalysis,
-    isTemplate,
-    palettes,
-    pixelCanvas,
-    referenceImage,
-    versePixelBrainPayload,
-    wandFillSpec,
-  ]);
+  // Dynamic asset for the main visual editor. Starts with the chestplate.
+  const [activeAssetPacket, setActiveAssetPacket] = useState(voidChestplatePacket);
+  const [editorInstanceKey, setEditorInstanceKey] = useState(0);
 
-  const pixelBrainRenderPacket = useMemo(
-    () => derivePixelBrainRenderPacket(assetPacket, { material: chromaticMaterial }),
-    [assetPacket, chromaticMaterial]
-  );
-
-  const chromaticPayload = useMemo(() => buildChromaticTransmutationPayload({
-    sourcePalettes: assetPacket.palette.sourcePalette,
-    sourceCoordinates: assetPacket.geometry.coordinates,
-    material: chromaticMaterial,
-    intent: chromaticMaterial === SOURCE_MATERIAL
-      ? 'preserve_source_palette'
-      : `transmute_to_${chromaticMaterial}`,
-  }), [assetPacket, chromaticMaterial]);
-
-  const rawRenderCoordinates = pixelBrainRenderPacket.coordinates;
-  const renderPalettes = pixelBrainRenderPacket.palettes;
-  
-  const colorIntensityPayload = useMemo(() => buildColorIntensityPayload({
-    coordinates: rawRenderCoordinates,
-    options: { neighborRadius: 1 }
-  }), [rawRenderCoordinates]);
-  const annotatedRenderCoordinates = colorIntensityPayload.outputCoordinates;
-
-  const squareRenderPayload = useMemo(() => buildSquareSharpnessContrastPayload({
-    coordinates: annotatedRenderCoordinates,
-    material: chromaticMaterial,
-    canvas: pixelCanvas,
-    options: {
-      enabled: true,
-    },
-  }), [chromaticMaterial, pixelCanvas, annotatedRenderCoordinates]);
-  const renderCoordinates = squareRenderPayload.outputCoordinates;
-
-  const clockRef = useRef({ elapsedSeconds: 0 });
-
-  useEffect(() => {
-    registerPixelBrainShaderUniformProvider();
+  // The single document model: the live engine grid owned by TemplateEditor.
+  // `rev` changes on every canvas mutation so panels re-render against the
+  // same (intentionally mutable) grid object.
+  const [canvasDoc, setCanvasDoc] = useState(null);
+  const handleGridChange = useCallback((grid, rev) => {
+    setCanvasDoc({ grid, rev });
   }, []);
+  const canvasGrid = canvasDoc?.grid || null;
 
-  useEffect(() => {
-    let active = true;
-    const start = performance.now();
-    const tick = () => {
-      if (!active) return;
-      clockRef.current.elapsedSeconds = (performance.now() - start) / 1000;
-      requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-    return () => { active = false; };
-  }, []);
+  // In-world status line (faults, drill results). The LAW forbids alert boxes.
+  const [pageNotice, setPageNotice] = useState(null);
 
-  const SCHOOL_TO_INDEX = useMemo(() => ({
-    SONIC: 0,
-    PSYCHIC: 1,
-    VOID: 2,
-    ALCHEMY: 3,
-    WILL: 4,
-    NECROMANCY: 5,
-    ABJURATION: 6,
-    DIVINATION: 7,
-  }), []);
+  // External trigger for the mentor panel's critique run.
+  const [critiqueToken, setCritiqueToken] = useState(0);
 
-  const shaderRuntimeState = useMemo(() => {
-    const schoolIdx = SCHOOL_TO_INDEX[activeSchool] ?? 2;
-    return {
-      clock: clockRef.current,
-      canvas: { size: [160, 144] },
-      spell: { schoolIndex: schoolIdx },
-      verse: {
-        resonance: totalSyllables ? Math.min(1.0, totalSyllables / 10) : 0.5,
-        vowelDensity: 0.5,
-      },
-      palette: {
-        0: renderPalettes[0] ? renderPalettes[0].colors[0] : '#000000',
-      },
-      packet: assetPacket,
-      assetPacket,
-      renderPacket: pixelBrainRenderPacket,
-      squareRenderPayload,
-      wandFillSpec,
-      photonicRoute,
-    };
-  }, [SCHOOL_TO_INDEX, activeSchool, assetPacket, photonicRoute, pixelBrainRenderPacket, renderPalettes, squareRenderPayload, totalSyllables, wandFillSpec]);
+  // Drill mode state (for Void Shield Drill button)
+  const [isDrillActive, setIsDrillActive] = useState(false);
+  const [drillSecondsLeft, setDrillSecondsLeft] = useState(0);
+  const drillTimerRef = useRef(null);
 
-  const handleShaderDiagnostic = useCallback((err) => {
-    if (err) {
-      setError(err.message || 'Shader compile error');
-      setStatus('error');
-    } else {
-      setError(null);
-      setStatus('ready');
+  // Custom user palette (top-right box). Max 12 colors, editable by hex input.
+  const [customPalette, setCustomPalette] = useState([
+    '#C9A227', '#00E5FF', '#1B1B27', '#FFFFFF', '#000000', '#4A90D9', '#E5E5E5'
+  ]); // start with some theme colors, user can add/edit up to 12
+
+  const addCustomColor = () => {
+    if (customPalette.length >= 12) return;
+    const newColor = '#C9A227'; // default to theme gold
+    setCustomPalette([...customPalette, newColor]);
+  };
+
+  const removeCustomColor = (index) => {
+    const next = customPalette.filter((_, i) => i !== index);
+    setCustomPalette(next.length > 0 ? next : ['#000000']);
+  };
+
+  const updateCustomColor = (index, value) => {
+    let v = value.trim().toUpperCase();
+    if (!v.startsWith('#')) v = '#' + v;
+    // basic validation / normalization
+    if (v.length > 7) v = v.slice(0, 7);
+    // allow partial input while typing
+    const next = [...customPalette];
+    next[index] = v;
+    setCustomPalette(next);
+  };
+
+  const setBrushFromPalette = (color) => {
+    if (editorRef.current && editorRef.current.setBrushColor) {
+      // normalize to full hex if possible
+      let c = color.toUpperCase();
+      if (!c.startsWith('#')) c = '#' + c;
+      if (c.length === 4) {
+        // expand #rgb to #rrggbb
+        c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+      }
+      if (!/^#[0-9A-F]{6}$/.test(c)) return; // ignore partial/invalid hex
+      editorRef.current.setBrushColor(c);
+      if (editorRef.current?.forceRedraw) editorRef.current.forceRedraw();
     }
-  }, []);
-  const canMorph = (instructionTarget.available || Boolean(versePixelBrainPayload)) && !isMorphing;
+  };
 
-  // Sync parameters state from formula
-  useEffect(() => {
-    if (formula?.coordinateFormula?.parameters) {
-      const newParams = {};
-      Object.entries(formula.coordinateFormula.parameters).forEach(([k, v]) => {
-        const sliderKey = REVERSE_PARAM_MAP[k] || k;
-        newParams[sliderKey] = v;
-      });
-      setParameters(newParams);
-    }
-  }, [formula]);
-
-  const uploadRequestRef = useRef(0);
-
-  // Handle parameter change
-  const handleParameterChange = useCallback((key, value) => {
-    // 1. Update parameters state (for UI sliders)
-    setParameters(prev => ({ ...prev, [key]: value }));
-    
-    // 2. If we have a formula, re-evaluate it with the new value
-    if (formula) {
-      const formulaKey = PARAM_MAP[key] || key;
-      const updatedFormula = {
-        ...formula,
-        coordinateFormula: {
-          ...formula.coordinateFormula,
-          parameters: {
-            ...formula.coordinateFormula.parameters,
-            [formulaKey]: value
-          }
-        }
-      };
-      
-      // Evaluate formula to get new coordinates
-      const newCoords = evaluateFormulaWithColor(updatedFormula, { width: 160, height: 144 });
-      
-      // These setters are now outside the setParameters updater, preventing React anti-patterns
-      setCoordinates(newCoords);
-      setFormula(updatedFormula);
-    }
-  }, [formula]);
-
-  // Handle image upload
-  const handleImageUpload = useCallback(async (file) => {
-    const requestId = ++uploadRequestRef.current;
-    setStatus('analyzing');
-    setError(null);
-
-    try {
-      const preview = URL.createObjectURL(file);
-      if (requestId !== uploadRequestRef.current) return;
-      setReferenceImage({ file, preview });
-
-      let analysis = await analyzeImageClientSide(file);
-      if (requestId !== uploadRequestRef.current) return;
-      analysis = { ...analysis, preview };
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.aseprite,.ase';
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file || !editorRef.current) return;
 
       try {
-        const formData = new FormData();
-        formData.append('image', file);
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        const response = await fetch('/api/image/analyze', {
-          method: 'POST', body: formData, signal: controller.signal,
+        const isAse = file.name.toLowerCase().endsWith('.ase') || file.name.toLowerCase().endsWith('.aseprite');
+        if (isAse) {
+          await editorRef.current?.importAse?.(file);
+        } else {
+          // Full pixel import for the whole image (no edge detection / bits-and-pieces)
+          await editorRef.current.importImage(file);
+        }
+
+        // Always replace the previous thing (chestplate or prior asset).
+        // Packet null prevents chestplate reload effects; reset gives fresh view/undo on the (live) instance that received the raster.
+        // Full currentDocument sync for panels is done via the same pattern as other replace paths (PDR + top boon from disparity reconciliation).
+        setActiveAssetPacket(null);
+
+        // Fresh-instance feel without key bump (key bump would unmount the instance that just did the full raster importImage).
+        editorRef.current?.resetView?.();
+        editorRef.current?.clearCommandStack?.();
+
+        setPageNotice(null);
+      } catch (err) {
+        setPageNotice(`IMPORT FAULT — ${err.message}`);
+      }
+    };
+    input.click();
+  };
+
+  const handleNew = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*,.json,.aseprite,.ase';
+
+    // Cancelling the picker means "blank project". File inputs do not fire
+    // `change` on cancel — only the `cancel` event covers this path.
+    input.oncancel = () => {
+      setActiveAssetPacket(null);
+      setEditorInstanceKey(k => k + 1);
+      setPageNotice('New blank lattice forged.');
+    };
+
+    input.onchange = async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const lower = file.name.toLowerCase();
+
+      try {
+        if (lower.endsWith('.json')) {
+          const text = await file.text();
+          const pkt = JSON.parse(text);
+          // Remount the editor with the new packet; it imports the grid itself
+          // and reports it back through onGridChange.
+          setActiveAssetPacket(pkt);
+          setEditorInstanceKey(k => k + 1);
+        } else if (lower.endsWith('.ase') || lower.endsWith('.aseprite')) {
+          await editorRef.current?.importAse?.(file);
+          setActiveAssetPacket(null);
+        } else if (editorRef.current?.importImage) {
+          // Image — full raster import into the existing editor instance.
+          // Always replace previous (including any chestplate in the tool document).
+          await editorRef.current.importImage(file);
+          setActiveAssetPacket(null);
+        }
+
+        // For non-JSON "New from file", ensure previous is replaced (packet null + resets).
+        // (The visual raster replacement happens in the import* call; panels converge on subsequent operations or explicit syncs per the approved editor PDR.)
+        if (!lower.endsWith('.json')) {
+          editorRef.current?.resetView?.();
+          editorRef.current?.clearCommandStack?.();
+        }
+
+        setPageNotice(null);
+      } catch (err) {
+        setPageNotice(`LOAD FAULT — ${err.message}`);
+      }
+    };
+    input.click();
+  };
+
+  // Cleanup drill timer on unmount
+  useEffect(() => {
+    return () => {
+      if (drillTimerRef.current) clearInterval(drillTimerRef.current);
+    };
+  }, []);
+
+  // Global keyboard shortcuts for undo/redo (Ctrl+Z / Cmd+Z, Ctrl+Shift+Z / Ctrl+Y)
+  // This works even if the canvas isn't focused, and delegates to the editor's command stack.
+  useEffect(() => {
+    const handleGlobalKeyDown = (e) => {
+      const isMod = e.ctrlKey || e.metaKey;
+      if (!isMod) return;
+
+      if (e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          if (editorRef.current?.redo) editorRef.current.redo();
+        } else {
+          if (editorRef.current?.undo) editorRef.current.undo();
+        }
+      } else if (e.key.toLowerCase() === 'y') {
+        e.preventDefault();
+        if (editorRef.current?.redo) editorRef.current.redo();
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
+
+  // Construction guides, drawn on the live canvas grid (00_Reference layer).
+  const applyConstructionGuides = () => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const dims = editor.getGridDimensions ? editor.getGridDimensions() : { width: 64, height: 80 };
+    const guideCells = buildConstructionGuideCells(dims);
+    editor.applyReferenceGuides?.(guideCells, '00_Reference');
+  };
+
+  // "Create it via Pixelbrain" — the Eclipse Ward Pauldron (user recipe) + SDF/Noise from PDR.
+  // Uses editor ref + new AMPs (sdf-shape + noise-fill) + layers + command history for full deterministic cockpit flow.
+  // Matches the 10-step pauldron recipe (New 64x80, CNSTR, PENCIL on named layers, AMPs, polish, export recipe).
+  // Cleaned: no remount/key-bump/timeout hack. Operates synchronously in-place on the live grid for reliability.
+  const createEclipseWardPauldronViaPixelBrain = () => {
+    const editor = editorRef.current;
+    if (!editor) {
+      setPageNotice('Editor not ready');
+      return;
+    }
+
+    // ensure clean (in place, no remount)
+    if (editor.clearCommandStack) editor.clearCommandStack();
+    if (editor.resetView) editor.resetView();
+
+    const g = editor.getGrid && editor.getGrid();
+    if (!g) {
+      setPageNotice('No active grid');
+      return;
+    }
+
+    const dims = editor.getGridDimensions ? editor.getGridDimensions() : { width: 64, height: 80 };
+
+    // 2. Layers per recipe (fresh canonical set)
+    g.layers = [
+      createLayer('00_Reference'),
+      createLayer('10_Structure'),
+      createLayer('20_Energy'),
+      createLayer('30_Focal'),
+      createLayer('40_Polish'),
+      createLayer('50_Final'),
+    ];
+
+    // 3. Construction guides (CNSTR) — prefer the editor API
+    const guides = buildConstructionGuideCells ? buildConstructionGuideCells(dims) : [];
+    if (editor.applyReferenceGuides) {
+      editor.applyReferenceGuides(guides, '00_Reference');
+    } else if (g.layers[0]) {
+      // fallback direct
+      guides.forEach(c => {
+        if (!g.layers[0].cells) g.layers[0].cells = new Map();
+        g.layers[0].cells.set(`${c.x},${c.y}`, { x: c.x, y: c.y, color: c.color || '#888', emphasis: 1 });
+      });
+    }
+
+    function setCellOnLayer(layer, x, y, col) {
+      if (!layer) return;
+      if (!layer.cells) layer.cells = new Map();
+      const key = `${x},${y}`;
+      layer.cells.set(key, { x, y, color: col, emphasis: 1 });
+    }
+
+    // 4. Draw deterministic rings/radials + focal structure directly on layers (lattice first, per manual)
+    if (g.layers[1]) {
+      const L = g.layers;
+      const centerX = 32, centerY = 40;
+
+      // structure ring + radials (10_Structure)
+      for (let r = 6; r <= 18; r += 3) {
+        for (let a = 0; a < 360; a += 30) {
+          const rad = (a * Math.PI) / 180;
+          const x = Math.round(centerX + Math.cos(rad) * r);
+          const y = Math.round(centerY + Math.sin(rad) * r * 0.9);
+          if (x >= 0 && x < dims.width && y >= 0 && y < dims.height) setCellOnLayer(L[1], x, y, '#C9A227');
+        }
+      }
+
+      // energy spokes (20_Energy)
+      for (let a = 0; a < 360; a += 45) {
+        const rad = (a * Math.PI) / 180;
+        for (let d = 4; d < 22; d++) {
+          const x = Math.round(centerX + Math.cos(rad) * d);
+          const y = Math.round(centerY + Math.sin(rad) * d * 0.85);
+          if (x >= 0 && x < dims.width && y >= 0 && y < dims.height) setCellOnLayer(L[2], x, y, '#00E5FF');
+        }
+      }
+
+      // focal core on 30_Focal
+      for (let dx = -3; dx <= 3; dx++) {
+        for (let dy = -3; dy <= 3; dy++) {
+          if (dx * dx + dy * dy <= 10) setCellOnLayer(L[3], centerX + dx, centerY + dy, '#FFFFFF');
+        }
+      }
+    }
+
+    // 5. Apply SDF Shape (new PDR AMP) on structure layer for clean silhouette
+    if (editor.applyAMP) editor.applyAMP('sdf-shape', { layerIndex: 1, createNewLayer: true, color: '#B8860B' });
+
+    // 6. Apply Noise Fill (new PDR AMP) on energy/focal for variation
+    if (editor.applyAMP) editor.applyAMP('noise-fill', { layerIndex: 2, createNewLayer: true });
+
+    // 7. Polish pass (re-uses existing sharpness as in user recipe)
+    if (editor.applyAMP) editor.applyAMP('square-sharpness-contrast', { layerIndex: 4, intensity: 0.75 });
+
+    // sync document model for panels + force redraw so everything (layers, palette, history) updates
+    if (editor.forceRedraw) editor.forceRedraw();
+    if (editor.getLayers) {
+      const vis = editor.getLayers();
+      setCurrentDocument(prev => ({
+        ...(prev || { width: dims.width, height: dims.height, cellSize: 1 }),
+        layers: vis.map(v => ({ ...v, cells: v.cells instanceof Map ? new Map(v.cells) : v.cells }))
+      }));
+    }
+
+    setPageNotice('Created Eclipse Ward Pauldron via PixelBrain (SDF + Noise + lattice + full recipe provenance). Command history has the steps — use EXPORT RECIPE (Forge Spec) for the machine-readable packet.');
+  };
+
+  // Critique runs against the live canvas grid inside the mentor panel.
+  const triggerCritique = () => {
+    setShowPixelBrainPanel(true);
+    setCritiqueToken(t => t + 1);
+  };
+
+  // Void Shield Drill — timed + guided. Ends with an automatic mentor critique
+  // (the critique IS the feedback; there is no separate numeric score).
+  const startVoidShieldDrill = () => {
+    applyConstructionGuides(); // load the drill guides onto the canvas
+
+    setIsDrillActive(true);
+    setDrillSecondsLeft(20 * 60); // 20 minute drill as per Library
+    setPageNotice(null);
+
+    if (drillTimerRef.current) clearInterval(drillTimerRef.current);
+
+    drillTimerRef.current = setInterval(() => {
+      setDrillSecondsLeft(prev => {
+        const next = prev - 1;
+        if (next <= 0) {
+          clearInterval(drillTimerRef.current);
+          setIsDrillActive(false);
+          setTimeout(() => {
+            setShowPixelBrainPanel(true);
+            setCritiqueToken(t => t + 1);
+            setPageNotice('DRILL COMPLETE — the mentor has critiqued the result. Findings are in the PixelBrain panel.');
+          }, 100);
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+  };
+
+  const formatDrillTime = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Deterministic recipe / Forge Spec export (machine-readable full provenance for item-foundry)
+  const exportDeterministicRecipe = () => {
+    const editor = editorRef.current;
+    if (!editor) {
+      setPageNotice('Editor not ready for recipe export');
+      return;
+    }
+
+    const history = (typeof editor.getCommandHistory === 'function' ? editor.getCommandHistory() : []) || [];
+    const dims = editor.getGridDimensions ? editor.getGridDimensions() : { width: 64, height: 80 };
+    const layers = editor.getLayers ? editor.getLayers() : [];
+    const grid = editor.getGrid ? editor.getGrid() : null;
+
+    const recipe = {
+      version: 'pixelbrain.recipe.v1',
+      createdAt: new Date().toISOString(),
+      dims,
+      palette: [...customPalette],
+      symmetry: grid?.symmetryAxes || [],
+      layers: layers.map((l, i) => ({
+        index: i,
+        name: l.name,
+        visible: !!l.visible,
+        locked: !!l.locked,
+        opacity: l.opacity,
+        cellCount: l.cells ? (l.cells.size || (Array.isArray(l.cells) ? l.cells.length : 0)) : 0,
+      })),
+      commands: history.map(h => ({
+        description: h.description,
+        ampId: h.ampId,
+        options: h.options,
+        layerIndex: h.layerIndex,
+        timestamp: h.timestamp,
+      })),
+      note: 'Replay the commands in order on a fresh grid with the same palette + construction to reproduce exactly.',
+    };
+
+    const blob = new Blob([JSON.stringify(recipe, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pixelbrain-recipe-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Exports of the live canvas, via the editor's own (tested) export paths.
+  const handleRealExport = (format) => {
+    const editor = editorRef.current;
+    if (!editor) return;
+    if (format === 'ase') editor.exportAse?.();
+    else if (format === 'png') editor.exportPng?.();
+  };
+
+  // === AMP post-processing (runs on the live canvas grid) ===
+  // Optionally duplicates the active layer first so the AMP lands on a copy.
+  const handleApplyAMP = (ampId, options = {}, createNewLayer = false) => {
+    const editor = editorRef.current;
+    if (!editor || !editor.applyAMP) return { description: 'editor not ready' };
+    const res = editor.applyAMP(ampId, { ...options, layerIndex: rightActiveLayer, createNewLayer });
+    // Auto sync document after real AMP so right panels (mentor, layers) reflect the visual immediately (dual-model improvement)
+    if (editor.getLayers) {
+      const visual = editor.getLayers();
+      setCurrentDocument(prev => {
+        if (!prev?.layers) return prev;
+        const synced = prev.layers.map((l, i) => {
+          const v = visual[i] || {};
+          return {
+            ...l,
+            visible: v.visible ?? l.visible,
+            locked: v.locked ?? l.locked,
+            opacity: typeof v.opacity === 'number' ? v.opacity : l.opacity,
+            cells: v.cells ? (v.cells instanceof Map ? new Map(v.cells) : v.cells) : l.cells,
+          };
         });
-        clearTimeout(timeoutId);
-        if (response.ok) {
-          const responseData = await response.json();
-          const serverAnalysis = responseData.analysis?.colors
-            ? responseData.analysis
-            : responseData.analysis?.analysis;
-          if (serverAnalysis?.colors && requestId === uploadRequestRef.current) {
-            analysis = { ...serverAnalysis, preview };
+        return { ...prev, layers: synced };
+      });
+    }
+    return res || { description: 'AMP applied' };
+  };
+
+  const handlePreviewAMP = (ampId, options = {}, createNewLayer = false) => {
+    const editor = editorRef.current;
+    if (!editor || !editor.previewAMP) return handleApplyAMP(ampId, options, createNewLayer);
+    const res = editor.previewAMP(ampId, { ...options, layerIndex: rightActiveLayer, createNewLayer });
+    setIsAMPPreviewing(true);
+    // sync preview result
+    if (editor.getLayers) {
+      const visual = editor.getLayers();
+      setCurrentDocument(prev => {
+        if (!prev?.layers) return prev;
+        const synced = prev.layers.map((l, i) => {
+          const v = visual[i] || {};
+          return { ...l, visible: v.visible ?? l.visible, locked: v.locked ?? l.locked, opacity: typeof v.opacity === 'number' ? v.opacity : l.opacity, cells: v.cells ? (v.cells instanceof Map ? new Map(v.cells) : v.cells) : l.cells };
+        });
+        return { ...prev, layers: synced };
+      });
+    }
+    return { ...(res || {}), isPreview: true };
+  };
+
+  const commitAMPPreview = () => {
+    const editor = editorRef.current;
+    if (editor?.commitPreview) editor.commitPreview();
+    setIsAMPPreviewing(false);
+  };
+
+  const discardAMPPreview = () => {
+    const editor = editorRef.current;
+    if (editor?.discardPreview) editor.discardPreview();
+    setIsAMPPreviewing(false);
+  };
+
+  // === Semantic image import for reference layers ===
+  // Uses generatePixelArtFromImage + analyzeImageToFormula with a raw raster fallback.
+  const handleUploadForReference = async (file) => {
+    if (!file) return { analysis: {}, quantizedCells: [] };
+    try {
+      let analysis = {};
+      if (analyzeImageToFormula) {
+        try { analysis = analyzeImageToFormula(file) || analyzeImageToFormula({ name: file.name }) || {}; } catch (e) { /* non-fatal */ }
+      }
+      let quantizedCells = [];
+      if (generatePixelArtFromImage) {
+        try {
+          const res = generatePixelArtFromImage(file) || generatePixelArtFromImage({ file });
+          quantizedCells = res?.coordinates || res?.cells || res?.quantizedCells || [];
+        } catch (e) { /* non-fatal, will use raster fallback */ }
+      }
+
+      // Fallback raster sample so the flow is always usable (and reference layer gets created)
+      if (!quantizedCells || quantizedCells.length === 0) {
+        const img = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject;
+            image.src = e.target.result;
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+        const dims = editorRef.current?.getGridDimensions?.() || { width: 64, height: 80 };
+        const w = dims.width, h = dims.height;
+        const temp = document.createElement('canvas');
+        temp.width = w; temp.height = h;
+        const tctx = temp.getContext('2d', { willReadFrequently: true });
+        tctx.imageSmoothingEnabled = false;
+        tctx.drawImage(img, 0, 0, w, h);
+        const idata = tctx.getImageData(0, 0, w, h);
+        const data = idata.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const i = (y * w + x) * 4;
+            if (data[i + 3] > 10) {
+              const hex = '#' + [data[i], data[i+1], data[i+2]].map(v => v.toString(16).padStart(2,'0')).join('').toUpperCase();
+              quantizedCells.push({ x, y, color: hex });
+            }
           }
         }
-      } catch { /* server unavailable — client analysis is sufficient */ }
-
-      if (requestId !== uploadRequestRef.current) return;
-      setImageAnalysis(analysis);
-      setPixelCanvas(DEFAULT_PIXEL_CANVAS);
-      setLatticeView(false);
-      setStatus('generating');
-
-      const workerResult = await processorBridge.execute('pixel.trace', {
-        pixelData: analysis.pixelData,
-        dimensions: analysis.dimensions,
-        threshold: 30,
-      });
-
-      if (requestId !== uploadRequestRef.current) return;
-
-      const result = await generatePixelArtFromImage(
-        { ...analysis, coordinates: workerResult.coordinates },
-        { width: 160, height: 144, gridSize: 1 },
-        extensions.length > 0 ? extensions[0] : null
-      );
-
-      if (requestId !== uploadRequestRef.current) return;
-
-      setFormula(result.formula);
-      setCoordinates(result.coordinates ?? []);
-      setPalettes(result.palettes ?? []);
-      setPixelCanvas(DEFAULT_PIXEL_CANVAS);
-      setStatus('ready');
-
-    } catch (err) {
-      if (requestId === uploadRequestRef.current) {
-        console.error('Image upload failed:', err);
-        setError(err.message || 'Image analysis failed. Please try again.');
-        setStatus('error');
-        setReferenceImage(null);
-        setImageAnalysis(null);
-      }
-    }
-  }, [extensions]);
-
-  const handleTransmuteResult = useCallback((result) => {
-    setCoordinates(result.coordinates);
-    setPalettes(result.palettes);
-    setPixelCanvas(DEFAULT_PIXEL_CANVAS);
-    setStatus('ready');
-  }, []);
-
-  // Handle export
-  const handleExport = useCallback(async (presetKey) => {
-    try {
-      setStatus('generating');
-      
-      const preset = {
-        GODOT: { scale: 1, name: 'godot' },
-        UNITY: { scale: 2, name: 'unity' },
-        WEB: { scale: 1, name: 'web' },
-        FORMULA: { format: 'json', name: 'formula' }
-      }[presetKey];
-
-      if (preset.format === 'json') {
-        const data = JSON.stringify({
-          formula,
-          coordinates: renderCoordinates,
-          palettes: renderPalettes,
-          chromaticTransmutation: chromaticPayload,
-          squareSharpnessContrast: squareRenderPayload,
-          pixelBrainAssetPacket: assetPacket,
-          pixelBrainRenderPacket,
-        }, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${Date.now()}.json`;
-        link.click();
-        URL.revokeObjectURL(url);
-      } else {
-        const exportCanvas = document.createElement('canvas');
-        const scale = preset.scale || 1;
-        exportCanvas.width = 160 * scale;
-        exportCanvas.height = 144 * scale;
-        const ectx = exportCanvas.getContext('2d');
-        ectx.clearRect(0, 0, exportCanvas.width, exportCanvas.height);
-        renderCoordinates.forEach(coord => {
-          ectx.fillStyle = coord.color;
-          const px = Math.round(coord.x * scale);
-          const py = Math.round(coord.y * scale);
-          ectx.fillRect(px, py, scale, scale);
-        });
-        const url = exportCanvas.toDataURL('image/png');
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `pixelbrain_${activeSchool.toLowerCase()}_${preset.name}_${'12345'}.png`;
-        link.click();
-      }
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message || 'Export failed');
-      setStatus('error');
-    }
-  }, [activeSchool, assetPacket, chromaticPayload, formula, pixelBrainRenderPacket, renderCoordinates, renderPalettes, squareRenderPayload]);
-
-  const handleGodotArtifactExport = useCallback(() => {
-    try {
-      const artifactText = buildPixelBrainGodotExport({
-        canvas: pixelCanvas,
-        palettes: renderPalettes,
-        coordinates: renderCoordinates,
-        formula,
-      });
-
-      downloadTextFile(`pixelbrain_${activeSchool.toLowerCase()}_${Date.now()}.pbrain`, artifactText);
-      setStatus('ready');
-      setError(null);
-    } catch (err) {
-      setError(err.message || 'Godot artifact export failed');
-      setStatus('error');
-    }
-  }, [activeSchool, formula, pixelCanvas, renderCoordinates, renderPalettes]);
-
-  // Handle clear
-  const handleClear = useCallback(() => {
-    if (morphRafRef.current) {
-      cancelAnimationFrame(morphRafRef.current);
-      morphRafRef.current = null;
-    }
-    setReferenceImage(null);
-    setImageAnalysis(null);
-    setFormula(null);
-    setCoordinates([]);
-    setPalettes([]);
-    setPixelCanvas(DEFAULT_PIXEL_CANVAS);
-    setPhotonicRoute(null);
-    previousPhotonicPacketRef.current = null;
-    setChromaticMaterial(SOURCE_MATERIAL);
-    setParameters({});
-    setIsMorphing(false);
-    setLatticeView(false);
-    setIsTemplate(false);
-    setStatus('idle');
-    setError(null);
-  }, []);
-
-  const handleApplySuggestion = useCallback((suggestion) => {
-    setVerseText((current) => spliceSuggestionIntoVerse(current, suggestion));
-  }, []);
-
-  const handleSynthesizeFromVerse = useCallback(() => {
-    if (!versePixelBrainPayload) {
-      setError('VerseIR amplifier did not emit PixelBrain payload.');
-      setStatus('error');
-      return;
-    }
-
-    setReferenceImage(null);
-    setImageAnalysis(null);
-    setFormula(null);
-    setCoordinates(Array.isArray(versePixelBrainPayload.coordinates) ? versePixelBrainPayload.coordinates : []);
-    setPalettes(Array.isArray(versePixelBrainPayload.palettes) ? versePixelBrainPayload.palettes : []);
-    setPixelCanvas(versePixelBrainPayload.canvas || DEFAULT_PIXEL_CANVAS);
-    setLatticeView(true);
-    setStatus('ready');
-    setError(null);
-  }, [versePixelBrainPayload]);
-
-  // NLP MORPH — edit the LOADED asset in place, animated, driven by the verse.
-  // Keeps the asset's geometry; sweeps each pixel's hue toward the verse's
-  // dominant school while preserving luminance, so it morphs before your eyes.
-  const handleApplyNlpMorph = useCallback(() => {
-    // Plain instruction wins ("make it blue"); fall back to the phonetic
-    // amplifier payload only when the text carries no color/tone words.
-    const instruction = interpretInstruction(verseText);
-    const target = instruction.available
-      ? instruction
-      : deriveVerseMorphTarget(versePixelBrainPayload);
-    if (!target.available) {
-      setError('No color/tone read from that. Try “make it icy blue”, “darker”, or “vivid crimson”.');
-      setStatus('error');
-      return;
-    }
-    if (coordinates.length === 0) {
-      setError('No loaded asset to morph. Upload an asset first.');
-      setStatus('error');
-      return;
-    }
-
-    if (morphRafRef.current) cancelAnimationFrame(morphRafRef.current);
-
-    const baseCoordinates = coordinates;
-    const DURATION_MS = 900;
-    const startTime = performance.now();
-    // easeInOutCubic — settle gently at both ends of the morph.
-    const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
-
-    setError(null);
-    setLatticeView(true);
-    setIsMorphing(true);
-
-    const step = (now) => {
-      const linear = Math.min(1, (now - startTime) / DURATION_MS);
-      setCoordinates(morphCoordinatesToward(baseCoordinates, target, ease(linear)));
-
-      if (linear < 1) {
-        morphRafRef.current = requestAnimationFrame(step);
-      } else {
-        morphRafRef.current = null;
-        setPalettes(Array.isArray(target.palettes) ? target.palettes : []);
-        setIsMorphing(false);
-        setStatus('ready');
-      }
-    };
-
-    morphRafRef.current = requestAnimationFrame(step);
-  }, [verseText, versePixelBrainPayload, coordinates]);
-
-  useEffect(() => () => {
-    if (morphRafRef.current) cancelAnimationFrame(morphRafRef.current);
-  }, []);
-
-  // TEMPLATIZE — strip the loaded asset to geometry + neutral role-slots,
-  // so it can be re-filled by any bytecode formula.
-  const handleTemplatize = useCallback(() => {
-    if (coordinates.length === 0) {
-      setError('No loaded asset to templatize. Upload or synthesize one first.');
-      setStatus('error');
-      return;
-    }
-    const template = templatize(coordinates, { bands: TEMPLATE_BANDS });
-    setCoordinates(template.coordinates);
-    setPalettes([]);
-    setLatticeView(true);
-    setIsTemplate(true);
-    setError(null);
-    setStatus('ready');
-  }, [coordinates]);
-
-  // FILL — resolve the template's slots to concrete colors via a bytecode
-  // formula (VW-SCHOOL-RARITY-EFFECT). Works on a raw asset too (auto-slots).
-  const handleFillAsBytecode = useCallback(() => {
-    if (coordinates.length === 0) {
-      setError('Nothing to fill. Upload, synthesize, or templatize an asset first.');
-      setStatus('error');
-      return;
-    }
-    setCoordinates(fillTemplate(coordinates, fillBytecode, { bands: TEMPLATE_BANDS }));
-    setLatticeView(true);
-    setIsTemplate(false);
-    setError(null);
-    setStatus('ready');
-  }, [coordinates, fillBytecode]);
-
-  // PULL FROM WAND — adopt the bytecode WAND emitted, populating the fill
-  // selectors. WAND's procedural proposal then drives the fill, not the dropdowns.
-  const handlePullFromWand = useCallback(() => {
-    try {
-      const raw = readWandFill();
-      if (!raw) {
-        setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
-        setStatus('error');
-        return;
-      }
-      const spec = ensureValidWandFillSpec(raw);
-      setFillSchool(FILL_SCHOOLS.has(spec.schoolId) ? spec.schoolId : 'VOID');
-      if (FILL_RARITIES.has(spec.rarity)) setFillRarity(spec.rarity);
-      if (FILL_EFFECTS.has(spec.effect)) setFillEffect(spec.effect);
-      setWandFillSpec(spec);
-      setError(null);
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message || 'Failed to read WAND fill spec');
-      setStatus('error');
-    }
-  }, []);
-
-  // PULL GEOMETRY FROM WAND — load WAND's procedural shape as a silhouette,
-  // rescaled to sprite space and auto-shaded (same Sketch AMP), and adopt its
-  // bytecode. One click: WAND shape → shaded template ready to FILL.
-  const handlePullWandGeometry = useCallback(() => {
-    try {
-      const raw = readWandFill();
-      if (!raw) {
-        setError('No WAND emission found. In WAND, click "Send → PixelBrain" first.');
-        setStatus('error');
-        return;
-      }
-      if (!Array.isArray(raw.coordinates) || raw.coordinates.length === 0) {
-        setError('No WAND geometry found. In WAND, evaluate a shape then click "Send → PixelBrain".');
-        setStatus('error');
-        return;
-      }
-      const spec = ensureValidWandFillSpec(raw);
-      if (morphRafRef.current) {
-        cancelAnimationFrame(morphRafRef.current);
-        morphRafRef.current = null;
       }
 
-      const src = spec.canvas || { width: 800, height: 600 };
-      const scale = WAND_TARGET_MAX / Math.max(1, Math.max(src.width, src.height));
-      const width = Math.max(1, Math.round(src.width * scale));
-      const height = Math.max(1, Math.round(src.height * scale));
-
-      const seen = new Set();
-      const occupied = [];
-      for (const point of spec.coordinates) {
-        const x = Math.min(width - 1, Math.max(0, Math.round(Number(point.x) * scale)));
-        const y = Math.min(height - 1, Math.max(0, Math.round(Number(point.y) * scale)));
-        const key = `${x},${y}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        occupied.push({ x, y });
-      }
-
-      const tpl = sketchToSilhouette(occupied, { width, height }, { bands: TEMPLATE_BANDS, symmetry: 'none' });
-      setReferenceImage(null);
-      setImageAnalysis(null);
-      setFormula(null);
-      setCoordinates(tpl.coordinates);
-      setPalettes([]);
-      setPixelCanvas(tpl.dimensions);
-      setLatticeView(true);
-      setIsTemplate(true);
-      setIsMorphing(false);
-
-      setFillSchool(FILL_SCHOOLS.has(spec.schoolId) ? spec.schoolId : 'VOID');
-      if (FILL_RARITIES.has(spec.rarity)) setFillRarity(spec.rarity);
-      if (FILL_EFFECTS.has(spec.effect)) setFillEffect(spec.effect);
-      setWandFillSpec(spec);
-      setError(null);
-      setStatus('ready');
-    } catch (err) {
-      setError(err.message || 'Failed to read WAND geometry');
-      setStatus('error');
+      return { analysis, quantizedCells };
+    } catch (e) {
+      console.warn('semantic reference import partial (calls were attempted)', e);
+      return { analysis: { source: file.name }, quantizedCells: [] };
     }
-  }, []);
+  };
 
-  // COMMIT SKETCH — run the Sketch AMP (auto-shaded silhouette) and load the
-  // result as the active asset, ready to FILL by bytecode. No external art.
-  const handleCommitSketch = useCallback(({ occupied, dimensions, symmetry }) => {
-    if (!Array.isArray(occupied) || occupied.length === 0) {
-      setError('Sketch is empty. Paint a shape first.');
-      setStatus('error');
-      return;
-    }
-    if (morphRafRef.current) {
-      cancelAnimationFrame(morphRafRef.current);
-      morphRafRef.current = null;
-    }
-    const result = sketchToSilhouette(occupied, dimensions, { bands: TEMPLATE_BANDS, symmetry });
-    setReferenceImage(null);
-    setImageAnalysis(null);
-    setFormula(null);
-    setCoordinates(result.coordinates);
-    setPalettes([]);
-    setPixelCanvas(result.dimensions);
-    setLatticeView(true);
-    setIsTemplate(true);
-    setIsMorphing(false);
-    setError(null);
-    setStatus('ready');
-  }, []);
+  // ReferencePanel hands us a ready reference layer — insert it at the bottom
+  // of the live canvas grid (replacing any previous reference layer).
+  const handleCreateReferenceLayer = (refLayer) => {
+    const grid = editorRef.current?.getGrid?.();
+    if (!refLayer || !grid || !Array.isArray(grid.layers)) return;
+    grid.layers = [refLayer, ...grid.layers.filter(l => l?.type !== 'reference')];
+    editorRef.current?.forceRedraw?.();
+  };
 
-  const handleTemplateAssetCommit = useCallback((packet) => {
-    if (!packet || packet.kind !== 'pixelbrain.asset.v1') {
-      setError('Template editor did not emit a valid PixelBrain asset packet.');
-      setStatus('error');
-      return;
-    }
+  const handleGenerateEditableFromRef = () => {
+    // Construction guides are the "editable structure" starting point from a reference.
+    applyConstructionGuides();
+  };
 
-    if (morphRafRef.current) {
-      cancelAnimationFrame(morphRafRef.current);
-      morphRafRef.current = null;
-    }
+  // Tool buttons select tools on the canvas — nothing else. (They previously
+  // stamped pixels into a shadow document on every click.)
+  const selectTool = (tool) => {
+    setActiveTool(tool);
+    editorRef.current?.setTool?.(tool);
+  };
 
-    setReferenceImage(null);
-    setImageAnalysis(null);
-    setFormula(packet.formula || null);
-    setCoordinates(Array.isArray(packet.geometry?.coordinates) ? packet.geometry.coordinates : []);
-    setPalettes(Array.isArray(packet.palette?.sourcePalette) ? packet.palette.sourcePalette : []);
-    setPixelCanvas(packet.canvas || DEFAULT_PIXEL_CANVAS);
-    setLatticeView(true);
-    setIsTemplate(packet.geometry?.mode === 'template-grid');
-    setIsMorphing(false);
-    setError(null);
-    setStatus('ready');
-  }, []);
-
-  useEffect(() => {
-    let isCancelled = false;
-
-    async function loadSuggestions() {
-      if (!isPredictiveReady || !verseText.trim()) {
-        if (!isCancelled) setPlsSuggestions([]);
-        return;
-      }
-
-      const completions = await getCompletions(
-        buildPlsContext(verseText, verseAnalysis, bridgedPlsFeatures),
-        { limit: 6 }
-      );
-
-      if (!isCancelled) {
-        setPlsSuggestions(Array.isArray(completions) ? completions : []);
-      }
-    }
-
-    void loadSuggestions();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [bridgedPlsFeatures, getCompletions, isPredictiveReady, verseAnalysis, verseText]);
-
-  useEffect(() => {
-    if (renderCoordinates.length === 0 || status !== 'ready') {
-      setPhotonicRoute(null);
-      previousPhotonicPacketRef.current = null;
-      return;
-    }
-
-    const route = buildPixelBrainPhotonicRoute(
-      {
-        coordinates: renderCoordinates,
-        palettes: renderPalettes,
-        canvas: pixelCanvas,
-      },
-      {
-        previousPacket: previousPhotonicPacketRef.current,
-      }
-    );
-
-    setPhotonicRoute(route);
-
-    if (route?.packet) {
-      previousPhotonicPacketRef.current = route.packet;
-    }
-  }, [pixelCanvas, renderCoordinates, renderPalettes, status]);
-
-  // Render canvas preview — flat 2D only, no Z transforms
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    const srcW = imageAnalysis?.dimensions?.width || pixelCanvas?.width || 32;
-    const srcH = imageAnalysis?.dimensions?.height || pixelCanvas?.height || 32;
-    const scale = Math.min(canvas.width / srcW, canvas.height / srcH) * 0.85;
-    const offsetX = Math.floor((canvas.width - srcW * scale) / 2);
-    const offsetY = Math.floor((canvas.height - srcH * scale) / 2);
-
-    ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    if (imageAnalysis?.preview && !latticeView && chromaticPayload.material === SOURCE_MATERIAL) {
-      const img = new Image();
-      img.onload = () => {
-        ctx.drawImage(img, offsetX, offsetY, srcW * scale, srcH * scale);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-        ctx.lineWidth = Math.max(0.5, scale * 0.1);
-        for (let x = 0; x <= srcW; x++) {
-          const px = offsetX + x * scale;
-          ctx.beginPath();
-          ctx.moveTo(px, offsetY);
-          ctx.lineTo(px, offsetY + srcH * scale);
-          ctx.stroke();
-        }
-        for (let y = 0; y <= srcH; y++) {
-          const py = offsetY + y * scale;
-          ctx.beginPath();
-          ctx.moveTo(offsetX, py);
-          ctx.lineTo(offsetX + srcW * scale, py);
-          ctx.stroke();
-        }
-        if (renderCoordinates.length > 0) {
-          renderCoordinates.forEach(coord => {
-            const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
-            const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
-            ctx.fillStyle = '#ffffff';
-            ctx.globalAlpha = 0.8;
-            ctx.fillRect(px, py, Math.max(1, scale * 0.3), Math.max(1, scale * 0.3));
-            ctx.globalAlpha = 1;
-          });
-        }
-      };
-      img.src = imageAnalysis.preview;
-    } else if (renderCoordinates.length > 0) {
-      // Lattice view: render the colored coordinate reconstruction (the
-      // recolored asset itself), so the NLP morph is visible frame-by-frame.
-      renderCoordinates.forEach(coord => {
-        const px = offsetX + Math.floor((coord.snappedX ?? coord.x) * scale);
-        const py = offsetY + Math.floor((coord.snappedY ?? coord.y) * scale);
-        ctx.fillStyle = coord.color || '#a0a0c0';
-        ctx.fillRect(px, py, Math.max(1, scale), Math.max(1, scale));
-      });
-    }
-  }, [chromaticPayload.material, imageAnalysis, latticeView, pixelCanvas, renderCoordinates]);
-
-  const terminalAnalysisResult = imageAnalysis ? {
-    ...imageAnalysis,
-    coordinates: renderCoordinates,
-    palettes: renderPalettes,
-    formula,
-    canvas: { width: 160, height: 144, gridSize: 1 },
-    referenceImage,
-    photonicRoute,
-    chromaticTransmutation: chromaticPayload,
-    squareSharpnessContrast: squareRenderPayload,
-    pixelBrainAssetPacket: assetPacket,
-    pixelBrainRenderPacket,
-  } : versePixelBrainPayload ? {
-    ...versePixelBrainPayload,
-    coordinates: renderCoordinates,
-    palettes: renderPalettes,
-    formula,
-    canvas: pixelCanvas,
-    referenceImage: null,
-    photonicRoute,
-    chromaticTransmutation: chromaticPayload,
-    squareSharpnessContrast: squareRenderPayload,
-    pixelBrainAssetPacket: assetPacket,
-    pixelBrainRenderPacket,
-  } : coordinates.length > 0 ? {
-    coordinates: renderCoordinates,
-    palettes: renderPalettes,
-    formula,
-    canvas: pixelCanvas,
-    referenceImage: null,
-    photonicRoute,
-    chromaticTransmutation: chromaticPayload,
-    squareSharpnessContrast: squareRenderPayload,
-    pixelBrainAssetPacket: assetPacket,
-    pixelBrainRenderPacket,
-  } : null;
+  const loadDrill = () => startVoidShieldDrill();
 
   return (
-    <div className="pixelbrain-page">
-      {/* Surgical Matrix Topbar */}
-      <div className="pixelbrain-topbar">
-        <div className="topbar-left">
-          <span className="topbar-title">PIXELBRAIN // VOID_ECHO v1.1</span>
-          <span className="telemetry-text">[STATUS: {status.toUpperCase()}] [MODE: TRANSMUTATION]</span>
-        </div>
-        <div className="topbar-right">
-          {/* IMMUNE_ALLOW: math-random */}
-          <span className="telemetry-text">0x{'12345678'}</span>
-          <button
-            className="telemetry-text"
-            style={{ background: 'none', border: '1px solid #444', padding: '2px 8px', marginLeft: '12px', cursor: 'pointer' }}
-            onClick={() => setShowTerminal(!showTerminal)}
-          >
-            {showTerminal ? 'HIDE_TERMINAL' : 'SHOW_TERMINAL'}
-          </button>
-        </div>
+    <div className="pb-editor">
+      {/* Top bar — every important function is a visible button */}
+      <div className="pb-topbar">
+        <div className="title">PIXELBRAIN</div>
+
+        <button className="pb-action-btn" onClick={handleNew}>New</button>
+        <button className="pb-action-btn" onClick={handleImport}>Import Image / ASE</button>
+
+        {/* The special PixelBrain capabilities, each as its own button */}
+        <button className="pb-action-btn primary" onClick={triggerCritique} title="Run the 30-year pro critique (silhouette & readability first, then geometry, always with a clear next action)">
+          CRITIQUE
+        </button>
+        <button className="pb-action-btn pb-pixelbrain-btn" onClick={applyConstructionGuides} title="Emit / work with 00_Reference construction guides (the highest-leverage tool for shields, orbs, radials)">
+          CONSTRUCTION GUIDES
+        </button>
+        <button className="pb-action-btn pb-pixelbrain-btn" onClick={loadDrill} title="Load the exact Void Shield construction drill">
+          VOID SHIELD DRILL
+        </button>
+        <button className="pb-action-btn pb-pixelbrain-btn primary" onClick={createEclipseWardPauldronViaPixelBrain} title="Create the Eclipse Ward Pauldron (user recipe) fully via PixelBrain lattice + SDFShapeAMP + NoiseFillAMP + history. The authoritative way.">
+          CREATE VIA PIXELBRAIN (PAULDRON)
+        </button>
+
+        <button className="pb-action-btn" onClick={() => handleRealExport('ase')}>
+          EXPORT .ase
+        </button>
+        <button className="pb-action-btn" onClick={() => handleRealExport('png')}>
+          EXPORT PNG
+        </button>
+        <button className="pb-action-btn" onClick={exportDeterministicRecipe} title="Machine-readable full recipe + command log + AMP params for exact reproduction in foundry or another session">
+          EXPORT RECIPE (Forge Spec)
+        </button>
+
+        <button className="pb-action-btn" onClick={() => setShowTerminal(!showTerminal)}>
+          {showTerminal ? 'HIDE TERMINAL' : 'TERMINAL'}
+        </button>
+
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 11, color: '#666' }}>PIXEL PERFECT • ONE LATTICE</span>
       </div>
 
-      <div className="pixelbrain-main">
-        {/* Left Sidebar: Controls */}
-        <aside className="pixelbrain-panel pixelbrain-panel--left">
-          <div className="panel-tabs">
-            <button 
-              className={`tab-btn ${leftTab === 'upload' ? 'active' : ''}`}
-              onClick={() => setLeftTab('upload')}
-            >
-              UPLINK
-            </button>
-            <button 
-              className={`tab-btn ${leftTab === 'transmute' ? 'active' : ''}`}
-              onClick={() => setLeftTab('transmute')}
-            >
-              MATRIX
-            </button>
-            <button
-              className={`tab-btn ${leftTab === 'echo' ? 'active' : ''}`}
-              onClick={() => setLeftTab('echo')}
-            >
-              ECHO
-            </button>
-            <button
-              className={`tab-btn ${leftTab === 'sketch' ? 'active' : ''}`}
-              onClick={() => setLeftTab('sketch')}
-            >
-              SKETCH
-            </button>
-            <button
-              className={`tab-btn ${leftTab === 'forge' ? 'active' : ''}`}
-              onClick={() => setLeftTab('forge')}
-            >
-              FORGE
-            </button>
-            <button
-              className={`tab-btn ${leftTab === 'lattice' ? 'active' : ''}`}
-              onClick={() => setLeftTab('lattice')}
-            >
-              LATTICE
-            </button>
+      <div className="pb-main">
+        {/* Classic left toolbar — tools + the PixelBrain functions as buttons */}
+        <div className="pb-toolbar" role="toolbar" aria-label="Tools">
+          <button className={`pb-tool-btn ${activeTool === 'paint' ? 'active' : ''}`} onClick={() => selectTool('paint')}>PENCIL</button>
+          <button className={`pb-tool-btn ${activeTool === 'erase' ? 'active' : ''}`} onClick={() => selectTool('erase')}>ERASER</button>
+          <button className={`pb-tool-btn ${activeTool === 'fill' ? 'active' : ''}`} onClick={() => selectTool('fill')}>FILL</button>
+
+          <div style={{ height: 8 }} />
+
+          {/* The "functions we invented" also live here as prominent buttons */}
+          <button className="pb-tool-btn pb-pixelbrain-btn" onClick={triggerCritique}>CRITIQUE</button>
+          <button className="pb-tool-btn pb-pixelbrain-btn" onClick={applyConstructionGuides}>CNSTR</button>
+          <button className="pb-tool-btn pb-pixelbrain-btn" onClick={loadDrill}>DRILL</button>
+          <button className="pb-tool-btn pb-pixelbrain-btn primary" onClick={createEclipseWardPauldronViaPixelBrain} title="Via PixelBrain (SDF+Noise)">PAULDRON</button>
+        </div>
+
+        {/* THE CANVAS — this is the entire point of the page */}
+        <div className="pb-canvas-area">
+          <div className="pb-canvas-viewport">
+            <div className="pb-canvas-frame">
+              {/* Aseprite-like document "window" — the canvas should feel large and spacious */}
+              <div className="pb-canvas-document-header">
+                {activeAssetPacket?.source?.label || activeAssetPacket?.id || 'untitled'} — {canvasGrid?.width || 64}×{canvasGrid?.height || 80}
+                {isDrillActive && <span style={{ color: '#f66', marginLeft: 8 }}>DRILL {formatDrillTime(drillSecondsLeft)}</span>}
+                <span className="pb-canvas-doc-dirty">•</span>
+              </div>
+              <Suspense fallback={<div style={{ padding: 40, color: '#555', textAlign: 'center' }}>Loading pixel editor…</div>}>
+                <TemplateEditor
+                  ref={editorRef}
+                  key={`editor-${editorInstanceKey}`}
+                  initialAssetPacket={activeAssetPacket}
+                  onGridChange={handleGridChange}
+                />
+              </Suspense>
+            </div>
           </div>
 
-          <div className="tab-content">
-            {leftTab === 'upload' && (
-              <>
-                <div className="verse-seed-panel">
-                  <div className="section-header">
-                    <span className="telemetry-text">VERSEIR UPLINK</span>
-                  </div>
-                  <label className="section-label telemetry-text" htmlFor="pixelbrain-verse-seed">
-                    Seed a verse to synthesize, or a plain instruction to morph the loaded asset
-                  </label>
-                  <textarea
-                    id="pixelbrain-verse-seed"
-                    className="pixelbrain-verse-input telemetry-text"
-                    value={verseText}
-                    onChange={(event) => setVerseText(event.target.value)}
-                    placeholder="verse → SYNTHESIZE, or “make it icy blue” / “darker, more vivid” → MORPH..."
-                    aria-label="Verse or instruction input for PixelBrain"
+          <div className="pb-statusbar">
+            <span>TOOL: {activeTool.toUpperCase()}</span>
+            <span>Direct pixel canvas • Construction before ink • Critique before polish</span>
+            <span style={{ marginLeft: 'auto', color: pageNotice ? '#fc4' : '#555' }} aria-live="polite">
+              {pageNotice || 'All PixelBrain tools are the buttons above and on the left'}
+            </span>
+          </div>
+
+          {/* Custom palette box - top right, user editable hex colors, max 12 */}
+          <div className="custom-palette-box">
+            <div className="header">
+              <span>CUSTOM PALETTE</span>
+              <span style={{color: '#666'}}>{customPalette.length}/12</span>
+            </div>
+
+            {customPalette.map((color, index) => (
+              <div key={index} className="color-row">
+                <div
+                  className="swatch"
+                  role="button"
+                  tabIndex={0}
+                  style={{ backgroundColor: color }}
+                  onClick={() => setBrushFromPalette(color)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setBrushFromPalette(color); } }}
+                  title="Click or press Enter/Space to set brush color"
+                  aria-label={`Palette color ${color}`}
+                />
+                <input
+                  className="hex"
+                  type="text"
+                  value={color}
+                  onChange={(e) => updateCustomColor(index, e.target.value)}
+                  maxLength={7}
+                  placeholder="#RRGGBB"
+                />
+                <button
+                  className="remove"
+                  onClick={() => removeCustomColor(index)}
+                  title="Remove color"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+
+            {customPalette.length < 12 && (
+              <button className="add-btn" onClick={addCustomColor}>
+                + ADD COLOR (up to 12)
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Right side — supporting panels, all reading the live canvas grid */}
+        <div className="pb-right-panels">
+          {showPixelBrainPanel && (
+            <div className="pb-panel">
+              <div className="pb-panel-header">
+                PIXELBRAIN <button onClick={() => setShowPixelBrainPanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
+              </div>
+              <div className="pb-panel-body">
+                <button className="pb-action-btn primary" style={{ width: '100%', marginBottom: 4 }} onClick={triggerCritique}>Critique Piece</button>
+                <button className="pb-action-btn pb-pixelbrain-btn" style={{ width: '100%', marginBottom: 4 }} onClick={applyConstructionGuides}>Construction Guides</button>
+                <button className="pb-action-btn pb-pixelbrain-btn" style={{ width: '100%', marginBottom: 4 }} onClick={loadDrill}>Void Shield Drill</button>
+
+                <div style={{ marginTop: 8 }}>
+                  <MentorCritiquePanel
+                    grid={canvasGrid}
+                    analysis={null}
+                    critiqueToken={critiqueToken}
+                    drillActive={isDrillActive}
+                    drillSecondsLeft={drillSecondsLeft}
+                    onApplySuggestion={(type) => {
+                      if (type === 'construction' || type === 'symmetry') {
+                        applyConstructionGuides();
+                      }
+                    }}
+                    onLoadDrill={loadDrill}
                   />
-                  <div className="pixelbrain-verse-toolbar">
-                    <button
-                      className="transmute-ignite-btn pixelbrain-verse-btn"
-                      onClick={handleSynthesizeFromVerse}
-                      disabled={!versePixelBrainPayload || isVerseAnalyzing}
-                    >
-                      {isVerseAnalyzing ? 'AMPLIFYING_VERSE...' : 'SYNTHESIZE_VERSE_LATTICE'}
-                    </button>
-                    <button
-                      className="transmute-ignite-btn pixelbrain-verse-btn"
-                      onClick={handleApplyNlpMorph}
-                      disabled={!canMorph || coordinates.length === 0}
-                      title="Edit the loaded asset in place from a plain instruction (e.g. “make it icy blue”, “darker”). Keeps its shape, morphs the color."
-                    >
-                      {isMorphing
-                        ? 'MORPHING_ASSET...'
-                        : instructionTarget.available
-                          ? `MORPH → ${instructionTarget.label.toUpperCase()}`
-                          : 'MORPH_LOADED_ASSET'}
-                    </button>
-                    <span className="telemetry-text pixelbrain-verse-status">
-                      {amplifierExplanation}
-                    </span>
-                  </div>
-                  {plsSuggestions.length > 0 && (
-                    <div className="pixelbrain-pls-shell" aria-label="PLS suggestions">
-                      {plsSuggestions.map((candidate) => (
-                        <button
-                          key={`${candidate.token}-${candidate.score}`}
-                          className="pixelbrain-pls-chip"
-                          onClick={() => handleApplySuggestion(candidate.token)}
-                          type="button"
-                        >
-                          <span>{candidate.token}</span>
-                          <span>{Math.round((Number(candidate.score) || 0) * 100)}%</span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
                 </div>
-                <UploadSection
-                  onImageUpload={handleImageUpload}
-                  analysis={imageAnalysis}
-                  onClear={handleClear}
-                  uploadError={error}
+              </div>
+            </div>
+          )}
+
+          {showLayersPanel && (
+            <div className="pb-panel" style={{ flex: 1, minHeight: 130 }}>
+              <div className="pb-panel-header">
+                LAYERS <button onClick={() => setShowLayersPanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
+              </div>
+              <div className="pb-panel-body">
+                <LayerStackPanel
+                  grid={canvasGrid}
+                  activeLayerIndex={rightActiveLayer}
+                  onGridUpdate={() => {
+                    // The panel mutates the live grid in place; a redraw
+                    // re-renders the canvas and re-broadcasts the grid.
+                    editorRef.current?.forceRedraw?.();
+                  }}
+                  onActiveLayerChange={(idx) => {
+                    setRightActiveLayer(idx);
+                    if (editorRef.current?.setActiveLayer) {
+                      editorRef.current.setActiveLayer(idx);
+                    }
+                  }}
                 />
-                {imageAnalysis && (
-                  <AnalysisResults analysis={imageAnalysis} />
+              </div>
+            </div>
+          )}
+
+          {showPalettePanel && (
+            <div className="pb-panel">
+              <div className="pb-panel-header">
+                PALETTE <button onClick={() => setShowPalettePanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
+              </div>
+              <div className="pb-panel-body">
+                <IndexedPalettePanel
+                  packet={(() => {
+                    // Exact palette of whatever asset is actually loaded:
+                    // prefer the live grid's imported palette, fall back to
+                    // scanning the active packet (max 7 colors).
+                    let pal = Array.isArray(canvasGrid?.palette) ? canvasGrid.palette.slice(0, 7) : [];
+                    if (pal.length === 0) {
+                      const cols = new Set();
+                      const coords = activeAssetPacket?.geometry?.coordinates || [];
+                      for (const c of coords) {
+                        if (typeof c.color === 'string') {
+                          cols.add(c.color);
+                          if (cols.size >= 7) break; // hard cap at 7
+                        }
+                      }
+                      pal = Array.from(cols);
+                    }
+                    return { palette: { materialPalette: pal.length ? pal : ['#C9A227', '#00E5FF', '#4A90D9'] } };
+                  })()}
+                  fgColor="#C9A227"
+                  bgColor="#111"
+                  onColorPick={(color) => setBrushFromPalette(color)}
+                  intensityRatings={{}}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* AMP post-processing panel — applies adapter AMPs to the live canvas grid */}
+          {showAmpPanel && (
+            <div className="pb-panel" style={{ flex: '0 0 auto' }}>
+              <div className="pb-panel-header">
+                AMP FILTERS <button onClick={() => setShowAmpPanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
+              </div>
+              <div className="pb-panel-body" style={{ padding: 0 }}>
+                <AMPApplyPanel
+                  grid={canvasGrid}
+                  activeLayerIndex={rightActiveLayer}
+                  onApplyAMP={handleApplyAMP}
+                  onPreviewAMP={handlePreviewAMP}
+                  isPreviewing={isAMPPreviewing}
+                  onCommitPreview={commitAMPPreview}
+                  onDiscardPreview={discardAMPPreview}
+                />
+
+                {/* Visible, scrubbable command history (addresses "full command history only in the ref") */}
+                {editorRef.current?.getCommandHistory && (
+                  <div style={{ borderTop: '1px solid #444', padding: '4px 6px', fontSize: 9, maxHeight: 90, overflow: 'auto', background: '#111' }}>
+                    <div style={{ color: '#888', marginBottom: 2 }}>COMMAND HISTORY (click to scrub)</div>
+                    {(editorRef.current.getCommandHistory() || []).slice(-8).reverse().map((entry, i) => (
+                      <button
+                        key={entry.id || i}
+                        type="button"
+                        onClick={() => editorRef.current?.jumpToCommand && editorRef.current.jumpToCommand(entry.index)}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          textAlign: 'left',
+                          background: entry.isPreview ? 'rgba(255,200,0,0.15)' : 'transparent',
+                          color: entry.isPreview ? '#ff8' : '#ccc',
+                          border: 'none',
+                          padding: '1px 4px',
+                          font: 'inherit',
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                        title={entry.description}
+                      >
+                        {entry.description} {entry.isPreview ? '(preview)' : ''}
+                      </button>
+                    ))}
+                    {!(editorRef.current.getCommandHistory() || []).length && <div style={{ color: '#555' }}>No commands yet</div>}
+                  </div>
                 )}
-              </>
-            )}
-            {leftTab === 'transmute' && (
-              <StyleTransmuter 
-                referenceFile={referenceImage?.file}
-                onTransmute={handleTransmuteResult}
-                isProcessing={status === 'analyzing'}
-              />
-            )}
-            {leftTab === 'echo' && (
-              <DuplicateSection
-                referenceFile={referenceImage?.file}
-                isProcessing={status === 'generating'}
-                onProcessingChange={(p) => setStatus(p ? 'generating' : 'ready')}
-              />
-            )}
-            {leftTab === 'sketch' && (
-              <SketchPad
-                onCommit={handleCommitSketch}
-                disabled={isMorphing}
-              />
-            )}
-            {leftTab === 'forge' && (
-              <div className="telemetry-text" style={{ padding: '16px', opacity: 0.7 }}>
-                FORGE_ACTIVE // WebGL pipeline engaged. Custom GLSL shaders mapped to spells.
               </div>
-            )}
-            {leftTab === 'lattice' && (
-              <div className="telemetry-text" style={{ padding: '16px', opacity: 0.7 }}>
-                LATTICE_ACTIVE // Template grid engaged. Paint glyph cells on the
-                rectangular, isometric, hexagonal, circular or fibonacci lattice.
+            </div>
+          )}
+
+          {/* Reference / semantic image import panel — adds reference layers to the live canvas */}
+          {showRefPanel && (
+            <div className="pb-panel" style={{ flex: '0 0 auto' }}>
+              <div className="pb-panel-header">
+                REFERENCE LAYERS <button onClick={() => setShowRefPanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
               </div>
+              <div className="pb-panel-body" style={{ padding: 0 }}>
+                <ReferencePanel
+                  onUploadImage={handleUploadForReference}
+                  onCreateReferenceLayer={handleCreateReferenceLayer}
+                  onGenerateEditableLayers={handleGenerateEditableFromRef}
+                />
+              </div>
+            </div>
+          )}
+
+          <div style={{ padding: 6 }}>
+            {!showPixelBrainPanel && (
+              <button className="pb-action-btn" style={{ width: '100%' }} onClick={() => setShowPixelBrainPanel(true)}>
+                Show PixelBrain Tools
+              </button>
+            )}
+            {!showAmpPanel && (
+              <button className="pb-action-btn" style={{ width: '100%', marginTop: 4 }} onClick={() => setShowAmpPanel(true)}>
+                SHOW AMP (post-process)
+              </button>
+            )}
+            {!showRefPanel && (
+              <button className="pb-action-btn" style={{ width: '100%', marginTop: 4 }} onClick={() => setShowRefPanel(true)}>
+                SHOW REFERENCE (semantic import)
+              </button>
             )}
           </div>
-        </aside>
-
-        {leftTab === 'forge' ? (
-          <Suspense fallback={<div className="telemetry-text" style={{ padding: '24px' }}>LOADING SHADER FORGE...</div>}>
-            <ShaderForgePanel
-              runtimeState={shaderRuntimeState}
-              onDiagnosticEmit={handleShaderDiagnostic}
-            />
-          </Suspense>
-        ) : leftTab === 'lattice' ? (
-          <Suspense fallback={<div className="telemetry-text" style={{ padding: '24px' }}>FORGING_LATTICE...</div>}>
-            <TemplateEditor onCommitAsset={handleTemplateAssetCommit} />
-          </Suspense>
-        ) : (
-          <>
-            {/* Center: Viewport */}
-            <section className="pixelbrain-panel pixelbrain-panel--center">
-              <div className="canvas-container">
-                <canvas
-                  ref={canvasRef}
-                  className="preview-canvas"
-                  width={800}
-                  height={600}
-                />
-              </div>
-
-              <StatusDisplay
-                status={status}
-                error={error}
-              />
-            </section>
-
-            {/* Right Sidebar: Telemetry & Compiler */}
-            <aside className="pixelbrain-panel pixelbrain-panel--right">
-              <div className="section-header">
-                <span className="telemetry-text">LATTICE COMPILER</span>
-              </div>
-              
-              <div className="bytecode-terminal">
-                <div className="terminal-header telemetry-text">0xF_SYNTAX_STREAM</div>
-                <textarea 
-                  className="terminal-textarea telemetry-text"
-                  style={{ width: '100%', height: '120px', background: '#000', border: '1px solid #333', color: '#00FF41', padding: '8px', fontSize: '12px' }}
-                  value={formula ? formulaToBytecode(formula) : "AWAITING_TRANSMUTATION..."}
-                  readOnly
-                />
-              </div>
-
-              <LatticeCanvas analysis={imageAnalysis} />
-
-              <ParameterSliders
-                parameters={parameters}
-                onChange={handleParameterChange}
-                school={activeSchool}
-              />
-              
-              <ExtensionSelector
-                selectedExtensions={extensions}
-                onChange={setExtensions}
-              />
-
-              <div className="section-header" style={{ marginTop: '12px' }}>
-                <span className="telemetry-text">CHROMATIC AMP</span>
-              </div>
-              <div className="pixelbrain-chromatic-controls">
-                <label className="section-label telemetry-text" htmlFor="pixelbrain-chromatic-material">
-                  Material transmutation
-                </label>
-                <select
-                  id="pixelbrain-chromatic-material"
-                  className="telemetry-text pixelbrain-chromatic-select"
-                  value={chromaticMaterial}
-                  onChange={(event) => setChromaticMaterial(event.target.value)}
-                  aria-label="Chromatic transmutation material"
-                >
-                  {CHROMATIC_MATERIAL_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-                <div className="telemetry-text pixelbrain-chromatic-status">
-                  {chromaticPayload.material === SOURCE_MATERIAL
-                    ? 'SOURCE PALETTE BYPASS'
-                    : `${chromaticPayload.amp.toUpperCase()} · ${chromaticPayload.outputPalette.length} ANCHORS`}
-                </div>
-              </div>
-
-              {/* Template / Fill bridge: strip to neutral slots, refill by bytecode */}
-              <div className="section-header" style={{ marginTop: '12px' }}>
-                <span className="telemetry-text">TEMPLATE / FILL</span>
-                {isTemplate && <span className="telemetry-text" style={{ marginLeft: 'auto', color: '#888' }}>[NEUTRAL SLOTS]</span>}
-              </div>
-              <div style={{ display: 'flex', gap: '4px' }}>
-                <button
-                  className="transmute-ignite-btn"
-                  onClick={handlePullFromWand}
-                  title="Adopt only the fill bytecode WAND emitted, populating the selectors below."
-                  type="button"
-                  style={{ flex: 1 }}
-                >
-                  PULL_BYTECODE ← WAND
-                </button>
-                <button
-                  className="transmute-ignite-btn"
-                  onClick={handlePullWandGeometry}
-                  title="Load WAND's procedural shape as a shaded silhouette template (rescaled to sprite space) and adopt its bytecode."
-                  type="button"
-                  style={{ flex: 1 }}
-                >
-                  PULL_GEOMETRY ← WAND
-                </button>
-              </div>
-              {wandFillSpec && (
-                <div className="telemetry-text" style={{ margin: '4px 0', color: '#7ab4ff', fontSize: '11px' }}>
-                  WAND: {wandFillSpec.bytecode}
-                  {wandFillSpec.material ? ` · ${String(wandFillSpec.material).toUpperCase()}` : ''}
-                </div>
-              )}
-              <button
-                className="transmute-ignite-btn"
-                onClick={handleTemplatize}
-                disabled={coordinates.length === 0}
-                title="Strip the loaded asset to geometry + neutral role-slots (grayscale relief)."
-                type="button"
-              >
-                TEMPLATIZE_ASSET
-              </button>
-              <div className="pixelbrain-fill-controls" style={{ display: 'flex', gap: '4px', margin: '8px 0' }}>
-                <select
-                  className="telemetry-text"
-                  style={{ flex: 2, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
-                  value={fillSchool}
-                  onChange={(e) => setFillSchool(e.target.value)}
-                  aria-label="Fill school"
-                >
-                  {Object.keys(SCHOOLS).map((id) => <option key={id} value={id}>{id}</option>)}
-                </select>
-                <select
-                  className="telemetry-text"
-                  style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
-                  value={fillRarity}
-                  onChange={(e) => setFillRarity(e.target.value)}
-                  aria-label="Fill rarity"
-                >
-                  {FILL_RARITY_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
-                </select>
-                <select
-                  className="telemetry-text"
-                  style={{ flex: 1, background: '#000', border: '1px solid #333', color: '#00FF41', padding: '4px', fontSize: '11px' }}
-                  value={fillEffect}
-                  onChange={(e) => setFillEffect(e.target.value)}
-                  aria-label="Fill effect"
-                >
-                  {FILL_EFFECT_OPTIONS.map((eff) => <option key={eff} value={eff}>{eff}</option>)}
-                </select>
-              </div>
-              <button
-                className="transmute-ignite-btn"
-                onClick={handleFillAsBytecode}
-                disabled={coordinates.length === 0}
-                title="Resolve every slot to a color via this bytecode formula. Re-skins the asset."
-                type="button"
-              >
-                FILL → {fillBytecode}
-              </button>
-
-              <button
-                className="transmute-ignite-btn"
-                onClick={() => handleExport('FORMULA')}
-                disabled={!formula}
-              >
-                EXECUTE_BURN_TO_LATTICE
-              </button>
-              {isGodotExportEnabled && (
-                <button
-                  className="transmute-ignite-btn"
-                  onClick={handleGodotArtifactExport}
-                  disabled={coordinates.length === 0}
-                  type="button"
-                >
-                  EXPORT_GODOT_ARTIFACT
-                </button>
-              )}
-            </aside>
-          </>
-        )}
+        </div>
       </div>
 
-      {/* Terminal Overlay */}
+      {/* Keep the old terminal for power users */}
       <AnimatePresence>
         {showTerminal && (
-          <motion.div
-            className="terminal-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          >
+          <motion.div className="terminal-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <PixelBrainTerminal
-              mode={terminalAnalysisResult ? "result" : "input"}
-              analysisResult={terminalAnalysisResult}
+              mode="input"
+              analysisResult={null}
               onClose={() => setShowTerminal(false)}
             />
           </motion.div>

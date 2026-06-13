@@ -25,17 +25,37 @@
 
 import { deflateSync } from 'node:zlib';
 
-import { sketchToSilhouette } from './sketch-amp.js';
+import { sketchToSilhouette, runSketchAMP, applyConstructionLines } from './sketch-amp.js';
+import { forgeArmor } from './factory/armor-factory.js';
+import { forgeWeapon } from './factory/weapon-factory.js';
+import { forgeShield } from './factory/shield-factory.js';
+import { forgeJewelry } from './factory/jewelry-factory.js';
+import { getClassFactory, registerClassFactory } from './factory-registry.js';
+
+registerClassFactory('armor', 'chestplate', forgeArmor);
+registerClassFactory('weapon', '*', forgeWeapon);
+registerClassFactory('shield', '*', forgeShield);
+registerClassFactory('jewelry', '*', forgeJewelry);
+import { executeRoute } from './microprocessor-route.js';
+import { applyHolyFireMotif } from './holyfire-motif-amp.js';
+import { validateMirroredTrimByClass } from './mirrored-trim-validator.js';
 import { buildSquareSharpnessContrastPayload } from './square-sharpness-contrast-amp.js';
 import { composeSilhouette, computeOutline } from './silhouette-composer.js';
 import { applyRegionFills, hashRegionFills } from './region-fill-amp.js';
 import { applySelout } from './selout-amp.js';
 import { applyPixelAA } from './pixel-aa-amp.js';
 import { applyFacets } from './facet-amp.js';
+import { buildGeometryAmpPayload } from './geometry-amp.js';
 import { applyShieldRimTemplate } from './shield-rim-amp.js';
 import { applyShieldVolumeTemplate } from './shield-volume-amp.js';
 import { applyHeraldryTemplate, applyHeraldryFills } from './heraldry-amp.js';
 import { applyJewelryTemplate } from './jewelry-amp.js';
+import { applyChestplateTemplate } from './chestplate-amp.js';
+import {
+  applyChestplateFidelityFills,
+  finalizeChestplateFidelityCoordinates,
+  validateChestplateFidelityInput,
+} from './chestplate-fidelity-pipeline.js';
 import { engraveMotifs, hashMotifs } from './motif-engraver.js';
 import { buildItemEffectShader } from './item-effect-shader.js';
 import { createPixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
@@ -47,6 +67,8 @@ import { createPixelBrainArtifact } from '../../../src/lib/godot-export/artifact
 import { serializeStable } from '../../../src/lib/godot-export/stableSerialize.js';
 import { normalizeItemSpec, hashItemSpec, validateItemSpec } from './item-spec.js';
 import { hashString } from './shared.js';
+import { SDFShapeAMP } from './sdf-shape-amp.js';
+import { NoiseFillAMP } from './noise-fill-amp.js';
 
 function err(reason, context) {
   const e = new Error(`item-foundry: ${reason}`);
@@ -150,6 +172,8 @@ function renderPng(coordinates, width, height, scale = 4) {
   return encodePng(outW, outH, pixels);
 }
 
+export { renderPng };
+
 function encodePng(outW, outH, rgba) {
   // Minimal zero-dep PNG encoder (signature + IHDR + IDAT + IEND).
   const SIG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
@@ -225,7 +249,67 @@ export function forgeItemAsset(rawSpec, opts = {}) {
   const hdMaterial = opts.hdMaterial || SOURCE_MATERIAL;
 
   // 1. Silhouette composition
-  const silhouette = composeSilhouette(spec);
+  // Pass constructionHints early if present for harmonic (sketch + sym + fib) reconciliation.
+  let constructionHintsForComposer = null;
+  const constructionInputEarly = rawSpec?.construction || spec?.construction;
+  if (constructionInputEarly) {
+    // Lightweight peek (full run happens later for hints)
+    constructionHintsForComposer = { harmonic: !!constructionInputEarly.harmonic || !!constructionInputEarly.goldenSpacing, center: constructionInputEarly.center };
+  }
+  let silhouette = composeSilhouette(spec, constructionHintsForComposer);
+  const chestplateProportions = validateChestplateFidelityInput({ spec, silhouette });
+
+  // 1a. Holy Fire Motif AMP — deterministic flame emission for holy-paladin
+  //     weapons. Must run BEFORE template construction so motif cells become
+  //     part of the silhouette and get the regular fill pass.
+  if (spec.class === 'weapon'
+      && spec.archetype === 'sword'
+      && spec.parts.some((p) => p.profile === 'weapon.sword.holyfire_motif'
+        || p.id === 'holyFire' || p.id === 'holy_fire')) {
+    const holyFireResult = applyHolyFireMotif(silhouette, spec);
+    silhouette = Object.freeze({
+      ...silhouette,
+      cells: holyFireResult.cells,
+      partOf: holyFireResult.partOf,
+    });
+  }
+
+  // 1b. SketchAMP / Construction Line Microprocessor (for radial shields, orbs, energy, focal assets)
+  // Per 2026-06-12 PDR: produces authoritative referenceCells + hints for 00_Reference + downstream locking.
+  let constructionResult = null;
+  const constructionInput = spec.construction || rawSpec?.construction;
+  if (constructionInput) {
+    constructionResult = applyConstructionLines(silhouette.cells || [], constructionInput, { mergeBase: false });
+  } else {
+    // Allow runSketchAMP to discover if embedded
+    const sketchRun = runSketchAMP(spec);
+    if (sketchRun && sketchRun.isConstruction) constructionResult = sketchRun;
+  }
+
+  const constructionHints = constructionResult ? constructionResult.constructionHints : null;
+  const referenceCells = constructionResult ? constructionResult.referenceCells : null;
+  const constructionSkeleton = constructionResult ? constructionResult.constructionSkeleton || constructionResult.skeleton : null;
+
+  // SDF and Coherent Noise integration (full per 2026-06-12-pixelbrain-sdf-and-coherent-noise-integration-pdr.md)
+  // SDFShapeAMP for parts declaring 'sdf' (uses construction for bounds, emits integer cells)
+  const sdfSpecParts = spec.parts.filter(p => p.sdf);
+  if (sdfSpecParts.length > 0) {
+    for (const part of sdfSpecParts) {
+      const sdfResult = SDFShapeAMP({ construction: constructionResult, silhouette, spec }, { sdf: part.sdf, partId: part.id, minCells: part.minCells || 1 });
+      if (sdfResult.partCells && sdfResult.partCells.length > 0) {
+        const added = sdfResult.partCells;
+        silhouette = {
+          ...silhouette,
+          cells: [...silhouette.cells, ...added],
+          partOf: new Map(silhouette.partOf),
+        };
+        added.forEach(c => silhouette.partOf.set(`${c.x},${c.y}`, part.id));
+      }
+    }
+  }
+
+  // NoiseFill for parts declaring 'noise' (modulates after fills)
+
 
   // 2. Distance transform shading slots
   let template = sketchToSilhouette(
@@ -239,6 +323,9 @@ export function forgeItemAsset(rawSpec, opts = {}) {
   template = applyShieldVolumeTemplate(template, silhouette, spec);
   template = applyHeraldryTemplate(template, silhouette, spec);
   template = applyJewelryTemplate(template, silhouette, spec);
+  template = applyChestplateTemplate(template, silhouette, spec, constructionHintsForComposer || (constructionResult ? constructionResult.constructionHints : null));
+
+  const geometry = buildGeometryAmpPayload({ spec, silhouette, construction: constructionResult });
 
   const outline = computeOutline(silhouette);
 
@@ -261,6 +348,18 @@ export function forgeItemAsset(rawSpec, opts = {}) {
   let fills = applyRegionFills({ silhouette, template, spec, motifCells });
   // Per-part rules (e.g. grip wrap rows). Adds wrap colors to grip rows.
   fills = applyPartRules(fills, spec);
+  fills = applyChestplateFidelityFills({ fills, spec, silhouette });
+
+  // NoiseFillAMP (after fills, for parts with 'noise' per PDR)
+  const noiseSpecParts = spec.parts.filter(p => p.noise);
+  if (noiseSpecParts.length > 0) {
+    for (const part of noiseSpecParts) {
+      const noiseResult = NoiseFillAMP(fills, part.noise, { partId: part.id });
+      if (noiseResult.fills && noiseResult.fills.length > 0) {
+        fills = { ...fills, coordinates: noiseResult.fills };
+      }
+    }
+  }
   
   // Finish passes
   fills = applySelout(fills, spec, materialResolver, spec.light);
@@ -280,7 +379,11 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     options: { enabled: true },
     intent: 'enhance_square_render_readability',
   });
-  const polished = sharpness.outputCoordinates;
+  const quantization = finalizeChestplateFidelityCoordinates({
+    coordinates: sharpness.outputCoordinates,
+    spec,
+  });
+  const polished = quantization.coordinates;
 
   // 6. Effect shader
   let shader = null;
@@ -288,6 +391,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     try {
       shader = buildItemEffectShader({
         spec,
+        geometry,
         materialColor: (target) => materialResolver(target),
         engravingDensity: motifRaw.cells.size / Math.max(1, silhouette.cells.length),
       });
@@ -331,9 +435,64 @@ export function forgeItemAsset(rawSpec, opts = {}) {
         pdr: 'pixelbrain-item-foundry-v1',
         spec: { id: spec.id, hash: hashItemSpec(spec) },
         shader: shader?.packet ? { id: shader.packet.id, hash: shader.hash, contract: 'PB-SHADER-v1' } : null,
+        geometry: { id: geometry.amp, hash: geometry.hash },
+        fidelity: {
+          pdr: 'pixelbrain-deterministic-pro-chestplate-v1',
+          proportions: chestplateProportions.diagnostics || null,
+          palette: quantization.diagnostics || null,
+        },
+        ...(constructionHints ? {
+          construction: {
+            version: 'construction-v1',
+            contract: constructionSkeleton?.contract || null,
+            hash: constructionSkeleton?.hash || null,
+            center: constructionHints.center,
+            ringRadii: constructionHints.ringRadii,
+          },
+        } : {}),
       },
+      ...(constructionHints ? { constructionHints } : {}),
     },
   });
+
+  // Validate route / loud failures
+  let routeDiagnostics = { ok: true, failures: [] };
+  let expansion = null;
+
+  const factoryFn = getClassFactory(spec.class, spec.archetype);
+  if (factoryFn) {
+    const routeBundle = factoryFn(spec, constructionResult);
+    expansion = routeBundle.expansion;
+
+    const context = {
+      spec,
+      silhouette: { cells: silhouette.cells, parts: silhouette.parts },
+      fills: { coordinates: polished },
+      geometry,
+      construction: constructionResult,
+    };
+
+    const results = executeRoute(routeBundle.routeDefinition, context);
+    routeDiagnostics = results.diagnostics;
+
+    // ── Mirrored trim pair validation (three-level symmetry) ──────────
+    // Run AFTER the seam-based route to add structural symmetry checks
+    // that the existing required-output validator does not cover.
+    if (expansion?.grammarId) {
+      const trimResult = validateMirroredTrimByClass(polished, expansion.grammarId);
+      if (!trimResult.ok) {
+        routeDiagnostics.ok = false;
+        routeDiagnostics.failures.push(...trimResult.failures);
+      }
+    }
+  }
+
+  // Remove EXPORT_READY if failures exist
+  if (!routeDiagnostics.ok) {
+     if (template.chestplateDiagnostics && template.chestplateDiagnostics.diagnostics) {
+         template.chestplateDiagnostics.diagnostics = template.chestplateDiagnostics.diagnostics.filter(d => !d.code.includes('EXPORT_READY'));
+     }
+  }
 
   // 8. Godot artifact + shader exports
   const godotArtifact = serializeStable(createPixelBrainArtifact({
@@ -370,9 +529,20 @@ export function forgeItemAsset(rawSpec, opts = {}) {
       parts: silhouette.parts,
     }),
     template: Object.freeze({ ...template }),
+    // SketchAMP construction output (00_Reference guides + hints for downstream + Aseprite bridge)
+    construction: constructionResult ? Object.freeze({
+      referenceCells: constructionResult.referenceCells,
+      skeleton: constructionSkeleton,
+      hints: constructionHints,
+      spec: spec.construction || null,
+      diagnostics: constructionResult.diagnostics,
+    }) : null,
     fills: Object.freeze({
       coordinates: fills.coordinates,
       diagnostics: fills.diagnostics,
+      ...(fills.chestplateBevel ? { chestplateBevel: fills.chestplateBevel } : {}),
+      ...(fills.crystalCore ? { crystalCore: fills.crystalCore } : {}),
+      ...(fills.chestplateFidelity ? { chestplateFidelity: fills.chestplateFidelity } : {}),
       // Heraldry readability diagnostics (coverage/contrast/warnings).
       ...(fills.heraldry ? { heraldry: fills.heraldry } : {}),
       hash: fillHash,
@@ -382,6 +552,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
       partIds: motifRaw.partIds,
       hash: motifHash,
     }),
+    geometry,
     shader: shader ? Object.freeze({
       packet: shader.packet,
       hash: shader.hash,
@@ -390,6 +561,12 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     }) : null,
     assetPacket: Object.freeze(assetPacket),
     sharpness: Object.freeze(sharpness),
+    fidelity: Object.freeze({
+      proportions: chestplateProportions,
+      palette: quantization.diagnostics,
+    }),
+    routeDiagnostics: Object.freeze(routeDiagnostics),
+    expansion: expansion ? Object.freeze(expansion) : null,
     godotArtifact,
     godotShader,
     phaserPipeline,
@@ -404,7 +581,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
 export function renderBundlePng(bundle, scale = 4) {
   if (!bundle || !bundle.assetPacket) throw err('bundle is required');
   const canvas = bundle.assetPacket.canvas;
-  return renderPngWithZlib(bundle.sharpness.outputCoordinates, canvas.width, canvas.height, scale);
+  return renderPngWithZlib(bundle.assetPacket.geometry.coordinates, canvas.width, canvas.height, scale);
 }
 
 function renderPngWithZlib(coordinates, width, height, scale) {

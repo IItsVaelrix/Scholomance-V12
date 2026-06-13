@@ -1,0 +1,163 @@
+<h2>Design — Revised: Foundry Base + GPU Effects</h2>
+<p class="subtitle">PixelBrain foundry renders the pixel art. A single effects shader adds school glow, rim light, and aura on top. No SDF body — the pixels are already good.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Revised Pipeline</div>
+  <div class="mockup-body" style="padding:1.5rem;font-family:monospace;font-size:11px;line-height:2.2">
+
+    <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;margin-bottom:0.5rem">
+      <div style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.5);border-radius:4px;padding:4px 12px;color:#93c5fd">CHARACTER-SPEC-v1</div>
+      <span style="color:rgba(255,255,255,0.3)">→</span>
+      <div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);border-radius:4px;padding:4px 12px;color:#6ee7b7">forgeCharacter(spec)</div>
+      <span style="color:rgba(255,255,255,0.3)">→</span>
+      <div style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);border-radius:4px;padding:4px 12px;color:#6ee7b7">dirRgbas[ ]</div>
+      <span style="color:rgba(255,255,255,0.4);font-size:9px">&nbsp;← already works ✓</span>
+    </div>
+
+    <div style="margin-left:1rem;color:rgba(255,255,255,0.25)">│</div>
+    <div style="margin-left:0.5rem;color:rgba(251,146,60,0.8);margin-bottom:0.25rem">▼  CharacterShaderRenderer.bake(spec, scene)</div>
+
+    <div style="display:flex;gap:0;margin-bottom:0.5rem">
+      <div style="width:3px;background:rgba(251,146,60,0.3);border-radius:2px;margin-left:0.9rem;margin-right:0.75rem"></div>
+      <div style="display:flex;flex-direction:column;gap:0.4rem;flex:1">
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">①</span>
+          <span style="color:rgba(255,255,255,0.5)">rasterizeCells(spec, 'south') → Uint8Array RGBA</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">②</span>
+          <span style="color:rgba(255,255,255,0.5)">scene.textures.addDynamicTexture(key, 128, 192)</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">③</span>
+          <span style="color:rgba(255,255,255,0.5)">stamp raw RGBA pixels onto base DynamicTexture</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">④</span>
+          <span style="color:rgba(255,255,255,0.5)">compileEffectsBytecode(spec) → 5 effects uniforms</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">⑤</span>
+          <span style="color:rgba(255,255,255,0.5)">scene.add.shader('char-effects', { u_texture: baseDT, uniforms })</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem">
+          <span style="color:rgba(255,255,255,0.3);font-size:10px">⑥</span>
+          <span style="color:rgba(255,255,255,0.5)">finalDT.snapshot() → bake result to SpriteGPULayer texture</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-left:0.5rem;color:rgba(52,211,153,0.8)">▼  SpriteGPULayer  (single draw call, all combatants)</div>
+
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.25rem">
+
+  <div class="mockup">
+    <div class="mockup-header">Before: foundry only (flat pixel art)</div>
+    <div class="mockup-body" style="padding:1.25rem;display:flex;justify-content:center;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <svg width="64" height="96" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;background:#0a0a12;border-radius:3px;border:1px solid rgba(255,255,255,0.1)">
+          <rect x="10" y="2" width="12" height="8" fill="#4a3828"/>
+          <rect x="11" y="5" width="10" height="8" fill="#c08850"/>
+          <rect x="13" y="8" width="2" height="2" fill="#3a2010"/>
+          <rect x="17" y="8" width="2" height="2" fill="#3a2010"/>
+          <rect x="9" y="14" width="14" height="14" fill="#a8a090"/>
+          <rect x="6" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="22" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="10" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="17" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="9" y="39" width="6" height="3" fill="#6a5a48"/>
+          <rect x="17" y="39" width="6" height="3" fill="#6a5a48"/>
+        </svg>
+        <div style="font-size:9px;color:rgba(255,255,255,0.3);font-family:monospace">flat — no effects</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header" style="color:#a78bfa">After: foundry + effects shader</div>
+    <div class="mockup-body" style="padding:1.25rem;display:flex;justify-content:center;align-items:center">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <svg width="64" height="96" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated;background:#0a0a12;border-radius:3px;border:1px solid rgba(167,139,250,0.4)">
+          <defs>
+            <radialGradient id="aura2" cx="50%" cy="100%" r="60%">
+              <stop offset="0%" stop-color="#9bf6ff" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#9bf6ff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- foot aura -->
+          <ellipse cx="16" cy="44" rx="13" ry="5" fill="url(#aura2)"/>
+          <!-- hair -->
+          <rect x="10" y="2" width="12" height="8" fill="#5a4838"/>
+          <!-- head -->
+          <rect x="11" y="5" width="10" height="8" fill="#c08850"/>
+          <!-- eye glow halo (school cyan) -->
+          <rect x="11" y="6" width="5" height="5" fill="#00e5ff" opacity="0.25"/>
+          <rect x="15" y="6" width="5" height="5" fill="#00e5ff" opacity="0.25"/>
+          <!-- eyes lit with school color -->
+          <rect x="13" y="8" width="2" height="2" fill="#00e5ff" opacity="0.9"/>
+          <rect x="17" y="8" width="2" height="2" fill="#00e5ff" opacity="0.9"/>
+          <!-- torso -->
+          <rect x="9" y="14" width="14" height="14" fill="#a8a090"/>
+          <rect x="6" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="22" y="14" width="4" height="10" fill="#c08850"/>
+          <!-- rim light: left silhouette edge -->
+          <rect x="9" y="14" width="1" height="14" fill="#60a5fa" opacity="0.8"/>
+          <rect x="6" y="14" width="1" height="10" fill="#60a5fa" opacity="0.6"/>
+          <rect x="11" y="5" width="1" height="8" fill="#60a5fa" opacity="0.5"/>
+          <!-- legs -->
+          <rect x="10" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="17" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="10" y="28" width="1" height="12" fill="#60a5fa" opacity="0.6"/>
+          <rect x="17" y="28" width="1" height="12" fill="#60a5fa" opacity="0.6"/>
+          <rect x="9" y="39" width="6" height="3" fill="#6a5a48"/>
+          <rect x="17" y="39" width="6" height="3" fill="#6a5a48"/>
+        </svg>
+        <div style="font-size:9px;color:#a78bfa;font-family:monospace">eye glow + rim + aura</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section" style="margin-top:1.25rem">
+  <h3>character-effects.frag.glsl — three techniques</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace;margin-top:0.5rem">
+    <thead>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.15)">
+        <th style="padding:5px 10px;text-align:left;color:#a78bfa">Effect</th>
+        <th style="padding:5px 10px;text-align:left;color:#a78bfa">GLSL technique</th>
+        <th style="padding:5px 10px;text-align:left;color:#a78bfa">Uniforms</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+        <td style="padding:5px 10px;color:#6ee7b7">Eye glow</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Match pixels near <code>u_eyeColor</code> ± threshold; bloom into adjacent transparent pixels with school color</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">u_schoolGlow, u_eyeColor, u_glowIntensity</td>
+      </tr>
+      <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+        <td style="padding:5px 10px;color:#6ee7b7">Rim light</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Silhouette: opaque pixel whose left/top neighbour is transparent → tint with rim color at full alpha</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">u_rimColor, u_glowIntensity</td>
+      </tr>
+      <tr>
+        <td style="padding:5px 10px;color:#6ee7b7">Foot aura</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Radial school-color gradient from bottom-centre of texture; blended only into transparent pixels</td>
+        <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">u_schoolGlow, u_atmosphereOpacity</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:10px;color:rgba(255,255,255,0.35);margin-top:0.75rem;font-family:monospace">Key input: <span style="color:#93c5fd">uniform sampler2D u_texture</span> — the DynamicTexture the foundry painted. Shader only adds effects, never touches body shape.</p>
+</div>
+
+<div class="section">
+  <h3>BytecodeCompiler — now effects-only (5 uniforms, not 13)</h3>
+  <p style="font-size:11px;color:rgba(255,255,255,0.5);line-height:1.7">
+    Derives <code>u_schoolGlow</code>, <code>u_rimColor</code>, <code>u_eyeColor</code>, <code>u_glowIntensity</code>, <code>u_atmosphereOpacity</code> from spec.combatProfile.school + spec.materials.eyes. Pure function, same determinism guarantee. Simpler scope than the original 13-uniform body contract.
+  </p>
+</div>
+
+<p class="subtitle">Does this look right? Confirm and we move to Section 4: the AI enhancement flow.</p>

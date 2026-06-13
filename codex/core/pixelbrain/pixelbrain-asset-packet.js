@@ -213,6 +213,9 @@ export function normalizePixelBrainAssetPacket(input = {}) {
       notes: Object.freeze(Array.isArray(input.metadata?.notes) ? [...input.metadata.notes] : []),
       compatibility: Object.freeze(clonePlain(input.metadata?.compatibility || {})),
     }),
+    // New per SDF+Noise PDR: optional descriptors for generation (SDFs/noise are tools, not canonical lattice)
+    sdfDescriptors: Object.freeze((input.sdfDescriptors || []).map(normalizePB_SDF_v1)),
+    noiseDescriptors: Object.freeze((input.noiseDescriptors || []).map(normalizePB_NOISE_v1)),
   });
 }
 
@@ -265,5 +268,185 @@ export function derivePixelBrainExportPacket(packet, target = 'json', options = 
       materialStage: render.material.id,
       sourcePacketId: render.sourcePacketId,
     }),
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PB-SDF-v1 and PB-NOISE-v1 contracts (per 2026-06-12 SDF & Coherent Noise PDR)
+// These are generation-time descriptors only. Final lattice is always integer cells.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PB_SDF_KIND = 'PB-SDF-v1';
+export const PB_NOISE_KIND = 'PB-NOISE-v1';
+
+function normalizeSDFPrimitive(prim = {}) {
+  const type = String(prim.type || 'circle');
+  const params = {};
+  if (prim.params) {
+    Object.keys(prim.params).forEach(k => {
+      const v = prim.params[k];
+      if (v && typeof v === 'object') {
+        params[k] = { x: toFiniteNumber(v.x), y: toFiniteNumber(v.y), ...(v.radius != null ? {radius: toFiniteNumber(v.radius)} : {}), ...(v.size ? {size: {x:toFiniteNumber(v.size.x), y:toFiniteNumber(v.size.y)}} : {}) };
+      } else {
+        params[k] = toFiniteNumber(v);
+      }
+    });
+  }
+  return Object.freeze({
+    type,
+    params: Object.freeze(params),
+    transform: prim.transform ? Object.freeze({
+      translate: prim.transform.translate ? {x: toFiniteNumber(prim.transform.translate.x), y: toFiniteNumber(prim.transform.translate.y)} : undefined,
+      rotate: toFiniteNumber(prim.transform.rotate, 0),
+      scale: toFiniteNumber(prim.transform.scale, 1),
+    }) : undefined,
+  });
+}
+
+function normalizeSDFOperation(op = {}) {
+  return Object.freeze({
+    op: String(op.op || 'union'),
+    k: toFiniteNumber(op.k, 0),
+    children: Array.isArray(op.children) ? op.children.map(Number) : [],
+  });
+}
+
+export function normalizePB_SDF_v1(input = {}) {
+  if (!input || input.contract !== PB_SDF_KIND) {
+    return Object.freeze({ contract: PB_SDF_KIND, version: '1.0.0', id: 'empty', primitives: [], operations: [] });
+  }
+  return Object.freeze({
+    contract: PB_SDF_KIND,
+    version: String(input.version || '1.0.0'),
+    id: String(input.id || stableId('sdf', input)),
+    primitives: Object.freeze((input.primitives || []).map(normalizeSDFPrimitive)),
+    operations: Object.freeze((input.operations || []).map(normalizeSDFOperation)),
+    domain: input.domain ? Object.freeze({
+      min: { x: toFiniteNumber(input.domain.min?.x), y: toFiniteNumber(input.domain.min?.y) },
+      max: { x: toFiniteNumber(input.domain.max?.x), y: toFiniteNumber(input.domain.max?.y) },
+    }) : undefined,
+  });
+}
+
+export function assertPB_SDF_v1(sdf) {
+  if (!sdf || sdf.contract !== PB_SDF_KIND) throw new Error('Invalid PB-SDF-v1');
+  return true;
+}
+
+export function hashPB_SDF_v1(sdf) {
+  return stableId('pbsdf', normalizePB_SDF_v1(sdf));
+}
+
+function normalizeNoiseDescriptor(n = {}) {
+  return Object.freeze({
+    contract: PB_NOISE_KIND,
+    version: String(n.version || '1.0.0'),
+    id: String(n.id || stableId('noise', n)),
+    type: String(n.type || 'value'),
+    seed: Number(n.seed || 0) >>> 0,
+    octaves: toFiniteNumber(n.octaves, 1),
+    lacunarity: toFiniteNumber(n.lacunarity, 2),
+    gain: toFiniteNumber(n.gain, 0.5),
+    frequency: toFiniteNumber(n.frequency, 0.1),
+    amplitude: toFiniteNumber(n.amplitude, 1),
+    domainWarp: n.domainWarp ? Object.freeze({ type: String(n.domainWarp.type || 'none'), strength: toFiniteNumber(n.domainWarp.strength, 0) }) : undefined,
+    outputRange: Array.isArray(n.outputRange) ? Object.freeze(n.outputRange.map(toFiniteNumber)) : Object.freeze([-1,1]),
+  });
+}
+
+export function normalizePB_NOISE_v1(input = {}) {
+  if (!input || input.contract !== PB_NOISE_KIND) {
+    return Object.freeze({ contract: PB_NOISE_KIND, version: '1.0.0', id: 'empty', type: 'value', seed: 0 });
+  }
+  return normalizeNoiseDescriptor(input);
+}
+
+export function assertPB_NOISE_v1(noise) {
+  if (!noise || noise.contract !== PB_NOISE_KIND) throw new Error('Invalid PB-NOISE-v1');
+  return true;
+}
+
+export function hashPB_NOISE_v1(noise) {
+  return stableId('pbnoise', normalizePB_NOISE_v1(noise));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PB-POLISH-DELTA-v1, PB-POLISH-PROFILE-v1, PB-EDIT-SESSION-v1
+// For the PixelBrain Edit Compiler (manual polish roundtrips, deltas, semantic verbs)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const PB_POLISH_DELTA_KIND = 'PB-POLISH-DELTA-v1';
+export const PB_POLISH_PROFILE_KIND = 'PB-POLISH-PROFILE-v1';
+export const PB_EDIT_SESSION_KIND = 'PB-EDIT-SESSION-v1';
+
+export const POLISH_DELTA_KINDS = Object.freeze({
+  ADD_CELL: 'add-cell',
+  REMOVE_CELL: 'remove-cell',
+  RECOLOR_CELL: 'recolor-cell',
+  REASSIGN_PART: 'reassign-part',
+  PROMOTE_TO_TRIM: 'promote-to-trim',
+  PROMOTE_TO_MOTIF: 'promote-to-motif',
+  WIDEN_PART: 'widen-part',
+  MOVE_PART: 'move-part',
+  REMAP_MATERIAL: 'remap-material',
+});
+
+export function normalizePB_POLISH_DELTA_v1(input = {}) {
+  if (!input || input.contract !== PB_POLISH_DELTA_KIND) {
+    return Object.freeze({
+      contract: PB_POLISH_DELTA_KIND,
+      version: '1.0.0',
+      parentAssetId: null,
+      targetAssetId: null,
+      operations: [],
+    });
+  }
+  return Object.freeze({
+    contract: PB_POLISH_DELTA_KIND,
+    version: String(input.version || '1.0.0'),
+    parentAssetId: input.parentAssetId ? String(input.parentAssetId) : null,
+    targetAssetId: input.targetAssetId ? String(input.targetAssetId) : null,
+    operations: Object.freeze(
+      (Array.isArray(input.operations) ? input.operations : []).map(op => Object.freeze({
+        kind: String(op.kind || 'add-cell'),
+        x: toFiniteNumber(op.x),
+        y: toFiniteNumber(op.y),
+        color: op.color ? String(op.color) : null,
+        from: op.from ? String(op.from) : null,
+        to: op.to ? String(op.to) : null,
+        partId: op.partId ? String(op.partId) : null,
+        material: op.material ? String(op.material) : null,
+      }))
+    ),
+  });
+}
+
+export function normalizePB_POLISH_PROFILE_v1(input = {}) {
+  if (!input || input.contract !== PB_POLISH_PROFILE_KIND) {
+    return Object.freeze({ contract: PB_POLISH_PROFILE_KIND, version: '1.0.0', preferences: {} });
+  }
+  return Object.freeze({
+    contract: PB_POLISH_PROFILE_KIND,
+    version: String(input.version || '1.0.0'),
+    preferences: Object.freeze(input.preferences || {}),
+  });
+}
+
+export function createPBEditSession(basePacket, options = {}) {
+  const base = normalizePixelBrainAssetPacket(basePacket);
+  return Object.freeze({
+    contract: PB_EDIT_SESSION_KIND,
+    version: '1.0.0',
+    basePacket: base,
+    currentPacket: base,
+    deltas: [],
+    constraints: Object.freeze({
+      mirrorX: options.mirrorX ?? 31.5,  // .5 for correct 0-based center symmetry on even grids during edit/raster
+      preservePartConnectivity: true,
+      preventOutOfBounds: true,
+      requireMaterialAuthority: true,
+      ...options.constraints,
+    }),
+    // apply implemented in edit-compiler.js
   });
 }

@@ -28,49 +28,13 @@ export const combatBridge = new CombatBridge();
 const RELAY_URL =
   import.meta.env.VITE_COMBAT_RELAY_URL || 'ws://127.0.0.1:3001';
 
-let socket = null;
 let commandHandler = null;
-let reconnectTimer = null;
-let pendingInitPacket = null;
 
 export function connectCombatBridge() {
-  if (socket && socket.readyState <= WebSocket.OPEN) return socket;
-
-  socket = new WebSocket(RELAY_URL);
-
-  socket.addEventListener('open', () => {
-    socket.send(JSON.stringify({
-      type: 'HELLO',
-      role: 'host',
-    }));
-    if (pendingInitPacket) {
-      socket.send(pendingInitPacket);
-      pendingInitPacket = null;
-    }
-  });
-
-  socket.addEventListener('message', (event) => {
-    let packet;
-
-    try {
-      packet = JSON.parse(event.data);
-    } catch {
-      return;
-    }
-
-    if (packet.type === 'COMBAT_COMMAND' && commandHandler) {
-      commandHandler(packet.command, packet);
-    }
-  });
-
-  socket.addEventListener('close', () => {
-    reconnectTimer = window.setTimeout(() => {
-      reconnectTimer = null;
-      connectCombatBridge();
-    }, 1000);
-  });
-
-  return socket;
+  // Deprecated: We migrated to a native Phaser React UI. 
+  // The Godot websocket relay is no longer used.
+  // Return a dummy object to prevent errors in legacy callers.
+  return { readyState: 1, send: () => {} };
 }
 
 export function onCombatCommand(handler) {
@@ -204,15 +168,5 @@ export function buildActionPayload(turnResult) {
 }
 
 export function disconnectCombatBridge() {
-  if (reconnectTimer) {
-    window.clearTimeout(reconnectTimer);
-    reconnectTimer = null;
-  }
-
-  if (socket) {
-    socket.close();
-    socket = null;
-  }
-
   commandHandler = null;
 }

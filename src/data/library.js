@@ -56,6 +56,7 @@ export const INTERNAL_MODULES = [
   { id: "collab", path: "/collab", label: "Collab" },
   { id: "wand", path: "/wand", label: "Wand Workspace" },
   { id: "photonic-bridge", path: "/internal/photonic-bridge", label: "Photonic Bridge" },
+  { id: "time-lab", path: "/internal/time-lab", label: "ScholoTime Lab" },
 ];
 
 // Dynamically generate COLORS from SCHOOLS source of truth

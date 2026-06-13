@@ -4,7 +4,8 @@ extends RefCounted
 static func stringify(value: Variant) -> String:
 	match typeof(value):
 		TYPE_DICTIONARY:
-			var keys := value.keys()
+			var dict := value as Dictionary
+			var keys = dict.keys()
 			keys.sort()
 			var parts: Array[String] = []
 			for key in keys:

@@ -40,6 +40,7 @@ const ROUTE_COPY = {
   profile: "Review account standing and inner-sanctum access.",
   auth: "Enter the portal and secure your chamber.",
   "photonic-bridge": "Diagnostic interface for the Photonic Quantization Bridge.",
+  "time-lab": "Experiment with video rendering and timeline muxing.",
 };
 
 export default function Navigation() {

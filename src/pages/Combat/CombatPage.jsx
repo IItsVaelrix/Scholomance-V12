@@ -2,28 +2,18 @@ import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import { useCombatBoard } from './hooks/useCombatBoard.js';
 import { useSpellScoringFlow } from './hooks/useSpellScoringFlow.js';
 import { CombatUIStateProvider, deriveCombatMode } from './state/useCombatUIState.js';
-import { HOTKEY_TO_ACTION, buildActionHotkeyFooter } from './state/combatActions.js';
-import BattleChrome from './BattleChrome.jsx';
+import { HOTKEY_TO_ACTION } from './state/combatActions.js';
 import BattleArena from './BattleArena.jsx';
 import OracleScribe from './OracleScribe.jsx';
 import ExtractionScribe from './components/ExtractionScribe.jsx';
-import CombatLog from './CombatLog.jsx';
-import OpponentDisplay from './OpponentDisplay.jsx';
-import EnemyDetailsModal from './components/EnemyDetailsModal.jsx';
-import ScholarStatusPanel from './components/ScholarStatusPanel.jsx';
-import TileInspector from './components/TileInspector.jsx';
-import BottomCommandBand from './components/BottomCommandBand.jsx';
 import { getCrossPattern } from './state/combatPreviewUtils.js';
 import ShaderArenaBackdrop from './components/ShaderArenaBackdrop.jsx';
-import CombatRundownModal from './components/CombatRundownModal.jsx';
-import { connectCombatBridge, onCombatCommand, broadcastCombatInit, broadcastCombatAction, buildActionPayload, disconnectCombatBridge } from './combatBridge.js';
+import { connectCombatBridge, onCombatCommand, broadcastCombatInit, broadcastCombatAction, buildActionPayload } from './combatBridge.js';
 import './CombatPage.css';
 
 export default function CombatPage() {
   const arenaRef = useRef(null);
-  const [showEnemyDetails, setShowEnemyDetails] = useState(false);
   const [arenaReady, setArenaReady] = useState(false);
-  const [isLogCollapsed, setIsLogCollapsed] = useState(false);
   const lastAnimatedOpponentTurnRef = useRef(null);
   const [opponentMotionHold, setOpponentMotionHold] = useState(null);
 
@@ -37,7 +27,6 @@ export default function CombatPage() {
     moveEntity,
     fleeBattle,
     isResolving,
-    turnTimeRemaining,
     isPlayerTurn,
     selectedAction,
     setSelectedAction,
@@ -48,8 +37,6 @@ export default function CombatPage() {
     encounterHeader,
     scholar,
     opponent,
-    cellLabel,
-    range,
   } = useCombatBoard();
 
   const canExtract = useMemo(
@@ -80,7 +67,7 @@ export default function CombatPage() {
     ));
   }, [opponentMotionHold, pendingOpponentMotion, renderedUnits]);
 
-  // Derive UI mode from game state — drives data-combat-mode on shell
+  // Derive UI mode from game state
   const mode = useMemo(
     () => deriveCombatMode(selectedAction, isResolving),
     [selectedAction, isResolving]
@@ -89,7 +76,7 @@ export default function CombatPage() {
   useEffect(() => {
     connectCombatBridge();
 
-    return onCombatCommand((commandText, packet) => {
+    return onCombatCommand((commandText) => {
       // Execute the command via React state
       if (commandText.startsWith("MOVE ")) {
         const parts = commandText.split(" ");
@@ -183,15 +170,12 @@ export default function CombatPage() {
 
   useEffect(() => {
     const onKey = (e) => {
-      // Backtick toggles the combat log
-      if (e.key === '`') {
-        setIsLogCollapsed(c => !c);
-        return;
-      }
+      // Ignore text input fields
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
 
       if (!isPlayerTurn || battleState?.phase === 'victory' || battleState?.phase === 'defeat') return;
 
-      // Number hotkeys for action selection — derived from ACTION_DEFS
+      // Number hotkeys for action selection
       const actionId = HOTKEY_TO_ACTION[e.key];
       if (actionId) {
         if (actionId === 'EXTRACT' && !canExtract) return;
@@ -218,8 +202,6 @@ export default function CombatPage() {
     }
   }, [scholar, cursorTile, battleState?.phase, submitScroll]);
 
-  const activeLabel = encounterHeader?.activeLabel;
-
   useEffect(() => {
     if (!arenaReady || !battleState?.history?.length) return;
 
@@ -235,7 +217,6 @@ export default function CombatPage() {
 
   useEffect(() => {
     if (!opponentMotionHold?.turnId) return;
-    // Instantly complete opponent motion hold since we have no local isPlaying blocker anymore
     setOpponentMotionHold({ completedTurnId: opponentMotionHold.turnId });
   }, [opponentMotionHold]);
 
@@ -243,26 +224,15 @@ export default function CombatPage() {
     startBattle('void_wraith_01');
   }, [startBattle]);
 
-  // Clear any active action highlight when combat ends so the bottom
-  // command band doesn't show a stale "is-active" button over the
-  // post-battle modal.
   useEffect(() => {
     if (battleState?.phase === 'victory' || battleState?.phase === 'defeat') {
       setSelectedAction(null);
     }
   }, [battleState?.phase, setSelectedAction]);
 
-
-
   const {
     bridgeState,
-    scoreResult,
-    combatRundown,
-    isRundownOpen,
     submitCast: submitScoringCast,
-    claimVictory,
-    dismissRundown,
-    clearForRestart,
   } = useSpellScoringFlow({
     battleState,
     scholar,
@@ -277,190 +247,102 @@ export default function CombatPage() {
     return <div className="battle-page-loading">The Arena Stirs...</div>;
   }
 
-  const cursorVM = tileViewModels.find(t => t.isCursor);
-  const occupantEntity = cursorVM?.occupantId
-    ? battleState.entities.find(e => e.id === cursorVM.occupantId)
-    : null;
-  const latestPlayerTurn = [...battleState.history]
-    .reverse()
-    .find((turn) => turn.entityId === scholar?.id) || null;
-  const latestOpponentTurn = [...battleState.history]
-    .reverse()
-    .find((turn) => turn.entityId === opponent?.id) || null;
-
-  const uiStateValue = { mode, isLogCollapsed, setIsLogCollapsed };
+  const uiStateValue = { mode, isLogCollapsed: true, setIsLogCollapsed: () => {} };
   const isCombatEnded = battleState.phase === 'victory' || battleState.phase === 'defeat';
 
   return (
     <CombatUIStateProvider value={uiStateValue}>
       <div
-        className={`battle-page-root${bridgeState !== 'PLAYER_TURN' ? ' bridge-active' : ''}`}
+        className={`battle-page-root mmorpg-hybrid-layout ${bridgeState !== 'PLAYER_TURN' ? ' bridge-active' : ''}`}
         data-combat-mode={mode}
         data-state={bridgeState}
       >
         <div className="battle-immersive-mode">
-          <BattleChrome
-            school={arenaSchool}
-            round={battleState.round}
-            onFlee={fleeBattle}
-            timeRemaining={turnTimeRemaining}
-            mode={mode}
-            isPlayerTurn={isPlayerTurn}
-            isResolving={isResolving}
-          />
-
-          <main className="combat-page combat-page--codex">
-            <section className="combat-book-spread" aria-label="Combat encounter">
-              <section className="combat-text-page" aria-label="Battle transcript and commands">
-                <header className="combat-mud-header">
-                  <div className="combat-data-block combat-data-block--scholar">
-                    <ScholarStatusPanel scholar={scholar} latestTurn={latestPlayerTurn} playerTurnIndex={battleState.playerTurnIndex} />
-                  </div>
-
-                  <div className="combat-data-block combat-data-block--opponent">
-                    {opponent && (
-                      <OpponentDisplay
-                        archetype={opponent}
-                        currentHP={opponent.hp}
-                        maxHP={opponent.maxHp}
-                        phase={battleState.phase}
-                        onShowDetails={() => setShowEnemyDetails(true)}
-                      />
-                    )}
-                  </div>
-                </header>
-
-                <section className="combat-transcript-shell" aria-label="Combat log">
-                  <CombatLog
-                    history={battleState.history}
-                    isResolving={isResolving}
-                    activeIntent={null}
-                    isCollapsed={isLogCollapsed}
-                    onToggle={() => setIsLogCollapsed(c => !c)}
-                    variant="mud"
-                  />
-                </section>
-
-                <footer className="combat-command-dock" aria-label="Combat command line">
-                  <BottomCommandBand
-                    selectedAction={selectedAction}
-                    onActionSelect={handleActionSelect}
-                    isDisabled={isCombatEnded}
-                    movesRemaining={scholar?.movesRemaining}
-                    canExtract={canExtract}
-                    variant="inline"
-                  />
-
-                  {selectedAction === 'EXTRACT' ? (
-                    <ExtractionScribe
-                      leyline={battleState.leylines?.find(ley => ley.coord.x === scholar?.position.x && ley.coord.y === scholar?.position.y)}
-                      onSubmit={async (phrase) => {
-                        await submitExtraction(phrase, scholar?.position);
-                        setSelectedAction(null);
-                      }}
-                      isDisabled={isCombatEnded || !isPlayerTurn || isResolving}
-                      variant="terminal"
-                    />
-                  ) : (
-                    <OracleScribe
-                      onSubmit={submitScoringCast}
-                      isDisabled={isCombatEnded || (bridgeState === 'CASTING' ? false : (!isPlayerTurn || isResolving))}
-                      school={arenaSchool}
-                      variant="terminal"
-                    />
-                  )}
-                </footer>
-              </section>
-
-              <aside className="combat-illustration-page" aria-label="Battle illustration">
-                <div className="combat-illustration-meta">
-                  <span>ARENA PLATE</span>
-                  <span>PHASER GRID</span>
-                </div>
-
-                <div className="combat-illustration-frame">
-                  <ShaderArenaBackdrop school={arenaSchool} resonance={0.72} />
-                  
-                  <BattleArena
-                    ref={arenaRef}
-                    arenaSchool={arenaSchool}
-                    tileViewModels={tileViewModels}
-                    renderedUnits={displayedRenderedUnits}
-                    cursorTile={cursorTile}
-                    onSelectCell={handleSelectCell}
-                    onReady={() => setArenaReady(true)}
-                  />
-
-                  {mode !== 'inscribe' && (
-                    <div className="combat-floating-inspector" style={{ position: 'absolute', bottom: '1rem', right: '1rem', zIndex: 10, background: 'rgba(0,0,0,0.8)', padding: '0.5rem', border: '1px solid var(--combat-line)' }}>
-                      <TileInspector
-                        cellLabel={cellLabel}
-                        range={range}
-                        occupantEntity={occupantEntity}
-                        scholarRange={scholar?.range || 2}
-                        tile={cursorVM}
-                      />
-                    </div>
-                  )}
-                </div>
-              </aside>
-            </section>
-          </main>
-
-          <div className="hotkey-footer" aria-hidden="true">
-            [WASD] MOVE CURSOR
-            <span className="footer-divider">·</span>
-            [ENTER] CONFIRM
-            <span className="footer-divider">·</span>
-            [ESC] CANCEL
-            <span className="footer-divider">·</span>
-            {buildActionHotkeyFooter()}
-            <span className="footer-divider">·</span>
-            [`] LOG
+          
+          {/* MMORPG World View (Fullscreen) */}
+          <div className="mmorpg-world-view">
+            <ShaderArenaBackdrop school={arenaSchool} resonance={0.72} />
+            <BattleArena
+              ref={arenaRef}
+              arenaSchool={arenaSchool}
+              tileViewModels={tileViewModels}
+              renderedUnits={displayedRenderedUnits}
+              cursorTile={cursorTile}
+              onSelectCell={handleSelectCell}
+              onReady={() => setArenaReady(true)}
+            />
           </div>
-        </div>
 
-        {bridgeState === 'SCORE_REVEAL' && scoreResult && (
-          <div className="bridge-score-overlay">
-            <div className="bridge-score-panel" role="region" aria-label="Spell score breakdown">
-              <h2>VERSE AFTERMATH</h2>
-              <div className="bridge-score-content">
-                <div className="bridge-score-stat">
-                  <span className="bridge-score-label">TOTAL DAMAGE</span>
-                  <span className="bridge-score-value">{scoreResult.damage}</span>
+          {/* MMORPG HUD Overlay */}
+          <div className="mmorpg-hud">
+            {/* Top Left: Unit Frame (Scholar) */}
+            {scholar && (
+              <div className="hud-unit-frame hud-scholar">
+                <div className="unit-name">{scholar.name || 'Scholar'}</div>
+                <div className="bar-row">
+                  <div className="bar-label"><span>HP</span><span>{scholar.hp} / {scholar.maxHp}</span></div>
+                  <div className="bar-track"><div className="bar-fill-hp" style={{ width: `${(scholar.hp / scholar.maxHp) * 100}%` }} /></div>
                 </div>
-                <div className="bridge-score-stat">
-                  <span className="bridge-score-label">SCORE</span>
-                  <span className="bridge-score-value">{scoreResult.totalScore}</span>
+                <div className="bar-row">
+                  <div className="bar-label"><span>MP</span><span>{scholar.mp} / {scholar.maxMp}</span></div>
+                  <div className="bar-track"><div className="bar-fill-mp" style={{ width: `${(scholar.mp / scholar.maxMp) * 100}%` }} /></div>
+                </div>
+                <div className="unit-level">Lv. {scholar.level || 1}</div>
+              </div>
+            )}
+
+            {/* Top Center: Opponent Unit Frame */}
+            {opponent && (
+              <div className="hud-unit-frame hud-opponent">
+                <div className="unit-name">{opponent.name || 'Opponent'}</div>
+                <div className="bar-row">
+                  <div className="bar-label"><span>HP</span><span>{opponent.hp} / {opponent.maxHp}</span></div>
+                  <div className="bar-track"><div className="bar-fill-hp" style={{ width: `${(opponent.hp / opponent.maxHp) * 100}%` }} /></div>
                 </div>
               </div>
-              <div className="battle-log">{scoreResult.commentary}</div>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={claimVictory}
-              >
-                Claim victory
-              </button>
+            )}
+
+            {/* Bottom Left: Action Bar / MUD Input */}
+            <div className="hud-action-bar">
+              {canExtract && selectedAction !== 'EXTRACT' && (
+                <button 
+                  className="hud-extract-btn" 
+                  onClick={() => setSelectedAction('EXTRACT')}
+                >
+                  Leyline Resonating — Click to Extract
+                </button>
+              )}
+              {selectedAction === 'EXTRACT' && (
+                <button 
+                  className="hud-extract-btn cancel" 
+                  onClick={() => setSelectedAction(null)}
+                >
+                  Cancel Extraction
+                </button>
+              )}
+
+              {selectedAction === 'EXTRACT' ? (
+                <ExtractionScribe
+                  leyline={battleState.leylines?.find(ley => ley.coord.x === scholar?.position.x && ley.coord.y === scholar?.position.y)}
+                  onSubmit={async (phrase) => {
+                    await submitExtraction(phrase, scholar?.position);
+                    setSelectedAction(null);
+                  }}
+                  isDisabled={isCombatEnded || !isPlayerTurn || isResolving}
+                  variant="terminal"
+                />
+              ) : (
+                <OracleScribe
+                  onSubmit={submitScoringCast}
+                  isDisabled={isCombatEnded || (bridgeState === 'CASTING' ? false : (!isPlayerTurn || isResolving))}
+                  school={arenaSchool}
+                  variant="terminal"
+                />
+              )}
             </div>
           </div>
-        )}
-
-        <EnemyDetailsModal
-          isOpen={showEnemyDetails}
-          onClose={() => setShowEnemyDetails(false)}
-          enemy={opponent}
-          latestTurn={latestOpponentTurn}
-        />
-        <CombatRundownModal
-          isOpen={isRundownOpen}
-          rundown={combatRundown}
-          onClose={dismissRundown}
-          onRestart={() => {
-            clearForRestart();
-            startBattle('void_wraith_01');
-          }}
-        />
+          
+        </div>
       </div>
     </CombatUIStateProvider>
   );

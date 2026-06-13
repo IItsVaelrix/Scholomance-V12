@@ -21,7 +21,7 @@ import {
 import { 
   drawPixelatedLine,
   drawHandDrawnLine
-} from '../../../codex/core/pixelbrain/anti-alias-control.js';
+} from '../../../codex/core/pixelbrain/raster-jitter-filter.js';
 import { GOLDEN_RATIO } from '../../../codex/core/pixelbrain/shared.js';
 
 describe('PixelBrain — Aseprite Emulation Audit', () => {

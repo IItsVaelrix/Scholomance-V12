@@ -8,8 +8,15 @@ const ORIGIN_Y := 100.0
 
 var _store: CombatStateStore
 var _unit_sprites := {}
+var _target_positions := {}
 
-	pass
+func _process(delta: float) -> void:
+    for id in _unit_sprites:
+        if _target_positions.has(id):
+            var sprite = _unit_sprites[id]
+            sprite.position = sprite.position.lerp(_target_positions[id], 15.0 * delta)
+
+
 
 func _on_state_updated() -> void:
     if not _store: return
@@ -21,21 +28,16 @@ func _on_state_updated() -> void:
         current_ids.append(id)
         
         var pos = unit.get("position", {"x": 0, "y": 0})
-        var target_x = ORIGIN_X + (pos.x - pos.y) * (TILE_W / 2.0)
-        var target_y = ORIGIN_Y + (pos.x + pos.y) * (TILE_H / 2.0)
-        # Offset slightly up so they stand on the tile
-        var target_pos = Vector2(target_x, target_y - TILE_H/2)
+        
+        # Free-roam direct 1:1 world coordinates.
+        var target_pos = Vector2(pos.x, pos.y)
+        _target_positions[id] = target_pos
         
         if not _unit_sprites.has(id):
             var sprite = _create_unit_sprite(unit)
             add_child(sprite)
             sprite.position = target_pos
             _unit_sprites[id] = sprite
-        else:
-            var sprite = _unit_sprites[id]
-            if sprite.position.distance_to(target_pos) > 1.0:
-                var tween = create_tween()
-                tween.tween_property(sprite, "position", target_pos, 0.3).set_trans(Tween.TRANS_SINE)
                 
     # Cleanup dead units
     var to_remove = []
@@ -46,33 +48,42 @@ func _on_state_updated() -> void:
             
     for id in to_remove:
         _unit_sprites.erase(id)
+        _target_positions.erase(id)
 
 func _create_unit_sprite(unit_data: Dictionary) -> Sprite2D:
-    # Minimal placeholder using Godot's default icon or a color rect if missing
     var sprite = Sprite2D.new()
     
-    # We'll just draw a Colored polygon for now
-    var poly = Polygon2D.new()
-    poly.polygon = PackedVector2Array([
-        Vector2(-20, -20), Vector2(20, -20),
-        Vector2(20, 20), Vector2(-20, 20)
-    ])
-    
     if unit_data.get("id") == "player":
-        poly.color = Color(0.1, 0.6, 0.9, 1.0) # Blue
+        # Use the generated Icy Holy Fire Chestplate asset (from scripts/generate-new-void-chestplate.mjs with icy-holy-fire)
+        # In practice: copy output/foundry/icy-holy-fire-chestplate/icy-holy-fire-chestplate.png to a res://assets/ path
+        # or load dynamically. For demo, use a bright texture representing the chestplate.
+        # To fully use PixelBrain: parse the .json packet and draw coords, or use the .png as sprite.
+        var chestplate_texture = load("res://assets/icy_holy_fire_chestplate.png")  # Assume copied from output
+        if chestplate_texture:
+            sprite.texture = chestplate_texture
+            sprite.scale = Vector2(0.6, 0.6)  # Scale for arena
+            sprite.offset = Vector2(0, -chestplate_texture.get_height() / 2.0)
+        else:
+            # Fallback colored for player (icy blue theme)
+            var poly = Polygon2D.new()
+            poly.polygon = PackedVector2Array([Vector2(-24, -64), Vector2(24, -64), Vector2(24, 0), Vector2(-24, 0)])
+            poly.color = Color(0.3, 0.6, 0.9, 1.0)  # Icy blue
+            sprite.add_child(poly)
     else:
-        poly.color = Color(0.9, 0.2, 0.2, 1.0) # Red
-        
-    sprite.add_child(poly)
+        # Enemy or other: use red or load other generated asset
+        var poly = Polygon2D.new()
+        poly.polygon = PackedVector2Array([Vector2(-20, -40), Vector2(20, -40), Vector2(20, 0), Vector2(-20, 0)])
+        poly.color = Color(0.9, 0.2, 0.2, 1.0)
+        sprite.add_child(poly)
     
-    # Add speech bubble label
+    # Add speech bubble label (for real-time chat/effects in free-roam)
     var label = Label.new()
     label.name = "SpeechBubble"
     label.text = ""
     label.visible = false
     label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
     label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
-    label.position = Vector2(-100, -80)
+    label.position = Vector2(-100, -110)
     label.size = Vector2(200, 50)
     label.add_theme_color_override("font_color", Color(1, 1, 1, 1))
     label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1))

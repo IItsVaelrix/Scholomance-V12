@@ -1,0 +1,12 @@
+{
+  "specHash": "n/a (custom lattice recipe)",
+  "assetId": "pbasset_fad7d734",
+  "coords": 1005,
+  "uniqueColors": 6,
+  "routeOk": true,
+  "usedNewAbilities": [
+    "SDFShapeAMP",
+    "NoiseFillAMP"
+  ],
+  "source": "scripts/generate-eclipse-ward-pauldron.mjs"
+}

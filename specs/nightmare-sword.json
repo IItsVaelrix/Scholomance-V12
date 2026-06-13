@@ -1,0 +1,99 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "nightmare.sword",
+  "class": "weapon",
+  "archetype": "sword",
+  "canvas": {
+    "width": 48,
+    "height": 96,
+    "gridSize": 1
+  },
+  "seed": 666,
+  "bytecode": "VW-VOID-INEXPLICABLE-TRANSCENDENT",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "blade",
+      "profile": "blade.straight",
+      "params": {
+        "cx": 24,
+        "span": [
+          0,
+          59
+        ],
+        "belly": 5
+      },
+      "fill": {
+        "material": "obsidian"
+      },
+      "outline": {
+        "material": "holy_fire"
+      },
+      "motif": {
+        "kind": "bolt",
+        "fork": true,
+        "core": {
+          "material": "holy_fire",
+          "anchor": "whiteCore"
+        },
+        "glow": {
+          "material": "shadow_fire",
+          "anchor": "deep"
+        }
+      }
+    },
+    {
+      "id": "guard",
+      "profile": "guard.cross",
+      "attach": {
+        "parent": "blade",
+        "at": "base"
+      },
+      "params": {
+        "width": 32,
+        "height": 6,
+        "halfBase": 14
+      },
+      "fill": {
+        "material": "silver"
+      },
+      "shading": "faceted"
+    },
+    {
+      "id": "grip",
+      "profile": "grip.wrapped",
+      "attach": {
+        "parent": "guard",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_core"
+      },
+      "outline": {
+        "material": "gold"
+      }
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.gem",
+      "attach": {
+        "parent": "grip",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "obsidian"
+      },
+      "outline": {
+        "material": "holy_fire",
+        "anchor": "spectral"
+      }
+    }
+  ],
+  "shader": {
+    "kind": "motif-energize"
+  },
+  "light": {
+    "angle": 3.9269908169872414,
+    "ambient": 0.3
+  }
+}

@@ -46,9 +46,16 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-11-pixelbrain-color-intensity-rating-microprocessor-pdr.md`](./2026-06-11-pixelbrain-color-intensity-rating-microprocessor-pdr.md) | Draft | PixelBrain + Rendering + Microprocessors + Color Engine | High |
 | [`2026-06-11-pixelbrain-connective-tissue-seven-systems-pdr.md`](./2026-06-11-pixelbrain-connective-tissue-seven-systems-pdr.md) | Implemented | Architectural + PixelBrain + Rendering + Microprocessors + Interop | Critical |
 | [`2026-06-11-pixelbrain-directional-light-finish-pdr.md`](./2026-06-11-pixelbrain-directional-light-finish-pdr.md) | Draft | PixelBrain + Rendering + AMP + Visual Fidelity | High |
+| [`2026-06-11-pixelbrain-emblem-microprocessor-pdr.md`](./2026-06-11-pixelbrain-emblem-microprocessor-pdr.md) | Draft | PixelBrain + Emblem + Item Foundry | High |
 | [`2026-06-11-pixelbrain-item-foundry-pdr.md`](./2026-06-11-pixelbrain-item-foundry-pdr.md) | Draft | Architectural + PixelBrain + Procedural Generation + Asset Pipeline | High |
 | [`2026-06-11-pixelbrain-render-fidelity-pipeline-pdr.md`](./2026-06-11-pixelbrain-render-fidelity-pipeline-pdr.md) | Implemented | Behavioral render-stage AMPs / Pipeline Orchestration | High |
 | [`2026-06-11-pixelbrain-square-sharpness-contrast-amp-pdr.md`](./2026-06-11-pixelbrain-square-sharpness-contrast-amp-pdr.md) | Implemented | PixelBrain + Rendering + AMP + Visual Fidelity | High |
+| [`2026-06-12-pixelbrain-deterministic-pro-chestplate-pdr.md`](./2026-06-12-pixelbrain-deterministic-pro-chestplate-pdr.md) | Implemented | PixelBrain + Item Foundry + Armor Fidelity + Deterministic Asset Pipeline | High |
+| [`2026-06-12-foundry-aseprite-bridge-pdr.md`](./2026-06-12-foundry-aseprite-bridge-pdr.md) | Implemented | PixelBrain + Item Foundry + Aseprite + Manual Editing | High |
+| [`2026-06-12-pixelbrain-editor-aseprite-rival-pdr.md`](./2026-06-12-pixelbrain-editor-aseprite-rival-pdr.md) | Draft | PixelBrain Editor + Aseprite-Rival Canvas + AMP-Aware Editing | High |
+| [`2026-06-12-jewelry-amp-pdr.md`](./2026-06-12-jewelry-amp-pdr.md) | Draft | PixelBrain + Item Foundry + Jewelry + AMP Migration | High |
+| [`2026-06-12-sketchamp-construction-line-microprocessor-pdr.md`](./2026-06-12-sketchamp-construction-line-microprocessor-pdr.md) | Draft | PixelBrain + Sketching + Reference Layer + AMP + Microprocessor + Aseprite Bridge + Item Foundry | High |
+| [`2026-06-12-pixelbrain-deterministic-shape-grammar-router-pdr.md`](./2026-06-12-pixelbrain-deterministic-shape-grammar-router-pdr.md) | Implemented | PixelBrain + Shape Grammar + Construction Skeletons + Microprocessor Router + Deterministic Asset Pipeline | Critical |
 | [`Animation-Audit-PDR-6-10-2026.md`](./Animation-Audit-PDR-6-10-2026.md) | Draft | Animation Audit + UI Runtime | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
@@ -58,6 +65,8 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`bandcamp-sweetener-pdr.md`](./bandcamp-sweetener-pdr.md) | Draft | Audio + Distribution + UI | High |
 | [`bytecode_blueprint_bridge_pdr.md`](./bytecode_blueprint_bridge_pdr.md) | Draft for implementation | Architectural | Critical |
 | [`cell_wall_infrastructure_pdr.md`](./cell_wall_infrastructure_pdr.md) | RATIFIED — Completed by Gemini 2026-05-09 | Architectural \| Preventative \| High Priority | High |
+| [`ChestplateAMP-pdr.md`](./ChestplateAMP-pdr.md) | Draft | Architectural + PixelBrain + Armor Generation + AMP + Item Foundry | High |
+| [`void-chestplate-pdr.md`](./void-chestplate-pdr.md) | Implemented | Item Foundry + Armor Archetype + Material/Shader Integration + PixelBrain | High |
 | [`diagnostic_cell_infrastructure_pdr.md`](./diagnostic_cell_infrastructure_pdr.md) | Draft | Architectural \| QA Infrastructure \| AI Observability | High |
 | [`cognitive_bus_pdr.md`](./cognitive_bus_pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`collab_control_plane_mcp_convergence_pdr.md`](./collab_control_plane_mcp_convergence_pdr.md) | Draft | Unclassified | High |

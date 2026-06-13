@@ -1,0 +1,17 @@
+{
+  "label": "Void Sonic Plate — greaves",
+  "slots": {
+    "shell": "onyx",
+    "plate": "black_steel",
+    "trim": "gold",
+    "energy": "amethyst",
+    "core": "darksteel",
+    "glyph": "gold"
+  },
+  "spec": {
+    "id": "voidplate.hd.greaves.v1",
+    "hash": "fnv1a_a5c19f23"
+  },
+  "cells": 674,
+  "heraldry": null
+}

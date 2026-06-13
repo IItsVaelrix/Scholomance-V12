@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Scholomance VOID Arena"
-run/main_scene="res://scenes/VoidArena.tscn"
+run/main_scene="res://scenes/Combat/CombatPage.tscn"
 config/features=PackedStringArray("4.6", "GL Compatibility")
 
 [display]

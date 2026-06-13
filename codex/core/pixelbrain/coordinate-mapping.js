@@ -5,7 +5,7 @@ import {
   GOLDEN_RATIO,
   roundTo,
 } from './shared.js';
-import { snapToPixelGrid } from './anti-alias-control.js';
+import { snapToPixelGrid } from './raster-jitter-filter.js';
 
 /**
  * Generate spiral coordinates using golden ratio
@@ -255,7 +255,7 @@ export function applySymmetry(coordinates, symmetry, canvasSize) {
   });
 }
 
-export { snapToPixelGrid } from './anti-alias-control.js';
+export { snapToPixelGrid } from './raster-jitter-filter.js';
 
 export function mapToCoordinates(entries, verseIR, canvasSize = DEFAULT_PIXELBRAIN_CANVAS) {
   const safeEntries = Array.isArray(entries) ? entries : [];

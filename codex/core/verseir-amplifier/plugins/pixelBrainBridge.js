@@ -8,7 +8,7 @@ import {
   drawPixelatedLine,
   snapToPixelGrid,
   summarizePixelBuffer,
-} from '../../pixelbrain/anti-alias-control.js';
+} from '../../pixelbrain/raster-jitter-filter.js';
 import { createExtensionRegistry } from '../../pixelbrain/extension-registry.js';
 import {
   applyDithering,

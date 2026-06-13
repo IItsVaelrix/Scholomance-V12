@@ -1,0 +1,122 @@
+<h2>Design — Section 6: Actor Forge Lab Changes</h2>
+<p class="subtitle">Two additions to the existing lab UI: a "Forge & Enhance" button that runs the AI bake, and a before/after preview panel that shows the result.</p>
+
+<div class="mockup">
+  <div class="mockup-header">Revised Actor Forge Lab — bottom action area</div>
+  <div class="mockup-body" style="padding:1.5rem">
+
+    <!-- Preview area mockup -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+
+      <!-- Base preview -->
+      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);font-family:monospace;letter-spacing:0.05em">BASE</div>
+        <svg width="64" height="96" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
+          <rect x="10" y="2" width="12" height="8" fill="#4a3828"/>
+          <rect x="11" y="5" width="10" height="8" fill="#c08850"/>
+          <rect x="13" y="8" width="2" height="2" fill="#3a2010"/>
+          <rect x="17" y="8" width="2" height="2" fill="#3a2010"/>
+          <rect x="9" y="14" width="14" height="14" fill="#a8a090"/>
+          <rect x="6" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="22" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="10" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="17" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="9" y="39" width="6" height="3" fill="#6a5a48"/>
+          <rect x="17" y="39" width="6" height="3" fill="#6a5a48"/>
+        </svg>
+        <div style="font-size:9px;color:rgba(255,255,255,0.2);font-family:monospace">school defaults</div>
+      </div>
+
+      <!-- Enhanced preview -->
+      <div style="background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.35);border-radius:6px;padding:1rem;display:flex;flex-direction:column;align-items:center;gap:0.5rem">
+        <div style="font-size:10px;color:#a78bfa;font-family:monospace;letter-spacing:0.05em">ENHANCED ✦</div>
+        <svg width="64" height="96" viewBox="0 0 32 48" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
+          <defs>
+            <radialGradient id="aura3" cx="50%" cy="100%" r="60%">
+              <stop offset="0%" stop-color="#9bf6ff" stop-opacity="0.55"/>
+              <stop offset="100%" stop-color="#9bf6ff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="16" cy="44" rx="13" ry="5" fill="url(#aura3)"/>
+          <rect x="10" y="2" width="12" height="8" fill="#5a4838"/>
+          <rect x="11" y="5" width="10" height="8" fill="#c08850"/>
+          <rect x="11" y="6" width="5" height="5" fill="#00e5ff" opacity="0.25"/>
+          <rect x="15" y="6" width="5" height="5" fill="#00e5ff" opacity="0.25"/>
+          <rect x="13" y="8" width="2" height="2" fill="#00e5ff" opacity="0.9"/>
+          <rect x="17" y="8" width="2" height="2" fill="#00e5ff" opacity="0.9"/>
+          <rect x="9" y="14" width="14" height="14" fill="#a8a090"/>
+          <rect x="6" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="22" y="14" width="4" height="10" fill="#c08850"/>
+          <rect x="9" y="14" width="1" height="14" fill="#a78bfa" opacity="0.85"/>
+          <rect x="6" y="14" width="1" height="10" fill="#a78bfa" opacity="0.65"/>
+          <rect x="11" y="5" width="1" height="8" fill="#a78bfa" opacity="0.55"/>
+          <rect x="10" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="17" y="28" width="5" height="12" fill="#a8a090"/>
+          <rect x="10" y="28" width="1" height="12" fill="#a78bfa" opacity="0.65"/>
+          <rect x="17" y="28" width="1" height="12" fill="#a78bfa" opacity="0.65"/>
+          <rect x="9" y="39" width="6" height="3" fill="#6a5a48"/>
+          <rect x="17" y="39" width="6" height="3" fill="#6a5a48"/>
+        </svg>
+        <div style="font-size:9px;color:#a78bfa;font-family:monospace">AI-tuned effects</div>
+      </div>
+
+    </div>
+
+    <!-- Button row -->
+    <div style="display:flex;gap:0.75rem;align-items:center">
+      <button style="flex:1;background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.6);color:#c4b5fd;border-radius:6px;padding:10px 0;font-family:monospace;font-size:12px;cursor:pointer">
+        ✦ Forge &amp; Enhance
+      </button>
+      <button style="flex:1;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.5);color:#6ee7b7;border-radius:6px;padding:10px 0;font-family:monospace;font-size:12px;cursor:pointer">
+        Enter the Void →
+      </button>
+    </div>
+    <div style="margin-top:0.5rem;font-size:9px;color:rgba(255,255,255,0.2);font-family:monospace;text-align:center">
+      "Enter the Void" works without enhancing — uses school defaults
+    </div>
+
+  </div>
+</div>
+
+<div class="section" style="margin-top:1.25rem">
+  <h3>"Forge & Enhance" button state machine</h3>
+  <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;margin-top:0.5rem">
+    <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:4px;padding:5px 12px;font-family:monospace;font-size:10px;color:rgba(255,255,255,0.5)">idle</div>
+    <div style="color:rgba(255,255,255,0.3);font-size:10px">→ click →</div>
+    <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.4);border-radius:4px;padding:5px 12px;font-family:monospace;font-size:10px;color:#fdba74">forging…</div>
+    <div style="color:rgba(255,255,255,0.3);font-size:10px">→ bake done →</div>
+    <div style="background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.4);border-radius:4px;padding:5px 12px;font-family:monospace;font-size:10px;color:#f9a8d4">enhancing…</div>
+    <div style="color:rgba(255,255,255,0.3);font-size:10px">→ AI returns →</div>
+    <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.5);border-radius:4px;padding:5px 12px;font-family:monospace;font-size:10px;color:#c4b5fd">enhanced ✦</div>
+  </div>
+  <div style="margin-top:0.75rem;font-size:10px;color:rgba(255,255,255,0.35);font-family:monospace;line-height:1.8">
+    <div><span style="color:#fdba74">forging…</span> — bake() + effects shader running (fast, ~100ms)</div>
+    <div><span style="color:#f9a8d4">enhancing…</span> — POST /api/character/enhance in flight (Haiku ~1-2s)</div>
+    <div><span style="color:#c4b5fd">enhanced ✦</span> — shaderEnhancements stored, enhanced preview rendered, re-enterable</div>
+    <div style="margin-top:0.35rem;color:rgba(255,100,100,0.6)">error state — network/API failure → toast "Enhancement failed, using defaults" → falls back gracefully</div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>What changes in ActorForgeLab.tsx</h3>
+  <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+      <td style="padding:5px 8px;color:#6ee7b7;width:35%">enhancementState</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.45)">'idle' | 'forging' | 'enhancing' | 'enhanced' | 'error' — drives button label + preview layout</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+      <td style="padding:5px 8px;color:#6ee7b7">enhancedPreviewUrl</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.45)">string | null — data URL of the AI-enhanced bake shown in the right preview panel</td>
+    </tr>
+    <tr style="border-bottom:1px solid rgba(255,255,255,0.08)">
+      <td style="padding:5px 8px;color:#6ee7b7">handleForgeAndEnhance()</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.45)">async fn: bake → snapshot → POST enhance → store → re-bake enhanced → set enhancedPreviewUrl</td>
+    </tr>
+    <tr>
+      <td style="padding:5px 8px;color:#6ee7b7">handleEnterVoid()</td>
+      <td style="padding:5px 8px;color:rgba(255,255,255,0.45)">unchanged — stores pixelLotusActor (now includes shaderEnhancements if present) → navigate /combat</td>
+    </tr>
+  </table>
+</div>
+
+<p class="subtitle">That's all six sections. Writing the spec doc now.</p>

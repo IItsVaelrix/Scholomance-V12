@@ -16,7 +16,7 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 100;
+  z-index: var(--z-overlay);
   overflow: hidden;
   border-radius: 8px;
 }
@@ -637,7 +637,7 @@
   font-size: 8px;
   color: var(--active-school-color, #00ff88);
   box-shadow: 0 0 10px var(--active-school-color, #00ff88);
-  z-index: 2;
+  z-index: var(--z-above);
 }
 
 .emitter-rings {

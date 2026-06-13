@@ -42,7 +42,7 @@
     transparent 4px
   );
   pointer-events: none;
-  z-index: 1000;
+  z-index: var(--z-system);
 }
 
 .pixelbrain-topbar {
@@ -54,7 +54,7 @@
   align-items: center;
   justify-content: space-between;
   color: #000;
-  z-index: 100;
+  z-index: var(--z-overlay);
 }
 
 .topbar-title {
@@ -297,6 +297,520 @@
 .school-btn[data-school="alchemy"].is-active {
   --void-primary: var(--alchemy-primary, #e060a0);
   --void-primary-glow: rgba(224, 96, 160, 0.3);
+}
+
+/* ============================================
+   PIXELBRAIN — PHOTOSHOP-FOR-PIXELS EDITOR
+   Clean, focused pixel art editor. Canvas is king.
+   Left toolbar, top actions, big central canvas, minimal right panels.
+   ============================================ */
+
+.pb-editor {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #1a1a1a;
+  color: #ddd;
+  font-family: var(--font-matrix-data, monospace);
+  overflow: hidden;
+}
+
+.pb-topbar {
+  height: 40px;
+  background: #2a2a2a;
+  border-bottom: 1px solid #111;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: var(--z-above);
+}
+
+.pb-topbar .title {
+  font-weight: 700;
+  letter-spacing: 1px;
+  margin-right: 16px;
+  color: #ccc;
+}
+
+.pb-action-btn {
+  background: #333;
+  border: 1px solid #444;
+  color: #ddd;
+  padding: 4px 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pb-action-btn:hover {
+  background: #444;
+  border-color: #666;
+}
+.pb-action-btn.primary {
+  background: #4a90d9;
+  border-color: #6ab;
+  color: white;
+}
+.pb-action-btn.danger {
+  background: #5a2a2a;
+}
+
+.pb-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Left toolbar — classic Photoshop vertical tools */
+.pb-toolbar {
+  width: 48px;
+  background: #222;
+  border-right: 1px solid #111;
+  padding: 4px 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.pb-tool-btn {
+  width: 40px;
+  height: 40px;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #ccc;
+  font-size: 9px;
+  line-height: 1.0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  padding: 1px;
+  border-radius: 2px;
+}
+.pb-tool-btn:hover {
+  background: #3a3a3a;
+  border-color: #555;
+}
+.pb-tool-btn.active {
+  background: #3d5a80;
+  border-color: #6ab;
+  color: #fff;
+}
+
+/* Center canvas area — the star of the show */
+.pb-canvas-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+  min-width: 0;
+  position: relative;
+}
+
+/* Custom palette box - top right, user-defined up to 12 colors with hex input */
+.custom-palette-box {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: var(--z-above);
+  background: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 3px;
+  padding: 6px;
+  font-size: 9px;
+  color: #aaa;
+  width: 172px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  font-family: var(--font-matrix-telemetry, monospace);
+}
+
+.custom-palette-box .header {
+  font-weight: bold;
+  font-size: 9px;
+  color: #ccc;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-palette-box .colors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-bottom: 4px;
+}
+
+.custom-palette-box .color-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.custom-palette-box .swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #555;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.custom-palette-box .swatch:hover {
+  border-color: #0f0;
+}
+
+.custom-palette-box input.hex {
+  font-family: var(--font-matrix-telemetry, monospace);
+  font-size: 9px;
+  background: #000;
+  color: #0f0;
+  border: 1px solid #222;
+  padding: 1px 3px;
+  width: 58px;
+  flex: 1;
+}
+
+.custom-palette-box input.hex:focus {
+  border-color: #0a4;
+  outline: none;
+}
+
+.custom-palette-box .add-btn {
+  background: #222;
+  border: 1px solid #444;
+  color: #0f0;
+  font-size: 8px;
+  padding: 1px 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.custom-palette-box .add-btn:hover {
+  background: #333;
+}
+
+.custom-palette-box .remove {
+  background: transparent;
+  border: none;
+  color: #666;
+  font-size: 10px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.custom-palette-box .remove:hover {
+  color: #f44;
+}
+
+.pb-canvas-viewport {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  background: #0d0d0d; /* dark like Aseprite */
+  /* Aseprite-style subtle checker for transparency */
+  background-image: 
+    linear-gradient(45deg, #1a1a1a 25%, transparent 25%),
+    linear-gradient(-45deg, #1a1a1a 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #1a1a1a 75%),
+    linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+  padding: 4px; /* minimal padding for maximum canvas real estate */
+}
+
+/* The main "document" area — should be large and dominant, like Aseprite's sprite window */
+.pb-canvas-frame {
+  background: #111;
+  box-shadow: 0 0 0 1px #222, 0 2px 12px rgba(0,0,0,0.8);
+  border: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  min-width: 300px;
+  min-height: 200px;
+  /* Let the content (high-zoom grid) determine size; viewport scrolls when larger than available area.
+     This maximizes the usable drawing surface while keeping the frame from collapsing. */
+  width: fit-content;
+  height: fit-content;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: visible; /* let inner large canvas push size for scrolling on outer viewport */
+}
+
+/* Aseprite-like document title bar */
+.pb-canvas-document-header {
+  background: #1c1c1c;
+  color: #aaa;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+  font-family: var(--font-matrix-telemetry, monospace);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  user-select: none;
+}
+.pb-canvas-document-header .pb-canvas-doc-dirty {
+  color: #f66;
+}
+
+.pb-canvas-frame .template-editor-host,
+.pb-canvas-frame canvas,
+.pb-canvas-frame > div {
+  image-rendering: pixelated;
+  display: block;
+}
+
+/* Encourage the hosted TemplateEditor / its internal canvas to claim as much space as its content (the zoomed pixel grid) requires.
+   The outer viewport provides the scroll container. This helps the editing surface take maximum screen real-estate. */
+.pb-canvas-frame > div,
+.pb-canvas-area .TemplateEditor,
+.pb-canvas-area [class*="template"] {
+  flex: 0 0 auto;
+  width: auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* Make it Aseprite-like: kill any old LCD/bezel/max-width constraints inside the editor so the sprite canvas feels big and open */
+.pb-canvas-frame .lcd-screen {
+  max-width: none !important;
+  aspect-ratio: auto !important;
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.pb-canvas-frame .canvas-container {
+  border: 1px solid #222 !important;
+  background: #0a0a0a !important;
+}
+
+/* Right side panels — slim, like PS */
+.pb-right-panels {
+  width: 220px;
+  background: #1f1f1f;
+  border-left: 1px solid #111;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.pb-panel {
+  border-bottom: 1px solid #111;
+  display: flex;
+  flex-direction: column;
+}
+.pb-panel:last-child {
+  border-bottom: none;
+}
+
+.pb-panel-header {
+  background: #2a2a2a;
+  padding: 4px 8px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #aaa;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pb-panel-body {
+  padding: 6px;
+  overflow: auto;
+  flex: 1;
+  min-height: 80px;
+}
+
+/* Bottom status bar */
+.pb-statusbar {
+  height: 24px;
+  background: #222;
+  border-top: 1px solid #111;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  gap: 16px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+/* Minimal overrides so the hosted TemplateEditor feels native */
+.pb-canvas-area .TemplateEditor,
+.pb-canvas-area [class*="template"] {
+  width: 100%;
+  height: 100%;
+}
+
+/* Keep some of the old matrix flavor for PixelBrain specific buttons but toned down */
+.pb-pixelbrain-btn {
+  background: #2d3a2d;
+  border-color: #4a6;
+  color: #9f9;
+}
+.pb-pixelbrain-btn:hover {
+  background: #3a4a3a;
+}
+
+.pixelbrain-cockpit {
+  display: grid;
+  grid-template-columns: 56px 1fr 320px;
+  grid-template-rows: auto 1fr;
+  gap: 8px;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cockpit-topbar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: #1a1a1a;
+  border-bottom: 1px solid #333;
+  font-family: var(--font-matrix-header);
+  text-transform: uppercase;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+}
+
+.cockpit-toolrail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px;
+  background: #111;
+  border-right: 1px solid #222;
+  overflow-y: auto;
+}
+
+.cockpit-tool {
+  width: 48px;
+  height: 48px;
+  border: 1px solid #333;
+  background: #1a1a1a;
+  color: #00ff41;
+  font-size: 10px;
+  font-family: var(--font-matrix-telemetry);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  text-align: center;
+  line-height: 1.1;
+}
+.cockpit-tool:hover { background: #222; border-color: #0a4; }
+.cockpit-tool.active { background: #0a4; color: #000; border-color: #0f0; }
+
+.cockpit-canvas-frame {
+  background: #000;
+  border: 1px solid #222;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  min-height: 420px;
+}
+
+.cockpit-canvas-frame .template-editor-host,
+.cockpit-canvas-frame .preview-canvas {
+  image-rendering: pixelated;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.cockpit-zoom-controls {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  gap: 4px;
+  z-index: var(--z-above);
+}
+.cockpit-zoom-controls button {
+  background: rgba(0,0,0,0.7);
+  border: 1px solid #444;
+  color: #0f0;
+  font-family: var(--font-matrix-telemetry);
+  padding: 2px 6px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.cockpit-right-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.mentor-station {
+  background: #0f0f0f;
+  border: 1px solid #0a4;
+}
+.mentor-station .section-header {
+  border-bottom: 1px solid #0a4;
+  padding-bottom: 4px;
+  margin-bottom: 6px;
+}
+
+.artisan-bench {
+  background: #111;
+  border: 1px solid #c9a227;
+  padding: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.artisan-bench button {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
+
+.target-size-previews {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+}
+.target-size-previews .mini {
+  image-rendering: pixelated;
+  border: 1px solid #333;
+  background: #000;
+}
+
+.construction-spec {
+  font-size: 11px;
+  background: #0a0a0a;
+  border: 1px solid #224;
+  padding: 8px;
+}
+.construction-spec input, .construction-spec select {
+  background: #000;
+  color: #0f0;
+  border: 1px solid #333;
+  font-family: var(--font-matrix-telemetry);
+  font-size: 11px;
 }
 
 .school-btn[data-school="will"].is-active {
@@ -1094,7 +1608,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.8);
-  z-index: 1000;
+  z-index: var(--z-system);
 }
 
 /* ─── Panel Tabs ───────────────────────────────────────────────────────── */

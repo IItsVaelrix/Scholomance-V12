@@ -33,6 +33,7 @@ import {
   BlogIndexPage,
   BlogArticlePage,
   VisualizerReleasePage,
+  ScholoTimeLabPage,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
 
@@ -90,6 +91,7 @@ const router = createBrowserRouter([
           { path: "internal/studio", element: <AdminRoute><StudioUpload /></AdminRoute> },
           { path: "internal/pixel-lotus/actor-forge", element: <AdminRoute><ActorForgeLab /></AdminRoute> },
           { path: "internal/pixel-lotus/iso-map-sandbox", element: <AdminRoute><IsoMapSandbox /></AdminRoute> },
+          { path: "internal/time-lab", element: <AdminRoute><ScholoTimeLabPage /></AdminRoute> },
           { path: "blog", element: <BlogIndexPage /> },
           { path: "blog/:slug", element: <BlogArticlePage /> },
           { path: "visualiser", element: <BytecodeVisualiserPage /> },

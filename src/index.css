@@ -599,7 +599,7 @@ a:focus-visible {
     #000 2px,
     #000 4px
   );
-  opacity: var(--active-scanline-opacity);
+  opacity: var(--active-scanline-opacity, 0);
   transition: opacity 1.5s ease;
   will-change: opacity;
   contain: paint;

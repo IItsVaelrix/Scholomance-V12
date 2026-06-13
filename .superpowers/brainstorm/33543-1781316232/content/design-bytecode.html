@@ -1,0 +1,154 @@
+<h2>Design — Section 2: The Bytecode Format</h2>
+<p class="subtitle">How CHARACTER-SPEC-v1 fields compile to GLSL uniforms. This is the contract that makes the spec "executable."</p>
+
+<div class="mockup">
+  <div class="mockup-header">character-bytecode-compiler.js — Uniform Contract</div>
+  <div class="mockup-body" style="padding:1.25rem;overflow-x:auto">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.15)">
+          <th style="padding:6px 10px;text-align:left;color:#a78bfa">Uniform</th>
+          <th style="padding:6px 10px;text-align:left;color:#a78bfa">GLSL Type</th>
+          <th style="padding:6px 10px;text-align:left;color:#a78bfa">Source in SPEC</th>
+          <th style="padding:6px 10px;text-align:left;color:#a78bfa">How Derived</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_seed</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.seed</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">Direct. Drives noise variation in hair + cloth.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_skinColor</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.materials.skin</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">material-registry.js anchors.body → hexToVec3</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_hairColor</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.materials.hair</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">material-registry.js anchors.body → hexToVec3</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_clothColor</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.clothing[top].profile</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">clothing profile → material slot (cloth_linen, cloth_wool…)</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_schoolGlow</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.combatProfile.school</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">SCHOOL_PALETTE[school].glow → hexToVec3</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_rimColor</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.combatProfile.school</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">SCHOOL_PALETTE[school].primary → hexToVec3</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_eyeColor</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.materials.eyes</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">material-registry.js anchors.body → hexToVec3</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_bodyWidth</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.presentation.buildClass</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">slender=0.8, average=1.0, stocky=1.2</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_bodyHeight</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.presentation.heightClass</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">short=0.85, average=1.0, tall=1.15</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_hairLength</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.hair.profile</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">bald=0.0, short=0.35, medium=0.65, long=1.0</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_hairStyle</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.hair.profile</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">int index: 0=short 1=medium 2=long 3=ponytail 4=curly 5=bald</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#6ee7b7">u_eyeShape</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.face[leftEye].profile</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">0=round 1=almond 2=narrow 3=voidTouched (affects SDF aspect ratio)</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 10px;color:#6ee7b7">u_glowIntensity</td>
+          <td style="padding:5px 10px;color:#93c5fd">float</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.6)">spec.combatProfile.school</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.4)">VOID=0.9, PSYCHIC=0.8, SONIC=0.6, default=0.5</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="mockup" style="margin-top:1.25rem">
+  <div class="mockup-header">ShaderEnhancements — AI Output Schema (stored in pixelLotusActor)</div>
+  <div class="mockup-body" style="padding:1.25rem">
+    <table style="width:100%;border-collapse:collapse;font-size:11px;font-family:monospace">
+      <thead>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.15)">
+          <th style="padding:6px 10px;text-align:left;color:#f9a8d4">Uniform</th>
+          <th style="padding:6px 10px;text-align:left;color:#f9a8d4">Range</th>
+          <th style="padding:6px 10px;text-align:left;color:#f9a8d4">Effect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#f9a8d4">u_glowIntensity</td>
+          <td style="padding:5px 10px;color:#93c5fd">0.0 – 1.5</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Overrides base glow. AI can push school energy higher.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#f9a8d4">u_contrastBoost</td>
+          <td style="padding:5px 10px;color:#93c5fd">-0.3 – 0.5</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Post-process contrast. Makes silhouette pop in dark arena.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#f9a8d4">u_saturationShift</td>
+          <td style="padding:5px 10px;color:#93c5fd">-0.3 – 0.5</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">Shifts overall palette saturation toward school identity.</td>
+        </tr>
+        <tr style="border-bottom:1px solid rgba(255,255,255,0.06)">
+          <td style="padding:5px 10px;color:#f9a8d4">u_enhancedRim</td>
+          <td style="padding:5px 10px;color:#93c5fd">vec3 hex</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">AI-chosen rim light color. Layered on top of base u_rimColor.</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 10px;color:#f9a8d4">u_atmosphereOpacity</td>
+          <td style="padding:5px 10px;color:#93c5fd">0.0 – 0.8</td>
+          <td style="padding:5px 10px;color:rgba(255,255,255,0.5)">School-colored atmospheric haze around the character's feet.</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="margin-top:0.75rem;font-size:10px;color:rgba(255,255,255,0.35);line-height:1.7">
+      Stored as: <span style="color:#f9a8d4">pixelLotusActor.shaderEnhancements</span> — merged over base uniforms at render time.<br>
+      Defaults to null (base uniforms used as-is) until "Forge &amp; Enhance" is run.<br>
+      Re-runnable: user can re-enhance at any time; new result overwrites stored value.
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:1.25rem">
+  <h3>Determinism guarantee</h3>
+  <p style="font-size:12px;color:rgba(255,255,255,0.6);line-height:1.7">
+    Same CHARACTER-SPEC-v1 + same seed → identical uniform object every run. The compiler is a pure function with no randomness. The AI enhancement is the <em>only</em> non-deterministic element, and it is stored — so after the first "Forge &amp; Enhance," combat rendering is fully deterministic again.
+  </p>
+</div>
+
+<p class="subtitle" style="margin-top:1rem">Does this bytecode contract look right? Anything to add or change before we move to the shader design?</p>

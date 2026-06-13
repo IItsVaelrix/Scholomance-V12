@@ -1,5 +1,12 @@
 import { hashString } from './shared.js';
 import {
+  BytecodeError,
+  ERROR_CATEGORIES,
+  ERROR_SEVERITY,
+  MODULE_IDS,
+  ERROR_CODES,
+} from './bytecode-error.js';
+import {
   createPixelBrainAssetPacket,
   derivePixelBrainExportPacket,
   derivePixelBrainRenderPacket,
@@ -130,10 +137,22 @@ export function runPixelBrainOperationPipeline(input = {}, context = {}) {
       }
       diagnostics.push(diagnostic(stageId, next === before && stageId !== 'normalize' ? 'skipped' : 'ok', before, current));
     } catch (error) {
+      // Stage failures speak the canonical taxonomy: a thrown BytecodeError
+      // passes through verbatim; anything else is wrapped as STATE/CRIT so
+      // the immunity scanner and diagnostics tooling can parse every failure.
+      const bytecodeError = error instanceof BytecodeError
+        ? error
+        : new BytecodeError(
+            ERROR_CATEGORIES.STATE,
+            ERROR_SEVERITY.CRIT,
+            MODULE_IDS.CORE,
+            ERROR_CODES.INVALID_STATE,
+            { stageId, message: error.message }
+          );
       diagnostics.push(diagnostic(stageId, 'error', before, current, {
-        code: 'PIPELINE_STAGE_FAILED',
-        message: error.message,
-        errors: [error.message],
+        code: bytecodeError.bytecode,
+        message: `${stageId} failed: ${error.message}`,
+        errors: [bytecodeError.toJSON()],
       }));
       if (!input.continueOnError) break;
     }

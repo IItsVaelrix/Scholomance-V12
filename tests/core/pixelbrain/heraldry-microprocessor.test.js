@@ -154,6 +154,16 @@ describe('Heraldry microprocessor — contrast & readability', () => {
     const { fills } = runToFills(mkSpec([{ id: 'emblem', mark: 'cross', target: 'face', scale: 0.2, style: { effect: 'inlay' } }]));
     expect(fills.heraldry[0].warnings.join(' ')).toMatch(/small/i);
   });
+
+  it('fails required emblems that stamp zero cells', () => {
+    expect(() => runToFills(mkSpec([{
+      id: 'emblem',
+      mark: 'cross',
+      target: 'face',
+      placement: { dx: 999, dy: 999 },
+      style: { effect: 'inlay' },
+    }]))).toThrow(/stamped zero cells/);
+  });
 });
 
 describe('Heraldry microprocessor — symmetry & style variants', () => {

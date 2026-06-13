@@ -1,0 +1,185 @@
+{
+  "code": "VOID_CHESTPLATE_EXPORT_READY",
+  "item": "icy.holyfire.chestplate.v1",
+  "spec": {
+    "id": "icy.holyfire.chestplate.v1",
+    "hash": "fnv1a_375198ec"
+  },
+  "cells": 2202,
+  "materialSlotManifest": {
+    "body": {
+      "fill": "holy_steel",
+      "trim": "sanctified_gold",
+      "outline": "blacksteel"
+    },
+    "mantle": {
+      "fill": "icy_fire",
+      "trim": "sanctified_gold",
+      "outline": "blacksteel"
+    },
+    "collar": {
+      "fill": "holy_steel",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "left_pauldron": {
+      "fill": "icy_fire",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "right_pauldron": {
+      "fill": "icy_fire",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "center_core": {
+      "fill": "divine_flame_core",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "top_crystal": {
+      "fill": "divine_flame_core",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "harness": {
+      "fill": "holy_fire",
+      "trim": "sanctified_gold",
+      "outline": "blacksteel"
+    },
+    "lower_drop": {
+      "fill": "divine_flame_core",
+      "trim": "sanctified_gold",
+      "outline": "sanctified_gold"
+    },
+    "emblem": {
+      "fill": "sanctified_gold",
+      "trim": null,
+      "outline": null
+    },
+    "rune_channels": {
+      "fill": "holy_fire",
+      "trim": null,
+      "outline": "sanctified_gold"
+    }
+  },
+  "editorPalette": {
+    "id": "icy-holy-fire-exact",
+    "colors": [
+      "#02070A",
+      "#06131C",
+      "#0E0902",
+      "#160F02",
+      "#1A1206",
+      "#06324A",
+      "#2A1F08",
+      "#5A4418",
+      "#7A4A10",
+      "#0EA5E9",
+      "#7DD3FC",
+      "#B8F7FF",
+      "#C7D2FE",
+      "#F59E0B",
+      "#A88C40",
+      "#D4B860",
+      "#E8C46A",
+      "#F0B450",
+      "#FFD888",
+      "#FDE68A",
+      "#FEF3C7",
+      "#FFFBEB",
+      "#FFF0B8",
+      "#FFFDF0",
+      "#8FA8C0",
+      "#B8C8D8",
+      "#D8E2EE",
+      "#000004",
+      "#05050D",
+      "#0B0B14"
+    ]
+  },
+  "shader": {
+    "id": "item.icy.holyfire.chestplate.v1.void-armor-breath",
+    "hash": "fnv1a_80F0F49E",
+    "contract": "PB-SHADER-v1"
+  },
+  "heraldry": [
+    {
+      "microprocessor": "pixelbrain.heraldry",
+      "version": "0.2.0",
+      "id": "emblem",
+      "mark": "eye",
+      "effect": "inlay",
+      "cells": 60,
+      "coverage": 0.3191,
+      "contrast": 0.613,
+      "color": "#0E0902",
+      "autoContrasted": true,
+      "warnings": []
+    }
+  ],
+  "fills": {
+    "rimCells": 216,
+    "fillCells": 1912,
+    "motifCells": 10,
+    "colorAnchors": [
+      "#5A4418",
+      "#1B2330",
+      "#3B4A60",
+      "#0A0E14",
+      "#A88C40",
+      "#06324A",
+      "#06131C",
+      "#02070A",
+      "#FDE68A",
+      "#3A2704",
+      "#7A4A10",
+      "#1A1206",
+      "#92400E",
+      "#160F02",
+      "#0E0902",
+      "#FEF3C7",
+      "#2A1F08",
+      "#F59E0B",
+      "#FFFBEB",
+      "#FFFDF0",
+      "#FFF0B8",
+      "#FFD888",
+      "#F0B450"
+    ]
+  },
+  "chestplate": {
+    "amp": "pixelbrain.chestplate-amp",
+    "version": "1.0.0-pdr",
+    "ok": true,
+    "diagnostics": [
+      {
+        "code": "CHESTPLATE_SPEC_NORMALIZED",
+        "message": "Processed armor/chestplate spec icy.holyfire.chestplate.v1"
+      },
+      {
+        "code": "CHESTPLATE_PROFILE_RESOLVED",
+        "message": "Body/pauldron/collar/gem parts resolved"
+      },
+      {
+        "code": "CHESTPLATE_SYMMETRY_OK",
+        "message": "Strict vertical symmetry requested"
+      },
+      {
+        "code": "CHESTPLATE_EMBLEM_SAFE_ZONE",
+        "message": "Emblem cells processed for safe center placement (60 cells)."
+      },
+      {
+        "code": "CHESTPLATE_EXPORT_READY",
+        "message": "Volume, trim, sockets, emblem zones applied."
+      }
+    ],
+    "metadata": {
+      "cellCount": 2138,
+      "bodyCells": 1163,
+      "pauldronCount": 2,
+      "gemCount": 3,
+      "symmetryMode": "strict"
+    }
+  }
+}

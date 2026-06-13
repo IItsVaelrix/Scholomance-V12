@@ -2,7 +2,7 @@
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { forgeItemAsset } from '../codex/core/pixelbrain/item-foundry.js';
+import { forgeItemAsset, renderBundlePng } from '../codex/core/pixelbrain/item-foundry.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname, '..', 'output', 'pixelbrain', 'amulet');
@@ -54,8 +54,8 @@ function buildAmuletSpec() {
 function main() {
   const spec = buildAmuletSpec();
   const bundle = forgeItemAsset(spec);
-  writeFileSync(resolve(OUT_DIR, 'amulet-declarative.png'), bundle.image8x);
-  writeFileSync(resolve(OUT_DIR, 'amulet-declarative@2x.png'), bundle.image4x);
+  writeFileSync(resolve(OUT_DIR, 'amulet-declarative.png'), renderBundlePng(bundle, 8));
+  writeFileSync(resolve(OUT_DIR, 'amulet-declarative@2x.png'), renderBundlePng(bundle, 4));
   writeFileSync(resolve(OUT_DIR, 'amulet-declarative.pbrain'), bundle.godotArtifact, 'utf8');
   writeFileSync(resolve(OUT_DIR, 'amulet-declarative.json'), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
   console.log('Declarative amulet generated successfully.');

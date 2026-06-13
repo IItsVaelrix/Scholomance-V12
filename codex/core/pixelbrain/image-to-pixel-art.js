@@ -5,7 +5,7 @@
  * This module traces shapes, extracts features, and maps them to PixelBrain's coordinate system.
  */
 
-import { snapToPixelGrid } from './anti-alias-control.js';
+import { snapToPixelGrid } from './raster-jitter-filter.js';
 import { analyzeImageToFormula, formulaToBytecode } from './image-to-bytecode-formula.js';
 import { verseIRMicroprocessors } from '../microprocessors/index.js';
 import { extensionRegistry } from './extension-registry.js';

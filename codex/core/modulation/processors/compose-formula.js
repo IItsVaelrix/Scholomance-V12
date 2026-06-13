@@ -12,7 +12,7 @@
 import { evaluateFormula } from '../../pixelbrain/formula-to-coordinates.js';
 import { validateProposal } from '../planner/formula-validator.js';
 import { parseBytecodeToFormula } from '../../pixelbrain/image-to-bytecode-formula.js';
-import { snapToPixelGrid, resolvePixelGridSize } from '../../pixelbrain/anti-alias-control.js';
+import { snapToPixelGrid, resolvePixelGridSize } from '../../pixelbrain/raster-jitter-filter.js';
 
 
 

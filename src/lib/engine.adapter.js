@@ -110,7 +110,7 @@ import { evaluateFormula as coreEvaluateFormula } from '../../codex/core/pixelbr
 import { 
   snapToPixelGrid as coreSnapToPixelGrid,
   resolvePixelGridSize as coreResolvePixelGridSize
-} from '../../codex/core/pixelbrain/anti-alias-control.js';
+} from '../../codex/core/pixelbrain/raster-jitter-filter.js';
 import { validateDivProposal as coreValidateDivProposal } from '../../codex/core/modulation/planner/div-layout-validator.js';
 
 export function validateProposal(proposal) {

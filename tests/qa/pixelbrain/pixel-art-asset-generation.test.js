@@ -43,7 +43,7 @@ import {
 import {
   applyPixelArtAliasing,
   drawPixelatedLine,
-} from '../../../codex/core/pixelbrain/anti-alias-control.js';
+} from '../../../codex/core/pixelbrain/raster-jitter-filter.js';
 
 // Layer 3: Extensions
 import {

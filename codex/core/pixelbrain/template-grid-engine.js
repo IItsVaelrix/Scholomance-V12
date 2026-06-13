@@ -521,10 +521,10 @@ export function applySymmetry(coordinates, grid) {
       let mirroredCoord = { ...coord };
 
       if (axis === 'vertical') {
-        mirroredCoord.x = grid.width - coord.x;
+        mirroredCoord.x = (grid.width - 1) - coord.x;  // correct 0-based mirror
         mirroredCoord.source = 'mirror_v';
       } else if (axis === 'horizontal') {
-        mirroredCoord.y = grid.height - coord.y;
+        mirroredCoord.y = (grid.height - 1) - coord.y;
         mirroredCoord.source = 'mirror_h';
       } else if (axis === 'diagonal') {
         // Anti-diagonal mirror, scale-normalized so non-square grids map
@@ -680,6 +680,118 @@ export function exportToAseprite(grid) {
   };
 }
 
+function normalizeNativeAsepriteCell(cell, grid) {
+  const x = Math.round(Number(cell?.x) || 0);
+  const y = Math.round(Number(cell?.y) || 0);
+  const color = typeof cell?.color === 'string' && /^#[0-9a-fA-F]{6}$/.test(cell.color)
+    ? cell.color.toUpperCase()
+    : '#FFFFFF';
+  const emphasis = Number.isFinite(Number(cell?.emphasis)) ? Number(cell.emphasis) : 1;
+  const scale = grid.gridType === GRID_TYPES.RECTANGULAR
+    ? Math.max(1, Math.round(Number(grid.cellSize) || 1))
+    : 1;
+
+  return { x, y, color, emphasis, scale };
+}
+
+/**
+ * Export the visible editor state as native Aseprite-compatible JSON where
+ * every emitted cell is one output pixel. Rectangular template cells expand to
+ * their rendered cell size; imported 1x PixelBrain assets therefore remain a
+ * strict 1:1 pixel replica.
+ */
+export function exportToPixelPerfectAseprite(grid, options = {}) {
+  if (!grid || typeof grid !== 'object') {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.TYPE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.TEMPLATE,
+      ERROR_CODES.NULL_INPUT,
+      { parameterName: 'grid', functionName: 'exportToPixelPerfectAseprite' }
+    );
+  }
+
+  const width = Math.max(1, Math.round(Number(options.width ?? grid.width) || 1));
+  const height = Math.max(1, Math.round(Number(options.height ?? grid.height) || 1));
+  const pixelMap = new Map();
+  const sourceLayers = Array.isArray(grid.layers) ? grid.layers : [];
+
+  sourceLayers.forEach((layer) => {
+    if (layer?.visible === false || Number(layer?.opacity ?? 1) <= 0) return;
+    if (!layer.cells || typeof layer.cells.forEach !== 'function') return;
+
+    layer.cells.forEach((cell) => {
+      const normalized = normalizeNativeAsepriteCell(cell, grid);
+      for (let dy = 0; dy < normalized.scale; dy += 1) {
+        for (let dx = 0; dx < normalized.scale; dx += 1) {
+          const x = normalized.x + dx;
+          const y = normalized.y + dy;
+          if (x < 0 || y < 0 || x >= width || y >= height) continue;
+          pixelMap.set(`${x},${y}`, {
+            x,
+            y,
+            color: normalized.color,
+            emphasis: normalized.emphasis,
+          });
+        }
+      }
+    });
+  });
+
+  const cells = Array.from(pixelMap.values()).sort((a, b) => {
+    if (a.y !== b.y) return a.y - b.y;
+    if (a.x !== b.x) return a.x - b.x;
+    return a.color.localeCompare(b.color);
+  });
+
+  const paletteColors = Array.from(new Set(cells.map((cell) => cell.color))).sort();
+  const id = options.id || grid.sourcePacket?.id || 'pixelbrain-pixel-perfect';
+
+  return {
+    version: 'pixelbrain-aseprite-pixel-perfect/1.0.0',
+    width,
+    height,
+    cellSize: 1,
+    gridType: GRID_TYPES.RECTANGULAR,
+    snapStrength: 1,
+    colorMode: 'rgba',
+    frames: [{
+      frame: 0,
+      duration: Number(options.duration) || 100,
+      layers: [{
+        name: options.layerName || 'Pixel Perfect Replica',
+        visible: true,
+        editable: true,
+        locked: false,
+        opacity: 255,
+        cells,
+      }],
+    }],
+    anchorPoints: [],
+    symmetryAxes: [],
+    palette: {
+      source: 'pixelbrain-editor',
+      mode: 'rgba',
+      locked: false,
+      transparentIndex: 0,
+      colors: paletteColors,
+    },
+    meta: {
+      bridge: 'pixelbrain-aseprite',
+      id,
+      editable: true,
+      pixelPerfect: true,
+      oneToOne: true,
+      sourceGrid: {
+        width: grid.width,
+        height: grid.height,
+        cellSize: grid.cellSize,
+        gridType: grid.gridType,
+      },
+    },
+  };
+}
+
 /**
  * Validate Aseprite-compatible JSON payload
  *
@@ -712,6 +824,7 @@ export function validateAsepriteImportPayload(payload, options = {}) {
     'version',
     'meta',
     'palette',
+    'colorMode',
   ]);
 
   for (const key of Object.keys(payload)) {
@@ -987,6 +1100,139 @@ export function importFromAseprite(data, options = {}) {
   grid.template = grid;
   grid.warnings = val.warnings;
 
+  return grid;
+}
+
+function normalizeAssetCoordinate(coord = {}) {
+  const x = Math.round(Number(coord.snappedX ?? coord.x) || 0);
+  const y = Math.round(Number(coord.snappedY ?? coord.y) || 0);
+  return {
+    ...coord,
+    x,
+    y,
+    snappedX: x,
+    snappedY: y,
+    color: String(coord.color || '#FFFFFF').toUpperCase(),
+    emphasis: Number.isFinite(Number(coord.emphasis)) ? Number(coord.emphasis) : 1,
+  };
+}
+
+function assetCoordinates(packet) {
+  if (Array.isArray(packet?.geometry?.coordinates)) return packet.geometry.coordinates;
+  if (Array.isArray(packet?.coordinates)) return packet.coordinates;
+  return [];
+}
+
+function assetCanvas(packet, coordinates) {
+  const canvas = packet?.canvas || {};
+  if (Number(canvas.width) > 0 && Number(canvas.height) > 0) {
+    return {
+      width: Math.round(Number(canvas.width)),
+      height: Math.round(Number(canvas.height)),
+      cellSize: Math.max(1, Math.round(Number(canvas.cellSize ?? canvas.gridSize ?? 1))),
+    };
+  }
+  const xs = coordinates.map((coord) => coord.x);
+  const ys = coordinates.map((coord) => coord.y);
+  return {
+    width: Math.max(1, Math.max(...xs, 0) + 1),
+    height: Math.max(1, Math.max(...ys, 0) + 1),
+    cellSize: 1,
+  };
+}
+
+function assetLayerName(coord, options = {}) {
+  if (typeof options.layerBy === 'function') return options.layerBy(coord);
+  if (options.layerBy === 'single') return options.layerName || 'PixelBrain Asset';
+  if (options.layerBy === 'z') return `Layer ${Number(coord.z) || 0}`;
+  return coord.layer || coord.partId || coord.part || `Layer ${Number(coord.z) || 0}`;
+}
+
+function collectAssetPalette(packet, coordinates) {
+  const paletteSources = [
+    packet?.metadata?.editorPalette?.colors,
+    packet?.palette?.materialPalette,
+    packet?.palette?.semanticPalette,
+    packet?.palette?.sourcePalette?.flatMap?.((entry) => entry?.colors || []),
+    packet?.palettes?.flatMap?.((entry) => entry?.colors || entry || []),
+  ];
+  const colors = [];
+  for (const source of paletteSources) {
+    if (Array.isArray(source)) colors.push(...source);
+  }
+  colors.push(...coordinates.map((coord) => coord.color));
+  return Array.from(new Set(
+    colors
+      .filter((color) => typeof color === 'string' && /^#[0-9a-fA-F]{6}$/.test(color))
+      .map((color) => color.toUpperCase()),
+  )).sort();
+}
+
+/**
+ * Import a PixelBrainAssetPacket into the editor grid without passing through
+ * Aseprite's one-pixel-per-layer bitmap constraints. Overdraw is resolved
+ * deterministically per layer coordinate by taking the last coordinate in the
+ * packet order, while the original coordinate metadata is retained on the cell.
+ */
+export function importFromPixelBrainAssetPacket(packet, options = {}) {
+  const coordinates = assetCoordinates(packet).map(normalizeAssetCoordinate);
+  const canvas = assetCanvas(packet, coordinates);
+  const grid = createTemplateGrid({
+    width: canvas.width,
+    height: canvas.height,
+    cellSize: options.cellSize || canvas.cellSize || 1,
+    gridType: GRID_TYPES.RECTANGULAR,
+    snapStrength: 1,
+  });
+
+  grid.frames = [];
+  grid.layers = [];
+  grid.currentFrame = 0;
+  grid.currentLayer = 0;
+  grid.palette = collectAssetPalette(packet, coordinates);
+  grid.sourcePacket = {
+    id: packet?.id || packet?.source?.id || null,
+    kind: packet?.kind || null,
+    source: packet?.source || null,
+    metadata: packet?.metadata || null,
+  };
+
+  const layerMap = new Map();
+  for (const coord of coordinates) {
+    const name = String(assetLayerName(coord, options) || 'PixelBrain Asset');
+    if (!layerMap.has(name)) {
+      const layer = createLayer(name);
+      layer.source = 'pixelbrain-asset-packet';
+      layerMap.set(name, layer);
+    }
+    const layer = layerMap.get(name);
+    const key = `${coord.x},${coord.y}`;
+    layer.cells.set(key, {
+      x: coord.x,
+      y: coord.y,
+      color: coord.color,
+      emphasis: coord.emphasis,
+      metadata: {
+        partId: coord.partId || null,
+        layer: coord.layer || null,
+        z: coord.z ?? null,
+        isRim: Boolean(coord.isRim),
+        isMotif: Boolean(coord.isMotif),
+        motifRole: coord.motifRole || null,
+        materialId: coord.materialId || coord.squareAmpMaterial || null,
+        source: coord.source || 'pixelbrain-asset-packet',
+      },
+    });
+  }
+
+  const frame = createFrame();
+  frame.layers = Array.from(layerMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+  if (frame.layers.length === 0) frame.layers.push(createLayer('Base Layer'));
+  grid.frames.push(frame);
+  grid.layers = frame.layers;
+  grid.ok = true;
+  grid.template = grid;
+  grid.warnings = [];
   return grid;
 }
 
@@ -1401,3 +1647,263 @@ export function floodFill(grid, layer, startX, startY, color) {
     }
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// EDITOR SYSTEMS EXTENSIONS (for Aseprite-rival editor per PDR)
+// These build on the existing primitives to deliver the 8 systems.
+// All are deterministic. UI must go through adapter.
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * Layer management (System 2)
+ */
+export function setLayerOpacity(grid, layerIndex, opacity) {
+  if (!grid.layers || !grid.layers[layerIndex]) return grid;
+  const layer = grid.layers[layerIndex];
+  layer.opacity = Math.max(0, Math.min(1, Number(opacity) || 1));
+  return grid;
+}
+
+export function setLayerVisible(grid, layerIndex, visible) {
+  if (!grid.layers || !grid.layers[layerIndex]) return grid;
+  grid.layers[layerIndex].visible = !!visible;
+  return grid;
+}
+
+export function setLayerLocked(grid, layerIndex, locked) {
+  if (!grid.layers || !grid.layers[layerIndex]) return grid;
+  grid.layers[layerIndex].locked = !!locked;
+  return grid;
+}
+
+export function reorderLayers(grid, fromIndex, toIndex) {
+  if (!grid.layers) return grid;
+  const layers = grid.layers;
+  if (fromIndex < 0 || fromIndex >= layers.length || toIndex < 0 || toIndex >= layers.length) return grid;
+  const [moved] = layers.splice(fromIndex, 1);
+  layers.splice(toIndex, 0, moved);
+  // Update currentLayer if needed
+  if (grid.currentLayer === fromIndex) grid.currentLayer = toIndex;
+  return grid;
+}
+
+/**
+ * Non-destructive flatten (preview only, does not mutate source layers)
+ */
+export function getFlattenedPreviewCells(grid, targetWidth = null, targetHeight = null) {
+  const w = targetWidth || grid.width;
+  const h = targetHeight || grid.height;
+  const flat = new Map();
+
+  if (!grid.layers) return flat;
+
+  // Composite from bottom to top, respecting visibility and opacity (simple alpha blend for preview)
+  for (let li = 0; li < grid.layers.length; li++) {
+    const layer = grid.layers[li];
+    if (!layer.visible || layer.opacity <= 0) continue;
+
+    layer.cells.forEach((cell, key) => {
+      if (cell.x < 0 || cell.x >= w || cell.y < 0 || cell.y >= h) return;
+      const alpha = layer.opacity;
+      const existing = flat.get(key);
+      if (existing) {
+        // Simple over blend (for preview; real render may use emphasis)
+        flat.set(key, {
+          ...cell,
+          color: blendColors(existing.color, cell.color, alpha), // naive; in practice use emphasis or material
+          emphasis: Math.max(existing.emphasis || 1, cell.emphasis || 1)
+        });
+      } else {
+        flat.set(key, { ...cell, emphasis: (cell.emphasis || 1) * alpha });
+      }
+    });
+  }
+  return flat;
+}
+
+function blendColors(c1, c2, alpha) {
+  // Very naive hex blend for preview purposes. Real path uses render packets.
+  if (!c1 || alpha >= 1) return c2;
+  if (!c2) return c1;
+  // For demo, just return c2 (top wins). Production would parse RGB and lerp.
+  return c2;
+}
+
+/**
+ * Reference Layer + Annotations (System 8)
+ * Uses data from image-to-* pipelines.
+ */
+export function createReferenceLayer(name = 'Reference', sourceAnalysis = null, quantizedCells = []) {
+  const layer = createLayer(name);
+  layer.type = 'reference';
+  layer.locked = true;
+  layer.opacity = 0.35; // low opacity default
+  layer.visible = true;
+  layer.annotations = new Map(); // per cell key -> {text, sourceImageRegion?, semanticTags?}
+
+  quantizedCells.forEach(cell => {
+    const key = `${cell.x},${cell.y}`;
+    setCell(layer, cell.x, cell.y, cell.color || '#808080', cell.emphasis || 0.5);
+    if (sourceAnalysis) {
+      layer.annotations.set(key, {
+        text: `Ref: ${sourceAnalysis.dominantColors?.[0] || 'image'} region`,
+        source: 'image-import',
+        confidence: sourceAnalysis.confidence || 0.8
+      });
+    }
+  });
+
+  return layer;
+}
+
+export function attachAnnotation(layer, x, y, annotation) {
+  if (!layer.annotations) layer.annotations = new Map();
+  const key = `${x},${y}`;
+  layer.annotations.set(key, { ...(layer.annotations.get(key) || {}), ...annotation });
+}
+
+export function getCellAnnotations(layer, x, y) {
+  if (!layer || !layer.annotations) return null;
+  return layer.annotations.get(`${x},${y}`) || null;
+}
+
+/**
+ * Selection + Transform (System 6)
+ * Basic rectangular selection. Transforms operate on cell sets.
+ */
+export function selectRect(grid, x1, y1, x2, y2, layerIndex = null) {
+  const minX = Math.min(x1, x2);
+  const maxX = Math.max(x1, x2);
+  const minY = Math.min(y1, y2);
+  const maxY = Math.max(y1, y2);
+
+  const selection = {
+    type: 'rect',
+    bounds: { minX, minY, maxX, maxY },
+    cells: [],
+    layerIndex: layerIndex !== null ? layerIndex : (grid.currentLayer || 0)
+  };
+
+  const layer = grid.layers ? grid.layers[selection.layerIndex] : null;
+  if (layer && layer.cells) {
+    layer.cells.forEach((cell, key) => {
+      if (cell.x >= minX && cell.x <= maxX && cell.y >= minY && cell.y <= maxY) {
+        selection.cells.push({ ...cell });
+      }
+    });
+  }
+  grid.currentSelection = selection;
+  return selection;
+}
+
+export function clearSelection(grid) {
+  grid.currentSelection = null;
+}
+
+export function getSelectionCells(grid) {
+  return grid.currentSelection ? grid.currentSelection.cells : [];
+}
+
+/**
+ * Basic transforms on a set of cells (layer-local or global)
+ */
+export function transformCells(cells, transformType, params = {}) {
+  // transformType: 'nudge', 'flipH', 'flipV', 'rotate90'
+  if (!Array.isArray(cells) || cells.length === 0) return cells;
+
+  const { dx = 0, dy = 0, cx = 0, cy = 0 } = params;
+
+  return cells.map(cell => {
+    let { x, y, color, emphasis = 1 } = cell;
+    switch (transformType) {
+      case 'nudge':
+        x += dx; y += dy; break;
+      case 'flipH':
+        x = 2 * cx - x; break;
+      case 'flipV':
+        y = 2 * cy - y; break;
+      case 'rotate90CW':
+        // Rotate 90 CW around (cx,cy)
+      {
+        const rx = x - cx;
+        const ry = y - cy;
+        x = cx + ry;
+        y = cy - rx;
+        break;
+      }
+      case 'rotate90CCW':
+      {
+        const rx2 = x - cx;
+        const ry2 = y - cy;
+        x = cx - ry2;
+        y = cy + rx2;
+        break;
+      }
+    }
+    return { x: Math.round(x), y: Math.round(y), color, emphasis };
+  });
+}
+
+/**
+ * AMP-Aware Editing (System 5) - core hook
+ * Takes current cells (from layer or selection), runs an AMP function, returns processed cells + provenance.
+ * AMP fn signature: (cells, options) => processedCells
+ * Examples: squareSharpnessContrastAMP, chromaticTransmute, etc. (passed from adapter)
+ */
+export function applyAMPToCells(cells, ampFn, ampOptions = {}, provenanceMeta = {}) {
+  if (typeof ampFn !== 'function') throw new Error('ampFn must be a function');
+  if (!Array.isArray(cells)) return cells;
+
+  const processed = ampFn(cells, ampOptions); // AMPs are expected to accept array of {x,y,color,emphasis}
+
+  // Attach editor provenance
+  const withProvenance = (processed || cells).map(c => ({
+    ...c,
+    _editorProvenance: {
+      appliedAMP: ampOptions.ampName || 'unknown',
+      options: ampOptions,
+      timestamp: Date.now(), // EXEMPT — provenance metadata, not gameplay logic
+      ...provenanceMeta
+    }
+  }));
+
+  return withProvenance;
+}
+
+/**
+ * Convenience: apply AMP to a specific layer (creates new layer or mutates based on flag)
+ */
+export function applyAMPToLayer(grid, layerIndex, ampFn, ampOptions = {}, createNewLayer = true) {
+  const layer = grid.layers && grid.layers[layerIndex] ? grid.layers[layerIndex] : null;
+  if (!layer) return null;
+
+  const cellsArr = Array.from(layer.cells.values ? layer.cells.values() : []);
+  const processed = applyAMPToCells(cellsArr, ampFn, ampOptions, { sourceLayer: layer.name || layerIndex });
+
+  if (createNewLayer) {
+    const newLayer = createLayer(`${layer.name || 'Layer'}-AMP-${ampOptions.ampName || 'fx'}`);
+    processed.forEach(c => setCell(newLayer, c.x, c.y, c.color, c.emphasis));
+    newLayer._editorProvenance = processed[0]?._editorProvenance;
+    grid.layers.push(newLayer);
+    return { newLayerIndex: grid.layers.length - 1, newLayer };
+  } else {
+    // mutate in place (destructive, use with caution / command wrapper)
+    layer.cells.clear();
+    processed.forEach(c => setCell(layer, c.x, c.y, c.color, c.emphasis));
+    layer._editorProvenance = processed[0]?._editorProvenance;
+    return { mutatedLayerIndex: layerIndex };
+  }
+}
+
+/**
+ * Selection transform convenience
+ */
+export function transformSelection(grid, transformType, params = {}) {
+  if (!grid.currentSelection || !grid.currentSelection.cells.length) return null;
+  const transformed = transformCells(grid.currentSelection.cells, transformType, params);
+  grid.currentSelection.cells = transformed;
+  // Note: caller (UI) should apply back to the layer using commands
+  return transformed;
+}
+
+// End of editor extensions

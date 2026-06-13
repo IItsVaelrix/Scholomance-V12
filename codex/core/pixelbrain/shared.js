@@ -1,6 +1,36 @@
 export const GOLDEN_RATIO = 1.618033988749895;
 export const GOLDEN_ANGLE = 137.50776405003785;
 
+/**
+ * Harmonic / Golden utilities for emergent Sketch + Symmetry + Fibonacci properties in PixelBrain.
+ * Reconciles disparate golden math usage across construction, grids, spirals, and profiles.
+ */
+export function goldenSection(width, height) {
+  return {
+    x: roundTo((width / GOLDEN_RATIO), 2),
+    y: roundTo((height / GOLDEN_RATIO), 2),
+  };
+}
+
+export function fibonacciSequence(n, start = 1) {
+  const seq = [start];
+  let a = start, b = start;
+  for (let i = 1; i < n; i++) {
+    const next = a + b;
+    seq.push(next);
+    a = b; b = next;
+  }
+  return seq;
+}
+
+export function goldenRingRadii(baseRadius, count) {
+  const radii = [];
+  for (let i = 0; i < count; i++) {
+    radii.push(Math.max(1, Math.round(baseRadius * Math.pow(1 / GOLDEN_RATIO, i))));
+  }
+  return radii;
+}
+
 export const DEFAULT_PIXELBRAIN_CANVAS = Object.freeze({
   width: 160,
   height: 144,

@@ -64,7 +64,20 @@ export function applyPixelAA(fills, spec) {
         const r2Continues = isRim(r2x, r2y + q.dy);
         if (r1Continues && r2Continues) continue; // Hard 90-degree corner
 
-        // Blend cell color with 50% of the rim colors (average of r1 and r2)
+        // Connective Tissue (Slot-based blending)
+        // If the cells have slots (e.g. from SketchAMP), blend the structural meaning.
+        let blendedSlot = cell.slot;
+        let isRimCell = cell.isRim;
+        
+        if (cell.slot !== undefined && r1.slot !== undefined && r2.slot !== undefined) {
+          const rimSlotAvg = (r1.slot + r2.slot) / 2;
+          blendedSlot = Math.round((cell.slot + rimSlotAvg) / 2);
+          isRimCell = blendedSlot === 0;
+        }
+
+        // Always compute a blended fallback color so pipeline doesn't crash on null.
+        // If this is a template, fillTemplate will override it using the new slot.
+        // If this is a filled asset, palette-quantization-amp will snap it to the palette.
         const c1 = parseHex(r1.color);
         const c2 = parseHex(r2.color);
         const rimColor = {
@@ -80,7 +93,12 @@ export function applyPixelAA(fills, spec) {
           (cCore.b + rimColor.b) / 2
         );
 
-        return { ...cell, color: blended };
+        return { 
+          ...cell, 
+          slot: blendedSlot !== undefined ? blendedSlot : cell.slot,
+          isRim: isRimCell !== undefined ? isRimCell : cell.isRim,
+          color: blended 
+        };
       }
     }
 

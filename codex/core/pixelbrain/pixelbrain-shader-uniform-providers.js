@@ -1,4 +1,5 @@
 import { registerUniformProvider } from './shader-uniform-registry.js';
+import { MATERIAL_SHADER_INDEX } from './material-registry.js';
 
 function toFloat(value, fallback = 0) {
   const numeric = Number(value);
@@ -6,10 +7,10 @@ function toFloat(value, fallback = 0) {
 }
 
 function materialIndex(materialId) {
-  const id = String(materialId || 'source');
-  const known = ['source', 'icy_fire', 'shadow_fire', 'holy_fire', 'poison_flame', 'void_ice'];
-  const index = known.indexOf(id);
-  return index >= 0 ? index : 0;
+  // Single authority: material-registry's append-only index map.
+  // Unknown materials fall back to 0 ('source') explicitly.
+  const index = MATERIAL_SHADER_INDEX[String(materialId || 'source')];
+  return Number.isInteger(index) ? index : 0;
 }
 
 export const PIXELBRAIN_SHADER_UNIFORM_PROVIDER_ID = 'pixelbrain-state';

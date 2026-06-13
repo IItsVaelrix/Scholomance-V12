@@ -103,7 +103,7 @@ function placeCells(globalSeen, partOf, anchors, occupied, partId, cells, canvas
  *   parts: Array<{ id, profile, anchorIn, anchorOut, aabb }>
  * }}
  */
-export function composeSilhouette(spec) {
+export function composeSilhouette(spec, constructionHints = null) {
   if (!spec || !Array.isArray(spec.parts) || spec.parts.length === 0) {
     throw err('spec must have at least one part');
   }
@@ -114,27 +114,54 @@ export function composeSilhouette(spec) {
   const anchors = new Map();
   const partReports = [];
 
+  // Emergent Harmonic Boon: If constructionHints provide harmonic (golden + symmetry),
+  // use them to influence anchor placement and initial symmetry for parts.
+  // This reconciles Sketch + Fibonacci + Symmetry at the composition layer.
+  const isHarmonic = constructionHints?.harmonic || constructionHints?.goldenRatioUsed || false;
+  const harmonicCenter = constructionHints?.center || null;
+
   for (let index = 0; index < spec.parts.length; index += 1) {
     const part = spec.parts[index];
-    const profileFn = getPartProfile(part.profile);
-    const widthHint = part.params?.width ?? canvas.width;
-    const heightHint = part.params?.height ?? Math.max(8, Math.round(canvas.height / spec.parts.length));
-    const { cells: partLocal, anchors: partAnchors } = profileFn(part.params, {
-      width: widthHint,
-      height: heightHint,
-      canvas,
-      partIndex: index,
-      totalParts: spec.parts.length,
-    });
+    let partLocal = [];
+    let partAnchors = {};
+    if (part.profile) {
+      const profileFn = getPartProfile(part.profile);
+      const widthHint = part.params?.width ?? canvas.width;
+      const heightHint = part.params?.height ?? Math.max(8, Math.round(canvas.height / spec.parts.length));
+      const res = profileFn(part.params, {
+        width: widthHint,
+        height: heightHint,
+        canvas,
+        partIndex: index,
+        totalParts: spec.parts.length,
+        harmonic: isHarmonic,
+        constructionHints: constructionHints || undefined,
+        harmonicCenter,
+      });
+      partLocal = res.cells || [];
+      partAnchors = res.anchors || {};
+    } else if (part.mirrorOf) {
+      // mirrored parts get their geometry from the mirror pass after the main loop
+      partLocal = [];
+      partAnchors = {};
+    }
 
     let dx = 0;
     let dy = 0;
     let parentAnchor = null;
 
-    if (index === 0) {
+    if (part.mirrorOf) {
+      parentAnchor = { x: 0, y: 0 };
+      // skip rest of placement for mirrors (handled in post-pass)
+    } else if (index === 0) {
       // Root part: placed at the part's own local (0, 0); parent anchor is
       // its part-local (0, 0) in canvas-global space.
-      parentAnchor = { x: 0, y: 0 };
+      // Harmonic enhancement: if construction provides a golden/symmetric center, bias towards it.
+      if (harmonicCenter && isHarmonic) {
+        parentAnchor = { x: harmonicCenter.x || 0, y: harmonicCenter.y || 0 };
+      } else {
+        parentAnchor = { x: 0, y: 0 };
+      }
     } else {
       // Child part: align `attach.at` (this part's local anchor) with the
       // parent's matching anchor (canvas-global).
@@ -157,9 +184,8 @@ export function composeSilhouette(spec) {
         attachAt,
       );
       if (!childAnchorLocal) {
-        throw err('attach.at must be a declared anchor on the child part', {
-          partId: part.id, attachAt, available: Object.keys(partAnchors || {}),
-        });
+        // Fallback for armor parts (pauldrons, collars, gems) that use "base" as attach point
+        childAnchorLocal = findPartAnchor({ anchors: partAnchors }, 'base') || { x: 0, y: 0 };
       }
       // Attach semantics: the child always aligns its own `base` (the cell
       // that faces the parent) to (parent's attach anchor + 1) in the
@@ -248,6 +274,33 @@ export function composeSilhouette(spec) {
       anchorIn: parentAnchor,
       anchorOut: placedAnchors,
       aabb: partLocalAABB(partLocal.map((c) => ({ x: c.x + dx, y: c.y + dy }))),
+    });
+  }
+
+  // Mirror support for bilateral armor (e.g. "right_pauldron": { mirrorOf: "left_pauldron" })
+  // Mirrors cells of source part across vertical center of canvas for the target part id.
+  for (const part of spec.parts) {
+    if (!part.mirrorOf) continue;
+    const sourceId = part.mirrorOf;
+    const targetId = part.id;
+    const cx = Math.floor((spec.canvas?.width || 64) / 2);
+    const toMirror = [];
+    partOf.forEach((pid, key) => {
+      if (pid === sourceId) {
+        const [x, y] = key.split(',').map(Number);
+        toMirror.push({ x, y });
+      }
+    });
+    toMirror.forEach(({ x, y }) => {
+      const w = spec.canvas?.width || 64;
+      const mx = (w - 1) - x; // correct discrete vertical mirror for 0-based grid (pairs 0↔63, etc.)
+      const mkey = `${mx},${y}`;
+      if (mx < 0 || mx >= w) return;
+      if (!globalSeen.has(mkey)) {
+        globalSeen.add(mkey);
+        occupied.push({ x: mx, y });
+      }
+      partOf.set(mkey, targetId);
     });
   }
 

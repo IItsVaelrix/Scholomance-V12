@@ -72,4 +72,17 @@ describe('traceBoundary', () => {
     expect(a.vertices).toEqual(b.vertices);
     expect(a.segments).toEqual(b.segments);
   });
+
+  it('handles double-digit coordinates correctly (numeric sort, not lexicographic)', () => {
+    // 2×2 block at (10,10) tests that "10,3" sorts correctly after "9,3"
+    const cells = new Set(['10,10', '11,10', '10,11', '11,11']);
+    const { vertices } = traceBoundary(cells, { smooth: false });
+    expect(vertices).toHaveLength(4);
+    // Corners should be (10,10), (12,10), (12,12), (10,12)
+    const keys = vertices.map(([x, y]) => `${x},${y}`);
+    expect(keys).toContain('10,10');
+    expect(keys).toContain('12,10');
+    expect(keys).toContain('12,12');
+    expect(keys).toContain('10,12');
+  });
 });

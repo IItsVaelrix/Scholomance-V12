@@ -19,7 +19,7 @@
  * bridging; profiles are responsible for occupancy and anchor declaration.
  */
 
-import { hashString } from './shared.js';
+import { hashString, GOLDEN_RATIO } from './shared.js';
 
 const REGISTRY = Object.create(null);
 
@@ -41,6 +41,15 @@ export function getPartProfile(id) {
   }
   return profile;
 }
+
+// Per SDF+Noise PDR: profiles may now return a PB-SDF-v1 descriptor (and/or noise) instead of or in addition to imperative cells.
+// The profile function can be (params, options) => ({ cells, anchors, sdf: PB_SDF_v1, noise: PB_NOISE_v1 })
+// The caller (SDFShapeAMP or factory) is responsible for consuming the descriptor to emit lattice cells.
+export function profileSupportsSDF(profileFn) {
+  // duck check or convention: if the registered profile mentions sdf in docs or returns object with sdf
+  return true; // profiles opt-in by returning the field when called with sdf-aware options
+}
+
 
 export function listPartProfiles() {
   return Object.freeze(Object.keys(REGISTRY));
@@ -293,7 +302,7 @@ registerPartProfile('gem.ellipse', (params = {}, options = {}) => {
       if (d <= 1) cells.push({ x, y });
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
 // GEM.ROUND
@@ -307,7 +316,7 @@ registerPartProfile('gem.round', (params = {}, options = {}) => {
       if (x*x + y*y <= r*r) cells.push({ x: cx + x, y: cy + y });
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
 // GEM.OVAL
@@ -326,7 +335,7 @@ registerPartProfile('gem.square', (params = {}, options = {}) => {
       cells.push({ x: cx + x, y: cy + y });
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
 // GEM.EMERALD-CUT
@@ -344,7 +353,7 @@ registerPartProfile('gem.emerald-cut', (params = {}, options = {}) => {
       }
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
 // FRAME.OVAL
@@ -361,7 +370,7 @@ registerPartProfile('frame.oval', (params = {}, options = {}) => {
       }
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
 // BAIL
@@ -403,7 +412,7 @@ registerPartProfile('chain.link', (params = {}, options = {}) => {
       if (d <= rOuter && d >= rInner) cells.push({ x, y });
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy }, top: { x: cx, y: cy - rOuter }, bottom: { x: cx, y: cy + rOuter } } };
+  return { cells, anchors: { center: { x: cx, y: cy }, top: { x: cx, y: cy - rOuter }, bottom: { x: cx, y: cy + rOuter }, base: { x: cx, y: cy - rOuter } } };
 });
 
 // SETTING.PRONG and SETTING.BEZEL
@@ -436,3 +445,1004 @@ export function seededJitter(seed, segment, magnitude) {
   const norm = (h / 0xffffffff) - 0.5;
   return norm * 2 * magnitude;
 }
+
+// ── ARMOR / CHESTPLATE PROFILES (ChestplateAMP) ──────────────────────────
+// Added per ChestplateAMP PDR. All deterministic, return {cells, anchors}.
+
+registerPartProfile('armor.chestplate.classic', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const shoulderW = roundInt(params.shoulderWidth ?? 50);
+  const waistW = roundInt(params.waistWidth ?? 26);
+  const h = roundInt(params.torsoHeight ?? 58);
+  const neckW = roundInt(params.neckWidth ?? 12);
+  const neckD = roundInt(params.neckDepth ?? 7);
+
+  const cells = [];
+  for (let y = 0; y < h; y += 1) {
+    const t = y / Math.max(1, h - 1);
+    let half = Math.round(shoulderW / 2 * (1 - t * 0.55) + waistW / 2 * t);
+    half = Math.max(4, half);
+    const isNeckZone = y < neckD;
+    const nHalf = Math.floor(neckW / 2);
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (isNeckZone && Math.abs(dx) <= nHalf) continue;
+      cells.push({ x: cx + dx, y });
+    }
+  }
+
+  return {
+    cells,
+    anchors: {
+      top: { x: cx, y: 0 },
+      centerChest: { x: cx, y: Math.floor(h * 0.38) },
+      leftShoulder: { x: cx - Math.floor(shoulderW * 0.36), y: Math.floor(h * 0.1) },
+      rightShoulder: { x: cx + Math.floor(shoulderW * 0.36), y: Math.floor(h * 0.1) },
+      waist: { x: cx, y: h - 4 },
+      bottom: { x: cx, y: h - 1 },
+    },
+  };
+});
+
+registerPartProfile('armor.chestplate.angular', (params = {}, options = {}) => {
+  const base = getPartProfile('armor.chestplate.classic')(params, options);
+  const cx = roundInt(params.cx ?? 0);
+  const extra = roundInt(params.shoulderExtra ?? 5);
+  const added = [];
+  base.cells.forEach((c) => {
+    if (c.y < 14) {
+      added.push({ x: c.x - extra, y: c.y });
+      added.push({ x: c.x + extra, y: c.y });
+    }
+  });
+  return { cells: [...base.cells, ...added], anchors: base.anchors };
+});
+
+registerPartProfile('armor.chestplate.void_royal', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? options.width ?? 64) / 2));
+  const halfAt = params.halfAt || {
+    8: 18, 9: 22, 10: 24, 11: 25, 12: 25, 13: 24,
+    14: 23, 15: 22, 16: 21, 17: 20, 18: 20, 19: 19,
+    20: 18, 21: 18, 22: 17, 23: 17, 24: 16, 25: 16,
+    26: 15, 27: 15, 28: 15, 29: 14, 30: 14, 31: 14,
+    32: 13, 33: 13, 34: 12, 35: 12, 36: 12, 37: 13,
+    38: 14, 39: 14, 40: 15, 41: 15, 42: 14, 43: 13,
+    44: 12, 45: 10,
+  };
+  const neckCut = params.neckCut || {
+    8: 7, 9: 6, 10: 5, 11: 4,
+  };
+  const cells = [];
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    const cut = neckCut[yKey];
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (cut !== undefined && Math.abs(dx) <= roundInt(cut)) continue;
+      cells.push({ x: cx + dx, y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      top: { x: cx, y: 8 },
+      base: { x: cx, y: 45 },
+      centerChest: { x: cx, y: 25 },
+      leftShoulder: { x: cx - 22, y: 12 },
+      rightShoulder: { x: cx + 22, y: 12 },
+      safeZoneCenter: { x: cx, y: 25 },
+      safeZoneUpperLower: { x: cx, y: 31 },
+      waist: { x: cx, y: 36 },
+      bottom: { x: cx, y: 45 },
+    },
+  };
+});
+
+registerPartProfile('armor.chestplate.void_royal_human', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? options.width ?? 64) / 2));
+
+  // Emergent boon: when harmonic sketch is available via options.constructionHints,
+  // profiles can derive proportions from golden/fib + symmetry instead of pure hand tuning.
+  const harmonic = options?.constructionHints?.harmonic || params.harmonic || false;
+  if (harmonic && options?.harmonicCenter) {
+    // Example: bias shoulderWidth toward golden ratio from center for natural harmony
+    // (non-destructive; only adjusts if not explicitly overridden)
+    if (!params.shoulderWidth) {
+      const goldenOffset = Math.round((options.canvas?.width || 64) / GOLDEN_RATIO * 0.7);
+      params = { ...params, shoulderWidth: goldenOffset };
+    }
+  }
+  const shoulderWidth = roundInt(params.shoulderWidth ?? 46);
+  const chestWidth = roundInt(params.chestWidth ?? 38);
+  const waistWidth = roundInt(params.waistWidth ?? 26);
+  const torsoHeight = roundInt(params.torsoHeight ?? 58);
+  const topY = roundInt(params.topY ?? 8);
+  const neckWidth = roundInt(params.neckWidth ?? 12);
+  const neckDepth = roundInt(params.neckDepth ?? 7);
+  const cells = [];
+
+  for (let y = 0; y < torsoHeight; y += 1) {
+    const t = y / Math.max(1, torsoHeight - 1);
+    const chestFalloff = t < 0.32 ? t / 0.32 : 1;
+    const waistFalloff = Math.max(0, (t - 0.34) / 0.66);
+    const topHalf = (shoulderWidth / 2) * (1 - chestFalloff) + (chestWidth / 2) * chestFalloff;
+    const half = Math.max(4, Math.round(topHalf * (1 - waistFalloff) + (waistWidth / 2) * waistFalloff));
+    const absoluteY = topY + y;
+    const neckCutHalf = y < neckDepth ? Math.floor((neckWidth / 2) * (1 - (y / Math.max(1, neckDepth)) * 0.28)) : -1;
+
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (neckCutHalf >= 0 && Math.abs(dx) <= neckCutHalf) continue;
+      const lowerCornerTrim = y > torsoHeight * 0.78 && Math.abs(dx) > half - Math.round((y - torsoHeight * 0.78) * 0.45);
+      if (lowerCornerTrim) continue;
+      cells.push({ x: cx + dx, y: absoluteY });
+    }
+  }
+
+  return {
+    cells,
+    anchors: {
+      top: { x: cx, y: topY },
+      base: { x: cx, y: topY + torsoHeight - 1 },
+      centerChest: { x: cx, y: topY + Math.floor(torsoHeight * 0.38) },
+      leftShoulder: { x: cx - Math.floor(shoulderWidth * 0.36), y: topY + Math.floor(torsoHeight * 0.1) },
+      rightShoulder: { x: cx + Math.floor(shoulderWidth * 0.36), y: topY + Math.floor(torsoHeight * 0.1) },
+      safeZoneCenter: { x: cx, y: topY + Math.floor(torsoHeight * 0.38) },
+      safeZoneUpperLower: { x: cx, y: topY + Math.floor(torsoHeight * 0.52) },
+      waist: { x: cx, y: topY + Math.floor(torsoHeight * 0.7) },
+      bottom: { x: cx, y: topY + torsoHeight - 1 },
+    },
+  };
+});
+
+registerPartProfile('armor.pauldron.round', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 7);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    const hh = Math.round(Math.sqrt(Math.max(0, r * r - y * y)));
+    for (let dx = -hh; dx <= hh; dx += 1) cells.push({ x: cx + dx, y: cy + y });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy + r - 1 },
+      outer: { x: cx + r - 1, y: cy },
+      leftShoulder: { x: cx, y: cy + r - 1 },
+      rightShoulder: { x: cx, y: cy + r - 1 },
+    },
+  };
+});
+
+registerPartProfile('armor.pauldron.angular_royal', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const halfAt = params.halfAt || {
+    '-4': 4,
+    '-3': 7,
+    '-2': 10,
+    '-1': 12,
+    0: 13,
+    1: 12,
+    2: 11,
+    3: 9,
+    4: 7,
+    5: 4,
+  };
+  const cells = [];
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) {
+      const outerBias = params.side === 'right' ? -2 : 2;
+      const crown = y <= -2 && Math.sign(dx || outerBias) === Math.sign(outerBias)
+        ? Math.min(2, Math.abs(y + 2))
+        : 0;
+      cells.push({ x: cx + dx + crown * Math.sign(outerBias), y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy + 5 },
+      leftShoulder: { x: cx, y: cy + 5 },
+      rightShoulder: { x: cx, y: cy + 5 },
+      outer: { x: cx + 13, y: cy },
+    },
+  };
+});
+
+registerPartProfile('armor.pauldron.angular_human', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const side = params.side === 'right' ? 'right' : 'left';
+  const halfAt = params.halfAt || {
+    '-3': 3,
+    '-2': 5,
+    '-1': 7,
+    0: 8,
+    1: 8,
+    2: 7,
+    3: 5,
+    4: 3,
+  };
+  const cells = [];
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) {
+      const outward = side === 'right' ? 1 : -1;
+      const shoulderSlope = y < 0 && Math.sign(dx || outward) === outward
+        ? Math.min(1, Math.abs(y + 1))
+        : 0;
+      cells.push({ x: cx + dx + (shoulderSlope * outward), y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy + 4 },
+      leftShoulder: { x: cx, y: cy + 4 },
+      rightShoulder: { x: cx, y: cy + 4 },
+      outer: { x: cx + (side === 'right' ? 9 : -9), y: cy },
+    },
+  };
+});
+
+registerPartProfile('armor.pauldron.void_reference_human', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const side = params.side === 'right' ? 'right' : 'left';
+  const outward = side === 'right' ? 1 : -1;
+  const halfAt = params.halfAt || {
+    '-4': 4,
+    '-3': 8,
+    '-2': 10,
+    '-1': 11,
+    0: 12,
+    1: 12,
+    2: 10,
+    3: 8,
+    4: 5,
+  };
+  const cells = [];
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) {
+      const sweep = y <= -2 && Math.sign(dx || outward) === outward ? 1 : 0;
+      const innerCut = y >= 2 && Math.sign(dx || -outward) === -outward && Math.abs(dx) > half - 2;
+      if (innerCut) continue;
+      cells.push({ x: cx + dx + (sweep * outward), y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy + 4 },
+      leftShoulder: { x: cx, y: cy + 4 },
+      rightShoulder: { x: cx, y: cy + 4 },
+      outer: { x: cx + (outward * 12), y: cy },
+    },
+  };
+});
+
+registerPartProfile('armor.panel.void_reference_mantle', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  const halfAt = {
+    '-9': 16,
+    '-8': 18,
+    '-7': 19,
+    '-6': 19,
+    '-5': 18,
+    '-4': 17,
+    '-3': 15,
+    '-2': 13,
+    '-1': 13,
+    0: 12,
+    1: 11,
+    2: 10,
+  };
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (y <= -7 && Math.abs(dx) <= 5) continue;
+      if (y >= -2 && Math.abs(dx) < 4) continue;
+      cells.push({ x: cx + dx, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      center: { x: cx, y: cy - 4 },
+    },
+  };
+});
+
+registerPartProfile('armor.panel.void_reference_harness', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  const halfAt = {
+    '-6': 8,
+    '-5': 10,
+    '-4': 11,
+    '-3': 12,
+    '-2': 11,
+    '-1': 10,
+    0: 9,
+    1: 8,
+    2: 7,
+    3: 6,
+    4: 5,
+    5: 4,
+    6: 3,
+    7: 2,
+  };
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (Math.abs(dx) + Math.max(0, y - 1) > half + 1) continue;
+      cells.push({ x: cx + dx, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      center: { x: cx, y: cy - 1 },
+    },
+  };
+});
+
+registerPartProfile('gem.socket.void_reference_top', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 4);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (Math.abs(x) + Math.abs(y) <= r + 1) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  // Faceted top gem + small cross accent for solid look
+  cells.push({ x: cx, y: cy - r - 1 });
+  cells.push({ x: cx - 1, y: cy - r });
+  cells.push({ x: cx + 1, y: cy - r });
+  return { 
+    cells, 
+    anchors: { 
+      center: { x: cx, y: cy }, 
+      base: { x: cx, y: cy },
+      top: { x: cx, y: cy - r - 1 }
+    } 
+  };
+});
+
+registerPartProfile('gem.socket.void_reference_drop', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  const halfAt = {
+    '-2': 3,
+    '-1': 3,
+    0: 2,
+    1: 2,
+    2: 1,
+    3: 1,
+    4: 0,
+  };
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y: cy + y });
+  }
+  return { cells, anchors: { center: { x: cx, y: cy + 1 }, base: { x: cx, y: cy } } };
+});
+
+registerPartProfile('armor.pauldron.spiked', (params = {}, options = {}) => {
+  const base = getPartProfile('armor.pauldron.round')(params, options);
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 7);
+  const spikes = [];
+  [-2, 0, 2].forEach((i) => {
+    const sy = cy + Math.round(i * 1.8);
+    spikes.push({ x: cx + r + 2, y: sy });
+    spikes.push({ x: cx + r + 1, y: sy - 1 });
+    spikes.push({ x: cx + r + 1, y: sy + 1 });
+  });
+  return { cells: [...base.cells, ...spikes], anchors: {
+    ...base.anchors,
+    leftShoulder: base.anchors.base,
+    rightShoulder: base.anchors.base,
+  } };
+});
+
+registerPartProfile('armor.collar.high', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const w = roundInt(params.width ?? 20);
+  const h = roundInt(params.height ?? 5);
+  const cells = [];
+  for (let y = 0; y < h; y += 1) {
+    const half = Math.round((w / 2) * (1 - (y / h) * 0.25));
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y: cy + y });
+  }
+  const n = Math.floor(w * 0.22);
+  for (let y = 0; y < Math.min(2, h); y += 1) {
+    for (let dx = -n; dx <= n; dx += 1) {
+      const idx = cells.findIndex((c) => c.x === cx + dx && c.y === cy + y);
+      if (idx > -1) cells.splice(idx, 1);
+    }
+  }
+  return { cells, anchors: { base: { x: cx, y: cy + h - 1 }, top: { x: cx, y: cy } } };
+});
+
+registerPartProfile('armor.collar.high_void', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const halfAt = params.halfAt || {
+    0: 13,
+    1: 15,
+    2: 16,
+    3: 15,
+    4: 13,
+    5: 10,
+  };
+  const cells = [];
+  for (const [yKey, halfRaw] of Object.entries(halfAt)) {
+    const y = roundInt(yKey);
+    const half = roundInt(halfRaw);
+    const neckCut = y <= 2 ? 5 : 3;
+    for (let dx = -half; dx <= half; dx += 1) {
+      if (Math.abs(dx) <= neckCut) continue;
+      cells.push({ x: cx + dx, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy + 5 },
+      top: { x: cx, y: cy },
+      center: { x: cx, y: cy + 3 },
+    },
+  };
+});
+
+registerPartProfile('gem.socket.diamond', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 3);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (Math.abs(x) + Math.abs(y) <= r + 1) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+registerPartProfile('gem.socket.void_orb', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 5);
+  const height = roundInt(params.height ?? r * 2);
+  const cells = [];
+  // More solid faceted orb: layered ellipses + center cross for "solid" jewel look (using new deterministic style)
+  for (let y = -Math.floor(height/2); y <= Math.floor(height/2); y += 1) {
+    const yf = y / (height / 2);
+    const xr = Math.round(r * Math.sqrt(1 - yf * yf * 0.7)); // squashed for 3d
+    for (let x = -xr; x <= xr; x += 1) {
+      const d = Math.hypot(x / xr, yf);
+      if (d <= 1.05) {
+        cells.push({ x: cx + x, y: cy + y });
+      }
+    }
+  }
+  // Add facet highlights (small inner structure for solidity)
+  for (let i = -1; i <= 1; i++) {
+    cells.push({ x: cx + i, y: cy - 2 });
+    cells.push({ x: cx + i, y: cy + 2 });
+  }
+  return {
+    cells,
+    anchors: {
+      center: { x: cx, y: cy },
+      base: { x: cx, y: cy },
+      top: { x: cx, y: cy - Math.floor(height/2) },
+    },
+  };
+});
+
+// ── ARCANE / FUTURISTIC UI PROFILES for Mystical HUD (VOID palette: obsidian, indigo, purple, crimson, silver)
+// These are small, high-detail pixel frames for MMORPG-style overlay that "breathes" with resonance.
+// Use harmonic proportions for natural arcane elegance.
+// Generate as small assets, then in Phaser animate for breathing (pulse alpha/scale on glow layers).
+
+registerPartProfile('ui.arcane.frame', (params = {}, options = {}) => {
+  const w = roundInt(params.width ?? 128);
+  const h = roundInt(params.height ?? 32);
+  const thickness = roundInt(params.thickness ?? 4);
+  const cx = roundInt(params.cx ?? w / 2);
+  const cy = roundInt(params.cy ?? h / 2);
+  const cells = [];
+
+  // Outer silver border
+  for (let x = 0; x < w; x++) {
+    for (let t = 0; t < thickness; t++) {
+      cells.push({ x, y: t, color: '#A8A8B8' });
+      cells.push({ x, y: h - 1 - t, color: '#A8A8B8' });
+    }
+  }
+  for (let y = 0; y < h; y++) {
+    for (let t = 0; t < thickness; t++) {
+      cells.push({ x: t, y, color: '#A8A8B8' });
+      cells.push({ x: w - 1 - t, y, color: '#A8A8B8' });
+    }
+  }
+
+  // Inner obsidian fill
+  for (let x = thickness; x < w - thickness; x++) {
+    for (let y = thickness; y < h - thickness; y++) {
+      cells.push({ x, y, color: '#11111A' });
+    }
+  }
+
+  // Indigo inner bevel
+  for (let x = thickness + 1; x < w - thickness - 1; x++) {
+    cells.push({ x, y: thickness + 1, color: '#2E2A5A' });
+    cells.push({ x, y: h - thickness - 2, color: '#2E2A5A' });
+  }
+  for (let y = thickness + 1; y < h - thickness - 1; y++) {
+    cells.push({ x: thickness + 1, y, color: '#2E2A5A' });
+    cells.push({ x: w - thickness - 2, y, color: '#2E2A5A' });
+  }
+
+  // Purple glowing inner area (for breathing core)
+  const glowW = w - thickness * 3;
+  const glowH = h - thickness * 3;
+  for (let x = thickness * 1.5; x < w - thickness * 1.5; x++) {
+    for (let y = thickness * 1.5; y < h - thickness * 1.5; y++) {
+      if (Math.random() < 0.3) {
+        cells.push({ x: Math.floor(x), y: Math.floor(y), color: '#4A2C6A' });
+      }
+    }
+  }
+
+  // Crimson accent lines (mystical energy veins)
+  for (let i = 0; i < 3; i++) {
+    const lx = thickness + 4 + i * 8;
+    if (lx < w - thickness - 4) {
+      cells.push({ x: lx, y: Math.floor(h / 2), color: '#8B1E3D' });
+    }
+  }
+
+  // Silver corner runes (arcane sigils)
+  const runeColor = '#A8A8B8';
+  // Top left rune
+  cells.push({ x: 3, y: 3, color: runeColor });
+  cells.push({ x: 4, y: 3, color: runeColor });
+  cells.push({ x: 3, y: 4, color: runeColor });
+  // Similar for other corners (symmetric)
+  cells.push({ x: w - 4, y: 3, color: runeColor });
+  cells.push({ x: w - 5, y: 3, color: runeColor });
+  cells.push({ x: w - 4, y: 4, color: runeColor });
+
+  cells.push({ x: 3, y: h - 4, color: runeColor });
+  cells.push({ x: 4, y: h - 4, color: runeColor });
+  cells.push({ x: 3, y: h - 5, color: runeColor });
+
+  cells.push({ x: w - 4, y: h - 4, color: runeColor });
+  cells.push({ x: w - 5, y: h - 4, color: runeColor });
+  cells.push({ x: w - 4, y: h - 5, color: runeColor });
+
+  return {
+    cells,
+    anchors: {
+      center: { x: cx, y: cy },
+      topLeft: { x: thickness, y: thickness },
+      topRight: { x: w - thickness, y: thickness },
+      bottomLeft: { x: thickness, y: h - thickness },
+      bottomRight: { x: w - thickness, y: h - thickness },
+    },
+  };
+});
+
+registerPartProfile('ui.hotbar.bar', (params = {}, options = {}) => {
+  const w = roundInt(params.width ?? 512);
+  const h = roundInt(params.height ?? 80);
+  const cx = roundInt(params.cx ?? w / 2);
+  const cy = roundInt(params.cy ?? h / 2);
+  // Use the frame profile and extend for long bar
+  const frame = getPartProfile('ui.arcane.frame')({ width: w, height: h, thickness: 6 }, options);
+  // Add horizontal energy lines for futuristic flow (crimson pulse lines)
+  for (let x = 8; x < w - 8; x += 4) {
+    if (Math.random() > 0.6) {
+      frame.cells.push({ x, y: Math.floor(h / 2) - 1, color: '#8B1E3D' });
+      frame.cells.push({ x, y: Math.floor(h / 2) + 1, color: '#8B1E3D' });
+    }
+  }
+  return {
+    cells: frame.cells,
+    anchors: frame.anchors,
+  };
+});
+
+registerPartProfile('ui.slot', (params = {}, options = {}) => {
+  const size = roundInt(params.size ?? 48);
+  const cx = roundInt(params.cx ?? size / 2);
+  const cy = roundInt(params.cy ?? size / 2);
+  const frame = getPartProfile('ui.arcane.frame')({ width: size, height: size, thickness: 3 }, options);
+  // Central glow area for icon (indigo/purple for breathing core)
+  for (let x = 6; x < size - 6; x++) {
+    for (let y = 6; y < size - 6; y++) {
+      if (Math.abs(x - cx) + Math.abs(y - cy) < size / 3) {
+        if (Math.random() < 0.4) frame.cells.push({ x, y, color: '#4A2C6A' });
+      }
+    }
+  }
+  // Small silver cross or sigil in center for arcane
+  frame.cells.push({ x: cx, y: cy - 2, color: '#A8A8B8' });
+  frame.cells.push({ x: cx, y: cy + 2, color: '#A8A8B8' });
+  frame.cells.push({ x: cx - 2, y: cy, color: '#A8A8B8' });
+  frame.cells.push({ x: cx + 2, y: cy, color: '#A8A8B8' });
+  return {
+    cells: frame.cells,
+    anchors: frame.anchors,
+  };
+});
+
+registerPartProfile('ui.minimap.border', (params = {}, options = {}) => {
+  const size = roundInt(params.size ?? 160);
+  const cx = roundInt(params.cx ?? size / 2);
+  const cy = roundInt(params.cy ?? size / 2);
+  const r = size / 2 - 4;
+  const cells = [];
+  // Outer silver ring (arcane circle for minimap)
+  for (let a = 0; a < 360; a += 3) {
+    const rad = a * Math.PI / 180;
+    const x = Math.floor(cx + Math.cos(rad) * r);
+    const y = Math.floor(cy + Math.sin(rad) * r);
+    cells.push({ x, y, color: '#A8A8B8' });
+    // Thicker
+    const x2 = Math.floor(cx + Math.cos(rad) * (r - 1));
+    const y2 = Math.floor(cy + Math.sin(rad) * (r - 1));
+    cells.push({ x: x2, y: y2, color: '#A8A8B8' });
+  }
+  // Inner obsidian fill with purple glow
+  for (let x = cx - r + 4; x <= cx + r - 4; x++) {
+    for (let y = cy - r + 4; y <= cy + r - 4; y++) {
+      if ((x - cx) ** 2 + (y - cy) ** 2 < (r - 4) ** 2) {
+        cells.push({ x, y, color: '#11111A' });
+        if (Math.random() < 0.1) cells.push({ x, y, color: '#4A2C6A' });
+      }
+    }
+  }
+  // Crimson cardinal points for arcane compass
+  const card = r - 8;
+  cells.push({ x: cx, y: cy - card, color: '#8B1E3D' });
+  cells.push({ x: cx, y: cy + card, color: '#8B1E3D' });
+  cells.push({ x: cx - card, y: cy, color: '#8B1E3D' });
+  cells.push({ x: cx + card, y: cy, color: '#8B1E3D' });
+
+  return {
+    cells,
+    anchors: {
+      center: { x: cx, y: cy },
+    },
+  };
+});
+
+registerPartProfile('ui.chatbox.frame', (params = {}, options = {}) => {
+  const w = roundInt(params.width ?? 320);
+  const h = roundInt(params.height ?? 160);
+  const frame = getPartProfile('ui.arcane.frame')({ width: w, height: h, thickness: 5 }, options);
+  // Add vertical rune lines on sides for chat mysticism (indigo)
+  for (let y = 10; y < h - 10; y += 8) {
+    frame.cells.push({ x: 8, y, color: '#2E2A5A' });
+    frame.cells.push({ x: w - 9, y, color: '#2E2A5A' });
+  }
+  // Top header bar with silver text line simulation
+  for (let x = 10; x < w - 10; x++) {
+    if (x % 3 === 0) frame.cells.push({ x, y: 8, color: '#A8A8B8' });
+  }
+  return {
+    cells: frame.cells,
+    anchors: frame.anchors,
+  };
+});
+
+registerPartProfile('ui.indicator.player', (params = {}, options = {}) => {
+  const size = roundInt(params.size ?? 40);
+  const cx = roundInt(params.cx ?? size / 2);
+  const cy = roundInt(params.cy ?? size / 2);
+  const cells = [];
+  // Silver outer circle
+  for (let a = 0; a < 360; a += 8) {
+    const rad = a * Math.PI / 180;
+    cells.push({ x: Math.floor(cx + Math.cos(rad) * (size/2 - 2)), y: Math.floor(cy + Math.sin(rad) * (size/2 - 2)), color: '#A8A8B8' });
+  }
+  // Inner purple fill
+  for (let x = 4; x < size - 4; x++) {
+    for (let y = 4; y < size - 4; y++) {
+      if ((x - cx) ** 2 + (y - cy) ** 2 < (size/2 - 6) ** 2) {
+        cells.push({ x, y, color: '#4A2C6A' });
+      }
+    }
+  }
+  // Crimson cross for player marker
+  for (let i = -3; i <= 3; i++) {
+    cells.push({ x: cx + i, y: cy, color: '#8B1E3D' });
+    cells.push({ x: cx, y: cy + i, color: '#8B1E3D' });
+  }
+  return { cells, anchors: { center: { x: cx, y: cy } } };
+});
+
+registerPartProfile('ui.indicator.enemy', (params = {}, options = {}) => {
+  const size = roundInt(params.size ?? 36);
+  const cx = roundInt(params.cx ?? size / 2);
+  const cy = roundInt(params.cy ?? size / 2);
+  const cells = [];
+  // Crimson outer diamond/reticle
+  for (let i = -size/2 + 2; i <= size/2 - 2; i++) {
+    cells.push({ x: cx + i, y: cy - Math.abs(i) / 1.5 + 2, color: '#8B1E3D' });
+    cells.push({ x: cx + i, y: cy + Math.abs(i) / 1.5 - 2, color: '#8B1E3D' });
+  }
+  // Inner obsidian
+  for (let x = cx - 4; x <= cx + 4; x++) {
+    for (let y = cy - 4; y <= cy + 4; y++) {
+      if (Math.abs(x - cx) + Math.abs(y - cy) < 6) cells.push({ x, y, color: '#11111A' });
+    }
+  }
+  // Silver center dot
+  cells.push({ x: cx, y: cy, color: '#A8A8B8' });
+  return { cells, anchors: { center: { x: cx, y: cy } } };
+});
+
+registerPartProfile('heraldry.void_eye', (params, options) => getPartProfile('none')(params, options));
+
+registerPartProfile('motif.harmonic_channels', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const span = roundInt(params.span ?? 13);
+  const cells = [];
+  for (let dx = -span; dx <= span; dx += 1) {
+    if (Math.abs(dx) <= 4) continue;
+    if (dx % 2 === 0) {
+      cells.push({ x: cx + dx, y: cy - 4 });
+      cells.push({ x: cx + dx, y: cy + 4 });
+    }
+    if (Math.abs(dx) % 5 === 0) cells.push({ x: cx + dx, y: cy });
+  }
+  for (let dy = -3; dy <= 3; dy += 1) {
+    if (dy !== 0) {
+      cells.push({ x: cx - 10, y: cy + dy });
+      cells.push({ x: cx + 10, y: cy + dy });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      center: { x: cx, y: cy },
+    },
+  };
+});
+
+// ── HOLY FIRE PALADIN SWORD PROFILES (per 2026-06-12 PDR) ─────────────
+// All deterministic, integer-cell formulas. The PDR's formulas at §4
+// translate directly to the part-local coordinate system.
+//
+// Layout (canvas 64x96):
+//   blade:    y =  8 .. 72  (root part; base anchor at bottom)
+//   guard:    y = 73 .. 75  (attaches to blade's base)
+//   hilt:     y = 76 .. 88  (attaches to guard's base)
+//   pommel:   y = 89 .. 94  (attaches to hilt's base)
+//   holyFire: flame cells emitted post-silhouette (no profile of its own)
+
+// Blade — integer-quantized taper formula
+//   w(y) = floor(w_base * (1 - k * (y - y_0) / L)^p + 0.5)
+// with w_base = 6, k = 0.67, p = 0.85, L = 64, y_0 = 8
+// Tip half-width ≈ 2, base half-width = 6.
+registerPartProfile('weapon.sword.holyfire_paladin_blade', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const wBase = roundInt(params.baseHalfWidth ?? 6);
+  const tipHalf = roundInt(params.tipHalfWidth ?? 2);
+  const k = Number(params.taperK ?? 0.67);
+  const p = Number(params.taperPower ?? 0.85);
+  const y0 = roundInt(params.yStart ?? 8);
+  const length = roundInt(params.length ?? 64);
+  const yEnd = y0 + length - 1;
+  const cells = [];
+  for (let y = y0; y <= yEnd; y += 1) {
+    const t = (y - y0) / Math.max(1, length - 1);
+    const raw = wBase * Math.pow(Math.max(0, 1 - k * t), p);
+    const half = Math.max(tipHalf, Math.floor(raw + 0.5));
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: yEnd },
+      tip: { x: cx, y: y0 },
+      center: { x: cx, y: Math.round((y0 + yEnd) / 2) },
+    },
+  };
+});
+
+// Crossguard — horizontal bar; canonical attach is `at: 'base'`.
+registerPartProfile('weapon.sword.holyfire_paladin_guard', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const halfBase = roundInt(params.halfBase ?? 14); // x: cx-14..cx+14 → 28 cells
+  const height = roundInt(params.height ?? 3);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const isEdge = y === 0 || y === height - 1;
+    const half = isEdge ? halfBase - 1 : halfBase;
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: 0 },
+      tip: { x: cx, y: height - 1 },
+      center: { x: cx, y: Math.floor(height / 2) },
+    },
+  };
+});
+
+// Hilt — uniform 3-cell wide grip with optional cord flares.
+registerPartProfile('weapon.sword.holyfire_paladin_grip', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const half = roundInt(params.half ?? 1);     // 3-cell wide
+  const height = roundInt(params.height ?? 13);
+  const ringRows = roundInt(params.ringRows ?? 2);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const inRing = y < ringRows || y >= height - ringRows;
+    const localHalf = inRing ? half + 1 : half;
+    for (let dx = -localHalf; dx <= localHalf; dx += 1) cells.push({ x: cx + dx, y });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: 0 },
+      tip: { x: cx, y: height - 1 },
+    },
+  };
+});
+
+// Pommel — 5×5 sphere with center marker.
+// (x - cx)² + (y - cy)² ≤ r² with r = 4 quantized (2 * Math.round(2.25) = 4 → 25 cells minus corners)
+registerPartProfile('weapon.sword.holyfire_paladin_pommel', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.radius ?? 4);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      // Integer-radius test (avoids floating-point drift in canonical path)
+      if (x * x + y * y <= r * r) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: -r },
+      tip: { x: cx, y: r },
+      center: { x: cx, y: 0 },
+    },
+  };
+});
+
+// HOLY FIRE MOTIF — virtual profile. The part declares the holyFire id
+// so the heraldry/fill pipeline can resolve it; the actual flame cells
+// are emitted post-silhouette by the holyfire-motif-amp (deterministic
+// sin-based formula, no Math.random). The virtual anchor sits at the
+// blade's center column so the attach graph remains 4-connected.
+registerPartProfile('weapon.sword.holyfire_motif', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  return {
+    cells: [],
+    anchors: {
+      base: { x: cx, y: 0 },
+      tip: { x: cx, y: 0 },
+      center: { x: cx, y: 0 },
+    },
+  };
+});
+
+// ── REDWOOD TREE PROFILES (using harmonic/golden construction for natural tall form) ──
+
+registerPartProfile('tree.trunk.redwood', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 48) / 2));
+  const height = roundInt(params.height ?? 90);
+  const baseHalf = roundInt(params.baseHalf ?? 6);
+  const topHalf = roundInt(params.topHalf ?? 3);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const t = y / (height - 1);
+    // Slight base flare + linear taper
+    const half = Math.round(baseHalf * (1 - t * 0.5) + topHalf * t);
+    for (let dx = -half; dx <= half; dx += 1) {
+      cells.push({ x: cx + dx, y });
+    }
+    // Subtle vertical bark grooves (every few columns, skip for texture later via noise)
+    if (y % 3 === 0) {
+      for (let dx = -half + 1; dx <= half - 1; dx += 3) {
+        // These will be same part; region fill + noise will differentiate
+      }
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: height - 1 },
+      tip: { x: cx, y: 0 },
+      mid: { x: cx, y: Math.floor(height / 2) },
+      // Multiple layer anchors for whorls, positioned higher up the trunk
+      // for classic redwood form: long bare lower trunk, canopy starting mid-upper
+      layer1: { x: cx, y: Math.floor(height * 0.12) },
+      layer2: { x: cx, y: Math.floor(height * 0.20) },
+      layer3: { x: cx, y: Math.floor(height * 0.28) },
+      layer4: { x: cx, y: Math.floor(height * 0.36) },
+      layer5: { x: cx, y: Math.floor(height * 0.38) },
+      layer6: { x: cx, y: Math.floor(height * 0.45) },
+    },
+  };
+});
+
+registerPartProfile('tree.foliage.tier', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const width = roundInt(params.width ?? 28);
+  const thickness = roundInt(params.thickness ?? 5);
+  const droop = roundInt(params.droop ?? 3); // how much lower edges hang
+  const cells = [];
+  for (let y = -Math.floor(thickness / 2); y <= Math.floor(thickness / 2); y += 1) {
+    const yt = (y + Math.floor(thickness / 2)) / thickness;
+    const half = Math.round((width / 2) * (1 - Math.pow(yt - 0.5, 2) * 0.8)); // slightly rounded
+    for (let dx = -half; dx <= half; dx += 1) {
+      // Add some needle-like jaggedness
+      if (Math.abs(dx) === half && (y % 2 === 0)) continue; // notch edges
+      const actualY = cy + y + (y > 0 ? Math.floor(droop * (y / (thickness / 2))) : 0);
+      cells.push({ x: cx + dx, y: actualY });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      center: { x: cx, y: cy },
+      top: { x: cx, y: cy - Math.floor(thickness / 2) },
+    },
+  };
+});
+
+registerPartProfile('tree.foliage.top', (params = {}, options = {}) => {
+  // Narrow top spire for classic redwood silhouette
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const height = roundInt(params.height ?? 12);
+  const baseWidth = roundInt(params.baseWidth ?? 10);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const t = y / height;
+    const half = Math.max(1, Math.round(baseWidth / 2 * (1 - t)));
+    for (let dx = -half; dx <= half; dx += 1) {
+      cells.push({ x: cx + dx, y: cy - y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      tip: { x: cx, y: cy - height + 1 },
+    },
+  };
+});

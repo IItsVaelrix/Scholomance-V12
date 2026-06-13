@@ -4,7 +4,9 @@
  */
 
 export function applyJewelryTemplate(template, silhouette, spec) {
-  if (!['amulet', 'ring'].includes(spec.class)) return template;
+  // Generalized: apply to any spec with gem.* profiles (including chestplate gems, not just pure jewelry class)
+  const hasGems = spec.parts.some(p => p.profile && (p.profile.startsWith('gem.') || p.id.includes('crystal') || p.id.includes('core')));
+  if (!hasGems && !['amulet', 'ring', 'jewelry'].includes(spec.class)) return template;
 
   const updatedCoords = [...template.coordinates];
   const coordMap = new Map();
@@ -85,6 +87,30 @@ export function applyJewelryTemplate(template, silhouette, spec) {
         edgeCells.forEach(({ c, idx }) => {
           silhouette.partOf.set(`${c.x},${c.y}`, setting.id);
           updatedCoords[idx] = { ...c, slot: c.slot + 1 };
+        });
+
+        // Add engraving for the bezel rim (concentric recessed line + small facets)
+        // This is why bezels were fucking up — no dedicated engraving geometry for the setting.
+        // We simulate engraving by tagging a thin inner/outer ring with negative slot (depth) and part re-assignment for bezel_engrave.
+        // In full system this would delegate to motif-engraver or a proper engravingAMP.
+        const bezelEngraveId = `${setting.id}_engrave`;
+        gCells.forEach(({ c }) => {
+          const neighbors = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
+          neighbors.forEach(([dx, dy]) => {
+            const nk = `${c.x + dx},${c.y + dy}`;
+            if (!silhouette.partOf.has(nk) || silhouette.partOf.get(nk) === gem.id) {
+              // outer bezel rim engraving
+              const eIdx = coordMap.get(nk);
+              if (eIdx !== undefined) {
+                silhouette.partOf.set(nk, bezelEngraveId);
+                updatedCoords[eIdx] = {
+                  ...updatedCoords[eIdx],
+                  slot: Math.max(0, (updatedCoords[eIdx].slot || 0) - 2), // recessed engraving depth
+                  partId: bezelEngraveId,
+                };
+              }
+            }
+          });
         });
       }
     }

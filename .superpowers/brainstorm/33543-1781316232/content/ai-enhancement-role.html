@@ -1,0 +1,96 @@
+<h2>What does "enhanced with AI" mean in this system?</h2>
+<p class="subtitle">The mathematical bytecode generates the character. Where does AI enter the pipeline?</p>
+
+<div class="cards">
+
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.5rem;min-height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1rem">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <div style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.4);border-radius:6px;padding:10px;font-size:11px;color:#c4b5fd;font-family:monospace;text-align:center;width:120px">
+          "A tall void mage<br>with crimson eyes<br>and a torn robe"
+        </div>
+        <div style="color:rgba(255,255,255,0.3);font-size:1.5rem">→</div>
+        <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:6px;padding:10px;font-size:10px;color:#93c5fd;font-family:monospace;width:130px">
+          seed: 0x4D4147<br>
+          school: VOID<br>
+          skin: skin_voidborne<br>
+          eyes: eye_void_glow<br>
+          hair: longStraight<br>
+          <span style="color:#a78bfa">sdf_distort: 0.3</span><br>
+          <span style="color:#a78bfa">noise_cloth: 0.7</span>
+        </div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);font-family:monospace">Claude reads description → outputs CHARACTER-SPEC-v1 + shader params</div>
+    </div>
+    <div class="card-body">
+      <h3>A — AI as Bytecode Generator</h3>
+      <p>Describe a character in plain English. Claude (via the API) interprets it and emits the full CHARACTER-SPEC-v1 + shader uniform overrides — SDF distortion amount, noise texture scale, glow intensity. You author characters by describing them, not by tweaking sliders.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.5rem;min-height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:1rem">
+      <div style="display:flex;align-items:center;gap:1rem">
+        <!-- Base shader output -->
+        <svg width="70" height="105" viewBox="0 0 32 48" style="border:1px solid rgba(255,255,255,0.1);border-radius:2px;background:#0a0a14" xmlns="http://www.w3.org/2000/svg">
+          <rect x="10" y="6" width="12" height="14" fill="#c08850"/>
+          <rect x="9" y="6" width="14" height="8" fill="#4a3828"/>
+          <rect x="8" y="20" width="16" height="18" fill="#a8a090"/>
+          <rect x="8" y="38" width="7" height="10" fill="#6a4030"/>
+          <rect x="17" y="38" width="7" height="10" fill="#6a4030"/>
+          <text x="16" y="47" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="2" font-family="monospace">pass 1</text>
+        </svg>
+        <div style="color:rgba(255,255,255,0.3);font-size:1.5rem">→ AI →</div>
+        <!-- Enhanced shader output -->
+        <svg width="70" height="105" viewBox="0 0 32 48" style="border:1px solid rgba(255,255,255,0.1);border-radius:2px;background:#0a0a14" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="e"><feGaussianBlur stdDeviation="0.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          </defs>
+          <rect x="10" y="6" width="12" height="14" fill="#d4a060"/>
+          <rect x="9" y="6" width="14" height="8" fill="#5a4838"/>
+          <!-- added detail: highlight + shadow -->
+          <rect x="12" y="8" width="4" height="3" fill="#e8c080" opacity="0.6"/>
+          <rect x="10" y="18" width="3" height="2" fill="#806040" opacity="0.7"/>
+          <rect x="8" y="20" width="16" height="18" fill="#b8b0a0"/>
+          <!-- belt detail -->
+          <rect x="8" y="32" width="16" height="2" fill="#6a5030"/>
+          <rect x="8" y="38" width="7" height="10" fill="#7a5040"/>
+          <rect x="17" y="38" width="7" height="10" fill="#7a5040"/>
+          <!-- glow eyes -->
+          <rect x="12" y="10" width="2" height="2" fill="#00e5ff" filter="url(#e)"/>
+          <rect x="18" y="10" width="2" height="2" fill="#00e5ff" filter="url(#e)"/>
+          <text x="16" y="47" text-anchor="middle" fill="rgba(255,255,255,0.3)" font-size="2" font-family="monospace">enhanced</text>
+        </svg>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);font-family:monospace">AI analyzes rendered frame → proposes shader uniform adjustments</div>
+    </div>
+    <div class="card-body">
+      <h3>B — AI as Visual Enhancer</h3>
+      <p>The shader renders the character from bytecode. Claude then analyzes the output and suggests refinements — better contrast, additional detail layers, glow adjustments — which are fed back as updated shader uniforms. Iterative visual polish loop driven by AI critique.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="background:#0a0a14;padding:1.5rem;min-height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:0.75rem">
+      <div style="display:flex;align-items:center;gap:0.75rem;flex-wrap:wrap;justify-content:center">
+        <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.3);border-radius:4px;padding:6px 10px;font-size:10px;color:#c4b5fd;font-family:monospace">describe character</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:1rem">→</div>
+        <div style="background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.3);border-radius:4px;padding:6px 10px;font-size:10px;color:#93c5fd;font-family:monospace">generates spec + shaders</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:1rem">→</div>
+        <div style="background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:4px;padding:6px 10px;font-size:10px;color:#6ee7b7;font-family:monospace">renders on GPU</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:1rem">→</div>
+        <div style="background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);border-radius:4px;padding:6px 10px;font-size:10px;color:#fdba74;font-family:monospace">AI refines visuals</div>
+        <div style="color:rgba(255,255,255,0.3);font-size:1rem">→</div>
+        <div style="background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.3);border-radius:4px;padding:6px 10px;font-size:10px;color:#f9a8d4;font-family:monospace">final character</div>
+      </div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.35);font-family:monospace;text-align:center">Full pipeline: NL description → spec → GPU render → AI enhancement pass</div>
+    </div>
+    <div class="card-body">
+      <h3>C — Both: Generation + Enhancement</h3>
+      <p>AI acts at both ends. <strong>Input side:</strong> describe your character in natural language, Claude emits the mathematical bytecode (CHARACTER-SPEC-v1 + shader uniforms). <strong>Output side:</strong> after the GPU renders, an AI enhancement pass proposes a second set of shader overlays (extra detail, atmosphere, school-specific effects) applied in a second draw pass.</p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:1.5rem">Take a look and reply in the terminal — or click to select.</p>

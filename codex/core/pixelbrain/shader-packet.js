@@ -21,6 +21,8 @@ export function createShaderPacket({
   target = 'fragment',
   dialect = 'glsl-es-300',
   deterministicSeed = 0,
+  sdfDescriptors = [],
+  noiseDescriptors = [],
 } = {}) {
   return Object.freeze({
     contract: PB_SHADER_PACKET_VERSION,
@@ -35,6 +37,8 @@ export function createShaderPacket({
     fragmentSource: String(fragmentSource || '').trim(),
     uniforms: Object.freeze(sortKeys(JSON.parse(JSON.stringify(uniforms || {})))),
     deterministicSeed: Number(deterministicSeed) >>> 0,
+    ...(Array.isArray(sdfDescriptors) && sdfDescriptors.length ? { sdfDescriptors: Object.freeze(sdfDescriptors.map(d => ({...d}))) } : {}),
+    ...(Array.isArray(noiseDescriptors) && noiseDescriptors.length ? { noiseDescriptors: Object.freeze(noiseDescriptors.map(d => ({...d}))) } : {}),
   });
 }
 
@@ -56,6 +60,12 @@ export function validateShaderPacket(packet) {
   }
   if (typeof packet.canvas !== 'object' || !packet.canvas.width || !packet.canvas.height) {
     throw new Error('Shader packet must have a valid canvas dimensions object');
+  }
+  if (packet.sdfDescriptors && !Array.isArray(packet.sdfDescriptors)) {
+    throw new Error('sdfDescriptors must be array if present');
+  }
+  if (packet.noiseDescriptors && !Array.isArray(packet.noiseDescriptors)) {
+    throw new Error('noiseDescriptors must be array if present');
   }
   return true;
 }
@@ -110,6 +120,8 @@ export function hashShaderPacket(packet) {
     fragmentSource: normalizedSource,
     uniforms: sortedUniforms,
     deterministicSeed: packet.deterministicSeed,
+    ...(packet.sdfDescriptors && packet.sdfDescriptors.length ? { sdfDescriptors: packet.sdfDescriptors } : {}),
+    ...(packet.noiseDescriptors && packet.noiseDescriptors.length ? { noiseDescriptors: packet.noiseDescriptors } : {}),
   };
 
   const serializedString = JSON.stringify(serializationTarget);

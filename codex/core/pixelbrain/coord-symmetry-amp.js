@@ -109,7 +109,7 @@ export function runCoordSymmetryAmp(input) {
   switch (symmetry?.type) {
     case 'vertical':
       coordinates.forEach(coord => {
-        const mirrored = verticalMirror(coord, axis.x);
+        const mirrored = verticalMirror(coord, axis.x, dimensions?.width);
         applyEmphasisFade(mirrored, debugMirrorFade ? 0.9 : 1.0);
         
         transformed.push({
@@ -124,7 +124,7 @@ export function runCoordSymmetryAmp(input) {
 
     case 'horizontal':
       coordinates.forEach(coord => {
-        const mirrored = horizontalMirror(coord, axis.y);
+        const mirrored = horizontalMirror(coord, axis.y, dimensions?.height);
         applyEmphasisFade(mirrored, debugMirrorFade ? 0.9 : 1.0);
         
         transformed.push({
@@ -241,7 +241,18 @@ export function runCoordSymmetryAmp(input) {
 /**
  * Vertical mirror (left ↔ right) around axis
  */
-export function verticalMirror(coord, axisX) {
+export function verticalMirror(coord, axisX, width = null) {
+  // Robust for strict vertical symmetry on even-width grids:
+  // When axisX is the integer center (e.g. 32 for w=64), use (w-1 - x) to correctly pair 0↔63 etc.
+  // Otherwise fall back to 2*axis - x (supports arbitrary axis with float).
+  if (width && (axisX === width / 2 || Math.abs(axisX - width / 2) < 0.1)) {
+    return {
+      x: (width - 1) - coord.x,
+      y: coord.y,
+      color: coord.color,
+      emphasis: coord.emphasis,
+    };
+  }
   return {
     x: Math.round((axisX * 2) - coord.x),
     y: coord.y,
@@ -253,7 +264,15 @@ export function verticalMirror(coord, axisX) {
 /**
  * Horizontal mirror (top ↔ bottom) around axis
  */
-export function horizontalMirror(coord, axisY) {
+export function horizontalMirror(coord, axisY, height = null) {
+  if (height && (axisY === height / 2 || Math.abs(axisY - height / 2) < 0.1)) {
+    return {
+      x: coord.x,
+      y: (height - 1) - coord.y,
+      color: coord.color,
+      emphasis: coord.emphasis,
+    };
+  }
   return {
     x: coord.x,
     y: Math.round((axisY * 2) - coord.y),
@@ -311,7 +330,7 @@ function canonicalizeSymmetry(coordinates, symmetry, axis, debugFade) {
           coordinates.filter(c => c.x < axis.x),
           coordinates.filter(c => c.x >= axis.x),
         ],
-        coord => verticalMirror(coord, axis.x),
+        coord => verticalMirror(coord, axis.x, dimensions?.width),
         'vertical-mirror',
         debugFade
       );
@@ -323,7 +342,7 @@ function canonicalizeSymmetry(coordinates, symmetry, axis, debugFade) {
           coordinates.filter(c => c.y < axis.y),
           coordinates.filter(c => c.y >= axis.y),
         ],
-        coord => horizontalMirror(coord, axis.y),
+        coord => horizontalMirror(coord, axis.y, dimensions?.height),
         'horizontal-mirror',
         debugFade
       );

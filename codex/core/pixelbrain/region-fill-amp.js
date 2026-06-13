@@ -7,7 +7,7 @@
  *   1. Identify its part (from the silhouette-composer's partOf map).
  *   2. Look up the part's fill spec (`{ material, anchor? }`).
  *   3. If the cell is on the rim (4-neighbor check via silhouette-composer),
- *      use the part's outline material/anchor.
+ *      use the part's trim material/anchor when declared, otherwise outline.
  *   4. Otherwise, normalize the cell's slot onto the part's INTERIOR slot
  *      range and look up the color in the material's anchor ramp.
  *
@@ -109,6 +109,14 @@ function resolveFillColor(spec) {
   return definition.anchors[anchor] || definition.anchors.body || null;
 }
 
+function resolvePartField(partById, part, field, seen = new Set()) {
+  if (!part) return null;
+  if (part[field]) return part[field];
+  if (!part.mirrorOf || seen.has(part.id)) return null;
+  seen.add(part.id);
+  return resolvePartField(partById, partById.get(part.mirrorOf), field, seen);
+}
+
 // ── Slot range computation ──────────────────────────────────────────────
 
 /**
@@ -173,18 +181,21 @@ export function applyRegionFills({ silhouette, template, spec, motifCells = null
 
   // Material color authority per part.
   const fillByPart = new Map();
+  const trimByPart = new Map();
   const outlineByPart = new Map();
   for (const part of spec.parts) {
-    fillByPart.set(part.id, part.fill ? resolveFillColor(part.fill) : null);
-    outlineByPart.set(part.id, part.outline ? resolveFillColor(part.outline) : null);
+    fillByPart.set(part.id, resolveFillColor(resolvePartField(partById, part, 'fill')));
+    trimByPart.set(part.id, resolveFillColor(resolvePartField(partById, part, 'trim')));
+    outlineByPart.set(part.id, resolveFillColor(resolvePartField(partById, part, 'outline')));
   }
   // Material-aware ramp builders per part. The fill spec may include
   // `intensity: 'dark' | 'light'` to pick which anchor slice to ramp
   // across. Defaults to 'dark' (the scimitar's intent: void → body).
   const rampByPart = new Map();
   for (const part of spec.parts) {
-    const material = part.fill ? resolveMaterialId(part.fill.material) : 'source';
-    const intensity = part.fill?.intensity || (part.fill?.anchor === 'body' ? 'light' : 'dark');
+    const fill = resolvePartField(partById, part, 'fill');
+    const material = fill ? resolveMaterialId(fill.material) : 'source';
+    const intensity = fill?.intensity || (fill?.anchor === 'body' ? 'light' : 'dark');
     if (intensity === 'light') {
       rampByPart.set(part.id, buildLightRamp(material));
     } else {
@@ -217,8 +228,8 @@ export function applyRegionFills({ silhouette, template, spec, motifCells = null
       // motif cells take their role's color (core or glow)
       color = motifEntry.color || null;
       motifCellCount += 1;
-    } else if (isRim && part && outlineByPart.get(partId)) {
-      color = outlineByPart.get(partId);
+    } else if (isRim && part && (trimByPart.get(partId) || outlineByPart.get(partId))) {
+      color = trimByPart.get(partId) || outlineByPart.get(partId);
       rimCells += 1;
     } else if (part) {
       const ramp = rampByPart.get(partId) || [];
@@ -230,7 +241,8 @@ export function applyRegionFills({ silhouette, template, spec, motifCells = null
     if (!color || !isHex(color)) {
       // Last-resort fallback: the material's body anchor. Should never
       // trigger if the spec is well-formed; tests pin this behavior.
-      const material = part?.fill ? resolveMaterialId(part.fill.material) : 'source';
+      const fill = resolvePartField(partById, part, 'fill');
+      const material = fill ? resolveMaterialId(fill.material) : 'source';
       const fallback = MATERIAL_PALETTES[material]?.anchors?.body || '#000000';
       color = fallback;
     }
