@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { join, dirname } from 'path';
 import { characterToSVG } from '../../../codex/core/pixelbrain/character-to-svg.js';
 import { forgeCharacter } from '../../../codex/core/pixelbrain/character-foundry.js';
 
@@ -216,5 +219,60 @@ describe('applyCharacterFills → characterToSVG shape contract', () => {
     const fillCells   = fills.coordinates.filter(c => c.isRim === false);
     expect(rimCells.length).toBeGreaterThan(0);
     expect(fillCells.length).toBeGreaterThan(0);
+  });
+});
+
+describe('golden SVG snapshot — npc.void.v1', () => {
+  const GOLDEN_SPEC = {
+    contract: 'CHARACTER-SPEC-v1',
+    id: 'npc.void.v1',
+    class: 'character',
+    archetype: 'human',
+    canvas: { width: 32, height: 48, gridSize: 1 },
+    seed: 86,
+    bytecode: 'VW-SCHOLAR-COMMON-RESONANT',
+    presentation: { gender: 'feminine', heightClass: 'average', buildClass: 'average' },
+    directions: ['south'],
+    materials: { skin: 'skin_voidborne', hair: 'hair_void', eyes: 'eye_void_glow' },
+    body: { profile: 'character.body.human.androgynous' },
+    face: [
+      { id: 'leftEye',  profile: 'character.face.eye.round', attach: { parent: 'body', at: 'face.eyeLeft' } },
+      { id: 'rightEye', profile: 'character.face.eye.round', attach: { parent: 'body', at: 'face.eyeRight' } },
+      { id: 'nose',     profile: 'character.face.nose.small', attach: { parent: 'body', at: 'face.nose' } },
+      { id: 'mouth',    profile: 'character.face.mouth.small', attach: { parent: 'body', at: 'face.mouth' } },
+    ],
+    hair: { profile: 'character.hair.short', params: { color: 'hair_void' }, attach: { parent: 'body', at: 'headTop' } },
+    clothing: [
+      { id: 'bottom', profile: 'character.clothing.bottom.beginnerPants' },
+      { id: 'top',    profile: 'character.clothing.top.beginnerRobe' },
+      { id: 'shoes',  profile: 'character.clothing.shoes.beginnerBoots' },
+    ],
+    combatProfile: { school: 'VOID' },
+  };
+
+  it('forged SVG matches committed golden output byte-for-byte', () => {
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const goldenPath = join(__dirname, 'golden', 'npc-void-illustrated.svg');
+    const golden = readFileSync(goldenPath, 'utf8');
+
+    const result = forgeCharacter(GOLDEN_SPEC, { renderer: 'illustrated', scale: 1, smooth: false });
+    const svg = result.svg ?? result;
+    expect(svg).toBe(golden);
+  });
+
+  it('golden SVG has expected structure — fills, shading, outline, school class', () => {
+    const result = forgeCharacter(GOLDEN_SPEC, { renderer: 'illustrated', scale: 1, smooth: false });
+    const svg = result.svg ?? result;
+
+    expect(svg).toContain('pb-character');
+    expect(svg).toContain('school-void');
+    expect(svg).toContain('pb-fills');
+    expect(svg).toContain('pb-shading');
+    expect(svg).toContain('pb-outlines');
+    expect(svg).toContain('pb-outline');
+    expect(svg).toContain('pb-part-body');
+    expect(svg).toContain('viewBox="0 0 32 48"');
+    expect(svg).toContain('width="32"');
+    expect(svg).toContain('height="48"');
   });
 });
