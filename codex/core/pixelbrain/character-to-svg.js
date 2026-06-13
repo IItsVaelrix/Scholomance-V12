@@ -205,7 +205,10 @@ export function characterToSVG(fills, spec, options = {}) {
     }));
   }
 
-  // ── Layer 2: shadow fringe (cells adjacent to outline, inside the shape) ──
+  // ── Layer 2: shadow fringe ────────────────────────────────────────────────
+  // Adjacency-based: cells touching the rim ring (inside the shape) get a
+  // darkened overlay. Simpler than the slot-based approach (slotRanges from
+  // region-fill-amp) in the original design spec — no AMP pipeline dependency.
   const shadowPaths = [];
   if (twoTone) {
     for (const [partId, cells] of partAllCells) {

@@ -195,11 +195,12 @@ export function characterToSVG(fills, spec, options = {}) {
 
   // 1. Group cells by partId and zone
   //
-  // Fill layer  = ALL non-rim cells for the part (traces the complete part region)
-  // Shadow layer = subset: cells with slot ≤ mid (painted OVER the fill as a darker overlay)
+  // Fill layer   = ALL non-rim cells for the part (traces the complete part region)
+  // Shadow layer = subset: cells 4-adjacent to rim cells, inside the shape
+  //   (adjacency-based — simpler than slot-based; no slotRanges dependency)
   //
   // Why fill = ALL: the fill path must be contiguous (traceable). If we only put
-  // light-slot cells in it, isolated clusters at part edges break the tracer.
+  // shadow cells in it, isolated clusters at part edges break the tracer.
   const partAllCells    = new Map(); // partId → [cell, ...]  ALL non-rim cells
   const partShadowCells = new Map(); // partId → [cell, ...]  slot ≤ mid only
   const rimCells        = [];        // all rim cells → outline
