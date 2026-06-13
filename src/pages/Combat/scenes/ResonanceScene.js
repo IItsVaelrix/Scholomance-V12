@@ -17,7 +17,8 @@
  * not a Phaser pipeline — avoids the Phaser-3/4 PostFX API mismatch.
  */
 
-import { buildCombatTextures, textureKeyForUnit } from '../assets/combatAssets.js';
+import { buildCombatTextures, textureKeyForUnit, buildCharacterTextures } from '../assets/combatAssets.js';
+import { applyEffects } from './CharacterShaderRenderer.js';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -48,6 +49,7 @@ export function buildResonanceScene(Phaser) {
 
     preload() {
       // WAND/PixelBrain SVG combatant textures, rasterized at native size.
+      this.load.image('island_bg', '/void_ice_arena.png');
       try {
         const textures = buildCombatTextures({ school: 'VOID' });
         Object.entries(textures).forEach(([key, { uri, w, h }]) => {
@@ -71,6 +73,7 @@ export function buildResonanceScene(Phaser) {
       this._renderedUnits = [];
       this._cursorTile = null;
       this._unitContainers = new Map();
+      this._characterTextures = new Map(); // actorId → {textureKey, uniforms, enhancements}
       this._tiles = [];
       this._animating = false;
       this._pendingUnitsRebuild = false;
@@ -97,6 +100,12 @@ export function buildResonanceScene(Phaser) {
     }
 
     create() {
+      const g = this.make.graphics({x:0, y:0, add:false});
+      g.fillStyle(0xffffff);
+      g.fillCircle(4, 4, 4);
+      g.generateTexture('ice_spark', 8, 8);
+      g.destroy();
+
       if (!this.textures.exists('dust')) {
         const g = this.add.graphics();
         g.fillStyle(0xffffff, 1);
@@ -116,6 +125,16 @@ export function buildResonanceScene(Phaser) {
       this.boardContainer.sort('depth');
       this.recenter();
 
+      // Bake forged character textures (async; fallback to SVG sprites if incomplete).
+      if (this._renderedUnits?.length) {
+        buildCharacterTextures(this._renderedUnits, this).then(map => {
+          this._characterTextures = map;
+          this._rebuildUnits();
+        }).catch(err => {
+          console.warn('[ResonanceScene] buildCharacterTextures failed, using SVG fallback:', err);
+        });
+      }
+
       if (!this._ignited) {
         this._playIgnition();
         this._ignited = true;
@@ -127,10 +146,52 @@ export function buildResonanceScene(Phaser) {
 
     update(_time, _delta) {
       if (this.reducedMotion) return;
+      
+      if (this._torchLights) {
+        this._torchLights.forEach(t => {
+          t.phase += _delta * 0.005;
+          // Flicker effect
+          t.light.radius = t.baseRadius + Math.sin(t.phase) * 15 + Math.cos(t.phase * 2.3) * 7;
+          t.light.intensity = 0.4 + Math.sin(t.phase * 1.5) * 0.1;
+          
+          if (t.sprite) {
+             t.sprite.setScale(2 + Math.sin(t.phase * 3.1) * 0.05);
+             t.sprite.setAlpha(0.9 + Math.cos(t.phase * 4) * 0.1);
+          }
+        });
+      }
+
       this._tiles.forEach((tile) => {
         const vm = this._vmFor(tile.x, tile.y);
-        if (vm && vm.hasLeyline && (vm.leylinePhase === 'glowing' || vm.leylinePhase === 'fading')) {
-          this._drawTileField(tile.field, vm);
+        if (vm && vm.hasLeyline) {
+          tile.leylineSprite.setVisible(true);
+          const time = this.time?.now || Date.now();
+          
+          if (vm.leylinePhase === 'dormant') {
+            tile.leylineSprite.setTint(0x555555);
+            tile.leylineSprite.setAlpha(0.1);
+            tile.leylineSprite.setScale(0.8);
+          } else if (vm.leylinePhase === 'charging') {
+            tile.leylineSprite.setTint(0x00ff00);
+            tile.leylineSprite.setAlpha(0.4);
+            tile.leylineSprite.setScale(0.9);
+          } else if (vm.leylinePhase === 'glowing') {
+            tile.leylineSprite.setTint(0x00ffff);
+            const pulse = Math.sin(time / 200) * 0.2 + 0.6;
+            tile.leylineSprite.setAlpha(pulse);
+            tile.leylineSprite.setScale(1.0 + Math.sin(time / 150) * 0.05);
+          } else if (vm.leylinePhase === 'fading') {
+            tile.leylineSprite.setTint(0xffa500);
+            const flicker = Math.sin(time / 45) > 0 ? 0.5 : 0.2;
+            tile.leylineSprite.setAlpha(flicker);
+            tile.leylineSprite.setScale(0.9);
+          } else if (vm.leylinePhase === 'spent') {
+            tile.leylineSprite.setTint(0x222222);
+            tile.leylineSprite.setAlpha(0.05);
+            tile.leylineSprite.setScale(0.8);
+          }
+        } else {
+          tile.leylineSprite.setVisible(false);
         }
       });
     }
@@ -161,95 +222,71 @@ export function buildResonanceScene(Phaser) {
       this.recenter();
     }
 
-    // --- Solid VOID-arena environment --------------------------------------
+    // --- Solid Environment --------------------------------------
 
     _buildEnvironment() {
       if (this._slab) { this._slab.destroy(); this._slab = null; }
       if (this._pillars) { this._pillars.forEach((p) => p.destroy()); this._pillars = null; }
-      const m = 0.9; // platform margin beyond the board, in cells
-      const lo = -m;
-      const hi = GRID_SIZE - 1 + m;
-      const top = this._cellToIso(lo, lo);
-      const right = this._cellToIso(hi, lo);
-      const bottom = this._cellToIso(hi, hi);
-      const left = this._cellToIso(lo, hi);
-      const thickness = Math.max(26, this.tileH * 2.4);
-
-      const slab = this.add.graphics();
+      
+      // Load the generated island background
+      const slab = this.add.image(0, 0, 'island_bg');
+      slab.setOrigin(0.5, 0.5);
       slab.setDepth(-1000);
-      // Front-right extruded face.
-      slab.fillStyle(0x070612, 1);
-      slab.fillPoints([
-        { x: right.px, y: right.py }, { x: bottom.px, y: bottom.py },
-        { x: bottom.px, y: bottom.py + thickness }, { x: right.px, y: right.py + thickness },
-      ], true);
-      // Front-left extruded face (darker for a lit/shadow read).
-      slab.fillStyle(0x04030b, 1);
-      slab.fillPoints([
-        { x: bottom.px, y: bottom.py }, { x: left.px, y: left.py },
-        { x: left.px, y: left.py + thickness }, { x: bottom.px, y: bottom.py + thickness },
-      ], true);
-      // Top face.
-      const face = [top, right, bottom, left].map((c) => ({ x: c.px, y: c.py }));
-      slab.fillStyle(0x0c0a1c, 1);
-      slab.fillPoints(face, true);
-      // Amethyst rim on the platform lip.
-      slab.lineStyle(2, this._schoolColor, 0.55);
-      slab.strokePoints(face, true);
+      
+      // Scale the island to neatly encompass the board
+      const boardWidth = this.tileW * GRID_SIZE;
+      const targetScale = (boardWidth * 1.6) / slab.width; 
+      slab.setScale(targetScale);
+      
+      // Adjust slightly upwards so the island landmass centers with the tiles
+      slab.setPosition(0, -this.tileH);
+
       this.boardContainer.add(slab);
       this._slab = slab;
+      this._pillars = [];
 
-      // Four obsidian monoliths standing on the arena's corner tiles, built as true
-      // iso-extruded prisms so they share the platform's 2.5D geometry instead of
-      // billboarding over it.
-      const cMax = GRID_SIZE - 1;
-      const corners = [
-        { x: 0, y: 0 }, { x: cMax, y: 0 },
-        { x: 0, y: cMax }, { x: cMax, y: cMax },
+      // Dynamic Ice Fire lights and particles for torches
+      this._torchLights = [];
+      const torchPositions = [
+        // Top middle
+        { x: 0, y: -boardWidth * 0.45 },
+        // Far right, top lower edge
+        { x: boardWidth * 0.45, y: -boardWidth * 0.1 },
+        // In front of crystal, near staircase (guessing bottom-left quadrant)
+        { x: -boardWidth * 0.35, y: boardWidth * 0.3 },
       ];
-      this._pillars = corners.map(({ x, y }) => this._drawIsoPillar(x, y));
-    }
 
-    /** An obsidian monolith built as an isometric extruded prism (top + 2 faces). */
-    _drawIsoPillar(cellX, cellY) {
-      const { px, py } = this._cellToIso(cellX, cellY);
-      const fw = this.tileW * 0.42;       // footprint sits on the corner tile
-      const fh = this.tileH * 0.42;
-      const H = this.tileH * 3.6;          // moderate height — frames, not looms
-      const g = this.add.graphics();
-      g.setDepth((cellX + cellY) * 10 + 1);
+      torchPositions.forEach(pos => {
+        // Cyan PointLight
+        const light = this.add.pointlight(pos.x, pos.y - 20, 0x00ffff, 120, 0.4, 0.05);
+        light.setDepth(-900);
+        this.boardContainer.add(light);
+        
+        // Add the deterministic WAND torch SVG
+        const sprite = this.add.image(pos.x, pos.y, 'combat-torch');
+        sprite.setDepth(-901);
+        sprite.setOrigin(0.5, 1);
+        sprite.setScale(1.2);
+        this.boardContainer.add(sprite);
 
-      const bR = { x: px + fw, y: py }, bB = { x: px, y: py + fh }, bL = { x: px - fw, y: py };
-      const tT = { x: px, y: py - fh - H }, tR = { x: px + fw, y: py - H },
-            tB = { x: px, y: py + fh - H }, tL = { x: px - fw, y: py - H };
+        this._torchLights.push({ light, sprite, baseRadius: 120, phase: Math.random() * Math.PI * 2 });
 
-      // Contact shadow on the floor.
-      g.fillStyle(0x000000, 0.4);
-      g.fillEllipse(px, py + fh * 0.35, fw * 2.6, fh * 2.1);
-      // Right side face (catches light), then darker left face.
-      g.fillStyle(0x140f28, 1);
-      g.fillPoints([bR, bB, tB, tR], true);
-      g.fillStyle(0x07060f, 1);
-      g.fillPoints([bB, bL, tL, tB], true);
-      // Top face.
-      g.fillStyle(0x1b1638, 1);
-      g.fillPoints([tT, tR, tB, tL], true);
-      // Amethyst rim on the crown.
-      g.lineStyle(1.5, this._schoolColor, 0.7);
-      g.strokePoints([tT, tR, tB, tL], true);
-      // Front vertical edge + a glowing vein.
-      g.lineStyle(1.4, this._schoolColor, 0.45);
-      g.lineBetween(bB.x, bB.y, tB.x, tB.y);
-      g.lineStyle(1.2, 0x9a6bff, 0.5);
-      g.lineBetween(bR.x, bR.y, tR.x, tR.y);
-      // Crown ember.
-      g.fillStyle(0xc8a2ff, 0.35);
-      g.fillCircle(tT.x, tT.y, 6);
-      g.fillStyle(0xff7ae0, 0.95);
-      g.fillCircle(tT.x, tT.y, 2.5);
-
-      this.boardContainer.add(g);
-      return g;
+        // Simple particle emitter for fire
+        const particles = this.add.particles(0, 0, 'ice_spark', {
+          x: pos.x,
+          y: pos.y - 40,
+          speed: { min: 20, max: 40 },
+          angle: { min: 250, max: 290 },
+          scale: { start: 2, end: 0 },
+          alpha: { start: 0.8, end: 0 },
+          tint: 0x00ffff,
+          lifespan: 1200,
+          blendMode: 'ADD',
+          frequency: 30,
+        });
+        particles.setDepth(-899);
+        this.boardContainer.add(particles);
+      });
     }
 
     // --- Diamond geometry helpers ------------------------------------------
@@ -265,24 +302,29 @@ export function buildResonanceScene(Phaser) {
         for (let x = 0; x < GRID_SIZE; x++) {
           const { px, py } = this._cellToIso(x, y);
           const base = this.add.graphics();
-          const overlay = this.add.graphics();   // state fills (reachable/target/aoe)
-          const cursor = this.add.graphics();     // cursor + hover outline
-          const field = this.add.graphics();      // hazard / occupancy shadow
+          const overlay = this.add.graphics();
+          const field = this.add.graphics();
+          const cursor = this.add.graphics();
+          
+          const leylineSprite = this.add.sprite(0, 0, 'combat-leyline');
+          leylineSprite.setOrigin(0.5, 0.5);
+          leylineSprite.setVisible(false);
+          leylineSprite.setAlpha(0);
 
-          const container = this.add.container(px, py, [base, field, overlay, cursor]);
+          const container = this.add.container(px, py, [base, overlay, field, cursor, leylineSprite]);
           container.setDepth((x + y) * 10);
-
-          const pts = this._diamondPoints();
-          container.setInteractive(
-            new Phaser.Geom.Polygon(pts),
-            Phaser.Geom.Polygon.Contains
-          );
+          container.setSize(this.tileW * 2, this.tileH * 2);
+          container.setInteractive({
+            hitArea: new Phaser.Geom.Polygon(this._diamondPoints(1)),
+            hitAreaCallback: Phaser.Geom.Polygon.Contains,
+            useHandCursor: true
+          });
           container.on('pointerover', () => this._onTileHover(x, y));
           container.on('pointerout', () => this._onTileHoverEnd(x, y));
           container.on('pointerdown', () => { if (this.onSelectCell) this.onSelectCell({ x, y }); });
 
           this.boardContainer.add(container);
-          const tile = { x, y, px, py, base, overlay, cursor, field, container, hovered: false };
+          const tile = { x, y, px, py, base, overlay, cursor, field, leylineSprite, container, hovered: false };
           this._tiles.push(tile);
           this._redrawTile(tile);
         }
@@ -323,10 +365,10 @@ export function buildResonanceScene(Phaser) {
     _drawTileBase(gfx, hovered) {
       gfx.clear();
       const pts = this._toPointObjs(this._diamondPoints(0.98));
-      // Low-opacity fill so the shader nebula glows up through the board.
-      gfx.fillStyle(0x05060f, hovered ? 0.62 : 0.42);
+      // Transparent fill to let the island show through, but with a subtle white/green border
+      gfx.fillStyle(0xffffff, hovered ? 0.3 : 0.02);
       gfx.fillPoints(pts, true);
-      gfx.lineStyle(hovered ? 1.6 : 1, this._schoolColor, hovered ? 0.75 : 0.4);
+      gfx.lineStyle(hovered ? 1.6 : 1, 0xffffff, hovered ? 0.75 : 0.2);
       gfx.strokePoints(pts, true);
     }
 
@@ -347,58 +389,7 @@ export function buildResonanceScene(Phaser) {
       gfx.clear();
       if (!vm) return;
 
-      if (vm.hasLeyline) {
-        const time = this.time?.now || Date.now(); // EXEMPT
-        let color = 0x555555;
-        let opacity = 0.3;
-        let strokeAlpha = 0.45;
-        let size = 0.6;
-        let filled = false;
-        let lineWidth = 1.0;
-
-        if (vm.leylinePhase === 'dormant') {
-          color = 0x555555;
-          opacity = 0.1;
-          strokeAlpha = 0.3;
-          size = 0.5;
-        } else if (vm.leylinePhase === 'charging') {
-          color = 0x00ff00;
-          opacity = 0.12;
-          strokeAlpha = 0.5;
-          size = 0.55;
-          filled = true;
-          lineWidth = 1.5;
-        } else if (vm.leylinePhase === 'glowing') {
-          color = 0x00ffff;
-          const pulse = Math.sin(time / 200) * 0.12 + 0.28;
-          opacity = pulse;
-          strokeAlpha = 0.85;
-          size = 0.6;
-          filled = true;
-          lineWidth = 2.0;
-        } else if (vm.leylinePhase === 'fading') {
-          color = 0xffa500;
-          const flicker = Math.sin(time / 45) > 0 ? 0.32 : 0.08;
-          opacity = flicker;
-          strokeAlpha = 0.6;
-          size = 0.6;
-          filled = true;
-          lineWidth = 1.5;
-        } else if (vm.leylinePhase === 'spent') {
-          color = 0x222222;
-          opacity = 0.05;
-          strokeAlpha = 0.25;
-          size = 0.45;
-        }
-
-        const pts = this._toPointObjs(this._diamondPoints(size));
-        if (filled) {
-          gfx.fillStyle(color, opacity);
-          gfx.fillPoints(pts, true);
-        }
-        gfx.lineStyle(lineWidth, color, strokeAlpha);
-        gfx.strokePoints(pts, true);
-      } else if (vm.hasHazard) {
+      if (vm.hasHazard) {
         const pts = this._toPointObjs(this._diamondPoints(0.5));
         const color = vm.hazardKind === 'RESONANCE_BUFF' ? 0xffd400 : 0x7a7aa6;
         gfx.fillStyle(color, 0.18);
@@ -529,14 +520,20 @@ export function buildResonanceScene(Phaser) {
       shadow.fillEllipse(0, 0, this.tileW * 0.46, this.tileH * 0.46);
       container.add(shadow);
 
-      // Sprite — WAND-authored SVG. Feet anchored near tile center.
+      // Sprite — prefer forged character texture; fall back to WAND SVG texture.
       let sprite;
-      if (this.textures.exists(key)) {
-        sprite = this.add.image(0, 0, key).setOrigin(0.5, 1);
+      const charData = this._characterTextures?.get(unit.id);
+      const resolvedKey = charData?.textureKey ?? key;
+      if (this.textures.exists(resolvedKey)) {
+        sprite = this.add.image(0, 0, resolvedKey).setOrigin(0.5, 1);
         const targetW = this.tileW * (isScholar ? 1.85 : 2.15);
         sprite.setScale(targetW / sprite.width);
         sprite.y = this.tileH * 0.28; // feet sit just below tile center
         sprite.setOrigin(0.5, 1);
+        // Apply GPU glow effects if we have compiled uniforms.
+        if (charData?.uniforms) {
+          applyEffects(sprite, charData.uniforms, charData.enhancements, this);
+        }
       } else {
         // Fallback: a colored diamond token so the board never renders empty.
         sprite = this.add.graphics();

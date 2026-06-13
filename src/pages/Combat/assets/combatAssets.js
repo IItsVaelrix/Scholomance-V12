@@ -13,6 +13,7 @@
  */
 
 import { renderWandSvgUri } from './wandSvg.js';
+import { bakeAll } from '../scenes/CharacterShaderRenderer.js';
 
 export const SCHOOL_PALETTE = {
   SONIC:   { primary: '#8a5bff', glow: '#b79bff', dark: '#1a0f33', accent: '#ffe27a' },
@@ -239,13 +240,120 @@ export function buildCombatTextures({ school = 'SONIC' } = {}) {
   const tileW = 128, tileH = 64;
   const scholarW = 170, scholarH = 232;
   const wraithW = 200, wraithH = 264;
+  const torchW = 60, torchH = 120;
   return {
     'combat-tile':    { uri: buildTileTexture({ w: tileW, h: tileH, school }), w: tileW, h: tileH },
     'combat-scholar': { uri: buildScholarTexture({ w: scholarW, h: scholarH }), w: scholarW, h: scholarH },
     'combat-wraith':  { uri: buildWraithTexture({ w: wraithW, h: wraithH }), w: wraithW, h: wraithH },
+    'combat-torch':   { uri: buildTorchTexture({ w: torchW, h: torchH }), w: torchW, h: torchH },
+    'combat-leyline': { uri: buildLeylineTexture({ w: tileW, h: tileH }), w: tileW, h: tileH },
   };
 }
 
 export function textureKeyForUnit(unit) {
   return unit?.side === 'scholar' ? 'combat-scholar' : 'combat-wraith';
+}
+
+export function buildLeylineTexture({ w = 128, h = 64 } = {}) {
+  const cx = w / 2;
+  
+  // Outer esoteric ring (drawn as points on an ellipse to match isometric projection)
+  const outerRing = ellipsePath(cx, h / 2, w * 0.35, h * 0.35, 36);
+  
+  // Inner diamond rune
+  const rune = [
+    { x: cx, y: h * 0.25 },
+    { x: cx + w * 0.2, y: h / 2 },
+    { x: cx, y: h * 0.75 },
+    { x: cx - w * 0.2, y: h / 2 },
+  ];
+  
+  // Small center dot
+  const centerDot = [
+    { x: cx, y: h * 0.45 },
+    { x: cx + w * 0.05, y: h / 2 },
+    { x: cx, y: h * 0.55 },
+    { x: cx - w * 0.05, y: h / 2 },
+  ];
+
+  return renderWandSvgUri({
+    width: w, height: h,
+    layers: [
+      {
+        formula: edgeTrace(outerRing), close: true,
+        stroke: '#ffffff', strokeWidth: 1.5, opacity: 0.7, glow: 3
+      },
+      {
+        formula: edgeTrace(rune), close: true,
+        stroke: '#ffffff', strokeWidth: 2.0, opacity: 0.9, glow: 4
+      },
+      {
+        formula: edgeTrace(centerDot), close: true,
+        gradient: { type: 'linear', x1: 0, y1: 0, x2: 1, y2: 1, stops: [[0, '#ffffff', 1], [1, '#ffffff', 0.8]] },
+        glow: 6
+      }
+    ]
+  });
+}
+
+export function buildTorchTexture({ w = 60, h = 120 } = {}) {
+  const cx = w / 2;
+  const stoneColor = '#4a5061';
+  const stoneDark = '#1a1c22';
+  
+  // Torch base (pillar)
+  const pillarHalf = [
+    { x: cx, y: h },
+    { x: cx + 12, y: h },
+    { x: cx + 8, y: h * 0.6 },
+    { x: cx, y: h * 0.6 },
+  ];
+
+  // Torch bowl
+  const bowlHalf = [
+    { x: cx, y: h * 0.65 },
+    { x: cx + 16, y: h * 0.65 },
+    { x: cx + 22, y: h * 0.45 },
+    { x: cx + 10, y: h * 0.45 },
+    { x: cx, y: h * 0.5 },
+  ];
+
+  // Static inner flame core (cyan)
+  const flameCore = [
+    { x: cx, y: h * 0.5 },
+    { x: cx + 8, y: h * 0.4 },
+    { x: cx + 4, y: h * 0.2 },
+    { x: cx, y: h * 0.1 },
+  ];
+
+  return renderWandSvgUri({
+    width: w, height: h,
+    layers: [
+      {
+        formula: edgeTrace(pillarHalf), close: true, mirror: true,
+        gradient: { type: 'linear', x1: 0, y1: 0, x2: 1, y2: 0, stops: [[0, stoneDark, 1], [0.5, stoneColor, 1], [1, stoneDark, 1]] },
+      },
+      {
+        formula: edgeTrace(bowlHalf), close: true, mirror: true,
+        gradient: { type: 'linear', x1: 0, y1: 0, x2: 1, y2: 0, stops: [[0, stoneDark, 1], [0.4, '#6b7282', 1], [1, stoneDark, 1]] },
+      },
+      {
+        formula: edgeTrace(bowlHalf), close: true, mirror: true,
+        stroke: '#00ffff', strokeWidth: 1, opacity: 0.5, glow: 1
+      },
+      {
+        formula: edgeTrace(flameCore), close: true, mirror: true,
+        gradient: { type: 'linear', x1: 0, y1: 1, x2: 0, y2: 0, stops: [[0, '#00ffff', 1], [1, '#ffffff', 0.1]] },
+        glow: 3
+      }
+    ]
+  });
+}
+
+/**
+ * Build character textures for all combat actors via CharacterShaderRenderer.
+ * Returns Map<actorId, {textureKey, uniforms, enhancements}>.
+ */
+export async function buildCharacterTextures(actors, scene) {
+  return bakeAll(actors, scene);
 }
