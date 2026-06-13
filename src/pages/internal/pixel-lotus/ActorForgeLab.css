@@ -214,3 +214,232 @@
 .mono {
   font-family: JetBrains Mono, monospace;
 }
+
+.forged-sprite {
+  image-rendering: pixelated;
+  width: 192px;
+  height: auto;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.5));
+}
+
+.sheet-strip {
+  margin-top: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.sheet-strip img {
+  image-rendering: pixelated;
+  width: 256px;
+  height: auto;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+.sheet-strip-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+}
+
+.forge-error {
+  padding: 1rem;
+  color: #fca5a5;
+  font-size: 0.8rem;
+  max-width: 100%;
+  overflow: auto;
+}
+
+.forge-error pre {
+  white-space: pre-wrap;
+  margin-top: 0.5rem;
+}
+
+.control-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.seed-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.seed-row .forge-input {
+  flex: 1;
+}
+
+.forge-input {
+  width: 100%;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 1rem;
+}
+
+.forge-input:focus {
+  outline: none;
+  border-color: var(--school-sonic);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+.create-character-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.2), rgba(167, 139, 250, 0.2));
+  border: 1px solid rgba(167, 139, 250, 0.5);
+  border-radius: 6px;
+  color: #e9d5ff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.create-character-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, rgba(96, 165, 250, 0.35), rgba(167, 139, 250, 0.35));
+  box-shadow: 0 0 16px rgba(167, 139, 250, 0.3);
+}
+
+.create-character-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Cinematic Intro Styles */
+.cinematic-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #050510;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.cinematic-sky {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top, #1a1a3a, #000);
+}
+
+.cinematic-ground {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 40vh;
+  background: linear-gradient(to top, #050510, transparent);
+}
+
+.will-o-wisp {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  background: #aaffff;
+  border-radius: 50%;
+  box-shadow: 0 0 20px 10px #00ffff, 0 0 50px 20px #0055ff;
+}
+
+.will-o-wisp.impact,
+.will-o-wisp.whiteout {
+  display: none;
+}
+
+.energy-vortex {
+  position: absolute;
+  top: 60vh;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 4px solid #00ffff;
+  box-shadow: 0 0 40px #00ffff, inset 0 0 40px #00ffff;
+  transform-origin: center;
+}
+
+.whiteout-flash {
+  position: absolute;
+  inset: 0;
+  background: white;
+  z-index: 10;
+}
+
+.enhancement-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.enhancement-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+}
+
+.enhancement-panel.enhanced {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(167, 139, 250, 0.06);
+}
+
+.enhancement-panel-label {
+  font-size: 10px;
+  font-family: monospace;
+  color: rgba(255, 255, 255, 0.35);
+  letter-spacing: 0.06em;
+}
+
+.enhancement-panel.enhanced .enhancement-panel-label {
+  color: #a78bfa;
+}
+
+.enhancement-badge {
+  font-size: 9px;
+  font-family: monospace;
+  color: rgba(167, 139, 250, 0.7);
+  text-align: center;
+}
+
+.forge-enhance-btn {
+  width: 100%;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid rgba(167, 139, 250, 0.6);
+  color: #c4b5fd;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-family: monospace;
+  font-size: 13px;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  transition: background 0.15s;
+}
+
+.forge-enhance-btn:hover:not(:disabled) {
+  background: rgba(167, 139, 250, 0.28);
+}
+
+.forge-enhance-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.forge-error {
+  font-size: 11px;
+  font-family: monospace;
+  color: rgba(255, 100, 100, 0.8);
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 100, 100, 0.3);
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+}
