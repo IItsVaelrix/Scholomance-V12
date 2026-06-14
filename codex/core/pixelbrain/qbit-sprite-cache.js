@@ -17,11 +17,12 @@ export function createSpriteCache() {
     async get(pieceId, materialId, fill) {
       const k = key(pieceId, materialId);
       if (store.has(k)) return store.get(k);
-      const sprite = await fill();
-      store.set(k, sprite);
-      return sprite;
+      const promise = fill();
+      store.set(k, promise);
+      return promise;
     },
 
+    // pieceId must not contain ':' — the key separator — to avoid false-positive invalidation
     invalidatePiece(pieceId) {
       for (const k of store.keys()) {
         if (k.startsWith(`${pieceId}:`)) store.delete(k);
