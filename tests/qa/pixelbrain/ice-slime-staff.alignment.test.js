@@ -80,4 +80,31 @@ describe('Slime Staff Alignment QA', () => {
     expect(result.anchors.center).toBeDefined();
     expect(result.anchors.center).toEqual({ x: 0, y: 0 });
   });
+
+  it('shaft.rune_lattice emits periodic marks along the shaft span', () => {
+    const profile = getPartProfile('shaft.rune_lattice');
+    const result = profile({ cx: 24, span: [30, 90], half: 2 }, {});
+
+    // Non-empty
+    expect(result.cells.length).toBeGreaterThan(0);
+
+    // All cells must fall within the span
+    for (const { y } of result.cells) {
+      expect(y).toBeGreaterThanOrEqual(30);
+      expect(y).toBeLessThanOrEqual(90);
+    }
+
+    // Marks must be centered near cx (offset up to half+1 for off-center engraving)
+    for (const { x } of result.cells) {
+      expect(x).toBeGreaterThanOrEqual(24 - 4);
+      expect(x).toBeLessThanOrEqual(24 + 4);
+    }
+
+    // Must have marks at intervals — expect at least 6 distinct Y rows
+    const ySet = new Set(result.cells.map(c => c.y));
+    expect(ySet.size).toBeGreaterThanOrEqual(6);
+
+    expect(result.anchors.base).toBeDefined();
+    expect(result.anchors.tip).toBeDefined();
+  });
 });

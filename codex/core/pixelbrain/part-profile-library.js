@@ -468,6 +468,38 @@ registerPartProfile('orb.ring_glow', (params = {}, options = {}) => {
   return { cells, anchors: { center: { x: cx, y: cy } } };
 });
 
+// SHAFT.RUNE_LATTICE — sparse repeating single-pixel rune marks along the
+// shaft. Every 8px a 3-cell crosshatch fragment, offset 1px right of center
+// so marks read as engravings rather than surface decoration.
+registerPartProfile('shaft.rune_lattice', (params = {}, options = {}) => {
+  const { height } = options;
+  const span = Array.isArray(params.span) && params.span.length === 2
+    ? [roundInt(params.span[0]), roundInt(params.span[1])]
+    : [0, Math.max(1, (height || 96) - 1)];
+  const cx = roundInt(params.cx ?? 0);
+  const cells = [];
+  const period = 8;
+  for (let y = span[0]; y <= span[1]; y += 1) {
+    const offset = y - span[0];
+    if (offset % period === 0) {
+      // Crosshatch: one horizontal tick + one vertical tick, offset +1 from center
+      cells.push({ x: cx + 1, y });
+      cells.push({ x: cx + 2, y });
+      if (y + 1 <= span[1]) cells.push({ x: cx + 1, y: y + 1 });
+    }
+    if (offset % period === 4) {
+      // Alternate: mirror on the left
+      cells.push({ x: cx - 1, y });
+      cells.push({ x: cx - 2, y });
+      if (y + 1 <= span[1]) cells.push({ x: cx - 1, y: y + 1 });
+    }
+  }
+  return {
+    cells,
+    anchors: { base: { x: cx, y: span[1] }, tip: { x: cx, y: span[0] } },
+  };
+});
+
 // HIGHLIGHT.BLOB — internal slime reflection/crescent
 registerPartProfile('highlight.blob', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);
