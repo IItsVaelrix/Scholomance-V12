@@ -1,6 +1,9 @@
-import { evaluateSDF } from './sdf-evaluator.js';
+import { evaluateSDF, sdfGradient } from './sdf-evaluator.js';
 import { setCell } from './template-grid-engine.js';
 
+// Minimum collapse confidence for a phosphorylation to commit.
+// buildKinase produces confidence in [0.5, 1.0], so this default passes all real
+// cells; set material.phosphorylationThreshold > 0.5 to reject rim/edge cells.
 export const COLLAPSE_THRESHOLD = 0.5;
 
 const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
@@ -10,6 +13,7 @@ export function buildKinase(material, sdfDescriptor) {
     return { valid: false, reason: 'MISSING_SUBSTRATE', threshold: undefined, sdfDescriptor: null, call: null };
   }
 
+  // Anchors are sampled in insertion order (rim → core) per material-registry convention
   const anchors = Object.values(material.anchors || {});
 
   return {
@@ -51,11 +55,12 @@ export function phosphorylate(layer, x, y, kinase, options = {}) {
     return { committed: false, reason: 'MISSING_SUBSTRATE', confidence: 0 };
   }
 
+  // Outside the shape boundary — treat as missing substrate (no paintable surface here)
   if (sdfValue > 0) {
     return { committed: false, reason: 'MISSING_SUBSTRATE', confidence: 0 };
   }
 
-  const normal = sdfNormal(kinase.sdfDescriptor, x, y);
+  const normal = sdfGradient(kinase.sdfDescriptor, x, y);
   if (normal.nx === 0 && normal.ny === 0) {
     return { committed: false, reason: 'MISSING_SUBSTRATE', confidence: 0 };
   }
@@ -78,14 +83,6 @@ export function phosphorylate(layer, x, y, kinase, options = {}) {
 
   setCell(layer, x, y, result.color);
   return { committed: true, color: result.color, confidence: result.confidence };
-}
-
-function sdfNormal(sdfDescriptor, x, y, eps = 0.5) {
-  const dx = evaluateSDF(sdfDescriptor, x + eps, y) - evaluateSDF(sdfDescriptor, x - eps, y);
-  const dy = evaluateSDF(sdfDescriptor, x, y + eps) - evaluateSDF(sdfDescriptor, x, y - eps);
-  const len = Math.hypot(dx, dy);
-  if (len < 1e-8) return { nx: 0, ny: 0 };
-  return { nx: dx / len, ny: dy / len };
 }
 
 function shadedHex(hex, factor) {

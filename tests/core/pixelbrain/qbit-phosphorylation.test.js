@@ -143,4 +143,13 @@ describe('phosphorylate — gate logic', () => {
     const result = phosphorylate(layer, 4, 8, kinase);
     expect(result.committed).toBe(true);
   });
+
+  it('rejects with INVALID_REACTION when material has no anchors', () => {
+    const layer = makeLayer();
+    const noAnchorMaterial = { id: 'empty', anchors: {} };
+    const kinase = buildKinase(noAnchorMaterial, VALID_SDF);
+    const result = phosphorylate(layer, 4, 8, kinase);
+    expect(result.committed).toBe(false);
+    expect(result.reason).toBe('INVALID_REACTION');
+  });
 });
