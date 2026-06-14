@@ -153,3 +153,61 @@ describe('phosphorylate — gate logic', () => {
     expect(result.reason).toBe('INVALID_REACTION');
   });
 });
+
+import {
+  createCommandStack,
+  PhosphorylationCommand,
+  createPhosphorylationCommand,
+} from '../../../codex/core/pixelbrain/editor-command-stack.js';
+
+describe('PhosphorylationCommand', () => {
+  it('does not push to history on rejected phosphorylation', () => {
+    const layer = makeLayer();
+    const kinase = buildKinase(null, VALID_SDF); // invalid — will reject
+    const stack = createCommandStack();
+    const cmd = createPhosphorylationCommand(layer, 4, 8, kinase);
+    stack.execute(cmd);
+    expect(stack.canUndo()).toBe(false); // nothing was pushed
+    expect(layer.cells.has('4,8')).toBe(false);
+  });
+
+  it('pushes to history on successful phosphorylation', () => {
+    const layer = makeLayer();
+    const kinase = buildKinase(VALID_MATERIAL, VALID_SDF);
+    const stack = createCommandStack();
+    stack.execute(createPhosphorylationCommand(layer, 4, 8, kinase));
+    expect(stack.canUndo()).toBe(true);
+    expect(layer.cells.has('4,8')).toBe(true);
+  });
+
+  it('undo restores previous cell state', () => {
+    const layer = makeLayer();
+    layer.cells.set('4,8', { x: 4, y: 8, color: '#AAAAAA', emphasis: 1 });
+    const kinase = buildKinase(VALID_MATERIAL, VALID_SDF);
+    const stack = createCommandStack();
+    stack.execute(createPhosphorylationCommand(layer, 4, 8, kinase, '#AAAAAA'));
+    const committedColor = layer.cells.get('4,8')?.color;
+    stack.undo();
+    expect(layer.cells.get('4,8')?.color).toBe('#AAAAAA');
+    expect(layer.cells.get('4,8')?.color).not.toBe(committedColor);
+  });
+
+  it('redo replays captured color — kinase is NOT re-run', () => {
+    const layer = makeLayer();
+    let callCount = 0;
+    const impureKinase = {
+      valid: true, reason: null, threshold: undefined, sdfDescriptor: VALID_SDF,
+      call: ({ sdfValue }) => {
+        callCount++;
+        return { color: '#FF0000', confidence: 0.9 };
+      },
+    };
+    const stack = createCommandStack();
+    stack.execute(createPhosphorylationCommand(layer, 4, 8, impureKinase));
+    expect(callCount).toBe(1);
+    stack.undo();
+    stack.redo();
+    expect(callCount).toBe(1); // kinase NOT re-run on redo
+    expect(layer.cells.get('4,8')?.color).toBe('#FF0000');
+  });
+});

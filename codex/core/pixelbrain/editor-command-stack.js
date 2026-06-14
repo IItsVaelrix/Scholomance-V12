@@ -15,6 +15,7 @@
  */
 
 import { setCell, getCell, clearCell, floodFill } from './template-grid-engine.js';
+import { phosphorylate } from './qbit-phosphorylation.js';
 
 export class Command {
   constructor({ doFn, undoFn, description = 'Unnamed operation', meta = {} }) {
@@ -69,6 +70,11 @@ export function createCommandStack(initialCommands = []) {
       }
       truncateRedo();
       const result = cmd.execute();
+      // PhosphorylationCommand signals rejection via result.committed === false
+      // Rejected commands leave no undo footprint
+      if (result && result.committed === false) {
+        return { result, description: cmd.description, meta: cmd.meta, rejected: true };
+      }
       history.push(cmd);
       pointer = history.length - 1;
       return { result, description: cmd.description, meta: cmd.meta };
@@ -236,4 +242,37 @@ export function rehydrateEditorCommand(serialized) {
   }
   // Extend for other types
   return null;
+}
+
+export class PhosphorylationCommand extends Command {
+  constructor(layer, x, y, kinase, previousColor = null) {
+    let resolvedColor = null;
+
+    super({
+      doFn: () => {
+        if (resolvedColor !== null) {
+          // redo: replay stored color, never re-run kinase
+          setCell(layer, x, y, resolvedColor);
+          return { committed: true, color: resolvedColor };
+        }
+        const result = phosphorylate(layer, x, y, kinase);
+        if (result.committed) resolvedColor = result.color;
+        return result;
+      },
+      undoFn: () => {
+        if (previousColor === null) {
+          clearCell(layer, x, y);
+        } else {
+          setCell(layer, x, y, previousColor);
+        }
+        return { x, y, color: previousColor };
+      },
+      description: `Phosphorylate (${x},${y})`,
+      meta: { type: 'phosphorylation', x, y },
+    });
+  }
+}
+
+export function createPhosphorylationCommand(layer, x, y, kinase, previousColor = null) {
+  return new PhosphorylationCommand(layer, x, y, kinase, previousColor);
 }
