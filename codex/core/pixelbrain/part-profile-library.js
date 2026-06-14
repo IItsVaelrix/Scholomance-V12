@@ -547,6 +547,49 @@ registerPartProfile('guard.void_wings', (params = {}, options = {}) => {
   };
 });
 
+// POMMEL.VOID_ORB — small filled circle; echoes the top orb in miniature.
+// No cradle, no outline — sits bare against the grip.
+registerPartProfile('pommel.void_orb', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 3);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (x * x + y * y <= r * r) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy - r },
+      tip: { x: cx, y: cy + r },
+      center: { x: cx, y: cy },
+    },
+  };
+});
+
+// POMMEL.VOID_ORB_GLOW — 1px larger bleed ring for the shadow orb halo.
+registerPartProfile('pommel.void_orb_glow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 3) + 1;
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (x * x + y * y <= r * r) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy - r },
+      tip: { x: cx, y: cy + r },
+      center: { x: cx, y: cy },
+    },
+  };
+});
+
 // HIGHLIGHT.BLOB — internal slime reflection/crescent
 registerPartProfile('highlight.blob', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);

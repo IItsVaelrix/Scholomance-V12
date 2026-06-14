@@ -128,4 +128,32 @@ describe('Slime Staff Alignment QA', () => {
     const ys = result.cells.map(c => c.y);
     expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(7);
   });
+
+  it('pommel.void_orb is a small filled circle parameterised by r', () => {
+    const profile = getPartProfile('pommel.void_orb');
+    const result = profile({ r: 3 }, {});
+
+    expect(result.cells.length).toBeGreaterThan(0);
+
+    // All cells within radius
+    for (const { x, y } of result.cells) {
+      expect(x * x + y * y).toBeLessThanOrEqual(3 * 3 + 1); // +1 for rounding
+    }
+
+    expect(result.anchors.base).toBeDefined();
+    expect(result.anchors.tip).toBeDefined();
+  });
+
+  it('pommel.void_orb_glow is 1px larger than pommel.void_orb', () => {
+    const orb = getPartProfile('pommel.void_orb')({ r: 3 }, {});
+    const glow = getPartProfile('pommel.void_orb_glow')({ r: 3 }, {});
+
+    // Glow must have more cells (larger radius)
+    expect(glow.cells.length).toBeGreaterThan(orb.cells.length);
+
+    // Glow extent must be wider
+    const orbMaxR = Math.max(...orb.cells.map(c => Math.hypot(c.x, c.y)));
+    const glowMaxR = Math.max(...glow.cells.map(c => Math.hypot(c.x, c.y)));
+    expect(glowMaxR).toBeGreaterThan(orbMaxR);
+  });
 });
