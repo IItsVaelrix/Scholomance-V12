@@ -461,7 +461,7 @@ registerPartProfile('orb.ring_glow', (params = {}, options = {}) => {
   const cells = [];
   for (let y = cy - outerR; y <= cy + outerR; y += 1) {
     for (let x = cx - outerR; x <= cx + outerR; x += 1) {
-      const d = Math.hypot(x - cx, (y - cy) / aspect);
+      const d = Math.hypot(x - cx, (y - cy) * aspect);
       if (d >= innerR && d <= outerR) cells.push({ x, y });
     }
   }
