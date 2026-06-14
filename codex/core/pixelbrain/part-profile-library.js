@@ -327,6 +327,295 @@ registerPartProfile('gem.round', (params = {}, options = {}) => {
   return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
 });
 
+// ORB.SLIME — asymmetrical gooey orb.
+registerPartProfile('orb.slime', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 8);
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (x*x + y*y <= r*r) {
+        // Less perfect circular edge: omit a couple pixels on the top right
+        if (x >= r - 1 && y <= -r + 2) continue;
+        if (x >= r - 2 && y <= -r + 1) continue;
+        // Omit one pixel on the left
+        if (x === -r && y === 0) continue;
+        
+        cells.push({ x: cx + x, y: cy + y });
+      }
+    }
+  }
+  // Droopy goo pixels on the bottom right
+  cells.push({ x: cx + r - 3, y: cy + r + 1 });
+  cells.push({ x: cx + r - 2, y: cy + r + 1 });
+  cells.push({ x: cx + r - 2, y: cy + r + 2 });
+  
+  // Droop on the lower edge
+  cells.push({ x: cx, y: cy + r + 1 });
+  cells.push({ x: cx, y: cy + r + 2 });
+  cells.push({ x: cx + 1, y: cy + r + 1 });
+  
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + Math.floor(r * 0.8) } } };
+});
+
+function getOrbSlimeCells(r) {
+  const cells = [];
+  for (let y = -r; y <= r; y += 1) {
+    for (let x = -r; x <= r; x += 1) {
+      if (x*x + y*y <= r*r) {
+        if (x >= r - 1 && y <= -r + 2) continue;
+        if (x >= r - 2 && y <= -r + 1) continue;
+        if (x === -r && y === 0) continue;
+        cells.push({ x, y });
+      }
+    }
+  }
+  cells.push({ x: r - 3, y: r + 1 });
+  cells.push({ x: r - 2, y: r + 1 });
+  cells.push({ x: r - 2, y: r + 2 });
+  cells.push({ x: 0, y: r + 1 });
+  cells.push({ x: 0, y: r + 2 });
+  cells.push({ x: 1, y: r + 1 });
+  return cells;
+}
+
+registerPartProfile('orb.slime_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 8);
+  const cells = [];
+  for (const { x, y } of getOrbSlimeCells(r)) {
+    let sag = 0;
+    if (y > 0) sag = (x / r) * 1.5; 
+    const dist = Math.sqrt(x*x + (y - sag)*(y - sag));
+    if (x > 0 && y > 0 && dist > r - 3) {
+      cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+registerPartProfile('orb.slime_deep_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 8);
+  const cells = [];
+  for (const { x, y } of getOrbSlimeCells(r)) {
+    if (x + y > 10) {
+      cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+registerPartProfile('orb.slime_frost', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 8);
+  const cells = [];
+  for (const { x, y } of getOrbSlimeCells(r)) {
+    let sag = 0;
+    if (y > 0) sag = (x / r) * 1.5; 
+    const dist = Math.sqrt(x*x + (y - sag)*(y - sag));
+    if (x < -2 && y < 0 && dist > r - 3 && dist <= r) {
+      cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+// ORB.RING — thin elliptical halo around the slime orb.
+// Slightly squashed vertically (aspect 0.85) so it reads as orbiting rather
+// than flat. Cells at elliptical radius (r) to (r+2) in part-local space.
+// Distance measured with Y*aspect (squash) matching the test assertion formula.
+registerPartProfile('orb.ring', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const outerR = r + 2;
+  const innerR = r + 1;
+  const aspect = 0.85; // Y compression — squash Y to create elliptical shape
+  const cells = [];
+  for (let y = cy - outerR; y <= cy + outerR; y += 1) {
+    for (let x = cx - outerR; x <= cx + outerR; x += 1) {
+      const d = Math.hypot(x - cx, (y - cy) * aspect);
+      if (d >= innerR && d <= outerR) {
+        // Upper-left quadrant highlight break (makes it read as a 3D ring)
+        if (x - cx < -1 && y - cy < -1) continue;
+        cells.push({ x, y });
+      }
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy } } };
+});
+
+// ORB.RING_GLOW — 1px larger bleed layer for the spectral halo.
+registerPartProfile('orb.ring_glow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const outerR = r + 3;
+  const innerR = r + 2;
+  const aspect = 0.85;
+  const cells = [];
+  for (let y = cy - outerR; y <= cy + outerR; y += 1) {
+    for (let x = cx - outerR; x <= cx + outerR; x += 1) {
+      const d = Math.hypot(x - cx, (y - cy) / aspect);
+      if (d >= innerR && d <= outerR) cells.push({ x, y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy } } };
+});
+
+// HIGHLIGHT.BLOB — internal slime reflection/crescent
+registerPartProfile('highlight.blob', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [
+    // Pale green shine blob on the upper-left
+    { x: cx - 4, y: cy - 3 }, { x: cx - 3, y: cy - 4 },
+    { x: cx - 2, y: cy - 5 }, { x: cx - 1, y: cy - 5 },
+    { x: cx - 3, y: cy - 3 }, { x: cx - 2, y: cy - 4 },
+    { x: cx - 1, y: cy - 4 }
+  ];
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// BUBBLE.TINY
+registerPartProfile('bubble.tiny', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [
+    { x: cx + 2, y: cy + 1 }, { x: cx + 3, y: cy + 1 },
+    { x: cx + 2, y: cy + 2 }, { x: cx + 3, y: cy + 2 }
+  ];
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// SLIME.RIBBON — thin gooey ribbon wrapping a staff shaft
+registerPartProfile('slime.ribbon', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 40);
+  const cells = [];
+  
+  // Base coating at the top
+  for(let x=-2; x<=2; x++) {
+    cells.push({ x: cx + x, y: 0 });
+    cells.push({ x: cx + x, y: 1 });
+  }
+  cells.push({ x: cx - 1, y: 2 });
+  cells.push({ x: cx + 1, y: 2 });
+
+  // --- Left Drip ---
+  // Long main drip
+  for (let y = 4; y <= 30; y++) cells.push({ x: cx - 2, y });
+  // Weight where it meets the shaft
+  cells.push({ x: cx - 3, y: 4 });
+  cells.push({ x: cx - 3, y: 5 });
+  cells.push({ x: cx - 1, y: 4 });
+  cells.push({ x: cx - 1, y: 5 });
+  cells.push({ x: cx - 1, y: 6 });
+  cells.push({ x: cx, y: 4 });
+
+  // Bulb // Extra thickness near top
+  for(let y=2; y<=6; y++) {
+    cells.push({ x: cx - 1, y });
+  }
+  // Bulb
+  cells.push({ x: cx - 3, y: 20 });
+  cells.push({ x: cx - 2, y: 20 });
+  cells.push({ x: cx - 1, y: 20 });
+  cells.push({ x: cx - 2, y: 21 });
+
+  // --- Middle Drip ---
+  for(let y=2; y<=11; y++) {
+    cells.push({ x: cx, y });
+  }
+  // Bulb
+  cells.push({ x: cx - 1, y: 12 });
+  cells.push({ x: cx, y: 12 });
+  cells.push({ x: cx + 1, y: 12 });
+  cells.push({ x: cx, y: 13 });
+
+  // --- Right Drip ---
+  for(let y=2; y<=7; y++) {
+    cells.push({ x: cx + 2, y });
+  }
+  // Bulb
+  cells.push({ x: cx + 1, y: 8 });
+  cells.push({ x: cx + 2, y: 8 });
+  cells.push({ x: cx + 3, y: 8 });
+  cells.push({ x: cx + 2, y: 9 });
+
+  return { cells, anchors: { center: { x: cx, y: Math.floor(length / 2) }, base: { x: cx, y: 0 } } };
+});
+
+// RIBBON.HIGHLIGHT
+registerPartProfile('ribbon.highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 40);
+  const cells = [];
+  
+  // Left bulb highlight
+  cells.push({ x: cx - 3, y: 20 });
+  // Middle bulb highlight
+  cells.push({ x: cx - 1, y: 12 });
+  // Right bulb highlight
+  cells.push({ x: cx + 1, y: 8 });
+
+  return { cells, anchors: { center: { x: cx, y: Math.floor(length / 2) }, base: { x: cx, y: 0 } } };
+});
+
+// RIBBON.SHADOW
+registerPartProfile('ribbon.shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 40);
+  const cells = [];
+  
+  // Shadow under the base coating
+  cells.push({ x: cx - 1, y: 3 });
+  cells.push({ x: cx + 1, y: 3 });
+  
+  // Right side of left bulb
+  cells.push({ x: cx - 1, y: 20 });
+  // Right side of middle bulb
+  cells.push({ x: cx + 1, y: 12 });
+  // Right side of right bulb
+  cells.push({ x: cx + 3, y: 8 });
+  
+  return { cells, anchors: { center: { x: cx, y: Math.floor(length / 2) }, base: { x: cx, y: 0 } } };
+});
+
+// SETTING.CRADLE_HIGHLIGHT
+registerPartProfile('setting.cradle_highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 10);
+  const cells = [];
+  
+  // 1 bright pixel on each side arm
+  cells.push({ x: cx - r, y: cy + 2 });
+  cells.push({ x: cx + r, y: cy + 2 });
+  
+  // A small band directly under the orb (y = cy + r)
+  for (let x = -2; x <= 2; x += 1) {
+    cells.push({ x: cx + x, y: cy + r });
+    if (x >= -1 && x <= 1) cells.push({ x: cx + x, y: cy + r + 1 });
+  }
+  
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + 7 } } };
+});
+
+// GUARD.HIGHLIGHT
+registerPartProfile('guard.highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  // Just one bright pixel
+  const cells = [{ x: cx - 1, y: cy }];
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
 // GEM.OVAL
 registerPartProfile('gem.oval', (params = {}, options = {}) => {
   return getPartProfile('gem.ellipse')(params, options);
@@ -341,6 +630,99 @@ registerPartProfile('gem.square', (params = {}, options = {}) => {
   for (let y = -size; y <= size; y += 1) {
     for (let x = -size; x <= size; x += 1) {
       cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.MOUNT
+registerPartProfile('core.mount', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  for (let x = -5; x <= 5; x++) {
+    for (let y = -5; y <= 5; y++) {
+      if (Math.abs(x) === 5 && Math.abs(y) >= 4) continue;
+      if (Math.abs(y) === 5 && Math.abs(x) >= 4) continue;
+      if (Math.abs(x) + Math.abs(y) <= 4) continue;
+      cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.MOUNT_SHADOW
+registerPartProfile('core.mount_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  for (let x = -5; x <= 5; x++) {
+    for (let y = -5; y <= 5; y++) {
+      if (Math.abs(x) === 5 && Math.abs(y) >= 4) continue;
+      if (Math.abs(y) === 5 && Math.abs(x) >= 4) continue;
+      if (Math.abs(x) + Math.abs(y) <= 4) continue;
+      
+      const isOuterShadow = (x >= 2 && y >= -1) || (y >= 2 && x >= -1);
+      const isInnerShadow = (x <= 0 && y <= 0 && (Math.abs(x) + Math.abs(y) === 5));
+      if (isOuterShadow || isInnerShadow) {
+        cells.push({ x: cx + x, y: cy + y });
+      }
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.MOUNT_HIGHLIGHT
+registerPartProfile('core.mount_highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  cells.push({ x: cx - 4, y: cy - 3 });
+  cells.push({ x: cx - 3, y: cy - 4 });
+  cells.push({ x: cx - 4, y: cy - 4 });
+  cells.push({ x: cx - 5, y: cy - 2 });
+  cells.push({ x: cx - 2, y: cy - 5 });
+  
+  cells.push({ x: cx + 1, y: cy + 4 });
+  cells.push({ x: cx + 2, y: cy + 3 });
+  cells.push({ x: cx + 3, y: cy + 2 });
+  cells.push({ x: cx + 4, y: cy + 1 });
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.GEM
+registerPartProfile('core.gem', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  for (let x = -3; x <= 3; x++) {
+    for (let y = -3; y <= 3; y++) {
+      if (Math.abs(x) + Math.abs(y) <= 4) {
+        cells.push({ x: cx + x, y: cy + y });
+      }
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.GEM_HIGHLIGHT
+registerPartProfile('core.gem_highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [{ x: cx - 1, y: cy - 1 }, { x: cx, y: cy - 1 }, { x: cx - 1, y: cy }];
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// CORE.GEM_SHADOW
+registerPartProfile('core.gem_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  for (let x = 0; x <= 3; x++) {
+    for (let y = 0; y <= 3; y++) {
+      if (x + y >= 2 && x + y <= 4) {
+        cells.push({ x: cx + x, y: cy + y });
+      }
     }
   }
   return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
@@ -424,8 +806,130 @@ registerPartProfile('chain.link', (params = {}, options = {}) => {
 });
 
 // SETTING.PRONG and SETTING.BEZEL
+// SETTING.CRADLE — a U-shaped prong or cradle holding an orb
+registerPartProfile('setting.cradle', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 10);
+  const cells = [];
+  
+  // Draw an arc from bottom (y=r) up to the sides (y=0)
+  for (let x = -r; x <= r; x += 1) {
+    for (let y = -2; y <= r + 1; y += 1) {
+      const distSq = x*x + y*y;
+      // Hollow arc
+      if (distSq >= (r-2)*(r-2) && distSq <= r*r) {
+        cells.push({ x: cx + x, y: cy + y });
+      }
+    }
+  }
+  
+  // Base to connect to the shaft
+  cells.push({ x: cx - 2, y: cy + r + 1 });
+  cells.push({ x: cx - 1, y: cy + r + 1 });
+  cells.push({ x: cx, y: cy + r + 1 });
+  cells.push({ x: cx + 1, y: cy + r + 1 });
+  cells.push({ x: cx + 2, y: cy + r + 1 });
+  cells.push({ x: cx - 1, y: cy + r + 2 });
+  cells.push({ x: cx, y: cy + r + 2 });
+  cells.push({ x: cx + 1, y: cy + r + 2 });
+  cells.push({ x: cx, y: cy + r + 3 });
+  
+  return { cells, anchors: { center: { x: cx, y: cy }, tip: { x: cx, y: cy - r }, base: { x: cx, y: cy + 7 } } };
+});
+
 registerPartProfile('setting.prong', (params, options) => getPartProfile('none')(params, options));
-registerPartProfile('setting.bezel', (params, options) => getPartProfile('none')(params, options));
+
+// STAFF SHAFT — straight uniform cylinder.
+registerPartProfile('staff.shaft', (params = {}, options = {}) => {
+  const { height } = options;
+  const span = Array.isArray(params.span) && params.span.length === 2
+    ? [roundInt(params.span[0]), roundInt(params.span[1])]
+    : [0, Math.max(1, (height || 96) - 1)];
+  const cx = roundInt(params.cx ?? 0);
+  const half = roundInt(params.half ?? 2);
+  const cells = [];
+  for (let y = span[0]; y <= span[1]; y += 1) {
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y });
+  }
+  return { cells, anchors: { center: { x: cx, y: span[0] + Math.floor((span[1] - span[0]) / 2) }, tip: { x: cx, y: span[0] }, base: { x: cx, y: span[1] } } };
+});
+
+// STAFF.HANDLE
+registerPartProfile('staff.handle', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const length = roundInt(params.length ?? 20);
+  const half = roundInt(params.half ?? 2);
+  const cells = [];
+  for (let y = 0; y <= length; y += 1) {
+    for (let x = -half; x <= half; x += 1) {
+      cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  // base is top (attachment point), tip is bottom
+  return { cells, anchors: { center: { x: cx, y: cy + Math.floor(length / 2) }, base: { x: cx, y: cy + 1 }, tip: { x: cx, y: cy + length } } };
+});
+
+// STAFF.HANDLE_TRIM
+registerPartProfile('staff.handle_trim', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const length = roundInt(params.length ?? 20);
+  const half = roundInt(params.half ?? 2); 
+  const cells = [];
+  for(let x=-half-1; x<=half+1; x++) cells.push({ x: cx + x, y: cy + 1 });
+  for(let x=-half-1; x<=half+1; x++) cells.push({ x: cx + x, y: cy + length - 1 });
+  const midY = cy + Math.floor(length/2);
+  cells.push({ x: cx, y: midY - 2 });
+  cells.push({ x: cx - 1, y: midY - 1 });
+  cells.push({ x: cx, y: midY - 1 });
+  cells.push({ x: cx + 1, y: midY - 1 });
+  cells.push({ x: cx - 2, y: midY });
+  cells.push({ x: cx - 1, y: midY });
+  cells.push({ x: cx, y: midY });
+  cells.push({ x: cx + 1, y: midY });
+  cells.push({ x: cx + 2, y: midY });
+  cells.push({ x: cx - 1, y: midY + 1 });
+  cells.push({ x: cx, y: midY + 1 });
+  cells.push({ x: cx + 1, y: midY + 1 });
+  cells.push({ x: cx, y: midY + 2 });
+  return { cells, anchors: { center: { x: cx, y: midY }, base: { x: cx, y: cy + 1 }, tip: { x: cx, y: cy + length } } };
+});
+
+// CYLINDER.SHADOW
+registerPartProfile('cylinder.shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 60);
+  const half = roundInt(params.half ?? 2);
+  const cells = [];
+  for (let y = 0; y <= length; y += 1) cells.push({ x: cx + half, y }); 
+  return { cells, anchors: { base: { x: cx, y: length + 1 }, tip: { x: cx, y: 0 } } };
+});
+
+// CYLINDER.HIGHLIGHT
+registerPartProfile('cylinder.highlight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 60);
+  const half = roundInt(params.half ?? 2);
+  const cells = [];
+  for (let y = 0; y <= length; y += 1) cells.push({ x: cx - half, y }); 
+  return { cells, anchors: { base: { x: cx, y: length + 1 }, tip: { x: cx, y: 0 } } };
+});
+
+// STAFF.POMMEL
+registerPartProfile('staff.pommel', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 3);
+  const cells = [];
+  cells.push({ x: cx, y: cy });
+  for(let x=-1; x<=1; x++) cells.push({ x: cx+x, y: cy+1 });
+  for(let x=-2; x<=2; x++) cells.push({ x: cx+x, y: cy+2 });
+  for(let x=-1; x<=1; x++) cells.push({ x: cx+x, y: cy+3 });
+  cells.push({ x: cx, y: cy+4 });
+  return { cells, anchors: { base: { x: cx, y: cy + 1 }, tip: { x: cx, y: cy + 4 } } };
+});
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
