@@ -60,6 +60,26 @@ describe('Slime Staff Alignment QA', () => {
     // So its center is at 24, and its base is at 31.
     expect(orb.anchorOut.center.y).toBe(24);
     expect(orb.anchorOut.base.y).toBe(31);
+
+    // 7. Orb ring wraps the orb — must exist as a part
+    const orbRing = getPart('orb_ring');
+    expect(orbRing).toBeDefined();
+    // orb_ring attaches at orb center (y=24), ring cells extend above and below
+    expect(orbRing.aabb.minY).toBeLessThan(24);
+    expect(orbRing.aabb.maxY).toBeGreaterThan(24);
+
+    // 8. Shaft rune lattice falls within shaft span
+    const lattice = getPart('shaft_rune_lattice');
+    expect(lattice.aabb.minY).toBeGreaterThanOrEqual(30);
+    expect(lattice.aabb.maxY).toBeLessThanOrEqual(91);
+
+    // 9. Bezel void trim co-locates with bezel
+    const bezelVoidTrim = getPart('bezel_void_trim');
+    expect(bezelVoidTrim.aabb.minY).toBe(bezel.aabb.minY);
+
+    // 10. Pommel glow overlaps pommel
+    const pommelGlow = getPart('pommel_glow');
+    expect(pommelGlow.aabb.minY).toBeLessThanOrEqual(pommel.aabb.minY + 1);
   });
 
   it('orb.ring wraps the orb perimeter with an elliptical halo', () => {
