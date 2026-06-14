@@ -72,7 +72,7 @@ describe('Slime Staff Alignment QA', () => {
     // All cells must lie on or outside the orb radius (ring wraps outside)
     for (const { x, y } of result.cells) {
       const d = Math.hypot(x, y * 0.85); // elliptical: Y squashed by 0.85
-      expect(d).toBeGreaterThanOrEqual(8.5);
+      expect(d).toBeGreaterThanOrEqual(9.5);
       expect(d).toBeLessThanOrEqual(12);
     }
 

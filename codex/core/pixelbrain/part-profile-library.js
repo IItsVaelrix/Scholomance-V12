@@ -839,6 +839,7 @@ registerPartProfile('setting.cradle', (params = {}, options = {}) => {
 });
 
 registerPartProfile('setting.prong', (params, options) => getPartProfile('none')(params, options));
+registerPartProfile('setting.bezel', (params, options) => getPartProfile('none')(params, options));
 
 // STAFF SHAFT — straight uniform cylinder.
 registerPartProfile('staff.shaft', (params = {}, options = {}) => {
