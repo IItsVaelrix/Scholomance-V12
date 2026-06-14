@@ -107,4 +107,25 @@ describe('Slime Staff Alignment QA', () => {
     expect(result.anchors.base).toBeDefined();
     expect(result.anchors.tip).toBeDefined();
   });
+
+  it('guard.void_wings emits an asymmetric jagged guard with left wing longer than right', () => {
+    const profile = getPartProfile('guard.void_wings');
+    const result = profile({}, {});
+
+    expect(result.cells.length).toBeGreaterThan(0);
+
+    // Asymmetry check: leftmost X must be further from center than rightmost X
+    const xs = result.cells.map(c => c.x);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    expect(Math.abs(minX)).toBeGreaterThan(Math.abs(maxX));
+
+    // Anchors
+    expect(result.anchors.base).toBeDefined();
+    expect(result.anchors.tip).toBeDefined();
+
+    // Must span at least 8 rows vertically (has diamond core + wings)
+    const ys = result.cells.map(c => c.y);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThanOrEqual(7);
+  });
 });

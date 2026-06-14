@@ -500,6 +500,53 @@ registerPartProfile('shaft.rune_lattice', (params = {}, options = {}) => {
   };
 });
 
+// GUARD.VOID_WINGS — marquise diamond core with jagged asymmetric lateral
+// extensions. Left wing is longer than right to signal eldritch asymmetry.
+// Anchors: base = top (attach to shaft), tip = bottom (attach to grip).
+registerPartProfile('guard.void_wings', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cells = [];
+
+  // Diamond core (same shape as guard.marquise default)
+  const coreRows = { 0: 3, 1: 5, 2: 7, 3: 8, 4: 8, 5: 7, 6: 5, 7: 3 };
+  const yKeys = Object.keys(coreRows).map(Number).sort((a, b) => a - b);
+  for (const y of yKeys) {
+    const half = coreRows[y];
+    for (let dx = -half; dx <= half; dx += 1) cells.push({ x: cx + dx, y });
+  }
+
+  // Left wing — jagged, extends from rows 2–5, longest at row 3 (cx-12)
+  const leftWing = {
+    2: [-9, -10],
+    3: [-9, -10, -11, -12],
+    4: [-9, -10, -11],
+    5: [-9, -10],
+  };
+  for (const [row, xs] of Object.entries(leftWing)) {
+    for (const x of xs) cells.push({ x: cx + x, y: Number(row) });
+  }
+
+  // Right wing — jagged, extends from rows 2–5, longest at row 3 (cx+10)
+  const rightWing = {
+    2: [9],
+    3: [9, 10],
+    4: [9],
+    5: [9],
+  };
+  for (const [row, xs] of Object.entries(rightWing)) {
+    for (const x of xs) cells.push({ x: cx + x, y: Number(row) });
+  }
+
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: yKeys[0] },
+      tip: { x: cx, y: yKeys[yKeys.length - 1] },
+      center: { x: cx, y: 3 },
+    },
+  };
+});
+
 // HIGHLIGHT.BLOB — internal slime reflection/crescent
 registerPartProfile('highlight.blob', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);
