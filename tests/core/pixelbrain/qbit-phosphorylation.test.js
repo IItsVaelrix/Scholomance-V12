@@ -192,6 +192,17 @@ describe('PhosphorylationCommand', () => {
     expect(layer.cells.get('4,8')?.color).not.toBe(committedColor);
   });
 
+  it('undo on a rejected command does not mutate the layer', () => {
+    const layer = makeLayer();
+    layer.cells.set('4,8', { x: 4, y: 8, color: '#AAAAAA', emphasis: 1 });
+    const kinase = buildKinase(null, VALID_SDF); // will reject
+    const cmd = createPhosphorylationCommand(layer, 4, 8, kinase);
+    const stack = createCommandStack();
+    stack.execute(cmd);
+    cmd.undo(); // must be a no-op
+    expect(layer.cells.get('4,8')?.color).toBe('#AAAAAA');
+  });
+
   it('redo replays captured color — kinase is NOT re-run', () => {
     const layer = makeLayer();
     let callCount = 0;

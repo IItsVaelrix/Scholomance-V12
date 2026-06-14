@@ -72,7 +72,8 @@ export function createCommandStack(initialCommands = []) {
       const result = cmd.execute();
       // PhosphorylationCommand signals rejection via result.committed === false
       // Rejected commands leave no undo footprint
-      if (result && result.committed === false) {
+      if (cmd instanceof PhosphorylationCommand && result && result.committed === false) {
+        cmd.executed = false; // reset: command was not committed, undo must not fire
         return { result, description: cmd.description, meta: cmd.meta, rejected: true };
       }
       history.push(cmd);
