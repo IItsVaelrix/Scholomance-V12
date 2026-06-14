@@ -1,0 +1,258 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "ice.slime.staff.hd.v1",
+  "class": "weapon",
+  "archetype": "staff",
+  "canvas": { "width": 48, "height": 128, "gridSize": 1 },
+  "seed": 888,
+  "bytecode": "VW-NATURE-INEXPLICABLE-HARMONIC",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "shaft",
+      "profile": "staff.shaft",
+      "params": { "cx": 24, "span": [30, 90], "half": 2 },
+      "fill": { "material": "darksteel" },
+      "outline": { "material": "silver" }
+    },
+    {
+      "id": "shaft_shadow",
+      "profile": "cylinder.shadow",
+      "params": { "cx": 24, "length": 60, "half": 2 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "darksteel", "anchor": "shadow" }
+    },
+    {
+      "id": "shaft_highlight",
+      "profile": "cylinder.highlight",
+      "params": { "cx": 24, "length": 60, "half": 2 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "darksteel", "anchor": "frost" }
+    },
+    {
+      "id": "shaft_glint",
+      "profile": "cylinder.highlight",
+      "params": { "cx": 24, "length": 6, "half": 1 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "cyan_glow", "anchor": "body" }
+    },
+    {
+      "id": "shaft_rune_lattice",
+      "profile": "shaft.rune_lattice",
+      "params": { "cx": 24, "span": [30, 90], "half": 2 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "void_ice", "anchor": "deep" }
+    },
+    {
+      "id": "shaft_lattice_glow",
+      "profile": "shaft.rune_lattice",
+      "params": { "cx": 24, "span": [30, 90], "half": 2 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "cyan_glow", "anchor": "body" }
+    },
+    {
+      "id": "orb",
+      "profile": "orb.slime",
+      "params": { "r": 9 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice" },
+      "outline": { "material": "void_ice", "anchor": "spectral" }
+    },
+    {
+      "id": "orb_shadow",
+      "profile": "orb.slime_shadow",
+      "params": { "r": 9 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "shadow" }
+    },
+    {
+      "id": "orb_deep_shadow",
+      "profile": "orb.slime_deep_shadow",
+      "params": { "r": 9 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "deep" }
+    },
+    {
+      "id": "orb_frost",
+      "profile": "orb.slime_frost",
+      "params": { "r": 9 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "frost" }
+    },
+    {
+      "id": "orb_highlight",
+      "profile": "highlight.blob",
+      "attach": { "parent": "orb", "at": "center" },
+      "fill": { "material": "void_ice" },
+      "outline": { "material": "sapphire_enamel", "anchor": "spectral" }
+    },
+    {
+      "id": "orb_bubble",
+      "profile": "bubble.tiny",
+      "attach": { "parent": "orb", "at": "center" },
+      "fill": { "material": "void_ice" },
+      "outline": { "material": "sapphire_enamel", "anchor": "whiteCore" }
+    },
+    {
+      "id": "orb_ring",
+      "profile": "orb.ring",
+      "params": { "r": 9 },
+      "attach": { "parent": "orb", "at": "center" },
+      "fill": { "material": "void_ice", "anchor": "deep" },
+      "outline": { "material": "void_ice", "anchor": "spectral" }
+    },
+    {
+      "id": "orb_ring_glow",
+      "profile": "orb.ring_glow",
+      "params": { "r": 9 },
+      "attach": { "parent": "orb", "at": "center" },
+      "fill": { "material": "void_ice", "anchor": "frost" }
+    },
+    {
+      "id": "cradle",
+      "profile": "setting.cradle",
+      "params": { "r": 10 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "silver" },
+      "outline": { "material": "silver" }
+    },
+    {
+      "id": "cradle_highlight",
+      "profile": "setting.cradle_highlight",
+      "params": { "r": 10 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "silver", "anchor": "spectral" },
+      "outline": { "material": "silver", "anchor": "spectral" }
+    },
+    {
+      "id": "ribbon",
+      "profile": "slime.ribbon",
+      "params": { "cx": 0, "length": 40, "half": 2 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice" },
+      "outline": { "material": "sapphire_enamel" }
+    },
+    {
+      "id": "ribbon_highlight",
+      "profile": "ribbon.highlight",
+      "params": { "cx": 0, "length": 40, "half": 2 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "spectral" },
+      "outline": { "material": "sapphire_enamel", "anchor": "whiteCore" }
+    },
+    {
+      "id": "ribbon_shadow",
+      "profile": "ribbon.shadow",
+      "params": { "cx": 0, "length": 40, "half": 2 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "deep" },
+      "outline": { "material": "void_ice", "anchor": "deep" }
+    },
+    {
+      "id": "core_mount",
+      "profile": "core.mount",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "silver" }
+    },
+    {
+      "id": "core_mount_shadow",
+      "profile": "core.mount_shadow",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "silver", "anchor": "shadow" }
+    },
+    {
+      "id": "core_mount_highlight",
+      "profile": "core.mount_highlight",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "silver", "anchor": "frost" }
+    },
+    {
+      "id": "core_gem",
+      "profile": "core.gem",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "void_ice" },
+      "outline": { "material": "sapphire_enamel" }
+    },
+    {
+      "id": "core_gem_shadow",
+      "profile": "core.gem_shadow",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "void_ice", "anchor": "shadow" }
+    },
+    {
+      "id": "core_gem_highlight",
+      "profile": "core.gem_highlight",
+      "attach": { "parent": "shaft", "at": "center" },
+      "fill": { "material": "void_ice", "anchor": "spectral" }
+    },
+    {
+      "id": "bezel",
+      "profile": "guard.void_wings",
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "silver" }
+    },
+    {
+      "id": "bezel_highlight",
+      "profile": "guard.highlight",
+      "attach": { "parent": "bezel", "at": "center" },
+      "fill": { "material": "silver", "anchor": "spectral" },
+      "outline": { "material": "silver", "anchor": "spectral" }
+    },
+    {
+      "id": "bezel_void_trim",
+      "profile": "guard.void_wings",
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "void_ice", "anchor": "deep" }
+    },
+    {
+      "id": "bezel_void_glow",
+      "profile": "guard.void_wings",
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "cyan_glow", "anchor": "body" }
+    },
+    {
+      "id": "grip",
+      "profile": "staff.handle",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "bezel", "at": "base" },
+      "fill": { "material": "darksteel" },
+      "outline": { "material": "silver" }
+    },
+    {
+      "id": "grip_shadow",
+      "profile": "cylinder.shadow",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "bezel", "at": "base" },
+      "fill": { "material": "darksteel", "anchor": "shadow" }
+    },
+    {
+      "id": "grip_highlight",
+      "profile": "cylinder.highlight",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "bezel", "at": "base" },
+      "fill": { "material": "darksteel", "anchor": "frost" }
+    },
+    {
+      "id": "grip_trim",
+      "profile": "staff.handle_trim",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "bezel", "at": "base" },
+      "fill": { "material": "silver" },
+      "outline": { "material": "silver", "anchor": "shadow" }
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.void_orb",
+      "params": { "r": 3 },
+      "attach": { "parent": "grip", "at": "tip" },
+      "fill": { "material": "void_ice", "anchor": "deep" }
+    },
+    {
+      "id": "pommel_glow",
+      "profile": "pommel.void_orb_glow",
+      "params": { "r": 3 },
+      "attach": { "parent": "grip", "at": "tip" },
+      "fill": { "material": "cyan_glow", "anchor": "body" }
+    }
+  ]
+}

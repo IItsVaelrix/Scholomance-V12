@@ -447,7 +447,7 @@ registerPartProfile('orb.ring', (params = {}, options = {}) => {
       }
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } } };
 });
 
 // ORB.RING_GLOW — 1px larger bleed layer for the spectral halo.
@@ -465,7 +465,7 @@ registerPartProfile('orb.ring_glow', (params = {}, options = {}) => {
       if (d >= innerR && d <= outerR) cells.push({ x, y });
     }
   }
-  return { cells, anchors: { center: { x: cx, y: cy } } };
+  return { cells, anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } } };
 });
 
 // SHAFT.RUNE_LATTICE — sparse repeating single-pixel rune marks along the
