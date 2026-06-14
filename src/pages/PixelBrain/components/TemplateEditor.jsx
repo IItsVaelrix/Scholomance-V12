@@ -42,6 +42,8 @@ import {
   createCommandStack,
   Command,
   createPaintCommand,
+  createPhosphorylationCommand,
+  buildKinase,
   createFillCommand,
   createReferenceLayer,
   setLayerVisible,
@@ -104,6 +106,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
   const commandStackRef = useRef(null);
   const importedInitialAssetRef = useRef(null);
   const commandLogRef = useRef([]); // UI-side log for scrubbable history list and "Export Deterministic Recipe" (stores description, ampId, options, meta, timestamp). Enables the full provenance without touching core stack.
+  const strokeRejections = useRef(null); // dampened rejection state per stroke — reset on pointer up
 
   const [tool, setTool] = useState('paint');
   const [brushColor, setBrushColor] = useState('#C9A227');
@@ -343,6 +346,30 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
     return targets;
   }, []);
 
+  // --- Phosphorylation rejection dampening ---
+  // Fires at most one console.warn per unique rejection reason per stroke.
+  // A new reason within the same stroke resets the counter and fires again.
+  // Called with onStrokeEnd() when the pointer is released.
+  const notifyRejection = useCallback((reason, x, y) => {
+    if (!strokeRejections.current) {
+      strokeRejections.current = { reason, count: 1 };
+      console.warn(`[PhosphorylationGate] Rejected at (${x},${y}): ${reason}`);
+    } else if (strokeRejections.current.reason === reason) {
+      strokeRejections.current.count++;
+      // Same reason repeated — no additional signal (dampened)
+    } else {
+      strokeRejections.current = { reason, count: 1 };
+      console.warn(`[PhosphorylationGate] Rejected at (${x},${y}): ${reason}`);
+    }
+  }, []);
+
+  const onStrokeEnd = useCallback(() => {
+    if (strokeRejections.current?.count > 0) {
+      console.info(`[PhosphorylationGate] Stroke ended: ${strokeRejections.current.count} rejection(s) — ${strokeRejections.current.reason}`);
+    }
+    strokeRejections.current = null;
+  }, []);
+
   const applyTool = useCallback((cell) => {
     const grid = gridRef.current;
     if (!grid) return;
@@ -409,7 +436,25 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
       const prevColor = getCell(layer, target.x, target.y)?.color || null;
 
       if (tool === 'paint') {
-        stack.execute(createPaintCommand(grid, layerIndex, target.x, target.y, brushColor, prevColor));
+        // Phosphorylation path: fire when material + SDF context are available on the layer.
+        // TemplateEditor is a pure template-grid editor with a brush colour — no material/SDF
+        // concept exists here yet. The kinase build will return { valid: false } in that case,
+        // so we fall back to the plain PaintCommand. This additive guard makes it safe to wire
+        // now: when material/SDF are injected (future work), phosphorylation auto-activates.
+        const activeMaterial = layer.material ?? null;
+        const sdfDescriptor = layer.sdfDescriptor ?? null;
+        const kinase = buildKinase(activeMaterial, sdfDescriptor);
+        if (kinase.valid) {
+          const outcome = stack.execute(createPhosphorylationCommand(layer, target.x, target.y, kinase, prevColor));
+          if (outcome?.rejected) {
+            notifyRejection(outcome.result?.reason ?? 'UNKNOWN', target.x, target.y);
+            // Phosphorylation rejected — fall back to plain paint so the stroke is never lost
+            stack.execute(createPaintCommand(grid, layerIndex, target.x, target.y, brushColor, prevColor));
+          }
+        } else {
+          // No material/SDF on this layer — use plain PaintCommand (existing behaviour)
+          stack.execute(createPaintCommand(grid, layerIndex, target.x, target.y, brushColor, prevColor));
+        }
       } else if (tool === 'erase') {
         stack.execute(new Command({
           doFn: () => clearCell(layer, target.x, target.y),
@@ -424,7 +469,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
 
     setCursor({ col: cell.col, row: cell.row });
     setRevision(r => r + 1);
-  }, [tool, brushColor, targetsFor, activeLayerIndex]);
+  }, [tool, brushColor, targetsFor, activeLayerIndex, notifyRejection]);
 
   const cellFromEvent = useCallback((e) => {
     const canvas = canvasRef.current;
@@ -457,7 +502,8 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
 
   const stopPainting = useCallback(() => {
     paintingRef.current = false;
-  }, []);
+    onStrokeEnd();
+  }, [onStrokeEnd]);
 
   const handleKeyDown = useCallback((e) => {
     const grid = gridRef.current;

@@ -164,9 +164,15 @@ import {
   Command as codexCommand,
   createPaintCommand as codexCreatePaintCommand,
   createFillCommand as codexCreateFillCommand,
+  PhosphorylationCommand as codexPhosphorylationCommand,
+  createPhosphorylationCommand as codexCreatePhosphorylationCommand,
   LayerOpCommand,
   rehydrateEditorCommand,
 } from '../../codex/core/pixelbrain/editor-command-stack.js';
+
+import {
+  buildKinase as codexBuildKinase,
+} from '../../codex/core/pixelbrain/qbit-phosphorylation.js';
 
 import {
   buildConstructionGuideCells as codexBuildConstructionGuideCells,
@@ -675,6 +681,11 @@ export const Command = codexCommand;
 export const createPaintCommand = codexCreatePaintCommand; // convenience re-export, aliased to avoid duplicate declaration in this barrel module scope
 export const createFillCommand = codexCreateFillCommand;
 export { LayerOpCommand, rehydrateEditorCommand };
+
+// Phosphorylation gate (System 7 extension — material-gated brush stroke)
+export const PhosphorylationCommand = codexPhosphorylationCommand;
+export const createPhosphorylationCommand = codexCreatePhosphorylationCommand;
+export const buildKinase = codexBuildKinase;
 
 // Construction guides (00_Reference geometry for shields / radials)
 export const buildConstructionGuideCells = codexBuildConstructionGuideCells;
