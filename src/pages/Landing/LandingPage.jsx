@@ -69,6 +69,7 @@ export default function LandingPage() {
           <div className="portal-content">
             <GrimoireTitle />
             <p className="portal-tagline">Where words become weapons</p>
+            <span className="portal-beta" aria-label="Beta">β BETA</span>
             <p className="portal-hint" aria-hidden="true">
               <span className="portal-hint-beacon" />
               Step through

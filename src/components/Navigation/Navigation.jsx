@@ -5,8 +5,7 @@ import {
   Eye,
   Headphones,
   BookOpen,
-  Swords,
-  Compass,
+  Activity,
   Menu,
   ChevronRight,
   User,
@@ -22,16 +21,14 @@ const ICON_MAP = {
   watch: Eye,
   listen: Headphones,
   read: BookOpen,
-  combat: Swords,
-  nexus: Compass,
+  visualiser: Activity,
 };
 
 const ROUTE_COPY = {
   watch: "Witness the live arena and current ritual signal.",
   listen: "Tune stations, broadcasts, and ambient transmission.",
   read: "Compose scrolls and inspect their hidden anatomy.",
-  combat: "Cast verses into live conflict and scoring.",
-  nexus: "Survey unlocked paths, schools, and progression.",
+  visualiser: "Kinetic lyric visualiser — phoneme school colors, beat sync.",
   blog: "Read transmissions, skills, verdicts, and whitepapers.",
   pixelbrain: "Neural network visualization and metadata mapping.",
   career: "Transmute professional experience into high-acuity sigils.",

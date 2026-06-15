@@ -42,12 +42,11 @@ export const LIBRARY = {
 
 
 export const LINKS = [
-  { id: "watch",  path: "/watch",  label: "Watch" },
-  { id: "listen", path: "/listen", label: "Listen" },
-  { id: "read",   path: "/read",   label: "Scribe" },
-  { id: "combat", path: "/combat", label: "Combat" },
-  { id: "nexus",  path: "/nexus",  label: "Nexus" },
-  { id: "blog",   path: "/blog",   label: "Blog" },
+  { id: "watch",      path: "/watch",      label: "Watch" },
+  { id: "listen",     path: "/listen",     label: "Listen" },
+  { id: "read",       path: "/read",       label: "Scribe" },
+  { id: "visualiser", path: "/visualiser", label: "Visualiser" },
+  { id: "blog",       path: "/blog",       label: "Blog" },
 ];
 
 export const INTERNAL_MODULES = [

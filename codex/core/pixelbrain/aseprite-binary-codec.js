@@ -186,12 +186,13 @@ function celChunk(layerIndex, layer) {
   return chunk(CHUNK_CEL, payload);
 }
 
-function frameChunk(frame, frameIndex, layers) {
+function frameChunk(frame, frameIndex, layerDefs) {
+  const frameLayers = Array.isArray(frame.layers) ? frame.layers : layerDefs;
   const chunks = [];
   if (frameIndex === 0) {
-    layers.forEach((layer) => chunks.push(layerChunk(layer)));
+    layerDefs.forEach((layer) => chunks.push(layerChunk(layer)));
   }
-  layers.forEach((layer, layerIndex) => {
+  frameLayers.forEach((layer, layerIndex) => {
     const cel = celChunk(layerIndex, layer);
     if (cel) chunks.push(cel);
   });
