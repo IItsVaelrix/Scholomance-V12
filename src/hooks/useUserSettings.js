@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
   reducedMotion: false,
   fontSize: 'medium',
   compactMode: false,
+  hapticEnabled: false,
 };
 
 export function useUserSettings() {
