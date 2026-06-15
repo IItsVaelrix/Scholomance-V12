@@ -50,6 +50,10 @@ import SearchPanel from "./SearchPanel.jsx";
 import FloatingPanel from "../../components/shared/FloatingPanel.jsx";
 import IDEAmbientCanvas from "./IDEAmbientCanvas.jsx";
 import "./IDE.css";
+import MobileBottomNav from './MobileBottomNav.jsx';
+import MobileHexSheet from './MobileHexSheet.jsx';
+import MobileWordSheet from './MobileWordSheet.jsx';
+import { useHaptic } from '../../hooks/useHaptic.ts';
 
 const SCHOOL_GLYPHS = {
   DEFAULT:    "\uD83C\uDF08",
@@ -213,6 +217,9 @@ export default function ReadPage() {
     () => typeof window !== 'undefined' && window.innerWidth < 640
   );
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [isHexSheetOpen, setIsHexSheetOpen] = useState(false);
+  const [isWordSheetOpen, setIsWordSheetOpen] = useState(false);
+  const { haptic } = useHaptic(settings?.hapticEnabled ?? false);
 
   useEffect(() => {
     const narrow = window.matchMedia('(max-width: 959px)');
@@ -365,6 +372,16 @@ export default function ReadPage() {
     setSelectedSchool(schoolId);
   }, []);
 
+  const handleMobileTabChange = useCallback((tab) => {
+    if (tab === 'HEX') {
+      haptic('tap');
+      setIsHexSheetOpen(true);
+      return;
+    }
+    haptic(tab === 'EDITOR' ? 'select' : 'tap');
+    setMobileActiveTab(tab);
+  }, [haptic]);
+
   const handleInfoBeamToggle = useCallback(() => {
     setInfoBeamEnabled((prev) => !prev);
   }, []);
@@ -399,6 +416,9 @@ export default function ReadPage() {
   const currentLineText = cursorPos.line > 0 ? scrollLines[cursorPos.line - 1] || "" : "";
 
   const mobileSurfaceTitle = activeScroll?.title || (isEditable ? "Drafting..." : "Scholomance");
+  const editorSubtitle = scoreData
+    ? `${scoreData.totalScore} Power`
+    : `Ln ${cursorPos.line} · Col ${cursorPos.col}`;
 
   const ritualPalette = getRitualPalette(selectedSchool);
   const activeSchoolLabel = SCHOOLS[selectedSchool]?.name || "Universal";
@@ -642,7 +662,11 @@ export default function ReadPage() {
       resetWordLookup();
       lookup(activation.normalizedWord);
     }
-  }, [buildTooltipAnalysis, lookup, resetWordLookup, resolveTooltipPosition, tooltipState]);
+
+    if (isMobileViewport) {
+      setIsWordSheetOpen(true);
+    }
+  }, [buildTooltipAnalysis, isMobileViewport, lookup, resetWordLookup, resolveTooltipPosition, tooltipState]);
 
   const handleCloseTooltip = useCallback(() => {
     handleWordActivate(null);
@@ -976,7 +1000,7 @@ export default function ReadPage() {
       <div className="ide-layout-wrapper ide-layout-wrapper--mobile">
         <TopBar
           title={mobileSurfaceTitle}
-          onOpenSearch={() => { setMobileActiveTab("SEARCH"); }}
+          onOpenSearch={() => setMobileActiveTab('ORACLE')}
           showMinimap={false}
           onToggleMinimap={() => {}}
           isEditable={isEditable}
@@ -986,126 +1010,154 @@ export default function ReadPage() {
           progression={progression}
           auroraLevel={auroraLevel}
           onCycleAuroraLevel={cycleAuroraLevel}
-          onSettingsClick={() => setShowSettingsPanel((p) => !p)}
+          onSettingsClick={() => setShowSettingsPanel(p => !p)}
           showMinimapControl={false}
           showSettingsControl={true}
         />
-        <main className="ide-mobile-content">
-          <section className="ide-mobile-hero" aria-label="Scroll chamber overview">
-            <div className="ide-mobile-hero-copy">
-              <p className="ide-mobile-hero-eyebrow">Scribe chamber</p>
-              <h2 className="ide-mobile-hero-title">{mobileSurfaceTitle}</h2>
-              <p className="ide-mobile-hero-description">
-                Compose, inspect, and score within one continuous chamber built for touch instead of compromise.
-              </p>
-            </div>
-            <div className="ide-mobile-meta-grid" aria-label="Current ritual state">
-              <div className="ide-mobile-meta-chip">
-                <span className="ide-mobile-meta-label">School</span>
-                <span className="ide-mobile-meta-value">{activeSchoolLabel}</span>
-              </div>
-              <div className="ide-mobile-meta-chip">
-                <span className="ide-mobile-meta-label">Vision</span>
-                <span className="ide-mobile-meta-value">{mobileVisionLabel}</span>
-              </div>
-              <div className="ide-mobile-meta-chip">
-                <span className="ide-mobile-meta-label">Power</span>
-                <span className="ide-mobile-meta-value">{scoreData ? scoreData.totalScore : "Unscored"}</span>
-              </div>
-              <div className="ide-mobile-meta-item">
-                <span className="ide-mobile-meta-label">Vision</span>
-                <span className="ide-mobile-meta-value">Predictive active</span>
-              </div>
 
-            </div>
-          </section>
+        <main className="ide-mobile-content" id="main-content">
+          {mobileActiveTab === 'EDITOR' && (
+            <motion.div
+              key="editor"
+              className="ide-mobile-editor-stage"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              <ScrollEditor
+                key={editorDocumentIdentity}
+                ref={editorRef}
+                documentIdentity={editorDocumentIdentity}
+                title={editorInitialTitle}
+                content={editorInitialContent}
+                onSave={handleSaveScroll}
+                onCancel={isEditing ? handleCancelEdit : undefined}
+                isEditable={isEditable}
+                disabled={false}
+                isTruesight={isTruesight}
+                isLatticeGrid={isLatticeGrid}
+                isPredictive={isPredictive}
+                predict={predict}
+                getCompletions={getCompletions}
+                checkSpelling={checkSpelling}
+                getSpellingSuggestions={getSpellingSuggestions}
+                predictorReady={predictorReady}
+                plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                onContentChange={handleEditorContentChange}
+                onTitleChange={handleEditorTitleChange}
+                analyzedWords={analyzedWords}
+                analyzedWordsByIdentity={analyzedWordsByIdentity}
+                analyzedWordsByCharStart={analyzedWordsByCharStart}
+                lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
+                highlightedLines={effectiveHighlightedLines}
+                pinnedLines={pinnedLines}
+                syntaxLayer={deepAnalysis?.syntaxSummary}
+                theme={theme}
+                onWordActivate={handleWordActivate}
+                onCursorChange={setCursorPos}
+                mirrored={mirrored}
+                ideMode={ideMode}
+                onFocus={handleIdeFocus}
+                onBlur={handleIdeBlur}
+              />
+            </motion.div>
+          )}
 
-          <nav className="ide-mobile-tab-bar" aria-label="Scribe workspace sections">
-            {mobileTabs.map((tab) => {
-              const isActive = mobileActiveTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  className={`ide-mobile-tab-btn${isActive ? " active" : ""}`}
-                  onClick={() => setMobileActiveTab(tab.id)}
-                  aria-pressed={isActive}
-                  aria-label={`${tab.label} panel`}
-                >
-                  <span className="ide-mobile-tab-icon" aria-hidden="true">
-                    <MobileTabIcon tabId={tab.id} />
-                  </span>
-                  <span className="ide-mobile-tab-copy">
-                    <span className="ide-mobile-tab-label">{tab.label}</span>
-                    <span className="ide-mobile-tab-hint">{tab.hint}</span>
-                  </span>
-                </button>
-              );
-            })}
-          </nav>
+          {mobileActiveTab === 'SCROLLS' && (
+            <motion.div
+              key="scrolls"
+              className="ide-mobile-panel-stage"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              <ScrollList
+                scrolls={scrolls}
+                activeScrollId={activeScrollId}
+                onSelect={id => { handleSelectScroll(id); setMobileActiveTab('EDITOR'); }}
+                onNewScroll={handleNewScroll}
+              />
+            </motion.div>
+          )}
 
-          <section className={`ide-mobile-stage ide-mobile-stage--${String(currentMobileTab.id || "editor").toLowerCase()}`}>
-            <header className="ide-mobile-stage-header">
-              <div className="ide-mobile-stage-copy">
-                <p className="ide-mobile-stage-eyebrow">{currentMobileTab.eyebrow}</p>
-                <h3 className="ide-mobile-stage-title">{currentMobileTab.label}</h3>
-                <p className="ide-mobile-stage-description">{currentMobileTab.description}</p>
-              </div>
-              <span className="ide-mobile-stage-badge">{currentMobileTab.badge}</span>
-            </header>
-            <div className={`ide-mobile-stage-body${mobileActiveTab === "EDITOR" ? " ide-mobile-stage-body--editor" : ""}`}>
-              {mobileActiveTab === "EDITOR" && (
-                <ScrollEditor
-                  key={editorDocumentIdentity}
-                  ref={editorRef}
-                  documentIdentity={editorDocumentIdentity}
-                  title={editorInitialTitle}
-                  content={editorInitialContent}
-                  onSave={handleSaveScroll}
-                  onCancel={isEditing ? handleCancelEdit : undefined}
-                  isEditable={isEditable}
-                  disabled={false}
-                  isTruesight={isTruesight}
-                  isLatticeGrid={isLatticeGrid}
-                  isPredictive={isPredictive}
-                  predict={predict}
-                  getCompletions={getCompletions}
-                  checkSpelling={checkSpelling}
-                  getSpellingSuggestions={getSpellingSuggestions}
-                  predictorReady={predictorReady}
-                  plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
-                  onContentChange={handleEditorContentChange}
-                  onTitleChange={handleEditorTitleChange}
-                  analyzedWords={analyzedWords}
-                  analyzedWordsByIdentity={analyzedWordsByIdentity}
-                  analyzedWordsByCharStart={analyzedWordsByCharStart}
-                  lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
-                  highlightedLines={effectiveHighlightedLines}
-                  pinnedLines={pinnedLines}
-                  syntaxLayer={deepAnalysis?.syntaxSummary}
-                  theme={theme}
-                  onWordActivate={handleWordActivate}
-                  onCursorChange={setCursorPos}
-                  mirrored={mirrored}
-                  ideMode={ideMode}
-                  onFocus={handleIdeFocus}
-                  onBlur={handleIdeBlur}
-                />
-              )}
-              {activeMobilePanel}
-            </div>
-          </section>
+          {mobileActiveTab === 'ORACLE' && (
+            <motion.div
+              key="oracle"
+              className="ide-mobile-panel-stage"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              <SearchPanel
+                seedWord={lexiconSeedWord}
+                selectedSchool={selectedSchool}
+                contextLookup={resolveLexiconContext}
+                onJumpToLine={line => {
+                  editorRef.current?.jumpToLine?.(line);
+                  setMobileActiveTab('EDITOR');
+                }}
+              />
+            </motion.div>
+          )}
 
-          <div className="ide-mobile-status-strip" role="status" aria-live="polite">
-            <span className={`ide-mobile-status-chip${analysisError ? " is-offline" : ""}`}>
-              <span className="status-ready-dot" aria-hidden="true" />
-              {analysisError ? "Analysis offline" : "Analysis ready"}
-            </span>
-            <span className="ide-mobile-status-chip">{`Ln ${cursorPos.line}, Col ${cursorPos.col}`}</span>
-            <span className="ide-mobile-status-chip">Syllables {totalSyllables}</span>
-            <span className="ide-mobile-status-chip">{mobileVisionLabel}</span>
-          </div>
+          {mobileActiveTab === 'POWER' && (
+            <motion.div
+              key="power"
+              className="ide-mobile-panel-stage"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.12, ease: 'easeOut' }}
+            >
+              <HeuristicScorePanel
+                scoreData={scoreData}
+                genreProfile={genreProfile}
+                visible={true}
+                isEmbedded={true}
+              />
+            </motion.div>
+          )}
         </main>
+
+        <MobileBottomNav
+          activeTab={mobileActiveTab}
+          onTabChange={handleMobileTabChange}
+          editorSubtitle={mobileActiveTab === 'EDITOR' ? editorSubtitle : undefined}
+          hapticEnabled={settings?.hapticEnabled ?? false}
+        />
+
+        <MobileHexSheet
+          isOpen={isHexSheetOpen}
+          onClose={() => { haptic('dismiss'); setIsHexSheetOpen(false); }}
+          isTruesight={isTruesight}
+          onToggleTruesight={handleToggleTruesight}
+          isLatticeGrid={isLatticeGrid}
+          onToggleLatticeGrid={handleToggleLatticeGrid}
+          isPredictive={isPredictive}
+          onTogglePredictive={handleTogglePredictive}
+          mirrored={mirrored}
+          onToggleMirrored={handleToggleMirrored}
+          analysisMode={analysisMode}
+          onModeChange={handleModeChange}
+          selectedSchool={selectedSchool}
+          onSchoolChange={handleSchoolChange}
+          schoolList={schoolList}
+          hapticEnabled={settings?.hapticEnabled ?? false}
+          onToggleHaptic={() => updateSettings({ hapticEnabled: !(settings?.hapticEnabled ?? false) })}
+        />
+
+        <MobileWordSheet
+          isOpen={isWordSheetOpen}
+          onClose={() => { haptic('dismiss'); setIsWordSheetOpen(false); }}
+          wordData={tooltipWordData}
+          analysis={tooltipState.localAnalysis}
+          isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
+          error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
+          onSuggestionClick={handleSuggestionClick}
+          sessionHistory={sessionWords}
+          sessionIndex={sessionIndex}
+          onSessionNavigate={handleSessionNavigate}
+          hapticEnabled={settings?.hapticEnabled ?? false}
+        />
 
         {commonUI}
       </div>
@@ -1374,37 +1426,6 @@ export default function ReadPage() {
                       </div>
                     )}
 
-                    {tooltipState.token && (
-                      <div className="right-panel-section">
-                        <div className="right-panel-section-header">
-                          <span className="right-panel-section-title">Word Insight</span>
-                          <button
-                            type="button"
-                            className="right-panel-close"
-                            onClick={handleCloseTooltip}
-                            aria-label="Close Word Insight"
-                          >×</button>
-                        </div>
-                        <AnimatePresence>
-                          <WordTooltip
-                            key="word-card"
-                            wordData={tooltipWordData}
-                            analysis={tooltipState.localAnalysis}
-                            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-                            error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
-                            x={0}
-                            y={0}
-                            onDrag={() => {}}
-                            onClose={handleCloseTooltip}
-                            onSuggestionClick={handleSuggestionClick}
-                            sessionHistory={sessionWords}
-                            sessionIndex={sessionIndex}
-                            onSessionNavigate={handleSessionNavigate}
-                            isEmbedded={true}
-                          />
-                        </AnimatePresence>
-                      </div>
-                    )}
 
                     {isAnalysisPanelVisible && (
                       <div className="right-panel-section">
@@ -1550,24 +1571,22 @@ export default function ReadPage() {
         serverAnalysisActive={USE_SERVER_ANALYSIS}
       />
       
-      {/* Mobile bottom sheet for word insight on narrow viewports */}
-      {isNarrowViewport && tooltipState.token && (
+      {tooltipState.token && (
         <AnimatePresence>
           <WordTooltip
-            key="word-card-mobile"
+            key="word-card"
             wordData={tooltipWordData}
             analysis={tooltipState.localAnalysis}
             isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
             error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
-            x={0}
-            y={0}
-            onDrag={() => {}}
+            x={tooltipState.position.x}
+            y={tooltipState.position.y}
+            onDrag={handleTooltipDrag}
             onClose={handleCloseTooltip}
             onSuggestionClick={handleSuggestionClick}
             sessionHistory={sessionWords}
             sessionIndex={sessionIndex}
             onSessionNavigate={handleSessionNavigate}
-            isEmbedded={true}
           />
         </AnimatePresence>
       )}
