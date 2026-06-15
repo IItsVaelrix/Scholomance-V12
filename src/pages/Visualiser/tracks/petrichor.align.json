@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "scholomance.align.v1",
+  "trackId": "149036d5-397c-4b59-a150-f4f6403c4758",
+  "bpm": 123,
+  "offsetMs": 9000,
+  "lyricsHash": "mock-hand-authored-2026-06-15",
+  "audioUrl": "https://cdn1.suno.ai/149036d5-397c-4b59-a150-f4f6403c4758.mp3",
+  "generatedAt": "2026-06-15T00:00:00Z",
+  "wordTimings": [
+    {
+      "word": "I",
+      "startMs": 9000,
+      "endMs": 9200,
+      "beat": { "index": 0, "phase": 0.0, "bar": 0, "barPhase": 0.0 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "just",
+      "startMs": 9250,
+      "endMs": 9420,
+      "beat": { "index": 0, "phase": 0.512, "bar": 0, "barPhase": 0.128 },
+      "school": "WILL",
+      "confidence": 1.0
+    },
+    {
+      "word": "care",
+      "startMs": 9450,
+      "endMs": 9750,
+      "beat": { "index": 0, "phase": 0.922, "bar": 0, "barPhase": 0.230 },
+      "school": "WILL",
+      "confidence": 1.0
+    },
+    {
+      "word": "that",
+      "startMs": 9800,
+      "endMs": 9970,
+      "beat": { "index": 1, "phase": 0.639, "bar": 0, "barPhase": 0.410 },
+      "school": "WILL",
+      "confidence": 1.0
+    },
+    {
+      "word": "I",
+      "startMs": 10020,
+      "endMs": 10180,
+      "beat": { "index": 2, "phase": 0.090, "bar": 0, "barPhase": 0.522 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "miss",
+      "startMs": 10220,
+      "endMs": 10450,
+      "beat": { "index": 2, "phase": 0.501, "bar": 0, "barPhase": 0.625 },
+      "school": "SONIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "you",
+      "startMs": 10500,
+      "endMs": 11200,
+      "beat": { "index": 3, "phase": 0.075, "bar": 0, "barPhase": 0.769 },
+      "school": "ABJURATION",
+      "confidence": 1.0
+    },
+    {
+      "word": "I",
+      "startMs": 11400,
+      "endMs": 11600,
+      "beat": { "index": 4, "phase": 0.200, "bar": 1, "barPhase": 0.050 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "prepared",
+      "startMs": 11650,
+      "endMs": 12000,
+      "beat": { "index": 4, "phase": 0.710, "bar": 1, "barPhase": 0.178 },
+      "school": "WILL",
+      "confidence": 1.0
+    },
+    {
+      "word": "my",
+      "startMs": 12050,
+      "endMs": 12200,
+      "beat": { "index": 5, "phase": 0.210, "bar": 1, "barPhase": 0.303 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "life",
+      "startMs": 12250,
+      "endMs": 12550,
+      "beat": { "index": 5, "phase": 0.720, "bar": 1, "barPhase": 0.430 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "knowing",
+      "startMs": 12600,
+      "endMs": 12900,
+      "beat": { "index": 6, "phase": 0.230, "bar": 1, "barPhase": 0.558 },
+      "school": "ABJURATION",
+      "confidence": 1.0
+    },
+    {
+      "word": "my",
+      "startMs": 12950,
+      "endMs": 13100,
+      "beat": { "index": 6, "phase": 0.740, "bar": 1, "barPhase": 0.685 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "life",
+      "startMs": 13150,
+      "endMs": 13400,
+      "beat": { "index": 7, "phase": 0.240, "bar": 1, "barPhase": 0.810 },
+      "school": "PSYCHIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "is",
+      "startMs": 13450,
+      "endMs": 13600,
+      "beat": { "index": 7, "phase": 0.750, "bar": 1, "barPhase": 0.938 },
+      "school": "SONIC",
+      "confidence": 1.0
+    },
+    {
+      "word": "no",
+      "startMs": 13650,
+      "endMs": 13850,
+      "beat": { "index": 8, "phase": 0.050, "bar": 2, "barPhase": 0.013 },
+      "school": "ABJURATION",
+      "confidence": 1.0
+    },
+    {
+      "word": "longer",
+      "startMs": 13900,
+      "endMs": 14250,
+      "beat": { "index": 8, "phase": 0.560, "bar": 2, "barPhase": 0.140 },
+      "school": "ABJURATION",
+      "confidence": 1.0
+    },
+    {
+      "word": "yours",
+      "startMs": 14300,
+      "endMs": 15100,
+      "beat": { "index": 9, "phase": 0.070, "bar": 2, "barPhase": 0.268 },
+      "school": "SONIC",
+      "confidence": 1.0
+    }
+  ]
+}
