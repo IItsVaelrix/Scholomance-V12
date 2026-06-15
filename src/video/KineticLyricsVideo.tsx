@@ -4,6 +4,7 @@ import type { GrimoireTrackWithAlignment } from "../pages/Visualiser/tracks/load
 import { DEFAULT_PACING } from "../pages/Visualiser/tracks/types";
 import { useBeatClock } from "./useBeatClock";
 import { KineticWord } from "./KineticWord";
+import { PixelBrainStage } from "./PixelBrainStage";
 
 export interface KineticLyricsVideoProps {
   track: GrimoireTrackWithAlignment;
@@ -34,6 +35,7 @@ export function KineticLyricsVideo({ track }: KineticLyricsVideoProps) {
       }}
     >
       <Audio src={track.audioUrl} />
+      <PixelBrainStage words={words} currentMs={clock.timeMs} />
       <AbsoluteFill
         style={{
           display: "flex",
