@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { createVoxelVolume, ENERGY_TYPES } from '../../codex/core/pixelbrain/voxel-volume.js';
-import { liftToVoxelSeeds, generateFibonacciSeeds, SEED_CONFIGS } from '../../codex/core/pixelbrain/wand-seed-lift.js';
+import { liftToVoxelSeeds, generateFibonacciSeeds, generateVectorizedTextSeeds, SEED_CONFIGS } from '../../codex/core/pixelbrain/wand-seed-lift.js';
 
 describe('SEED_CONFIGS', () => {
   it('has all 6 formula types', () => {
@@ -80,5 +80,85 @@ describe('generateFibonacciSeeds', () => {
     const s2 = generateFibonacciSeeds({ iterations: 6, scale: 0.75 }, v);
     expect(s1.length).toBe(s2.length);
     expect(s1[0].vx).toBe(s2[0].vx);
+  });
+});
+
+function makeMockCanvas(whitePixels, W = 64, H = 32) {
+  return () => {
+    const data = new Uint8ClampedArray(W * H * 4);
+    for (const { x, y } of whitePixels) {
+      if (x < W && y < H) {
+        const idx = (y * W + x) * 4;
+        data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
+      }
+    }
+    return {
+      width: W, height: H,
+      getContext: () => ({
+        fillStyle: '', font: '', textAlign: '', textBaseline: '',
+        fillRect: () => {}, fillText: () => {},
+        getImageData: () => ({ data }),
+      }),
+    };
+  };
+}
+
+describe('generateVectorizedTextSeeds', () => {
+  it('returns seeds when mock canvas has white pixels', () => {
+    const whitePixels = [{ x: 10, y: 8 }, { x: 11, y: 8 }, { x: 10, y: 9 }];
+    const v = createVoxelVolume(32, 32, 32);
+    const seeds = generateVectorizedTextSeeds('A', v, {
+      createCanvas: makeMockCanvas(whitePixels, 64, 32),
+      canvasSize: { width: 64, height: 32 },
+    });
+    expect(seeds.length).toBeGreaterThan(0);
+  });
+
+  it('each seed has vx, vy, vz, energy, energyType', () => {
+    const whitePixels = [{ x: 20, y: 10 }];
+    const v = createVoxelVolume(32, 32, 32);
+    const seeds = generateVectorizedTextSeeds('B', v, {
+      createCanvas: makeMockCanvas(whitePixels, 64, 32),
+      canvasSize: { width: 64, height: 32 },
+    });
+    for (const s of seeds) {
+      expect(typeof s.vx).toBe('number');
+      expect(typeof s.vy).toBe('number');
+      expect(typeof s.vz).toBe('number');
+      expect(typeof s.energy).toBe('number');
+      expect(typeof s.energyType).toBe('number');
+    }
+  });
+
+  it('all seeds are within volume bounds', () => {
+    const whitePixels = [{ x: 5, y: 5 }, { x: 50, y: 25 }];
+    const v = createVoxelVolume(32, 32, 32);
+    const seeds = generateVectorizedTextSeeds('C', v, {
+      createCanvas: makeMockCanvas(whitePixels, 64, 32),
+      canvasSize: { width: 64, height: 32 },
+    });
+    for (const s of seeds) {
+      expect(s.vx).toBeGreaterThanOrEqual(0); expect(s.vx).toBeLessThan(32);
+      expect(s.vy).toBeGreaterThanOrEqual(0); expect(s.vy).toBeLessThan(32);
+      expect(s.vz).toBeGreaterThanOrEqual(0); expect(s.vz).toBeLessThan(32);
+    }
+  });
+
+  it('returns empty array when canvas produces no white pixels', () => {
+    const v = createVoxelVolume(32, 32, 32);
+    const seeds = generateVectorizedTextSeeds('X', v, {
+      createCanvas: makeMockCanvas([], 64, 32),
+      canvasSize: { width: 64, height: 32 },
+    });
+    expect(seeds).toEqual([]);
+  });
+
+  it('is deterministic', () => {
+    const whitePixels = [{ x: 15, y: 10 }, { x: 16, y: 10 }];
+    const v = createVoxelVolume(32, 32, 32);
+    const opts = { createCanvas: makeMockCanvas(whitePixels, 64, 32), canvasSize: { width: 64, height: 32 } };
+    const a = generateVectorizedTextSeeds('D', v, opts);
+    const b = generateVectorizedTextSeeds('D', v, opts);
+    expect(JSON.stringify(a)).toBe(JSON.stringify(b));
   });
 });

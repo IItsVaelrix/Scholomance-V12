@@ -1,4 +1,6 @@
 import { ENERGY_TYPES } from './voxel-volume.js';
+import { rasterizeTextToPixels, extractGlyphOutline } from './glyph-rasterizer.js';
+import { applyGravityAMP } from './gravity-amp.js';
 
 export const SEED_CONFIGS = Object.freeze({
   'fibonacci':        { lift: 'surface_scatter',   energySpread: 'radial'    },
@@ -57,4 +59,16 @@ export function generateFibonacciSeeds(formula, volume, options = {}) {
   }
 
   return liftToVoxelSeeds(coords2D, volume, { ...options, canvasSize });
+}
+
+export function generateVectorizedTextSeeds(text, volume, options = {}) {
+  const { canvasSize, createCanvas, gravityOptions = {} } = options;
+
+  const cells = rasterizeTextToPixels(text, { ...options, createCanvas, canvasSize });
+  const outlineCells = extractGlyphOutline(cells);
+
+  if (outlineCells.length === 0) return [];
+
+  const xzSeeds = liftToVoxelSeeds(outlineCells, volume, { ...options, canvasSize });
+  return applyGravityAMP(xzSeeds, volume, gravityOptions);
 }
