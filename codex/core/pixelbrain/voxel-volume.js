@@ -9,15 +9,26 @@ export const ENERGY_TYPES = Object.freeze({
   RADIANT:    7,
 });
 
+export const SENTINEL_MATERIAL_ID = 1;
+
 export function createVoxelVolume(width, height, depth) {
-  if (!Number.isInteger(width) || width <= 0) {
+  if (!Number.isInteger(width)) {
     throw new TypeError(`width must be a positive integer, got ${width}`);
   }
-  if (!Number.isInteger(height) || height <= 0) {
+  if (width <= 0) {
+    throw new RangeError(`width must be positive, got ${width}`);
+  }
+  if (!Number.isInteger(height)) {
     throw new TypeError(`height must be a positive integer, got ${height}`);
   }
-  if (!Number.isInteger(depth) || depth <= 0) {
+  if (height <= 0) {
+    throw new RangeError(`height must be positive, got ${height}`);
+  }
+  if (!Number.isInteger(depth)) {
     throw new TypeError(`depth must be a positive integer, got ${depth}`);
+  }
+  if (depth <= 0) {
+    throw new RangeError(`depth must be positive, got ${depth}`);
   }
 
   const totalCells = width * height * depth;
@@ -38,7 +49,7 @@ export function cellIndex(vol, x, y, z) {
 
 export function getCellMaterialId(vol, x, y, z) {
   const i = cellIndex(vol, x, y, z);
-  return (vol.cells[i] >> 4) & 0xFFF;
+  return vol.cells[i] >> 4;
 }
 
 export function isCellOccupied(vol, x, y, z) {
@@ -56,15 +67,15 @@ export function setCellMaterial(vol, x, y, z, materialId) {
 
 export function setCellOccupancy(vol, x, y, z, occupied) {
   const i = cellIndex(vol, x, y, z);
-  const currentMaterialId = getCellMaterialId(vol, x, y, z);
 
-  if (occupied === false) {
-    const flags = vol.cells[i] & 0xF;
-    vol.cells[i] = flags;
-  } else if (occupied === true) {
+  if (occupied) {
+    const currentMaterialId = getCellMaterialId(vol, x, y, z);
     if (currentMaterialId === 0) {
       const flags = vol.cells[i] & 0xF;
-      vol.cells[i] = (1 << 4) | flags;
+      vol.cells[i] = (SENTINEL_MATERIAL_ID << 4) | flags;
     }
+  } else {
+    const flags = vol.cells[i] & 0xF;
+    vol.cells[i] = flags;
   }
 }

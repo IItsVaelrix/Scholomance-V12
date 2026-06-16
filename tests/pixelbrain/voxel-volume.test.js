@@ -84,12 +84,12 @@ describe('createVoxelVolume', () => {
     }
   });
 
-  it('throws TypeError for width = 0', () => {
-    expect(() => createVoxelVolume(0, 4, 4)).toThrow(TypeError);
+  it('throws RangeError for width = 0', () => {
+    expect(() => createVoxelVolume(0, 4, 4)).toThrow(RangeError);
   });
 
-  it('throws TypeError for negative width', () => {
-    expect(() => createVoxelVolume(-1, 4, 4)).toThrow(TypeError);
+  it('throws RangeError for negative width', () => {
+    expect(() => createVoxelVolume(-1, 4, 4)).toThrow(RangeError);
   });
 
   it('throws TypeError for non-integer width', () => {
@@ -100,12 +100,12 @@ describe('createVoxelVolume', () => {
     expect(() => createVoxelVolume(NaN, 4, 4)).toThrow(TypeError);
   });
 
-  it('throws TypeError for height = 0', () => {
-    expect(() => createVoxelVolume(4, 0, 4)).toThrow(TypeError);
+  it('throws RangeError for height = 0', () => {
+    expect(() => createVoxelVolume(4, 0, 4)).toThrow(RangeError);
   });
 
-  it('throws TypeError for negative height', () => {
-    expect(() => createVoxelVolume(4, -1, 4)).toThrow(TypeError);
+  it('throws RangeError for negative height', () => {
+    expect(() => createVoxelVolume(4, -1, 4)).toThrow(RangeError);
   });
 
   it('throws TypeError for non-integer height', () => {
@@ -116,12 +116,12 @@ describe('createVoxelVolume', () => {
     expect(() => createVoxelVolume(4, NaN, 4)).toThrow(TypeError);
   });
 
-  it('throws TypeError for depth = 0', () => {
-    expect(() => createVoxelVolume(4, 4, 0)).toThrow(TypeError);
+  it('throws RangeError for depth = 0', () => {
+    expect(() => createVoxelVolume(4, 4, 0)).toThrow(RangeError);
   });
 
-  it('throws TypeError for negative depth', () => {
-    expect(() => createVoxelVolume(4, 4, -1)).toThrow(TypeError);
+  it('throws RangeError for negative depth', () => {
+    expect(() => createVoxelVolume(4, 4, -1)).toThrow(RangeError);
   });
 
   it('throws TypeError for non-integer depth', () => {
