@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { validateDivProposal } from '../../../codex/core/modulation/planner/div-layout-validator.js';
+import { validateDivProposal, validateDivLayout } from '../../../codex/core/modulation/planner/div-layout-validator.js';
 import { getAvailablePageComponents } from '../../../src/lib/routes.js';
 import { snapToPixelGrid } from '../../../src/lib/engine.adapter.js';
 import DivWandPage from '../../../src/pages/DivWand/DivWandPage.jsx';
@@ -380,4 +380,61 @@ describe('DIV Wand & Layout System — Core & Visual Validation Laws', () => {
     });
   });
 
+});
+
+describe('voxel node type', () => {
+  it('accepts a valid voxel node', () => {
+    const node = {
+      id: 'crystal-bg',
+      type: 'voxel',
+      role: 'voxel-scene',
+      props: { volumeSize: 32 },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts voxel node with text prop', () => {
+    const node = {
+      id: 'glyph-monuments',
+      type: 'voxel',
+      role: 'voxel-scene',
+      props: { text: 'DAMIEN', volumeSize: 32 },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts voxel node with seed prop', () => {
+    const node = {
+      id: 'fibonacci-crystal',
+      type: 'voxel',
+      role: 'voxel-scene',
+      props: { seed: { iterations: 6, scale: 0.75 }, volumeSize: 32 },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects voxel node with wrong role', () => {
+    const node = {
+      id: 'bad-voxel',
+      type: 'voxel',
+      role: 'text',
+      props: {},
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('voxel') || e.includes('role'))).toBe(true);
+  });
+
+  it('rejects unknown props on voxel node', () => {
+    const node = {
+      id: 'bad-props',
+      type: 'voxel',
+      role: 'voxel-scene',
+      props: { unknownField: true },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('unknownField'))).toBe(true);
+  });
 });

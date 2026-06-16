@@ -6,6 +6,7 @@ import {
   Download,
 } from 'lucide-react';
 import { validateDivProposal } from '../../lib/engine.adapter.js';
+import { VoxelScenePortal } from './components/VoxelScenePortal.jsx';
 import { generateCatalogId } from '../../lib/catalogId.js';
 import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
@@ -274,6 +275,10 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
     onMouseOver: handleMouseEnter,
     onMouseOut: handleMouseLeave
   };
+
+  if (node.type === 'voxel') {
+    return <VoxelScenePortal node={node} />;
+  }
 
   if (node.type === 'element') {
     return (

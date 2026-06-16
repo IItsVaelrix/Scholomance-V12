@@ -647,3 +647,16 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Voxel scene portal — SVG fills the container, no scroll */
+.div-voxel-scene {
+  display: block;
+  overflow: hidden;
+  background: #0a0a0f;
+}
+
+.div-voxel-scene svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}

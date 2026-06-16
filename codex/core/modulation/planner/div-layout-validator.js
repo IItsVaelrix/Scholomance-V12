@@ -32,8 +32,8 @@ export function validateDivLayout(node, depth = 0) {
 
   if (!node.type || typeof node.type !== 'string') {
     errors.push('Layout node is missing required "type" field of type string');
-  } else if (!['container', 'element'].includes(node.type)) {
-    errors.push(`Invalid node type: "${node.type}". Allowed: container, element`);
+  } else if (!['container', 'element', 'voxel'].includes(node.type)) {
+    errors.push(`Invalid node type: "${node.type}". Allowed: container, element, voxel`);
   }
 
   if (!node.role || typeof node.role !== 'string') {
@@ -51,10 +51,14 @@ export function validateDivLayout(node, depth = 0) {
       'text',
       'button',
       'badge',
-      'glow-container'
+      'glow-container',
+      'voxel-scene',
     ];
     if (!validRoles.includes(node.role)) {
       errors.push(`Invalid role: "${node.role}"`);
+    }
+    if (node.type === 'voxel' && node.role !== 'voxel-scene') {
+      errors.push(`Nodes with type "voxel" must use role "voxel-scene", got "${node.role}"`);
     }
   }
 
@@ -150,7 +154,7 @@ export function validateDivLayout(node, depth = 0) {
     if (typeof node.props !== 'object' || node.props === null) {
       errors.push('node.props must be an object');
     } else {
-      const allowedProps = ['text', 'icon', 'title', 'subtitle', 'interactive', 'onClickAction'];
+      const allowedProps = ['text', 'icon', 'title', 'subtitle', 'interactive', 'onClickAction', 'seed', 'volumeSize'];
       const unknownProps = Object.keys(node.props).filter(k => !allowedProps.includes(k));
       if (unknownProps.length > 0) {
         errors.push(`Unknown properties in props object: ${unknownProps.join(', ')}`);
