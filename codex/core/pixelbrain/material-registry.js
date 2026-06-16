@@ -1,5 +1,6 @@
 export const SOURCE_MATERIAL = 'source';
 export const MATERIAL_REGISTRY_VERSION = '0.2.0';
+export const DEFAULT_EMISSION_FACTOR = 0;
 
 export const MATERIAL_CATEGORIES = Object.freeze({
   SOURCE: 'source',
@@ -12,6 +13,7 @@ export const MATERIAL_CATEGORIES = Object.freeze({
 export const MATERIAL_PALETTES = Object.freeze({
   [SOURCE_MATERIAL]: Object.freeze({
     id: SOURCE_MATERIAL,
+    emissionFactor: 0,
     label: 'Source',
     category: MATERIAL_CATEGORIES.SOURCE,
     anchors: Object.freeze({}),
@@ -23,6 +25,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   icy_fire: Object.freeze({
     id: 'icy_fire',
+    emissionFactor: 0,
     label: 'Icy Fire',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -47,6 +50,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   shadow_fire: Object.freeze({
     id: 'shadow_fire',
+    emissionFactor: 0,
     label: 'Shadow Fire',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -62,6 +66,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   holy_fire: Object.freeze({
     id: 'holy_fire',
+    emissionFactor: 0,
     label: 'Holy Fire',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -77,6 +82,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   poison_flame: Object.freeze({
     id: 'poison_flame',
+    emissionFactor: 0,
     label: 'Poison Flame',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -92,6 +98,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   void_ice: Object.freeze({
     id: 'void_ice',
+    emissionFactor: 0,
     label: 'Void Ice',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -107,6 +114,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   sapphire_enamel: Object.freeze({
     id: 'sapphire_enamel',
+    emissionFactor: 0,
     label: 'Sapphire Enamel',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -122,6 +130,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   cyan_lightning: Object.freeze({
     id: 'cyan_lightning',
+    emissionFactor: 0,
     label: 'Cyan Lightning',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -131,6 +140,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   cyan_glow: Object.freeze({
     id: 'cyan_glow',
+    emissionFactor: 0,
     label: 'Cyan Glow',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -140,6 +150,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   darksteel: Object.freeze({
     id: 'darksteel',
+    emissionFactor: 0,
     label: 'Darksteel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -155,6 +166,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   diamond: Object.freeze({
     id: 'diamond',
+    emissionFactor: 0,
     label: 'Diamond',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -170,6 +182,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   sapphire: Object.freeze({
     id: 'sapphire',
+    emissionFactor: 0,
     label: 'Sapphire',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -185,6 +198,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   ruby: Object.freeze({
     id: 'ruby',
+    emissionFactor: 0,
     label: 'Ruby',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -200,6 +214,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   emerald: Object.freeze({
     id: 'emerald',
+    emissionFactor: 0,
     label: 'Emerald',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -213,8 +228,25 @@ export const MATERIAL_PALETTES = Object.freeze({
     }),
     rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
   }),
+  slime_gel: Object.freeze({
+    id: 'slime_gel',
+    emissionFactor: 0,
+    label: 'Slime Gel',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#062615',
+      shadow: '#064E3B',
+      deep: '#047857',
+      body: '#10B981',
+      frost: '#6EE7B7',
+      spectral: '#A7F3D0',
+      whiteCore: '#D1FAE5',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
+  }),
   amethyst: Object.freeze({
     id: 'amethyst',
+    emissionFactor: 0,
     label: 'Amethyst',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -230,6 +262,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   onyx: Object.freeze({
     id: 'onyx',
+    emissionFactor: 0,
     label: 'Onyx',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -245,6 +278,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   voidsteel: Object.freeze({
     id: 'voidsteel',
+    emissionFactor: 0,
     label: 'Voidsteel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -260,6 +294,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   obsidian: Object.freeze({
     id: 'obsidian',
+    emissionFactor: 0,
     label: 'Obsidian',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -275,6 +310,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   deep_indigo_steel: Object.freeze({
     id: 'deep_indigo_steel',
+    emissionFactor: 0,
     label: 'Deep Indigo Steel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -290,6 +326,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   void_gold: Object.freeze({
     id: 'void_gold',
+    emissionFactor: 0,
     label: 'Void Gold',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -305,6 +342,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   void_core: Object.freeze({
     id: 'void_core',
+    emissionFactor: 0,
     label: 'Void Core',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -320,6 +358,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   amethyst_resonance: Object.freeze({
     id: 'amethyst_resonance',
+    emissionFactor: 0,
     label: 'Amethyst Resonance',
     category: MATERIAL_CATEGORIES.GEMSTONE,
     anchors: Object.freeze({
@@ -335,6 +374,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   void_rune_glow: Object.freeze({
     id: 'void_rune_glow',
+    emissionFactor: 0,
     label: 'Void Rune Glow',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -350,6 +390,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   void_cloth: Object.freeze({
     id: 'void_cloth',
+    emissionFactor: 0,
     label: 'Void Cloth',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -365,6 +406,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   gold: Object.freeze({
     id: 'gold',
+    emissionFactor: 0,
     label: 'Gold',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -380,6 +422,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   silver: Object.freeze({
     id: 'silver',
+    emissionFactor: 0,
     label: 'Silver',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -395,6 +438,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   bronze: Object.freeze({
     id: 'bronze',
+    emissionFactor: 0,
     label: 'Bronze',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -410,6 +454,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   black_steel: Object.freeze({
     id: 'black_steel',
+    emissionFactor: 0,
     label: 'Black Steel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -425,6 +470,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   blacksteel: Object.freeze({
     id: 'blacksteel',
+    emissionFactor: 0,
     label: 'Blacksteel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -440,6 +486,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   holy_steel: Object.freeze({
     id: 'holy_steel',
+    emissionFactor: 0,
     label: 'Holy Steel',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -455,6 +502,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   sanctified_gold: Object.freeze({
     id: 'sanctified_gold',
+    emissionFactor: 0,
     label: 'Sanctified Gold',
     category: MATERIAL_CATEGORIES.METAL,
     anchors: Object.freeze({
@@ -470,6 +518,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   divine_flame_core: Object.freeze({
     id: 'divine_flame_core',
+    emissionFactor: 0,
     label: 'Divine Flame Core',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -485,6 +534,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   radiant_blue: Object.freeze({
     id: 'radiant_blue',
+    emissionFactor: 0,
     label: 'Radiant Blue',
     category: MATERIAL_CATEGORIES.FLAME,
     anchors: Object.freeze({
@@ -500,6 +550,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   bark: Object.freeze({
     id: 'bark',
+    emissionFactor: 0,
     label: 'Redwood Bark',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -515,6 +566,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   pine_needle: Object.freeze({
     id: 'pine_needle',
+    emissionFactor: 0,
     label: 'Pine Needle',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -531,6 +583,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   // ── Character Creator Materials ─────────────────────────────────────
   skin_light: Object.freeze({
     id: 'skin_light',
+    emissionFactor: 0,
     label: 'Skin Light',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -541,6 +594,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   skin_medium: Object.freeze({
     id: 'skin_medium',
+    emissionFactor: 0,
     label: 'Skin Medium',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -551,6 +605,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   skin_dark: Object.freeze({
     id: 'skin_dark',
+    emissionFactor: 0,
     label: 'Skin Dark',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -561,6 +616,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   skin_voidborne: Object.freeze({
     id: 'skin_voidborne',
+    emissionFactor: 0,
     label: 'Skin Voidborne',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -571,6 +627,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   hair_black: Object.freeze({
     id: 'hair_black',
+    emissionFactor: 0,
     label: 'Hair Black',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -581,6 +638,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   hair_brown: Object.freeze({
     id: 'hair_brown',
+    emissionFactor: 0,
     label: 'Hair Brown',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -591,6 +649,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   hair_blonde: Object.freeze({
     id: 'hair_blonde',
+    emissionFactor: 0,
     label: 'Hair Blonde',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -601,6 +660,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   hair_red: Object.freeze({
     id: 'hair_red',
+    emissionFactor: 0,
     label: 'Hair Red',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -611,6 +671,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   hair_void: Object.freeze({
     id: 'hair_void',
+    emissionFactor: 0,
     label: 'Hair Void',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -621,6 +682,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   eye_brown: Object.freeze({
     id: 'eye_brown',
+    emissionFactor: 0,
     label: 'Eye Brown',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -631,6 +693,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   eye_blue: Object.freeze({
     id: 'eye_blue',
+    emissionFactor: 0,
     label: 'Eye Blue',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -641,6 +704,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   eye_green: Object.freeze({
     id: 'eye_green',
+    emissionFactor: 0,
     label: 'Eye Green',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -651,6 +715,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   eye_void_glow: Object.freeze({
     id: 'eye_void_glow',
+    emissionFactor: 0,
     label: 'Eye Void Glow',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -661,6 +726,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   cloth_linen: Object.freeze({
     id: 'cloth_linen',
+    emissionFactor: 0,
     label: 'Cloth Linen',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -671,6 +737,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   cloth_wool: Object.freeze({
     id: 'cloth_wool',
+    emissionFactor: 0,
     label: 'Cloth Wool',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -681,6 +748,7 @@ export const MATERIAL_PALETTES = Object.freeze({
   }),
   leather_brown: Object.freeze({
     id: 'leather_brown',
+    emissionFactor: 0,
     label: 'Leather Brown',
     category: MATERIAL_CATEGORIES.ORGANIC,
     anchors: Object.freeze({
@@ -688,6 +756,94 @@ export const MATERIAL_PALETTES = Object.freeze({
       frost: '#7A4838', spectral: '#8A5040', whiteCore: '#A06858',
     }),
     rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
+  }),
+  skin_apricot_signal: Object.freeze({
+    id: 'skin_apricot_signal',
+    emissionFactor: 0,
+    label: 'Skin Apricot Signal',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#6B3329', shadow: '#8D4B35', deep: '#B86545', body: '#E08A61',
+      frost: '#F0A878', spectral: '#FFD0A0', whiteCore: '#FFE8C8',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
+  }),
+  hair_midnight_teal: Object.freeze({
+    id: 'hair_midnight_teal',
+    emissionFactor: 0,
+    label: 'Hair Midnight Teal',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#061018', shadow: '#0B2230', deep: '#123A45', body: '#1F5B62',
+      frost: '#3B8990', spectral: '#77BFC0', whiteCore: '#B8F0E8',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, forceColdHue: true }),
+  }),
+  hair_copper_arcade: Object.freeze({
+    id: 'hair_copper_arcade',
+    emissionFactor: 0,
+    label: 'Hair Copper Arcade',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#421006', shadow: '#6A2010', deep: '#96351A', body: '#C85A27',
+      frost: '#F0803C', spectral: '#FFB060', whiteCore: '#FFD88A',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
+  }),
+  eye_psychic_cobalt: Object.freeze({
+    id: 'eye_psychic_cobalt',
+    emissionFactor: 0,
+    label: 'Eye Psychic Cobalt',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#060C3A', shadow: '#101A68', deep: '#2030A8', body: '#3858F0',
+      frost: '#68A0FF', spectral: '#A8D8FF', whiteCore: '#E8FFFF',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, boostHighlightsToWhite: true }),
+  }),
+  cloth_star_jacket: Object.freeze({
+    id: 'cloth_star_jacket',
+    emissionFactor: 0,
+    label: 'Cloth Star Jacket',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#07111F', shadow: '#10233C', deep: '#1B3D66', body: '#2E6FA3',
+      frost: '#4CA0C8', spectral: '#9FD8E0', whiteCore: '#E8F8F0',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, forceColdHue: true }),
+  }),
+  cloth_psychic_denim: Object.freeze({
+    id: 'cloth_psychic_denim',
+    emissionFactor: 0,
+    label: 'Cloth Psychic Denim',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#15102E', shadow: '#272052', deep: '#3E347A', body: '#5A55A8',
+      frost: '#7A8BE0', spectral: '#B8C8FF', whiteCore: '#EEF2FF',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true }),
+  }),
+  trim_comet_gold: Object.freeze({
+    id: 'trim_comet_gold',
+    emissionFactor: 0,
+    label: 'Trim Comet Gold',
+    category: MATERIAL_CATEGORIES.METAL,
+    anchors: Object.freeze({
+      void: '#3A2104', shadow: '#6A4208', deep: '#A36A16', body: '#D99A2B',
+      frost: '#F0C85A', spectral: '#FFE68A', whiteCore: '#FFF8D0',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, boostHighlightsToWhite: true }),
+  }),
+  neon_mint_signal: Object.freeze({
+    id: 'neon_mint_signal',
+    emissionFactor: 0,
+    label: 'Neon Mint Signal',
+    category: MATERIAL_CATEGORIES.FLAME,
+    anchors: Object.freeze({
+      void: '#02120E', shadow: '#063A2E', deep: '#0A6A55', body: '#18C29B',
+      frost: '#56F0C8', spectral: '#A8FFE8', whiteCore: '#F0FFF8',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, boostHighlightsToWhite: true }),
   }),
 });
 
@@ -750,6 +906,14 @@ export const MATERIAL_SHADER_INDEX = Object.freeze({
   cloth_linen: 48,
   cloth_wool: 49,
   leather_brown: 50,
+  skin_apricot_signal: 51,
+  hair_midnight_teal: 52,
+  hair_copper_arcade: 53,
+  eye_psychic_cobalt: 54,
+  cloth_star_jacket: 55,
+  cloth_psychic_denim: 56,
+  trim_comet_gold: 57,
+  neon_mint_signal: 58,
 });
 
 export const MATERIAL_OPTIONS = Object.freeze(

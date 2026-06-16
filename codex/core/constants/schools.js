@@ -28,12 +28,18 @@ export const VOWEL_FAMILY_TO_SCHOOL = Object.freeze({
   UR: 'SONIC',
   // Alias rows mirror FAMILY_IDENTITY folds (vowelWheel.js) so a raw lookup
   // and a normalized lookup can never disagree about a family's school.
-  OH: 'ABJURATION',  // folds to OW
-  OO: 'VOID',        // folds to UH (the "book" vowel)
-  YUW: 'ABJURATION', // folds to UW
-  YOO: 'ABJURATION', // folds to UW
-  EE: 'PSYCHIC',     // folds to IY
-  IN: 'SONIC',       // folds to IH
+  OH:  'ABJURATION',  // folds to OW
+  OO:  'VOID',        // folds to UH (the "book" vowel)
+  YUW: 'ABJURATION',  // folds to UW
+  YOO: 'ABJURATION',  // folds to UW
+  YOW: 'ABJURATION',  // folds to OW (rare y-glide variant)
+  EE:  'PSYCHIC',     // folds to IY
+  IN:  'SONIC',       // folds to IH
+  A:   'NECROMANCY',  // bare "A" shorthand folds to AA
+  AI:  'PSYCHIC',     // alternate romanization of AY
+  OI:  'ALCHEMY',     // alternate romanization of OY
+  OU:  'ABJURATION',  // British "ou" folds to OW
+  OUR: 'SONIC',       // "our" reduced form folds to UR
 });
 
 export const SCHOOLS = Object.freeze({
@@ -251,7 +257,7 @@ export function computeSchoolWeightsFromHints(tokenHints) {
 
 /**
  * Finds the school with the highest weight in a school weights map.
- * 
+ *
  * @param {Record<string, number>} schoolWeights - Normalized school weights.
  * @returns {string|null} The dominant school ID, or null if empty.
  */
@@ -264,3 +270,14 @@ export function computeDominantSchool(schoolWeights) {
       return left[0].localeCompare(right[0]);
     })[0]?.[0] || null;
 }
+
+export const SCHOOL_TO_ENERGY = Object.freeze({
+  SONIC:      { type: 'RESONANT',   typeId: 0, baseThreshold: 0.35, emission: 0.2 },
+  PSYCHIC:    { type: 'PHOTONIC',   typeId: 1, baseThreshold: 0.30, emission: 0.4 },
+  VOID:       { type: 'STRUCTURAL', typeId: 2, baseThreshold: 0.55, emission: 0.0 },
+  ALCHEMY:    { type: 'THERMAL',    typeId: 3, baseThreshold: 0.25, emission: 0.7 },
+  WILL:       { type: 'KINETIC',    typeId: 4, baseThreshold: 0.40, emission: 0.5 },
+  NECROMANCY: { type: 'ENTROPIC',   typeId: 5, baseThreshold: 0.60, emission: 0.1 },
+  ABJURATION: { type: 'SHIELDING',  typeId: 6, baseThreshold: 0.50, emission: 0.0 },
+  DIVINATION: { type: 'RADIANT',    typeId: 7, baseThreshold: 0.20, emission: 0.9 },
+});
