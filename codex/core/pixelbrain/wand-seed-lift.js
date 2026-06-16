@@ -62,13 +62,13 @@ export function generateFibonacciSeeds(formula, volume, options = {}) {
 }
 
 export function generateVectorizedTextSeeds(text, volume, options = {}) {
-  const { canvasSize, createCanvas, gravityOptions = {} } = options;
+  const { canvasSize, createCanvas, gravityOptions = {}, fontSize, fontFamily } = options;
 
-  const cells = rasterizeTextToPixels(text, { ...options, createCanvas, canvasSize });
+  const cells = rasterizeTextToPixels(text, { fontSize, fontFamily, createCanvas, canvasSize });
   const outlineCells = extractGlyphOutline(cells);
 
   if (outlineCells.length === 0) return [];
 
-  const xzSeeds = liftToVoxelSeeds(outlineCells, volume, { ...options, canvasSize });
+  const xzSeeds = liftToVoxelSeeds(outlineCells, volume, { canvasSize });
   return applyGravityAMP(xzSeeds, volume, gravityOptions);
 }
