@@ -4,7 +4,6 @@ import {
   assignMaterial,
   propagate,
 } from '../../codex/core/pixelbrain/qbit-field.js';
-import { ENERGY_TYPES } from '../../codex/core/pixelbrain/voxel-volume.js';
 
 describe('QBITField', () => {
   describe('MATERIAL_THRESHOLDS', () => {

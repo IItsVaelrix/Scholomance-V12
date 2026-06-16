@@ -1,4 +1,5 @@
-import { ENERGY_TYPES } from './voxel-volume.js';
+export const DEFAULT_DECAY = 0.015;
+export const DEFAULT_ITERATIONS = 3;
 
 export const MATERIAL_THRESHOLDS = Object.freeze([
   { materialId: 1, name: 'earth', threshold: 0.00 },
@@ -38,8 +39,21 @@ export function assignMaterial(energyValue) {
  * @param {Object} options - { decay: 0.015, iterations: 3 }
  * @returns {Object} QBITField with energyAt(x,y,z) and gradientAt(x,y,z) methods
  */
-export function propagate(seeds, width, height, depth, options = {}) {
-  const { decay = 0.015, iterations = 3 } = options;
+export function propagate(seeds, width, height, depth, { decay = DEFAULT_DECAY, iterations = DEFAULT_ITERATIONS } = {}) {
+  // Guard against zero-size volumes
+  if (width === 0 || height === 0 || depth === 0) {
+    return {
+      width,
+      height,
+      depth,
+      energyAt() {
+        return 0;
+      },
+      gradientAt() {
+        return { gx: 0, gy: 0, gz: 0 };
+      },
+    };
+  }
 
   const totalCells = width * height * depth;
   let energyBuffer = new Float32Array(totalCells);
@@ -51,16 +65,13 @@ export function propagate(seeds, width, height, depth, options = {}) {
     for (let y = 0; y < height; y++) {
       for (let z = 0; z < depth; z++) {
         for (let x = 0; x < width; x++) {
-          // Distance from seed to this cell
           const dx = x - sx;
           const dy = y - sy;
           const dz = z - sz;
           const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
-          // Gaussian decay contribution
           const contribution = seedEnergy * Math.exp(-dist * decay);
 
-          // Index using YZX layout
           const idx = y * width * depth + z * width + x;
           energyBuffer[idx] += contribution;
         }
@@ -85,7 +96,6 @@ export function propagate(seeds, width, height, depth, options = {}) {
           let count = 1;
 
           // 6-neighbor face-adjacent averaging
-          // x±1
           if (x > 0) {
             sum += energyBuffer[y * width * depth + z * width + (x - 1)];
             count++;
@@ -95,7 +105,6 @@ export function propagate(seeds, width, height, depth, options = {}) {
             count++;
           }
 
-          // y±1
           if (y > 0) {
             sum += energyBuffer[(y - 1) * width * depth + z * width + x];
             count++;
@@ -105,7 +114,6 @@ export function propagate(seeds, width, height, depth, options = {}) {
             count++;
           }
 
-          // z±1
           if (z > 0) {
             sum += energyBuffer[y * width * depth + (z - 1) * width + x];
             count++;
@@ -123,7 +131,15 @@ export function propagate(seeds, width, height, depth, options = {}) {
     energyBuffer = newBuffer;
   }
 
-  // Return QBITField object
+  // Helper to safely read energy (clamped to bounds)
+  const readEnergy = (cx, cy, cz) => {
+    const clampedX = Math.max(0, Math.min(width - 1, cx));
+    const clampedY = Math.max(0, Math.min(height - 1, cy));
+    const clampedZ = Math.max(0, Math.min(depth - 1, cz));
+    const idx = clampedY * width * depth + clampedZ * width + clampedX;
+    return energyBuffer[idx];
+  };
+
   return {
     width,
     height,
@@ -138,19 +154,12 @@ export function propagate(seeds, width, height, depth, options = {}) {
     },
 
     gradientAt(x, y, z) {
-      // Helper to safely read energy (clamped to bounds)
-      const readEnergy = (cx, cy, cz) => {
-        const clampedX = Math.max(0, Math.min(width - 1, cx));
-        const clampedY = Math.max(0, Math.min(height - 1, cy));
-        const clampedZ = Math.max(0, Math.min(depth - 1, cz));
-        const idx = clampedY * width * depth + clampedZ * width + clampedX;
-        return energyBuffer[idx];
-      };
+      const CENTRAL_DIFF_SPAN = 2; // step = 1 voxel, span = (x+1)-(x-1) = 2
 
       // Central difference gradient with edge clamping
-      const gx = (readEnergy(x + 1, y, z) - readEnergy(x - 1, y, z)) / 2;
-      const gy = (readEnergy(x, y + 1, z) - readEnergy(x, y - 1, z)) / 2;
-      const gz = (readEnergy(x, y, z + 1) - readEnergy(x, y, z - 1)) / 2;
+      const gx = (readEnergy(x + 1, y, z) - readEnergy(x - 1, y, z)) / CENTRAL_DIFF_SPAN;
+      const gy = (readEnergy(x, y + 1, z) - readEnergy(x, y - 1, z)) / CENTRAL_DIFF_SPAN;
+      const gz = (readEnergy(x, y, z + 1) - readEnergy(x, y, z - 1)) / CENTRAL_DIFF_SPAN;
 
       return { gx, gy, gz };
     },
