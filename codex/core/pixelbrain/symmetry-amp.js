@@ -109,8 +109,17 @@ export function runSymmetryAmpProcessor(input) {
   // STEP 5: Apply to lattice (if autoApply + lattice provided + significant)
   let modifiedLattice;
   if (options.autoApply && input.lattice && normalizedSymmetry.significant && normalizedSymmetry.type !== 'none') {
-    modifiedLattice = applySymmetryToLattice(input.lattice, normalizedSymmetry);
-    diagnostics.push(`AUTO_APPLIED: ${normalizedSymmetry.type} symmetry to lattice`);
+    if (input.sourceType === 'formula' && (normalizedSymmetry.scores?.radial ?? 0) > 0.65) {
+      modifiedLattice = applyAsymmetryToLattice(input.lattice, normalizedSymmetry, [
+        rotationalBreaker(0.3),
+        lateralDrift(0.5),
+        verticalVariance(1.2),
+      ]);
+      diagnostics.push('AUTO_ASYMMETRIZED: formula source with high radial confidence');
+    } else {
+      modifiedLattice = applySymmetryToLattice(input.lattice, normalizedSymmetry);
+      diagnostics.push(`AUTO_APPLIED: ${normalizedSymmetry.type} symmetry to lattice`);
+    }
   }
 
   return {
@@ -586,6 +595,63 @@ export function generateSymmetryOverlay(symmetry, width, height, zoom = 1) {
   }
 
   return overlay;
+}
+
+/**
+ * Asymmetry microprocessors — deterministic positional drift functions.
+ * All three are pure functions of cell position: no random seed, no summation.
+ * Used to break radial symmetry produced by formula-seeded voxel terrain.
+ */
+
+export function rotationalBreaker(strength = 0.3) {
+  return function (cell, cols, rows) {
+    const angle = Math.atan2(cell.row - rows / 2, cell.col - cols / 2);
+    const hash = Math.sin(angle * 127.1) * 43758.5453;
+    const drift = (hash - Math.floor(hash)) * strength;
+    return {
+      dc: Math.cos(angle + Math.PI / 2) * drift,
+      dr: Math.sin(angle + Math.PI / 2) * drift,
+    };
+  };
+}
+
+export function lateralDrift(strength = 0.5) {
+  return function (cell) {
+    const hash = Math.sin(cell.col * 127.1 + cell.row * 311.7) * 43758.5453;
+    return { dc: (hash - Math.floor(hash) - 0.5) * strength, dr: 0 };
+  };
+}
+
+export function verticalVariance(strength = 1.2) {
+  return function (cell, cols) {
+    const hash = Math.sin((cell.col / cols) * 523.7) * 43758.5453;
+    return { dc: 0, dr: (hash - Math.floor(hash) - 0.5) * strength };
+  };
+}
+
+/**
+ * Apply asymmetry microprocessors to a lattice.
+ * Displaces each cell by the summed delta from all microprocessors.
+ * When two cells land on the same position, last write wins (Map key overwrite).
+ */
+export function applyAsymmetryToLattice(lattice, symmetry, microprocessors) {
+  const { cols, rows, cells } = lattice;
+  const newCells = new Map();
+
+  cells.forEach((cell) => {
+    let dc = 0, dr = 0;
+    for (const mp of microprocessors) {
+      const delta = mp(cell, cols, rows);
+      dc += delta.dc;
+      dr += delta.dr;
+    }
+    const newCol = Math.round(Math.max(0, Math.min(cols - 1, cell.col + dc)));
+    const newRow = Math.round(Math.max(0, Math.min(rows - 1, cell.row + dr)));
+    const newKey = `${newCol},${newRow}`;
+    newCells.set(newKey, { ...cell, col: newCol, row: newRow });
+  });
+
+  return { ...lattice, cells: newCells };
 }
 
 /**
