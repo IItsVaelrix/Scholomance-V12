@@ -1,5 +1,5 @@
 // src/pages/DivWand/components/VoxelScenePortal.jsx
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 
 import { createVoxelVolume, cellIndex, getCellMaterialId, isCellOccupied, setCellMaterial, ENERGY_TYPES } from '../../../codex/core/pixelbrain/voxel-volume.js';
 import { generateFibonacciSeeds, generateVectorizedTextSeeds } from '../../../codex/core/pixelbrain/wand-seed-lift.js';
@@ -69,15 +69,17 @@ function runVoxelPipeline(volumeSize, seedCfg, text) {
   return renderFacesToSVG(faces);
 }
 
-export function VoxelScenePortal({ node }) {
+export const VoxelScenePortal = memo(function VoxelScenePortal({ node }) {
   const seed       = node.props?.seed       ?? {};
   const volumeSize = node.props?.volumeSize ?? 32;
   const text       = node.props?.text       ?? null;
+  const seedKey    = JSON.stringify(seed);
 
   const svgString = useMemo(
     () => runVoxelPipeline(volumeSize, seed, text),
+    // seedKey serializes seed object for stable identity comparison
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [JSON.stringify(seed), volumeSize, text]
+    [seedKey, volumeSize, text]
   );
 
   const layoutStyle = {
@@ -94,4 +96,4 @@ export function VoxelScenePortal({ node }) {
       dangerouslySetInnerHTML={{ __html: svgString }}
     />
   );
-}
+});
