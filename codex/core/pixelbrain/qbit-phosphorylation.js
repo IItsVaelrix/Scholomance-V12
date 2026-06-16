@@ -21,7 +21,7 @@ export function buildKinase(material, sdfDescriptor) {
     reason: null,
     threshold: material.phosphorylationThreshold,
     sdfDescriptor,
-    call({ sdfValue, normal }) {
+    call({ sdfValue, normal, qbitEnergy, qbitGradient }) {
       if (sdfValue > 0) return { color: null, confidence: 0 };
 
       const depth = Math.min(1, -sdfValue / 20);
@@ -40,7 +40,20 @@ export function buildKinase(material, sdfDescriptor) {
       const color = shadedHex(baseColor, shading);
       const confidence = 0.5 + 0.5 * depth;
 
-      return { color, confidence };
+      // If qbitEnergy is not provided or is null/undefined, return old-style result
+      if (qbitEnergy === undefined || qbitEnergy === null) {
+        return { color, confidence };
+      }
+
+      // Compute emission: qbitEnergy * 0.8, clamped to [0, 1]
+      const emission = Math.min(1, Math.max(0, qbitEnergy * 0.8));
+
+      // Compute materialBleed from gradient magnitude
+      const gradient = qbitGradient || { gx: 0, gy: 0, gz: 0 };
+      const gradientMagnitude = Math.sqrt(gradient.gx * gradient.gx + gradient.gy * gradient.gy + gradient.gz * gradient.gz);
+      const materialBleed = Math.min(1, Math.max(0, gradientMagnitude * qbitEnergy * 2.0));
+
+      return { color, confidence, emission, materialBleed };
     },
   };
 }
