@@ -1,6 +1,7 @@
 import { cellIndex, getCellMaterialId, setCellMaterial, isCellOccupied } from './voxel-volume.js';
 
 export const NEGOTIATION_THRESHOLD = 0.05;
+export const MAX_NEGOTIATION_PASSES = 100;
 
 export function getNeighbors6(cell, volume) {
   const { x, y, z } = cell;
@@ -30,27 +31,25 @@ function majorityMaterial(cell, neighbors) {
 
 export function runBiomeCoherenceAMP(volume, field) {
   let unstable = true;
-  while (unstable) {
+  let passes = 0;
+  while (unstable && passes < MAX_NEGOTIATION_PASSES) {
     unstable = false;
+    passes++;
     for (let y = 0; y < volume.height; y++) {
       for (let z = 0; z < volume.depth; z++) {
         for (let x = 0; x < volume.width; x++) {
           if (!isCellOccupied(volume, x, y, z)) continue;
           const cell = { x, y, z, materialId: getCellMaterialId(volume, x, y, z) };
           const neighbors = getNeighbors6(cell, volume);
-          if (neighbors.length === 0) continue;
-          for (const neighbor of neighbors) {
-            if (neighbor.materialId === cell.materialId) continue;
-            const energyDelta = Math.abs(field.energyAt(cell) - field.energyAt(neighbor));
-            if (energyDelta < NEGOTIATION_THRESHOLD) {
-              const majority = majorityMaterial(cell, neighbors);
-              if (majority !== cell.materialId) {
-                setCellMaterial(volume, x, y, z, majority);
-                cell.materialId = majority;
-                unstable = true;
-                break;
-              }
-            }
+          const qualified = neighbors.filter(
+            n => Math.abs(field.energyAt(cell) - field.energyAt(n)) < NEGOTIATION_THRESHOLD
+          );
+          if (qualified.length === 0) continue;
+          const majority = majorityMaterial(cell, qualified);
+          if (majority !== cell.materialId) {
+            setCellMaterial(volume, x, y, z, majority);
+            cell.materialId = majority;
+            unstable = true;
           }
         }
       }

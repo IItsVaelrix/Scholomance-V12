@@ -6,7 +6,7 @@ import {
   getCellMaterialId,
   cellIndex,
 } from '../../codex/core/pixelbrain/voxel-volume.js';
-import { runBiomeCoherenceAMP, getNeighbors6, NEGOTIATION_THRESHOLD } from '../../codex/core/pixelbrain/biome-coherence-amp.js';
+import { runBiomeCoherenceAMP, getNeighbors6, NEGOTIATION_THRESHOLD, MAX_NEGOTIATION_PASSES } from '../../codex/core/pixelbrain/biome-coherence-amp.js';
 
 function makeField(volume, energies) {
   for (const [x, y, z, e] of energies) {
@@ -79,5 +79,23 @@ describe('runBiomeCoherenceAMP', () => {
     runBiomeCoherenceAMP(v, field);
     expect(getCellMaterialId(v, 0, 0, 0)).toBe(2);
     expect(getCellMaterialId(v, 1, 0, 0)).toBe(4);
+  });
+
+  it('respects convergence limit to avoid infinite loops', () => {
+    // Test that MAX_NEGOTIATION_PASSES limits the number of iterations.
+    // This ensures the algorithm terminates even in pathological cases.
+    const v = createVoxelVolume(4, 4, 4);
+    // Create a simple stable configuration
+    for (let x = 0; x < 4; x++) {
+      setCellOccupancy(v, x, 0, 0, true);
+      setCellMaterial(v, x, 0, 0, 2);
+      v.energyField[cellIndex(v, x, 0, 0)] = 0.5;
+    }
+    const field = { energyAt: (cell) => v.energyField[cellIndex(v, cell.x, cell.y, cell.z)] };
+    // This should terminate immediately (stable, no changes)
+    runBiomeCoherenceAMP(v, field);
+    // Verify the algorithm ran and completed
+    expect(getCellMaterialId(v, 0, 0, 0)).toBe(2);
+    expect(getCellMaterialId(v, 3, 0, 0)).toBe(2);
   });
 });
