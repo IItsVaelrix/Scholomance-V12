@@ -52,8 +52,8 @@ describe('renderFacesToSVG', () => {
     const left = makeFace('left', 0, 0, 0, 2);
     const svgTop = renderFacesToSVG([top]);
     const svgLeft = renderFacesToSVG([left]);
-    const fillTop = svgTop.match(/fill="(#[0-9a-fA-F]+)"/)?.[1];
-    const fillLeft = svgLeft.match(/fill="(#[0-9a-fA-F]+)"/)?.[1];
+    const fillTop = svgTop.match(/<polygon[^>]*fill="(#[0-9a-fA-F]+)"/)?.[1];
+    const fillLeft = svgLeft.match(/<polygon[^>]*fill="(#[0-9a-fA-F]+)"/)?.[1];
     expect(fillTop).toBeDefined();
     expect(fillLeft).toBeDefined();
     // Parse brightness: top should be numerically brighter (higher hex value)

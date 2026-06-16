@@ -57,12 +57,10 @@ export function renderFacesToSVG(faces, options = {}) {
     .filter(Boolean)
     .join('\n');
 
-  const rect = `  <rect width="${width}" height="${height}" fill="${background}" />`;
-  const content = polys ? [polys, rect].join('\n') : rect;
-
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">`,
-    content,
+    `  <rect width="${width}" height="${height}" fill="${background}" />`,
+    polys,
     `</svg>`,
   ].join('\n');
 }
