@@ -14,6 +14,7 @@ export function applyGravityAMP(xzSeeds, volume, options = {}) {
   const peakY = Math.floor(volume.height * peakYFraction);
   const seeds = [];
 
+  // Input seed energy is intentionally replaced by the Obelisk taper — the taper owns the energy curve.
   for (const { vx, vz } of xzSeeds) {
     for (let step = 0; step < steps; step++) {
       const t = step / Math.max(1, steps - 1);
