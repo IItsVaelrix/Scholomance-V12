@@ -2,9 +2,13 @@ import { evaluateSDF, sdfGradient } from './sdf-evaluator.js';
 import { setCell } from './template-grid-engine.js';
 
 // Minimum collapse confidence for a phosphorylation to commit.
-// buildKinase produces confidence in [0.5, 1.0], so this default passes all real
-// cells; set material.phosphorylationThreshold > 0.5 to reject rim/edge cells.
-export const COLLAPSE_THRESHOLD = 0.5;
+// buildKinase produces confidence in [0.5, 1.0]. 0.51 excludes the exact rim
+// (depth=0 → confidence=0.5); set material.phosphorylationThreshold higher to
+// reject more edge cells.
+export const COLLAPSE_THRESHOLD = 0.51;
+
+const EMISSION_SCALE = 0.8;    // fraction of qbitEnergy converted to emission glow
+const BLEED_AMPLIFIER = 2.0;   // gradient magnitude multiplier for material bleed radius
 
 const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/;
 
@@ -45,13 +49,11 @@ export function buildKinase(material, sdfDescriptor) {
         return { color, confidence };
       }
 
-      // Compute emission: qbitEnergy * 0.8, clamped to [0, 1]
-      const emission = Math.min(1, Math.max(0, qbitEnergy * 0.8));
+      const emission = Math.min(1, Math.max(0, qbitEnergy * EMISSION_SCALE));
 
-      // Compute materialBleed from gradient magnitude
       const gradient = qbitGradient || { gx: 0, gy: 0, gz: 0 };
       const gradientMagnitude = Math.sqrt(gradient.gx * gradient.gx + gradient.gy * gradient.gy + gradient.gz * gradient.gz);
-      const materialBleed = Math.min(1, Math.max(0, gradientMagnitude * qbitEnergy * 2.0));
+      const materialBleed = Math.min(1, Math.max(0, gradientMagnitude * qbitEnergy * BLEED_AMPLIFIER));
 
       return { color, confidence, emission, materialBleed };
     },
