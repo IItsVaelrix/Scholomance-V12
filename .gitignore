@@ -95,6 +95,7 @@ abyss.sqlite-shm
 abyss.sqlite-wal
 tmp-*.png
 *.png
+!godot_project/assets/blocks/*.png
 *.bmp
 
 # Keys
