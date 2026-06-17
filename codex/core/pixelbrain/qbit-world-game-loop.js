@@ -183,8 +183,12 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
     }
   }
 
+  // Crystal context: no surface lock (not terrain), no energy floor (PHI
+  // works on all occupied cells). Terrain contexts use energyMin + surfaceLockDepth.
   const { deltas: hollowDeltas, surfaceLocked } = collectHollowDeltas(volume, {
     iterations: options.hollowIterations ?? 3,
+    surfaceLockDepth: 0,
+    energyMin: 0,
   });
   applyVoxelDeltas(volume, hollowDeltas, surfaceLocked);
   runBiomeCoherenceAMP(volume, {
