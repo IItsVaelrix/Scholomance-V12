@@ -8,6 +8,7 @@ import { applyHollownessAMP } from '../../../../codex/core/pixelbrain/hollowness
 import { runBiomeCoherenceAMP } from '../../../../codex/core/pixelbrain/biome-coherence-amp.js';
 import { collectFaces } from '../../../../codex/core/pixelbrain/iso-projector.js';
 import { renderFacesToSVG } from '../../../../codex/core/pixelbrain/voxel-svg-renderer.js';
+import { worldRenderOptions, seedsToLightPoints } from '../../../../codex/core/pixelbrain/world-render-options.js';
 
 function runVoxelPipeline(volumeSize, seedCfg, text) {
   const SIZE = volumeSize;
@@ -65,8 +66,9 @@ function runVoxelPipeline(volumeSize, seedCfg, text) {
   // Remap faceType → type for SVG renderer
   const faces = rawFaces.map(f => ({ ...f, type: f.faceType }));
 
-  // Step 8: Render SVG
-  return renderFacesToSVG(faces);
+  // Step 8: Render SVG — shared world look (AO + antialias) with a soft glow
+  // cued from the energy seeds.
+  return renderFacesToSVG(faces, worldRenderOptions(seedsToLightPoints(seeds, { size: SIZE })));
 }
 
 export const VoxelScenePortal = memo(function VoxelScenePortal({ node }) {

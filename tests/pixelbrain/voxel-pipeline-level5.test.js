@@ -36,6 +36,7 @@ import { applyHollownessAMP } from '../../codex/core/pixelbrain/hollowness-amp.j
 import { runBiomeCoherenceAMP } from '../../codex/core/pixelbrain/biome-coherence-amp.js';
 import { collectFaces } from '../../codex/core/pixelbrain/iso-projector.js';
 import { renderFacesToSVG } from '../../codex/core/pixelbrain/voxel-svg-renderer.js';
+import { worldRenderOptions, seedsToLightPoints } from '../../codex/core/pixelbrain/world-render-options.js';
 import {
   generateVoxelFieldFromScrollAnalysis,
   schoolWeightsToEnergyMix,
@@ -104,7 +105,8 @@ function runPipeline(schoolWeights) {
   const boundOcc = (x, y, z) => isCellOccupied(volume, x, y, z);
   const rawFaces = collectFaces(volume, boundGet, boundOcc);
   const faces = rawFaces.map((f) => ({ ...f, type: f.faceType }));
-  const svg = renderFacesToSVG(faces);
+  const lightPoints = seedsToLightPoints(taggedSeeds, { schoolId: params.dominantSchoolId, size: SIZE });
+  const svg = renderFacesToSVG(faces, worldRenderOptions(lightPoints));
 
   let solidCount = 0;
   const materialHistogram = new Map();
