@@ -111,11 +111,14 @@ var _placed_torches := {}
 var _sword_mesh: MeshInstance3D
 var _pickaxe_mesh: Node3D
 var _mining_anim_t := -1.0
+var _mining_target: Dictionary = {}
+var _mining_swing_t := 0.0
 var _float_items: Array = []
 var _debug_tick_counter := 0
 var _simulate_walk := false
 var _simulate_walk_start_pos: Vector3
 var _simulate_walk_tick := 0
+var _dirty_chunks: Array[String] = []
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -142,6 +145,10 @@ func _ready() -> void:
 		print("simulate-walk mode: forcing +X velocity for 60 frames")
 
 func _physics_process(delta: float) -> void:
+	if _dirty_chunks.size() > 0:
+		var chunk_key: String = _dirty_chunks.pop_front()
+		_rebuild_chunk_mesh(chunk_key)
+
 	if _player == null:
 		return
 
@@ -362,6 +369,27 @@ func _load_chunk_settings() -> void:
 	_chunk_size_z = max(1, int(chunk_size.get("z", DEFAULT_CHUNK_SIZE_Z)))
 	_active_chunk_radius = max(0, int(chunk_info.get("activeRadius", DEFAULT_ACTIVE_CHUNK_RADIUS)))
 
+# Remove the emissive light source at a mined cell so the volume stays in sync
+# with occupancy. Without this, a mined ore keeps glowing and reads as if the
+# block were still there. Static + array-in so it is unit-testable.
+static func prune_emissive_at(emissive: Array, x: int, y: int, z: int) -> void:
+	for i in range(emissive.size() - 1, -1, -1):
+		var pos: Vector3 = emissive[i].get("position", Vector3.ZERO)
+		if int(floor(pos.x)) == x and int(floor(pos.y)) == y and int(floor(pos.z)) == z:
+			emissive.remove_at(i)
+
+# Distinct chunk keys whose mesh must be rebuilt when (x, z) is mined: the cell's
+# own chunk plus any neighbor chunk across a seam. A mined cell exposes only its
+# 6 face-neighbors, so only the 4 horizontal axis-neighbors can land in another
+# chunk (vertical neighbors always share the (x,z) chunk).
+static func chunk_keys_for_remesh(x: int, z: int, csx: int, csz: int) -> Array:
+	var keys: Array = []
+	for c in [[x, z], [x + 1, z], [x - 1, z], [x, z + 1], [x, z - 1]]:
+		var ck := "%d,%d" % [int(floor(float(c[0]) / float(csx))), int(floor(float(c[1]) / float(csz)))]
+		if not keys.has(ck):
+			keys.append(ck)
+	return keys
+
 func _build_emissive_voxel_index() -> void:
 	_emissive_voxels.clear()
 	for key in _occupied.keys():
@@ -422,7 +450,7 @@ func _build_greedy_chunk_mesh(chunk_data: Dictionary) -> void:
 					"max_v": v,
 				}
 			var group: Dictionary = groups[group_key]
-			group.cells["%d,%d" % [u, v]] = true
+			group.cells[Vector2i(u, v)] = true
 			group.min_u = min(int(group.min_u), u)
 			group.max_u = max(int(group.max_u), u)
 			group.min_v = min(int(group.min_v), v)
@@ -440,19 +468,19 @@ func _emit_greedy_group(st: SurfaceTool, group: Dictionary) -> void:
 	var plane: int = int(group.plane)
 	for v in range(int(group.min_v), int(group.max_v) + 1):
 		for u in range(int(group.min_u), int(group.max_u) + 1):
-			var start_key: String = "%d,%d" % [u, v]
+			var start_key := Vector2i(u, v)
 			if visited.has(start_key) or not cells.has(start_key):
 				continue
 
 			var width := 1
-			while cells.has("%d,%d" % [u + width, v]) and not visited.has("%d,%d" % [u + width, v]):
+			while cells.has(Vector2i(u + width, v)) and not visited.has(Vector2i(u + width, v)):
 				width += 1
 
 			var height := 1
 			var can_grow := true
 			while can_grow:
 				for scan_u in range(u, u + width):
-					var scan_key: String = "%d,%d" % [scan_u, v + height]
+					var scan_key := Vector2i(scan_u, v + height)
 					if not cells.has(scan_key) or visited.has(scan_key):
 						can_grow = false
 						break
@@ -461,7 +489,7 @@ func _emit_greedy_group(st: SurfaceTool, group: Dictionary) -> void:
 
 			for mark_v in range(v, v + height):
 				for mark_u in range(u, u + width):
-					visited["%d,%d" % [mark_u, mark_v]] = true
+					visited[Vector2i(mark_u, mark_v)] = true
 
 			_add_merged_face(st, face, material_id, block_id, plane, u, v, width, height)
 
@@ -587,43 +615,75 @@ func _build_player() -> void:
 	_player.add_child(_avatar_root)
 
 func _build_scholar_avatar() -> Node3D:
-	var packet := _load_json(SCHOLAR_PATH)
 	var root := Node3D.new()
-	root.scale = Vector3(0.055, 0.055, 0.055)
-	root.position = Vector3(0.0, -0.95, -0.28)
-	if packet.is_empty():
+	var packet_data := _load_json(SCHOLAR_PATH)
+	if packet_data.is_empty():
+		print("ERROR: Scholar packet is empty or failed to load!")
 		return root
-
-	var voxels: Array = packet.get("voxels", [])
-	var occupied := {}
-	for voxel in voxels:
-		occupied[_key(voxel.x, voxel.y, voxel.z)] = int(voxel.materialId)
-
-	var tools := {}
-	for material_id in _materials.keys():
-		var st := SurfaceTool.new()
-		st.begin(Mesh.PRIMITIVE_TRIANGLES)
-		tools[material_id] = st
-
-	for voxel in voxels:
-		var x := int(voxel.x)
-		var y := int(voxel.y)
-		var z := int(voxel.z)
-		var material_id := int(voxel.materialId)
-		for face in _model_exposed_faces(occupied, x, y, z):
-			_add_cube_face(tools.get(material_id, tools[1]), x - 8, y, z - 8, face)
-
-	for material_id in tools.keys():
-		var st: SurfaceTool = tools[material_id]
-		st.generate_normals()
-		var mesh := st.commit()
-		if mesh == null:
-			continue
-		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.mesh = mesh
-		mesh_instance.material_override = _materials.get(material_id, _materials[1])
-		root.add_child(mesh_instance)
-
+		
+	var mats: Dictionary = packet_data.get("materials", {})
+	var voxels: Array = packet_data.get("voxels", [])
+	print("SUCCESS: Loaded Scholar packet! Found " + str(voxels.size()) + " voxels and " + str(mats.size()) + " materials.")
+	
+	var VOXEL_SIZE := 0.05
+	var dim: Dictionary = packet_data.get("dimensions", {"width": 18, "height": 34, "depth": 10})
+	var offset_x = -float(dim.width) * VOXEL_SIZE / 2.0
+	var offset_y = -0.825
+	var offset_z = -float(dim.depth) * VOXEL_SIZE / 2.0
+	
+	var mat_nodes := {}
+	var mat_multimeshes := {}
+	
+	for mat_id_str in mats.keys():
+		var m_data = mats[mat_id_str]
+		var mat := StandardMaterial3D.new()
+		var color := Color(str(m_data.get("colorHint", "#ffffff")))
+		mat.albedo_color = color
+		mat.roughness = 0.8
+		mat_nodes[int(mat_id_str)] = mat
+		
+	for vox in voxels:
+		var mid: int = int(vox.get("materialId", 1))
+		if not mat_multimeshes.has(mid):
+			mat_multimeshes[mid] = []
+		mat_multimeshes[mid].append(vox)
+		var energy: float = float(vox.get("energy", 0.0))
+		if energy > 0.0 and mat_nodes.has(mid):
+			var m: StandardMaterial3D = mat_nodes[mid]
+			m.emission_enabled = true
+			m.emission = m.albedo_color
+			m.emission_energy_multiplier = energy * 2.5
+			
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE)
+	
+	for mid in mat_multimeshes.keys():
+		var vox_list: Array = mat_multimeshes[mid]
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.mesh = box_mesh
+		mm.instance_count = vox_list.size()
+		
+		for i in range(vox_list.size()):
+			var v = vox_list[i]
+			var px = float(v.x) * VOXEL_SIZE + offset_x + (VOXEL_SIZE / 2.0)
+			var py = float(v.y) * VOXEL_SIZE + offset_y + (VOXEL_SIZE / 2.0)
+			var pz = float(v.z) * VOXEL_SIZE + offset_z + (VOXEL_SIZE / 2.0)
+			
+			var basis := Basis()
+			var t := Transform3D(basis, Vector3(px, py, pz))
+			mm.set_instance_transform(i, t)
+			
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mmi.custom_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
+		if mat_nodes.has(mid):
+			mmi.material_override = mat_nodes[mid]
+		root.add_child(mmi)
+		
+	root.scale = Vector3(1.0, 1.0, 1.0)
+	root.position = Vector3(0.0, 0.0, 0.0)
 	return root
 
 func _build_lighting() -> void:
@@ -792,6 +852,10 @@ func _build_inventory_ui() -> void:
 func _update_camera_mode() -> void:
 	if _avatar_root:
 		_avatar_root.visible = _third_person
+	# The held pickaxe is a first-person viewmodel parented to the camera; hide
+	# it in third person so it does not float over the scene alongside the avatar.
+	if _pickaxe_mesh:
+		_pickaxe_mesh.visible = not _third_person
 	_update_camera_transform()
 	_update_hud()
 
@@ -1481,7 +1545,31 @@ func _spawn_pickaxe_in_hand() -> void:
 	_camera.add_child(_pickaxe_mesh)
 
 func _tick_pickaxe_anim(delta: float) -> void:
-	if _mining_anim_t < 0.0 or _pickaxe_mesh == null:
+	if _pickaxe_mesh == null:
+		return
+
+	if not _mining_target.is_empty():
+		var duration: float = MINING_DURATION.get(_mining_target.material_id, 0.9)
+		_mining_target.progress += delta / duration
+
+		_mining_swing_t += delta * MINING_SWING_SPEED
+		var swing: float = abs(sin(_mining_swing_t * PI))
+		_pickaxe_mesh.rotation_degrees = Vector3(
+			PICKAXE_REST_ROT.x - swing * 58.0,
+			PICKAXE_REST_ROT.y,
+			PICKAXE_REST_ROT.z
+		)
+		_pickaxe_mesh.position = Vector3(
+			PICKAXE_REST_POS.x,
+			PICKAXE_REST_POS.y + swing * 0.06,
+			PICKAXE_REST_POS.z - swing * 0.14
+		)
+
+		if _mining_target.progress >= 1.0:
+			_complete_mining()
+		return
+
+	if _mining_anim_t < 0.0:
 		return
 	_mining_anim_t += delta * MINING_ANIM_SPEED
 	var t := _mining_anim_t
@@ -1544,7 +1632,7 @@ func _raycast_mine_block() -> void:
 		return
 	var space_state := get_world_3d().direct_space_state
 	var origin := _camera.global_position
-	var end := origin - _camera.global_transform.basis.z * 6.0
+	var end := origin - _camera.global_transform.basis.z * 10.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
 	var result := space_state.intersect_ray(query)
 	if result:
@@ -1554,22 +1642,43 @@ func _raycast_mine_block() -> void:
 		var vy := int(floor(hit_pos.y))
 		var vz := int(floor(hit_pos.z))
 		var key := _key(vx, vy, vz)
-		
 		if _occupied.has(key):
-			_mine_block_at(vx, vy, vz)
+			_start_mining(vx, vy, vz)
+
+func _start_mining(vx: int, vy: int, vz: int) -> void:
+	var key := _key(vx, vy, vz)
+	var mat_id: int = int(_occupied.get(key, 1))
+	_mining_target = {
+		"x": vx, "y": vy, "z": vz,
+		"material_id": mat_id,
+		"progress": 0.0,
+		"chunk_key": _chunk_key_for_cell(vx, vz),
+	}
+	_mining_swing_t = 0.0
+
+func _complete_mining() -> void:
+	var vx: int = _mining_target.x
+	var vy: int = _mining_target.y
+	var vz: int = _mining_target.z
+	_mining_target.clear()
+	_mining_swing_t = 0.0
+	_mine_block_at(vx, vy, vz)
+	_mining_anim_t = 0.0
 
 func _mine_block_at(vx: int, vy: int, vz: int) -> void:
 	var key := _key(vx, vy, vz)
 	var mat_id: int = int(_occupied.get(key, 1))
 	_occupied.erase(key)
 	_block_ids.erase(key)
+	prune_emissive_at(_emissive_voxels, vx, vy, vz)
 
 	var chunk_key := _chunk_key_for_cell(vx, vz)
 	_remove_block_collider(chunk_key, vx, vy, vz)
-	_rebuild_chunk_mesh(chunk_key)
+	for remesh_key in chunk_keys_for_remesh(vx, vz, _chunk_size_x, _chunk_size_z):
+		if not _dirty_chunks.has(remesh_key):
+			_dirty_chunks.append(remesh_key)
 
 	_spawn_float_item(Vector3(vx, vy, vz), mat_id)
-	_mining_anim_t = 0.0
 	if mat_id == 4:
 		_inv.add("grimwood_shard", 1)
 		_update_inventory_ui()
@@ -1598,9 +1707,8 @@ func _rebuild_chunk_mesh(chunk_key: String) -> void:
 	if chunk_node == null:
 		return
 	for child in chunk_node.get_children():
-		if child.name == "AtlasTerrain":
+		if child is MeshInstance3D:
 			child.queue_free()
-			break
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	chunk_data["surface_tool"] = st
