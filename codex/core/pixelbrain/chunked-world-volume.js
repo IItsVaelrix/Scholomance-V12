@@ -592,10 +592,39 @@ export function generateWorldChunk(world, cx, cy, cz) {
 
   // Step 5: HollownessAMP — proposed removals resolved through authority table.
   // Energy field must be populated (step 4) before this runs.
-  const { deltas: hollowDeltas, surfaceLocked } = collectHollowDeltas(volume, { iterations: 3 });
+  // Crystal context: no surface lock, no energy floor (same as qbit-world-game-loop).
+  const { deltas: hollowDeltas, surfaceLocked } = collectHollowDeltas(volume, {
+    iterations: 3,
+    surfaceLockDepth: 0,
+    energyMin: 0,
+  });
   applyVoxelDeltas(volume, hollowDeltas, surfaceLocked);
 
+  // Surface the chunk's own seeds (chunk-local coords) so consumers can build
+  // a glow/lighting cue from energy sources. Ghost seeds are excluded — they
+  // belong to neighbors and would double-light the seam.
+  volume.seeds = ownSeeds;
+
   return volume;
+}
+
+/**
+ * Gather every loaded chunk's own seeds, lifted from chunk-local coordinates
+ * into world coordinates (local + chunk origin). Chunks without seeds (e.g.
+ * deserialized volumes) contribute nothing. Used to drive the WorldScenePortal
+ * glow cue.
+ */
+export function collectWorldSeeds(world) {
+  assertChunkedWorldVolume(world);
+  const { w, h, d } = world.spec.chunkSize;
+  const out = [];
+  for (const [key, vol] of world.chunks) {
+    const { cx, cy, cz } = parseChunkKey(key);
+    for (const s of (vol.seeds ?? [])) {
+      out.push({ x: s.x + cx * w, y: s.y + cy * h, z: s.z + cz * d, energy: s.energy });
+    }
+  }
+  return out;
 }
 
 /**

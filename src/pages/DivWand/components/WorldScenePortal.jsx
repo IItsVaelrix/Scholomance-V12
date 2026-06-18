@@ -13,10 +13,10 @@
 
 import { useMemo } from 'react';
 
-import { createChunkedWorldVolume, getOrLoadChunk, generateWorldChunk, chunkKey, parseChunkKey, applyMaterialBoundaryAlignment } from '../../../../codex/core/pixelbrain/chunked-world-volume.js';
+import { createChunkedWorldVolume, getOrLoadChunk, generateWorldChunk, chunkKey, parseChunkKey, applyMaterialBoundaryAlignment, collectWorldSeeds } from '../../../../codex/core/pixelbrain/chunked-world-volume.js';
 import { collectFaces, project, makeFace } from '../../../../codex/core/pixelbrain/iso-projector.js';
 import { renderFacesToSVG } from '../../../../codex/core/pixelbrain/voxel-svg-renderer.js';
-import { worldRenderOptions } from '../../../../codex/core/pixelbrain/world-render-options.js';
+import { worldRenderOptions, seedsToLightPoints } from '../../../../codex/core/pixelbrain/world-render-options.js';
 import { runBiomeCoherenceAMPWorld } from '../../../../codex/core/pixelbrain/biome-coherence-amp.js';
 
 /**
@@ -190,9 +190,14 @@ function runWorldPipeline(worldSpec) {
   // 4. Collect world-coord faces with the lex-min cull.
   const faces = collectWorldFaces(world);
 
-  // 5. Render to SVG — shared world look (AO + antialias). Per-seed glow is
-  // deferred here: chunk generation returns volumes without seed positions.
-  return renderFacesToSVG(faces, worldRenderOptions());
+  // 5. Render to SVG — shared world look (AO + antialias) plus a soft glow cue
+  // from the world's energy seeds (lifted to world coords, contained to a
+  // chunk-span radius so it reads as atmosphere, not a prop).
+  const lightPoints = seedsToLightPoints(collectWorldSeeds(world), {
+    schoolId: worldSpec.schoolId,
+    size: worldSpec.chunkSize.w,
+  });
+  return renderFacesToSVG(faces, worldRenderOptions(lightPoints));
 }
 
 export function WorldScenePortal({ node }) {
