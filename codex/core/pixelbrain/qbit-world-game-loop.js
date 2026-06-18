@@ -16,6 +16,7 @@ import {
   generateVoxelFieldFromScrollAnalysis,
   schoolWeightsToEnergyMix,
 } from './scroll-to-voxel-world.js';
+import { resolveBlockContext } from './block-school-bridge.js';
 
 export const QBIT_WORLD_SIZE = 32;
 
@@ -139,7 +140,7 @@ function histogramOccupiedMaterials(volume) {
   };
 }
 
-function buildFaceResource(face, field, params) {
+function buildFaceResource(face, field, params, blockCtx) {
   const energy = field.energyAt(face.x, face.y, face.z);
   const materialName = MATERIAL_NAMES[face.materialId] ?? `material-${face.materialId}`;
   const energyType = ENERGY_TYPE_NAMES[params.dominantEnergyTypeId] ?? 'UNKNOWN';
@@ -149,7 +150,8 @@ function buildFaceResource(face, field, params) {
     materialId: face.materialId,
     materialName,
     energyType,
-    schoolId: params.dominantSchoolId,
+    schoolId: blockCtx.schoolId,
+    blockId: blockCtx.blockId,
     amount: Math.max(1, Math.round((energy + params.emission + 0.1) * 10)),
     energy: Number(energy.toFixed(4)),
     position: Object.freeze({ x: face.x, y: face.y, z: face.z }),
@@ -201,10 +203,11 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
     (x, y, z) => isCellOccupied(volume, x, y, z)
   ).map((face, index) => {
     const typedFace = { ...face, type: face.faceType };
+    const blockCtx = resolveBlockContext(size, size, size, schoolWeights, face.materialId, face.x, face.y, face.z);
     return Object.freeze({
       ...typedFace,
       id: `${face.x}:${face.y}:${face.z}:${face.faceType}:${index}`,
-      resource: buildFaceResource(face, field, params),
+      resource: buildFaceResource(face, field, params, blockCtx),
     });
   });
 
