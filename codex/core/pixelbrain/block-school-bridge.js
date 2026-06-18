@@ -91,6 +91,18 @@ export function invalidateBasis(w, h, d) {
   }
 }
 
+export function lightAt(w, h, d, schoolWeights, x, y, z) {
+  const basis = getOrBuildBasis(w, h, d);
+  const cellIdx = y * w * d + z * w + x;
+  let total = 0;
+  for (const schoolId of ALL_SCHOOL_IDS) {
+    const weight = Number(schoolWeights[schoolId] ?? 0);
+    if (weight <= 0) continue;
+    total += weight * (basis[schoolId]?.[cellIdx] ?? 0);
+  }
+  return Math.min(1, Math.max(0, total));
+}
+
 export function resolveBlockContext(w, h, d, schoolWeights, materialId, x, y, z) {
   const schoolId = schoolAt(w, h, d, schoolWeights, x, y, z);
   const blockId = resolveBlockId(schoolId, materialId, x, y, z);

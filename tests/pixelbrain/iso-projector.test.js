@@ -183,6 +183,64 @@ describe('iso-projector', () => {
     });
   });
 
+  describe('ambient occlusion', () => {
+    it('every face has an ao property in [0, 1]', () => {
+      const vol = createVoxelVolume(4, 4, 4);
+      setCellMaterial(vol, 1, 1, 1, 2);
+      const faces = collectFaces(
+        vol,
+        (x, y, z) => getCellMaterialId(vol, x, y, z),
+        (x, y, z) => isCellOccupied(vol, x, y, z)
+      );
+      for (const face of faces) {
+        expect(typeof face.ao).toBe('number');
+        expect(face.ao).toBeGreaterThanOrEqual(0);
+        expect(face.ao).toBeLessThanOrEqual(1);
+      }
+    });
+
+    it('isolated cell has ao=0 on all faces (no occluding neighbors)', () => {
+      const vol = createVoxelVolume(4, 4, 4);
+      setCellMaterial(vol, 1, 1, 1, 2);
+      const faces = collectFaces(
+        vol,
+        (x, y, z) => getCellMaterialId(vol, x, y, z),
+        (x, y, z) => isCellOccupied(vol, x, y, z)
+      );
+      for (const face of faces) {
+        expect(face.ao).toBe(0);
+      }
+    });
+
+    it('top face ao increases when upper diagonal neighbors are occupied', () => {
+      const vol = createVoxelVolume(4, 4, 4);
+      setCellMaterial(vol, 1, 1, 1, 2);
+      setCellMaterial(vol, 0, 2, 1, 2); // upper diagonal: x-1, y+1, z
+      const faces = collectFaces(
+        vol,
+        (x, y, z) => getCellMaterialId(vol, x, y, z),
+        (x, y, z) => isCellOccupied(vol, x, y, z)
+      );
+      const topFace = faces.find(f => f.x === 1 && f.y === 1 && f.z === 1 && f.faceType === 'top');
+      expect(topFace).toBeDefined();
+      expect(topFace.ao).toBeGreaterThan(0);
+    });
+
+    it('left face ao increases when z+1 diagonal neighbors are occupied', () => {
+      const vol = createVoxelVolume(4, 4, 4);
+      setCellMaterial(vol, 1, 1, 1, 2);
+      setCellMaterial(vol, 2, 1, 2, 2); // x+1, y, z+1 — left face diagonal
+      const faces = collectFaces(
+        vol,
+        (x, y, z) => getCellMaterialId(vol, x, y, z),
+        (x, y, z) => isCellOccupied(vol, x, y, z)
+      );
+      const leftFace = faces.find(f => f.x === 1 && f.y === 1 && f.z === 1 && f.faceType === 'left');
+      expect(leftFace).toBeDefined();
+      expect(leftFace.ao).toBeGreaterThan(0);
+    });
+  });
+
   describe('renderBounds', () => {
     it('returns zero bounds for empty array', () => {
       const bounds = renderBounds([]);

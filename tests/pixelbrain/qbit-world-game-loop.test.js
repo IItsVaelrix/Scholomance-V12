@@ -99,4 +99,16 @@ describe('block attribution via PhotonicBridge', () => {
     const uniqueSchools = new Set(world.faces.map(f => f.resource.schoolId));
     expect(uniqueSchools.size).toBeGreaterThan(1);
   });
+
+  it('every face carries ao in [0,1] and light in [0,1]', () => {
+    const world = buildQbitWorldGameLoop(QBIT_WORLD_PRESETS.VOID, { size: 16, maxRadius: 12 });
+    for (const face of world.faces) {
+      expect(typeof face.ao).toBe('number');
+      expect(face.ao).toBeGreaterThanOrEqual(0);
+      expect(face.ao).toBeLessThanOrEqual(1);
+      expect(typeof face.light).toBe('number');
+      expect(face.light).toBeGreaterThanOrEqual(0);
+      expect(face.light).toBeLessThanOrEqual(1);
+    }
+  });
 });

@@ -16,7 +16,7 @@ import {
   generateVoxelFieldFromScrollAnalysis,
   schoolWeightsToEnergyMix,
 } from './scroll-to-voxel-world.js';
-import { resolveBlockContext } from './block-school-bridge.js';
+import { resolveBlockContext, lightAt } from './block-school-bridge.js';
 
 export const QBIT_WORLD_SIZE = 32;
 
@@ -207,6 +207,7 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
     return Object.freeze({
       ...typedFace,
       id: `${face.x}:${face.y}:${face.z}:${face.faceType}:${index}`,
+      light: lightAt(size, size, size, schoolWeights, face.x, face.y, face.z),
       resource: buildFaceResource(face, field, params, blockCtx),
     });
   });

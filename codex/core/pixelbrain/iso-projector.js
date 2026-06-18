@@ -60,6 +60,25 @@ export function makeFace(x, y, z, faceType, materialId) {
  * @param {Function} isCellOccupied - (x, y, z) => boolean
  * @returns {Array<object>} sorted array of face descriptors
  */
+function sampleOccupied(isCellOccupied, vol, x, y, z) {
+  if (x < 0 || y < 0 || z < 0) return false;
+  if (x >= vol.width || y >= vol.height || z >= vol.depth) return false;
+  return isCellOccupied(x, y, z);
+}
+
+function computeFaceAO(x, y, z, faceType, vol, isCellOccupied) {
+  const s = (dx, dy, dz) => sampleOccupied(isCellOccupied, vol, x + dx, y + dy, z + dz) ? 1 : 0;
+  let count = 0;
+  if (faceType === 'top') {
+    count = s(-1, 1, 0) + s(1, 1, 0) + s(0, 1, -1) + s(0, 1, 1);
+  } else if (faceType === 'left') {
+    count = s(-1, 0, 1) + s(1, 0, 1) + s(0, -1, 1) + s(0, 1, 1);
+  } else if (faceType === 'right') {
+    count = s(1, 0, -1) + s(1, 0, 1) + s(1, -1, 0) + s(1, 1, 0);
+  }
+  return count / 4;
+}
+
 export function collectFaces(vol, getCellMaterialId, isCellOccupied) {
   const faces = [];
 
@@ -77,19 +96,25 @@ export function collectFaces(vol, getCellMaterialId, isCellOccupied) {
         // Top face: visible if cell above is not occupied
         const aboveOccupied = y + 1 < vol.height && isCellOccupied(x, y + 1, z);
         if (!aboveOccupied) {
-          faces.push(makeFace(x, y, z, 'top', materialId));
+          const face = makeFace(x, y, z, 'top', materialId);
+          face.ao = computeFaceAO(x, y, z, 'top', vol, isCellOccupied);
+          faces.push(face);
         }
 
         // Left face: visible if cell at z+1 is not occupied
         const leftOccupied = z + 1 < vol.depth && isCellOccupied(x, y, z + 1);
         if (!leftOccupied) {
-          faces.push(makeFace(x, y, z, 'left', materialId));
+          const face = makeFace(x, y, z, 'left', materialId);
+          face.ao = computeFaceAO(x, y, z, 'left', vol, isCellOccupied);
+          faces.push(face);
         }
 
         // Right face: visible if cell at x+1 is not occupied
         const rightOccupied = x + 1 < vol.width && isCellOccupied(x + 1, y, z);
         if (!rightOccupied) {
-          faces.push(makeFace(x, y, z, 'right', materialId));
+          const face = makeFace(x, y, z, 'right', materialId);
+          face.ao = computeFaceAO(x, y, z, 'right', vol, isCellOccupied);
+          faces.push(face);
         }
       }
     }

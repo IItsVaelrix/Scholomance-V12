@@ -6,6 +6,7 @@ import {
   invalidateBasis,
   resolveBlockContext,
   prewarmBasis,
+  lightAt,
 } from '../../codex/core/pixelbrain/block-school-bridge.js';
 
 const VALID_SCHOOL_IDS = new Set([
@@ -150,5 +151,30 @@ describe('invalidateBasis', () => {
     invalidateBasis();
     const a = getOrBuildBasis(8, 8, 8);
     expect(a).toBeDefined();
+  });
+});
+
+describe('lightAt', () => {
+  it('returns a value in [0, 1]', () => {
+    const light = lightAt(8, 8, 8, { VOID: 1.0 }, 4, 4, 4);
+    expect(light).toBeGreaterThanOrEqual(0);
+    expect(light).toBeLessThanOrEqual(1);
+  });
+
+  it('returns 0 when schoolWeights is empty', () => {
+    const light = lightAt(8, 8, 8, {}, 4, 4, 4);
+    expect(light).toBe(0);
+  });
+
+  it('is deterministic', () => {
+    const a = lightAt(8, 8, 8, { VOID: 0.6, ALCHEMY: 0.4 }, 3, 2, 5);
+    const b = lightAt(8, 8, 8, { VOID: 0.6, ALCHEMY: 0.4 }, 3, 2, 5);
+    expect(a).toBe(b);
+  });
+
+  it('seed-adjacent cells are brighter than far cells', () => {
+    const near = lightAt(8, 8, 8, { VOID: 1.0 }, 4, 4, 4);
+    const far = lightAt(8, 8, 8, { VOID: 1.0 }, 0, 0, 0);
+    expect(near).toBeGreaterThanOrEqual(far);
   });
 });
