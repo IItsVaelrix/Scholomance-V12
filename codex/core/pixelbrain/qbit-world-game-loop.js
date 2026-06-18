@@ -17,6 +17,7 @@ import {
   schoolWeightsToEnergyMix,
 } from './scroll-to-voxel-world.js';
 import { resolveBlockContext, lightAt } from './block-school-bridge.js';
+import { applySchoolTagAMP } from './school-tag-amp.js';
 
 export const QBIT_WORLD_SIZE = 32;
 
@@ -196,6 +197,10 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
   runBiomeCoherenceAMP(volume, {
     energyAt: (cell) => field.energyAt(cell.x, cell.y, cell.z),
   });
+
+  // VolumeAMP: stamp schoolId + blockId onto every surviving cell after all
+  // shaping passes, so mining can look up block identity by coordinate.
+  applySchoolTagAMP(volume, schoolWeights);
 
   const faces = collectFaces(
     volume,

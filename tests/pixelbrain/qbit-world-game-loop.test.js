@@ -114,6 +114,17 @@ describe('block attribution via PhotonicBridge', () => {
     }
   });
 
+  it('vol.tags has an entry for every occupied cell', () => {
+    const world = buildQbitWorldGameLoop(QBIT_WORLD_PRESETS.VOID, { size: 16, maxRadius: 12 });
+    const vol = world.volume;
+    let solidCount = 0;
+    for (let y = 0; y < vol.height; y++)
+      for (let z = 0; z < vol.depth; z++)
+        for (let x = 0; x < vol.width; x++)
+          if (vol.cells[y * vol.width * vol.depth + z * vol.width + x] >> 4 > 0) solidCount++;
+    expect(world.volume.tags.size).toBe(solidCount);
+  });
+
   it('every face carries ao in [0,1] and light in [0,1]', () => {
     const world = buildQbitWorldGameLoop(QBIT_WORLD_PRESETS.VOID, { size: 16, maxRadius: 12 });
     for (const face of world.faces) {

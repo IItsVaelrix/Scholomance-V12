@@ -40,6 +40,7 @@ export function createVoxelVolume(width, height, depth) {
     cells: new Uint16Array(totalCells),
     energyField: new Float32Array(totalCells),
     energyTypes: new Uint8Array(totalCells),
+    tags: new Map(),
   };
 }
 

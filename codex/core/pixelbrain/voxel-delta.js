@@ -130,6 +130,10 @@ export function applyVoxelDeltas(vol, deltas, surfaceLockedCells = new Set()) {
       if (delta.materialId != null) {
         setCellMaterial(vol, delta.x, delta.y, delta.z, delta.materialId);
       }
+    } else if (delta.op === VoxelOp.TAG) {
+      if (delta.payload != null && vol.tags != null) {
+        vol.tags.set(`${delta.x},${delta.y},${delta.z}`, delta.payload);
+      }
     }
 
     stats.applied++;
