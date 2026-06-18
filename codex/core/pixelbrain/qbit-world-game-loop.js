@@ -11,7 +11,7 @@ import { assignMaterial } from './qbit-field.js';
 import { collectHollowDeltas } from './hollowness-amp.js';
 import { applyVoxelDeltas } from './voxel-delta.js';
 import { runBiomeCoherenceAMP } from './biome-coherence-amp.js';
-import { collectFaces } from './iso-projector.js';
+import { collectFaces, project, ISO_TILE_SIZE } from './iso-projector.js';
 import {
   generateVoxelFieldFromScrollAnalysis,
   schoolWeightsToEnergyMix,
@@ -219,6 +219,20 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
     energyMix: schoolWeightsToEnergyMix(schoolWeights),
   });
 
+  const lightRadius = size * ISO_TILE_SIZE;
+  const lightPoints = Object.freeze(
+    taggedSeeds.map(seed => {
+      const { sx, sy } = project(seed.vx, seed.vy, seed.vz);
+      return Object.freeze({
+        sx,
+        sy,
+        r: lightRadius,
+        energy: Math.min(1, Math.max(0, seed.energy ?? 1)),
+        schoolId: params.dominantSchoolId,
+      });
+    })
+  );
+
   return Object.freeze({
     volume,
     field,
@@ -226,6 +240,7 @@ export function buildQbitWorldGameLoop(schoolWeights, options = {}) {
     params,
     mix,
     seeds: taggedSeeds,
+    lightPoints,
     telemetry,
     pixelBrainAsset: buildPixelBrainAssembly(params, telemetry),
     wandProposal: buildWandProposal(schoolWeights),

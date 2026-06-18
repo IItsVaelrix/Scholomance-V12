@@ -66,4 +66,60 @@ describe('renderFacesToSVG', () => {
     const svg = renderFacesToSVG(faces);
     expect(svg).toContain('viewBox=');
   });
+
+  it('darkens faces when ambient occlusion metadata is enabled', () => {
+    const face = { ...makeFace('top', 0, 0, 0, 2), ao: 1 };
+    const svg = renderFacesToSVG([face], { ambientOcclusion: true, ambientOcclusionStrength: 0.5 });
+    const fill = svg.match(/<polygon[^>]*fill="(#[0-9a-fA-F]+)"/)?.[1];
+    expect(fill).toBe('#4e5258');
+  });
+
+  it('brightens faces when lighting metadata is enabled', () => {
+    const face = { ...makeFace('right', 0, 0, 0, 4), light: 1 };
+    const svg = renderFacesToSVG([face], { lighting: true, lightingStrength: 0.25 });
+    const fill = svg.match(/<polygon[^>]*fill="(#[0-9a-fA-F]+)"/)?.[1];
+    expect(fill).toBe('#46ecff');
+  });
+
+  it('adds geometric precision and edge blending when anti-aliasing is enabled', () => {
+    const svg = renderFacesToSVG([makeFace('top', 0, 0, 0, 2)], { antialias: true });
+    expect(svg).toContain('shape-rendering: geometricPrecision');
+    expect(svg).toContain('stroke-linejoin="round"');
+  });
+
+  it('emits no gradient defs when lightPoints is empty', () => {
+    const svg = renderFacesToSVG([makeFace('top', 0, 0, 0, 2)], { lightPoints: [] });
+    expect(svg).not.toContain('<defs>');
+    expect(svg).not.toContain('radialGradient');
+  });
+
+  it('emits radialGradient defs and screen-blend overlay when lightPoints provided', () => {
+    const face = makeFace('top', 0, 0, 0, 2);
+    const svg = renderFacesToSVG([face], {
+      lightPoints: [{ sx: 0, sy: 0, r: 100, energy: 1.0, schoolId: 'VOID' }],
+    });
+    expect(svg).toContain('<defs>');
+    expect(svg).toContain('radialGradient');
+    expect(svg).toContain('mix-blend-mode: screen');
+  });
+
+  it('emits one gradient def per light point', () => {
+    const face = makeFace('top', 0, 0, 0, 2);
+    const svg = renderFacesToSVG([face], {
+      lightPoints: [
+        { sx: 0, sy: 0, r: 80, energy: 1.0, schoolId: 'VOID' },
+        { sx: 50, sy: 30, r: 80, energy: 0.8, schoolId: 'ALCHEMY' },
+      ],
+    });
+    const count = (svg.match(/radialGradient/g) || []).length;
+    expect(count).toBeGreaterThanOrEqual(2);
+  });
+
+  it('uses school light color in the gradient stop', () => {
+    const face = makeFace('top', 0, 0, 0, 2);
+    const svg = renderFacesToSVG([face], {
+      lightPoints: [{ sx: 0, sy: 0, r: 100, energy: 1.0, schoolId: 'PSYCHIC' }],
+    });
+    expect(svg).toContain('#22d3ee');
+  });
 });

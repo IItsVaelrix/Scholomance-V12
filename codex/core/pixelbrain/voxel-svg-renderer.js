@@ -1,3 +1,14 @@
+const SCHOOL_LIGHT_COLORS = {
+  VOID:        '#60a5fa',
+  ALCHEMY:     '#e879f9',
+  SONIC:       '#a78bfa',
+  PSYCHIC:     '#22d3ee',
+  WILL:        '#fbbf24',
+  NECROMANCY:  '#4ade80',
+  ABJURATION:  '#fcd34d',
+  DIVINATION:  '#e0f2fe',
+};
+
 // Three light levels per material: top (brightest), left (mid), right (darkest)
 const MATERIAL_COLORS = {
   top:   { 1: '#6b7280', 2: '#9ca3af', 3: '#d1d5db', 4: '#bae6fd' },
@@ -77,6 +88,8 @@ export function renderFacesToSVG(faces, options = {}) {
     lighting = true,
     lightingStrength = 0.32,
     antialias = false,
+    lightPoints = [],
+    lightPointOpacity = 0.45,
   } = options;
 
   if (faces.length === 0) {
@@ -123,10 +136,42 @@ export function renderFacesToSVG(faces, options = {}) {
     ? ' style="shape-rendering: geometricPrecision; text-rendering: geometricPrecision;"'
     : '';
 
+  const gradientDefs = lightPoints.length > 0
+    ? [
+        '  <defs>',
+        ...lightPoints.map((lp, i) => {
+          const color = SCHOOL_LIGHT_COLORS[lp.schoolId] ?? '#ffffff';
+          const cx = (lp.sx + ox).toFixed(1);
+          const cy = (lp.sy + oy).toFixed(1);
+          const r = lp.r.toFixed(1);
+          const opacity = ((lp.energy ?? 1) * lightPointOpacity).toFixed(3);
+          return [
+            `    <radialGradient id="_lp${i}" cx="${cx}" cy="${cy}" r="${r}" gradientUnits="userSpaceOnUse">`,
+            `      <stop offset="0%" stop-color="${color}" stop-opacity="${opacity}"/>`,
+            `      <stop offset="100%" stop-color="${color}" stop-opacity="0"/>`,
+            `    </radialGradient>`,
+          ].join('\n');
+        }),
+        '  </defs>',
+      ].join('\n')
+    : '';
+
+  const lightOverlay = lightPoints.length > 0
+    ? [
+        '  <g style="mix-blend-mode: screen;">',
+        ...lightPoints.map((_, i) =>
+          `    <rect width="${width}" height="${height}" fill="url(#_lp${i})"/>`
+        ),
+        '  </g>',
+      ].join('\n')
+    : '';
+
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}"${renderHints}>`,
+    gradientDefs,
     `  <rect width="${width}" height="${height}" fill="${background}" />`,
     polys,
+    lightOverlay,
     `</svg>`,
-  ].join('\n');
+  ].filter(Boolean).join('\n');
 }
