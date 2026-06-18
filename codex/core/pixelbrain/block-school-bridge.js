@@ -3,6 +3,7 @@ import { propagate, DEFAULT_DECAY, DEFAULT_ITERATIONS } from './qbit-field.js';
 import { SCHOOL_TO_ENERGY } from '../constants/schools.js';
 import { SCHOOL_VOXEL_DEFAULTS } from './scroll-to-voxel-world.js';
 import { createVoxelVolume } from './voxel-volume.js';
+import { resolveBlockId } from './block-taxonomy.js';
 
 const ALL_SCHOOL_IDS = Object.freeze(Object.keys(SCHOOL_TO_ENERGY));
 
@@ -87,5 +88,17 @@ export function invalidateBasis(w, h, d) {
     _basisCache.clear();
   } else {
     _basisCache.delete(basisKey(w, h, d));
+  }
+}
+
+export function resolveBlockContext(w, h, d, schoolWeights, materialId, x, y, z) {
+  const schoolId = schoolAt(w, h, d, schoolWeights, x, y, z);
+  const blockId = resolveBlockId(schoolId, materialId, x, y, z);
+  return { schoolId, blockId };
+}
+
+export function prewarmBasis(tiers) {
+  for (const { w, h, d } of tiers) {
+    getOrBuildBasis(w, h, d);
   }
 }
