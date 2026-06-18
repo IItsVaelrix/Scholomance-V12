@@ -66,7 +66,7 @@ function sampleOccupied(isCellOccupied, vol, x, y, z) {
   return isCellOccupied(x, y, z);
 }
 
-function computeFaceAO(x, y, z, faceType, vol, isCellOccupied) {
+export function computeFaceAO(x, y, z, faceType, vol, isCellOccupied) {
   const s = (dx, dy, dz) => sampleOccupied(isCellOccupied, vol, x + dx, y + dy, z + dz) ? 1 : 0;
   let count = 0;
   if (faceType === 'top') {
