@@ -1,0 +1,49 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "voidmetal-pickaxe.v1",
+  "class": "weapon",
+  "archetype": "pickaxe",
+  "canvas": { "width": 64, "height": 64, "gridSize": 1 },
+  "seed": 240619,
+  "bytecode": "VW-VOID-WILL-KINETIC-TRANSCENDENT",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "head_core",
+      "profile": "tool.pickaxe.head.minecraft_void",
+      "params": { "cx": 32, "y": 7 },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "silver", "anchor": "spectral" }
+    },
+    {
+      "id": "handle",
+      "profile": "tool.pickaxe.handle.diagonal",
+      "params": { "length": 38, "dx": -25, "thickness": 1 },
+      "attach": { "parent": "head_core", "at": "base" },
+      "fill": { "material": "bark" },
+      "outline": { "material": "voidsteel", "anchor": "deep" }
+    },
+    {
+      "id": "handle_wrap",
+      "profile": "tool.pickaxe.handle.wrap",
+      "params": { "length": 38, "dx": -25, "spacing": 6 },
+      "attach": { "parent": "head_core", "at": "base" },
+      "fill": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "collar",
+      "profile": "tool.pickaxe.collar.socket",
+      "params": { "half": 5, "height": 6 },
+      "attach": { "parent": "head_core", "at": "base" },
+      "fill": { "material": "void_gold", "anchor": "body" },
+      "outline": { "material": "silver", "anchor": "frost" }
+    },
+    {
+      "id": "void_inlay",
+      "profile": "tool.pickaxe.void_inlay",
+      "params": { "span": 15 },
+      "attach": { "parent": "head_core", "at": "rune_track" },
+      "fill": { "material": "void_rune_glow", "anchor": "frost" }
+    }
+  ]
+}

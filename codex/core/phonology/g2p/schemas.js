@@ -233,7 +233,7 @@ export function dedupeCandidates(candidates) {
 }
 
 export function isValidVote(vote) {
-  return (
+  return Boolean(
     vote &&
     typeof vote.candidateKey === 'string' &&
     G2P_JUROR_IDS[vote.jurorId] &&
@@ -247,7 +247,7 @@ export function isValidVote(vote) {
 }
 
 export function isValidVerdict(value) {
-  return (
+  return Boolean(
     value &&
     typeof value === 'object' &&
     Array.isArray(value.candidates) &&

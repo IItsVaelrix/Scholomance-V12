@@ -7,11 +7,13 @@ import {
 } from 'lucide-react';
 import { validateDivProposal } from '../../lib/engine.adapter.js';
 import { VoxelScenePortal } from './components/VoxelScenePortal.jsx';
+import { WorldScenePortal } from './components/WorldScenePortal.jsx';
 import { generateCatalogId } from '../../lib/catalogId.js';
 import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
 import { buildDivWandGodotExport } from '../../lib/godot-export/divwandGodotExport.js';
+import obsidianChoirCrystalProposal from './obsidian-choir-crystal.formula.json';
 import './DivWandPage.css';
 
 // ── BROWSER-SAFE CATALOG ──────────────────────────────────────────────────────
@@ -158,6 +160,11 @@ const PRESETS = [
     },
   },
   {
+    id: 'preset-obsidian-choir',
+    name: 'Obsidian Choir',
+    proposal: obsidianChoirCrystalProposal,
+  },
+  {
     id: 'preset-hud',
     name: 'Combat HUD',
     proposal: {
@@ -278,6 +285,10 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 
   if (node.type === 'voxel') {
     return <VoxelScenePortal node={node} />;
+  }
+
+  if (node.type === 'world') {
+    return <WorldScenePortal node={node} />;
   }
 
   if (node.type === 'element') {

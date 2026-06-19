@@ -62,6 +62,25 @@ registerPartProfile('character.face.eye.voidTouched', (params = {}, options = {}
   };
 });
 
+registerPartProfile('character.face.eye.humanSoft', (params = {}, options = {}) => {
+  const isLeft = String(options.side || 'left') === 'left';
+  const cx = roundInt(params.cx ?? (isLeft ? -1 : 1));
+  const cy = roundInt(params.cy ?? 0);
+  const dir = isLeft ? -1 : 1;
+  const iris = params.iris || params.color || null;
+  const sclera = params.sclera || '#FFF1D6';
+  const cells = [];
+  cells.push({ x: cx - dir, y: cy, color: sclera });
+  cells.push({ x: cx, y: cy, ...(iris ? { color: iris } : {}) });
+  cells.push({ x: cx + dir, y: cy, color: sclera });
+  cells.push({ x: cx, y: cy + 1, ...(iris ? { color: iris } : {}) });
+  cells.push({ x: cx - dir, y: cy + 1, color: sclera });
+  return {
+    cells,
+    anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } },
+  };
+});
+
 registerPartProfile('character.face.nose.small', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);
   const cy = roundInt(params.cy ?? 0);
@@ -101,12 +120,48 @@ registerPartProfile('character.face.nose.broad', (params = {}, options = {}) => 
   };
 });
 
+registerPartProfile('character.face.nose.humanSoft', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const direction = String(options.direction || 'south');
+  const cells = [];
+  if (direction === 'east' || direction === 'west') {
+    const dir = direction === 'east' ? 1 : -1;
+    cells.push({ x: cx, y: cy });
+    cells.push({ x: cx + dir, y: cy + 1 });
+    cells.push({ x: cx + dir, y: cy + 2 });
+  } else {
+    cells.push({ x: cx, y: cy });
+    cells.push({ x: cx, y: cy + 1 });
+    cells.push({ x: cx + 1, y: cy + 1 });
+  }
+  return {
+    cells,
+    anchors: { base: { x: cx, y: cy }, tip: { x: cx, y: cy + 2 } },
+  };
+});
+
 registerPartProfile('character.face.mouth.small', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);
   const cy = roundInt(params.cy ?? 0);
   const cells = [];
   cells.push({ x: cx, y: cy });
   cells.push({ x: cx + 1, y: cy });
+  return {
+    cells,
+    anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } },
+  };
+});
+
+registerPartProfile('character.face.mouth.humanSoft', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const lip = params.color || '#8C3E36';
+  const cells = [];
+  cells.push({ x: cx - 1, y: cy, color: lip });
+  cells.push({ x: cx, y: cy, color: lip });
+  cells.push({ x: cx + 1, y: cy, color: lip });
+  cells.push({ x: cx, y: cy + 1, color: lip });
   return {
     cells,
     anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } },

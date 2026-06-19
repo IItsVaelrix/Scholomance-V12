@@ -19,7 +19,14 @@ export function cleanVisualiserWord(word: string): string {
  * map hit would silently disagree with every normalized consumer. */
 export function wordTruesight(word: string): { color: string; school: string; analysis: any } | null {
   const clean = cleanVisualiserWord(word);
-  if (!clean || VISUALISER_FUNCTION_WORDS.has(clean.toLowerCase())) return null;
+  if (!clean) return null;
+  if (VISUALISER_FUNCTION_WORDS.has(clean.toLowerCase())) return null;
+  // Contractions: "I'm" → stem "i", "you're" → stem "you", etc.
+  const apostrophe = String(word || '').indexOf("'");
+  if (apostrophe > 0) {
+    const stem = word.slice(0, apostrophe).replace(/[^A-Za-z]/g, '').toLowerCase();
+    if (stem && VISUALISER_FUNCTION_WORDS.has(stem)) return null;
+  }
   const engine = PhonemeEngine as {
     analyzeDeep?: (w: string) => any | null;
     getSchoolFromVowelFamily?: (f: string) => string | null;

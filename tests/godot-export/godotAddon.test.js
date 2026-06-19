@@ -16,13 +16,15 @@ describe('Scholomance Godot bridge addon', () => {
     expect(plugin).toContain('script="scholomance_godot_bridge_plugin.gd"');
   });
 
-  it('registers PixelBrain, Wand, and DivWand importers', () => {
+  it('registers PixelBrain, Wand, DivWand, QBIT World, and frame importers', () => {
     const plugin = readAddonFile('scholomance_godot_bridge_plugin.gd');
 
     expect(plugin).toContain('importers/pixelbrain_importer.gd');
     expect(plugin).toContain('importers/wand_importer.gd');
     expect(plugin).toContain('importers/divwand_importer.gd');
-    expect(plugin.match(/add_import_plugin/g)).toHaveLength(4);
+    expect(plugin).toContain('importers/qbit_world_importer.gd');
+    expect(plugin).toContain('importers/frame_timeline_importer.gd');
+    expect(plugin.match(/add_import_plugin/g)).toHaveLength(5);
   });
 
   it('renders PixelBrain artifacts into ImageTexture scenes', () => {

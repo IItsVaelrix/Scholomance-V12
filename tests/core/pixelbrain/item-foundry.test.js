@@ -13,6 +13,7 @@ import { applyRegionFills } from '../../../codex/core/pixelbrain/region-fill-amp
 import { MATERIAL_PALETTES } from '../../../codex/core/pixelbrain/material-registry.js';
 
 const SCIMITAR_SPEC = JSON.parse(readFileSync('specs/scimitar.hd.v1.json', 'utf8'));
+const PICKAXE_SPEC = JSON.parse(readFileSync('specs/voidmetal-pickaxe.v1.json', 'utf8'));
 
 // Empirically pinned from the recovered scimitar.hd.v1 spec (seed 1337).
 // The shader hash matches the original team forge exactly; the spec hash is
@@ -176,10 +177,42 @@ describe('Item Foundry — golden scimitar (specs/scimitar.hd.v1.json)', () => {
   });
 });
 
+describe('Item Foundry — voidmetal pickaxe (specs/voidmetal-pickaxe.v1.json)', () => {
+  const bundle = forgeItemAsset(PICKAXE_SPEC, { includeShader: false });
+
+  it('routes through the pickaxe grammar without required-output failures', () => {
+    expect(bundle.expansion.contract).toBe('PB-SHAPE-GRAMMAR-v1');
+    expect(bundle.expansion.grammarId).toBe('weapon.tool.pickaxe-v1');
+    expect(bundle.routeDiagnostics.ok).toBe(true);
+    expect(bundle.routeDiagnostics.failures).toEqual([]);
+  });
+
+  it('emits a dense Minecraft-readable silhouette with Scholomance inlay parts', () => {
+    const counts = {};
+    for (const c of bundle.assetPacket.geometry.coordinates) {
+      counts[c.partId] = (counts[c.partId] || 0) + 1;
+    }
+    expect(counts.head_core).toBeGreaterThanOrEqual(120);
+    expect(counts.handle).toBeGreaterThanOrEqual(70);
+    expect(counts.handle_wrap).toBeGreaterThanOrEqual(8);
+    expect(counts.collar).toBeGreaterThanOrEqual(20);
+    expect(counts.void_inlay).toBeGreaterThanOrEqual(8);
+  });
+
+  it('is deterministic: two forges produce byte-identical exported artifacts', () => {
+    const again = forgeItemAsset(PICKAXE_SPEC, { includeShader: false });
+    expect(JSON.stringify(again.assetPacket)).toBe(JSON.stringify(bundle.assetPacket));
+    expect(again.godotArtifact).toBe(bundle.godotArtifact);
+    expect(again.fills.hash).toBe(bundle.fills.hash);
+    expect(Buffer.compare(again.png, bundle.png)).toBe(0);
+  });
+});
+
 describe('Item Foundry — structural invariants', () => {
   it.each([
     ['scimitar', SCIMITAR_SPEC],
     ['mini dirk', MINI_SPEC],
+    ['voidmetal pickaxe', PICKAXE_SPEC],
   ])('composes a silhouette with no floating islands (%s)', (_label, rawSpec) => {
     const silhouette = composeSilhouette(normalizeItemSpec(rawSpec));
     expect(silhouette.cells.length).toBeGreaterThan(0);
@@ -189,6 +222,7 @@ describe('Item Foundry — structural invariants', () => {
   it.each([
     ['scimitar', SCIMITAR_SPEC],
     ['mini dirk', MINI_SPEC],
+    ['voidmetal pickaxe', PICKAXE_SPEC],
   ])('outline is exactly the missing-4-neighbor rim (%s)', (_label, rawSpec) => {
     const silhouette = composeSilhouette(normalizeItemSpec(rawSpec));
     const outline = computeOutline(silhouette);

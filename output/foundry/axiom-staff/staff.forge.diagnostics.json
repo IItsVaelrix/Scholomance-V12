@@ -1,0 +1,12 @@
+{
+  "spec": {
+    "file": "/home/deck/Downloads/Scholomance-V12-main/specs/axiom-staff.v1.json",
+    "id": "axiom.staff.v1",
+    "hash": "fnv1a_9901770b"
+  },
+  "shader": null,
+  "cells": 1267,
+  "motifCells": 0,
+  "fillHash": "fnv1a_1c80fc8a",
+  "assetPacketId": "pbasset_b34febbe"
+}

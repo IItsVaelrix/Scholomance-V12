@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolveBlockId } from '../../../codex/core/pixelbrain/block-taxonomy.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = resolve(__dirname);
@@ -170,7 +171,7 @@ for (let y = 0; y < HEIGHT; y += 1) {
     for (let x = 0; x < WIDTH; x += 1) {
       const mat = getVoxel(x, y, z);
       if (mat === 0) continue;
-      collisionSolids.push({ x, y, z, materialId: mat });
+      collisionSolids.push({ x, y, z, materialId: mat, blockId: resolveBlockId('NECROMANCY', mat, x, y, z) });
       occupiedSet.add(`${x},${y},${z}`);
     }
   }
@@ -223,6 +224,7 @@ const artifact = {
   kind: 'scholomance.world.surface.v1',
   version: 1,
   contract: 'PB-WORLD-SURFACE-v1',
+  schoolId: 'NECROMANCY',
   seed: { value: WORLD_SEED, prng: 'fnv1a-coordinate-hash', deterministic: true },
   terrain: {
     algorithm: 'bilinear-interpolated heightmap with peat/grimstone layers, grimwood trees, and scholomance ruins',

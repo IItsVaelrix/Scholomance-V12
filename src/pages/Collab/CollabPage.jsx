@@ -938,9 +938,9 @@ export default function CollabPage() {
                         }
                         rightWing={
                             <div className="wing-content">
-                                <BugChecksumShrine 
-                                    verified={selectedBug?.checksum_verified} 
-                                    checksum={selectedBug?.checksum} 
+                                <BugChecksumShrine
+                                    verified={selectedBug?.checksum_verified}
+                                    checksum={selectedBug?.checksum || (selectedBug?.bytecode?.startsWith('PB-ERR-') ? selectedBug.bytecode.split('-').pop() : '')}
                                 />
                                 <BugRecoveryModule 
                                     hints={selectedBug?.recovery_hints || (selectedBug ? [
@@ -953,7 +953,7 @@ export default function CollabPage() {
                                     <div style={{ color: '#fff', fontSize: '10px', fontFamily: "'Press Start 2P', cursive", textAlign: 'center', marginBottom: '12px' }}>
                                         SPATIAL DIAGNOSTICS
                                     </div>
-                                    <BugLatticeMap bug={selectedBug} size={220} />
+                                    <BugLatticeMap bug={selectedBug} size={160} />
                                 </div>
                             </div>
                         }
@@ -1103,7 +1103,7 @@ export default function CollabPage() {
                                 {tab.key === 'activity' && newActivityCount > 0 && (
                                     <span className="collab-tab-btn__badge">{newActivityCount}</span>
                                 )}
-                                {tab.key === 'bugs' && metrics.bugs.critical > 0 && (
+                                {tab.key === 'bugs' && metrics.bugs.critical > 0 && activeTab !== 'bugs' && (
                                     <span className="collab-tab-btn__badge collab-tab-btn__badge--critical">!</span>
                                 )}
                             </button>
@@ -1212,7 +1212,7 @@ export default function CollabPage() {
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
                 >
-                    <div className="viewport-container">
+                    <div className={`viewport-container ${activeTab === 'bugs' ? 'viewport-container--cabinet' : ''}`}>
                         <AnimatePresence mode="wait">
                             <motion.div
                                 key={activeTab}
@@ -1228,13 +1228,15 @@ export default function CollabPage() {
                         </AnimatePresence>
                     </div>
                     
-                    {/* Status Display (below viewport) */}
-                    <CollabStatusDisplay 
-                        status={status}
-                        conflict={conflict}
-                        context={error || null}
-                        bugs={bugs}
-                    />
+                    {/* Status Display (below viewport) — suppressed on BUGS tab so the cabinet "screen" is fully visible without outer chrome/scroll */}
+                    {activeTab !== 'bugs' && (
+                        <CollabStatusDisplay 
+                            status={status}
+                            conflict={conflict}
+                            context={error || null}
+                            bugs={bugs}
+                        />
+                    )}
                 </motion.section>
 
                 {/* RIGHT PANEL: Telemetry */}

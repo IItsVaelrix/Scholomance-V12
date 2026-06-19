@@ -109,6 +109,8 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`turboquant_integration_bridge_pdr.md`](./turboquant_integration_bridge_pdr.md) | Implemented | Architectural + Prediction + Infrastructure | High |
 | [`zero_cost_infrastructure_pdr.md`](./zero_cost_infrastructure_pdr.md) | Finalized | Infrastructure + DevOps + Database + Cost Optimization | High |
 | [`2026-06-11-discography-nav-bandcamp-pdr.md`](./2026-06-11-discography-nav-bandcamp-pdr.md) | Draft | Architectural \| UI \| Behavioral | High |
+| [`2026-06-16-qbit-voxel-level3-multi-biome-pdr.md`](./2026-06-16-qbit-voxel-level3-multi-biome-pdr.md) | Proposed | QBIT-Voxel \| Chunked Volume \| Cross-Chunk Energy Propagation \| Wand Composite Formula | High |
+| [`2026-06-17-qbit-3d-lattice-unification_pdr.md`](./2026-06-17-qbit-3d-lattice-unification_pdr.md) | Draft | QBIT-Voxel \| 3D Lattice \| Lifting Faces to Volume \| 2D Projection as Derived View \| Godot 3D Game World | High |
 
 ---
 

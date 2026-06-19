@@ -40,10 +40,10 @@ export function oklchToRgb(l, c, h) {
   const g = -1.2684380046 * l_3 + 2.6097574011 * m_3 - 0.3413193965 * s_3;
   const b_ = -0.0041960863 * l_3 - 0.7034186147 * m_3 + 1.7076147010 * s_3;
 
-  return { 
-    r: clamp(r, 0, 1), 
-    g: clamp(g, 0, 1), 
-    b: clamp(b_, 0, 1) 
+  return {
+    r: clamp(linearToSRGB(r), 0, 1),
+    g: clamp(linearToSRGB(g), 0, 1),
+    b: clamp(linearToSRGB(b_), 0, 1)
   };
 }
 
@@ -63,4 +63,11 @@ export function deltaE(c1, c2) {
 
 function clamp(v, min, max) {
   return Math.max(min, Math.min(max, v));
+}
+
+// IEC 61966-2-1: linear light → gamma-encoded sRGB
+function linearToSRGB(v) {
+  return v <= 0.0031308
+    ? 12.92 * v
+    : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
 }

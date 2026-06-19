@@ -22,6 +22,7 @@ import {
   createFillCommand,
   LayerOpCommand,
 } from '../../../codex/core/pixelbrain/editor-command-stack.js';
+import { createPlane } from '../../../codex/core/pixelbrain/build-plane.js';
 
 function makeGrid() {
   return createTemplateGrid({
@@ -138,5 +139,44 @@ describe('LayerOpCommand', () => {
 
     stack.undo();
     expect(grid.layers[0].locked).toBe(false);
+  });
+});
+
+describe('active build plane (A2)', () => {
+  const vol = { width: 8, height: 6, depth: 4 };
+
+  it('defaults to the z-plane at index 0', () => {
+    const stack = createCommandStack();
+    expect(stack.getActivePlane()).toEqual({ axis: 'z', index: 0 });
+  });
+
+  it('accepts an initial plane via options', () => {
+    const stack = createCommandStack([], { activePlane: createPlane('x', 2) });
+    expect(stack.getActivePlane()).toEqual({ axis: 'x', index: 2 });
+  });
+
+  it('setActivePlane updates the session plane', () => {
+    const stack = createCommandStack();
+    const result = stack.setActivePlane(createPlane('y', 3));
+    expect(result).toEqual({ axis: 'y', index: 3 });
+    expect(stack.getActivePlane()).toEqual({ axis: 'y', index: 3 });
+  });
+
+  it('clamps the plane to the volume when one is given', () => {
+    const stack = createCommandStack();
+    stack.setActivePlane(createPlane('z', 99), vol);
+    expect(stack.getActivePlane()).toEqual({ axis: 'z', index: 3 });
+  });
+
+  it('slice navigation is not pushed onto the undo history', () => {
+    const grid = makeGrid();
+    const stack = createCommandStack();
+    stack.execute(createPaintCommand(grid, 0, 2, 3, '#ff0000'));
+    stack.setActivePlane(createPlane('z', 2));
+
+    expect(stack.canUndo()).toBe(true);
+    stack.undo(); // must undo the paint, not the plane move
+    expect(getCell(grid.layers[0], 2, 3)).toBeUndefined();
+    expect(stack.canUndo()).toBe(false);
   });
 });

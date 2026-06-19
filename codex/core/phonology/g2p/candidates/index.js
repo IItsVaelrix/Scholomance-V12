@@ -1,6 +1,9 @@
 import { CANDIDATE_SOURCES, MAX_CANDIDATES, generateCandidateId } from '../schemas.js';
 import { generateSubstringCandidates } from './substring.candidate.generator.js';
 import { generateRuleCandidates } from './rule.candidate.generator.js';
+import { retrieveVectorNNPhonemeCandidates } from './vector-nn.candidate.generator.js';
+
+export { generateRuleCandidates, generateSubstringCandidates, retrieveVectorNNPhonemeCandidates };
 
 export function generateCandidates(word, cmuEntries) {
   const upper = String(word || '').toUpperCase().replace(/[^A-Z]/g, '');

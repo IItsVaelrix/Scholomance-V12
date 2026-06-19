@@ -2,6 +2,7 @@ extends SceneTree
 
 const CombatEngine = preload("res://scripts/Combat/Core/CombatEngine.gd")
 const CombatCanonicalizer = preload("res://scripts/Combat/Core/CombatCanonicalizer.gd")
+const CombatHydrator = preload("res://scripts/Combat/Core/CombatHydrator.gd")
 
 var log_file: FileAccess
 
@@ -52,7 +53,7 @@ func _run_scenario(scenario_filename: String) -> bool:
     var state = {}
 
     var snap_0 = golden["snapshots"][0]
-    _hydrate_state_from_snapshot(state, snap_0)
+    CombatHydrator.hydrate(state, snap_0)
     
     var canon_0 = CombatCanonicalizer.canonicalize(state, 0)
     if not _assert_equal(canon_0, snap_0, "snapshot 0"):
@@ -70,46 +71,6 @@ func _run_scenario(scenario_filename: String) -> bool:
 
     log_file.store_line("  -> Passed")
     return true
-
-func _hydrate_state_from_snapshot(state: Dictionary, snapshot: Dictionary) -> void:
-    state["activeTurnSide"] = snapshot.get("turn", "player")
-    state["turnCount"] = snapshot.get("round", 1)
-    state["rngState"] = snapshot.get("rngState", "0")
-    
-    var grid_data = snapshot.get("grid", {})
-    var blocked = grid_data.get("blocked", [])
-    var cols = int(grid_data.get("cols", 8))
-    var rows = int(grid_data.get("rows", 8))
-    
-    state["gridWidth"] = cols
-    state["gridHeight"] = rows
-    
-    # build empty grid
-    var grid_arr = []
-    for r in range(rows):
-        var row_arr = []
-        for c in range(cols):
-            row_arr.append({"occupantId": null, "blocked": false})
-        grid_arr.append(row_arr)
-        
-    for b in blocked:
-        grid_arr[int(b.get("row", 0))][int(b.get("col", 0))]["blocked"] = true
-        
-    state["grid"] = grid_arr
-    
-    var entities = []
-    for u in snapshot.get("units", []):
-        entities.append({
-            "id": u.get("id", ""),
-            "hp": int(u.get("hp", 0)),
-            "mp": int(u.get("mp", 0)),
-            "movesRemaining": int(u.get("ap", 0)),
-            "position": {"x": int(u.get("col", 0)), "y": int(u.get("row", 0))},
-            "statusEffects": u.get("statuses", [])
-        })
-        grid_arr[int(u.get("row", 0))][int(u.get("col", 0))]["occupantId"] = u.get("id", "")
-        
-    state["entities"] = entities
 
 func _fix_numbers(v: Variant) -> Variant:
     if typeof(v) == TYPE_FLOAT:

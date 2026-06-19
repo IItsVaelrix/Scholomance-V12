@@ -32,7 +32,6 @@ import { IndexedPalettePanel } from "./components/IndexedPalettePanel.jsx";
 import MentorCritiquePanel from "./components/MentorCritiquePanel.jsx";
 import { AMPApplyPanel } from "./components/AMPApplyPanel.jsx";
 import { ReferencePanel } from "./components/ReferencePanel.jsx";
-import voidChestplatePacket from "../../../output/foundry/void-chestplate/void-chestplate.json";
 
 const TemplateEditor = lazy(() => import('./components/TemplateEditor.jsx'));
 const PixelBrainTerminal = lazy(() => import('./PixelBrainTerminal.jsx'));
@@ -62,8 +61,8 @@ export default function PixelBrainPage() {
   const editorRef = useRef(null);
   const [rightActiveLayer, setRightActiveLayer] = useState(0);
 
-  // Dynamic asset for the main visual editor. Starts with the chestplate.
-  const [activeAssetPacket, setActiveAssetPacket] = useState(voidChestplatePacket);
+  // Dynamic asset for the main visual editor. Starts empty — load via Open File.
+  const [activeAssetPacket, setActiveAssetPacket] = useState(null);
   const [editorInstanceKey, setEditorInstanceKey] = useState(0);
 
   // The single document model: the live engine grid owned by TemplateEditor.

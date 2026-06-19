@@ -1,0 +1,65 @@
+{
+  "rationale": "Validate voxel-scene node with Fibonacci-seeded 32 STRUCTURAL volume (QBIT-Voxel Level 1: The Crystal).",
+  "confidence": 0.85,
+  "reviewRequired": false,
+  "sourceIntentHash": "voxel-crystal-level1",
+  "evalSuiteId": "suite-voxel-crystal",
+  "proposedLayout": {
+    "id": "crystal-wrapper",
+    "type": "container",
+    "role": "wrapper",
+    "layout": { "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "width": "100%", "height": "100%", "padding": 24 },
+    "style": { "variant": "transparent" },
+    "children": [
+      {
+        "id": "crystal-card",
+        "type": "container",
+        "role": "card",
+        "layout": { "display": "flex", "flexDirection": "column", "width": 480, "height": 540, "padding": 16, "gap": 12 },
+        "style": { "variant": "glassmorphic", "glowColor": "void", "borderRadius": 12 },
+        "children": [
+          {
+            "id": "crystal-header",
+            "type": "container",
+            "role": "header",
+            "layout": { "display": "flex", "justifyContent": "space-between", "alignItems": "center", "height": 40 },
+            "style": { "variant": "transparent" },
+            "children": [
+              { "id": "crystal-title", "type": "element", "role": "text", "props": { "title": "QBIT Crystal", "subtitle": "Fibonacci seed 32 stone" } },
+              { "id": "crystal-badge", "type": "element", "role": "badge", "style": { "variant": "neonBorder", "glowColor": "void" }, "props": { "text": "Lvl 1" } }
+            ]
+          },
+          {
+            "id": "crystal-scene",
+            "type": "voxel",
+            "role": "voxel-scene",
+            "layout": { "width": 448, "height": 420 },
+            "style": { "variant": "obsidianPanel", "borderRadius": 8 },
+            "props": {
+              "volumeSize": 32,
+              "seed": {
+                "iterations": 8,
+                "scale": 0.75,
+                "initialEnergy": 0.5,
+                "decay": 0.15,
+                "propagationIterations": 3,
+                "hollowIterations": 3
+              }
+            }
+          },
+          {
+            "id": "crystal-footer",
+            "type": "container",
+            "role": "footer",
+            "layout": { "display": "flex", "justifyContent": "space-between", "alignItems": "center", "height": 40 },
+            "style": { "variant": "transparent" },
+            "children": [
+              { "id": "crystal-meta", "type": "element", "role": "text", "props": { "title": "32 volume STRUCTURAL void" } },
+              { "id": "crystal-btn", "type": "element", "role": "button", "style": { "variant": "neonBorder", "glowColor": "void" }, "layout": { "padding": 8, "width": 100 }, "props": { "text": "Re-seed", "onClickAction": "reseed" } }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

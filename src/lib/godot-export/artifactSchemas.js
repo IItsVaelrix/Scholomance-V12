@@ -3,6 +3,7 @@ export const GODOT_ARTIFACT_VERSION = 1;
 export const PIXELBRAIN_GODOT_KIND = 'scholomance.pixelbrain.godot.v1';
 export const WAND_GODOT_KIND = 'scholomance.wand.godot.v1';
 export const DIVWAND_GODOT_KIND = 'scholomance.divwand.godot.v1';
+export const QBIT_WORLD_GODOT_KIND = 'scholomance.qbitworld.godot.v1';
 
 function toFiniteNumber(value, fallback) {
   const number = Number(value);
@@ -42,5 +43,27 @@ export function createDivWandArtifact({ proposal, validation } = {}) {
     valid: Boolean(validation?.ok ?? validation?.valid),
     validation: validation ?? null,
     proposal: proposal ?? null,
+  };
+}
+
+export function createQbitWorldArtifact({
+  schoolWeights,
+  params,
+  telemetry,
+  faces,
+  pixelBrainAsset,
+  wandProposal,
+  divWandNode,
+} = {}) {
+  return {
+    kind: QBIT_WORLD_GODOT_KIND,
+    version: GODOT_ARTIFACT_VERSION,
+    schoolWeights: schoolWeights && typeof schoolWeights === 'object' ? schoolWeights : {},
+    params: params ?? null,
+    telemetry: telemetry ?? null,
+    faces: Array.isArray(faces) ? faces : [],
+    pixelBrainAsset: pixelBrainAsset ?? null,
+    wandProposal: wandProposal ?? null,
+    divWandNode: divWandNode ?? null,
   };
 }

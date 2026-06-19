@@ -1,0 +1,140 @@
+{
+  "contract": "CHARACTER-SPEC-v1",
+  "id": "scholar.starbound.esper.v1",
+  "class": "character",
+  "archetype": "human",
+  "canvas": {
+    "width": 32,
+    "height": 48,
+    "gridSize": 1
+  },
+  "seed": 9917,
+  "bytecode": "VW-STARBOUND-ESPER-CHIBI",
+  "presentation": {
+    "gender": "androgynous",
+    "heightClass": "short",
+    "buildClass": "average"
+  },
+  "directions": [
+    "south",
+    "east",
+    "north",
+    "west"
+  ],
+  "materials": {
+    "skin": "skin_apricot_signal",
+    "hair": "hair_midnight_teal",
+    "eyes": "eye_psychic_cobalt"
+  },
+  "body": {
+    "profile": "character.body.chibi.starboundEsper",
+    "params": {
+      "compact": 0.72
+    }
+  },
+  "face": [
+    {
+      "id": "leftEye",
+      "profile": "character.face.eye.humanSoft",
+      "params": {
+        "iris": "eye_psychic_cobalt"
+      },
+      "attach": {
+        "parent": "body",
+        "at": "face.eyeLeft"
+      }
+    },
+    {
+      "id": "rightEye",
+      "profile": "character.face.eye.humanSoft",
+      "params": {
+        "iris": "eye_psychic_cobalt"
+      },
+      "attach": {
+        "parent": "body",
+        "at": "face.eyeRight"
+      }
+    },
+    {
+      "id": "nose",
+      "profile": "character.face.nose.humanSoft",
+      "attach": {
+        "parent": "body",
+        "at": "face.nose"
+      }
+    },
+    {
+      "id": "mouth",
+      "profile": "character.face.mouth.humanSoft",
+      "attach": {
+        "parent": "body",
+        "at": "face.mouth"
+      }
+    }
+  ],
+  "hair": {
+    "profile": "character.hair.cometSweep",
+    "params": {
+      "color": "hair_midnight_teal",
+      "streak": "neon_mint_signal"
+    },
+    "attach": {
+      "parent": "body",
+      "at": "headTop"
+    }
+  },
+  "clothing": [
+    {
+      "id": "bottom",
+      "profile": "character.clothing.bottom.psychicStreetShorts",
+      "params": {
+        "color": "cloth_psychic_denim",
+        "trim": "trim_comet_gold"
+      }
+    },
+    {
+      "id": "top",
+      "profile": "character.clothing.top.starboundJacket",
+      "params": {
+        "color": "cloth_star_jacket",
+        "trim": "trim_comet_gold",
+        "signal": "neon_mint_signal"
+      }
+    },
+    {
+      "id": "shoes",
+      "profile": "character.clothing.shoes.cometBoots",
+      "params": {
+        "color": "leather_brown",
+        "trim": "trim_comet_gold"
+      }
+    }
+  ],
+  "accessories": [
+    {
+      "id": "antenna",
+      "profile": "character.accessory.signalAntenna",
+      "params": {
+        "stem": "trim_comet_gold",
+        "signal": "neon_mint_signal"
+      }
+    }
+  ],
+  "details": [
+    {
+      "id": "constellation",
+      "profile": "character.detail.jacketConstellation",
+      "params": {
+        "color": "neon_mint_signal",
+        "gold": "trim_comet_gold"
+      }
+    },
+    {
+      "id": "cheekBlush",
+      "profile": "character.detail.cheekPixelBlush",
+      "params": {
+        "color": "#F08A78"
+      }
+    }
+  ]
+}

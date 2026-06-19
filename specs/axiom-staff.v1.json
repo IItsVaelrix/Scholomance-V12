@@ -1,0 +1,121 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "axiom.staff.v1",
+  "class": "weapon",
+  "archetype": "staff",
+  "canvas": { "width": 48, "height": 128, "gridSize": 1 },
+  "seed": 9999,
+  "bytecode": "VW-AXIOM-PURE-GEOMETRY",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "shaft",
+      "profile": "staff.shaft",
+      "params": { "cx": 24, "span": [28, 96], "half": 2 },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "voidsteel", "anchor": "spectral" }
+    },
+    {
+      "id": "sphere",
+      "profile": "orb.perfect",
+      "params": { "r": 10 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "diamond" },
+      "outline": { "material": "void_ice", "anchor": "spectral" }
+    },
+    {
+      "id": "sphere_void_core",
+      "profile": "gem.round",
+      "params": { "r": 6 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "void_core", "anchor": "deep" }
+    },
+    {
+      "id": "sphere_corona",
+      "profile": "orb.corona",
+      "params": { "r": 6, "width": 2 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "void_rune_glow", "anchor": "spectral" }
+    },
+    {
+      "id": "sphere_ring",
+      "profile": "orb.ring.symmetric",
+      "params": { "r": 10 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "voidsteel", "anchor": "frost" }
+    },
+    {
+      "id": "sphere_ring_glow",
+      "profile": "orb.ring_glow",
+      "params": { "r": 10 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "void_rune_glow", "anchor": "spectral" }
+    },
+    {
+      "id": "sphere_ring_outer",
+      "profile": "orb.ring.symmetric",
+      "params": { "r": 13 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "silver" }
+    },
+    {
+      "id": "sphere_ring_outer_glow",
+      "profile": "orb.ring_glow",
+      "params": { "r": 13 },
+      "attach": { "parent": "sphere", "at": "center" },
+      "fill": { "material": "void_ice", "anchor": "frost" }
+    },
+    {
+      "id": "cradle",
+      "profile": "setting.cradle",
+      "params": { "r": 11 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "voidsteel", "anchor": "frost" }
+    },
+    {
+      "id": "cradle_highlight",
+      "profile": "setting.cradle_highlight",
+      "params": { "r": 11 },
+      "attach": { "parent": "shaft", "at": "tip" },
+      "fill": { "material": "silver" },
+      "outline": { "material": "silver", "anchor": "spectral" }
+    },
+    {
+      "id": "guard",
+      "profile": "guard.cross",
+      "params": { "cx": 0, "halfBase": 12, "height": 4, "quillonTip": 0 },
+      "attach": { "parent": "shaft", "at": "base" },
+      "fill": { "material": "voidsteel" }
+    },
+    {
+      "id": "grip",
+      "profile": "staff.handle",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "guard", "at": "tip" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "voidsteel", "anchor": "spectral" }
+    },
+    {
+      "id": "grip_trim",
+      "profile": "staff.handle_trim",
+      "params": { "length": 22, "half": 3 },
+      "attach": { "parent": "guard", "at": "tip" },
+      "fill": { "material": "silver" }
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.void_orb",
+      "params": { "r": 3 },
+      "attach": { "parent": "grip", "at": "tip" },
+      "fill": { "material": "diamond", "anchor": "deep" }
+    },
+    {
+      "id": "pommel_glow",
+      "profile": "pommel.void_orb_glow",
+      "params": { "r": 3 },
+      "attach": { "parent": "grip", "at": "tip" },
+      "fill": { "material": "void_rune_glow", "anchor": "spectral" }
+    }
+  ]
+}

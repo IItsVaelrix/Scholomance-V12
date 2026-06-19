@@ -1,5 +1,4 @@
-import { forgeCharacter } from '../../../lib/pixelbrain.adapter.js';
-import { compileEffectsBytecode } from '../../../../codex/core/pixelbrain/character-bytecode-compiler.js';
+import { forgeCharacter, compileEffectsBytecode } from '../../../lib/pixelbrain.adapter.js';
 
 // Convert [r, g, b] float vec3 to Phaser integer colour (0xRRGGBB).
 function vec3ToInt([r, g, b]) {
@@ -14,6 +13,10 @@ function pngBytesToDataUrl(bytes) {
     bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
   }
   return 'data:image/png;base64,' + btoa(bin);
+}
+
+function svgToDataUrl(svg) {
+  return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svg)));
 }
 
 // Minimal CHARACTER-SPEC-v1 for NPC enemies — deterministic from school name.
@@ -73,11 +76,10 @@ export function npcSpec(school) {
 export async function bake(key, spec, scene) {
   if (scene.textures.exists(key)) return key;
 
-  const character = forgeCharacter(spec, {});
-  const pngBytes = character.sprites?.south;
-  if (!pngBytes) throw new Error(`[CharacterShaderRenderer] no south sprite for ${key}`);
-
-  const dataUrl = pngBytesToDataUrl(pngBytes);
+  const generated = forgeCharacter({ ...spec, directions: ['south'] }, { scale: 4 });
+  const pngBytes = generated?.sprites?.south;
+  const dataUrl = pngBytes ? pngBytesToDataUrl(pngBytes) : null;
+  if (!dataUrl) throw new Error(`[CharacterShaderRenderer] no renderable texture for ${key}`);
 
   await new Promise((resolve, reject) => {
     scene.textures.addBase64(key, dataUrl);

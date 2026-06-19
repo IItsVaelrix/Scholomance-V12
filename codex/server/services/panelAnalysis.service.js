@@ -190,6 +190,7 @@ function createEmptyPanelPayload() {
     rhymeAstrology: null,
     narrativeAMP: null,
     oracle: null,
+    vowelSummary: { families: [], totalWords: 0, uniqueWords: 0 },
   };
 }
 
@@ -835,6 +836,22 @@ export async function createPanelAnalysisService(options = {}) {
         }
         : scoreData;
 
+      const vowelSummary = (() => {
+        const familyCounts = new Map();
+        let totalWords = 0;
+        for (const profile of (Array.isArray(wordAnalyses) ? wordAnalyses : [])) {
+          const family = profile.vowelFamily;
+          if (!family) continue;
+          totalWords++;
+          familyCounts.set(family, (familyCounts.get(family) || 0) + 1);
+        }
+        return {
+          families: [...familyCounts.entries()].map(([family, count]) => ({ family, count })),
+          totalWords,
+          uniqueWords: familyCounts.size,
+        };
+      })();
+
       return {
         analysis: toMinimalAnalysisPayload(
           deepAnalysis,
@@ -858,6 +875,7 @@ export async function createPanelAnalysisService(options = {}) {
         rhymeAstrology,
         narrativeAMP,
         oracle: toLegacyOraclePayload(narrativeAMP),
+        vowelSummary,
       };
     } catch (error) {
       log?.error?.({ err: error }, '[PanelAnalysisService] Failed to analyze panel payload');

@@ -62,6 +62,7 @@ describe('buildSigilDataArchive', () => {
       'verbs',
       'preserved',
       'alignment',
+      'acronyms',
       'boundary_warnings',
       'anchors',
       'legibility',
@@ -142,7 +143,7 @@ describe('assembleDataArchive (pure)', () => {
   it('handles empty inputs without throwing', () => {
     const archive = assembleDataArchive();
     expect(archive.schemaVersion).toBe(1);
-    expect(archive.sections).toHaveLength(6);
+    expect(archive.sections).toHaveLength(7);
     expect(archive.alignmentScore).toBeNull();
   });
 

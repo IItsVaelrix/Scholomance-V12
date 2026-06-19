@@ -20,6 +20,17 @@ function targetOperationKind(targetOperation) {
   return 'CONTROL';
 }
 
+// QBIT field propagation is a sum-of-distance-weighted contributions from
+// N seed points to every cell in a 3D tensor. This is structurally identical
+// to a matrix-vector multiply with the attenuation kernel as the matrix —
+// the operation class photonic interference hardware executes natively.
+// We expose it as a dedicated PROPAGATE kind so the bridge can grade it
+// distinctly from generic MVM and so simulators can compute fan-out / energy
+// budgets specific to the propagation step.
+function isQbitFieldPacket(packet) {
+  return packet.sourceKind === 'qbit-field';
+}
+
 export function buildPhotonicOperationGraph(packet) {
   const operations = [];
   let order = 0;
@@ -34,6 +45,22 @@ export function buildPhotonicOperationGraph(packet) {
   ));
 
   let previousId = inputId;
+
+  if (isQbitFieldPacket(packet)) {
+    const id = 'op_qbit_propagate';
+    operations.push(createOperation(
+      id,
+      'PROPAGATE',
+      PHOTONIC_EXECUTION_CLASSES.PHOTONIC_FRIENDLY,
+      order += 1,
+      {
+        sourceKind: packet.sourceKind,
+        attenuationModel: packet.metadata?.attenuationModel ?? 'inverse_square',
+      },
+      [previousId]
+    ));
+    previousId = id;
+  }
 
   if (packet.rotationKind !== 'none') {
     const id = 'op_rotation';
@@ -90,7 +117,7 @@ export function buildPhotonicOperationGraph(packet) {
   const sortedOperations = operations.sort((left, right) => left.order - right.order);
 
   const linearPath = sortedOperations
-    .filter((operation) => ['ROTATE', 'MVM', 'INNER_PRODUCT'].includes(operation.kind))
+    .filter((operation) => ['ROTATE', 'MVM', 'INNER_PRODUCT', 'PROPAGATE'].includes(operation.kind))
     .map((operation) => operation.id);
 
   const electronicBoundaries = sortedOperations

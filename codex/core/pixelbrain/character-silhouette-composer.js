@@ -5,6 +5,7 @@ export function composeCharacterSilhouette(spec, { direction = 'south' } = {}) {
   const canvas = spec.canvas || { width: 32, height: 48 };
   const cells = [];
   const partOf = new Map();
+  const colorOf = new Map();
   const seen = new Set();
   const partReports = [];
   const anchors = new Map();
@@ -91,6 +92,7 @@ export function composeCharacterSilhouette(spec, { direction = 'south' } = {}) {
             cells.push({ x: gx, y: gy });
           }
           partOf.set(key, facePart.id);
+          if (c.color) colorOf.set(key, c.color);
         }
 
         partReports.push({
@@ -127,6 +129,7 @@ export function composeCharacterSilhouette(spec, { direction = 'south' } = {}) {
           cells.push({ x: c.x, y: c.y });
         }
         partOf.set(key, 'hair');
+        if (c.color) colorOf.set(key, c.color);
       }
 
       partReports.push({
@@ -175,6 +178,7 @@ export function composeCharacterSilhouette(spec, { direction = 'south' } = {}) {
             cells.push({ x: c.x, y: c.y });
           }
           partOf.set(key, clothingPart.id);
+          if (c.color) colorOf.set(key, c.color);
         }
 
         partReports.push({
@@ -188,9 +192,54 @@ export function composeCharacterSilhouette(spec, { direction = 'south' } = {}) {
     }
   }
 
+  function applyProfileLayer(parts, layerName) {
+    if (!Array.isArray(parts)) return;
+    for (const part of parts) {
+      if (!part.profile) continue;
+      try {
+        const profileFn = getPartProfile(part.profile);
+        const result = profileFn({
+          cx: 16,
+          cy: 16,
+          shoulderY: bodyAnchors.shoulderL?.y || 12,
+          waistY: bodyAnchors.waist?.y || 24,
+          hemY: (bodyAnchors.ankleL?.y || 40) - 5,
+          topY: skeleton?.head?.top?.y || bodyAnchors.headTop?.y || 2,
+          ...(part.params || {}),
+        }, { canvas, direction, skeleton, bodyAnchors });
+
+        for (const c of result.cells || []) {
+          if (c.x < 0 || c.x >= canvas.width || c.y < 0 || c.y >= canvas.height) continue;
+          const key = `${c.x},${c.y}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            cells.push({ x: c.x, y: c.y });
+          }
+          partOf.set(key, part.id);
+          if (c.color) colorOf.set(key, c.color);
+        }
+
+        partReports.push({
+          id: part.id,
+          profile: part.profile,
+          layer: layerName,
+          aabb: computeAABB(result.cells),
+        });
+      } catch (e) {
+        throw new Error(`character-silhouette-composer: ${layerName} profile "${part.profile}" failed: ${e.message}`);
+      }
+    }
+  }
+
+  // Layer 6: Accessories and layer 7: detail overlays. These may overwrite
+  // part ownership for existing occupied cells so SVG classes can animate them.
+  applyProfileLayer(spec.accessories, 'accessory');
+  applyProfileLayer(spec.details, 'detail');
+
   return Object.freeze({
     cells: Object.freeze(cells),
     partOf,
+    colorOf,
     anchors,
     skeleton,
     parts: Object.freeze(partReports),

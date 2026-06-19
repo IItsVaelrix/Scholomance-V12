@@ -150,7 +150,13 @@ function applyCharacterFills({ silhouette, spec, direction } = {}) {
 
       const bounds = partYBounds.get(partId) || { minY: c.y, maxY: c.y };
       const yRange = bounds.maxY - bounds.minY;
-      if (yRange >= 6) {
+
+      // Hair / comet / wing energy parts (small narrow fins, sweeps) need luminous bias.
+      // Without this the general body gradient + rim logic over-applies deep/void to thin structures,
+      // producing the classic "pillow or muddy small detail" amateur look.
+      const isEnergyHair = partId === 'hair';
+
+      if (yRange >= 6 && !isEnergyHair) {
         // Only apply gradient to parts tall enough to show form
         const yT = (c.y - bounds.minY) / yRange;
         if (yT < 0.28) {
@@ -165,9 +171,14 @@ function applyCharacterFills({ silhouette, spec, direction } = {}) {
           color = ramp.body;
         }
       } else {
-        if (isTopLeft) color = ramp.frost;
-        else if (isBottomRight) color = ramp.deep;
-        else color = ramp.body;
+        // Small parts + all hair/energy: stronger adjacency + top bias so tiny wings/fins keep readable volume and glow.
+        if (isTopLeft || (isEnergyHair && (c.y - bounds.minY) / Math.max(1, yRange) < 0.4)) {
+          color = ramp.frost;
+        } else if (isBottomRight) {
+          color = ramp.deep;
+        } else {
+          color = ramp.body;
+        }
       }
     }
 

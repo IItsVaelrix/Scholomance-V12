@@ -13,6 +13,7 @@ import {
   MODULE_IDS,
   ERROR_CODES,
 } from './bytecode-error.js';
+import { getMaterialDefinition } from './material-registry.js';
 
 
 /**
@@ -1223,6 +1224,24 @@ export function importFromPixelBrainAssetPacket(packet, options = {}) {
         source: coord.source || 'pixelbrain-asset-packet',
       },
     });
+  }
+
+  // Enrich each layer with dominant material + SDF descriptor for phosphorylation gate
+  const sdfDescriptor = packet.sdfDescriptors?.length === 1 ? packet.sdfDescriptors[0] : null;
+  for (const layer of layerMap.values()) {
+    const counts = new Map();
+    for (const cell of layer.cells.values()) {
+      const mid = cell.metadata?.materialId;
+      if (mid) counts.set(mid, (counts.get(mid) || 0) + 1);
+    }
+    if (counts.size > 0) {
+      const dominantId = [...counts.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+      const mat = getMaterialDefinition(dominantId);
+      if (mat && Object.keys(mat.anchors || {}).length > 0) {
+        layer.material = mat;
+        if (sdfDescriptor) layer.sdfDescriptor = sdfDescriptor;
+      }
+    }
   }
 
   const frame = createFrame();

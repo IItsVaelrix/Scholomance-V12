@@ -3,6 +3,9 @@ import {
   MATERIAL_THRESHOLDS,
   assignMaterial,
   propagate,
+  propagateWithOctree,
+  ATTENUATION_MODELS,
+  PHI,
 } from '../../codex/core/pixelbrain/qbit-field.js';
 
 describe('QBITField', () => {
@@ -189,5 +192,221 @@ describe('QBITField', () => {
       expect(Number.isFinite(grad.gy)).toBe(true);
       expect(Number.isFinite(grad.gz)).toBe(true);
     });
+
+    it('default attenuationModel is gaussian (backward compat)', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const a = propagate(seeds, 16, 16, 16);
+      const b = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.GAUSSIAN });
+      expect(a.energyAt(8, 8, 8)).toBe(b.energyAt(8, 8, 8));
+    });
+
+    it('inverse_square matches closed-form seedEnergy / (dist^2 + 1) to 1e-6', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const field = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, iterations: 0 });
+      // distance 0: 1.0 / (0 + 1) = 1.0
+      expect(field.energyAt(8, 8, 8)).toBeCloseTo(1.0, 6);
+      // distance 1: 1.0 / (1 + 1) = 0.5
+      expect(field.energyAt(9, 8, 8)).toBeCloseTo(0.5, 6);
+      // distance sqrt(3): 1.0 / (3 + 1) = 0.25
+      expect(field.energyAt(9, 9, 9)).toBeCloseTo(0.25, 6);
+    });
+
+    it('phi_attenuation matches closed-form seedEnergy / (dist^(2/φ) + 1) to 1e-6', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const field = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.PHI_ATTENUATION, iterations: 0 });
+      const exponent = 2 / PHI;
+      // distance 0: 1.0 / (0 + 1) = 1.0
+      expect(field.energyAt(8, 8, 8)).toBeCloseTo(1.0, 6);
+      // distance 1: 1.0 / (1^exp + 1) = 0.5
+      expect(field.energyAt(9, 8, 8)).toBeCloseTo(0.5, 6);
+      // distance 2: 1.0 / (2^exp + 1)
+      const expected = 1.0 / (Math.pow(2, exponent) + 1);
+      expect(field.energyAt(10, 8, 8)).toBeCloseTo(expected, 6);
+    });
+
+    it('phi_attenuation falls off softer than inverse_square at distance 10', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const inv = propagate(seeds, 24, 24, 24, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, iterations: 0 });
+      const phi = propagate(seeds, 24, 24, 24, { attenuationModel: ATTENUATION_MODELS.PHI_ATTENUATION, iterations: 0 });
+      const invE = inv.energyAt(18, 8, 8);  // distance 10
+      const phiE = phi.energyAt(18, 8, 8);
+      expect(phiE).toBeGreaterThan(invE);
+    });
+
+    it('inverse_square never divides by zero at seed cell', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const field = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, iterations: 0 });
+      expect(field.energyAt(8, 8, 8)).toBe(1.0);
+      expect(Number.isFinite(field.energyAt(8, 8, 8))).toBe(true);
+    });
+
+    it('maxRadius limits seed reach', () => {
+      const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+      const field = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, iterations: 0, maxRadius: 3 });
+      // distance 1 is within reach
+      expect(field.energyAt(9, 8, 8)).toBeGreaterThan(0);
+      // distance 10 is beyond reach, contributes 0
+      expect(field.energyAt(18, 8, 8)).toBe(0);
+    });
+
+    it('clamps energy to [0, 1] under inverse_square with many seeds', () => {
+      // Many seeds at the same point would saturate; verify clamp holds
+      const seeds = [];
+      for (let i = 0; i < 10; i++) {
+        seeds.push({ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 });
+      }
+      const field = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, iterations: 0 });
+      for (let x = 0; x < 16; x++) {
+        for (let y = 0; y < 16; y++) {
+          for (let z = 0; z < 16; z++) {
+            const e = field.energyAt(x, y, z);
+            expect(e).toBeGreaterThanOrEqual(0);
+            expect(e).toBeLessThanOrEqual(1);
+          }
+        }
+      }
+    });
+  });
+});
+
+// =====================================================================
+// QBIT-Voxel Phase 5 — Octree-accelerated propagation
+// =====================================================================
+
+describe('propagateWithOctree', () => {
+  it('produces the same energy field as propagate() for inverse_square', () => {
+    const seeds = [
+      { x: 4, y: 4, z: 4, energy: 1.0, energyType: 0 },
+      { x: 12, y: 12, z: 12, energy: 0.5, energyType: 1 },
+    ];
+    const a = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 12, iterations: 2 });
+    const b = propagateWithOctree(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 12, iterations: 2 });
+    for (let x = 0; x < 16; x++) {
+      for (let y = 0; y < 16; y++) {
+        for (let z = 0; z < 16; z++) {
+          expect(b.energyAt(x, y, z)).toBeCloseTo(a.energyAt(x, y, z), 6);
+        }
+      }
+    }
+  });
+
+  it('produces the same energy field as propagate() for gaussian (sqrt path)', () => {
+    const seeds = [
+      { x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 },
+    ];
+    const a = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.GAUSSIAN, decay: 0.05, maxRadius: 10, iterations: 0 });
+    const b = propagateWithOctree(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.GAUSSIAN, decay: 0.05, maxRadius: 10, iterations: 0 });
+    for (let x = 0; x < 16; x++) {
+      for (let y = 0; y < 16; y++) {
+        for (let z = 0; z < 16; z++) {
+          expect(b.energyAt(x, y, z)).toBeCloseTo(a.energyAt(x, y, z), 5);
+        }
+      }
+    }
+  });
+
+  it('produces the same energy field as propagate() for phi_attenuation', () => {
+    const seeds = [{ x: 8, y: 8, z: 8, energy: 1.0, energyType: 0 }];
+    const a = propagate(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.PHI_ATTENUATION, maxRadius: 10, iterations: 0 });
+    const b = propagateWithOctree(seeds, 16, 16, 16, { attenuationModel: ATTENUATION_MODELS.PHI_ATTENUATION, maxRadius: 10, iterations: 0 });
+    for (let x = 0; x < 16; x++) {
+      for (let y = 0; y < 16; y++) {
+        for (let z = 0; z < 16; z++) {
+          expect(b.energyAt(x, y, z)).toBeCloseTo(a.energyAt(x, y, z), 5);
+        }
+      }
+    }
+  });
+
+  it('handles a seed at the corner correctly (deep prune case)', () => {
+    // Seed at (0, 0, 0) with maxRadius=8 in a 32³ volume. The subtree
+    // behind the seed (x, y, z > 8) is entirely outside maxRadius and
+    // should be skipped entirely by the octree.
+    const seeds = [{ x: 0, y: 0, z: 0, energy: 1.0, energyType: 0 }];
+    const a = propagate(seeds, 32, 32, 32, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    const b = propagateWithOctree(seeds, 32, 32, 32, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    for (let x = 0; x < 32; x++) {
+      for (let y = 0; y < 32; y++) {
+        for (let z = 0; z < 32; z++) {
+          expect(b.energyAt(x, y, z)).toBeCloseTo(a.energyAt(x, y, z), 6);
+        }
+      }
+    }
+  });
+
+  it('handles a seed at the center (no prune case)', () => {
+    // Seed at (16, 16, 16) with maxRadius=8 in a 32³ volume. The whole
+    // volume is partially within maxRadius; the octree should still
+    // produce the correct result.
+    const seeds = [{ x: 16, y: 16, z: 16, energy: 1.0, energyType: 0 }];
+    const a = propagate(seeds, 32, 32, 32, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    const b = propagateWithOctree(seeds, 32, 32, 32, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    for (let x = 0; x < 32; x++) {
+      for (let y = 0; y < 32; y++) {
+        for (let z = 0; z < 32; z++) {
+          expect(b.energyAt(x, y, z)).toBeCloseTo(a.energyAt(x, y, z), 6);
+        }
+      }
+    }
+  });
+
+  it('handles multiple seeds with overlapping reach', () => {
+    const seeds = [
+      { x: 4, y: 4, z: 4, energy: 1.0, energyType: 0 },
+      { x: 12, y: 12, z: 12, energy: 1.0, energyType: 0 },
+      { x: 20, y: 20, z: 20, energy: 1.0, energyType: 0 },
+    ];
+    const a = propagate(seeds, 24, 24, 24, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    const b = propagateWithOctree(seeds, 24, 24, 24, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    let maxDiff = 0;
+    for (let x = 0; x < 24; x++) {
+      for (let y = 0; y < 24; y++) {
+        for (let z = 0; z < 24; z++) {
+          maxDiff = Math.max(maxDiff, Math.abs(b.energyAt(x, y, z) - a.energyAt(x, y, z)));
+        }
+      }
+    }
+    expect(maxDiff).toBeLessThan(1e-6);
+  });
+
+  it('returns same shape as propagate()', () => {
+    const seeds = [{ x: 4, y: 4, z: 4, energy: 1.0, energyType: 0 }];
+    const field = propagateWithOctree(seeds, 8, 8, 8, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE });
+    expect(field.width).toBe(8);
+    expect(field.height).toBe(8);
+    expect(field.depth).toBe(8);
+    expect(typeof field.energyAt).toBe('function');
+    expect(typeof field.gradientAt).toBe('function');
+  });
+
+  it('is comparable in speed to propagate() for sparse seeds at the corner of a 64³ volume', () => {
+    // The octree was the PDR §3.1 Step 3.1 promised optimization. Empirically
+    // it is NOT a clear win over the simpler spatial-pruning approach that
+    // `propagate()` already uses. For a single seed at the corner of a 64³
+    // volume with small maxRadius, the octree's recursive descent has
+    // comparable cost to the per-cell early-continue in the spatial version.
+    // The octree is more useful in cases where the seed's bounding box
+    // covers a large region but most of it is outside maxRadius — a niche
+    // that doesn't arise in the standard QBIT-Voxel world pipeline.
+    //
+    // This test asserts that the octree doesn't regress (within 3x of
+    // the standard version) — not that it's faster. Correctness is the
+    // primary guarantee; performance is informational.
+    const seeds = [{ x: 0, y: 0, z: 0, energy: 1.0, energyType: 0 }];
+    const N = 10;
+    const t0 = performance.now();
+    for (let i = 0; i < N; i++) {
+      propagate(seeds, 64, 64, 64, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    }
+    const tStandard = (performance.now() - t0) / N;
+    const t1 = performance.now();
+    for (let i = 0; i < N; i++) {
+      propagateWithOctree(seeds, 64, 64, 64, { attenuationModel: ATTENUATION_MODELS.INVERSE_SQUARE, maxRadius: 8, iterations: 0 });
+    }
+    const tOctree = (performance.now() - t1) / N;
+    // Don't regress beyond 3x the standard version's time.
+    expect(tOctree).toBeLessThan(tStandard * 3);
+    // eslint-disable-next-line no-console
+    console.log(`  propagate avg: ${tStandard.toFixed(2)}ms, octree avg: ${tOctree.toFixed(2)}ms, ratio: ${(tOctree / tStandard).toFixed(2)}x`);
   });
 });

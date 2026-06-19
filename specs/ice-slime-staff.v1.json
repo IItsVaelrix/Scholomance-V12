@@ -52,7 +52,7 @@
     },
     {
       "id": "orb",
-      "profile": "orb.slime",
+      "profile": "orb.perfect",
       "params": { "r": 9 },
       "attach": { "parent": "shaft", "at": "tip" },
       "fill": { "material": "void_ice" },
@@ -60,21 +60,21 @@
     },
     {
       "id": "orb_shadow",
-      "profile": "orb.slime_shadow",
+      "profile": "orb.perfect_shadow",
       "params": { "r": 9 },
       "attach": { "parent": "shaft", "at": "tip" },
       "fill": { "material": "void_ice", "anchor": "shadow" }
     },
     {
       "id": "orb_deep_shadow",
-      "profile": "orb.slime_deep_shadow",
+      "profile": "orb.perfect_deep_shadow",
       "params": { "r": 9 },
       "attach": { "parent": "shaft", "at": "tip" },
       "fill": { "material": "void_ice", "anchor": "deep" }
     },
     {
       "id": "orb_frost",
-      "profile": "orb.slime_frost",
+      "profile": "orb.perfect_frost",
       "params": { "r": 9 },
       "attach": { "parent": "shaft", "at": "tip" },
       "fill": { "material": "void_ice", "anchor": "frost" }
@@ -95,7 +95,7 @@
     },
     {
       "id": "orb_ring",
-      "profile": "orb.ring",
+      "profile": "orb.ring.symmetric",
       "params": { "r": 9 },
       "attach": { "parent": "orb", "at": "center" },
       "fill": { "material": "void_ice", "anchor": "deep" },

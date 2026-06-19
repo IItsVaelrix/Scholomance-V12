@@ -54,6 +54,7 @@ export const INTERNAL_MODULES = [
   { id: "career", path: "/career", label: "Career" },
   { id: "collab", path: "/collab", label: "Collab" },
   { id: "wand", path: "/wand", label: "Wand Workspace" },
+  { id: "qbit-world", path: "/qbit-world", label: "QBIT World" },
   { id: "photonic-bridge", path: "/internal/photonic-bridge", label: "Photonic Bridge" },
   { id: "time-lab", path: "/internal/time-lab", label: "ScholoTime Lab" },
 ];

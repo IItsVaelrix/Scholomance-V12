@@ -17,8 +17,8 @@ if (!trackId) {
 // Dynamically import the track definition
 const trackModule = await import(`../src/pages/Visualiser/tracks/${trackId}.ts`);
 const track = Object.values(trackModule).find(
-  (v) => v && typeof v === "object" && (v as any).id
-) as any;
+  (v) => v && typeof v === "object" && v.id
+);
 
 if (!track) {
   console.error(`No track found for id: ${trackId}`);

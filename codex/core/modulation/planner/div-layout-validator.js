@@ -32,8 +32,8 @@ export function validateDivLayout(node, depth = 0) {
 
   if (!node.type || typeof node.type !== 'string') {
     errors.push('Layout node is missing required "type" field of type string');
-  } else if (!['container', 'element', 'voxel'].includes(node.type)) {
-    errors.push(`Invalid node type: "${node.type}". Allowed: container, element, voxel`);
+  } else if (!['container', 'element', 'voxel', 'world'].includes(node.type)) {
+    errors.push(`Invalid node type: "${node.type}". Allowed: container, element, voxel, world`);
   }
 
   if (!node.role || typeof node.role !== 'string') {
@@ -53,12 +53,16 @@ export function validateDivLayout(node, depth = 0) {
       'badge',
       'glow-container',
       'voxel-scene',
+      'world-scene',
     ];
     if (!validRoles.includes(node.role)) {
       errors.push(`Invalid role: "${node.role}"`);
     }
     if (node.type === 'voxel' && node.role !== 'voxel-scene') {
       errors.push(`Nodes with type "voxel" must use role "voxel-scene", got "${node.role}"`);
+    }
+    if (node.type === 'world' && node.role !== 'world-scene') {
+      errors.push(`Nodes with type "world" must use role "world-scene", got "${node.role}"`);
     }
   }
 
@@ -154,10 +158,56 @@ export function validateDivLayout(node, depth = 0) {
     if (typeof node.props !== 'object' || node.props === null) {
       errors.push('node.props must be an object');
     } else {
-      const allowedProps = ['text', 'icon', 'title', 'subtitle', 'interactive', 'onClickAction', 'seed', 'volumeSize'];
+      const allowedProps = ['text', 'icon', 'title', 'subtitle', 'interactive', 'onClickAction', 'seed', 'volumeSize', 'worldSpec'];
       const unknownProps = Object.keys(node.props).filter(k => !allowedProps.includes(k));
       if (unknownProps.length > 0) {
         errors.push(`Unknown properties in props object: ${unknownProps.join(', ')}`);
+      }
+      // World nodes must declare a worldSpec; the spec is itself a
+      // ChunkedWorldVolumeSpec (validated by chunked-world-volume.js at
+      // createChunkedWorldVolume time). Here we only check shape and the
+      // minimal contract: chunkSize, chunkCount, seed.
+      if (node.type === 'world') {
+        const ws = node.props.worldSpec;
+        if (ws === undefined) {
+          errors.push('Nodes with type "world" must declare props.worldSpec');
+        } else if (typeof ws !== 'object' || ws === null) {
+          errors.push('node.props.worldSpec must be an object');
+        } else {
+          if (!ws.chunkSize || typeof ws.chunkSize !== 'object') {
+            errors.push('worldSpec.chunkSize must be an object with w, h, d');
+          } else {
+            for (const axis of ['w', 'h', 'd']) {
+              const v = ws.chunkSize[axis];
+              if (!Number.isInteger(v) || v < 8 || v > 128) {
+                errors.push(`worldSpec.chunkSize.${axis} must be an integer in [8, 128], got ${v}`);
+              } else if ((v & (v - 1)) !== 0) {
+                errors.push(`worldSpec.chunkSize.${axis} must be a power of two, got ${v}`);
+              }
+            }
+          }
+          if (!ws.chunkCount || typeof ws.chunkCount !== 'object') {
+            errors.push('worldSpec.chunkCount must be an object with x, y, z');
+          } else {
+            for (const axis of ['x', 'y', 'z']) {
+              const v = ws.chunkCount[axis];
+              if (!Number.isInteger(v) || v < 1) {
+                errors.push(`worldSpec.chunkCount.${axis} must be a positive integer, got ${v}`);
+              }
+            }
+          }
+          if (ws.seed !== undefined && !Number.isInteger(ws.seed)) {
+            errors.push(`worldSpec.seed must be an integer, got ${ws.seed}`);
+          }
+          if (ws.attenuationModel !== undefined
+              && !['gaussian', 'inverse_square', 'phi_attenuation'].includes(ws.attenuationModel)) {
+            errors.push(`worldSpec.attenuationModel must be one of gaussian, inverse_square, phi_attenuation, got ${ws.attenuationModel}`);
+          }
+          if (ws.overlapRadius !== undefined
+              && (!Number.isInteger(ws.overlapRadius) || ws.overlapRadius < 0)) {
+            errors.push(`worldSpec.overlapRadius must be a non-negative integer, got ${ws.overlapRadius}`);
+          }
+        }
       }
     }
   }

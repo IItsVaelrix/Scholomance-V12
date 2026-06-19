@@ -16,6 +16,7 @@
 
 import { setCell, getCell, clearCell, floodFill } from './template-grid-engine.js';
 import { phosphorylate } from './qbit-phosphorylation.js';
+import { createPlane, clampPlane } from './build-plane.js';
 
 export class Command {
   constructor({ doFn, undoFn, description = 'Unnamed operation', meta = {} }) {
@@ -53,9 +54,14 @@ export class Command {
   }
 }
 
-export function createCommandStack(initialCommands = []) {
+export function createCommandStack(initialCommands = [], options = {}) {
   const history = [...initialCommands];
   let pointer = history.length - 1;
+
+  // Active build plane (A2): the depth slice authoring targets. This is editor
+  // session state, not document state — slice navigation stays out of the undo
+  // history (matching VoxEdit, where moving the build slice is not an undo step).
+  let activePlane = options.activePlane ?? createPlane();
 
   function truncateRedo() {
     if (pointer < history.length - 1) {
@@ -95,6 +101,19 @@ export function createCommandStack(initialCommands = []) {
       const cmd = history[pointer];
       const result = cmd.execute();
       return { result, description: cmd.description, redone: true };
+    },
+
+    // ── Active build plane (A2) ──────────────────────────────────────────
+    getActivePlane() {
+      return { ...activePlane };
+    },
+
+    // Set the active build plane. When `vol` is provided the plane index is
+    // clamped to the volume's extent along its axis. Returns the resulting
+    // plane. Not pushed onto the undo history (view/session state).
+    setActivePlane(plane, vol) {
+      activePlane = vol ? clampPlane(plane, vol) : { axis: plane.axis, index: plane.index };
+      return { ...activePlane };
     },
 
     canUndo() {

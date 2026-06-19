@@ -357,3 +357,242 @@ body:has(.mmorpg-hybrid-layout) .scholomance-rail {
   color: var(--gold);
   background: #02020a;
 }
+
+body:has(.void-cave-page) .scholomance-rail {
+  display: none;
+}
+
+.void-cave-page {
+  --void-bg: #02030a;
+  --void-panel: rgba(4, 5, 12, 0.82);
+  --void-line: rgba(110, 231, 255, 0.28);
+  --void-text: #edf7ff;
+  --void-muted: rgba(237, 247, 255, 0.62);
+  --void-gold: #d49f55;
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  min-height: 100vh;
+  overflow: hidden;
+  color: var(--void-text);
+  background:
+    radial-gradient(circle at 18% 16%, rgba(36, 199, 223, 0.15), transparent 24%),
+    radial-gradient(circle at 70% 68%, rgba(123, 108, 255, 0.16), transparent 28%),
+    linear-gradient(180deg, #030511 0%, #010207 100%);
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace);
+}
+
+.void-cave-world {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.void-cave-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.void-cave-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.void-cave-camera-chip {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 5;
+  border: 1px solid rgba(110, 231, 255, 0.28);
+  border-radius: 6px;
+  background: rgba(3, 4, 11, 0.72);
+  color: rgba(237, 247, 255, 0.78);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(10px);
+  padding: 9px 11px;
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.void-cave-bg {
+  fill: transparent;
+}
+
+.void-cave-face {
+  stroke: rgba(1, 2, 8, 0.72);
+  stroke-width: 0.7;
+  shape-rendering: geometricPrecision;
+}
+
+.void-cave-face--voidmetal {
+  filter: drop-shadow(0 0 5px rgba(123, 108, 255, 0.58));
+}
+
+.void-cave-texture-mark {
+  pointer-events: none;
+  vector-effect: non-scaling-stroke;
+  mix-blend-mode: screen;
+}
+
+.void-cave-player {
+  filter:
+    drop-shadow(0 12px 12px rgba(0, 0, 0, 0.78))
+    drop-shadow(0 0 12px rgba(110, 231, 255, 0.2));
+  transform-box: fill-box;
+  transform-origin: center bottom;
+}
+
+.void-cave-player polygon {
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 0.15;
+  vector-effect: non-scaling-stroke;
+}
+
+.void-cave-third-person {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+  padding-bottom: clamp(96px, 15vh, 150px);
+  background:
+    radial-gradient(ellipse at center bottom, rgba(110, 231, 255, 0.16), transparent 34%),
+    linear-gradient(90deg, rgba(1, 2, 8, 0.18), transparent 24%, transparent 76%, rgba(1, 2, 8, 0.18));
+}
+
+.void-cave-scholar-avatar {
+  width: min(36vw, 340px);
+  min-width: 220px;
+  height: auto;
+  overflow: visible;
+  filter:
+    drop-shadow(0 24px 22px rgba(0, 0, 0, 0.76))
+    drop-shadow(0 0 18px rgba(110, 231, 255, 0.28));
+  image-rendering: pixelated;
+}
+
+.void-cave-scholar-avatar--art {
+  display: block;
+  max-height: min(72vh, 720px);
+  object-fit: contain;
+  user-select: none;
+}
+
+.void-cave-scholar-avatar polygon {
+  stroke: rgba(0, 0, 0, 0.58);
+  stroke-width: 0.16;
+  vector-effect: non-scaling-stroke;
+}
+
+.void-cave-hud {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) repeat(3, minmax(120px, 170px));
+  gap: 10px;
+  max-width: calc(100vw - 220px);
+  pointer-events: none;
+}
+
+.void-cave-panel {
+  min-height: 68px;
+  border: 1px solid rgba(110, 231, 255, 0.24);
+  border-left-color: rgba(212, 159, 85, 0.68);
+  border-radius: 6px;
+  background: var(--void-panel);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(10px);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+}
+
+.void-cave-panel span,
+.void-cave-panel small {
+  color: var(--void-muted);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.void-cave-panel strong {
+  color: var(--void-text);
+  font-size: clamp(0.88rem, 1.2vw, 1.12rem);
+  line-height: 1.05;
+}
+
+.void-cave-panel--hero {
+  border-left-color: rgba(110, 231, 255, 0.82);
+}
+
+.void-cave-panel--hero strong {
+  color: #6ee7ff;
+  font-size: clamp(1rem, 1.6vw, 1.45rem);
+}
+
+.void-cave-panel--notice {
+  grid-column: 1 / -1;
+  min-height: 42px;
+  color: var(--void-gold);
+}
+
+.void-cave-minimap {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+  width: 168px;
+  height: 168px;
+  border: 1px solid rgba(110, 231, 255, 0.34);
+  border-radius: 8px;
+  background: rgba(3, 4, 11, 0.78);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.42), 0 0 18px rgba(110, 231, 255, 0.08);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.void-cave-minimap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.void-cave-minimap__backdrop {
+  fill: rgba(2, 3, 10, 0.92);
+}
+
+@media (max-width: 860px) {
+  .void-cave-hud {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    max-width: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .void-cave-panel {
+    min-height: 58px;
+    padding: 10px;
+  }
+
+  .void-cave-minimap {
+    top: 10px;
+    right: 10px;
+    width: 132px;
+    height: 132px;
+  }
+}

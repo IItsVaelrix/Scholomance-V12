@@ -6,7 +6,7 @@
     "filledCoordinates": 596,
     "engravingCells": 55,
     "sharpnessEnabled": true,
-    "sharpnessChangedCount": 536,
+    "sharpnessChangedCount": 545,
     "finalCoordinates": 596,
     "bytecode": "VW-VOID-INEXPLICABLE-TRANSCENDENT",
     "material": "source",
@@ -23,7 +23,7 @@
   },
   "sharpnessDiagnostics": {
     "coordinateCount": 596,
-    "changedCount": 536,
+    "changedCount": 545,
     "enabled": true
   }
 }

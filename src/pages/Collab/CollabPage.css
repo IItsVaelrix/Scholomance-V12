@@ -167,9 +167,10 @@
 }
 
 .collab-panel--left {
-    width: 320px;
+    width: 120px;
     flex-shrink: 0;
     border-left: 2px solid var(--color-collab-gold);
+    padding: 8px 6px; /* tighter horizontal padding to fit narrow left rail */
 }
 
 .collab-panel--center {
@@ -205,11 +206,12 @@
     border-radius: 6px;
     color: var(--color-collab-text-muted);
     font-family: var(--font-collab-mono);
-    font-size: 11px;
+    font-size: 10px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    padding: 12px 16px;
+    letter-spacing: 0.08em;
+    padding: 8px 6px;
     cursor: pointer;
+    touch-action: manipulation;
     transition: all 0.2s ease;
     text-align: left;
     position: relative;
@@ -245,15 +247,15 @@
 
 .collab-tab-btn__badge {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 4px;
+    right: 3px;
     background: var(--color-collab-info);
     color: #000;
-    font-size: 9px;
+    font-size: 8px;
     font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 10px;
-    min-width: 18px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    min-width: 14px;
     text-align: center;
 }
 
@@ -353,6 +355,12 @@
     overflow-y: auto;
     padding: var(--space-4);
     min-height: 0;
+}
+
+/* Full-bleed cabinet for the BUGS "screen" — no outer padding/scroll on the frame itself */
+.viewport-container--cabinet {
+    padding: 0;
+    overflow: hidden;
 }
 
 .viewport-content {
@@ -825,7 +833,7 @@
 
 @media (max-width: 1200px) {
     .collab-panel--left {
-        width: 260px;
+        width: 120px;
     }
     
     .collab-panel--right {
@@ -837,44 +845,152 @@
     .collab-main {
         flex-direction: column;
         overflow-y: auto;
+        padding: var(--space-2);
+        gap: var(--space-2);
     }
-    
+
     .collab-panel {
         width: 100% !important;
         flex-shrink: 1;
         min-height: auto;
     }
-    
-    .collab-panel--center {
-        min-height: 400px;
+
+    /* Collapse left panel to a compact horizontal tab strip */
+    .collab-panel--left {
+        flex-direction: row;
+        height: auto;
+        padding: var(--space-2);
+        border-left: none;
+        border-bottom: 2px solid var(--color-collab-gold);
+        overflow-y: visible;
+        overflow-x: auto;
+        gap: 0;
     }
-    
+
+    .collab-panel--center {
+        min-height: 420px;
+    }
+
+    /* Right panel hidden on tablet — saves critical vertical space */
+    .collab-panel--right {
+        display: none;
+    }
+
     .collab-tabs {
         flex-direction: row;
         overflow-x: auto;
+        flex-wrap: nowrap;
+        gap: var(--space-1);
+        padding-bottom: 0;
+        border-bottom: none;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        flex: 0 0 auto;
     }
-    
+
+    .collab-tabs::-webkit-scrollbar { display: none; }
+
     .collab-tab-btn {
         white-space: nowrap;
+        padding: 6px 10px;
+        margin-bottom: 0;
+        flex-shrink: 0;
     }
+
+    /* Hide context help / quickstart inside the left panel strip */
+    .collab-tab-content { display: none; }
 }
 
 @media (max-width: 600px) {
     .collab-topbar {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
         height: auto;
-        padding: var(--space-2);
+        padding: var(--space-2) var(--space-3);
         gap: var(--space-2);
     }
-    
-    .topbar-left,
-    .topbar-right {
-        width: 100%;
-        justify-content: center;
+
+    .topbar-left { gap: var(--space-2); }
+    .topbar-title { font-size: 14px; }
+    .topbar-subtitle { display: none; }
+
+    .topbar-right { gap: var(--space-2); }
+
+    .topbar-agents-online {
+        font-size: 9px;
+        padding: 3px 6px;
     }
-    
+
     .metrics-grid {
         grid-template-columns: repeat(2, 1fr);
+    }
+
+    .collab-tab-btn {
+        font-size: 8px;
+        padding: 5px 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .collab-topbar {
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .topbar-title { font-size: 12px; letter-spacing: 0.08em; }
+    .topbar-agents-online { display: none; }
+
+    .topbar-btn {
+        font-size: 8px;
+        padding: 5px 10px;
+    }
+
+    /* Cabinet fills 100% of its container on phone */
+    .viewport-container--cabinet {
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Status pill compact */
+    .collab-status-display {
+        padding: var(--space-1) var(--space-3);
+        font-size: 10px;
+        margin: var(--space-1) var(--space-2);
+    }
+
+    /* Drawers go full-width */
+    .task-detail-drawer {
+        width: 100vw;
+        left: 0;
+        right: 0;
+    }
+
+    .metrics-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-2);
+    }
+
+    .metric-value { font-size: 14px; }
+    .metric-label { font-size: 8px; }
+
+    /* Activity feed: shorter detail truncation */
+    .activity-entry__detail { max-width: 120px; }
+
+    /* Kanban: scroll-snap on phone */
+    .kanban {
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .kanban__column {
+        flex: 0 0 85vw;
+        scroll-snap-align: start;
+    }
+
+    /* Task create form stacks on phone */
+    .task-create-form {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

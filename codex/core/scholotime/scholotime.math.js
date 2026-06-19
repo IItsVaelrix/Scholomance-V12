@@ -64,7 +64,10 @@ export function applyEasing(progress, easingType = 'linear') {
     case 'easeOutQuad': return p * (2 - p);
     case 'easeInOutQuad': return p < 0.5 ? 2 * p * p : -1 + (4 - 2 * p) * p;
     case 'easeInCubic': return p * p * p;
-    case 'easeOutCubic': return (--p) * p * p + 1;
+    case 'easeOutCubic': {
+      const q = p - 1;
+      return q * q * q + 1;
+    }
     case 'easeInOutCubic': return p < 0.5 ? 4 * p * p * p : (p - 1) * (2 * p - 2) * (2 * p - 2) + 1;
     case 'linear':
     default:

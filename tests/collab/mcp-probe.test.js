@@ -2,6 +2,7 @@ import { PassThrough } from 'node:stream';
 import { describe, expect, it, vi } from 'vitest';
 import {
     classifyProbeFailure,
+    getCanonicalBridgeLaunchSpec,
     runCollabMcpProbe,
 } from '../../codex/server/collab/mcp-probe.js';
 
@@ -126,5 +127,11 @@ describe('collab MCP probe', () => {
         });
 
         expect(classification).toBe('bridge_startup_failure');
+    });
+
+    it('uses the stable bridge entrypoint for canonical stdio launches', () => {
+        const launchSpec = getCanonicalBridgeLaunchSpec();
+
+        expect(launchSpec.args.at(-1)).toMatch(/codex[/\\]server[/\\]collab[/\\]mcp-bridge-entry\.js$/);
     });
 });

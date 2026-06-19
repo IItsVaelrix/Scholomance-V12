@@ -49,7 +49,7 @@ export function buildPath(traceResult, options = {}) {
 /**
  * Build a `<path .../>` element string.
  */
-export function buildPathElement({ d, fill = 'none', stroke, strokeWidth, className, opacity }) {
+export function buildPathElement({ d, fill = 'none', stroke, strokeWidth, className, opacity, filter }) {
   if (!d) return '';
   const attrs = [];
   if (className)   attrs.push(`class="${className}"`);
@@ -58,6 +58,7 @@ export function buildPathElement({ d, fill = 'none', stroke, strokeWidth, classN
   if (strokeWidth != null) attrs.push(`stroke-width="${strokeWidth}"`);
   if (strokeWidth != null) attrs.push(`stroke-linejoin="round" stroke-linecap="round"`);
   if (opacity != null) attrs.push(`opacity="${opacity}"`);
+  if (filter) attrs.push(`filter="${filter}"`);
   attrs.push(`d="${d}"`);
   return `<path ${attrs.join(' ')}/>`;
 }

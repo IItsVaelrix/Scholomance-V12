@@ -3,7 +3,7 @@
 
 > Read first: `SHARED_PREAMBLE.md` → this file. ARCH-PRIORITY: docs/skills loaded every new read of @VAELRIX_LAW
 
-**Version: 1.15** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
+**Version: 1.16** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
 
 All agents read this file before acting.
 All agents reference `SCHEMA_CONTRACT.md` for data shapes.
@@ -1320,6 +1320,20 @@ Agents MUST use the **Immune System** (`mcp_scholomance_collab_immunity_scan_fil
 - **Adaptive Immunity**: Detects semantic similarity to known high-risk fractures (e.g., `RECURSIVE_SHADOW`).
 - **Forensic Stasis**: If a scan reveals a violation, the agent must seal the fracture before proceeding with the implementation ritual.
 
+### 19. Explicit Type Annotations Only — No `:=` Inference
+
+**The `:=` static type inference operator is prohibited in all GDScript files.**
+
+GDScript's `:=` operator tells the compiler to infer a static type from the assigned value. However, many Godot built-in functions (`abs()`, `dict.get()`, `JSON.parse_string()`, etc.) return `Variant` — Godot's dynamic union type. When `:=` is used with these functions, the compiler infers the type as `Variant`, which triggers a parse error under `warnings_as_errors` (enabled project-wide).
+
+**The rule:**
+- Always use explicit type annotations: `var swing: float = abs(sin(...))` — **never** `var swing := abs(sin(...))`
+- This applies to all GDScript files (`.gd`) in the project
+- No exceptions for "obvious" types — the compiler is the arbiter, not intuition
+
+**Why this exists:**
+`:=` is a recurring parse-error vector in this project. Explicit annotations remove compiler ambiguity, document intent, and prevent type-inference failures from blocking builds. An agent that uses `:=` in GDScript will cause the next agent to waste time on a known failure mode.
+
 ---
 
 ## Online Reference Resources
@@ -1355,6 +1369,7 @@ Agents MUST use the **Immune System** (`mcp_scholomance_collab_immunity_scan_fil
 | 1.13 | 2026-04-27 | Integrated Archive of Dominance and Immune System tools into Law 14. Expanded Law 17 with Hybrid Search. Added Law 18: "The Immune System and Forensic Stasis" mandating immune scans before commits. |
 | 1.14 | 2026-05-09 | Canonicalized encyclopedia-consolidated documentation paths: PDRs now live under `docs/scholomance-encyclopedia/PDR-archive/`, PIRs under `docs/scholomance-encyclopedia/post-implementation-reports/`, and root law files may act as compatibility entrypoints. |
 | 1.15 | 2026-05-22 | Added Law 9 (Component Instance Isolation) to prohibit global mutable variables in UI files and enforce component-local useRef caching. Corrected Law 12's violation reference pointer. Renumbered Law 17 (Collab Login and MCP Access Protocol) to Law 14 to reconcile sub-heading numbers and resolve missing law gaps. |
+| 1.16 | 2026-06-17 | Added Law 19: "Explicit Type Annotations Only — No `:=` Inference" — GDScript's `:=` operator is prohibited project-wide. Explicit type annotations (`var x: float = ...`) are required. Prevents recurring parse errors from Variant-inferred types under `warnings_as_errors`. |
 
 ---
 

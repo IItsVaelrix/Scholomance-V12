@@ -1,0 +1,9423 @@
+{
+  "schemaVersion": "scholomance.align.v1",
+  "trackId": "polarity",
+  "bpm": 93,
+  "offsetMs": 1200,
+  "lyricsHash": "966ea3407b9ab6ee",
+  "audioUrl": "https://cdn1.suno.ai/0ff1c2ee-6951-4f65-9204-4cbb2baf16fa.mp3",
+  "generatedAt": "2026-06-15T13:17:21.744Z",
+  "wordTimings": [
+    {
+      "word": "Lyrical",
+      "startMs": 1200,
+      "endMs": 1597,
+      "beat": {
+        "index": 0,
+        "phase": 0,
+        "bar": 0,
+        "barPhase": 0
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rapper",
+      "startMs": 1597,
+      "endMs": 1995,
+      "beat": {
+        "index": 0,
+        "phase": 0.616,
+        "bar": 0,
+        "barPhase": 0.154
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "spilling",
+      "startMs": 1995,
+      "endMs": 2392,
+      "beat": {
+        "index": 1,
+        "phase": 0.232,
+        "bar": 0,
+        "barPhase": 0.308
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 2392,
+      "endMs": 2790,
+      "beat": {
+        "index": 1,
+        "phase": 0.848,
+        "bar": 0,
+        "barPhase": 0.462
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "heart",
+      "startMs": 2790,
+      "endMs": 3187,
+      "beat": {
+        "index": 2,
+        "phase": 0.464,
+        "bar": 0,
+        "barPhase": 0.616
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "out",
+      "startMs": 3187,
+      "endMs": 3585,
+      "beat": {
+        "index": 3,
+        "phase": 0.081,
+        "bar": 0,
+        "barPhase": 0.77
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "heart",
+      "startMs": 3585,
+      "endMs": 3876,
+      "beat": {
+        "index": 3,
+        "phase": 0.697,
+        "bar": 0,
+        "barPhase": 0.924
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "bringing",
+      "startMs": 3876,
+      "endMs": 4168,
+      "beat": {
+        "index": 4,
+        "phase": 0.148,
+        "bar": 1,
+        "barPhase": 0.037
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "large",
+      "startMs": 4168,
+      "endMs": 4459,
+      "beat": {
+        "index": 4,
+        "phase": 0.6,
+        "bar": 1,
+        "barPhase": 0.15
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "droughts",
+      "startMs": 4459,
+      "endMs": 4751,
+      "beat": {
+        "index": 5,
+        "phase": 0.052,
+        "bar": 1,
+        "barPhase": 0.263
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rapper",
+      "startMs": 4751,
+      "endMs": 5042,
+      "beat": {
+        "index": 5,
+        "phase": 0.504,
+        "bar": 1,
+        "barPhase": 0.376
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 5042,
+      "endMs": 5334,
+      "beat": {
+        "index": 5,
+        "phase": 0.956,
+        "bar": 1,
+        "barPhase": 0.489
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 5334,
+      "endMs": 5625,
+      "beat": {
+        "index": 6,
+        "phase": 0.407,
+        "bar": 1,
+        "barPhase": 0.602
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "bard",
+      "startMs": 5625,
+      "endMs": 5917,
+      "beat": {
+        "index": 6,
+        "phase": 0.859,
+        "bar": 1,
+        "barPhase": 0.715
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "mouth",
+      "startMs": 5917,
+      "endMs": 6208,
+      "beat": {
+        "index": 7,
+        "phase": 0.311,
+        "bar": 1,
+        "barPhase": 0.828
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Card",
+      "startMs": 6208,
+      "endMs": 6481,
+      "beat": {
+        "index": 7,
+        "phase": 0.763,
+        "bar": 1,
+        "barPhase": 0.941
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "up",
+      "startMs": 6481,
+      "endMs": 6753,
+      "beat": {
+        "index": 8,
+        "phase": 0.185,
+        "bar": 2,
+        "barPhase": 0.046
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 6753,
+      "endMs": 7026,
+      "beat": {
+        "index": 8,
+        "phase": 0.608,
+        "bar": 2,
+        "barPhase": 0.152
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "sleeve",
+      "startMs": 7026,
+      "endMs": 7299,
+      "beat": {
+        "index": 9,
+        "phase": 0.03,
+        "bar": 2,
+        "barPhase": 0.258
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 7299,
+      "endMs": 7571,
+      "beat": {
+        "index": 9,
+        "phase": 0.453,
+        "bar": 2,
+        "barPhase": 0.363
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "black",
+      "startMs": 7571,
+      "endMs": 7844,
+      "beat": {
+        "index": 9,
+        "phase": 0.875,
+        "bar": 2,
+        "barPhase": 0.469
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Lotus",
+      "startMs": 7844,
+      "endMs": 8116,
+      "beat": {
+        "index": 10,
+        "phase": 0.298,
+        "bar": 2,
+        "barPhase": 0.574
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bars",
+      "startMs": 8116,
+      "endMs": 8408,
+      "beat": {
+        "index": 10,
+        "phase": 0.72,
+        "bar": 2,
+        "barPhase": 0.68
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "when",
+      "startMs": 8408,
+      "endMs": 8699,
+      "beat": {
+        "index": 11,
+        "phase": 0.172,
+        "bar": 2,
+        "barPhase": 0.793
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 8699,
+      "endMs": 8991,
+      "beat": {
+        "index": 11,
+        "phase": 0.624,
+        "bar": 2,
+        "barPhase": 0.906
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "breathe",
+      "startMs": 8991,
+      "endMs": 9282,
+      "beat": {
+        "index": 12,
+        "phase": 0.076,
+        "bar": 3,
+        "barPhase": 0.019
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 9282,
+      "endMs": 9574,
+      "beat": {
+        "index": 12,
+        "phase": 0.527,
+        "bar": 3,
+        "barPhase": 0.132
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "breath",
+      "startMs": 9574,
+      "endMs": 9865,
+      "beat": {
+        "index": 12,
+        "phase": 0.979,
+        "bar": 3,
+        "barPhase": 0.245
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "flows",
+      "startMs": 9865,
+      "endMs": 10157,
+      "beat": {
+        "index": 13,
+        "phase": 0.431,
+        "bar": 3,
+        "barPhase": 0.358
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 10157,
+      "endMs": 10448,
+      "beat": {
+        "index": 13,
+        "phase": 0.883,
+        "bar": 3,
+        "barPhase": 0.471
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "text-gnosis",
+      "startMs": 10448,
+      "endMs": 10740,
+      "beat": {
+        "index": 14,
+        "phase": 0.335,
+        "bar": 3,
+        "barPhase": 0.584
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 10740,
+      "endMs": 11038,
+      "beat": {
+        "index": 14,
+        "phase": 0.786,
+        "bar": 3,
+        "barPhase": 0.697
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "best",
+      "startMs": 11038,
+      "endMs": 11336,
+      "beat": {
+        "index": 15,
+        "phase": 0.248,
+        "bar": 3,
+        "barPhase": 0.812
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "focus",
+      "startMs": 11336,
+      "endMs": 11634,
+      "beat": {
+        "index": 15,
+        "phase": 0.711,
+        "bar": 3,
+        "barPhase": 0.928
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "let's",
+      "startMs": 11634,
+      "endMs": 11932,
+      "beat": {
+        "index": 16,
+        "phase": 0.173,
+        "bar": 4,
+        "barPhase": 0.043
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "go",
+      "startMs": 11932,
+      "endMs": 12230,
+      "beat": {
+        "index": 16,
+        "phase": 0.635,
+        "bar": 4,
+        "barPhase": 0.159
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 12230,
+      "endMs": 12528,
+      "beat": {
+        "index": 17,
+        "phase": 0.097,
+        "bar": 4,
+        "barPhase": 0.274
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "clip",
+      "startMs": 12528,
+      "endMs": 12826,
+      "beat": {
+        "index": 17,
+        "phase": 0.559,
+        "bar": 4,
+        "barPhase": 0.39
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Bonkers",
+      "startMs": 12826,
+      "endMs": 13125,
+      "beat": {
+        "index": 18,
+        "phase": 0.021,
+        "bar": 4,
+        "barPhase": 0.505
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Disrespectful",
+      "startMs": 13125,
+      "endMs": 13602,
+      "beat": {
+        "index": 18,
+        "phase": 0.483,
+        "bar": 4,
+        "barPhase": 0.621
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "posers",
+      "startMs": 13602,
+      "endMs": 14078,
+      "beat": {
+        "index": 19,
+        "phase": 0.222,
+        "bar": 4,
+        "barPhase": 0.806
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "getting",
+      "startMs": 14078,
+      "endMs": 14555,
+      "beat": {
+        "index": 19,
+        "phase": 0.962,
+        "bar": 4,
+        "barPhase": 0.99
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "their",
+      "startMs": 14555,
+      "endMs": 15032,
+      "beat": {
+        "index": 20,
+        "phase": 0.701,
+        "bar": 5,
+        "barPhase": 0.175
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "chest",
+      "startMs": 15032,
+      "endMs": 15509,
+      "beat": {
+        "index": 21,
+        "phase": 0.44,
+        "bar": 5,
+        "barPhase": 0.36
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "broken",
+      "startMs": 15509,
+      "endMs": 15986,
+      "beat": {
+        "index": 22,
+        "phase": 0.18,
+        "bar": 5,
+        "barPhase": 0.545
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "detest",
+      "startMs": 15986,
+      "endMs": 16463,
+      "beat": {
+        "index": 22,
+        "phase": 0.919,
+        "bar": 5,
+        "barPhase": 0.73
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "jokers",
+      "startMs": 16463,
+      "endMs": 16940,
+      "beat": {
+        "index": 23,
+        "phase": 0.658,
+        "bar": 5,
+        "barPhase": 0.915
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "They're",
+      "startMs": 16940,
+      "endMs": 17315,
+      "beat": {
+        "index": 24,
+        "phase": 0.398,
+        "bar": 6,
+        "barPhase": 0.099
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "actually",
+      "startMs": 17315,
+      "endMs": 17690,
+      "beat": {
+        "index": 24,
+        "phase": 0.978,
+        "bar": 6,
+        "barPhase": 0.245
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Arthur",
+      "startMs": 17690,
+      "endMs": 18065,
+      "beat": {
+        "index": 25,
+        "phase": 0.559,
+        "bar": 6,
+        "barPhase": 0.39
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "have",
+      "startMs": 18065,
+      "endMs": 18439,
+      "beat": {
+        "index": 26,
+        "phase": 0.14,
+        "bar": 6,
+        "barPhase": 0.535
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 18439,
+      "endMs": 18814,
+      "beat": {
+        "index": 26,
+        "phase": 0.721,
+        "bar": 6,
+        "barPhase": 0.68
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "be",
+      "startMs": 18814,
+      "endMs": 19189,
+      "beat": {
+        "index": 27,
+        "phase": 0.302,
+        "bar": 6,
+        "barPhase": 0.826
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "harder",
+      "startMs": 19189,
+      "endMs": 19564,
+      "beat": {
+        "index": 27,
+        "phase": 0.883,
+        "bar": 6,
+        "barPhase": 0.971
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "agony",
+      "startMs": 19564,
+      "endMs": 20011,
+      "beat": {
+        "index": 28,
+        "phase": 0.464,
+        "bar": 7,
+        "barPhase": 0.116
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Parker",
+      "startMs": 20011,
+      "endMs": 20458,
+      "beat": {
+        "index": 29,
+        "phase": 0.157,
+        "bar": 7,
+        "barPhase": 0.289
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "killing",
+      "startMs": 20458,
+      "endMs": 20905,
+      "beat": {
+        "index": 29,
+        "phase": 0.85,
+        "bar": 7,
+        "barPhase": 0.463
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Ben",
+      "startMs": 20905,
+      "endMs": 21352,
+      "beat": {
+        "index": 30,
+        "phase": 0.543,
+        "bar": 7,
+        "barPhase": 0.636
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 21352,
+      "endMs": 21800,
+      "beat": {
+        "index": 31,
+        "phase": 0.236,
+        "bar": 7,
+        "barPhase": 0.809
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "tragedy",
+      "startMs": 21800,
+      "endMs": 22247,
+      "beat": {
+        "index": 31,
+        "phase": 0.929,
+        "bar": 7,
+        "barPhase": 0.982
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "darker",
+      "startMs": 22247,
+      "endMs": 22694,
+      "beat": {
+        "index": 32,
+        "phase": 0.623,
+        "bar": 8,
+        "barPhase": 0.156
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "ugh",
+      "startMs": 22694,
+      "endMs": 23141,
+      "beat": {
+        "index": 33,
+        "phase": 0.316,
+        "bar": 8,
+        "barPhase": 0.329
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "You",
+      "startMs": 23141,
+      "endMs": 23409,
+      "beat": {
+        "index": 34,
+        "phase": 0.009,
+        "bar": 8,
+        "barPhase": 0.502
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "see",
+      "startMs": 23409,
+      "endMs": 23678,
+      "beat": {
+        "index": 34,
+        "phase": 0.425,
+        "bar": 8,
+        "barPhase": 0.606
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 23678,
+      "endMs": 23946,
+      "beat": {
+        "index": 34,
+        "phase": 0.84,
+        "bar": 8,
+        "barPhase": 0.71
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fire",
+      "startMs": 23946,
+      "endMs": 24214,
+      "beat": {
+        "index": 35,
+        "phase": 0.256,
+        "bar": 8,
+        "barPhase": 0.814
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "from",
+      "startMs": 24214,
+      "endMs": 24483,
+      "beat": {
+        "index": 35,
+        "phase": 0.672,
+        "bar": 8,
+        "barPhase": 0.918
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 24483,
+      "endMs": 24751,
+      "beat": {
+        "index": 36,
+        "phase": 0.088,
+        "bar": 9,
+        "barPhase": 0.022
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Golden",
+      "startMs": 24751,
+      "endMs": 25019,
+      "beat": {
+        "index": 36,
+        "phase": 0.504,
+        "bar": 9,
+        "barPhase": 0.126
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Fist",
+      "startMs": 25019,
+      "endMs": 25288,
+      "beat": {
+        "index": 36,
+        "phase": 0.92,
+        "bar": 9,
+        "barPhase": 0.23
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "So",
+      "startMs": 25288,
+      "endMs": 25621,
+      "beat": {
+        "index": 37,
+        "phase": 0.336,
+        "bar": 9,
+        "barPhase": 0.334
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "many",
+      "startMs": 25621,
+      "endMs": 25955,
+      "beat": {
+        "index": 37,
+        "phase": 0.853,
+        "bar": 9,
+        "barPhase": 0.463
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "rappers",
+      "startMs": 25955,
+      "endMs": 26289,
+      "beat": {
+        "index": 38,
+        "phase": 0.371,
+        "bar": 9,
+        "barPhase": 0.593
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 26289,
+      "endMs": 26623,
+      "beat": {
+        "index": 38,
+        "phase": 0.888,
+        "bar": 9,
+        "barPhase": 0.722
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "choose",
+      "startMs": 26623,
+      "endMs": 26957,
+      "beat": {
+        "index": 39,
+        "phase": 0.406,
+        "bar": 9,
+        "barPhase": 0.851
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "Eenie",
+      "startMs": 26957,
+      "endMs": 27291,
+      "beat": {
+        "index": 39,
+        "phase": 0.923,
+        "bar": 9,
+        "barPhase": 0.981
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "Miney",
+      "startMs": 27291,
+      "endMs": 27625,
+      "beat": {
+        "index": 40,
+        "phase": 0.441,
+        "bar": 10,
+        "barPhase": 0.11
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Moe",
+      "startMs": 27625,
+      "endMs": 27959,
+      "beat": {
+        "index": 40,
+        "phase": 0.958,
+        "bar": 10,
+        "barPhase": 0.24
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 27959,
+      "endMs": 28293,
+      "beat": {
+        "index": 41,
+        "phase": 0.476,
+        "bar": 10,
+        "barPhase": 0.369
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 28293,
+      "endMs": 28626,
+      "beat": {
+        "index": 41,
+        "phase": 0.993,
+        "bar": 10,
+        "barPhase": 0.498
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Teeny",
+      "startMs": 28626,
+      "endMs": 28936,
+      "beat": {
+        "index": 42,
+        "phase": 0.511,
+        "bar": 10,
+        "barPhase": 0.628
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "Tiny",
+      "startMs": 28936,
+      "endMs": 29246,
+      "beat": {
+        "index": 42,
+        "phase": 0.992,
+        "bar": 10,
+        "barPhase": 0.748
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "poets",
+      "startMs": 29246,
+      "endMs": 29557,
+      "beat": {
+        "index": 43,
+        "phase": 0.472,
+        "bar": 10,
+        "barPhase": 0.868
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "wish",
+      "startMs": 29557,
+      "endMs": 29867,
+      "beat": {
+        "index": 43,
+        "phase": 0.953,
+        "bar": 10,
+        "barPhase": 0.988
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "they",
+      "startMs": 29867,
+      "endMs": 30177,
+      "beat": {
+        "index": 44,
+        "phase": 0.433,
+        "bar": 11,
+        "barPhase": 0.108
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "could",
+      "startMs": 30177,
+      "endMs": 30487,
+      "beat": {
+        "index": 44,
+        "phase": 0.914,
+        "bar": 11,
+        "barPhase": 0.228
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "ever",
+      "startMs": 30487,
+      "endMs": 30797,
+      "beat": {
+        "index": 45,
+        "phase": 0.394,
+        "bar": 11,
+        "barPhase": 0.349
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "flow",
+      "startMs": 30797,
+      "endMs": 31107,
+      "beat": {
+        "index": 45,
+        "phase": 0.875,
+        "bar": 11,
+        "barPhase": 0.469
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 31107,
+      "endMs": 31417,
+      "beat": {
+        "index": 46,
+        "phase": 0.355,
+        "bar": 11,
+        "barPhase": 0.589
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 31417,
+      "endMs": 31727,
+      "beat": {
+        "index": 46,
+        "phase": 0.836,
+        "bar": 11,
+        "barPhase": 0.709
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Cannonball",
+      "startMs": 31727,
+      "endMs": 32244,
+      "beat": {
+        "index": 47,
+        "phase": 0.317,
+        "bar": 11,
+        "barPhase": 0.829
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Scury",
+      "startMs": 32244,
+      "endMs": 32760,
+      "beat": {
+        "index": 48,
+        "phase": 0.117,
+        "bar": 12,
+        "barPhase": 0.029
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "bringing",
+      "startMs": 32760,
+      "endMs": 33277,
+      "beat": {
+        "index": 48,
+        "phase": 0.918,
+        "bar": 12,
+        "barPhase": 0.23
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "fire",
+      "startMs": 33277,
+      "endMs": 33794,
+      "beat": {
+        "index": 49,
+        "phase": 0.719,
+        "bar": 12,
+        "barPhase": 0.43
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 33794,
+      "endMs": 34310,
+      "beat": {
+        "index": 50,
+        "phase": 0.52,
+        "bar": 12,
+        "barPhase": 0.63
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "relationships",
+      "startMs": 34310,
+      "endMs": 34827,
+      "beat": {
+        "index": 51,
+        "phase": 0.321,
+        "bar": 12,
+        "barPhase": 0.83
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "never",
+      "startMs": 34827,
+      "endMs": 35185,
+      "beat": {
+        "index": 52,
+        "phase": 0.122,
+        "bar": 13,
+        "barPhase": 0.031
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "stop",
+      "startMs": 35185,
+      "endMs": 35543,
+      "beat": {
+        "index": 52,
+        "phase": 0.677,
+        "bar": 13,
+        "barPhase": 0.169
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 35543,
+      "endMs": 35900,
+      "beat": {
+        "index": 53,
+        "phase": 0.231,
+        "bar": 13,
+        "barPhase": 0.308
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Beretta",
+      "startMs": 35900,
+      "endMs": 36258,
+      "beat": {
+        "index": 53,
+        "phase": 0.786,
+        "bar": 13,
+        "barPhase": 0.446
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Pops",
+      "startMs": 36258,
+      "endMs": 36616,
+      "beat": {
+        "index": 54,
+        "phase": 0.34,
+        "bar": 13,
+        "barPhase": 0.585
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 36616,
+      "endMs": 36974,
+      "beat": {
+        "index": 54,
+        "phase": 0.895,
+        "bar": 13,
+        "barPhase": 0.724
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "blasting",
+      "startMs": 36974,
+      "endMs": 37331,
+      "beat": {
+        "index": 55,
+        "phase": 0.449,
+        "bar": 13,
+        "barPhase": 0.862
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "shots",
+      "startMs": 37331,
+      "endMs": 37689,
+      "beat": {
+        "index": 56,
+        "phase": 0.004,
+        "bar": 14,
+        "barPhase": 0.001
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Old",
+      "startMs": 37689,
+      "endMs": 38047,
+      "beat": {
+        "index": 56,
+        "phase": 0.558,
+        "bar": 14,
+        "barPhase": 0.14
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "school",
+      "startMs": 38047,
+      "endMs": 38405,
+      "beat": {
+        "index": 57,
+        "phase": 0.113,
+        "bar": 14,
+        "barPhase": 0.278
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "vision",
+      "startMs": 38405,
+      "endMs": 38762,
+      "beat": {
+        "index": 57,
+        "phase": 0.667,
+        "bar": 14,
+        "barPhase": 0.417
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 38762,
+      "endMs": 39120,
+      "beat": {
+        "index": 58,
+        "phase": 0.222,
+        "bar": 14,
+        "barPhase": 0.555
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 39120,
+      "endMs": 39478,
+      "beat": {
+        "index": 58,
+        "phase": 0.776,
+        "bar": 14,
+        "barPhase": 0.694
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Magavox",
+      "startMs": 39478,
+      "endMs": 39835,
+      "beat": {
+        "index": 59,
+        "phase": 0.33,
+        "bar": 14,
+        "barPhase": 0.833
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Have",
+      "startMs": 39835,
+      "endMs": 40244,
+      "beat": {
+        "index": 59,
+        "phase": 0.885,
+        "bar": 14,
+        "barPhase": 0.971
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 40244,
+      "endMs": 40653,
+      "beat": {
+        "index": 60,
+        "phase": 0.519,
+        "bar": 15,
+        "barPhase": 0.13
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "box",
+      "startMs": 40653,
+      "endMs": 41062,
+      "beat": {
+        "index": 61,
+        "phase": 0.152,
+        "bar": 15,
+        "barPhase": 0.288
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rappers",
+      "startMs": 41062,
+      "endMs": 41471,
+      "beat": {
+        "index": 61,
+        "phase": 0.786,
+        "bar": 15,
+        "barPhase": 0.447
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "even",
+      "startMs": 41471,
+      "endMs": 41880,
+      "beat": {
+        "index": 62,
+        "phase": 0.42,
+        "bar": 15,
+        "barPhase": 0.605
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Shadows",
+      "startMs": 41880,
+      "endMs": 42289,
+      "beat": {
+        "index": 63,
+        "phase": 0.053,
+        "bar": 15,
+        "barPhase": 0.763
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "sciamachy",
+      "startMs": 42289,
+      "endMs": 42697,
+      "beat": {
+        "index": 63,
+        "phase": 0.687,
+        "bar": 15,
+        "barPhase": 0.922
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 42697,
+      "endMs": 43015,
+      "beat": {
+        "index": 64,
+        "phase": 0.321,
+        "bar": 16,
+        "barPhase": 0.08
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "damage",
+      "startMs": 43015,
+      "endMs": 43333,
+      "beat": {
+        "index": 64,
+        "phase": 0.814,
+        "bar": 16,
+        "barPhase": 0.203
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "speak",
+      "startMs": 43333,
+      "endMs": 43651,
+      "beat": {
+        "index": 65,
+        "phase": 0.307,
+        "bar": 16,
+        "barPhase": 0.327
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "My",
+      "startMs": 43651,
+      "endMs": 43969,
+      "beat": {
+        "index": 65,
+        "phase": 0.8,
+        "bar": 16,
+        "barPhase": 0.45
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "battle",
+      "startMs": 43969,
+      "endMs": 44287,
+      "beat": {
+        "index": 66,
+        "phase": 0.292,
+        "bar": 16,
+        "barPhase": 0.573
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "steed",
+      "startMs": 44287,
+      "endMs": 44605,
+      "beat": {
+        "index": 66,
+        "phase": 0.785,
+        "bar": 16,
+        "barPhase": 0.696
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "run",
+      "startMs": 44605,
+      "endMs": 44950,
+      "beat": {
+        "index": 67,
+        "phase": 0.278,
+        "bar": 16,
+        "barPhase": 0.82
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "into",
+      "startMs": 44950,
+      "endMs": 45294,
+      "beat": {
+        "index": 67,
+        "phase": 0.812,
+        "bar": 16,
+        "barPhase": 0.953
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 45294,
+      "endMs": 45639,
+      "beat": {
+        "index": 68,
+        "phase": 0.346,
+        "bar": 17,
+        "barPhase": 0.087
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "war",
+      "startMs": 45639,
+      "endMs": 45983,
+      "beat": {
+        "index": 68,
+        "phase": 0.88,
+        "bar": 17,
+        "barPhase": 0.22
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "zone",
+      "startMs": 45983,
+      "endMs": 46328,
+      "beat": {
+        "index": 69,
+        "phase": 0.414,
+        "bar": 17,
+        "barPhase": 0.354
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "scream",
+      "startMs": 46328,
+      "endMs": 46672,
+      "beat": {
+        "index": 69,
+        "phase": 0.948,
+        "bar": 17,
+        "barPhase": 0.487
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 46672,
+      "endMs": 47017,
+      "beat": {
+        "index": 70,
+        "phase": 0.482,
+        "bar": 17,
+        "barPhase": 0.62
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Cletus",
+      "startMs": 47017,
+      "endMs": 47361,
+      "beat": {
+        "index": 71,
+        "phase": 0.016,
+        "bar": 17,
+        "barPhase": 0.754
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Cassidy",
+      "startMs": 47361,
+      "endMs": 47706,
+      "beat": {
+        "index": 71,
+        "phase": 0.55,
+        "bar": 17,
+        "barPhase": 0.887
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Deceit",
+      "startMs": 47706,
+      "endMs": 48278,
+      "beat": {
+        "index": 72,
+        "phase": 0.084,
+        "bar": 18,
+        "barPhase": 0.021
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 48278,
+      "endMs": 48850,
+      "beat": {
+        "index": 72,
+        "phase": 0.971,
+        "bar": 18,
+        "barPhase": 0.243
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "rapidly",
+      "startMs": 48850,
+      "endMs": 49423,
+      "beat": {
+        "index": 73,
+        "phase": 0.858,
+        "bar": 18,
+        "barPhase": 0.465
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "depleting",
+      "startMs": 49423,
+      "endMs": 49995,
+      "beat": {
+        "index": 74,
+        "phase": 0.745,
+        "bar": 18,
+        "barPhase": 0.686
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "faculty",
+      "startMs": 49995,
+      "endMs": 50568,
+      "beat": {
+        "index": 75,
+        "phase": 0.633,
+        "bar": 18,
+        "barPhase": 0.908
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Diseased",
+      "startMs": 50568,
+      "endMs": 50859,
+      "beat": {
+        "index": 76,
+        "phase": 0.52,
+        "bar": 19,
+        "barPhase": 0.13
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 50859,
+      "endMs": 51151,
+      "beat": {
+        "index": 76,
+        "phase": 0.972,
+        "bar": 19,
+        "barPhase": 0.243
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "have",
+      "startMs": 51151,
+      "endMs": 51442,
+      "beat": {
+        "index": 77,
+        "phase": 0.423,
+        "bar": 19,
+        "barPhase": 0.356
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 51442,
+      "endMs": 51734,
+      "beat": {
+        "index": 77,
+        "phase": 0.875,
+        "bar": 19,
+        "barPhase": 0.469
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "be",
+      "startMs": 51734,
+      "endMs": 52025,
+      "beat": {
+        "index": 78,
+        "phase": 0.327,
+        "bar": 19,
+        "barPhase": 0.582
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 52025,
+      "endMs": 52316,
+      "beat": {
+        "index": 78,
+        "phase": 0.779,
+        "bar": 19,
+        "barPhase": 0.695
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pieces",
+      "startMs": 52316,
+      "endMs": 52608,
+      "beat": {
+        "index": 79,
+        "phase": 0.231,
+        "bar": 19,
+        "barPhase": 0.808
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "lacking",
+      "startMs": 52608,
+      "endMs": 52899,
+      "beat": {
+        "index": 79,
+        "phase": 0.682,
+        "bar": 19,
+        "barPhase": 0.921
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "glee",
+      "startMs": 52899,
+      "endMs": 53191,
+      "beat": {
+        "index": 80,
+        "phase": 0.134,
+        "bar": 20,
+        "barPhase": 0.034
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 53191,
+      "endMs": 53445,
+      "beat": {
+        "index": 80,
+        "phase": 0.586,
+        "bar": 20,
+        "barPhase": 0.146
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "need",
+      "startMs": 53445,
+      "endMs": 53700,
+      "beat": {
+        "index": 80,
+        "phase": 0.98,
+        "bar": 20,
+        "barPhase": 0.245
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 53700,
+      "endMs": 53954,
+      "beat": {
+        "index": 81,
+        "phase": 0.375,
+        "bar": 20,
+        "barPhase": 0.344
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rap",
+      "startMs": 53954,
+      "endMs": 54209,
+      "beat": {
+        "index": 81,
+        "phase": 0.769,
+        "bar": 20,
+        "barPhase": 0.442
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 54209,
+      "endMs": 54463,
+      "beat": {
+        "index": 82,
+        "phase": 0.163,
+        "bar": 20,
+        "barPhase": 0.541
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "scheme",
+      "startMs": 54463,
+      "endMs": 54717,
+      "beat": {
+        "index": 82,
+        "phase": 0.557,
+        "bar": 20,
+        "barPhase": 0.639
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "or",
+      "startMs": 54717,
+      "endMs": 54972,
+      "beat": {
+        "index": 82,
+        "phase": 0.952,
+        "bar": 20,
+        "barPhase": 0.738
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "else",
+      "startMs": 54972,
+      "endMs": 55226,
+      "beat": {
+        "index": 83,
+        "phase": 0.346,
+        "bar": 20,
+        "barPhase": 0.837
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'll",
+      "startMs": 55226,
+      "endMs": 55480,
+      "beat": {
+        "index": 83,
+        "phase": 0.74,
+        "bar": 20,
+        "barPhase": 0.935
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "feed",
+      "startMs": 55480,
+      "endMs": 55735,
+      "beat": {
+        "index": 84,
+        "phase": 0.135,
+        "bar": 21,
+        "barPhase": 0.034
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 55735,
+      "endMs": 55989,
+      "beat": {
+        "index": 84,
+        "phase": 0.529,
+        "bar": 21,
+        "barPhase": 0.132
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "dragon",
+      "startMs": 55989,
+      "endMs": 56244,
+      "beat": {
+        "index": 84,
+        "phase": 0.923,
+        "bar": 21,
+        "barPhase": 0.231
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "in",
+      "startMs": 56244,
+      "endMs": 56498,
+      "beat": {
+        "index": 85,
+        "phase": 0.318,
+        "bar": 21,
+        "barPhase": 0.329
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 56498,
+      "endMs": 56752,
+      "beat": {
+        "index": 85,
+        "phase": 0.712,
+        "bar": 21,
+        "barPhase": 0.428
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "skull",
+      "startMs": 56752,
+      "endMs": 57007,
+      "beat": {
+        "index": 86,
+        "phase": 0.106,
+        "bar": 21,
+        "barPhase": 0.527
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 57007,
+      "endMs": 57245,
+      "beat": {
+        "index": 86,
+        "phase": 0.501,
+        "bar": 21,
+        "barPhase": 0.625
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "then",
+      "startMs": 57245,
+      "endMs": 57484,
+      "beat": {
+        "index": 86,
+        "phase": 0.87,
+        "bar": 21,
+        "barPhase": 0.718
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 57484,
+      "endMs": 57722,
+      "beat": {
+        "index": 87,
+        "phase": 0.24,
+        "bar": 21,
+        "barPhase": 0.81
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "has",
+      "startMs": 57722,
+      "endMs": 57961,
+      "beat": {
+        "index": 87,
+        "phase": 0.61,
+        "bar": 21,
+        "barPhase": 0.902
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 57961,
+      "endMs": 58199,
+      "beat": {
+        "index": 87,
+        "phase": 0.979,
+        "bar": 21,
+        "barPhase": 0.995
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bleed",
+      "startMs": 58199,
+      "endMs": 58438,
+      "beat": {
+        "index": 88,
+        "phase": 0.349,
+        "bar": 22,
+        "barPhase": 0.087
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 58438,
+      "endMs": 59392,
+      "beat": {
+        "index": 88,
+        "phase": 0.718,
+        "bar": 22,
+        "barPhase": 0.18
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 59392,
+      "endMs": 60346,
+      "beat": {
+        "index": 90,
+        "phase": 0.197,
+        "bar": 22,
+        "barPhase": 0.549
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 60346,
+      "endMs": 61300,
+      "beat": {
+        "index": 91,
+        "phase": 0.676,
+        "bar": 22,
+        "barPhase": 0.919
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "The",
+      "startMs": 61300,
+      "endMs": 61618,
+      "beat": {
+        "index": 93,
+        "phase": 0.154,
+        "bar": 23,
+        "barPhase": 0.289
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pull",
+      "startMs": 61618,
+      "endMs": 61936,
+      "beat": {
+        "index": 93,
+        "phase": 0.647,
+        "bar": 23,
+        "barPhase": 0.412
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 61936,
+      "endMs": 62254,
+      "beat": {
+        "index": 94,
+        "phase": 0.14,
+        "bar": 23,
+        "barPhase": 0.535
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "gravity",
+      "startMs": 62254,
+      "endMs": 62572,
+      "beat": {
+        "index": 94,
+        "phase": 0.633,
+        "bar": 23,
+        "barPhase": 0.658
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 62572,
+      "endMs": 62890,
+      "beat": {
+        "index": 95,
+        "phase": 0.126,
+        "bar": 23,
+        "barPhase": 0.781
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "skull",
+      "startMs": 62890,
+      "endMs": 63208,
+      "beat": {
+        "index": 95,
+        "phase": 0.619,
+        "bar": 23,
+        "barPhase": 0.905
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 63208,
+      "endMs": 63526,
+      "beat": {
+        "index": 96,
+        "phase": 0.112,
+        "bar": 24,
+        "barPhase": 0.028
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "blasting",
+      "startMs": 63526,
+      "endMs": 63844,
+      "beat": {
+        "index": 96,
+        "phase": 0.605,
+        "bar": 24,
+        "barPhase": 0.151
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "grease",
+      "startMs": 63844,
+      "endMs": 64162,
+      "beat": {
+        "index": 97,
+        "phase": 0.097,
+        "bar": 24,
+        "barPhase": 0.274
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "onto",
+      "startMs": 64162,
+      "endMs": 64519,
+      "beat": {
+        "index": 97,
+        "phase": 0.59,
+        "bar": 24,
+        "barPhase": 0.398
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 64519,
+      "endMs": 64877,
+      "beat": {
+        "index": 98,
+        "phase": 0.145,
+        "bar": 24,
+        "barPhase": 0.536
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "beat",
+      "startMs": 64877,
+      "endMs": 65235,
+      "beat": {
+        "index": 98,
+        "phase": 0.699,
+        "bar": 24,
+        "barPhase": 0.675
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 65235,
+      "endMs": 65592,
+      "beat": {
+        "index": 99,
+        "phase": 0.254,
+        "bar": 24,
+        "barPhase": 0.813
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "gasoline",
+      "startMs": 65592,
+      "endMs": 65950,
+      "beat": {
+        "index": 99,
+        "phase": 0.808,
+        "bar": 24,
+        "barPhase": 0.952
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "damn",
+      "startMs": 65950,
+      "endMs": 66308,
+      "beat": {
+        "index": 100,
+        "phase": 0.363,
+        "bar": 25,
+        "barPhase": 0.091
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Frothing",
+      "startMs": 66308,
+      "endMs": 66626,
+      "beat": {
+        "index": 100,
+        "phase": 0.917,
+        "bar": 25,
+        "barPhase": 0.229
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "from",
+      "startMs": 66626,
+      "endMs": 66944,
+      "beat": {
+        "index": 101,
+        "phase": 0.41,
+        "bar": 25,
+        "barPhase": 0.353
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 66944,
+      "endMs": 67262,
+      "beat": {
+        "index": 101,
+        "phase": 0.903,
+        "bar": 25,
+        "barPhase": 0.476
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "mouth",
+      "startMs": 67262,
+      "endMs": 67580,
+      "beat": {
+        "index": 102,
+        "phase": 0.396,
+        "bar": 25,
+        "barPhase": 0.599
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "honor",
+      "startMs": 67580,
+      "endMs": 67898,
+      "beat": {
+        "index": 102,
+        "phase": 0.889,
+        "bar": 25,
+        "barPhase": 0.722
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "has",
+      "startMs": 67898,
+      "endMs": 68216,
+      "beat": {
+        "index": 103,
+        "phase": 0.382,
+        "bar": 25,
+        "barPhase": 0.845
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 68216,
+      "endMs": 68534,
+      "beat": {
+        "index": 103,
+        "phase": 0.875,
+        "bar": 25,
+        "barPhase": 0.969
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "meet",
+      "startMs": 68534,
+      "endMs": 68852,
+      "beat": {
+        "index": 104,
+        "phase": 0.367,
+        "bar": 26,
+        "barPhase": 0.092
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "demand",
+      "startMs": 68852,
+      "endMs": 69170,
+      "beat": {
+        "index": 104,
+        "phase": 0.86,
+        "bar": 26,
+        "barPhase": 0.215
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Syncopated",
+      "startMs": 69170,
+      "endMs": 69742,
+      "beat": {
+        "index": 105,
+        "phase": 0.353,
+        "bar": 26,
+        "barPhase": 0.338
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "rhythm",
+      "startMs": 69742,
+      "endMs": 70315,
+      "beat": {
+        "index": 106,
+        "phase": 0.24,
+        "bar": 26,
+        "barPhase": 0.56
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "algorithmically",
+      "startMs": 70315,
+      "endMs": 70887,
+      "beat": {
+        "index": 107,
+        "phase": 0.128,
+        "bar": 26,
+        "barPhase": 0.782
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 70887,
+      "endMs": 71459,
+      "beat": {
+        "index": 108,
+        "phase": 0.015,
+        "bar": 27,
+        "barPhase": 0.004
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "grand",
+      "startMs": 71459,
+      "endMs": 72032,
+      "beat": {
+        "index": 108,
+        "phase": 0.902,
+        "bar": 27,
+        "barPhase": 0.225
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Act",
+      "startMs": 72032,
+      "endMs": 72403,
+      "beat": {
+        "index": 109,
+        "phase": 0.789,
+        "bar": 27,
+        "barPhase": 0.447
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 72403,
+      "endMs": 72774,
+      "beat": {
+        "index": 110,
+        "phase": 0.364,
+        "bar": 27,
+        "barPhase": 0.591
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Crocodile",
+      "startMs": 72774,
+      "endMs": 73145,
+      "beat": {
+        "index": 110,
+        "phase": 0.939,
+        "bar": 27,
+        "barPhase": 0.735
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 73145,
+      "endMs": 73516,
+      "beat": {
+        "index": 111,
+        "phase": 0.514,
+        "bar": 27,
+        "barPhase": 0.879
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 73516,
+      "endMs": 73887,
+      "beat": {
+        "index": 112,
+        "phase": 0.089,
+        "bar": 28,
+        "barPhase": 0.022
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "water",
+      "startMs": 73887,
+      "endMs": 74258,
+      "beat": {
+        "index": 112,
+        "phase": 0.664,
+        "bar": 28,
+        "barPhase": 0.166
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 74258,
+      "endMs": 74629,
+      "beat": {
+        "index": 113,
+        "phase": 0.239,
+        "bar": 28,
+        "barPhase": 0.31
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 74629,
+      "endMs": 75000,
+      "beat": {
+        "index": 113,
+        "phase": 0.814,
+        "bar": 28,
+        "barPhase": 0.454
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Sandman",
+      "startMs": 75000,
+      "endMs": 75371,
+      "beat": {
+        "index": 114,
+        "phase": 0.389,
+        "bar": 28,
+        "barPhase": 0.597
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "You're",
+      "startMs": 75371,
+      "endMs": 75689,
+      "beat": {
+        "index": 114,
+        "phase": 0.964,
+        "bar": 28,
+        "barPhase": 0.741
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "allergic",
+      "startMs": 75689,
+      "endMs": 76007,
+      "beat": {
+        "index": 115,
+        "phase": 0.457,
+        "bar": 28,
+        "barPhase": 0.864
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 76007,
+      "endMs": 76325,
+      "beat": {
+        "index": 115,
+        "phase": 0.95,
+        "bar": 28,
+        "barPhase": 0.988
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 76325,
+      "endMs": 76643,
+      "beat": {
+        "index": 116,
+        "phase": 0.443,
+        "bar": 29,
+        "barPhase": 0.111
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "hook",
+      "startMs": 76643,
+      "endMs": 76961,
+      "beat": {
+        "index": 116,
+        "phase": 0.936,
+        "bar": 29,
+        "barPhase": 0.234
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "are",
+      "startMs": 76961,
+      "endMs": 77278,
+      "beat": {
+        "index": 117,
+        "phase": 0.429,
+        "bar": 29,
+        "barPhase": 0.357
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "you",
+      "startMs": 77278,
+      "endMs": 77596,
+      "beat": {
+        "index": 117,
+        "phase": 0.922,
+        "bar": 29,
+        "barPhase": 0.48
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "peter",
+      "startMs": 77596,
+      "endMs": 77914,
+      "beat": {
+        "index": 118,
+        "phase": 0.415,
+        "bar": 29,
+        "barPhase": 0.604
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Pan",
+      "startMs": 77914,
+      "endMs": 78232,
+      "beat": {
+        "index": 118,
+        "phase": 0.907,
+        "bar": 29,
+        "barPhase": 0.727
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "deceit",
+      "startMs": 78232,
+      "endMs": 78542,
+      "beat": {
+        "index": 119,
+        "phase": 0.4,
+        "bar": 29,
+        "barPhase": 0.85
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 78542,
+      "endMs": 78853,
+      "beat": {
+        "index": 119,
+        "phase": 0.881,
+        "bar": 29,
+        "barPhase": 0.97
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "leaking",
+      "startMs": 78853,
+      "endMs": 79163,
+      "beat": {
+        "index": 120,
+        "phase": 0.361,
+        "bar": 30,
+        "barPhase": 0.09
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "from",
+      "startMs": 79163,
+      "endMs": 79473,
+      "beat": {
+        "index": 120,
+        "phase": 0.842,
+        "bar": 30,
+        "barPhase": 0.21
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "your",
+      "startMs": 79473,
+      "endMs": 79783,
+      "beat": {
+        "index": 121,
+        "phase": 0.323,
+        "bar": 30,
+        "barPhase": 0.331
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "skin",
+      "startMs": 79783,
+      "endMs": 80093,
+      "beat": {
+        "index": 121,
+        "phase": 0.803,
+        "bar": 30,
+        "barPhase": 0.451
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 80093,
+      "endMs": 80403,
+      "beat": {
+        "index": 122,
+        "phase": 0.284,
+        "bar": 30,
+        "barPhase": 0.571
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 80403,
+      "endMs": 80713,
+      "beat": {
+        "index": 122,
+        "phase": 0.764,
+        "bar": 30,
+        "barPhase": 0.691
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "sweaty",
+      "startMs": 80713,
+      "endMs": 81023,
+      "beat": {
+        "index": 123,
+        "phase": 0.245,
+        "bar": 30,
+        "barPhase": 0.811
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "gland",
+      "startMs": 81023,
+      "endMs": 81333,
+      "beat": {
+        "index": 123,
+        "phase": 0.725,
+        "bar": 30,
+        "barPhase": 0.931
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Bloody",
+      "startMs": 81333,
+      "endMs": 81691,
+      "beat": {
+        "index": 124,
+        "phase": 0.206,
+        "bar": 31,
+        "barPhase": 0.051
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "busted",
+      "startMs": 81691,
+      "endMs": 82048,
+      "beat": {
+        "index": 124,
+        "phase": 0.76,
+        "bar": 31,
+        "barPhase": 0.19
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "heavy",
+      "startMs": 82048,
+      "endMs": 82406,
+      "beat": {
+        "index": 125,
+        "phase": 0.315,
+        "bar": 31,
+        "barPhase": 0.329
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "hands",
+      "startMs": 82406,
+      "endMs": 82764,
+      "beat": {
+        "index": 125,
+        "phase": 0.869,
+        "bar": 31,
+        "barPhase": 0.467
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Musket",
+      "startMs": 82764,
+      "endMs": 83173,
+      "beat": {
+        "index": 126,
+        "phase": 0.424,
+        "bar": 31,
+        "barPhase": 0.606
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "loaded",
+      "startMs": 83173,
+      "endMs": 83581,
+      "beat": {
+        "index": 127,
+        "phase": 0.058,
+        "bar": 31,
+        "barPhase": 0.764
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "deadly",
+      "startMs": 83581,
+      "endMs": 83990,
+      "beat": {
+        "index": 127,
+        "phase": 0.691,
+        "bar": 31,
+        "barPhase": 0.923
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "slam",
+      "startMs": 83990,
+      "endMs": 84399,
+      "beat": {
+        "index": 128,
+        "phase": 0.325,
+        "bar": 32,
+        "barPhase": 0.081
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "poetry",
+      "startMs": 84399,
+      "endMs": 84808,
+      "beat": {
+        "index": 128,
+        "phase": 0.959,
+        "bar": 32,
+        "barPhase": 0.24
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "you",
+      "startMs": 84808,
+      "endMs": 85217,
+      "beat": {
+        "index": 129,
+        "phase": 0.592,
+        "bar": 32,
+        "barPhase": 0.398
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "understand",
+      "startMs": 85217,
+      "endMs": 85626,
+      "beat": {
+        "index": 130,
+        "phase": 0.226,
+        "bar": 32,
+        "barPhase": 0.557
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Flowing",
+      "startMs": 85626,
+      "endMs": 85912,
+      "beat": {
+        "index": 130,
+        "phase": 0.86,
+        "bar": 32,
+        "barPhase": 0.715
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 85912,
+      "endMs": 86198,
+      "beat": {
+        "index": 131,
+        "phase": 0.303,
+        "bar": 32,
+        "barPhase": 0.826
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 86198,
+      "endMs": 86484,
+      "beat": {
+        "index": 131,
+        "phase": 0.747,
+        "bar": 32,
+        "barPhase": 0.937
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "fire",
+      "startMs": 86484,
+      "endMs": 86770,
+      "beat": {
+        "index": 132,
+        "phase": 0.191,
+        "bar": 33,
+        "barPhase": 0.048
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "hose",
+      "startMs": 86770,
+      "endMs": 87057,
+      "beat": {
+        "index": 132,
+        "phase": 0.634,
+        "bar": 33,
+        "barPhase": 0.159
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "focused",
+      "startMs": 87057,
+      "endMs": 87343,
+      "beat": {
+        "index": 133,
+        "phase": 0.078,
+        "bar": 33,
+        "barPhase": 0.269
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "where",
+      "startMs": 87343,
+      "endMs": 87629,
+      "beat": {
+        "index": 133,
+        "phase": 0.521,
+        "bar": 33,
+        "barPhase": 0.38
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 87629,
+      "endMs": 87915,
+      "beat": {
+        "index": 133,
+        "phase": 0.965,
+        "bar": 33,
+        "barPhase": 0.491
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "ire",
+      "startMs": 87915,
+      "endMs": 88201,
+      "beat": {
+        "index": 134,
+        "phase": 0.409,
+        "bar": 33,
+        "barPhase": 0.602
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "grows",
+      "startMs": 88201,
+      "endMs": 88488,
+      "beat": {
+        "index": 134,
+        "phase": 0.852,
+        "bar": 33,
+        "barPhase": 0.713
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "potion",
+      "startMs": 88488,
+      "endMs": 88885,
+      "beat": {
+        "index": 135,
+        "phase": 0.296,
+        "bar": 33,
+        "barPhase": 0.824
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 88885,
+      "endMs": 89283,
+      "beat": {
+        "index": 135,
+        "phase": 0.912,
+        "bar": 33,
+        "barPhase": 0.978
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 89283,
+      "endMs": 89680,
+      "beat": {
+        "index": 136,
+        "phase": 0.528,
+        "bar": 34,
+        "barPhase": 0.132
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "higher",
+      "startMs": 89680,
+      "endMs": 90077,
+      "beat": {
+        "index": 137,
+        "phase": 0.144,
+        "bar": 34,
+        "barPhase": 0.286
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "dose",
+      "startMs": 90077,
+      "endMs": 90475,
+      "beat": {
+        "index": 137,
+        "phase": 0.76,
+        "bar": 34,
+        "barPhase": 0.44
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "emotion",
+      "startMs": 90475,
+      "endMs": 90872,
+      "beat": {
+        "index": 138,
+        "phase": 0.376,
+        "bar": 34,
+        "barPhase": 0.594
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 90872,
+      "endMs": 91270,
+      "beat": {
+        "index": 138,
+        "phase": 0.992,
+        "bar": 34,
+        "barPhase": 0.748
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "designer",
+      "startMs": 91270,
+      "endMs": 91667,
+      "beat": {
+        "index": 139,
+        "phase": 0.608,
+        "bar": 34,
+        "barPhase": 0.902
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "clothes",
+      "startMs": 91667,
+      "endMs": 92065,
+      "beat": {
+        "index": 140,
+        "phase": 0.225,
+        "bar": 35,
+        "barPhase": 0.056
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "exposing",
+      "startMs": 92065,
+      "endMs": 92482,
+      "beat": {
+        "index": 140,
+        "phase": 0.841,
+        "bar": 35,
+        "barPhase": 0.21
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 92482,
+      "endMs": 92900,
+      "beat": {
+        "index": 141,
+        "phase": 0.488,
+        "bar": 35,
+        "barPhase": 0.372
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 92900,
+      "endMs": 93317,
+      "beat": {
+        "index": 142,
+        "phase": 0.134,
+        "bar": 35,
+        "barPhase": 0.534
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "tightest",
+      "startMs": 93317,
+      "endMs": 93734,
+      "beat": {
+        "index": 142,
+        "phase": 0.781,
+        "bar": 35,
+        "barPhase": 0.695
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "prose",
+      "startMs": 93734,
+      "endMs": 94152,
+      "beat": {
+        "index": 143,
+        "phase": 0.428,
+        "bar": 35,
+        "barPhase": 0.857
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "supposedly",
+      "startMs": 94152,
+      "endMs": 94569,
+      "beat": {
+        "index": 144,
+        "phase": 0.075,
+        "bar": 36,
+        "barPhase": 0.019
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 94569,
+      "endMs": 94986,
+      "beat": {
+        "index": 144,
+        "phase": 0.722,
+        "bar": 36,
+        "barPhase": 0.181
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "flow",
+      "startMs": 94986,
+      "endMs": 95404,
+      "beat": {
+        "index": 145,
+        "phase": 0.369,
+        "bar": 36,
+        "barPhase": 0.342
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 95404,
+      "endMs": 95801,
+      "beat": {
+        "index": 146,
+        "phase": 0.016,
+        "bar": 36,
+        "barPhase": 0.504
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "ordinary",
+      "startMs": 95801,
+      "endMs": 96199,
+      "beat": {
+        "index": 146,
+        "phase": 0.632,
+        "bar": 36,
+        "barPhase": 0.658
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 96199,
+      "endMs": 96596,
+      "beat": {
+        "index": 147,
+        "phase": 0.248,
+        "bar": 36,
+        "barPhase": 0.812
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "would",
+      "startMs": 96596,
+      "endMs": 96994,
+      "beat": {
+        "index": 147,
+        "phase": 0.864,
+        "bar": 36,
+        "barPhase": 0.966
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "love",
+      "startMs": 96994,
+      "endMs": 97391,
+      "beat": {
+        "index": 148,
+        "phase": 0.48,
+        "bar": 37,
+        "barPhase": 0.12
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 97391,
+      "endMs": 97789,
+      "beat": {
+        "index": 149,
+        "phase": 0.096,
+        "bar": 37,
+        "barPhase": 0.274
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "see",
+      "startMs": 97789,
+      "endMs": 98186,
+      "beat": {
+        "index": 149,
+        "phase": 0.712,
+        "bar": 37,
+        "barPhase": 0.428
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 98186,
+      "endMs": 98584,
+      "beat": {
+        "index": 150,
+        "phase": 0.329,
+        "bar": 37,
+        "barPhase": 0.582
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "rapper",
+      "startMs": 98584,
+      "endMs": 98981,
+      "beat": {
+        "index": 150,
+        "phase": 0.945,
+        "bar": 37,
+        "barPhase": 0.736
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "flowing",
+      "startMs": 98981,
+      "endMs": 99379,
+      "beat": {
+        "index": 151,
+        "phase": 0.561,
+        "bar": 37,
+        "barPhase": 0.89
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "fibonacci",
+      "startMs": 99379,
+      "endMs": 99776,
+      "beat": {
+        "index": 152,
+        "phase": 0.177,
+        "bar": 38,
+        "barPhase": 0.044
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "codes",
+      "startMs": 99776,
+      "endMs": 100174,
+      "beat": {
+        "index": 152,
+        "phase": 0.793,
+        "bar": 38,
+        "barPhase": 0.198
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fibbing",
+      "startMs": 100174,
+      "endMs": 100545,
+      "beat": {
+        "index": 153,
+        "phase": 0.409,
+        "bar": 38,
+        "barPhase": 0.352
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "nazi",
+      "startMs": 100545,
+      "endMs": 100916,
+      "beat": {
+        "index": 153,
+        "phase": 0.984,
+        "bar": 38,
+        "barPhase": 0.496
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "wrote",
+      "startMs": 100916,
+      "endMs": 101287,
+      "beat": {
+        "index": 154,
+        "phase": 0.559,
+        "bar": 38,
+        "barPhase": 0.64
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "another",
+      "startMs": 101287,
+      "endMs": 101658,
+      "beat": {
+        "index": 155,
+        "phase": 0.134,
+        "bar": 38,
+        "barPhase": 0.784
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "post",
+      "startMs": 101658,
+      "endMs": 102029,
+      "beat": {
+        "index": 155,
+        "phase": 0.709,
+        "bar": 38,
+        "barPhase": 0.927
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 102029,
+      "endMs": 102399,
+      "beat": {
+        "index": 156,
+        "phase": 0.284,
+        "bar": 39,
+        "barPhase": 0.071
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "try",
+      "startMs": 102399,
+      "endMs": 102770,
+      "beat": {
+        "index": 156,
+        "phase": 0.859,
+        "bar": 39,
+        "barPhase": 0.215
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 102770,
+      "endMs": 103141,
+      "beat": {
+        "index": 157,
+        "phase": 0.434,
+        "bar": 39,
+        "barPhase": 0.359
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "silence",
+      "startMs": 103141,
+      "endMs": 103512,
+      "beat": {
+        "index": 158,
+        "phase": 0.009,
+        "bar": 39,
+        "barPhase": 0.502
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Get",
+      "startMs": 103512,
+      "endMs": 103811,
+      "beat": {
+        "index": 158,
+        "phase": 0.584,
+        "bar": 39,
+        "barPhase": 0.646
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "your",
+      "startMs": 103811,
+      "endMs": 104109,
+      "beat": {
+        "index": 159,
+        "phase": 0.046,
+        "bar": 39,
+        "barPhase": 0.762
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "body",
+      "startMs": 104109,
+      "endMs": 104407,
+      "beat": {
+        "index": 159,
+        "phase": 0.508,
+        "bar": 39,
+        "barPhase": 0.877
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "thrown",
+      "startMs": 104407,
+      "endMs": 104705,
+      "beat": {
+        "index": 159,
+        "phase": 0.971,
+        "bar": 39,
+        "barPhase": 0.993
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "into",
+      "startMs": 104705,
+      "endMs": 105003,
+      "beat": {
+        "index": 160,
+        "phase": 0.433,
+        "bar": 40,
+        "barPhase": 0.108
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 105003,
+      "endMs": 105301,
+      "beat": {
+        "index": 160,
+        "phase": 0.895,
+        "bar": 40,
+        "barPhase": 0.224
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "fire",
+      "startMs": 105301,
+      "endMs": 105599,
+      "beat": {
+        "index": 161,
+        "phase": 0.357,
+        "bar": 40,
+        "barPhase": 0.339
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pit",
+      "startMs": 105599,
+      "endMs": 105897,
+      "beat": {
+        "index": 161,
+        "phase": 0.819,
+        "bar": 40,
+        "barPhase": 0.455
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 105897,
+      "endMs": 106195,
+      "beat": {
+        "index": 162,
+        "phase": 0.281,
+        "bar": 40,
+        "barPhase": 0.57
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "only",
+      "startMs": 106195,
+      "endMs": 106494,
+      "beat": {
+        "index": 162,
+        "phase": 0.743,
+        "bar": 40,
+        "barPhase": 0.686
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "way",
+      "startMs": 106494,
+      "endMs": 106792,
+      "beat": {
+        "index": 163,
+        "phase": 0.205,
+        "bar": 40,
+        "barPhase": 0.801
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 106792,
+      "endMs": 107090,
+      "beat": {
+        "index": 163,
+        "phase": 0.667,
+        "bar": 40,
+        "barPhase": 0.917
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "thrown",
+      "startMs": 107090,
+      "endMs": 107388,
+      "beat": {
+        "index": 164,
+        "phase": 0.129,
+        "bar": 41,
+        "barPhase": 0.032
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 107388,
+      "endMs": 107686,
+      "beat": {
+        "index": 164,
+        "phase": 0.591,
+        "bar": 41,
+        "barPhase": 0.148
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "being",
+      "startMs": 107686,
+      "endMs": 107984,
+      "beat": {
+        "index": 165,
+        "phase": 0.053,
+        "bar": 41,
+        "barPhase": 0.263
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "monarch",
+      "startMs": 107984,
+      "endMs": 108282,
+      "beat": {
+        "index": 165,
+        "phase": 0.515,
+        "bar": 41,
+        "barPhase": 0.379
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "The",
+      "startMs": 108282,
+      "endMs": 108545,
+      "beat": {
+        "index": 165,
+        "phase": 0.978,
+        "bar": 41,
+        "barPhase": 0.494
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "thief",
+      "startMs": 108545,
+      "endMs": 108807,
+      "beat": {
+        "index": 166,
+        "phase": 0.384,
+        "bar": 41,
+        "barPhase": 0.596
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 108807,
+      "endMs": 109069,
+      "beat": {
+        "index": 166,
+        "phase": 0.791,
+        "bar": 41,
+        "barPhase": 0.698
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "sawed",
+      "startMs": 109069,
+      "endMs": 109332,
+      "beat": {
+        "index": 167,
+        "phase": 0.197,
+        "bar": 41,
+        "barPhase": 0.799
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "off",
+      "startMs": 109332,
+      "endMs": 109594,
+      "beat": {
+        "index": 167,
+        "phase": 0.604,
+        "bar": 41,
+        "barPhase": 0.901
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "musket",
+      "startMs": 109594,
+      "endMs": 109856,
+      "beat": {
+        "index": 168,
+        "phase": 0.011,
+        "bar": 42,
+        "barPhase": 0.003
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "turns",
+      "startMs": 109856,
+      "endMs": 110119,
+      "beat": {
+        "index": 168,
+        "phase": 0.417,
+        "bar": 42,
+        "barPhase": 0.104
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "your",
+      "startMs": 110119,
+      "endMs": 110381,
+      "beat": {
+        "index": 168,
+        "phase": 0.824,
+        "bar": 42,
+        "barPhase": 0.206
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "heart",
+      "startMs": 110381,
+      "endMs": 110643,
+      "beat": {
+        "index": 169,
+        "phase": 0.231,
+        "bar": 42,
+        "barPhase": 0.308
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "off",
+      "startMs": 110643,
+      "endMs": 110906,
+      "beat": {
+        "index": 169,
+        "phase": 0.637,
+        "bar": 42,
+        "barPhase": 0.409
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Elite",
+      "startMs": 110906,
+      "endMs": 111253,
+      "beat": {
+        "index": 170,
+        "phase": 0.044,
+        "bar": 42,
+        "barPhase": 0.511
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 111253,
+      "endMs": 111599,
+      "beat": {
+        "index": 170,
+        "phase": 0.581,
+        "bar": 42,
+        "barPhase": 0.645
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 111599,
+      "endMs": 111946,
+      "beat": {
+        "index": 171,
+        "phase": 0.119,
+        "bar": 42,
+        "barPhase": 0.78
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "pentabyte",
+      "startMs": 111946,
+      "endMs": 112293,
+      "beat": {
+        "index": 171,
+        "phase": 0.657,
+        "bar": 42,
+        "barPhase": 0.914
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pyramid",
+      "startMs": 112293,
+      "endMs": 112640,
+      "beat": {
+        "index": 172,
+        "phase": 0.195,
+        "bar": 43,
+        "barPhase": 0.049
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "for",
+      "startMs": 112640,
+      "endMs": 112987,
+      "beat": {
+        "index": 172,
+        "phase": 0.732,
+        "bar": 43,
+        "barPhase": 0.183
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 112987,
+      "endMs": 113334,
+      "beat": {
+        "index": 173,
+        "phase": 0.27,
+        "bar": 43,
+        "barPhase": 0.317
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "brain",
+      "startMs": 113334,
+      "endMs": 113681,
+      "beat": {
+        "index": 173,
+        "phase": 0.808,
+        "bar": 43,
+        "barPhase": 0.452
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 113681,
+      "endMs": 114028,
+      "beat": {
+        "index": 174,
+        "phase": 0.345,
+        "bar": 43,
+        "barPhase": 0.586
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 114028,
+      "endMs": 114375,
+      "beat": {
+        "index": 174,
+        "phase": 0.883,
+        "bar": 43,
+        "barPhase": 0.721
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "beast",
+      "startMs": 114375,
+      "endMs": 114722,
+      "beat": {
+        "index": 175,
+        "phase": 0.421,
+        "bar": 43,
+        "barPhase": 0.855
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "My",
+      "startMs": 114722,
+      "endMs": 115055,
+      "beat": {
+        "index": 175,
+        "phase": 0.958,
+        "bar": 43,
+        "barPhase": 0.99
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "name",
+      "startMs": 115055,
+      "endMs": 115389,
+      "beat": {
+        "index": 176,
+        "phase": 0.476,
+        "bar": 44,
+        "barPhase": 0.119
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "written",
+      "startMs": 115389,
+      "endMs": 115723,
+      "beat": {
+        "index": 176,
+        "phase": 0.993,
+        "bar": 44,
+        "barPhase": 0.248
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "stays",
+      "startMs": 115723,
+      "endMs": 116057,
+      "beat": {
+        "index": 177,
+        "phase": 0.511,
+        "bar": 44,
+        "barPhase": 0.378
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "steady",
+      "startMs": 116057,
+      "endMs": 116391,
+      "beat": {
+        "index": 178,
+        "phase": 0.028,
+        "bar": 44,
+        "barPhase": 0.507
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "in",
+      "startMs": 116391,
+      "endMs": 116725,
+      "beat": {
+        "index": 178,
+        "phase": 0.546,
+        "bar": 44,
+        "barPhase": 0.636
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 116725,
+      "endMs": 117059,
+      "beat": {
+        "index": 179,
+        "phase": 0.063,
+        "bar": 44,
+        "barPhase": 0.766
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "puddle",
+      "startMs": 117059,
+      "endMs": 117393,
+      "beat": {
+        "index": 179,
+        "phase": 0.581,
+        "bar": 44,
+        "barPhase": 0.895
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "during",
+      "startMs": 117393,
+      "endMs": 117726,
+      "beat": {
+        "index": 180,
+        "phase": 0.099,
+        "bar": 45,
+        "barPhase": 0.025
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "sleet",
+      "startMs": 117726,
+      "endMs": 118060,
+      "beat": {
+        "index": 180,
+        "phase": 0.616,
+        "bar": 45,
+        "barPhase": 0.154
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "Vox",
+      "startMs": 118060,
+      "endMs": 118394,
+      "beat": {
+        "index": 181,
+        "phase": 0.134,
+        "bar": 45,
+        "barPhase": 0.283
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "boxer",
+      "startMs": 118394,
+      "endMs": 118728,
+      "beat": {
+        "index": 181,
+        "phase": 0.651,
+        "bar": 45,
+        "barPhase": 0.413
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 118728,
+      "endMs": 119062,
+      "beat": {
+        "index": 182,
+        "phase": 0.169,
+        "bar": 45,
+        "barPhase": 0.542
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "text",
+      "startMs": 119062,
+      "endMs": 119396,
+      "beat": {
+        "index": 182,
+        "phase": 0.686,
+        "bar": 45,
+        "barPhase": 0.672
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "doctor",
+      "startMs": 119396,
+      "endMs": 119730,
+      "beat": {
+        "index": 183,
+        "phase": 0.204,
+        "bar": 45,
+        "barPhase": 0.801
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "boxing",
+      "startMs": 119730,
+      "endMs": 120021,
+      "beat": {
+        "index": 183,
+        "phase": 0.721,
+        "bar": 45,
+        "barPhase": 0.93
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "X'",
+      "startMs": 120021,
+      "endMs": 120313,
+      "beat": {
+        "index": 184,
+        "phase": 0.173,
+        "bar": 46,
+        "barPhase": 0.043
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "boxing",
+      "startMs": 120313,
+      "endMs": 120604,
+      "beat": {
+        "index": 184,
+        "phase": 0.625,
+        "bar": 46,
+        "barPhase": 0.156
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Os",
+      "startMs": 120604,
+      "endMs": 120896,
+      "beat": {
+        "index": 185,
+        "phase": 0.077,
+        "bar": 46,
+        "barPhase": 0.269
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "it's",
+      "startMs": 120896,
+      "endMs": 121187,
+      "beat": {
+        "index": 185,
+        "phase": 0.528,
+        "bar": 46,
+        "barPhase": 0.382
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "tic",
+      "startMs": 121187,
+      "endMs": 121479,
+      "beat": {
+        "index": 185,
+        "phase": 0.98,
+        "bar": 46,
+        "barPhase": 0.495
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "tac",
+      "startMs": 121479,
+      "endMs": 121770,
+      "beat": {
+        "index": 186,
+        "phase": 0.432,
+        "bar": 46,
+        "barPhase": 0.608
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "toe",
+      "startMs": 121770,
+      "endMs": 122062,
+      "beat": {
+        "index": 186,
+        "phase": 0.884,
+        "bar": 46,
+        "barPhase": 0.721
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 122062,
+      "endMs": 122353,
+      "beat": {
+        "index": 187,
+        "phase": 0.336,
+        "bar": 46,
+        "barPhase": 0.834
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Rick's",
+      "startMs": 122353,
+      "endMs": 122651,
+      "beat": {
+        "index": 187,
+        "phase": 0.787,
+        "bar": 46,
+        "barPhase": 0.947
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "capsule",
+      "startMs": 122651,
+      "endMs": 122949,
+      "beat": {
+        "index": 188,
+        "phase": 0.25,
+        "bar": 47,
+        "barPhase": 0.062
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 122949,
+      "endMs": 123248,
+      "beat": {
+        "index": 188,
+        "phase": 0.712,
+        "bar": 47,
+        "barPhase": 0.178
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "sick",
+      "startMs": 123248,
+      "endMs": 123546,
+      "beat": {
+        "index": 189,
+        "phase": 0.174,
+        "bar": 47,
+        "barPhase": 0.293
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "ass",
+      "startMs": 123546,
+      "endMs": 123844,
+      "beat": {
+        "index": 189,
+        "phase": 0.636,
+        "bar": 47,
+        "barPhase": 0.409
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "bow",
+      "startMs": 123844,
+      "endMs": 124142,
+      "beat": {
+        "index": 190,
+        "phase": 0.098,
+        "bar": 47,
+        "barPhase": 0.524
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 124142,
+      "endMs": 124440,
+      "beat": {
+        "index": 190,
+        "phase": 0.56,
+        "bar": 47,
+        "barPhase": 0.64
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "wack",
+      "startMs": 124440,
+      "endMs": 124738,
+      "beat": {
+        "index": 191,
+        "phase": 0.022,
+        "bar": 47,
+        "barPhase": 0.755
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Is",
+      "startMs": 124738,
+      "endMs": 125016,
+      "beat": {
+        "index": 191,
+        "phase": 0.484,
+        "bar": 47,
+        "barPhase": 0.871
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "that",
+      "startMs": 125016,
+      "endMs": 125295,
+      "beat": {
+        "index": 191,
+        "phase": 0.915,
+        "bar": 47,
+        "barPhase": 0.979
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "so",
+      "startMs": 125295,
+      "endMs": 125573,
+      "beat": {
+        "index": 192,
+        "phase": 0.347,
+        "bar": 48,
+        "barPhase": 0.087
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 125573,
+      "endMs": 125851,
+      "beat": {
+        "index": 192,
+        "phase": 0.778,
+        "bar": 48,
+        "barPhase": 0.194
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "big",
+      "startMs": 125851,
+      "endMs": 126129,
+      "beat": {
+        "index": 193,
+        "phase": 0.209,
+        "bar": 48,
+        "barPhase": 0.302
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "black",
+      "startMs": 126129,
+      "endMs": 126408,
+      "beat": {
+        "index": 193,
+        "phase": 0.64,
+        "bar": 48,
+        "barPhase": 0.41
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "hole",
+      "startMs": 126408,
+      "endMs": 126686,
+      "beat": {
+        "index": 194,
+        "phase": 0.072,
+        "bar": 48,
+        "barPhase": 0.518
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rhymes",
+      "startMs": 126686,
+      "endMs": 126964,
+      "beat": {
+        "index": 194,
+        "phase": 0.503,
+        "bar": 48,
+        "barPhase": 0.626
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 126964,
+      "endMs": 127242,
+      "beat": {
+        "index": 194,
+        "phase": 0.934,
+        "bar": 48,
+        "barPhase": 0.734
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "impact",
+      "startMs": 127242,
+      "endMs": 127521,
+      "beat": {
+        "index": 195,
+        "phase": 0.366,
+        "bar": 48,
+        "barPhase": 0.841
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "so",
+      "startMs": 127521,
+      "endMs": 127799,
+      "beat": {
+        "index": 195,
+        "phase": 0.797,
+        "bar": 48,
+        "barPhase": 0.949
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 127799,
+      "endMs": 128077,
+      "beat": {
+        "index": 196,
+        "phase": 0.228,
+        "bar": 49,
+        "barPhase": 0.057
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "rip",
+      "startMs": 128077,
+      "endMs": 128315,
+      "beat": {
+        "index": 196,
+        "phase": 0.659,
+        "bar": 49,
+        "barPhase": 0.165
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "that",
+      "startMs": 128315,
+      "endMs": 128554,
+      "beat": {
+        "index": 197,
+        "phase": 0.029,
+        "bar": 49,
+        "barPhase": 0.257
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "flow",
+      "startMs": 128554,
+      "endMs": 128792,
+      "beat": {
+        "index": 197,
+        "phase": 0.399,
+        "bar": 49,
+        "barPhase": 0.35
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 128792,
+      "endMs": 129031,
+      "beat": {
+        "index": 197,
+        "phase": 0.768,
+        "bar": 49,
+        "barPhase": 0.442
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 129031,
+      "endMs": 129269,
+      "beat": {
+        "index": 198,
+        "phase": 0.138,
+        "bar": 49,
+        "barPhase": 0.534
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "dam",
+      "startMs": 129269,
+      "endMs": 129508,
+      "beat": {
+        "index": 198,
+        "phase": 0.508,
+        "bar": 49,
+        "barPhase": 0.627
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "broke",
+      "startMs": 129508,
+      "endMs": 129746,
+      "beat": {
+        "index": 198,
+        "phase": 0.877,
+        "bar": 49,
+        "barPhase": 0.719
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "BYE",
+      "startMs": 129746,
+      "endMs": 129985,
+      "beat": {
+        "index": 199,
+        "phase": 0.247,
+        "bar": 49,
+        "barPhase": 0.812
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "G",
+      "startMs": 129985,
+      "endMs": 130366,
+      "beat": {
+        "index": 199,
+        "phase": 0.617,
+        "bar": 49,
+        "barPhase": 0.904
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 130366,
+      "endMs": 130748,
+      "beat": {
+        "index": 200,
+        "phase": 0.208,
+        "bar": 50,
+        "barPhase": 0.052
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Jokes",
+      "startMs": 130748,
+      "endMs": 131130,
+      "beat": {
+        "index": 200,
+        "phase": 0.8,
+        "bar": 50,
+        "barPhase": 0.2
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "try",
+      "startMs": 131130,
+      "endMs": 131511,
+      "beat": {
+        "index": 201,
+        "phase": 0.391,
+        "bar": 50,
+        "barPhase": 0.348
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 131511,
+      "endMs": 131893,
+      "beat": {
+        "index": 201,
+        "phase": 0.982,
+        "bar": 50,
+        "barPhase": 0.496
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "incinerate",
+      "startMs": 131893,
+      "endMs": 132274,
+      "beat": {
+        "index": 202,
+        "phase": 0.574,
+        "bar": 50,
+        "barPhase": 0.643
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "me",
+      "startMs": 132274,
+      "endMs": 132656,
+      "beat": {
+        "index": 203,
+        "phase": 0.165,
+        "bar": 50,
+        "barPhase": 0.791
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 132656,
+      "endMs": 133038,
+      "beat": {
+        "index": 203,
+        "phase": 0.757,
+        "bar": 50,
+        "barPhase": 0.939
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "eliminate",
+      "startMs": 133038,
+      "endMs": 133419,
+      "beat": {
+        "index": 204,
+        "phase": 0.348,
+        "bar": 51,
+        "barPhase": 0.087
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "G's",
+      "startMs": 133419,
+      "endMs": 133801,
+      "beat": {
+        "index": 204,
+        "phase": 0.94,
+        "bar": 51,
+        "barPhase": 0.235
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "silent",
+      "startMs": 133801,
+      "endMs": 134218,
+      "beat": {
+        "index": 205,
+        "phase": 0.531,
+        "bar": 51,
+        "barPhase": 0.383
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "letter",
+      "startMs": 134218,
+      "endMs": 134635,
+      "beat": {
+        "index": 206,
+        "phase": 0.178,
+        "bar": 51,
+        "barPhase": 0.545
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "in",
+      "startMs": 134635,
+      "endMs": 135053,
+      "beat": {
+        "index": 206,
+        "phase": 0.825,
+        "bar": 51,
+        "barPhase": 0.706
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "benign",
+      "startMs": 135053,
+      "endMs": 135470,
+      "beat": {
+        "index": 207,
+        "phase": 0.472,
+        "bar": 51,
+        "barPhase": 0.868
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Revived",
+      "startMs": 135470,
+      "endMs": 135845,
+      "beat": {
+        "index": 208,
+        "phase": 0.119,
+        "bar": 52,
+        "barPhase": 0.03
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rapper",
+      "startMs": 135845,
+      "endMs": 136220,
+      "beat": {
+        "index": 208,
+        "phase": 0.7,
+        "bar": 52,
+        "barPhase": 0.175
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 136220,
+      "endMs": 136595,
+      "beat": {
+        "index": 209,
+        "phase": 0.281,
+        "bar": 52,
+        "barPhase": 0.32
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "discovered",
+      "startMs": 136595,
+      "endMs": 136969,
+      "beat": {
+        "index": 209,
+        "phase": 0.861,
+        "bar": 52,
+        "barPhase": 0.465
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 136969,
+      "endMs": 137344,
+      "beat": {
+        "index": 210,
+        "phase": 0.442,
+        "bar": 52,
+        "barPhase": 0.611
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "gold",
+      "startMs": 137344,
+      "endMs": 137719,
+      "beat": {
+        "index": 211,
+        "phase": 0.023,
+        "bar": 52,
+        "barPhase": 0.756
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "mine",
+      "startMs": 137719,
+      "endMs": 138094,
+      "beat": {
+        "index": 211,
+        "phase": 0.604,
+        "bar": 52,
+        "barPhase": 0.901
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Recovery",
+      "startMs": 138094,
+      "endMs": 138571,
+      "beat": {
+        "index": 212,
+        "phase": 0.185,
+        "bar": 53,
+        "barPhase": 0.046
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "won't",
+      "startMs": 138571,
+      "endMs": 139048,
+      "beat": {
+        "index": 212,
+        "phase": 0.924,
+        "bar": 53,
+        "barPhase": 0.231
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "die",
+      "startMs": 139048,
+      "endMs": 139525,
+      "beat": {
+        "index": 213,
+        "phase": 0.664,
+        "bar": 53,
+        "barPhase": 0.416
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Suffering",
+      "startMs": 139525,
+      "endMs": 139843,
+      "beat": {
+        "index": 214,
+        "phase": 0.403,
+        "bar": 53,
+        "barPhase": 0.601
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "soul",
+      "startMs": 139843,
+      "endMs": 140161,
+      "beat": {
+        "index": 214,
+        "phase": 0.896,
+        "bar": 53,
+        "barPhase": 0.724
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "tied",
+      "startMs": 140161,
+      "endMs": 140478,
+      "beat": {
+        "index": 215,
+        "phase": 0.389,
+        "bar": 53,
+        "barPhase": 0.847
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "until",
+      "startMs": 140478,
+      "endMs": 140796,
+      "beat": {
+        "index": 215,
+        "phase": 0.882,
+        "bar": 53,
+        "barPhase": 0.97
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 140796,
+      "endMs": 141114,
+      "beat": {
+        "index": 216,
+        "phase": 0.375,
+        "bar": 54,
+        "barPhase": 0.094
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "broke",
+      "startMs": 141114,
+      "endMs": 141432,
+      "beat": {
+        "index": 216,
+        "phase": 0.867,
+        "bar": 54,
+        "barPhase": 0.217
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "free",
+      "startMs": 141432,
+      "endMs": 141750,
+      "beat": {
+        "index": 217,
+        "phase": 0.36,
+        "bar": 54,
+        "barPhase": 0.34
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "got",
+      "startMs": 141750,
+      "endMs": 142068,
+      "beat": {
+        "index": 217,
+        "phase": 0.853,
+        "bar": 54,
+        "barPhase": 0.463
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "closure",
+      "startMs": 142068,
+      "endMs": 142386,
+      "beat": {
+        "index": 218,
+        "phase": 0.346,
+        "bar": 54,
+        "barPhase": 0.587
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "on",
+      "startMs": 142386,
+      "endMs": 142704,
+      "beat": {
+        "index": 218,
+        "phase": 0.839,
+        "bar": 54,
+        "barPhase": 0.71
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 142704,
+      "endMs": 143022,
+      "beat": {
+        "index": 219,
+        "phase": 0.332,
+        "bar": 54,
+        "barPhase": 0.833
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "own",
+      "startMs": 143022,
+      "endMs": 143340,
+      "beat": {
+        "index": 219,
+        "phase": 0.825,
+        "bar": 54,
+        "barPhase": 0.956
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "made",
+      "startMs": 143340,
+      "endMs": 143674,
+      "beat": {
+        "index": 220,
+        "phase": 0.318,
+        "bar": 55,
+        "barPhase": 0.079
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 143674,
+      "endMs": 144008,
+      "beat": {
+        "index": 220,
+        "phase": 0.835,
+        "bar": 55,
+        "barPhase": 0.209
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "petrichor",
+      "startMs": 144008,
+      "endMs": 144342,
+      "beat": {
+        "index": 221,
+        "phase": 0.353,
+        "bar": 55,
+        "barPhase": 0.338
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "go",
+      "startMs": 144342,
+      "endMs": 144676,
+      "beat": {
+        "index": 221,
+        "phase": 0.87,
+        "bar": 55,
+        "barPhase": 0.468
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "by",
+      "startMs": 144676,
+      "endMs": 145010,
+      "beat": {
+        "index": 222,
+        "phase": 0.388,
+        "bar": 55,
+        "barPhase": 0.597
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Legend",
+      "startMs": 145010,
+      "endMs": 145328,
+      "beat": {
+        "index": 222,
+        "phase": 0.905,
+        "bar": 55,
+        "barPhase": 0.726
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "that",
+      "startMs": 145328,
+      "endMs": 145646,
+      "beat": {
+        "index": 223,
+        "phase": 0.398,
+        "bar": 55,
+        "barPhase": 0.85
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "don't",
+      "startMs": 145646,
+      "endMs": 145964,
+      "beat": {
+        "index": 223,
+        "phase": 0.891,
+        "bar": 55,
+        "barPhase": 0.973
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "try",
+      "startMs": 145964,
+      "endMs": 146282,
+      "beat": {
+        "index": 224,
+        "phase": 0.384,
+        "bar": 56,
+        "barPhase": 0.096
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "BAM",
+      "startMs": 146282,
+      "endMs": 146600,
+      "beat": {
+        "index": 224,
+        "phase": 0.877,
+        "bar": 56,
+        "barPhase": 0.219
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Monster",
+      "startMs": 146600,
+      "endMs": 146918,
+      "beat": {
+        "index": 225,
+        "phase": 0.37,
+        "bar": 56,
+        "barPhase": 0.342
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Begging",
+      "startMs": 146918,
+      "endMs": 147293,
+      "beat": {
+        "index": 225,
+        "phase": 0.862,
+        "bar": 56,
+        "barPhase": 0.466
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "for",
+      "startMs": 147293,
+      "endMs": 147667,
+      "beat": {
+        "index": 226,
+        "phase": 0.443,
+        "bar": 56,
+        "barPhase": 0.611
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 147667,
+      "endMs": 148042,
+      "beat": {
+        "index": 227,
+        "phase": 0.024,
+        "bar": 56,
+        "barPhase": 0.756
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Candy",
+      "startMs": 148042,
+      "endMs": 148417,
+      "beat": {
+        "index": 227,
+        "phase": 0.605,
+        "bar": 56,
+        "barPhase": 0.901
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "you're",
+      "startMs": 148417,
+      "endMs": 148792,
+      "beat": {
+        "index": 228,
+        "phase": 0.186,
+        "bar": 57,
+        "barPhase": 0.047
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Aaron",
+      "startMs": 148792,
+      "endMs": 149166,
+      "beat": {
+        "index": 228,
+        "phase": 0.767,
+        "bar": 57,
+        "barPhase": 0.192
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Carter",
+      "startMs": 149166,
+      "endMs": 149541,
+      "beat": {
+        "index": 229,
+        "phase": 0.348,
+        "bar": 57,
+        "barPhase": 0.337
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Compare",
+      "startMs": 149541,
+      "endMs": 149939,
+      "beat": {
+        "index": 229,
+        "phase": 0.929,
+        "bar": 57,
+        "barPhase": 0.482
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 149939,
+      "endMs": 150336,
+      "beat": {
+        "index": 230,
+        "phase": 0.545,
+        "bar": 57,
+        "barPhase": 0.636
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Authors",
+      "startMs": 150336,
+      "endMs": 150734,
+      "beat": {
+        "index": 231,
+        "phase": 0.161,
+        "bar": 57,
+        "barPhase": 0.79
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "what's",
+      "startMs": 150734,
+      "endMs": 151074,
+      "beat": {
+        "index": 231,
+        "phase": 0.777,
+        "bar": 57,
+        "barPhase": 0.944
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "an",
+      "startMs": 151074,
+      "endMs": 151415,
+      "beat": {
+        "index": 232,
+        "phase": 0.305,
+        "bar": 58,
+        "barPhase": 0.076
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Auteur",
+      "startMs": 151415,
+      "endMs": 151756,
+      "beat": {
+        "index": 232,
+        "phase": 0.833,
+        "bar": 58,
+        "barPhase": 0.208
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 151756,
+      "endMs": 152096,
+      "beat": {
+        "index": 233,
+        "phase": 0.361,
+        "bar": 58,
+        "barPhase": 0.34
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 152096,
+      "endMs": 152437,
+      "beat": {
+        "index": 233,
+        "phase": 0.889,
+        "bar": 58,
+        "barPhase": 0.472
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "syllable",
+      "startMs": 152437,
+      "endMs": 152778,
+      "beat": {
+        "index": 234,
+        "phase": 0.417,
+        "bar": 58,
+        "barPhase": 0.604
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "King",
+      "startMs": 152778,
+      "endMs": 153118,
+      "beat": {
+        "index": 234,
+        "phase": 0.946,
+        "bar": 58,
+        "barPhase": 0.736
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 153118,
+      "endMs": 153476,
+      "beat": {
+        "index": 235,
+        "phase": 0.474,
+        "bar": 58,
+        "barPhase": 0.868
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "despair",
+      "startMs": 153476,
+      "endMs": 153834,
+      "beat": {
+        "index": 236,
+        "phase": 0.028,
+        "bar": 59,
+        "barPhase": 0.007
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 153834,
+      "endMs": 154192,
+      "beat": {
+        "index": 236,
+        "phase": 0.583,
+        "bar": 59,
+        "barPhase": 0.146
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "conquor",
+      "startMs": 154192,
+      "endMs": 154549,
+      "beat": {
+        "index": 237,
+        "phase": 0.137,
+        "bar": 59,
+        "barPhase": 0.284
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 154549,
+      "endMs": 155503,
+      "beat": {
+        "index": 237,
+        "phase": 0.692,
+        "bar": 59,
+        "barPhase": 0.423
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 155503,
+      "endMs": 156457,
+      "beat": {
+        "index": 239,
+        "phase": 0.17,
+        "bar": 59,
+        "barPhase": 0.793
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "POLARITY",
+      "startMs": 156457,
+      "endMs": 157411,
+      "beat": {
+        "index": 240,
+        "phase": 0.649,
+        "bar": 60,
+        "barPhase": 0.162
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "Polarity",
+      "startMs": 157411,
+      "endMs": 157835,
+      "beat": {
+        "index": 242,
+        "phase": 0.128,
+        "bar": 60,
+        "barPhase": 0.532
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "won't",
+      "startMs": 157835,
+      "endMs": 158259,
+      "beat": {
+        "index": 242,
+        "phase": 0.785,
+        "bar": 60,
+        "barPhase": 0.696
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bury",
+      "startMs": 158259,
+      "endMs": 158683,
+      "beat": {
+        "index": 243,
+        "phase": 0.442,
+        "bar": 60,
+        "barPhase": 0.86
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "me",
+      "startMs": 158683,
+      "endMs": 159107,
+      "beat": {
+        "index": 244,
+        "phase": 0.099,
+        "bar": 61,
+        "barPhase": 0.025
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "flow",
+      "startMs": 159107,
+      "endMs": 159531,
+      "beat": {
+        "index": 244,
+        "phase": 0.756,
+        "bar": 61,
+        "barPhase": 0.189
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "merrily",
+      "startMs": 159531,
+      "endMs": 159955,
+      "beat": {
+        "index": 245,
+        "phase": 0.413,
+        "bar": 61,
+        "barPhase": 0.353
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "over",
+      "startMs": 159955,
+      "endMs": 160379,
+      "beat": {
+        "index": 246,
+        "phase": 0.071,
+        "bar": 61,
+        "barPhase": 0.518
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 160379,
+      "endMs": 160803,
+      "beat": {
+        "index": 246,
+        "phase": 0.728,
+        "bar": 61,
+        "barPhase": 0.682
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "beat",
+      "startMs": 160803,
+      "endMs": 161227,
+      "beat": {
+        "index": 247,
+        "phase": 0.385,
+        "bar": 61,
+        "barPhase": 0.846
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "while",
+      "startMs": 161227,
+      "endMs": 161800,
+      "beat": {
+        "index": 248,
+        "phase": 0.042,
+        "bar": 62,
+        "barPhase": 0.011
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "concurrently",
+      "startMs": 161800,
+      "endMs": 162372,
+      "beat": {
+        "index": 248,
+        "phase": 0.929,
+        "bar": 62,
+        "barPhase": 0.232
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "flamethrower",
+      "startMs": 162372,
+      "endMs": 162944,
+      "beat": {
+        "index": 249,
+        "phase": 0.816,
+        "bar": 62,
+        "barPhase": 0.454
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 162944,
+      "endMs": 163517,
+      "beat": {
+        "index": 250,
+        "phase": 0.704,
+        "bar": 62,
+        "barPhase": 0.676
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "heat",
+      "startMs": 163517,
+      "endMs": 164089,
+      "beat": {
+        "index": 251,
+        "phase": 0.591,
+        "bar": 62,
+        "barPhase": 0.898
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "composed",
+      "startMs": 164089,
+      "endMs": 164464,
+      "beat": {
+        "index": 252,
+        "phase": 0.478,
+        "bar": 63,
+        "barPhase": 0.12
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "an",
+      "startMs": 164464,
+      "endMs": 164839,
+      "beat": {
+        "index": 253,
+        "phase": 0.059,
+        "bar": 63,
+        "barPhase": 0.265
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "elite",
+      "startMs": 164839,
+      "endMs": 165213,
+      "beat": {
+        "index": 253,
+        "phase": 0.64,
+        "bar": 63,
+        "barPhase": 0.41
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "scheme",
+      "startMs": 165213,
+      "endMs": 165588,
+      "beat": {
+        "index": 254,
+        "phase": 0.221,
+        "bar": 63,
+        "barPhase": 0.555
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 165588,
+      "endMs": 165963,
+      "beat": {
+        "index": 254,
+        "phase": 0.802,
+        "bar": 63,
+        "barPhase": 0.7
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Dovakhin",
+      "startMs": 165963,
+      "endMs": 166338,
+      "beat": {
+        "index": 255,
+        "phase": 0.383,
+        "bar": 63,
+        "barPhase": 0.846
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "fleets",
+      "startMs": 166338,
+      "endMs": 166712,
+      "beat": {
+        "index": 255,
+        "phase": 0.963,
+        "bar": 63,
+        "barPhase": 0.991
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "blowing",
+      "startMs": 166712,
+      "endMs": 167030,
+      "beat": {
+        "index": 256,
+        "phase": 0.544,
+        "bar": 64,
+        "barPhase": 0.136
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 167030,
+      "endMs": 167348,
+      "beat": {
+        "index": 257,
+        "phase": 0.037,
+        "bar": 64,
+        "barPhase": 0.259
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "streets",
+      "startMs": 167348,
+      "endMs": 167666,
+      "beat": {
+        "index": 257,
+        "phase": 0.53,
+        "bar": 64,
+        "barPhase": 0.383
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "off",
+      "startMs": 167666,
+      "endMs": 167984,
+      "beat": {
+        "index": 258,
+        "phase": 0.023,
+        "bar": 64,
+        "barPhase": 0.506
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 167984,
+      "endMs": 168302,
+      "beat": {
+        "index": 258,
+        "phase": 0.516,
+        "bar": 64,
+        "barPhase": 0.629
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "scraping",
+      "startMs": 168302,
+      "endMs": 168620,
+      "beat": {
+        "index": 259,
+        "phase": 0.009,
+        "bar": 64,
+        "barPhase": 0.752
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "cement",
+      "startMs": 168620,
+      "endMs": 168938,
+      "beat": {
+        "index": 259,
+        "phase": 0.502,
+        "bar": 64,
+        "barPhase": 0.875
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 168938,
+      "endMs": 169256,
+      "beat": {
+        "index": 259,
+        "phase": 0.994,
+        "bar": 64,
+        "barPhase": 0.999
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 169256,
+      "endMs": 169574,
+      "beat": {
+        "index": 260,
+        "phase": 0.487,
+        "bar": 65,
+        "barPhase": 0.122
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "focus",
+      "startMs": 169574,
+      "endMs": 169892,
+      "beat": {
+        "index": 260,
+        "phase": 0.98,
+        "bar": 65,
+        "barPhase": 0.245
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 169892,
+      "endMs": 170210,
+      "beat": {
+        "index": 261,
+        "phase": 0.473,
+        "bar": 65,
+        "barPhase": 0.368
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "speech",
+      "startMs": 170210,
+      "endMs": 170528,
+      "beat": {
+        "index": 261,
+        "phase": 0.966,
+        "bar": 65,
+        "barPhase": 0.491
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "demonic",
+      "startMs": 170528,
+      "endMs": 171005,
+      "beat": {
+        "index": 262,
+        "phase": 0.459,
+        "bar": 65,
+        "barPhase": 0.615
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "reach",
+      "startMs": 171005,
+      "endMs": 171482,
+      "beat": {
+        "index": 263,
+        "phase": 0.198,
+        "bar": 65,
+        "barPhase": 0.8
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "tectonic",
+      "startMs": 171482,
+      "endMs": 171959,
+      "beat": {
+        "index": 263,
+        "phase": 0.938,
+        "bar": 65,
+        "barPhase": 0.984
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "stride",
+      "startMs": 171959,
+      "endMs": 172436,
+      "beat": {
+        "index": 264,
+        "phase": 0.677,
+        "bar": 66,
+        "barPhase": 0.169
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "psychotic",
+      "startMs": 172436,
+      "endMs": 172834,
+      "beat": {
+        "index": 265,
+        "phase": 0.416,
+        "bar": 66,
+        "barPhase": 0.354
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "thief",
+      "startMs": 172834,
+      "endMs": 173231,
+      "beat": {
+        "index": 266,
+        "phase": 0.032,
+        "bar": 66,
+        "barPhase": 0.508
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bionic",
+      "startMs": 173231,
+      "endMs": 173629,
+      "beat": {
+        "index": 266,
+        "phase": 0.648,
+        "bar": 66,
+        "barPhase": 0.662
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "eyes",
+      "startMs": 173629,
+      "endMs": 174026,
+      "beat": {
+        "index": 267,
+        "phase": 0.264,
+        "bar": 66,
+        "barPhase": 0.816
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "that",
+      "startMs": 174026,
+      "endMs": 174424,
+      "beat": {
+        "index": 267,
+        "phase": 0.881,
+        "bar": 66,
+        "barPhase": 0.97
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "glow",
+      "startMs": 174424,
+      "endMs": 174821,
+      "beat": {
+        "index": 268,
+        "phase": 0.497,
+        "bar": 67,
+        "barPhase": 0.124
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "like",
+      "startMs": 174821,
+      "endMs": 175219,
+      "beat": {
+        "index": 269,
+        "phase": 0.113,
+        "bar": 67,
+        "barPhase": 0.278
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "red",
+      "startMs": 175219,
+      "endMs": 175616,
+      "beat": {
+        "index": 269,
+        "phase": 0.729,
+        "bar": 67,
+        "barPhase": 0.432
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fireflies",
+      "startMs": 175616,
+      "endMs": 176014,
+      "beat": {
+        "index": 270,
+        "phase": 0.345,
+        "bar": 67,
+        "barPhase": 0.586
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Body",
+      "startMs": 176014,
+      "endMs": 176312,
+      "beat": {
+        "index": 270,
+        "phase": 0.961,
+        "bar": 67,
+        "barPhase": 0.74
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 176312,
+      "endMs": 176610,
+      "beat": {
+        "index": 271,
+        "phase": 0.423,
+        "bar": 67,
+        "barPhase": 0.856
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 176610,
+      "endMs": 176908,
+      "beat": {
+        "index": 271,
+        "phase": 0.885,
+        "bar": 67,
+        "barPhase": 0.971
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "coral",
+      "startMs": 176908,
+      "endMs": 177206,
+      "beat": {
+        "index": 272,
+        "phase": 0.347,
+        "bar": 68,
+        "barPhase": 0.087
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "reef",
+      "startMs": 177206,
+      "endMs": 177504,
+      "beat": {
+        "index": 272,
+        "phase": 0.809,
+        "bar": 68,
+        "barPhase": 0.202
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "dead",
+      "startMs": 177504,
+      "endMs": 177802,
+      "beat": {
+        "index": 273,
+        "phase": 0.271,
+        "bar": 68,
+        "barPhase": 0.318
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 177802,
+      "endMs": 178100,
+      "beat": {
+        "index": 273,
+        "phase": 0.734,
+        "bar": 68,
+        "barPhase": 0.433
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "gray",
+      "startMs": 178100,
+      "endMs": 178398,
+      "beat": {
+        "index": 274,
+        "phase": 0.196,
+        "bar": 68,
+        "barPhase": 0.549
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "color",
+      "startMs": 178398,
+      "endMs": 178796,
+      "beat": {
+        "index": 274,
+        "phase": 0.658,
+        "bar": 68,
+        "barPhase": 0.664
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "always",
+      "startMs": 178796,
+      "endMs": 179193,
+      "beat": {
+        "index": 275,
+        "phase": 0.274,
+        "bar": 68,
+        "barPhase": 0.818
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "fades",
+      "startMs": 179193,
+      "endMs": 179591,
+      "beat": {
+        "index": 275,
+        "phase": 0.89,
+        "bar": 68,
+        "barPhase": 0.972
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Wonder",
+      "startMs": 179591,
+      "endMs": 179988,
+      "beat": {
+        "index": 276,
+        "phase": 0.506,
+        "bar": 69,
+        "barPhase": 0.126
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "always",
+      "startMs": 179988,
+      "endMs": 180386,
+      "beat": {
+        "index": 277,
+        "phase": 0.122,
+        "bar": 69,
+        "barPhase": 0.281
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "breaks",
+      "startMs": 180386,
+      "endMs": 180783,
+      "beat": {
+        "index": 277,
+        "phase": 0.738,
+        "bar": 69,
+        "barPhase": 0.435
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "til",
+      "startMs": 180783,
+      "endMs": 181124,
+      "beat": {
+        "index": 278,
+        "phase": 0.354,
+        "bar": 69,
+        "barPhase": 0.589
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 181124,
+      "endMs": 181465,
+      "beat": {
+        "index": 278,
+        "phase": 0.882,
+        "bar": 69,
+        "barPhase": 0.721
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "trapped",
+      "startMs": 181465,
+      "endMs": 181805,
+      "beat": {
+        "index": 279,
+        "phase": 0.41,
+        "bar": 69,
+        "barPhase": 0.853
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "banging",
+      "startMs": 181805,
+      "endMs": 182146,
+      "beat": {
+        "index": 279,
+        "phase": 0.939,
+        "bar": 69,
+        "barPhase": 0.985
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "on",
+      "startMs": 182146,
+      "endMs": 182487,
+      "beat": {
+        "index": 280,
+        "phase": 0.467,
+        "bar": 70,
+        "barPhase": 0.117
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 182487,
+      "endMs": 182828,
+      "beat": {
+        "index": 280,
+        "phase": 0.995,
+        "bar": 70,
+        "barPhase": 0.249
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "wonderwall",
+      "startMs": 182828,
+      "endMs": 183168,
+      "beat": {
+        "index": 281,
+        "phase": 0.523,
+        "bar": 70,
+        "barPhase": 0.381
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "thundering",
+      "startMs": 183168,
+      "endMs": 183645,
+      "beat": {
+        "index": 282,
+        "phase": 0.051,
+        "bar": 70,
+        "barPhase": 0.513
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "disdain",
+      "startMs": 183645,
+      "endMs": 184122,
+      "beat": {
+        "index": 282,
+        "phase": 0.79,
+        "bar": 70,
+        "barPhase": 0.698
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bludgeoning",
+      "startMs": 184122,
+      "endMs": 184599,
+      "beat": {
+        "index": 283,
+        "phase": 0.53,
+        "bar": 70,
+        "barPhase": 0.882
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 184599,
+      "endMs": 185076,
+      "beat": {
+        "index": 284,
+        "phase": 0.269,
+        "bar": 71,
+        "barPhase": 0.067
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "veins",
+      "startMs": 185076,
+      "endMs": 185553,
+      "beat": {
+        "index": 285,
+        "phase": 0.008,
+        "bar": 71,
+        "barPhase": 0.252
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 185553,
+      "endMs": 185851,
+      "beat": {
+        "index": 285,
+        "phase": 0.747,
+        "bar": 71,
+        "barPhase": 0.437
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 185851,
+      "endMs": 186149,
+      "beat": {
+        "index": 286,
+        "phase": 0.21,
+        "bar": 71,
+        "barPhase": 0.552
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "pickaxe",
+      "startMs": 186149,
+      "endMs": 186448,
+      "beat": {
+        "index": 286,
+        "phase": 0.672,
+        "bar": 71,
+        "barPhase": 0.668
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "scraping",
+      "startMs": 186448,
+      "endMs": 186746,
+      "beat": {
+        "index": 287,
+        "phase": 0.134,
+        "bar": 71,
+        "barPhase": 0.783
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "at",
+      "startMs": 186746,
+      "endMs": 187044,
+      "beat": {
+        "index": 287,
+        "phase": 0.596,
+        "bar": 71,
+        "barPhase": 0.899
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 187044,
+      "endMs": 187342,
+      "beat": {
+        "index": 288,
+        "phase": 0.058,
+        "bar": 72,
+        "barPhase": 0.014
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "wrist",
+      "startMs": 187342,
+      "endMs": 187640,
+      "beat": {
+        "index": 288,
+        "phase": 0.52,
+        "bar": 72,
+        "barPhase": 0.13
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fat",
+      "startMs": 187640,
+      "endMs": 187938,
+      "beat": {
+        "index": 288,
+        "phase": 0.982,
+        "bar": 72,
+        "barPhase": 0.245
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "left",
+      "startMs": 187938,
+      "endMs": 188203,
+      "beat": {
+        "index": 289,
+        "phase": 0.444,
+        "bar": 72,
+        "barPhase": 0.361
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "arm",
+      "startMs": 188203,
+      "endMs": 188468,
+      "beat": {
+        "index": 289,
+        "phase": 0.855,
+        "bar": 72,
+        "barPhase": 0.464
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "covered",
+      "startMs": 188468,
+      "endMs": 188733,
+      "beat": {
+        "index": 290,
+        "phase": 0.266,
+        "bar": 72,
+        "barPhase": 0.566
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "in",
+      "startMs": 188733,
+      "endMs": 188998,
+      "beat": {
+        "index": 290,
+        "phase": 0.676,
+        "bar": 72,
+        "barPhase": 0.669
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "more",
+      "startMs": 188998,
+      "endMs": 189263,
+      "beat": {
+        "index": 291,
+        "phase": 0.087,
+        "bar": 72,
+        "barPhase": 0.772
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "scars",
+      "startMs": 189263,
+      "endMs": 189528,
+      "beat": {
+        "index": 291,
+        "phase": 0.498,
+        "bar": 72,
+        "barPhase": 0.874
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "than",
+      "startMs": 189528,
+      "endMs": 189793,
+      "beat": {
+        "index": 291,
+        "phase": 0.908,
+        "bar": 72,
+        "barPhase": 0.977
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "skin",
+      "startMs": 189793,
+      "endMs": 190058,
+      "beat": {
+        "index": 292,
+        "phase": 0.319,
+        "bar": 73,
+        "barPhase": 0.08
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "cells",
+      "startMs": 190058,
+      "endMs": 190323,
+      "beat": {
+        "index": 292,
+        "phase": 0.73,
+        "bar": 73,
+        "barPhase": 0.182
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Sardonic",
+      "startMs": 190323,
+      "endMs": 190721,
+      "beat": {
+        "index": 293,
+        "phase": 0.141,
+        "bar": 73,
+        "barPhase": 0.285
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Intel",
+      "startMs": 190721,
+      "endMs": 191118,
+      "beat": {
+        "index": 293,
+        "phase": 0.757,
+        "bar": 73,
+        "barPhase": 0.439
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Bardock",
+      "startMs": 191118,
+      "endMs": 191515,
+      "beat": {
+        "index": 294,
+        "phase": 0.373,
+        "bar": 73,
+        "barPhase": 0.593
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 191515,
+      "endMs": 191913,
+      "beat": {
+        "index": 294,
+        "phase": 0.989,
+        "bar": 73,
+        "barPhase": 0.747
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 191913,
+      "endMs": 192310,
+      "beat": {
+        "index": 295,
+        "phase": 0.605,
+        "bar": 73,
+        "barPhase": 0.901
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "skill",
+      "startMs": 192310,
+      "endMs": 192708,
+      "beat": {
+        "index": 296,
+        "phase": 0.221,
+        "bar": 74,
+        "barPhase": 0.055
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "birthing",
+      "startMs": 192708,
+      "endMs": 193185,
+      "beat": {
+        "index": 296,
+        "phase": 0.837,
+        "bar": 74,
+        "barPhase": 0.209
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "vigor",
+      "startMs": 193185,
+      "endMs": 193662,
+      "beat": {
+        "index": 297,
+        "phase": 0.577,
+        "bar": 74,
+        "barPhase": 0.394
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "words",
+      "startMs": 193662,
+      "endMs": 194139,
+      "beat": {
+        "index": 298,
+        "phase": 0.316,
+        "bar": 74,
+        "barPhase": 0.579
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "delivering",
+      "startMs": 194139,
+      "endMs": 194616,
+      "beat": {
+        "index": 299,
+        "phase": 0.055,
+        "bar": 74,
+        "barPhase": 0.764
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 194616,
+      "endMs": 195093,
+      "beat": {
+        "index": 299,
+        "phase": 0.795,
+        "bar": 74,
+        "barPhase": 0.949
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "sickle",
+      "startMs": 195093,
+      "endMs": 195570,
+      "beat": {
+        "index": 300,
+        "phase": 0.534,
+        "bar": 75,
+        "barPhase": 0.133
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "cell",
+      "startMs": 195570,
+      "endMs": 196047,
+      "beat": {
+        "index": 301,
+        "phase": 0.273,
+        "bar": 75,
+        "barPhase": 0.318
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "anemia",
+      "startMs": 196047,
+      "endMs": 196524,
+      "beat": {
+        "index": 302,
+        "phase": 0.013,
+        "bar": 75,
+        "barPhase": 0.503
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 196524,
+      "endMs": 196810,
+      "beat": {
+        "index": 302,
+        "phase": 0.752,
+        "bar": 75,
+        "barPhase": 0.688
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "little",
+      "startMs": 196810,
+      "endMs": 197096,
+      "beat": {
+        "index": 303,
+        "phase": 0.195,
+        "bar": 75,
+        "barPhase": 0.799
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "hell",
+      "startMs": 197096,
+      "endMs": 197382,
+      "beat": {
+        "index": 303,
+        "phase": 0.639,
+        "bar": 75,
+        "barPhase": 0.91
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 197382,
+      "endMs": 197669,
+      "beat": {
+        "index": 304,
+        "phase": 0.083,
+        "bar": 76,
+        "barPhase": 0.021
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "leaving",
+      "startMs": 197669,
+      "endMs": 197955,
+      "beat": {
+        "index": 304,
+        "phase": 0.526,
+        "bar": 76,
+        "barPhase": 0.132
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "ya",
+      "startMs": 197955,
+      "endMs": 198241,
+      "beat": {
+        "index": 304,
+        "phase": 0.97,
+        "bar": 76,
+        "barPhase": 0.242
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "will",
+      "startMs": 198241,
+      "endMs": 198527,
+      "beat": {
+        "index": 305,
+        "phase": 0.413,
+        "bar": 76,
+        "barPhase": 0.353
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rip",
+      "startMs": 198527,
+      "endMs": 198813,
+      "beat": {
+        "index": 305,
+        "phase": 0.857,
+        "bar": 76,
+        "barPhase": 0.464
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "you",
+      "startMs": 198813,
+      "endMs": 199099,
+      "beat": {
+        "index": 306,
+        "phase": 0.301,
+        "bar": 76,
+        "barPhase": 0.575
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "up",
+      "startMs": 199099,
+      "endMs": 199386,
+      "beat": {
+        "index": 306,
+        "phase": 0.744,
+        "bar": 76,
+        "barPhase": 0.686
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Bodies",
+      "startMs": 199386,
+      "endMs": 199724,
+      "beat": {
+        "index": 307,
+        "phase": 0.188,
+        "bar": 76,
+        "barPhase": 0.797
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "love",
+      "startMs": 199724,
+      "endMs": 200061,
+      "beat": {
+        "index": 307,
+        "phase": 0.711,
+        "bar": 76,
+        "barPhase": 0.928
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 200061,
+      "endMs": 200399,
+      "beat": {
+        "index": 308,
+        "phase": 0.235,
+        "bar": 77,
+        "barPhase": 0.059
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pile",
+      "startMs": 200399,
+      "endMs": 200737,
+      "beat": {
+        "index": 308,
+        "phase": 0.759,
+        "bar": 77,
+        "barPhase": 0.19
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "into",
+      "startMs": 200737,
+      "endMs": 201075,
+      "beat": {
+        "index": 309,
+        "phase": 0.283,
+        "bar": 77,
+        "barPhase": 0.321
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "towers",
+      "startMs": 201075,
+      "endMs": 201413,
+      "beat": {
+        "index": 309,
+        "phase": 0.806,
+        "bar": 77,
+        "barPhase": 0.452
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "when",
+      "startMs": 201413,
+      "endMs": 201751,
+      "beat": {
+        "index": 310,
+        "phase": 0.33,
+        "bar": 77,
+        "barPhase": 0.582
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 201751,
+      "endMs": 202089,
+      "beat": {
+        "index": 310,
+        "phase": 0.854,
+        "bar": 77,
+        "barPhase": 0.713
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "step",
+      "startMs": 202089,
+      "endMs": 202426,
+      "beat": {
+        "index": 311,
+        "phase": 0.377,
+        "bar": 77,
+        "barPhase": 0.844
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "inside",
+      "startMs": 202426,
+      "endMs": 202764,
+      "beat": {
+        "index": 311,
+        "phase": 0.901,
+        "bar": 77,
+        "barPhase": 0.975
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 202764,
+      "endMs": 203102,
+      "beat": {
+        "index": 312,
+        "phase": 0.425,
+        "bar": 78,
+        "barPhase": 0.106
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "booth",
+      "startMs": 203102,
+      "endMs": 203440,
+      "beat": {
+        "index": 312,
+        "phase": 0.948,
+        "bar": 78,
+        "barPhase": 0.237
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "weapons",
+      "startMs": 203440,
+      "endMs": 203798,
+      "beat": {
+        "index": 313,
+        "phase": 0.472,
+        "bar": 78,
+        "barPhase": 0.368
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 203798,
+      "endMs": 204155,
+      "beat": {
+        "index": 314,
+        "phase": 0.026,
+        "bar": 78,
+        "barPhase": 0.507
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "produce",
+      "startMs": 204155,
+      "endMs": 204513,
+      "beat": {
+        "index": 314,
+        "phase": 0.581,
+        "bar": 78,
+        "barPhase": 0.645
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "leaving",
+      "startMs": 204513,
+      "endMs": 204871,
+      "beat": {
+        "index": 315,
+        "phase": 0.135,
+        "bar": 78,
+        "barPhase": 0.784
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "them",
+      "startMs": 204871,
+      "endMs": 205229,
+      "beat": {
+        "index": 315,
+        "phase": 0.69,
+        "bar": 78,
+        "barPhase": 0.922
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "shocked",
+      "startMs": 205229,
+      "endMs": 205586,
+      "beat": {
+        "index": 316,
+        "phase": 0.244,
+        "bar": 79,
+        "barPhase": 0.061
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "pursuing",
+      "startMs": 205586,
+      "endMs": 205944,
+      "beat": {
+        "index": 316,
+        "phase": 0.799,
+        "bar": 79,
+        "barPhase": 0.2
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "truth",
+      "startMs": 205944,
+      "endMs": 206302,
+      "beat": {
+        "index": 317,
+        "phase": 0.353,
+        "bar": 79,
+        "barPhase": 0.338
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Truthful",
+      "startMs": 206302,
+      "endMs": 206719,
+      "beat": {
+        "index": 317,
+        "phase": 0.908,
+        "bar": 79,
+        "barPhase": 0.477
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Rubix",
+      "startMs": 206719,
+      "endMs": 207137,
+      "beat": {
+        "index": 318,
+        "phase": 0.555,
+        "bar": 79,
+        "barPhase": 0.639
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Cube",
+      "startMs": 207137,
+      "endMs": 207554,
+      "beat": {
+        "index": 319,
+        "phase": 0.202,
+        "bar": 79,
+        "barPhase": 0.8
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Voodoo",
+      "startMs": 207554,
+      "endMs": 207971,
+      "beat": {
+        "index": 319,
+        "phase": 0.849,
+        "bar": 79,
+        "barPhase": 0.962
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "oozing",
+      "startMs": 207971,
+      "endMs": 208389,
+      "beat": {
+        "index": 320,
+        "phase": 0.496,
+        "bar": 80,
+        "barPhase": 0.124
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "through",
+      "startMs": 208389,
+      "endMs": 208806,
+      "beat": {
+        "index": 321,
+        "phase": 0.142,
+        "bar": 80,
+        "barPhase": 0.286
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 208806,
+      "endMs": 209223,
+      "beat": {
+        "index": 321,
+        "phase": 0.789,
+        "bar": 80,
+        "barPhase": 0.447
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "microphone",
+      "startMs": 209223,
+      "endMs": 209641,
+      "beat": {
+        "index": 322,
+        "phase": 0.436,
+        "bar": 80,
+        "barPhase": 0.609
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "Stream",
+      "startMs": 209641,
+      "endMs": 210050,
+      "beat": {
+        "index": 323,
+        "phase": 0.083,
+        "bar": 80,
+        "barPhase": 0.771
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "of",
+      "startMs": 210050,
+      "endMs": 210458,
+      "beat": {
+        "index": 323,
+        "phase": 0.717,
+        "bar": 80,
+        "barPhase": 0.929
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "consciousness",
+      "startMs": 210458,
+      "endMs": 210867,
+      "beat": {
+        "index": 324,
+        "phase": 0.351,
+        "bar": 81,
+        "barPhase": 0.088
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "became",
+      "startMs": 210867,
+      "endMs": 211276,
+      "beat": {
+        "index": 324,
+        "phase": 0.984,
+        "bar": 81,
+        "barPhase": 0.246
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 211276,
+      "endMs": 211685,
+      "beat": {
+        "index": 325,
+        "phase": 0.618,
+        "bar": 81,
+        "barPhase": 0.404
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "YouTube",
+      "startMs": 211685,
+      "endMs": 212094,
+      "beat": {
+        "index": 326,
+        "phase": 0.252,
+        "bar": 81,
+        "barPhase": 0.563
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "View",
+      "startMs": 212094,
+      "endMs": 212503,
+      "beat": {
+        "index": 326,
+        "phase": 0.885,
+        "bar": 81,
+        "barPhase": 0.721
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'll",
+      "startMs": 212503,
+      "endMs": 212789,
+      "beat": {
+        "index": 327,
+        "phase": 0.519,
+        "bar": 81,
+        "barPhase": 0.88
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "never",
+      "startMs": 212789,
+      "endMs": 213075,
+      "beat": {
+        "index": 327,
+        "phase": 0.963,
+        "bar": 81,
+        "barPhase": 0.991
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "see",
+      "startMs": 213075,
+      "endMs": 213361,
+      "beat": {
+        "index": 328,
+        "phase": 0.406,
+        "bar": 82,
+        "barPhase": 0.102
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 213361,
+      "endMs": 213647,
+      "beat": {
+        "index": 328,
+        "phase": 0.85,
+        "bar": 82,
+        "barPhase": 0.212
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "though",
+      "startMs": 213647,
+      "endMs": 213934,
+      "beat": {
+        "index": 329,
+        "phase": 0.293,
+        "bar": 82,
+        "barPhase": 0.323
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Views",
+      "startMs": 213934,
+      "endMs": 214291,
+      "beat": {
+        "index": 329,
+        "phase": 0.737,
+        "bar": 82,
+        "barPhase": 0.434
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "rising",
+      "startMs": 214291,
+      "endMs": 214649,
+      "beat": {
+        "index": 330,
+        "phase": 0.292,
+        "bar": 82,
+        "barPhase": 0.573
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "still",
+      "startMs": 214649,
+      "endMs": 215007,
+      "beat": {
+        "index": 330,
+        "phase": 0.846,
+        "bar": 82,
+        "barPhase": 0.712
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "have",
+      "startMs": 215007,
+      "endMs": 215365,
+      "beat": {
+        "index": 331,
+        "phase": 0.401,
+        "bar": 82,
+        "barPhase": 0.85
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 215365,
+      "endMs": 215722,
+      "beat": {
+        "index": 331,
+        "phase": 0.955,
+        "bar": 82,
+        "barPhase": 0.989
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "same",
+      "startMs": 215722,
+      "endMs": 216080,
+      "beat": {
+        "index": 332,
+        "phase": 0.51,
+        "bar": 83,
+        "barPhase": 0.127
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fucking",
+      "startMs": 216080,
+      "endMs": 216438,
+      "beat": {
+        "index": 333,
+        "phase": 0.064,
+        "bar": 83,
+        "barPhase": 0.266
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "episodes",
+      "startMs": 216438,
+      "endMs": 216795,
+      "beat": {
+        "index": 333,
+        "phase": 0.618,
+        "bar": 83,
+        "barPhase": 0.405
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "let",
+      "startMs": 216795,
+      "endMs": 217129,
+      "beat": {
+        "index": 334,
+        "phase": 0.173,
+        "bar": 83,
+        "barPhase": 0.543
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "me",
+      "startMs": 217129,
+      "endMs": 217463,
+      "beat": {
+        "index": 334,
+        "phase": 0.691,
+        "bar": 83,
+        "barPhase": 0.673
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "go",
+      "startMs": 217463,
+      "endMs": 217797,
+      "beat": {
+        "index": 335,
+        "phase": 0.208,
+        "bar": 83,
+        "barPhase": 0.802
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 217797,
+      "endMs": 218131,
+      "beat": {
+        "index": 335,
+        "phase": 0.726,
+        "bar": 83,
+        "barPhase": 0.931
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "die",
+      "startMs": 218131,
+      "endMs": 218465,
+      "beat": {
+        "index": 336,
+        "phase": 0.243,
+        "bar": 84,
+        "barPhase": 0.061
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "inside",
+      "startMs": 218465,
+      "endMs": 218799,
+      "beat": {
+        "index": 336,
+        "phase": 0.761,
+        "bar": 84,
+        "barPhase": 0.19
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 218799,
+      "endMs": 219133,
+      "beat": {
+        "index": 337,
+        "phase": 0.278,
+        "bar": 84,
+        "barPhase": 0.32
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "road",
+      "startMs": 219133,
+      "endMs": 219467,
+      "beat": {
+        "index": 337,
+        "phase": 0.796,
+        "bar": 84,
+        "barPhase": 0.449
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "of",
+      "startMs": 219467,
+      "endMs": 219800,
+      "beat": {
+        "index": 338,
+        "phase": 0.313,
+        "bar": 84,
+        "barPhase": 0.578
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "recovery",
+      "startMs": 219800,
+      "endMs": 220134,
+      "beat": {
+        "index": 338,
+        "phase": 0.831,
+        "bar": 84,
+        "barPhase": 0.708
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "and",
+      "startMs": 220134,
+      "endMs": 220407,
+      "beat": {
+        "index": 339,
+        "phase": 0.348,
+        "bar": 84,
+        "barPhase": 0.837
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "be",
+      "startMs": 220407,
+      "endMs": 220679,
+      "beat": {
+        "index": 339,
+        "phase": 0.771,
+        "bar": 84,
+        "barPhase": 0.943
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "a",
+      "startMs": 220679,
+      "endMs": 220952,
+      "beat": {
+        "index": 340,
+        "phase": 0.193,
+        "bar": 85,
+        "barPhase": 0.048
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "statue",
+      "startMs": 220952,
+      "endMs": 221225,
+      "beat": {
+        "index": 340,
+        "phase": 0.616,
+        "bar": 85,
+        "barPhase": 0.154
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "for",
+      "startMs": 221225,
+      "endMs": 221497,
+      "beat": {
+        "index": 341,
+        "phase": 0.038,
+        "bar": 85,
+        "barPhase": 0.26
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 221497,
+      "endMs": 221770,
+      "beat": {
+        "index": 341,
+        "phase": 0.461,
+        "bar": 85,
+        "barPhase": 0.365
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "dead",
+      "startMs": 221770,
+      "endMs": 222042,
+      "beat": {
+        "index": 341,
+        "phase": 0.883,
+        "bar": 85,
+        "barPhase": 0.471
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "Grappling",
+      "startMs": 222042,
+      "endMs": 222360,
+      "beat": {
+        "index": 342,
+        "phase": 0.306,
+        "bar": 85,
+        "barPhase": 0.576
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "with",
+      "startMs": 222360,
+      "endMs": 222678,
+      "beat": {
+        "index": 342,
+        "phase": 0.798,
+        "bar": 85,
+        "barPhase": 0.7
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "death",
+      "startMs": 222678,
+      "endMs": 222996,
+      "beat": {
+        "index": 343,
+        "phase": 0.291,
+        "bar": 85,
+        "barPhase": 0.823
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "having",
+      "startMs": 222996,
+      "endMs": 223282,
+      "beat": {
+        "index": 343,
+        "phase": 0.784,
+        "bar": 85,
+        "barPhase": 0.946
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "been",
+      "startMs": 223282,
+      "endMs": 223569,
+      "beat": {
+        "index": 344,
+        "phase": 0.228,
+        "bar": 86,
+        "barPhase": 0.057
+      },
+      "school": "SONIC",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 223569,
+      "endMs": 223855,
+      "beat": {
+        "index": 344,
+        "phase": 0.671,
+        "bar": 86,
+        "barPhase": 0.168
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "same",
+      "startMs": 223855,
+      "endMs": 224141,
+      "beat": {
+        "index": 345,
+        "phase": 0.115,
+        "bar": 86,
+        "barPhase": 0.279
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "since",
+      "startMs": 224141,
+      "endMs": 224427,
+      "beat": {
+        "index": 345,
+        "phase": 0.559,
+        "bar": 86,
+        "barPhase": 0.39
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 224427,
+      "endMs": 224713,
+      "beat": {
+        "index": 346,
+        "phase": 0.002,
+        "bar": 86,
+        "barPhase": 0.501
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "killed",
+      "startMs": 224713,
+      "endMs": 225000,
+      "beat": {
+        "index": 346,
+        "phase": 0.446,
+        "bar": 86,
+        "barPhase": 0.611
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "my",
+      "startMs": 225000,
+      "endMs": 225286,
+      "beat": {
+        "index": 346,
+        "phase": 0.889,
+        "bar": 86,
+        "barPhase": 0.722
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "inner",
+      "startMs": 225286,
+      "endMs": 225572,
+      "beat": {
+        "index": 347,
+        "phase": 0.333,
+        "bar": 86,
+        "barPhase": 0.833
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "child",
+      "startMs": 225572,
+      "endMs": 225858,
+      "beat": {
+        "index": 347,
+        "phase": 0.776,
+        "bar": 86,
+        "barPhase": 0.944
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "bludgeoning",
+      "startMs": 225858,
+      "endMs": 226199,
+      "beat": {
+        "index": 348,
+        "phase": 0.22,
+        "bar": 87,
+        "barPhase": 0.055
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "an",
+      "startMs": 226199,
+      "endMs": 226540,
+      "beat": {
+        "index": 348,
+        "phase": 0.748,
+        "bar": 87,
+        "barPhase": 0.187
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "axe",
+      "startMs": 226540,
+      "endMs": 226880,
+      "beat": {
+        "index": 349,
+        "phase": 0.276,
+        "bar": 87,
+        "barPhase": 0.319
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "through",
+      "startMs": 226880,
+      "endMs": 227221,
+      "beat": {
+        "index": 349,
+        "phase": 0.804,
+        "bar": 87,
+        "barPhase": 0.451
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "his",
+      "startMs": 227221,
+      "endMs": 227562,
+      "beat": {
+        "index": 350,
+        "phase": 0.332,
+        "bar": 87,
+        "barPhase": 0.583
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fucking",
+      "startMs": 227562,
+      "endMs": 227902,
+      "beat": {
+        "index": 350,
+        "phase": 0.861,
+        "bar": 87,
+        "barPhase": 0.715
+      },
+      "school": "NECROMANCY",
+      "confidence": 0.85
+    },
+    {
+      "word": "neck",
+      "startMs": 227902,
+      "endMs": 228243,
+      "beat": {
+        "index": 351,
+        "phase": 0.389,
+        "bar": 87,
+        "barPhase": 0.847
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Disrespect",
+      "startMs": 228243,
+      "endMs": 228641,
+      "beat": {
+        "index": 351,
+        "phase": 0.917,
+        "bar": 87,
+        "barPhase": 0.979
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "isn't",
+      "startMs": 228641,
+      "endMs": 229038,
+      "beat": {
+        "index": 352,
+        "phase": 0.533,
+        "bar": 88,
+        "barPhase": 0.133
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 229038,
+      "endMs": 229435,
+      "beat": {
+        "index": 353,
+        "phase": 0.149,
+        "bar": 88,
+        "barPhase": 0.287
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 229435,
+      "endMs": 229753,
+      "beat": {
+        "index": 353,
+        "phase": 0.765,
+        "bar": 88,
+        "barPhase": 0.441
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "am",
+      "startMs": 229753,
+      "endMs": 230071,
+      "beat": {
+        "index": 354,
+        "phase": 0.258,
+        "bar": 88,
+        "barPhase": 0.564
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "large",
+      "startMs": 230071,
+      "endMs": 230389,
+      "beat": {
+        "index": 354,
+        "phase": 0.751,
+        "bar": 88,
+        "barPhase": 0.688
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 230389,
+      "endMs": 230707,
+      "beat": {
+        "index": 355,
+        "phase": 0.244,
+        "bar": 88,
+        "barPhase": 0.811
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 230707,
+      "endMs": 231025,
+      "beat": {
+        "index": 355,
+        "phase": 0.737,
+        "bar": 88,
+        "barPhase": 0.934
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "negative",
+      "startMs": 231025,
+      "endMs": 231343,
+      "beat": {
+        "index": 356,
+        "phase": 0.229,
+        "bar": 89,
+        "barPhase": 0.057
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "charge",
+      "startMs": 231343,
+      "endMs": 231661,
+      "beat": {
+        "index": 356,
+        "phase": 0.722,
+        "bar": 89,
+        "barPhase": 0.181
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 231661,
+      "endMs": 231979,
+      "beat": {
+        "index": 357,
+        "phase": 0.215,
+        "bar": 89,
+        "barPhase": 0.304
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Eclipse",
+      "startMs": 231979,
+      "endMs": 232297,
+      "beat": {
+        "index": 357,
+        "phase": 0.708,
+        "bar": 89,
+        "barPhase": 0.427
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "body",
+      "startMs": 232297,
+      "endMs": 232727,
+      "beat": {
+        "index": 358,
+        "phase": 0.201,
+        "bar": 89,
+        "barPhase": 0.55
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 232727,
+      "endMs": 233156,
+      "beat": {
+        "index": 358,
+        "phase": 0.866,
+        "bar": 89,
+        "barPhase": 0.717
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "stiff",
+      "startMs": 233156,
+      "endMs": 233585,
+      "beat": {
+        "index": 359,
+        "phase": 0.532,
+        "bar": 89,
+        "barPhase": 0.883
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "logically",
+      "startMs": 233585,
+      "endMs": 234014,
+      "beat": {
+        "index": 360,
+        "phase": 0.197,
+        "bar": 90,
+        "barPhase": 0.049
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "dense",
+      "startMs": 234014,
+      "endMs": 234444,
+      "beat": {
+        "index": 360,
+        "phase": 0.862,
+        "bar": 90,
+        "barPhase": 0.216
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 234444,
+      "endMs": 234750,
+      "beat": {
+        "index": 361,
+        "phase": 0.528,
+        "bar": 90,
+        "barPhase": 0.382
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "wanna",
+      "startMs": 234750,
+      "endMs": 235057,
+      "beat": {
+        "index": 362,
+        "phase": 0.003,
+        "bar": 90,
+        "barPhase": 0.501
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "die",
+      "startMs": 235057,
+      "endMs": 235364,
+      "beat": {
+        "index": 362,
+        "phase": 0.478,
+        "bar": 90,
+        "barPhase": 0.62
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 235364,
+      "endMs": 235670,
+      "beat": {
+        "index": 362,
+        "phase": 0.954,
+        "bar": 90,
+        "barPhase": 0.738
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "wanna",
+      "startMs": 235670,
+      "endMs": 235977,
+      "beat": {
+        "index": 363,
+        "phase": 0.429,
+        "bar": 90,
+        "barPhase": 0.857
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "be",
+      "startMs": 235977,
+      "endMs": 236284,
+      "beat": {
+        "index": 363,
+        "phase": 0.904,
+        "bar": 90,
+        "barPhase": 0.976
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fixed",
+      "startMs": 236284,
+      "endMs": 236590,
+      "beat": {
+        "index": 364,
+        "phase": 0.38,
+        "bar": 91,
+        "barPhase": 0.095
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 236590,
+      "endMs": 236829,
+      "beat": {
+        "index": 364,
+        "phase": 0.855,
+        "bar": 91,
+        "barPhase": 0.214
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "want",
+      "startMs": 236829,
+      "endMs": 237067,
+      "beat": {
+        "index": 365,
+        "phase": 0.224,
+        "bar": 91,
+        "barPhase": 0.306
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 237067,
+      "endMs": 237306,
+      "beat": {
+        "index": 365,
+        "phase": 0.594,
+        "bar": 91,
+        "barPhase": 0.399
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "live",
+      "startMs": 237306,
+      "endMs": 237544,
+      "beat": {
+        "index": 365,
+        "phase": 0.964,
+        "bar": 91,
+        "barPhase": 0.491
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 237544,
+      "endMs": 237783,
+      "beat": {
+        "index": 366,
+        "phase": 0.333,
+        "bar": 91,
+        "barPhase": 0.583
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 237783,
+      "endMs": 238021,
+      "beat": {
+        "index": 366,
+        "phase": 0.703,
+        "bar": 91,
+        "barPhase": 0.676
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "what",
+      "startMs": 238021,
+      "endMs": 238260,
+      "beat": {
+        "index": 367,
+        "phase": 0.073,
+        "bar": 91,
+        "barPhase": 0.768
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 238260,
+      "endMs": 238498,
+      "beat": {
+        "index": 367,
+        "phase": 0.442,
+        "bar": 91,
+        "barPhase": 0.861
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 238498,
+      "endMs": 238737,
+      "beat": {
+        "index": 367,
+        "phase": 0.812,
+        "bar": 91,
+        "barPhase": 0.953
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "A",
+      "startMs": 238737,
+      "endMs": 239077,
+      "beat": {
+        "index": 368,
+        "phase": 0.182,
+        "bar": 92,
+        "barPhase": 0.045
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "symptom",
+      "startMs": 239077,
+      "endMs": 239418,
+      "beat": {
+        "index": 368,
+        "phase": 0.71,
+        "bar": 92,
+        "barPhase": 0.177
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "of",
+      "startMs": 239418,
+      "endMs": 239759,
+      "beat": {
+        "index": 369,
+        "phase": 0.238,
+        "bar": 92,
+        "barPhase": 0.309
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "negative",
+      "startMs": 239759,
+      "endMs": 240099,
+      "beat": {
+        "index": 369,
+        "phase": 0.766,
+        "bar": 92,
+        "barPhase": 0.441
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "get",
+      "startMs": 240099,
+      "endMs": 240440,
+      "beat": {
+        "index": 370,
+        "phase": 0.294,
+        "bar": 92,
+        "barPhase": 0.574
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 240440,
+      "endMs": 240781,
+      "beat": {
+        "index": 370,
+        "phase": 0.822,
+        "bar": 92,
+        "barPhase": 0.706
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "hint",
+      "startMs": 240781,
+      "endMs": 241122,
+      "beat": {
+        "index": 371,
+        "phase": 0.35,
+        "bar": 92,
+        "barPhase": 0.838
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "Disrespect",
+      "startMs": 241122,
+      "endMs": 241519,
+      "beat": {
+        "index": 371,
+        "phase": 0.878,
+        "bar": 92,
+        "barPhase": 0.97
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "isn't",
+      "startMs": 241519,
+      "endMs": 241916,
+      "beat": {
+        "index": 372,
+        "phase": 0.494,
+        "bar": 93,
+        "barPhase": 0.124
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "this",
+      "startMs": 241916,
+      "endMs": 242314,
+      "beat": {
+        "index": 373,
+        "phase": 0.111,
+        "bar": 93,
+        "barPhase": 0.278
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 242314,
+      "endMs": 242632,
+      "beat": {
+        "index": 373,
+        "phase": 0.727,
+        "bar": 93,
+        "barPhase": 0.432
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "am",
+      "startMs": 242632,
+      "endMs": 242950,
+      "beat": {
+        "index": 374,
+        "phase": 0.22,
+        "bar": 93,
+        "barPhase": 0.555
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "large",
+      "startMs": 242950,
+      "endMs": 243268,
+      "beat": {
+        "index": 374,
+        "phase": 0.712,
+        "bar": 93,
+        "barPhase": 0.678
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 243268,
+      "endMs": 243586,
+      "beat": {
+        "index": 375,
+        "phase": 0.205,
+        "bar": 93,
+        "barPhase": 0.801
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 243586,
+      "endMs": 243904,
+      "beat": {
+        "index": 375,
+        "phase": 0.698,
+        "bar": 93,
+        "barPhase": 0.925
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "negative",
+      "startMs": 243904,
+      "endMs": 244222,
+      "beat": {
+        "index": 376,
+        "phase": 0.191,
+        "bar": 94,
+        "barPhase": 0.048
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "charge",
+      "startMs": 244222,
+      "endMs": 244540,
+      "beat": {
+        "index": 376,
+        "phase": 0.684,
+        "bar": 94,
+        "barPhase": 0.171
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I'm",
+      "startMs": 244540,
+      "endMs": 244858,
+      "beat": {
+        "index": 377,
+        "phase": 0.177,
+        "bar": 94,
+        "barPhase": 0.294
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "Eclipse",
+      "startMs": 244858,
+      "endMs": 245176,
+      "beat": {
+        "index": 377,
+        "phase": 0.67,
+        "bar": 94,
+        "barPhase": 0.417
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "body",
+      "startMs": 245176,
+      "endMs": 245605,
+      "beat": {
+        "index": 378,
+        "phase": 0.163,
+        "bar": 94,
+        "barPhase": 0.541
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 245605,
+      "endMs": 246034,
+      "beat": {
+        "index": 378,
+        "phase": 0.828,
+        "bar": 94,
+        "barPhase": 0.707
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "stiff",
+      "startMs": 246034,
+      "endMs": 246464,
+      "beat": {
+        "index": 379,
+        "phase": 0.493,
+        "bar": 94,
+        "barPhase": 0.873
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "logically",
+      "startMs": 246464,
+      "endMs": 246893,
+      "beat": {
+        "index": 380,
+        "phase": 0.159,
+        "bar": 95,
+        "barPhase": 0.04
+      },
+      "school": "WILL",
+      "confidence": 0.85
+    },
+    {
+      "word": "dense",
+      "startMs": 246893,
+      "endMs": 247322,
+      "beat": {
+        "index": 380,
+        "phase": 0.824,
+        "bar": 95,
+        "barPhase": 0.206
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 247322,
+      "endMs": 247629,
+      "beat": {
+        "index": 381,
+        "phase": 0.49,
+        "bar": 95,
+        "barPhase": 0.372
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "wanna",
+      "startMs": 247629,
+      "endMs": 247936,
+      "beat": {
+        "index": 381,
+        "phase": 0.965,
+        "bar": 95,
+        "barPhase": 0.491
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "die",
+      "startMs": 247936,
+      "endMs": 248242,
+      "beat": {
+        "index": 382,
+        "phase": 0.44,
+        "bar": 95,
+        "barPhase": 0.61
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 248242,
+      "endMs": 248549,
+      "beat": {
+        "index": 382,
+        "phase": 0.915,
+        "bar": 95,
+        "barPhase": 0.729
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "wanna",
+      "startMs": 248549,
+      "endMs": 248855,
+      "beat": {
+        "index": 383,
+        "phase": 0.391,
+        "bar": 95,
+        "barPhase": 0.848
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "be",
+      "startMs": 248855,
+      "endMs": 249162,
+      "beat": {
+        "index": 383,
+        "phase": 0.866,
+        "bar": 95,
+        "barPhase": 0.966
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "fixed",
+      "startMs": 249162,
+      "endMs": 249469,
+      "beat": {
+        "index": 384,
+        "phase": 0.341,
+        "bar": 96,
+        "barPhase": 0.085
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "I",
+      "startMs": 249469,
+      "endMs": 249707,
+      "beat": {
+        "index": 384,
+        "phase": 0.816,
+        "bar": 96,
+        "barPhase": 0.204
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "want",
+      "startMs": 249707,
+      "endMs": 249946,
+      "beat": {
+        "index": 385,
+        "phase": 0.186,
+        "bar": 96,
+        "barPhase": 0.297
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "to",
+      "startMs": 249946,
+      "endMs": 250184,
+      "beat": {
+        "index": 385,
+        "phase": 0.556,
+        "bar": 96,
+        "barPhase": 0.389
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "live",
+      "startMs": 250184,
+      "endMs": 250423,
+      "beat": {
+        "index": 385,
+        "phase": 0.925,
+        "bar": 96,
+        "barPhase": 0.481
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 250423,
+      "endMs": 250661,
+      "beat": {
+        "index": 386,
+        "phase": 0.295,
+        "bar": 96,
+        "barPhase": 0.574
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 250661,
+      "endMs": 250900,
+      "beat": {
+        "index": 386,
+        "phase": 0.665,
+        "bar": 96,
+        "barPhase": 0.666
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "what",
+      "startMs": 250900,
+      "endMs": 251138,
+      "beat": {
+        "index": 387,
+        "phase": 0.034,
+        "bar": 96,
+        "barPhase": 0.759
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "it",
+      "startMs": 251138,
+      "endMs": 251377,
+      "beat": {
+        "index": 387,
+        "phase": 0.404,
+        "bar": 96,
+        "barPhase": 0.851
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "is",
+      "startMs": 251377,
+      "endMs": 251615,
+      "beat": {
+        "index": 387,
+        "phase": 0.774,
+        "bar": 96,
+        "barPhase": 0.943
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "A",
+      "startMs": 251615,
+      "endMs": 251956,
+      "beat": {
+        "index": 388,
+        "phase": 0.143,
+        "bar": 97,
+        "barPhase": 0.036
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "symptom",
+      "startMs": 251956,
+      "endMs": 252296,
+      "beat": {
+        "index": 388,
+        "phase": 0.671,
+        "bar": 97,
+        "barPhase": 0.168
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "of",
+      "startMs": 252296,
+      "endMs": 252637,
+      "beat": {
+        "index": 389,
+        "phase": 0.2,
+        "bar": 97,
+        "barPhase": 0.3
+      },
+      "school": "VOID",
+      "confidence": 0.85
+    },
+    {
+      "word": "negative",
+      "startMs": 252637,
+      "endMs": 252978,
+      "beat": {
+        "index": 389,
+        "phase": 0.728,
+        "bar": 97,
+        "barPhase": 0.432
+      },
+      "school": "ALCHEMY",
+      "confidence": 0.85
+    },
+    {
+      "word": "get",
+      "startMs": 252978,
+      "endMs": 253319,
+      "beat": {
+        "index": 390,
+        "phase": 0.256,
+        "bar": 97,
+        "barPhase": 0.564
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "the",
+      "startMs": 253319,
+      "endMs": 253659,
+      "beat": {
+        "index": 390,
+        "phase": 0.784,
+        "bar": 97,
+        "barPhase": 0.696
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    },
+    {
+      "word": "hint",
+      "startMs": 253659,
+      "endMs": 254000,
+      "beat": {
+        "index": 391,
+        "phase": 0.312,
+        "bar": 97,
+        "barPhase": 0.828
+      },
+      "school": "DIVINATION",
+      "confidence": 0.85
+    }
+  ]
+}

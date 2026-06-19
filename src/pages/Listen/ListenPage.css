@@ -928,9 +928,23 @@
   }
   .hud-sidebar--left { display: none; }
   .hud-center { margin-left: 0; }
-  
+
   .chamber-heading {
     display: none;
+  }
+
+  /* Remove the desktop-sidebar upshift — nothing to compensate on mobile */
+  .core-mount {
+    transform: none;
+  }
+
+  /* Re-centre the button so it doesn't escape the screen edge
+     (desktop left:80% puts it off-screen at narrow widths) */
+  .black-hole-embed {
+    left: 50%;
+    top: auto;
+    bottom: 1.5rem;
+    transform: translateX(-50%);
   }
 }
 

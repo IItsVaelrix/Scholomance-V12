@@ -1,0 +1,12 @@
+{
+  "spec": {
+    "file": "/home/deck/Downloads/Scholomance-V12-main/specs/claymore-v1.json",
+    "id": "claymore.v1",
+    "hash": "fnv1a_3693ff24"
+  },
+  "shader": null,
+  "cells": 788,
+  "motifCells": 0,
+  "fillHash": "fnv1a_53f0450e",
+  "assetPacketId": "pbasset_d5757c77"
+}

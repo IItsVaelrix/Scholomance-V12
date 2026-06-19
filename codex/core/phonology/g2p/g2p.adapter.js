@@ -122,6 +122,16 @@ export async function runG2PJury(word, syntaxContext = null, options = {}) {
   }
 }
 
+export async function runVerificationTests(word) {
+  const upper = String(word || '').toUpperCase().replace(/[^A-Z]/g, '');
+  if (upper.length < 3) {
+    return { passed: false, reason: `Word '${word}' is too short for G2P verification` };
+  }
+  const result = await runG2PJury(upper);
+  const passed = typeof result.verdict === 'object' && typeof result.verdict.ok === 'boolean';
+  return { passed, verdict: result.verdict, diagnostics: result.diagnostics };
+}
+
 function offResult(upper, startTime = 0, beforeMemory = 0) {
   const endTime = Date.now(); // EXEMPT — latency telemetry only
   const afterMemory = process.memoryUsage?.()?.heapUsed || beforeMemory;

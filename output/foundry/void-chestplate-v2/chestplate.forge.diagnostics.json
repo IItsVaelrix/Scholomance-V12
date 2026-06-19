@@ -1,0 +1,15 @@
+{
+  "spec": {
+    "file": "/home/deck/Downloads/Scholomance-V12-main/specs/void-chestplate-sovereign-v2.json",
+    "id": "void.chestplate.sovereign.v2",
+    "hash": "fnv1a_43dda173"
+  },
+  "shader": {
+    "id": "item.void.chestplate.sovereign.v2.harness.energize",
+    "hash": "fnv1a_502D2348"
+  },
+  "cells": 2284,
+  "motifCells": 174,
+  "fillHash": "fnv1a_0717015e",
+  "assetPacketId": "pbasset_102a65ca"
+}

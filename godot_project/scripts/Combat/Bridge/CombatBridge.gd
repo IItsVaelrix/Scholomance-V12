@@ -1,6 +1,8 @@
 extends Node
 class_name CombatBridge
 
+const Contracts := preload("res://scripts/Combat/Bridge/CombatContracts.gd")
+
 signal state_patch_received(packet: Dictionary)
 signal init_received(packet: Dictionary)
 signal action_received(packet: Dictionary)
@@ -62,7 +64,7 @@ func send_hello() -> void:
 
 func send_command(command_text: String, source := "godot_terminal") -> void:
     _send({
-        "type": "COMBAT_COMMAND",
+        "type": Contracts.TYPE_COMMAND,
         "source": source,
         "command": command_text,
     })
@@ -85,7 +87,7 @@ func _handle_raw_packet(raw: String) -> void:
             init_received.emit(parsed)
         "COMBAT_ACTION":
             action_received.emit(parsed)
-        "COMBAT_STATE_PATCH":
+        Contracts.TYPE_STATE_PATCH:
             state_patch_received.emit(parsed)
         "BRIDGE_ERROR":
             bridge_error_received.emit(parsed)

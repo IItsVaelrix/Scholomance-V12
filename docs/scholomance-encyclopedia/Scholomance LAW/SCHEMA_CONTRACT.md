@@ -174,6 +174,61 @@ These are the current shared shapes used across `codex/core/`, `src/types/`, and
 ```ts
 type BytecodeXPSourceKind = "error" | "health" | "cccb";
 
+// QBIT-Voxel Level 3 (The World) — multi-chunk world packet.
+// Implements PDR `2026-06-16-qbit-voxel-level3-multi-biome-pdr.md` §3.3.
+// The world is a lazy Map<"cx,cy,cz", VoxelVolume>. Generation is
+// deterministic from (spec, chunkCoords). Cross-chunk energy propagation
+// uses the φ-scaled overlap radius `⌊16φ⌋ = 25` to dissolve the
+// energy-field seam. The seed-layer seam is impossible by construction
+// (every Wand formula type is a pure function of world coordinates, per
+// the continuity principle in the PDR §3.4).
+interface ChunkedWorldVolumeSpec {
+  contract: "PB-WORLD-v1";
+  schemaVersion: "1.0.0";
+  chunkSize: { w: number; h: number; d: number };   // power of 2, 8..128
+  chunkCount: { x: number; y: number; z: number }; // each ≥ 1
+  formula: WandFormulaComposite;                   // see below
+  seed: number;                                   // integer
+  overlapRadius?: number;                         // default ⌊16φ⌋ = 25
+  attenuationModel?: "gaussian" | "inverse_square" | "phi_attenuation";
+                                                  // default "inverse_square"
+  energyTypeMix?: Record<EnergyType, number>;     // reserved for Level 5
+}
+
+// Composite Wand formula grammar. Children are themselves world-continuous
+// formulas (PDR §3.4), each scoped to a sub-region of the XZ plane. The
+// composite is piecewise-continuous in world coordinates with discontinuities
+// only at declared `region` boundaries. Region overlap is rejected at
+// parse time with PB-ERR-v1-FORMULA-CR-COMPOSITE-OVERLAP-0001.
+interface WandFormulaComposite {
+  type: "composite";
+  children: WandFormulaRegion[];
+  region: "rect" | "voronoi";
+}
+
+interface WandFormulaRegion {
+  type: "fibonacci" | "fractal_iter" | "parametric_curve" | "grid_projection" | "vectorized_text" | "composite";
+  region:
+    | { x: number; z: number; width: number; depth: number }  // rect
+    | { seed: { x: number; z: number }; radius: number };   // voronoi disc
+  energyType: number;   // ENERGY_TYPES index (0=RESONANT .. 7=RADIANT)
+  params: Record<string, number | string>;
+}
+
+interface ChunkedWorldVolume {
+  contract: "PB-WORLD-v1";
+  schemaVersion: "1.0.0";
+  spec: ChunkedWorldVolumeSpec;
+  chunks: Map<string, VoxelVolume>;  // key: "cx,cy,cz"
+  worldEnergyField: Float32Array | null;  // sparse, lazily assembled
+  fingerprint: string;  // FNV-1a of canonicalized spec
+  checksum: string;     // FNV-1a of canonicalized JSON
+}
+
+type EnergyType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+// 0=RESONANT, 1=PHOTONIC, 2=STRUCTURAL, 3=THERMAL,
+// 4=KINETIC, 5=ENTROPIC, 6=SHIELDING, 7=RADIANT
+
 interface ScholoCandyEqPreset {
   version: 2;
   schema_id: "scholomance/eq-preset";
@@ -1579,6 +1634,12 @@ type DiagnosticSeverity = "info" | "warning" | "error" | "success";
 type TruesightAnalysisMode = "live_fast" | "balanced" | "deep_truesight";
 
 type LineBreakStyle = "lf" | "crlf" | "cr" | "mixed" | "none";
+
+// QBIT-Voxel energy types — used by Wand formula regions and ChunkedWorldVolume.
+// Index matches `ENERGY_TYPES` in `codex/core/pixelbrain/voxel-volume.js`.
+type EnergyType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+// 0=RESONANT, 1=PHOTONIC, 2=STRUCTURAL, 3=THERMAL,
+// 4=KINETIC, 5=ENTROPIC, 6=SHIELDING, 7=RADIANT
 ```
 
 ---

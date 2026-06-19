@@ -52,6 +52,15 @@ describe('traceBoundary', () => {
     expect(segments).toHaveLength(0);
   });
 
+  it('keeps disconnected islands as separate contours', () => {
+    const cells = new Set(['0,0', '3,0']);
+    const { vertices, contours } = traceBoundary(cells, { smooth: false });
+
+    expect(vertices).toHaveLength(4);
+    expect(contours).toHaveLength(2);
+    expect(contours.every((contour) => contour.vertices.length === 4)).toBe(true);
+  });
+
   it('each segment has p1, cp1, cp2, p2 with 2-element arrays', () => {
     const cells = new Set(['0,0','1,0','2,0','1,1','0,1','0,2']);
     const { segments } = traceBoundary(cells, { smooth: true });

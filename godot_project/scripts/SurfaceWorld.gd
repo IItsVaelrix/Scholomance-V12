@@ -3,9 +3,11 @@ extends Node3D
 const TorchScene := preload("res://scripts/Torch.gd")
 const VolumeAMP := preload("res://scripts/VolumeAMP.gd")
 const InventoryClass := preload("res://scripts/Inventory.gd")
+const PixelBrainItemBuilder := preload("res://scripts/PixelBrainItemBuilder.gd")
 
 const WORLD_PATH := "res://assets/surface-world.qworld"
 const SCHOLAR_PATH := "res://assets/void-scholar-voxel.packet.json"
+const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe.pbrain"
 const BLOCK_REGISTRY_PATH := "res://assets/blocks/block-registry.json"
 const PLAYER_SPEED := 5.4
 const MOUSE_SENSITIVITY := 0.0025
@@ -1470,79 +1472,18 @@ func _spawn_pickaxe_in_hand() -> void:
 		return
 	if _camera == null:
 		return
-	_pickaxe_mesh = Node3D.new()
+	_pickaxe_mesh = _build_pickaxe_node()
 	_pickaxe_mesh.name = "HeldPickaxe"
-
-	var wood_mat := StandardMaterial3D.new()
-	wood_mat.albedo_color = Color(0.26, 0.17, 0.09)
-	wood_mat.roughness = 0.91
-
-	var metal_mat := StandardMaterial3D.new()
-	metal_mat.albedo_color = Color(0.50, 0.43, 0.66)
-	metal_mat.metallic = 0.94
-	metal_mat.roughness = 0.16
-	metal_mat.emission_enabled = true
-	metal_mat.emission = Color(0.18, 0.10, 0.40)
-	metal_mat.emission_energy_multiplier = 0.55
-
-	# Handle — tapered hardwood cylinder
-	var handle := MeshInstance3D.new()
-	var handle_mesh := CylinderMesh.new()
-	handle_mesh.top_radius = 0.021
-	handle_mesh.bottom_radius = 0.030
-	handle_mesh.height = 0.66
-	handle.mesh = handle_mesh
-	handle.material_override = wood_mat
-	handle.position = Vector3(0.0, -0.04, 0.0)
-	_pickaxe_mesh.add_child(handle)
-
-	# Ferrule — metal ring at the head end of the handle
-	var ferrule := MeshInstance3D.new()
-	var ferrule_mesh := CylinderMesh.new()
-	ferrule_mesh.top_radius = 0.036
-	ferrule_mesh.bottom_radius = 0.030
-	ferrule_mesh.height = 0.07
-	ferrule.mesh = ferrule_mesh
-	ferrule.material_override = metal_mat
-	ferrule.position = Vector3(0.0, 0.28, 0.0)
-	_pickaxe_mesh.add_child(ferrule)
-
-	# Head body — horizontal bar connecting the two pick points
-	var bar := MeshInstance3D.new()
-	var bar_mesh := BoxMesh.new()
-	bar_mesh.size = Vector3(0.38, 0.072, 0.072)
-	bar.mesh = bar_mesh
-	bar.material_override = metal_mat
-	bar.position = Vector3(0.0, 0.36, 0.0)
-	_pickaxe_mesh.add_child(bar)
-
-	# Left pick — tapered spike
-	var pick_l_mesh := CylinderMesh.new()
-	pick_l_mesh.top_radius = 0.0
-	pick_l_mesh.bottom_radius = 0.038
-	pick_l_mesh.height = 0.22
-	var pick_l := MeshInstance3D.new()
-	pick_l.mesh = pick_l_mesh
-	pick_l.material_override = metal_mat
-	pick_l.rotation_degrees = Vector3(0.0, 0.0, 90.0)
-	pick_l.position = Vector3(-0.27, 0.36, 0.0)
-	_pickaxe_mesh.add_child(pick_l)
-
-	# Right pick — tapered spike (mirror)
-	var pick_r_mesh := CylinderMesh.new()
-	pick_r_mesh.top_radius = 0.0
-	pick_r_mesh.bottom_radius = 0.038
-	pick_r_mesh.height = 0.22
-	var pick_r := MeshInstance3D.new()
-	pick_r.mesh = pick_r_mesh
-	pick_r.material_override = metal_mat
-	pick_r.rotation_degrees = Vector3(0.0, 0.0, -90.0)
-	pick_r.position = Vector3(0.27, 0.36, 0.0)
-	_pickaxe_mesh.add_child(pick_r)
-
 	_pickaxe_mesh.position = PICKAXE_REST_POS
 	_pickaxe_mesh.rotation_degrees = PICKAXE_REST_ROT
 	_camera.add_child(_pickaxe_mesh)
+
+func _build_pickaxe_node() -> Node3D:
+	return PixelBrainItemBuilder.build_extruded_item(PICKAXE_ARTIFACT_PATH, {
+		"cell_size": 0.016,
+		"depth": 0.056,
+		"name": "VoidmetalPickaxe"
+	})
 
 func _tick_pickaxe_anim(delta: float) -> void:
 	if _pickaxe_mesh == null:

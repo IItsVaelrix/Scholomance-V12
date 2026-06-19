@@ -34,6 +34,7 @@ const ROUTE_COPY = {
   career: "Transmute professional experience into high-acuity sigils.",
   collab: "Coordinate agent work and active pipelines.",
   wand: "Wield the Fairly Odd Wand formula system & designer.",
+  "qbit-world": "Enter the Level 5 QBIT world loop.",
   profile: "Review account standing and inner-sanctum access.",
   auth: "Enter the portal and secure your chamber.",
   "photonic-bridge": "Diagnostic interface for the Photonic Quantization Bridge.",

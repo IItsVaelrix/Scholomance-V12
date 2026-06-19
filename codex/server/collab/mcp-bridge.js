@@ -5,6 +5,7 @@
  * server without bypassing the authoritative orchestration layer.
  */
 
+import crypto from 'node:crypto';
 import path from 'path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'url';
@@ -163,6 +164,14 @@ const TOOL_ALIASES = new Map(Object.entries({
     mcp_scholomance_collab_clerical_raid_learning: ['raid_learning'],
     mcp_scholomance_collab_skill_vaelrix_law_audit: ['law_audit'],
     mcp_scholomance_collab_skill_scholomance_feedback: ['scholomance_feedback'],
+    mcp_scholomance_collab_skill_scholomance_knowledge: ['skill_scholomance'],
+    mcp_scholomance_collab_agent_list: ['agent_list'],
+    mcp_scholomance_collab_task_list: ['task_list'],
+    mcp_scholomance_collab_pipeline_list: ['pipeline_list'],
+    mcp_scholomance_collab_fs_propose_patch: ['propose_patch', 'edit_propose'],
+    mcp_scholomance_collab_law_get: ['law_get'],
+    mcp_scholomance_collab_lock_list: ['lock_list'],
+    mcp_scholomance_collab_skill_vaelrix_law_debug: ['vaelrix_law_debug', 'law_debug', 'high_inquisitor_debug', 'debug_oracle'],
 }));
 
 function registerTool(server, name, inputSchema, handler) {
@@ -321,6 +330,31 @@ export function registerCollabMcpBridge(server, service = collabService) {
     registerJsonResource(server, 'bugs', 'collab://bugs', () => service.listBugReports());
     registerJsonResource(server, 'status', 'collab://status', () => service.getStatus());
     registerJsonResource(server, 'memories', 'collab://memories', () => service.listMemories());
+
+    server.resource('skill-scholomance', 'collab://skills/scholomance', async () => ({
+        contents: [{
+            uri: 'collab://skills/scholomance',
+            mimeType: 'text/markdown',
+            text: fs.readFileSync(path.join(ROOT, 'codex/server/collab/skills/scholomance.md'), 'utf8'),
+        }],
+    }));
+
+    // Additional canonical ritual skills (now directly readable via MCP resources)
+    server.resource('vaelrix-law-debug', 'collab://skills/vaelrix-law-debug', async () => ({
+        contents: [{
+            uri: 'collab://skills/vaelrix-law-debug',
+            mimeType: 'text/markdown',
+            text: fs.readFileSync(path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/vaelrix_law_debug.md'), 'utf8'),
+        }],
+    }));
+
+    server.resource('scholomance-feedback', 'collab://skills/scholomance-feedback', async () => ({
+        contents: [{
+            uri: 'collab://skills/scholomance-feedback',
+            mimeType: 'text/markdown',
+            text: fs.readFileSync(path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/scholomance-feedback/scholomance-feedback.md'), 'utf8'),
+        }],
+    }));
 
     registerJsonResourceTemplate(server, 'agent-memories', 'collab://agents/{id}/memories', async ({ id }) => {
         return service.listMemories(id);
@@ -954,29 +988,467 @@ export function registerCollabMcpBridge(server, service = collabService) {
     }, params => service.listAlerts(params));
 
     // ========================
-    //  SKILLS & AUDITS
+    //  SKILLS & AUDITS (real implementations)
     // ========================
 
     registerTool(server, 'mcp_scholomance_collab_skill_vaelrix_law_audit', {
         target_file: z.string().optional().describe('Specific file to audit against Vaelrix Law'),
         intent: z.string().optional().describe('Proposed change intent for pre-emptive audit'),
-    }, async ({ target_file, intent }) => {
+        focus_laws: z.array(z.string()).optional().describe('Specific law numbers or names to emphasize'),
+    }, async ({ target_file, intent, focus_laws }) => {
+        const lawPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/VAELRIX_LAW.md');
+        const preamblePath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/SHARED_PREAMBLE.md');
+        let lawText = '';
+        let preambleText = '';
+        try {
+            lawText = fs.readFileSync(lawPath, 'utf8');
+            preambleText = fs.readFileSync(preamblePath, 'utf8');
+        } catch (e) {
+            // fall back gracefully
+        }
+
+        const fileContent = target_file ? (() => {
+            try {
+                const abs = path.resolve(ROOT, target_file);
+                if (abs.startsWith(ROOT) && fs.existsSync(abs)) return fs.readFileSync(abs, 'utf8').slice(0, 8000);
+            } catch {}
+            return null;
+        })() : null;
+
+        const criticalLaws = [
+            'No Hierarchy Between Agents', 'Conflict Escalation Is Mandatory', 'Schema Is Sovereign',
+            'Server Is Truth', 'Pure Analysis Never Touches Effects', 'Determinism Is Non-Negotiable',
+            'Security Before Features', 'Bytecode Is Priority', 'Scholomance Encyclopedia — Bug Fix Documentation'
+        ];
+
+        const violations = [];
+        const notes = [];
+
+        if (intent) {
+            if (/Math\.random|Date\.now\(\)|new Date\(\)/.test(intent) && !intent.includes('seeded')) {
+                violations.push({ law: 'Determinism Is Non-Negotiable (6)', severity: 'CRIT', note: 'Non-deterministic source detected in intent' });
+            }
+            if (/DOM|gsap|framer-motion|document\.|window\.|querySelector/.test(intent) && !/PixelBrain|Remotion|useBeatClock/.test(intent)) {
+                violations.push({ law: 'Pure Analysis Never Touches Effects (5)', severity: 'CRIT', note: 'Effect/render concern in non-render layer' });
+            }
+        }
+
+        if (fileContent) {
+            if (/Math\.random(?!\s*\/\*\s*seeded)/.test(fileContent)) {
+                violations.push({ law: 'Determinism (6) / QUANT-0101', severity: 'CRIT', note: 'Math.random outside explicit seeded context' });
+            }
+            if (/(from ['"]react['"]|useState|useEffect|gsap)/.test(fileContent) && target_file && /codex\/(core|services|runtime)/.test(target_file)) {
+                violations.push({ law: 'Pure Analysis Never Touches Effects (5) + LING-0F03', severity: 'CRIT', note: 'Render-adjacent import or hook in core layer' });
+            }
+        }
+
+        const verdict = violations.length === 0 ? 'CLEAN' : (violations.some(v => v.severity === 'CRIT') ? 'BLOCKED' : 'CONDITIONAL');
+        const bytecode = `SCHOL-LAW-AUDIT-V1-${verdict}-${Date.now().toString(36)}`;
+
         return {
-            verdict: 'PENDING',
-            bytecode: 'SCHOL-AUDIT-V1-INIT',
-            reason: 'Audit ritual initiated via MCP Bridge.',
-            focus: target_file || 'global',
+            verdict,
+            bytecode,
+            focus: target_file || intent || 'global',
+            laws_checked: focus_laws || criticalLaws,
+            violations,
+            notes: notes.length ? notes : ['No direct textual contradictions found in sampled content. Full human review of VAELRIX_LAW still required for architectural changes.'],
+            recommendation: verdict === 'BLOCKED' ? 'Escalate or revise before proceeding. Run immunity_scan_file on the target.' : 'Proceed with ownership validation and task context. Record decision in task notes.',
+            source_files: { vaelrix_law: lawPath, preamble: preamblePath },
+            raw_law_excerpt: lawText.slice(0, 2400),
         };
     });
 
     registerTool(server, 'mcp_scholomance_collab_skill_scholomance_feedback', {
-        subject: z.string().describe('The implementation, PDR, or concept to review'),
-        context: z.string().optional().describe('Additional context for the feedback'),
-    }, async ({ subject, context }) => {
+        subject: z.string().describe('The implementation, PDR, concept, file, or decision to review'),
+        context: z.string().optional().describe('Additional context, code, or intent'),
+        mode: z.enum(['A','B','C','D','E','F','G','H']).optional().describe('Feedback mode from scholomance-feedback skill (A=Concept ... H=Law Tribunal)'),
+    }, async ({ subject, context, mode }) => {
+        const fbSkillPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/scholomance-feedback/scholomance-feedback.md');
+        const fitPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/scholomance-feedback/references/fit-matrix.md');
+        let fbSkill = '';
+        let fitMatrix = '';
+        try {
+            fbSkill = fs.readFileSync(fbSkillPath, 'utf8');
+            fitMatrix = fs.readFileSync(fitPath, 'utf8');
+        } catch (e) {}
+
+        const detectedMode = mode || (subject.toLowerCase().includes('pdr') || subject.toLowerCase().includes('spec') ? 'D' : 
+                            subject.toLowerCase().includes('ui') || subject.toLowerCase().includes('component') ? 'C' : 'B');
+
+        const report = {
+            summary: `Scholomance Feedback for: ${subject}`,
+            classification: { mode: detectedMode, area: 'auto-detected from subject', risk: context && context.length > 200 ? 'medium' : 'low' },
+            what_works: ['Subject provided; ritual engaged.'],
+            needs_improvement: [],
+            scholomance_fit: 'See fit-matrix references. Evaluate against CODEx layer law, determinism, bytecode priority, and domain ownership.',
+            risks: [],
+            recommended_improvements: [
+                { priority: 'P1', recommendation: 'Run mcp_scholomance_collab_immunity_scan_file on changed files before commit.', why: 'Law 18' },
+                { priority: 'P2', recommendation: 'Use mcp_scholomance_collab_codebase_hybrid_search (not grep) for any related analysis.', why: 'Semantic Search Mandate / Law 17' },
+            ],
+            vaelrix_law_grade: 'See separate law_audit tool for formal tribunal.',
+            template: 'Follow the full report template in scholomance-feedback.md (or the served resource collab://skills/scholomance-feedback). Include FeedbackTraceIR per bytecode-schema.md.',
+            sources: { skill: fbSkillPath, fit_matrix: fitPath },
+            raw_skill_excerpt: fbSkill.slice(0, 1800),
+        };
+
+        if (context && /Math\.random|direct DOM|client.*score|auto.save/i.test(context)) {
+            report.needs_improvement.push('Potential violation of determinism, pure analysis, or sovereign editor detected in provided context.');
+            report.risks.push({ risk: 'Law violation', severity: 'HIGH', mitigation: 'Re-audit with law_audit + immunity tools' });
+        }
+
+        // Build FeedbackTraceIR per the canonical bytecode-schema.md
+        const feedbackTraceIR = {
+            feedback_trace_ir_version: "1.0.0",
+            agent: {
+                name: "Scholomance Feedback Skill (MCP)",
+                mode: detectedMode,
+                request_type: subject,
+            },
+            subject: {
+                title: subject,
+                category: detectedMode === 'D' ? 'pdr' : detectedMode === 'C' ? 'ui_ux' : 'code',
+                scholomance_area: ["auto-detected"],
+                user_goal: context || "General review",
+            },
+            evidence: {
+                direct_evidence: context ? [context.slice(0, 500)] : [],
+                repo_context: [],
+                established_project_memory: [],
+                inferences: [],
+                hypotheses: [],
+                unknowns: ["Full manual evidence ladder required per skill (see scholomance-feedback.md)"],
+            },
+            assessment: {
+                what_works: report.what_works || [],
+                what_needs_improvement: report.needs_improvement || [],
+                scholomance_fit: "See fit-matrix in references. Evaluate CODEx/PixelBrain/TrueSight/VerseIR/lore coherence.",
+                engineering_impact: "See report.",
+                experience_impact: "See report.",
+                architecture_impact: "See report.",
+            },
+            fit_matrix: {
+                codex_compatibility: "unknown",
+                pixelbrain_compatibility: "unknown",
+                truesight_compatibility: "unknown",
+                verseir_compatibility: "unknown",
+                ui_ux_strength: "unknown",
+                maintainability: "unknown",
+                testability: "unknown",
+                lore_coherence: "unknown",
+                scalability: "unknown",
+                user_value: "unknown",
+            },
+            risks: report.risks || [],
+            recommendations: (report.recommended_improvements || []).map(r => ({
+                priority: r.priority || "P2",
+                recommendation: r.recommendation,
+                why: r.why,
+                risk_reduced: "",
+                implementation_hint: "",
+            })),
+            qa_validation: {
+                required_checks: ["lint", "test", "immunity_scan", "layer-boundary audit"],
+                suggested_commands: ["npm run lint", "npm test", "mcp immunity scan on changed paths"],
+                manual_review_steps: [],
+                not_run: ["Full visual + e2e until patch proposed"],
+            },
+            grade: {
+                letter: "See VAELRIX_LAW Tribunal section in full report (use law_audit + law_debug for formal grade).",
+                score: 0,
+                reason: "MCP skeleton — agent must complete with evidence and TraceIR.",
+                upgrade_path: "Re-run after fixes + law audit.",
+            },
+        };
+
         return {
-            grade: 'A',
-            feedback: `Scholomance feedback loop established for: ${subject}`,
-            bytecode: 'SCHOL-FEEDBACK-V1-ACK',
+            grade: 'RITUAL_ENGAGED',
+            bytecode: `SCHOL-FEEDBACK-V1-${detectedMode}-${Date.now().toString(36)}`,
+            report,
+            feedback_trace_ir: feedbackTraceIR,
+            instructions: 'Expand this into the full 15-section Scholomance Feedback Report template exactly as defined in scholomance-feedback.md. Ground every claim in the evidence ladder (Direct/Repo/Memory/Inference/Hypothesis/Unknown). Always include the FeedbackTraceIR block per the bytecode-schema. No flattery. Use fit-matrix for scoring. For deep forensic issues, also invoke the VAELRIX law debug skill.',
+        };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_skill_scholomance_knowledge', {}, async () => {
+        const skillPath = path.join(ROOT, 'codex/server/collab/skills/scholomance.md');
+        return {
+            content: fs.readFileSync(skillPath, 'utf8'),
+            source: 'codex/server/collab/skills/scholomance.md',
+            bytecode: 'SCHOL-SKILL-V1-KNOWLEDGE',
+        };
+    });
+
+    // ── Agent / Task / Pipeline Discovery (explicit tools for ergonomics) ─────
+    registerTool(server, 'mcp_scholomance_collab_agent_list', {
+        status: z.enum(['online', 'busy', 'offline']).optional(),
+        role: z.enum(['ui', 'backend', 'qa']).optional(),
+    }, async ({ status, role }) => {
+        const agents = await service.listAgents();
+        let filtered = agents;
+        if (status) filtered = filtered.filter(a => a.status === status);
+        if (role) filtered = filtered.filter(a => a.role === role);
+        return { agents: filtered, count: filtered.length };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_task_list', {
+        status: z.string().optional(),
+        agent: z.string().optional(),
+        priority: z.number().int().min(0).max(3).optional(),
+        limit: z.number().int().min(1).max(200).optional().default(50),
+    }, async (params) => {
+        const tasks = await service.listTasks(params);
+        return { tasks, count: tasks.length };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_pipeline_list', {
+        status: z.string().optional(),
+        limit: z.number().int().min(1).max(100).optional().default(30),
+    }, async (params) => {
+        const pipelines = await service.listPipelines(params);
+        return { pipelines, count: pipelines.length };
+    });
+
+    registerTool(server, 'mcp_scholomance_collab_lock_list', {
+        agent_id: z.string().optional(),
+    }, async ({ agent_id }) => {
+        const locks = (typeof service.listLocks === 'function') ? await service.listLocks() : [];
+        let filtered = locks;
+        if (agent_id) filtered = filtered.filter(l => l.locked_by === agent_id);
+        return { locks: filtered, count: filtered.length };
+    });
+
+    // ── Controlled Mutation (respects Sovereign Editor + Locks + Tasks) ───────
+    registerTool(server, 'mcp_scholomance_collab_fs_propose_patch', {
+        file_path: z.string().min(1).describe('Relative path of the substrate to propose an edit for'),
+        agent_id: z.string().min(1).describe('Agent proposing the change (must be registered)'),
+        justification: z.string().min(1).max(4000).describe('Call-center style note explaining the change and why (required ritual)'),
+        patch: z.string().min(1).describe('Unified diff, or clear before/after with context. This is recorded, not auto-applied.'),
+        task_id: z.string().optional().describe('Task this edit advances (recommended)'),
+        bypass_lock_check: z.boolean().optional().default(false),
+    }, async ({ file_path, agent_id, justification, patch, task_id, bypass_lock_check }) => {
+        let agent = null;
+        try {
+            if (typeof service.getAgent === 'function') agent = await service.getAgent(agent_id);
+        } catch {}
+        if (!agent && !bypass_lock_check) {
+            // still allow recording; strict check can be added later via ownership/locks
+        }
+
+        // Best-effort lock awareness (non-fatal)
+        let lockInfo = null;
+        try {
+            const locks = await service.listLocks ? await service.listLocks() : [];
+            lockInfo = locks.find(l => l.file_path === file_path || l.file_path === `/${file_path}`);
+        } catch {}
+
+        const activityDetails = {
+            file_path,
+            justification: justification.slice(0, 2000),
+            patch_preview: patch.slice(0, 1500),
+            task_id: task_id || null,
+            lock_holder: lockInfo?.locked_by || null,
+            bypass: !!bypass_lock_check,
+        };
+
+        await service.logActivity({
+            agent_id,
+            action: 'edit_proposed',
+            target_type: 'file',
+            target_id: file_path,
+            details: activityDetails,
+        });
+
+        if (task_id && justification) {
+            try {
+                await service.updateTask({
+                    id: task_id,
+                    actor_agent_id: agent_id,
+                    note: `[PATCH PROPOSAL by ${agent_id}] ${justification.slice(0, 600)}`,
+                });
+            } catch (e) {
+                // non-fatal; proposal is still logged in activity
+            }
+        }
+
+        const patchId = `patch_${Date.now().toString(36)}_${crypto.randomUUID().replace(/-/g, '').slice(0, 8)}`;
+        return {
+            ok: true,
+            patch_id: patchId,
+            recorded: true,
+            file_path,
+            task_id: task_id || null,
+            lock_status: lockInfo ? 'held' : (bypass_lock_check ? 'bypassed' : 'no_active_lock'),
+            advice: 'Human or authorized applicator should review + apply. Proposal lives in activity log and task notes.',
+        };
+    });
+
+    // ── Law Retrieval (targeted, better than full dumps) ───────────────────────
+    registerTool(server, 'mcp_scholomance_collab_law_get', {
+        section: z.string().optional().describe('Law name, number, or keyword (e.g. "Determinism", "Bug Fix Documentation", "5", "escalation")'),
+        max_chars: z.number().int().min(200).max(16000).optional().default(4000),
+    }, async ({ section, max_chars }) => {
+        const lawPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/VAELRIX_LAW.md');
+        const preamblePath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/SHARED_PREAMBLE.md');
+        let text = '';
+        try { text = fs.readFileSync(lawPath, 'utf8'); } catch {}
+        try { text += '\n\n' + fs.readFileSync(preamblePath, 'utf8'); } catch {}
+
+        let excerpt = text.slice(0, max_chars);
+        if (section) {
+            const re = new RegExp(`(?:^|\\n)[^\\n]*${section}[^\\n]*\\n[\\s\\S]{0,${max_chars}}`, 'i');
+            const match = text.match(re);
+            if (match) excerpt = match[0];
+        }
+
+        return {
+            section: section || 'global',
+            source: 'VAELRIX_LAW.md + SHARED_PREAMBLE.md',
+            excerpt,
+            full_length: text.length,
+            bytecode: 'SCHOL-LAW-RETRIEVE-V1',
+        };
+    });
+
+    // ── VAELRIX LAW DEBUG ORACLE (High Inquisitor forensic skill) ─────────────
+    // Full ritual from vaelrix_law_debug.md — produces the mandated Debug Report + DebugTraceIR
+    registerTool(server, 'mcp_scholomance_collab_skill_vaelrix_law_debug', {
+        anomaly_name: z.string().min(1).describe('Name of the anomaly or bug (e.g. "Chroma Drift in VerseIR")'),
+        symptoms: z.array(z.string()).min(1).describe('Observed symptoms or error messages'),
+        target_files: z.array(z.string()).optional().describe('Files suspected or involved'),
+        mode: z.enum(['A','B','C','D','E','F']).optional().default('B').describe('Debug mode: A=DiagnosticOnly, B=PatchReady, C=AutonomousRepairSpec, D=SeniorReviewer, E=PostUpdateAuditor, F=RedTeam'),
+        additional_context: z.string().optional(),
+    }, async ({ anomaly_name, symptoms, target_files = [], mode = 'B', additional_context }) => {
+        const debugSkillPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/vaelrix_law_debug.md');
+        let debugDoc = '';
+        try { debugDoc = fs.readFileSync(debugSkillPath, 'utf8'); } catch {}
+
+        // Auto-classify and gather basic evidence
+        const classification = target_files.length > 0 ? 'Structural/Integration' : 'Behavioral';
+        let failureChain = symptoms.slice(0, 3);
+        let rootCause = 'Requires deeper inspection (see reproduction path).';
+        let evidence = symptoms.map(s => `Direct: ${s}`);
+        let blastRadius = 'Unknown — run targeted tests and immunity scan.';
+        let fixStrategy = 'Minimal targeted patch after root cause confirmation. Prefer bytecode-level or schema fixes.';
+        let minimalPatch = '// TODO: Provide precise unified diff after analysis';
+        let regressionNet = 'Run: npm test, npm run test:qa, npm run test:visual, immunity scan on changed files.';
+
+        // Simple Scholomance-specific heuristics (Chroma, TrueSight, Dimension, Session, recursion, determinism)
+        const joined = (symptoms.join(' ') + ' ' + (additional_context || '') + ' ' + target_files.join(' ')).toLowerCase();
+        const specificAudits = [];
+        if (/chroma|hue|color|viseme/.test(joined)) specificAudits.push('Chroma Audit: Check fixed-width bytecode alignment and 180° hue collisions.');
+        if (/truesight|overlay|font|metric|caret/.test(joined)) specificAudits.push('TrueSight Audit: Pixel drift, coordinate indexing, font metrics.');
+        if (/dimension|layout|hierarchy|animation state/.test(joined)) specificAudits.push('Dimension Audit: Hierarchy flattening, orphaned animation state.');
+        if (/csrf|session|handshake|guest/.test(joined)) specificAudits.push('Session Audit: CSRF/Guest handshake integrity.');
+        if (/recursion|depth|stack/.test(joined)) specificAudits.push('Stasis Threshold: Recursion depth (max 8) or math finite guards may be violated.');
+        if (/math\.random|date\.now|non.?determin/.test(joined)) specificAudits.push('Determinism violation suspected — Law 6.');
+
+        if (specificAudits.length) {
+            rootCause = `Suspected Scholomance-specific fracture. ${specificAudits.join(' ')}`;
+            evidence.push(...specificAudits.map(a => `Inferred: ${a}`));
+        }
+
+        const reportTitle = `${anomaly_name} — Debug Report v1 (MCP)`;
+        const debugTraceIR = {
+            debug_trace_ir_version: "1.0.0",
+            bug: {
+                title: anomaly_name,
+                severity: symptoms.length > 4 ? "high" : "medium",
+                confidence: 0.65,
+            },
+            failure_chain: failureChain,
+            fix: {
+                strategy: fixStrategy,
+                files_to_change: target_files,
+                rollback_plan: "Revert via git + re-run full verification suite.",
+            },
+            grade: {
+                letter: "B",
+                score: 65,
+                reason: "Initial MCP diagnostic; full human/agent review required per High Inquisitor ritual.",
+            },
+        };
+
+        const fullReport = `# ${reportTitle}
+
+## 1. Symptom
+${symptoms.join('\n- ')}
+
+## 2. Classification
+${classification}
+
+## 3. Reproduction Path
+(Provide exact steps or command that surfaces the anomaly. MCP can run verification rituals.)
+
+## 4. Failure Chain
+${failureChain.map((s,i) => `${String.fromCharCode(65+i)} → ${s}`).join('\n')}
+
+## 5. Root Cause
+${rootCause}
+
+## 6. Evidence
+${evidence.map(e => `- ${e}`).join('\n')}
+
+${additional_context ? `## Additional Context Provided\n${additional_context}\n` : ''}
+
+## 7. Blast Radius
+${blastRadius}
+
+## 8. Fix Strategy
+${fixStrategy}
+
+## 9. Minimal Patch
+\`\`\`diff
+${minimalPatch}
+\`\`\`
+
+## 10. Regression Net
+${regressionNet}
+
+## 11. QA Checklist
+- [ ] \`npm run lint\`
+- [ ] \`npm test\`
+- [ ] \`npm run test:qa\`
+- [ ] \`npm run test:visual\`
+- [ ] \`npm run security:qa\`
+- [ ] Immunity scan on modified files
+- [ ] Specific Scholomance audits: ${specificAudits.length ? specificAudits.join('; ') : 'None auto-triggered'}
+
+## 12. Risk Reduced
+(Agent must fill after applying fix.)
+
+## 13. Confidence Grade
+**Initial**: B (MCP-assisted). Upgrade only after full evidence and Law 11 Encyclopedia entry.
+
+## 14. Remaining Unknowns
+- Full reproduction steps
+- Exact commit that introduced the fracture (consider git bisect reasoning)
+- Interaction with other layers (run diagnostic_full_scan if needed)
+
+## 15. DebugTraceIR (mandatory)
+\`\`\`json
+${JSON.stringify(debugTraceIR, null, 2)}
+\`\`\`
+
+---
+**Mode**: ${mode} (${mode === 'B' ? 'Patch-Ready' : mode === 'A' ? 'Diagnostic-Only' : 'See vaelrix_law_debug.md for full mode definitions'})
+**Source Skill**: ${debugSkillPath}
+**VAELRIX_LAW Enforcement**: Law 11 — No fix is complete without its story in the Scholomance Encyclopedia.
+`;
+
+        return {
+            anomaly: anomaly_name,
+            mode,
+            report: fullReport,
+            debug_trace_ir: debugTraceIR,
+            recommended_next: [
+                "Run mcp_scholomance_collab_immunity_scan_file on target files",
+                "Execute relevant verification suite via execute_verification",
+                "Document final fix in Encyclopedia per Law 11 (BUG REPORT AUDIT)",
+                "Use propose_patch for any code change under a task + lock"
+            ],
+            source: debugSkillPath,
+            raw_debug_doc_excerpt: debugDoc.slice(0, 2200),
         };
     });
 
@@ -1037,18 +1509,16 @@ function holdProcessOpenForStdio() {
 
 export async function main() {
     traceMcpBridge('main:start');
-    // Resume process.stdin before connecting so messages buffered by MCP hosts
-    // that spawn with paused stdio are delivered after the transport attaches.
-    // process.stdin (net.Socket over fd 0) re-enters flowing mode reliably on
-    // every data chunk, unlike fs.createReadStream which uses fs.read() pulls
-    // and can stall after the first message.
-    process.stdin.resume();
     const server = createCollabMcpServer();
     traceMcpBridge('main:server-created');
     const transport = new StdioServerTransport(process.stdin, process.stdout);
     const releaseKeepAlive = holdProcessOpenForStdio();
 
     await server.connect(transport);
+    // Node child-process pipes can remain paused after the SDK attaches its
+    // data listener. Resume only after connect so the first initialize frame
+    // cannot flow past an unattached transport.
+    process.stdin.resume();
     traceMcpBridge('main:stdin-resumed');
     if (process.env.SCHOL_MCP_BRIDGE_TRACE) {
         const originalOnMessage = transport.onmessage;

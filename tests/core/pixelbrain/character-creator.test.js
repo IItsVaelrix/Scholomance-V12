@@ -52,6 +52,56 @@ function buildScholarSpec() {
   };
 }
 
+function buildStarboundEsperSpec() {
+  return {
+    contract: 'CHARACTER-SPEC-v1',
+    id: 'scholar.starbound.esper.v1',
+    class: 'character',
+    archetype: 'human',
+    canvas: { width: 32, height: 48, gridSize: 1 },
+    seed: 9917,
+    bytecode: 'VW-STARBOUND-ESPER-CHIBI',
+    presentation: {
+      gender: 'androgynous',
+      heightClass: 'short',
+      buildClass: 'average',
+    },
+    directions: ['south', 'east', 'north', 'west'],
+    materials: {
+      skin: 'skin_apricot_signal',
+      hair: 'hair_midnight_teal',
+      eyes: 'eye_psychic_cobalt',
+    },
+    body: {
+      profile: 'character.body.chibi.starboundEsper',
+      params: { compact: 0.72 },
+    },
+    face: [
+      { id: 'leftEye',  profile: 'character.face.eye.humanSoft', params: { iris: 'eye_psychic_cobalt' }, attach: { parent: 'body', at: 'face.eyeLeft' } },
+      { id: 'rightEye', profile: 'character.face.eye.humanSoft', params: { iris: 'eye_psychic_cobalt' }, attach: { parent: 'body', at: 'face.eyeRight' } },
+      { id: 'nose',     profile: 'character.face.nose.humanSoft', attach: { parent: 'body', at: 'face.nose' } },
+      { id: 'mouth',    profile: 'character.face.mouth.humanSoft', attach: { parent: 'body', at: 'face.mouth' } },
+    ],
+    hair: {
+      profile: 'character.hair.cometSweep',
+      params: { color: 'hair_midnight_teal', streak: 'neon_mint_signal' },
+      attach: { parent: 'body', at: 'headTop' },
+    },
+    clothing: [
+      { id: 'bottom', profile: 'character.clothing.bottom.psychicStreetShorts', params: { color: 'cloth_psychic_denim', trim: 'trim_comet_gold' } },
+      { id: 'top',    profile: 'character.clothing.top.starboundJacket', params: { color: 'cloth_star_jacket', trim: 'trim_comet_gold', signal: 'neon_mint_signal' } },
+      { id: 'shoes',  profile: 'character.clothing.shoes.cometBoots', params: { color: 'leather_brown', trim: 'trim_comet_gold' } },
+    ],
+    accessories: [
+      { id: 'antenna', profile: 'character.accessory.signalAntenna', params: { stem: 'trim_comet_gold', signal: 'neon_mint_signal' } },
+    ],
+    details: [
+      { id: 'constellation', profile: 'character.detail.jacketConstellation', params: { color: 'neon_mint_signal', gold: 'trim_comet_gold' } },
+      { id: 'cheekBlush', profile: 'character.detail.cheekPixelBlush', params: { color: '#F08A78' } },
+    ],
+  };
+}
+
 describe('character-creator', () => {
   it('forges a complete character from CHARACTER-SPEC-v1', () => {
     const character = forgeCharacter(buildScholarSpec());
@@ -162,5 +212,30 @@ describe('character-creator', () => {
     const height = (png[20] << 24) | (png[21] << 16) | (png[22] << 8) | png[23];
     expect(width).toBe(512);  // 128 logical * 4 scale
     expect(height).toBe(192);
+  });
+
+  it('forges the Starbound Esper chibi style with readable overlay parts', () => {
+    const character = forgeCharacter(buildStarboundEsperSpec());
+    expect(character.spec.body.profile).toBe('character.body.chibi.starboundEsper');
+    expect(character.spec.face.map(part => part.profile)).toEqual(
+      expect.arrayContaining(['character.face.eye.humanSoft', 'character.face.nose.humanSoft', 'character.face.mouth.humanSoft']),
+    );
+    expect(character.spritesheet).toBeInstanceOf(Uint8Array);
+    expect(character.spritesheet.length).toBeGreaterThan(0);
+    expect(character.silhouette.south.parts.map(part => part.id)).toEqual(
+      expect.arrayContaining(['body', 'hair', 'top', 'bottom', 'shoes', 'antenna', 'constellation', 'cheekBlush']),
+    );
+    expect(character.fills.south.coordinates.length).toBeGreaterThan(350);
+    for (const dir of ['south', 'east', 'north', 'west']) {
+      expect(character.diagnostics.paletteSizes[dir]).toBeLessThanOrEqual(32);
+    }
+  });
+
+  it('keeps the Starbound Esper chibi style deterministic', () => {
+    const a = forgeCharacter(buildStarboundEsperSpec());
+    const b = forgeCharacter(buildStarboundEsperSpec());
+    expect(a.specHash).toBe(b.specHash);
+    expect(arraysEqual(a.spritesheet, b.spritesheet)).toBe(true);
+    expect(arraysEqual(a.sprites.south, b.sprites.south)).toBe(true);
   });
 });

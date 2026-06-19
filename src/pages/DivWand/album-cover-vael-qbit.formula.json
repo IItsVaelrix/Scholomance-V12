@@ -1,0 +1,56 @@
+{
+  "rationale": "Album cover prototype: glyph monuments of VAEL rendered as 64 STRUCTURAL voxel terrain, artist name and EP title overlaid as DOM text. Targets QBIT-Voxel paper section 4 Level 2 (The Cover).",
+  "confidence": 0.88,
+  "reviewRequired": false,
+  "sourceIntentHash": "album-cover-vael-qbit-crystal",
+  "evalSuiteId": "suite-voxel-album-cover",
+  "proposedLayout": {
+    "id": "cover-frame",
+    "type": "container",
+    "role": "wrapper",
+    "layout": { "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "width": "100%", "height": "100%", "padding": 24 },
+    "style": { "variant": "transparent" },
+    "children": [
+      {
+        "id": "cover-card",
+        "type": "container",
+        "role": "card",
+        "layout": { "display": "flex", "flexDirection": "column", "width": 720, "height": 430, "padding": 0, "gap": 0 },
+        "style": { "variant": "glassmorphic", "glowColor": "will", "borderRadius": 12 },
+        "children": [
+          {
+            "id": "cover-scene",
+            "type": "voxel",
+            "role": "voxel-scene",
+            "layout": { "width": 720, "height": 300 },
+            "style": { "variant": "obsidianPanel" },
+            "props": {
+              "volumeSize": 64,
+              "text": "VAEL",
+              "seed": {
+                "iterations": 6,
+                "scale": 0.8,
+                "initialEnergy": 0.6,
+                "decay": 0.12,
+                "propagationIterations": 4,
+                "hollowIterations": 3,
+                "gravitySteps": 8
+              }
+            }
+          },
+          {
+            "id": "cover-overlay",
+            "type": "container",
+            "role": "footer",
+            "layout": { "display": "flex", "flexDirection": "column", "justifyContent": "center", "alignItems": "center", "width": "100%", "height": 130, "padding": 16, "gap": 6 },
+            "style": { "variant": "transparent" },
+            "children": [
+              { "id": "cover-artist", "type": "element", "role": "text", "props": { "title": "VAEL", "subtitle": "shadowtongue resonance" } },
+              { "id": "cover-title", "type": "element", "role": "badge", "style": { "variant": "neonBorder", "glowColor": "will" }, "props": { "text": "QBIT CRYSTAL EP" } }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

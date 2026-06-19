@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-06-11T22:08:40.167Z
+Generated at: 2026-06-16T19:10:40.077Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -20,6 +20,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/game/iso/math/isoHitTest.ts
 - [ ] src/hooks/useAudioForge.js
 - [ ] src/hooks/useColorCodex.js
+- [ ] src/kits/channel-zero-ui-kit/components/CodeRuneBlock.tsx
 - [ ] src/kits/channel-zero-ui-kit/components/SkillArticleTemplate.tsx
 - [ ] src/kits/channel-zero-ui-kit/examples/ArticlePage.tsx
 - [ ] src/kits/channel-zero-ui-kit/examples/BlogIndexPage.tsx
@@ -36,6 +37,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/godot/frame-printer/stableId.ts
 - [ ] src/lib/godot/frame-printer/types.ts
 - [ ] src/lib/godot/frame-printer/validateFramePacket.ts
+- [ ] src/lib/godot-export/pixelbrainGodotExport.js
 - [ ] src/lib/godot-export/shadowFrameTimeline.ts
 - [ ] src/lib/godot-export/voidArenaConstants.ts
 - [ ] src/lib/godot-export/voidArenaFissures.ts
@@ -49,15 +51,50 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/render-engine.js
 - [ ] src/lib/truesight/color/visemeMapping.js
 - [ ] src/lib/truesight/compiler/verseIRSerialization.js
+- [ ] src/pages/Combat/BattleChrome.jsx
+- [ ] src/pages/Combat/CombatLog.jsx
+- [ ] src/pages/Combat/OpponentDisplay.jsx
+- [ ] src/pages/Combat/SigilEntity.jsx
+- [ ] src/pages/Combat/TurnTimer.jsx
+- [ ] src/pages/Combat/assets/wandSvg.js
 - [ ] src/pages/Combat/combatGoldenHarness.js
+- [ ] src/pages/Combat/components/ActionBar.jsx
+- [ ] src/pages/Combat/components/ActionHintStrip.jsx
+- [ ] src/pages/Combat/components/BottomCommandBand.jsx
+- [ ] src/pages/Combat/components/CombatRundownModal.jsx
+- [ ] src/pages/Combat/components/EnemyDetailsModal.jsx
+- [ ] src/pages/Combat/components/ScholarStatusPanel.jsx
+- [ ] src/pages/Combat/components/TileInspector.jsx
+- [ ] src/pages/Combat/components/WordToolTip.jsx
 - [ ] src/pages/Combat/hooks/useCombatAnimationQueue.js
 - [ ] src/pages/Combat/hooks/useSpellBubbles.js
 - [ ] src/pages/Combat/render/motionDescriptors.js
-- [ ] src/pages/Combat/scenes/ResonanceScene.js
 - [ ] src/pages/Landing/storm/dbm.js
 - [ ] src/pages/Landing/storm/dbm.worker.js
+- [ ] src/pages/PixelBrain/amps/chromaticTransmutationAmp.js
+- [ ] src/pages/PixelBrain/components/AnalysisResults.jsx
+- [ ] src/pages/PixelBrain/components/DuplicatePreviewGrid.jsx
+- [ ] src/pages/PixelBrain/components/DuplicateSection.jsx
+- [ ] src/pages/PixelBrain/components/ExtensionSelector.jsx
+- [ ] src/pages/PixelBrain/components/LatticeCanvas.jsx
+- [ ] src/pages/PixelBrain/components/ParameterSliders.jsx
+- [ ] src/pages/PixelBrain/components/ShaderForgePanel.jsx
+- [ ] src/pages/PixelBrain/components/ShaderSandbox.jsx
+- [ ] src/pages/PixelBrain/components/SketchPad.jsx
+- [ ] src/pages/PixelBrain/components/StatusDisplay.jsx
+- [ ] src/pages/PixelBrain/components/StyleTransmuter.jsx
+- [ ] src/pages/PixelBrain/components/TextureSelector.jsx
+- [ ] src/pages/PixelBrain/components/UploadSection.jsx
+- [ ] src/pages/PixelBrain/utils/imageAnalysis.client.js
+- [ ] src/pages/PixelBrain/utils/wandFillValidation.js
+- [ ] src/pages/Visualiser/tracks/loadTrackWithAlignment.ts
+- [ ] src/pages/Visualiser/tracks/maze-screensaver.ts
+- [ ] src/pages/Visualiser/tracks/polarity-remix.ts
+- [ ] src/phaser/CombatArenaScene.js
+- [ ] src/phaser/CombatHUDScene.js
 - [ ] src/pixel-lotus/actor-forge/index.ts
 - [ ] src/pixel-lotus/actor-forge/pixelLotusActorLayer.schema.ts
+- [ ] src/pixel-lotus/actor-forge/pixelbrainLayerBridge.ts
 - [ ] src/pixel-lotus/importers/lpc/index.ts
 - [ ] src/pixel-lotus/importers/lpc/lpcImportManifest.schema.ts
 - [ ] src/tools/youtube-downloader/ytdl.command-map.js
@@ -84,6 +121,39 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/types/lib/rhyme.ts
 - [ ] src/types/runtime/runtime.ts
 - [ ] src/ui/animation/hooks/useAnimationIntent.ts
+- [ ] src/video/KineticLine.tsx
+- [ ] src/video/KineticLyricsVideo.tsx
+- [ ] src/video/KineticWord.tsx
+- [ ] src/video/MazeLyricsVideo.tsx
+- [ ] src/video/PixelBrainStage.tsx
+- [ ] src/video/PolarityAmbientVideo.tsx
+- [ ] src/video/Root.tsx
+- [ ] src/video/components/BytecodeMandalaLayer.tsx
+- [ ] src/video/components/GlyphGhost.tsx
+- [ ] src/video/components/PixelBrainAssetLayer.tsx
+- [ ] src/video/components/SceneAtmosphereLayer.tsx
+- [ ] src/video/components/ambient/AmbientPalette.ts
+- [ ] src/video/components/ambient/BloomRings.tsx
+- [ ] src/video/components/ambient/MandalaCore.tsx
+- [ ] src/video/components/ambient/OrbField.tsx
+- [ ] src/video/components/ambient/PolarityAmbientBackground.tsx
+- [ ] src/video/components/ambient/PolarityField.tsx
+- [ ] src/video/components/ambient/VolumetricParticles.tsx
+- [ ] src/video/hooks/useActiveScene.ts
+- [ ] src/video/hooks/useActiveWords.ts
+- [ ] src/video/index.ts
+- [ ] src/video/logic/resolveActiveLines.ts
+- [ ] src/video/logic/resolveActiveScene.ts
+- [ ] src/video/logic/resolveActiveWords.ts
+- [ ] src/video/logic/resolveDominantSchool.ts
+- [ ] src/video/logic/resolveSceneAtmosphere.ts
+- [ ] src/video/logic/resolveTypographyProgram.ts
+- [ ] src/video/logic/validateVideoSidecar.ts
+- [ ] src/video/schemas/alignment.ts
+- [ ] src/video/schemas/foundryAssetManifest.ts
+- [ ] src/video/schemas/videoScene.ts
+- [ ] src/video/types.ts
+- [ ] src/video/useBeatClock.ts
 - [ ] src/vite-env.d.ts
 - [ ] codex/core/archive/truesight/color/visemeMapping.ARCHIVED.js
 - [ ] codex/core/audio-forge/affinity-audio-profiles.js
@@ -116,8 +186,54 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/modulation/planner/formula-registrar.js
 - [ ] codex/core/phonology/dictionary.web-worker.js
 - [ ] codex/core/phonology/dictionary.worker.js
+- [ ] codex/core/phonology/g2p/jurors/index.js
 - [ ] codex/core/phonology/prosodic-metronome.js
+- [ ] codex/core/pixelbrain/armor-proportion-validator.js
+- [ ] codex/core/pixelbrain/character-face-composer.js
+- [ ] codex/core/pixelbrain/chestplate-amp.js
+- [ ] codex/core/pixelbrain/chestplate-bevel-amp.js
+- [ ] codex/core/pixelbrain/chestplate-fidelity-pipeline.js
+- [ ] codex/core/pixelbrain/chestplate-surface-texture-amp.js
+- [ ] codex/core/pixelbrain/crystal-core-amp.js
+- [ ] codex/core/pixelbrain/detail-budget.js
+- [ ] codex/core/pixelbrain/facet-amp.js
+- [ ] codex/core/pixelbrain/factory/armor-factory.js
+- [ ] codex/core/pixelbrain/factory/jewelry-factory.js
+- [ ] codex/core/pixelbrain/factory/shield-factory.js
+- [ ] codex/core/pixelbrain/factory/weapon-factory.js
+- [ ] codex/core/pixelbrain/factory-registry.js
+- [ ] codex/core/pixelbrain/flame-tip-amp.js
+- [ ] codex/core/pixelbrain/flame-tip-ca.js
+- [ ] codex/core/pixelbrain/geometry-amp.js
+- [ ] codex/core/pixelbrain/heraldry-amp.js
+- [ ] codex/core/pixelbrain/heraldry-library.js
+- [ ] codex/core/pixelbrain/holyfire-motif-amp.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
+- [ ] codex/core/pixelbrain/item-effect-shader.js
+- [ ] codex/core/pixelbrain/item-foundry.js
+- [ ] codex/core/pixelbrain/item-spec.js
+- [ ] codex/core/pixelbrain/jewelry-amp.js
+- [ ] codex/core/pixelbrain/microprocessor-route.js
+- [ ] codex/core/pixelbrain/mirrored-trim-validator.js
+- [ ] codex/core/pixelbrain/motif-engraver.js
+- [ ] codex/core/pixelbrain/palette-quantization-amp.js
+- [ ] codex/core/pixelbrain/pixel-aa-amp.js
+- [ ] codex/core/pixelbrain/qbit-node-extractor.js
+- [ ] codex/core/pixelbrain/region-fill-amp.js
+- [ ] codex/core/pixelbrain/render-fidelity-pipeline.js
+- [ ] codex/core/pixelbrain/seam-contract.js
+- [ ] codex/core/pixelbrain/selout-amp.js
+- [ ] codex/core/pixelbrain/shadow-amp.js
+- [ ] codex/core/pixelbrain/shape-grammar-engine.js
+- [ ] codex/core/pixelbrain/shield-rim-amp.js
+- [ ] codex/core/pixelbrain/shield-volume-amp.js
+- [ ] codex/core/pixelbrain/silhouette-composer.js
+- [ ] codex/core/pixelbrain/tonation-amp.js
+- [ ] codex/core/pixelbrain/vector-amp.js
+- [ ] codex/core/pixelbrain/volume-amp.js
+- [ ] codex/core/scholotime/scholotime.export-plan.js
+- [ ] codex/core/scholotime/scholotime.phaser-adapter.js
+- [ ] codex/core/scholotime/scholotime.pixelbrain-adapter.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
 - [ ] codex/core/shared/workers/microprocessor.worker.js
 - [ ] codex/server/collab/mcp-bridge-entry.js
@@ -167,6 +283,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `setGodotExportFlag` in `src/hooks/useGodotExportFlag.js`
 - [ ] `GODOT_EXPORT_FLAG_CHANGED_EVENT` in `src/hooks/useGodotExportFlag.js`
 - [ ] `GODOT_EXPORT_FLAG_KEY` in `src/hooks/useGodotExportFlag.js`
+- [ ] `HapticPattern` in `src/hooks/useHaptic.ts`
 - [ ] `ArticleCardProps` in `src/kits/channel-zero-ui-kit/components/ArticleCard.tsx`
 - [ ] `ArticleHeroProps` in `src/kits/channel-zero-ui-kit/components/ArticleHero.tsx`
 - [ ] `ChannelNavItem` in `src/kits/channel-zero-ui-kit/components/ChannelHeader.tsx`
@@ -205,18 +322,16 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `PIXELBRAIN_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
 - [ ] `WAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
 - [ ] `DIVWAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `buildPixelBrainGodotExport` in `src/lib/godot-export/pixelbrainGodotExport.js`
 - [ ] `VOID_SCENE_WIDTH` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_SCENE_HEIGHT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_GRID_COLS` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_GRID_ROWS` in `src/lib/godot-export/voidArenaConstants.ts`
-- [ ] `PHI` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_SINGULARITY_TILE` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_TICK_DAMAGE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_TICK_COUNT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_MAX_EXPOSURE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
-- [ ] `buildVoidArenaRestingScene` in `src/lib/godot-export/voidArenaScene.ts`
 - [ ] `buildSingularityTriggerFrames` in `src/lib/godot-export/voidSingularityTrigger.ts`
-- [ ] `buildSingularityTriggerTimeline` in `src/lib/godot-export/voidSingularityTrigger.ts`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
 - [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
@@ -224,6 +339,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `PHOTONIC_ERROR_CODES` in `src/lib/photonic-quantization/photonic-errors.js`
 - [ ] `PHOTONIC_SEVERITIES` in `src/lib/photonic-quantization/photonic-errors.js`
 - [ ] `bindUniforms` in `src/lib/pixelbrain/shader-webgl-preview.js`
+- [ ] `runPixelBrainPipeline` in `src/lib/pixelbrain.adapter.js`
+- [ ] `buildPixelBrainPhotonicRoute` in `src/lib/pixelbrain.adapter.js`
+- [ ] `PIXELBRAIN_REGISTERED_AMPS` in `src/lib/pixelbrain.adapter.js`
 - [ ] `getDeviceId` in `src/lib/platform/wordCache.js`
 - [ ] `deriveFeatureAdjustedWeights` in `src/lib/pls/ranker.js`
 - [ ] `attachPlsVerseIRBridge` in `src/lib/pls/verseIRBridge.js`
@@ -231,21 +349,27 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
 - [ ] `ALL_COMPONENTS` in `src/lib/routes.js`
 - [ ] `getAvailablePageComponents` in `src/lib/routes.js`
+- [ ] `readWandFill` in `src/lib/wandPixelbrainBridge.js`
 - [ ] `clearWandFill` in `src/lib/wandPixelbrainBridge.js`
+- [ ] `ArticleSection` in `src/pages/Blog/articles.tsx`
+- [ ] `ARTICLES` in `src/pages/Blog/articles.tsx`
 - [ ] `buildTileTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `buildScholarTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `buildWraithTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `buildPillarTexture` in `src/pages/Combat/assets/combatAssets.js`
+- [ ] `buildLeylineTexture` in `src/pages/Combat/assets/combatAssets.js`
+- [ ] `buildTorchTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `coordsToPath` in `src/pages/Combat/assets/wandSvg.js`
 - [ ] `svgToDataUri` in `src/pages/Combat/assets/wandSvg.js`
 - [ ] `serializeStateForGodot` in `src/pages/Combat/combatBridge.js`
+- [ ] `disconnectCombatBridge` in `src/pages/Combat/combatBridge.js`
 - [ ] `createInitialCombatState` in `src/pages/Combat/combatGoldenHarness.js`
 - [ ] `applyCombatCommand` in `src/pages/Combat/combatGoldenHarness.js`
 - [ ] `canonicalizeCombatState` in `src/pages/Combat/combatGoldenHarness.js`
 - [ ] `useCombatAnimationQueue` in `src/pages/Combat/hooks/useCombatAnimationQueue.js`
 - [ ] `useSpellBubbles` in `src/pages/Combat/hooks/useSpellBubbles.js`
 - [ ] `MOTION_ENVELOPES` in `src/pages/Combat/render/motionDescriptors.js`
-- [ ] `buildResonanceScene` in `src/pages/Combat/scenes/ResonanceScene.js`
+- [ ] `npcSpec` in `src/pages/Combat/scenes/CharacterShaderRenderer.js`
 - [ ] `coordToKey` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `keyToCoord` in `src/pages/Combat/state/combatBoardUtils.js`
 - [ ] `getEuclideanDistance` in `src/pages/Combat/state/combatBoardUtils.js`
@@ -263,14 +387,34 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `SigilSpoke` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `SigilModel` in `src/pages/Grimoire/genomeGeometry.ts`
 - [ ] `createPacketNoise` in `src/pages/Landing/storm/photonicBolt.js`
-- [ ] `MATERIAL_PALETTES` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `CHROMATIC_MATERIAL_OPTIONS` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
 - [ ] `transmutePaletteColor` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
 - [ ] `transmutePixelBrainPalette` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
 - [ ] `transmutePixelBrainPalettes` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
-- [ ] `buildChromaticColorMap` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
 - [ ] `transmutePixelBrainCoordinates` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `buildChromaticColorMap` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `buildChromaticTransmutationPayload` in `src/pages/PixelBrain/amps/chromaticTransmutationAmp.js`
+- [ ] `DuplicateSection` in `src/pages/PixelBrain/components/DuplicateSection.jsx`
+- [ ] `ExtensionSelector` in `src/pages/PixelBrain/components/ExtensionSelector.jsx`
+- [ ] `SketchPad` in `src/pages/PixelBrain/components/SketchPad.jsx`
+- [ ] `StyleTransmuter` in `src/pages/PixelBrain/components/StyleTransmuter.jsx`
+- [ ] `UploadSection` in `src/pages/PixelBrain/components/UploadSection.jsx`
+- [ ] `analyzeImageClientSide` in `src/pages/PixelBrain/utils/imageAnalysis.client.js`
+- [ ] `FILL_SCHOOLS` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `FILL_RARITIES` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `FILL_EFFECTS` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `FILL_RARITY_OPTIONS` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `FILL_EFFECT_OPTIONS` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `ensureValidWandFillSpec` in `src/pages/PixelBrain/utils/wandFillValidation.js`
+- [ ] `EditorSigil` in `src/pages/Read/NavSigils.jsx`
+- [ ] `ScrollsSigil` in `src/pages/Read/NavSigils.jsx`
+- [ ] `OracleSigil` in `src/pages/Read/NavSigils.jsx`
+- [ ] `HexSigil` in `src/pages/Read/NavSigils.jsx`
+- [ ] `PowerSigil` in `src/pages/Read/NavSigils.jsx`
 - [ ] `TrackSeed` in `src/pages/Visualiser/bytecodeFingerprint.ts`
 - [ ] `VISUALISER_FUNCTION_WORDS` in `src/pages/Visualiser/truesightColor.ts`
+- [ ] `pixelBrainPacketToPixelLotusLayer` in `src/pixel-lotus/actor-forge/pixelbrainLayerBridge.ts`
+- [ ] `pixelLotusLayerToPixelBrainPacket` in `src/pixel-lotus/actor-forge/pixelbrainLayerBridge.ts`
 - [ ] `checkBinary` in `src/tools/youtube-downloader/ytdl.doctor.js`
 - [ ] `DocumentStats` in `src/types/core/analysis.ts`
 - [ ] `DocumentParsed` in `src/types/core/analysis.ts`
@@ -295,6 +439,35 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `CacheEntry` in `src/types/runtime/runtime.ts`
 - [ ] `EventCallback` in `src/types/runtime/runtime.ts`
 - [ ] `RoleBinding` in `src/ui/features/mysticHolistics/hero/roleDispatcher.ts`
+- [ ] `KineticLyricsVideoProps` in `src/video/KineticLyricsVideo.tsx`
+- [ ] `KineticWord` in `src/video/KineticWord.tsx`
+- [ ] `MazeLyricsVideoProps` in `src/video/MazeLyricsVideo.tsx`
+- [ ] `PolarityAmbientVideoProps` in `src/video/PolarityAmbientVideo.tsx`
+- [ ] `paletteUtils` in `src/video/components/ambient/AmbientPalette.ts`
+- [ ] `useActiveScene` in `src/video/hooks/useActiveScene.ts`
+- [ ] `useActiveWords` in `src/video/hooks/useActiveWords.ts`
+- [ ] `ResolveActiveLinesOptions` in `src/video/logic/resolveActiveLines.ts`
+- [ ] `ResolveDominantSchoolOptions` in `src/video/logic/resolveDominantSchool.ts`
+- [ ] `EffectiveAtmosphere` in `src/video/logic/resolveSceneAtmosphere.ts`
+- [ ] `resolveSceneAtmosphere` in `src/video/logic/resolveSceneAtmosphere.ts`
+- [ ] `resolveTypographyAlignItems` in `src/video/logic/resolveTypographyProgram.ts`
+- [ ] `resolveTypographyFontSize` in `src/video/logic/resolveTypographyProgram.ts`
+- [ ] `validateVideoSidecarFull` in `src/video/logic/validateVideoSidecar.ts`
+- [ ] `AmpHintKey` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `PartKind` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `AssetPart` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `AssetAnchor` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `FoundryAssetPacket` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `validateFoundryAssetPacket` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `AssetTier` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `FoundryAssetEntry` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `POLARITY_ASSET_MANIFEST` in `src/video/schemas/foundryAssetManifest.ts`
+- [ ] `SceneMode` in `src/video/schemas/videoScene.ts`
+- [ ] `CameraKind` in `src/video/schemas/videoScene.ts`
+- [ ] `CameraProgram` in `src/video/schemas/videoScene.ts`
+- [ ] `AtmosphereProgram` in `src/video/schemas/videoScene.ts`
+- [ ] `TypographyProgram` in `src/video/schemas/videoScene.ts`
+- [ ] `validateVideoSidecar` in `src/video/schemas/videoScene.ts`
 - [ ] `getEasingProgress` in `codex/core/animation/amp/motionVectorizer.ts`
 - [ ] `initAnimationAmp` in `codex/core/animation/amp/runAnimationAmp.ts`
 - [ ] `shutdownAnimationAmp` in `codex/core/animation/amp/runAnimationAmp.ts`
@@ -404,6 +577,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `RHYME_SUBTYPES` in `codex/core/constants/data/rhymeScheme.patterns.js`
 - [ ] `getSonicStationTrackPool` in `codex/core/constants/data/sonicStationBuckets.js`
 - [ ] `getDefaultSonicStationTrackUrl` in `codex/core/constants/data/sonicStationBuckets.js`
+- [ ] `SCHOOL_TO_ENERGY` in `codex/core/constants/schools.js`
 - [ ] `deepFreezeClone` in `codex/core/diagnostic/BytecodeHealth.js`
 - [ ] `DEFAULT_SKIP_DIRS` in `codex/core/diagnostic/diagnostic-file-source.js`
 - [ ] `DEFAULT_READABLE_EXT` in `codex/core/diagnostic/diagnostic-file-source.js`
@@ -490,21 +664,46 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `readMeter` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `pronounceWithMeter` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
-- [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/anti-alias-control.js`
-- [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/anti-alias-control.js`
+- [ ] `ASEPRITE_BINARY_CODEC_VERSION` in `codex/core/pixelbrain/aseprite-binary-codec.js`
+- [ ] `NEGOTIATION_THRESHOLD` in `codex/core/pixelbrain/biome-coherence-amp.js`
+- [ ] `MAX_NEGOTIATION_PASSES` in `codex/core/pixelbrain/biome-coherence-amp.js`
+- [ ] `getNeighbors6` in `codex/core/pixelbrain/biome-coherence-amp.js`
 - [ ] `createTypeMismatchError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
+- [ ] `CHARACTER_SKELETON_CONTRACT` in `codex/core/pixelbrain/character-construction-skeleton.js`
+- [ ] `getCharacterSkeletonAnchors` in `codex/core/pixelbrain/character-construction-skeleton.js`
+- [ ] `composeFaceFeatures` in `codex/core/pixelbrain/character-face-composer.js`
+- [ ] `rasterizeCells` in `codex/core/pixelbrain/character-foundry.js`
+- [ ] `uint8ToBase64` in `codex/core/pixelbrain/character-foundry.js`
+- [ ] `CHARACTER_SPEC_VERSION` in `codex/core/pixelbrain/character-spec.js`
+- [ ] `DEFAULT_ATTENUATION_MODEL` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `REGION_SHAPES` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `CHUNK_SIZE_MIN` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `CHUNK_SIZE_MAX` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `CHUNK_COUNT_MIN` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `assertFormulaRegions` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `assertChunkedWorldVolume` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `generateEmptyChunk` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `serializeChunkedWorldVolume` in `codex/core/pixelbrain/chunked-world-volume.js`
+- [ ] `deserializeChunkedWorldVolume` in `codex/core/pixelbrain/chunked-world-volume.js`
 - [ ] `generateSemanticPalette` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `getHexForByte` in `codex/core/pixelbrain/color-byte-mapping.js`
 - [ ] `getVisemeForFormants` in `codex/core/pixelbrain/color-byte-mapping.js`
+- [ ] `COLOR_INTENSITY_MICROPROCESSOR_ID` in `codex/core/pixelbrain/color-intensity-rating-microprocessor.js`
+- [ ] `COLOR_INTENSITY_VERSION` in `codex/core/pixelbrain/color-intensity-rating-microprocessor.js`
+- [ ] `rateColorIntensity` in `codex/core/pixelbrain/color-intensity-rating-microprocessor.js`
+- [ ] `rateCoordinateColorIntensity` in `codex/core/pixelbrain/color-intensity-rating-microprocessor.js`
+- [ ] `annotateCoordinateColorIntensity` in `codex/core/pixelbrain/color-intensity-rating-microprocessor.js`
+- [ ] `CONSTRUCTION_SKELETON_CONTRACT` in `codex/core/pixelbrain/construction-line-microprocessor.js`
 - [ ] `CoordSymmetryProcessor` in `codex/core/pixelbrain/coord-symmetry-amp.js`
 - [ ] `generateSpiralCoordinates` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `mapSemanticToCoordinateConstraints` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `resolveDominantAxis` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `resolveSymmetryType` in `codex/core/pixelbrain/coordinate-mapping.js`
 - [ ] `applyGoldenRatio` in `codex/core/pixelbrain/coordinate-mapping.js`
+- [ ] `deterministicNoise` in `codex/core/pixelbrain/deterministic-noise.js`
 - [ ] `DimensionCompileError` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FormulaNode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `FitMode` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
@@ -517,6 +716,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BytecodeInstruction` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `REGISTERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
 - [ ] `UNIT_MULTIPLIERS` in `codex/core/pixelbrain/dimension-formula-compiler.ts`
+- [ ] `cleanupOrphanPixels` in `codex/core/pixelbrain/edit-compiler.js`
+- [ ] `enforceInnerStructuralRigidity` in `codex/core/pixelbrain/edit-compiler.js`
+- [ ] `applyDropShadow` in `codex/core/pixelbrain/edit-compiler.js`
 - [ ] `physicsStretchSquash` in `codex/core/pixelbrain/extensions/physics-extensions.js`
 - [ ] `physicsGravity` in `codex/core/pixelbrain/extensions/physics-extensions.js`
 - [ ] `physicsBounce` in `codex/core/pixelbrain/extensions/physics-extensions.js`
@@ -524,6 +726,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `style8Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `style16Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `styleCRT` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `forgeHolyFirePaladinSword` in `codex/core/pixelbrain/factory/weapon-factory.js`
+- [ ] `FLAME_TIP_AMP_ID` in `codex/core/pixelbrain/flame-tip-amp.js`
+- [ ] `FLAME_TIP_AMP_VERSION` in `codex/core/pixelbrain/flame-tip-amp.js`
+- [ ] `applyFlameTipGeometry` in `codex/core/pixelbrain/flame-tip-amp.js`
+- [ ] `FLAME_TIP_CA_ID` in `codex/core/pixelbrain/flame-tip-ca.js`
+- [ ] `FLAME_TIP_CA_VERSION` in `codex/core/pixelbrain/flame-tip-ca.js`
+- [ ] `applyFlameTipCellularAutomata` in `codex/core/pixelbrain/flame-tip-ca.js`
 - [ ] `evaluateFibonacciGrid` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateParametricCurve` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateGridProjection` in `codex/core/pixelbrain/formula-to-coordinates.js`
@@ -534,6 +743,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `lerpFormulas` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `normalizeVectorizedText` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateVectorizedText` in `codex/core/pixelbrain/formula-to-coordinates.js`
+- [ ] `FOUNDRY_ASEPRITE_BRIDGE_VERSION` in `codex/core/pixelbrain/foundry-aseprite-bridge.js`
 - [ ] `GEAR_GLIDE_CONFIG` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `createGearGlideState` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `updateGearGlide` in `codex/core/pixelbrain/gear-glide-amp.js`
@@ -543,12 +753,20 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `syncMultipleElements` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `getTimeForRotation` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `generateRotationKeyframes` in `codex/core/pixelbrain/gear-glide-amp.js`
+- [ ] `RASTER_CANVAS_SIZE` in `codex/core/pixelbrain/glyph-rasterizer.js`
+- [ ] `HERALDRY_MICROPROCESSOR_ID` in `codex/core/pixelbrain/heraldry-amp.js`
+- [ ] `HERALDRY_MICROPROCESSOR_VERSION` in `codex/core/pixelbrain/heraldry-amp.js`
+- [ ] `HOLLOW_THRESHOLD` in `codex/core/pixelbrain/hollowness-amp.js`
+- [ ] `computeHollownessAMP` in `codex/core/pixelbrain/hollowness-amp.js`
+- [ ] `HOLYFIRE_MOTIF_AMP_ID` in `codex/core/pixelbrain/holyfire-motif-amp.js`
+- [ ] `HOLYFIRE_MOTIF_AMP_VERSION` in `codex/core/pixelbrain/holyfire-motif-amp.js`
 - [ ] `extractEdgePoints` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `fitParametricCurve` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `detectGridPattern` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `quantizeColorsToFormula` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateTemplateFromFormula` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `generateIdleAnimationConfig` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
+- [ ] `transcribeSourcePixelData` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `generateSilhouetteFromImage` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `fillShapeWithEvenOddWinding` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `fillShape` in `codex/core/pixelbrain/image-to-pixel-art.js`
@@ -556,25 +774,78 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `mergeImageAndNLUParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `generatePaletteFromImage` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `extractCoordinateHints` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
+- [ ] `ISO_TILE_SIZE` in `codex/core/pixelbrain/iso-projector.js`
+- [ ] `renderBounds` in `codex/core/pixelbrain/iso-projector.js`
+- [ ] `forgeItemAsset` in `codex/core/pixelbrain/item-foundry.js`
+- [ ] `renderBundlePng` in `codex/core/pixelbrain/item-foundry.js`
+- [ ] `ITEM_SPEC_VERSION` in `codex/core/pixelbrain/item-spec.js`
+- [ ] `categoryOf` in `codex/core/pixelbrain/item-spec.js`
+- [ ] `DEFAULT_EMISSION_FACTOR` in `codex/core/pixelbrain/material-registry.js`
+- [ ] `MIRRORED_TRIM_VALIDATOR_ID` in `codex/core/pixelbrain/mirrored-trim-validator.js`
+- [ ] `MIRRORED_TRIM_VALIDATOR_VERSION` in `codex/core/pixelbrain/mirrored-trim-validator.js`
+- [ ] `MIRRORED_TRIM_PAIRS` in `codex/core/pixelbrain/mirrored-trim-validator.js`
+- [ ] `validateMirroredTrimPairs` in `codex/core/pixelbrain/mirrored-trim-validator.js`
+- [ ] `resolveMotifColor` in `codex/core/pixelbrain/motif-engraver.js`
+- [ ] `NOISE_FILL_AMP_VERSION` in `codex/core/pixelbrain/noise-fill-amp.js`
+- [ ] `profileSupportsSDF` in `codex/core/pixelbrain/part-profile-library.js`
+- [ ] `listPartProfiles` in `codex/core/pixelbrain/part-profile-library.js`
+- [ ] `colorDist` in `codex/core/pixelbrain/pixel-scale-amp.js`
+- [ ] `PIXELBRAIN_ASSET_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PIXELBRAIN_RENDER_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PIXELBRAIN_EXPORT_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `normalizePixelBrainCanvas` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `normalizePixelBrainPalettes` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `assertPixelBrainAssetPacket` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PB_SDF_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PB_NOISE_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `assertPB_SDF_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `hashPB_SDF_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `assertPB_NOISE_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `hashPB_NOISE_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PB_POLISH_DELTA_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PB_POLISH_PROFILE_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PB_EDIT_SESSION_KIND` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `normalizePB_POLISH_PROFILE_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `createPBEditSession` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
+- [ ] `PIXELBRAIN_SHADER_UNIFORM_PROVIDER_ID` in `codex/core/pixelbrain/pixelbrain-shader-uniform-providers.js`
 - [ ] `normalizeNoiseSeed` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `generatePermutationTable` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `perlin2D` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `getTexturePalette` in `codex/core/pixelbrain/procedural-noise.js`
+- [ ] `DEFAULT_DECAY` in `codex/core/pixelbrain/qbit-field.js`
+- [ ] `DEFAULT_ITERATIONS` in `codex/core/pixelbrain/qbit-field.js`
+- [ ] `MATERIAL_THRESHOLDS` in `codex/core/pixelbrain/qbit-field.js`
+- [ ] `COLLAPSE_THRESHOLD` in `codex/core/pixelbrain/qbit-phosphorylation.js`
+- [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/raster-jitter-filter.js`
+- [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/raster-jitter-filter.js`
+- [ ] `assertDeterministic` in `codex/core/pixelbrain/region-fill-amp.js`
+- [ ] `runPixelBrainRenderFidelityPipeline` in `codex/core/pixelbrain/render-fidelity-pipeline.js`
+- [ ] `RENDERERS` in `codex/core/pixelbrain/renderer-registry.js`
+- [ ] `sdfInside` in `codex/core/pixelbrain/sdf-evaluator.js`
+- [ ] `SDF_SHAPE_AMP_VERSION` in `codex/core/pixelbrain/sdf-shape-amp.js`
 - [ ] `createShaderUniformError` in `codex/core/pixelbrain/shader-errors.js`
 - [ ] `createShaderContextLostError` in `codex/core/pixelbrain/shader-errors.js`
 - [ ] `PB_SHADER_PACKET_VERSION` in `codex/core/pixelbrain/shader-packet.js`
 - [ ] `getNestedProperty` in `codex/core/pixelbrain/shader-uniform-resolver.js`
-- [ ] `hexToRgb01` in `codex/core/pixelbrain/shader-uniform-resolver.js`
+- [ ] `SHADOW_AMP_ID` in `codex/core/pixelbrain/shadow-amp.js`
+- [ ] `SHADOW_AMP_VERSION` in `codex/core/pixelbrain/shadow-amp.js`
+- [ ] `goldenSection` in `codex/core/pixelbrain/shared.js`
+- [ ] `fibonacciSequence` in `codex/core/pixelbrain/shared.js`
+- [ ] `assertConnected` in `codex/core/pixelbrain/silhouette-composer.js`
+- [ ] `SQUARE_SHARPNESS_CONTRAST_AMP_ID` in `codex/core/pixelbrain/square-sharpness-contrast-amp.js`
+- [ ] `SQUARE_SHARPNESS_CONTRAST_VERSION` in `codex/core/pixelbrain/square-sharpness-contrast-amp.js`
 - [ ] `cropToOpaqueRegion` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `emitSymmetryBytecode` in `codex/core/pixelbrain/symmetry-amp.js`
+- [ ] `rotationalBreaker` in `codex/core/pixelbrain/symmetry-amp.js`
+- [ ] `lateralDrift` in `codex/core/pixelbrain/symmetry-amp.js`
+- [ ] `verticalVariance` in `codex/core/pixelbrain/symmetry-amp.js`
+- [ ] `applyAsymmetryToLattice` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `SymmetryProcessor` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `PIXELBRAIN_GRID_LIMITS` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `ASEPRITE_IMPORT_LIMITS` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getFibonacciRegions` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `addAnchorPoint` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `removeAnchorPoint` in `codex/core/pixelbrain/template-grid-engine.js`
-- [ ] `createLayer` in `codex/core/pixelbrain/template-grid-engine.js`
-- [ ] `getCell` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `createFrame` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getOnionSkins` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `mapVowelFamilyToSchoolId` in `codex/core/pixelbrain/token-to-bytecode.js`
@@ -584,6 +855,20 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `semanticToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `tokenToBytecode` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `buildPixelBrainTokenBytecodeWithSemantics` in `codex/core/pixelbrain/token-to-bytecode.js`
+- [ ] `TONATION_AMP_ID` in `codex/core/pixelbrain/tonation-amp.js`
+- [ ] `TONATION_AMP_VERSION` in `codex/core/pixelbrain/tonation-amp.js`
+- [ ] `VECTOR_AMP_ID` in `codex/core/pixelbrain/vector-amp.js`
+- [ ] `VECTOR_AMP_VERSION` in `codex/core/pixelbrain/vector-amp.js`
+- [ ] `VOID_CHESTPLATE_EXACT_PALETTE` in `codex/core/pixelbrain/void-chestplate-profile.js`
+- [ ] `REQUIRED_PARTS` in `codex/core/pixelbrain/void-chestplate-profile.js`
+- [ ] `VOLUME_AMP_ID` in `codex/core/pixelbrain/volume-amp.js`
+- [ ] `VOLUME_AMP_VERSION` in `codex/core/pixelbrain/volume-amp.js`
+- [ ] `SENTINEL_MATERIAL_ID` in `codex/core/pixelbrain/voxel-volume.js`
+- [ ] `SEED_CONFIGS` in `codex/core/pixelbrain/wand-seed-lift.js`
+- [ ] `liftToVoxelSeeds` in `codex/core/pixelbrain/wand-seed-lift.js`
+- [ ] `classifyCoordInRegions` in `codex/core/pixelbrain/wand-seed-lift.js`
+- [ ] `liftToMultiRegionVoxelSeeds` in `codex/core/pixelbrain/wand-seed-lift.js`
+- [ ] `generateFibonacciInRegion` in `codex/core/pixelbrain/wand-seed-lift.js`
 - [ ] `RHYME_ASTROLOGY_API_VERSION` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_MODES` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_DEFAULTS` in `codex/core/rhyme-astrology/contracts.js`
@@ -601,6 +886,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `RHYME_ASTROLOGY_TYPES_VERSION` in `codex/core/rhyme-astrology/types.js`
 - [ ] `TURBOQA_MIN_RECALL_OVERLAP` in `codex/core/ritual-prediction/turboqa.js`
 - [ ] `TURBOQA_DEFAULT_TOP_K` in `codex/core/ritual-prediction/turboqa.js`
+- [ ] `createExportPlan` in `codex/core/scholotime/scholotime.export-plan.js`
+- [ ] `assertPositiveInteger` in `codex/core/scholotime/scholotime.math.js`
+- [ ] `assertPositiveNumber` in `codex/core/scholotime/scholotime.math.js`
+- [ ] `timeMsToFrameIndex` in `codex/core/scholotime/scholotime.math.js`
+- [ ] `createScholoTimePhaserAdapter` in `codex/core/scholotime/scholotime.phaser-adapter.js`
+- [ ] `createScholoTimePixelBrainAdapter` in `codex/core/scholotime/scholotime.pixelbrain-adapter.js`
 - [ ] `DEFAULT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `COMBAT_SCORING_HEURISTICS` in `codex/core/scoring.defaults.js`
 - [ ] `getCombatScoringHeuristics` in `codex/core/scoring.defaults.js`

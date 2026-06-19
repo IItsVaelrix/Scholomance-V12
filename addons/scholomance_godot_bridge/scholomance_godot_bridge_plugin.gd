@@ -6,6 +6,7 @@ const PixelBrainPaintDock = preload("res://addons/scholomance_godot_bridge/edito
 var pixelbrain_importer: EditorImportPlugin
 var wand_importer: EditorImportPlugin
 var divwand_importer: EditorImportPlugin
+var qbit_world_importer: EditorImportPlugin
 var frame_timeline_importer: EditorImportPlugin
 var pixelbrain_paint_dock: Control = null
 
@@ -32,16 +33,20 @@ func _register_importers() -> void:
 	pixelbrain_importer = preload("res://addons/scholomance_godot_bridge/importers/pixelbrain_importer.gd").new()
 	wand_importer = preload("res://addons/scholomance_godot_bridge/importers/wand_importer.gd").new()
 	divwand_importer = preload("res://addons/scholomance_godot_bridge/importers/divwand_importer.gd").new()
+	qbit_world_importer = preload("res://addons/scholomance_godot_bridge/importers/qbit_world_importer.gd").new()
 	frame_timeline_importer = preload("res://addons/scholomance_godot_bridge/importers/frame_timeline_importer.gd").new()
 
 	add_import_plugin(pixelbrain_importer)
 	add_import_plugin(wand_importer)
 	add_import_plugin(divwand_importer)
+	add_import_plugin(qbit_world_importer)
 	add_import_plugin(frame_timeline_importer)
 
 func _unregister_importers() -> void:
 	if frame_timeline_importer != null:
 		remove_import_plugin(frame_timeline_importer)
+	if qbit_world_importer != null:
+		remove_import_plugin(qbit_world_importer)
 	if divwand_importer != null:
 		remove_import_plugin(divwand_importer)
 	if wand_importer != null:
@@ -50,6 +55,7 @@ func _unregister_importers() -> void:
 		remove_import_plugin(pixelbrain_importer)
 
 	frame_timeline_importer = null
+	qbit_world_importer = null
 	divwand_importer = null
 	wand_importer = null
 	pixelbrain_importer = null

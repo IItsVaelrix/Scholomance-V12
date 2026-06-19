@@ -25,6 +25,8 @@ const USER_DB_NAMESPACE = 'user';
 const IS_MCP_BRIDGE_PROCESS = process.argv.some((arg) =>
   typeof arg === 'string' && (
     arg.includes('codex/server/collab/mcp-bridge.js') ||
+    arg.includes('codex/server/collab/mcp-bridge-entry.js') ||
+    arg.includes('codex\\server\\collab\\mcp-bridge-entry.js') ||
     arg.includes('codex\\server\\collab\\mcp-bridge.js')
   ),
 );
@@ -962,6 +964,7 @@ async function saveScroll(scrollId, userId, { title, content, submit = false }) 
       content = excluded.content,
       updatedAt = excluded.updatedAt,
       submittedAt = excluded.submittedAt
+    WHERE scrolls.userId = excluded.userId
   `, [scrollId, userId, title, content, createdAt, now, submittedAt]);
   
   return await getScroll(scrollId, userId);

@@ -1,8 +1,8 @@
 import { DEFAULT_PHOTONIC_BRIDGE_CONFIG } from './photonic.config.js';
 import { createDiagnostic } from './photonic-diagnostics.js';
 
-const SOURCE_KINDS = new Set(['kv-cache', 'embedding', 'attention-probe', 'manual']);
-const ROTATION_KINDS = new Set(['none', 'random-rotation', 'hadamard', 'polar', 'custom']);
+const SOURCE_KINDS = new Set(['kv-cache', 'embedding', 'attention-probe', 'manual', 'qbit-field']);
+const ROTATION_KINDS = new Set(['none', 'random-rotation', 'signed-hash-rotation', 'hadamard', 'polar', 'custom']);
 const QUANTIZATION_KINDS = new Set(['none', 'scalar', 'polar', 'qjl-residual', 'custom']);
 const RESIDUAL_KINDS = new Set(['none', 'qjl', 'sign-bit', 'residual-codebook', 'custom']);
 const TARGET_OPERATIONS = new Set([

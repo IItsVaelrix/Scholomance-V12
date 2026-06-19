@@ -4,6 +4,7 @@ extends RefCounted
 const PIXELBRAIN_KIND := "scholomance.pixelbrain.godot.v1"
 const WAND_KIND := "scholomance.wand.godot.v1"
 const DIVWAND_KIND := "scholomance.divwand.godot.v1"
+const QBIT_WORLD_KIND := "scholomance.qbitworld.godot.v1"
 const SUPPORTED_VERSION := 1
 
 static func load_json_file(source_file: String) -> Dictionary:
@@ -129,6 +130,33 @@ static func validate_divwand_artifact(artifact: Dictionary, supported_roles: Arr
 	var layout_data: Dictionary = layout
 
 	return _validate_divwand_node(layout_data, supported_roles, supported_node_fields, supported_layout_fields, supported_style_fields, strict_validation) and ok
+
+static func validate_qbit_world_artifact(artifact: Dictionary, strict_validation: bool) -> bool:
+	var ok := validate_common_artifact(artifact, QBIT_WORLD_KIND, strict_validation)
+	ok = validate_supported_fields("QBIT world artifact", artifact, ["kind", "version", "schoolWeights", "params", "telemetry", "faces", "pixelBrainAsset", "wandProposal", "divWandNode"], strict_validation) and ok
+
+	var faces: Variant = artifact.get("faces", [])
+	if typeof(faces) != TYPE_ARRAY:
+		return _report("Scholomance Godot Bridge: QBIT world faces must be an array.", strict_validation) and ok
+
+	for face in faces:
+		if typeof(face) != TYPE_DICTIONARY:
+			ok = _report("Scholomance Godot Bridge: QBIT world face must be an object.", strict_validation) and ok
+			continue
+		var face_data: Dictionary = face
+		var polygon: Variant = face_data.get("polygon", [])
+		if typeof(polygon) != TYPE_ARRAY or polygon.size() < 3:
+			ok = _report("Scholomance Godot Bridge: QBIT world face polygon must contain at least 3 points.", strict_validation) and ok
+			continue
+		for point in polygon:
+			if typeof(point) != TYPE_DICTIONARY:
+				ok = _report("Scholomance Godot Bridge: QBIT world polygon point must be an object.", strict_validation) and ok
+				continue
+			var point_data: Dictionary = point
+			if not _is_number(point_data.get("x")) or not _is_number(point_data.get("y")):
+				ok = _report("Scholomance Godot Bridge: QBIT world polygon points require numeric x/y.", strict_validation) and ok
+
+	return ok
 
 static func _validate_divwand_node(node: Dictionary, supported_roles: Array[String], supported_node_fields: Array[String], supported_layout_fields: Array[String], supported_style_fields: Array[String], strict_validation: bool) -> bool:
 	var ok := validate_supported_fields("DivWand node", node, supported_node_fields, strict_validation)

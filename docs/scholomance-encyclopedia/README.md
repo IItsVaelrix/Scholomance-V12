@@ -155,6 +155,7 @@ Reality after implementation.
 - [`Wand_RAID_UX_Audit_Report.md`](./Wand_RAID_UX_Audit_Report.md)
 - [`UX Report/Scrying_Orb_Landing_UX_Report.md`](./UX%20Report/Scrying_Orb_Landing_UX_Report.md)
 - [`UX Report/Wand_RAID_UX_Audit_Report.md`](./UX%20Report/Wand_RAID_UX_Audit_Report.md)
+- [`PIR-20260616-QBIT-VOXEL-LEVEL3.md`](./post-implementation-reports/PIR-20260616-QBIT-VOXEL-LEVEL3.md)
 
 ### Architecture Docs
 

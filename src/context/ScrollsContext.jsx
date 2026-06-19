@@ -15,25 +15,7 @@ const CSRF_HEADER = "x-csrf-token";
 const INDEX_VERSION = 2;
 const PREVIEW_MAX_LENGTH = 120;
 
-let uuidCounter = 0;
-const generateUuid = () => {
-  const s4 = () => {
-    const array = new Uint16Array(1);
-    uuidCounter += 1;
-    const rnd = (uuidCounter * 16807) % 2147483647;
-    array[0] = Math.floor((rnd / 2147483646) * 0x10000);
-    return array[0].toString(16).padStart(4, '0');
-  };
-  const part1 = `${s4()}${s4()}`;
-  const part2 = s4();
-  const part3 = `4${s4().slice(1)}`;
-  uuidCounter += 1;
-  const rnd4 = (uuidCounter * 16807) % 2147483647;
-  const part4 = ((8 + Math.floor((rnd4 / 2147483646) * 4)).toString(16)) + s4().slice(1);
-  const part5 = `${s4()}${s4()}${s4()}`;
-  return `${part1}-${part2}-${part3}-${part4}-${part5}`;
-};
-const generateId = () => generateUuid();
+const generateId = () => crypto.randomUUID();
 const TimestampSchema = z.union([z.number(), z.string()]);
 const ScrollSchema = z.object({
   id: z.string(),

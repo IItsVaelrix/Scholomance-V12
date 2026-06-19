@@ -11,9 +11,9 @@
     --cabinet-accent: #ffd700;
     --cabinet-axis-color: rgba(255, 255, 255, 0.05);
     
-    --cabinet-width: 800px;
-    --wing-width: 280px;
-    --cabinet-h-gap: 24px;
+    --cabinet-width: 820px;
+    --wing-width: 200px;
+    --cabinet-h-gap: 16px;
     
     --terminal-crt-bg: #0a0a14;
     --terminal-scanline: rgba(18, 16, 16, 0.12);
@@ -121,13 +121,14 @@
 .bug-cabinet-shell {
     display: flex;
     justify-content: center;
-    align-items: center;
-    min-height: 100%;
+    align-items: stretch;
+    height: 100%;
     width: 100%;
     position: relative;
-    overflow-x: hidden;
-    padding: 40px 20px;
+    overflow: hidden;
+    padding: 6px 10px;
     perspective: 1200px;
+    box-sizing: border-box;
 }
 
 /* Vertical Symmetry Axis (Diagnostic/Aesthetic) */
@@ -148,9 +149,13 @@
     grid-template-columns: var(--wing-width) var(--cabinet-width) var(--wing-width);
     grid-template-rows: auto 1fr auto;
     gap: 0 var(--cabinet-h-gap);
-    width: min-content;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
     position: relative;
     z-index: 1;
+    overflow: hidden;
+    box-sizing: border-box;
 }
 
 /* --- SIDE RAILS --- */
@@ -314,6 +319,7 @@
     grid-row: 1 / -1;
     display: flex;
     flex-direction: column;
+    height: 100%;
     background: var(--cabinet-bg);
     border: 4px solid var(--cabinet-border);
     border-radius: 12px;
@@ -327,7 +333,7 @@
 }
 
 .cabinet-marquee {
-    height: 60px;
+    height: 44px;
     border-bottom: 2px solid var(--cabinet-border);
     background: linear-gradient(180deg, #1a0a2e 0%, #0a0514 100%);
     display: flex;
@@ -341,14 +347,14 @@
     flex: 1;
     position: relative;
     background: #000;
-    min-height: 480px;
+    min-height: 0;
 }
 
 .cabinet-deck {
-    height: 100px;
+    height: 72px; /* single row of controls with comfortable vertical breathing room */
     border-top: 4px solid var(--cabinet-border);
     background: linear-gradient(180deg, #2a1050 0%, #1a0a2e 100%);
-    padding: 12px;
+    padding: 8px 16px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -410,45 +416,74 @@
 
 /* --- DECK --- */
 
+/* Pixel-perfect single-row button alignment inside the arcade cabinet deck.
+   We use a 1fr | auto | 1fr grid so:
+   - The center column sizes *exactly* to the width of the primary cluster.
+   - The two 1fr side columns are mathematically identical in width.
+   - This guarantees the visual center of the primary actions sits on the exact
+     horizontal center line of the cabinet with pixel precision.
+   - Side clusters are pushed to the outer edges with equal "air" gaps on either
+     side of the center group.
+   - All buttons share the same vertical center line (align-items: center).
+   No overlaps possible because each cluster lives in its own grid track. */
 .bug-deck {
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 40px;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;   /* all buttons vertically centered to the same baseline */
+    padding: 0 14px;
+    gap: 0;                /* the 1fr tracks create the precise inter-group spacing */
 }
 
 .deck-cluster {
     display: flex;
-    gap: 16px;
+    gap: 10px;
     align-items: center;
+}
+
+.deck-cluster--nav {
+    grid-column: 1;
+    justify-content: flex-start;
+}
+
+.deck-cluster--primary {
+    grid-column: 2;
+    justify-content: center;
+}
+
+.deck-cluster--resolution {
+    grid-column: 3;
+    justify-content: flex-end;
 }
 
 .deck-btn {
     position: relative;
-    width: 80px;
-    height: 50px;
+    width: 72px;
+    height: 42px;
     background: #1a0a2e;
     border: 2px solid var(--btn-color);
     border-radius: 4px;
     cursor: pointer;
+    touch-action: manipulation;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 0 var(--btn-color);
+    box-shadow: 0 3px 0 var(--btn-color);
 }
 
 .deck-btn:active {
     box-shadow: 0 1px 0 var(--btn-color);
-    transform: translateY(3px);
+    transform: translateY(4px);
+    filter: brightness(0.82) saturate(0.9);
+    transition: transform 60ms linear, filter 60ms linear;
 }
 
 .deck-btn--primary {
-    width: 100px;
-    height: 60px;
+    width: 88px;
+    height: 46px;
     font-weight: bold;
 }
 
@@ -499,7 +534,7 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    padding: 30px;
+    padding: 16px;
 }
 
 .terminal-scroll-area {
@@ -518,7 +553,7 @@
 }
 
 .terminal-content {
-    padding-bottom: 40px;
+    padding-bottom: 16px;
 }
 
 /* --- WING MODULES --- */
@@ -528,8 +563,8 @@
     background: rgba(10, 5, 20, 0.8);
     border: 1px solid var(--cabinet-border);
     border-radius: 4px;
-    padding: 10px;
-    margin-bottom: 16px;
+    padding: 8px;
+    margin-bottom: 10px;
     font-family: 'Press Start 2P', cursive;
 }
 
@@ -669,6 +704,7 @@
     padding: 8px;
     margin-bottom: 4px;
     cursor: pointer;
+    touch-action: manipulation;
     border-radius: 2px;
     position: relative;
     border: 1px solid transparent;
@@ -807,7 +843,7 @@
 .cabinet-wing {
     display: flex;
     flex-direction: column;
-    padding-top: 60px;
+    padding-top: 44px;
 }
 
 .cabinet-wing--left {
@@ -828,8 +864,8 @@
     background: rgba(26, 10, 46, 0.4);
     border: 2px solid var(--cabinet-border);
     border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 24px;
+    padding: 8px;
+    margin-bottom: 12px;
     position: relative;
 }
 
@@ -848,12 +884,21 @@
     left: -32px;
 }
 
+/* --- WING CONTENT CONTAINER --- */
+
+.wing-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
 /* --- RESPONSIVE --- */
 
 @media (max-width: 1400px) {
     :root {
-        --wing-width: 220px;
-        --cabinet-width: 600px;
+        --wing-width: 180px;
+        --cabinet-width: 720px;
     }
 }
 
@@ -861,32 +906,133 @@
     .bug-cabinet-container {
         grid-template-columns: 1fr;
         grid-template-rows: auto auto auto;
-        gap: 20px 0;
+        gap: 16px 0;
         width: 100%;
-        max-width: 700px;
+        max-width: 900px;
     }
-    
+
     .cabinet-center {
         grid-column: 1;
         grid-row: 2;
         width: 100%;
     }
-    
+
     .cabinet-wing--left {
         grid-column: 1;
         grid-row: 1;
         padding-top: 0;
         align-items: stretch;
     }
-    
+
     .cabinet-wing--right {
         grid-column: 1;
         grid-row: 3;
         padding-top: 0;
         align-items: stretch;
     }
-    
-    .wing-rail::before {
-        display: none;
+
+    .wing-rail::before { display: none; }
+
+    /* Wings go horizontal on tablet */
+    .wing-content {
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
     }
+
+    .checksum-shrine, .recovery-module {
+        flex: 1;
+        min-width: 160px;
+    }
+
+    .wing-rail { width: 100%; margin-bottom: 0; }
+
+    /* Deck: compact */
+    .deck-btn { width: 62px; height: 40px; }
+    .deck-btn--primary { width: 80px; height: 44px; }
+    .deck-btn__label { font-size: 7px; }
+    .deck-btn__hint { display: none; }
+    .cabinet-deck { height: 64px; }
+}
+
+@media (max-width: 768px) {
+    .bug-cabinet-shell { padding: 4px 6px; }
+
+    .bug-cabinet-container {
+        gap: 10px 0;
+    }
+
+    /* Queue rail compact */
+    .queue-row { min-height: 44px; padding: 10px 8px; }
+
+    /* Terminal font sizes */
+    .terminal-bug-title { font-size: 11px; }
+    .terminal-bug-id { font-size: 8px; }
+    .terminal-header__bottom { gap: 10px; font-size: 7px; flex-wrap: wrap; }
+
+    /* Deck compact */
+    .deck-btn { width: 54px; height: 38px; }
+    .deck-btn--primary { width: 70px; height: 42px; }
+    .deck-btn__label { font-size: 6px; }
+    .cabinet-deck { height: 58px; padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+    .bug-cabinet-shell { padding: 2px; }
+
+    .bug-cabinet-container { gap: 6px 0; }
+
+    /* Hide pure-decorative elements */
+    .cabinet-rail { display: none; }
+    .anchor-point { display: none; }
+    .bug-cabinet-shell::after { display: none; }
+    .cabinet-center::before,
+    .cabinet-center::after { display: none; }
+
+    /* Compact marquee */
+    .cabinet-marquee { height: 32px; }
+    .marquee-text { font-size: 0.85rem; letter-spacing: 1px; }
+    .marquee-accent { display: none; }
+
+    /* Deck: 2-row layout for cramped space */
+    .cabinet-deck { height: auto; padding: 6px 8px; }
+
+    .bug-deck {
+        grid-template-columns: 1fr 1fr;
+        grid-template-rows: auto auto;
+        gap: 4px;
+        padding: 0;
+    }
+
+    .deck-cluster--nav      { grid-column: 1; grid-row: 1; }
+    .deck-cluster--resolution { grid-column: 2; grid-row: 1; justify-content: flex-end; }
+    .deck-cluster--primary  { grid-column: 1 / -1; grid-row: 2; justify-content: center; }
+
+    /* Touch targets: minimum 44px height */
+    .deck-btn { width: 52px; height: 44px; }
+    .deck-btn--primary { width: 68px; height: 44px; }
+    .deck-btn__label { font-size: 6px; line-height: 1.2; }
+
+    /* Wing content: horizontal on phone */
+    .wing-content { flex-direction: row; flex-wrap: wrap; gap: 6px; }
+    .checksum-shrine { flex: 1; min-width: 120px; max-width: 50%; }
+    .recovery-module { flex: 1; min-width: 140px; }
+
+    /* Shrine compact */
+    .shrine-header { font-size: 7px; }
+    .shrine-hash { font-size: 7px; }
+    .shrine-orb { width: 18px; height: 18px; }
+
+    /* Terminal compact */
+    .terminal-inner { padding: 10px; }
+    .terminal-bug-title { font-size: 10px; }
+    .terminal-checksum { display: none; }
+
+    /* Queue rail compact */
+    .bug-queue-rail { padding: 6px; }
+    .queue-row { min-height: 44px; padding: 8px 6px; }
+    .queue-row__title { font-size: 5px; }
+
+    /* Lattice map: smaller */
+    .bug-lattice-map { padding: 6px; }
 }

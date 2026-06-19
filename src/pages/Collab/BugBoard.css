@@ -184,6 +184,7 @@
     padding: 10px 16px;
     border-bottom: 1px solid rgba(33, 33, 222, 0.25);
     cursor: pointer;
+    touch-action: manipulation;
     transition: background 0.15s ease;
     position: relative;
     border-left: 3px solid transparent;
@@ -355,6 +356,7 @@
     padding: 7px 12px;
     border-radius: 3px;
     cursor: pointer;
+    touch-action: manipulation;
     letter-spacing: 0.06em;
     transition: all 0.1s ease;
     border: 2px solid transparent;
@@ -647,4 +649,115 @@
 @media (prefers-reduced-motion: reduce) {
     .arcade-scanlines { display: none; }
     .pac-dot { animation: none !important; opacity: 1; }
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .maze-body {
+        max-height: 55vh;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Collapse secondary columns — show ghost icon + title only */
+    .maze-header__col--cat,
+    .maze-header__col--status,
+    .maze-header__col--integrity {
+        display: none;
+    }
+
+    .maze-row__cat-col,
+    .maze-row__status-col,
+    .maze-row__integrity-col {
+        display: none;
+    }
+
+    .maze-header__col--ghost { width: 48px; }
+
+    .maze-row__ghost-col {
+        width: 48px;
+        gap: 4px;
+    }
+
+    .maze-row__ghost-name { display: none; }
+
+    /* Touch-friendly row height */
+    .maze-row {
+        min-height: 52px;
+        padding: 10px 12px;
+    }
+
+    .maze-row__title { font-size: 6px; }
+
+    .arcade-title { font-size: 11px; }
+
+    /* Arcade footer compact */
+    .arcade-footer {
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 8px 12px;
+    }
+
+    .arcade-btn { font-size: 6px; padding: 6px 10px; }
+}
+
+@media (max-width: 480px) {
+    .arcade-header {
+        padding: 8px 10px;
+    }
+
+    .arcade-header__left { width: 36px; }
+
+    .arcade-stats { display: none; }
+
+    .arcade-title { font-size: 9px; letter-spacing: 0.04em; }
+
+    .maze-body {
+        max-height: none;
+    }
+
+    /* Bezel bottom compact */
+    .bug-arcade__bezel--bottom {
+        height: 36px;
+        padding: 0 10px;
+    }
+
+    .bug-arcade__speaker { display: none; }
+
+    .bug-arcade__coin-slot {
+        width: 56px;
+        height: 16px;
+    }
+
+    /* Buttons in arcade footer must be at least 44px tall for touch */
+    .arcade-btn {
+        font-size: 6px;
+        padding: 10px 10px;
+        min-height: 44px;
+    }
+
+    .arcade-btn-row {
+        gap: 8px;
+    }
+
+    /* Empty state compact */
+    .bug-arcade--empty .bug-arcade__screen {
+        min-height: 200px;
+    }
+
+    .bug-arcade__empty-content {
+        padding: 20px 16px;
+    }
+
+    .arcade-text--title { font-size: 12px; }
+    .arcade-text--sub { font-size: 7px; }
+
+    /* Maze row: touch-friendly */
+    .maze-row {
+        min-height: 56px;
+        padding: 12px 10px;
+    }
+
+    .maze-row__title { white-space: normal; line-height: 1.4; }
 }

@@ -42,17 +42,25 @@ const PCA_VOWEL_FORMANTS = Object.freeze({
   AY: Object.freeze([660, 1720]),
   AW: Object.freeze([760, 1320]),
   OY: Object.freeze([500, 1000]),
-  A: Object.freeze([730, 1090]),
   OH: Object.freeze([550, 950]),
   OO: Object.freeze([400, 900]),
   UR: Object.freeze([450, 1200]),
   YUW: Object.freeze([350, 1800]),
 });
 
+// Aliases that map surface spellings → canonical keys present in PCA_VOWEL_FORMANTS.
+// Must stay in sync with FAMILY_IDENTITY in vowelWheel.js.
 const PCA_FAMILY_ALIASES = Object.freeze({
+  // Notation aliases
   YOO: 'YUW',
-  EE: 'IY',
-  IN: 'IH',
+  YOW: 'OW',
+  EE:  'IY',
+  IN:  'IH',
+  A:   'AA',
+  AI:  'AY',
+  OI:  'OY',
+  OU:  'OW',
+  OUR: 'UR',
 });
 
 const SCHOOL_COLOR_ANCHORS = Object.freeze({
@@ -85,7 +93,8 @@ function resolveProjectionFamily(value) {
   const raw = String(value || '').trim().toUpperCase();
   if (!raw) return '';
 
-  const explicit = FAMILY_IDENTITY[raw] || raw;
+  const aliased = PCA_FAMILY_ALIASES[raw] || raw;
+  const explicit = FAMILY_IDENTITY[aliased] || aliased;
   if (PCA_VOWEL_FORMANTS[explicit]) return explicit;
 
   const normalized = FAMILY_IDENTITY[normalizeVowelFamily(raw)] || normalizeVowelFamily(raw);

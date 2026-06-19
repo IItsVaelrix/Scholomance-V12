@@ -1,0 +1,60 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "claymore.v1",
+  "class": "weapon",
+  "archetype": "claymore",
+  "canvas": { "width": 64, "height": 112, "gridSize": 1 },
+  "seed": 1024,
+  "bytecode": "WP-CLAYMORE-IRON",
+  "bands": 8,
+  "parts": [
+    {
+      "id": "blade",
+      "profile": "blade.straight",
+      "params": {
+        "cx": 32,
+        "span": [8, 70],
+        "halfWidthAt": null,
+        "belly": 4
+      },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "guard",
+      "profile": "guard.cross",
+      "params": {
+        "width": 36,
+        "halfBase": 14,
+        "height": 6,
+        "quillonTip": 2
+      },
+      "attach": { "parent": "blade", "at": "base" },
+      "fill": { "material": "void_gold" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "grip",
+      "profile": "grip.wrapped",
+      "params": {
+        "half": 2,
+        "height": 22,
+        "flarePeriod": 4
+      },
+      "attach": { "parent": "guard", "at": "tip" },
+      "fill": { "material": "void_cloth" },
+      "outline": { "material": "voidsteel", "anchor": "body" }
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.round",
+      "params": {
+        "radius": 5
+      },
+      "attach": { "parent": "grip", "at": "tip" },
+      "fill": { "material": "void_gold" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    }
+  ],
+  "proportions": { "profile": "ceremonial_exaggerated" }
+}

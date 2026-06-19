@@ -102,3 +102,40 @@ registerPartProfile('character.accessory.jewelry.runePendant', (params = {}) => 
   return { cells, anchors: { pendant: { x: cx, y: y + 2 } } };
 }, { shader: 'crystal-rim' });
 
+registerPartProfile('character.accessory.signalAntenna', (params = {}) => {
+  const cx = roundInt(params.cx ?? 16);
+  const topY = roundInt(params.topY ?? 2);
+  const stem = params.stem || 'trim_comet_gold';
+  const signal = params.signal || 'neon_mint_signal';
+  const cells = [];
+
+  for (let i = 1; i < 5; i += 1) {
+    pushCell(cells, cx - 2 - i, topY - i, stem);
+    pushCell(cells, cx + 2 + i, topY - i, stem);
+  }
+  for (const side of [-1, 1]) {
+    const sx = cx + side * 7;
+    const sy = topY - 5;
+    pushCell(cells, sx, sy, signal);
+    pushCell(cells, sx - side, sy, signal);
+    pushCell(cells, sx, sy - 1, signal);
+    pushCell(cells, sx + side, sy + 1, signal);
+  }
+
+  return { cells, anchors: { center: { x: cx, y: topY - 3 } } };
+}, { shader: 'ice-glow' });
+
+registerPartProfile('character.accessory.starVisor', (params = {}) => {
+  const cx = roundInt(params.cx ?? 16);
+  const y = roundInt(params.y ?? 10);
+  const frame = params.frame || 'trim_comet_gold';
+  const lens = params.lens || 'neon_mint_signal';
+  const cells = [];
+
+  for (let dx = -6; dx <= 6; dx += 1) pushCell(cells, cx + dx, y, frame);
+  for (const dx of [-5, -4, -3, 3, 4, 5]) pushCell(cells, cx + dx, y + 1, lens);
+  pushCell(cells, cx - 2, y + 1, frame);
+  pushCell(cells, cx + 2, y + 1, frame);
+
+  return { cells, anchors: { center: { x: cx, y } } };
+}, { shader: 'crystal-rim' });

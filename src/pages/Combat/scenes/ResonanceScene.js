@@ -50,11 +50,13 @@ export function buildResonanceScene(Phaser) {
     preload() {
       // WAND/PixelBrain SVG combatant textures, rasterized at native size.
       this.load.image('island_bg', '/void_ice_arena.png');
+      this.load.spritesheet('combat-scholar-walk', '/starbound-esper-chibi-walk-east.png', { frameWidth: 32, frameHeight: 48 });
       try {
         const textures = buildCombatTextures({ school: 'VOID' });
         Object.entries(textures).forEach(([key, { uri, w, h }]) => {
           if (!this.textures.exists(key)) {
-            this.load.svg(key, uri, { width: w, height: h });
+            // We are using PNGs generated from the Item Foundry now instead of WAND SVGs
+            this.load.image(key, uri);
           }
         });
       } catch (err) {
@@ -146,20 +148,7 @@ export function buildResonanceScene(Phaser) {
 
     update(_time, _delta) {
       if (this.reducedMotion) return;
-      
-      if (this._torchLights) {
-        this._torchLights.forEach(t => {
-          t.phase += _delta * 0.005;
-          // Flicker effect
-          t.light.radius = t.baseRadius + Math.sin(t.phase) * 15 + Math.cos(t.phase * 2.3) * 7;
-          t.light.intensity = 0.4 + Math.sin(t.phase * 1.5) * 0.1;
-          
-          if (t.sprite) {
-             t.sprite.setScale(2 + Math.sin(t.phase * 3.1) * 0.05);
-             t.sprite.setAlpha(0.9 + Math.cos(t.phase * 4) * 0.1);
-          }
-        });
-      }
+
 
       this._tiles.forEach((tile) => {
         const vm = this._vmFor(tile.x, tile.y);
@@ -245,48 +234,6 @@ export function buildResonanceScene(Phaser) {
       this._slab = slab;
       this._pillars = [];
 
-      // Dynamic Ice Fire lights and particles for torches
-      this._torchLights = [];
-      const torchPositions = [
-        // Top middle
-        { x: 0, y: -boardWidth * 0.45 },
-        // Far right, top lower edge
-        { x: boardWidth * 0.45, y: -boardWidth * 0.1 },
-        // In front of crystal, near staircase (guessing bottom-left quadrant)
-        { x: -boardWidth * 0.35, y: boardWidth * 0.3 },
-      ];
-
-      torchPositions.forEach(pos => {
-        // Cyan PointLight
-        const light = this.add.pointlight(pos.x, pos.y - 20, 0x00ffff, 120, 0.4, 0.05);
-        light.setDepth(-900);
-        this.boardContainer.add(light);
-        
-        // Add the deterministic WAND torch SVG
-        const sprite = this.add.image(pos.x, pos.y, 'combat-torch');
-        sprite.setDepth(-901);
-        sprite.setOrigin(0.5, 1);
-        sprite.setScale(1.2);
-        this.boardContainer.add(sprite);
-
-        this._torchLights.push({ light, sprite, baseRadius: 120, phase: Math.random() * Math.PI * 2 });
-
-        // Simple particle emitter for fire
-        const particles = this.add.particles(0, 0, 'ice_spark', {
-          x: pos.x,
-          y: pos.y - 40,
-          speed: { min: 20, max: 40 },
-          angle: { min: 250, max: 290 },
-          scale: { start: 2, end: 0 },
-          alpha: { start: 0.8, end: 0 },
-          tint: 0x00ffff,
-          lifespan: 1200,
-          blendMode: 'ADD',
-          frequency: 30,
-        });
-        particles.setDepth(-899);
-        this.boardContainer.add(particles);
-      });
     }
 
     // --- Diamond geometry helpers ------------------------------------------
@@ -510,7 +457,7 @@ export function buildResonanceScene(Phaser) {
     _buildUnit(unit) {
       const { px, py } = this._cellToIso(unit.position.x, unit.position.y);
       const key = textureKeyForUnit(unit);
-      const isScholar = unit.side === 'scholar';
+      const isScholar = unit.id === 'player';
       const container = this.add.container(px, py);
       container.setDepth((unit.position.x + unit.position.y) * 10 + 5);
 
@@ -524,10 +471,24 @@ export function buildResonanceScene(Phaser) {
       let sprite;
       const charData = this._characterTextures?.get(unit.id);
       const resolvedKey = charData?.textureKey ?? key;
-      if (this.textures.exists(resolvedKey)) {
-        sprite = this.add.image(0, 0, resolvedKey).setOrigin(0.5, 1);
+      if (this.textures.exists(resolvedKey) || isScholar) {
+        if (isScholar && this.textures.exists('combat-scholar-walk')) {
+          sprite = this.add.sprite(0, 0, 'combat-scholar-walk').setOrigin(0.5, 1);
+          if (!this.anims.exists('scholar-walk')) {
+            this.anims.create({
+              key: 'scholar-walk',
+              frames: this.anims.generateFrameNumbers('combat-scholar-walk', { start: 0, end: 3 }),
+              frameRate: 6,
+              repeat: -1
+            });
+          }
+          sprite.play('scholar-walk');
+        } else if (this.textures.exists(resolvedKey)) {
+          sprite = this.add.image(0, 0, resolvedKey).setOrigin(0.5, 1);
+        }
+
         const targetW = this.tileW * (isScholar ? 1.85 : 2.15);
-        sprite.setScale(targetW / sprite.width);
+        sprite.setScale(targetW / (isScholar && this.textures.exists('combat-scholar-walk') ? 32 : sprite.width));
         sprite.y = this.tileH * 0.28; // feet sit just below tile center
         sprite.setOrigin(0.5, 1);
         // Apply GPU glow effects if we have compiled uniforms.
@@ -614,7 +575,7 @@ export function buildResonanceScene(Phaser) {
               sprite.scaleX = 1;
               sprite.scaleY = 1;
               this._playTileLockEffect(targetCoord, unit?.school || 'SONIC');
-              this._startIdleFloat(container, unit?.side === 'scholar');
+              this._startIdleFloat(container, unit?.id === 'player');
               this._animating = false;
               this.boardContainer.sort('depth');
               if (this._pendingUnitsRebuild) this._rebuildUnits();
@@ -892,8 +853,8 @@ export function buildResonanceScene(Phaser) {
           let lx = tilePx;
           let ly = tilePy;
           for (let step = 0; step < 4; step++) {
-            const dx = (Math.random() - 0.5) * 40; // EXEMPT — cosmetic crackle path
-            const dy = (Math.random() - 0.5) * 20; // EXEMPT — cosmetic crackle path
+            const dx = (Math.random() - 0.5) * 40; // IMMUNE_ALLOW: math-random — cosmetic crackle path
+            const dy = (Math.random() - 0.5) * 20; // IMMUNE_ALLOW: math-random — cosmetic crackle path
             lx += dx;
             ly += dy;
             crackle.lineTo(lx, ly);

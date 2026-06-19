@@ -102,6 +102,37 @@ function normalizeColors(payload) {
   return colors.map(colorToNumber);
 }
 
+function normalizeQbitField(payload, dimensions, targetDimension) {
+  if (!payload || typeof payload !== 'object') return [];
+
+  const field = ArrayBuffer.isView(payload.energyField) ? payload.energyField : null;
+  if (!field || field.length === 0) return [];
+
+  const width = Math.max(1, Number(dimensions?.width) || Number(payload.width) || 0);
+  const height = Math.max(1, Number(dimensions?.height) || Number(payload.height) || 0);
+  const depth = Math.max(1, Number(dimensions?.depth) || Number(payload.depth) || 0);
+  const expectedLength = width * height * depth;
+  const length = expectedLength > 0 ? Math.min(field.length, expectedLength) : field.length;
+  const stride = Math.max(1, Math.floor(length / targetDimension));
+  const values = [];
+
+  for (let index = 0; index < length && values.length < targetDimension; index += stride) {
+    const energy = numberOrZero(field[index]);
+    const clamped = Math.max(0, Math.min(1, energy));
+    values.push(clamped * 255);
+  }
+
+  const gradientField = ArrayBuffer.isView(payload.gradientField) ? payload.gradientField : null;
+  if (gradientField && values.length < targetDimension) {
+    const gradStride = Math.max(1, Math.floor(gradientField.length / Math.max(1, targetDimension - values.length)));
+    for (let index = 0; index < gradientField.length && values.length < targetDimension; index += gradStride) {
+      values.push(numberOrZero(gradientField[index]) * 127);
+    }
+  }
+
+  return values;
+}
+
 export function normalizeRetinaPayload(input, config) {
   let values;
 
@@ -123,6 +154,9 @@ export function normalizeRetinaPayload(input, config) {
       break;
     case 'colors':
       values = normalizeColors(input.payload);
+      break;
+    case 'qbit-field':
+      values = normalizeQbitField(input.payload, input.dimensions, config.targetDimension);
       break;
     default:
       values = [];

@@ -75,3 +75,70 @@ registerPartProfile('character.detail.cheekSigil.snow', (params = {}) => {
   return { cells, anchors: { center: { x: cx, y } } };
 }, { shader: 'ice-glow' });
 
+registerPartProfile('character.detail.jacketConstellation', (params = {}) => {
+  const cx = roundInt(params.cx ?? 16);
+  const shoulderY = roundInt(params.shoulderY ?? 21);
+  const color = String(params.color || '').startsWith('#') ? params.color : '#56F0C8';
+  const gold = String(params.gold || '').startsWith('#') ? params.gold : '#D99A2B';
+  const cells = [];
+
+  for (const [dx, dy] of [[0, 2], [-1, 3], [1, 3], [0, 4], [0, 6]]) {
+    pushCell(cells, cx + dx, shoulderY + dy, color);
+  }
+  for (const [dx, dy] of [[-1, 4], [0, 4], [1, 4], [0, 5], [0, 6]]) {
+    pushCell(cells, cx + dx, shoulderY + dy, gold);
+  }
+
+  return { cells, anchors: { center: { x: cx, y: shoulderY + 4 } } };
+}, { shader: 'ice-glow' });
+
+registerPartProfile('character.detail.cheekPixelBlush', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 16);
+  const y = roundInt(params.y ?? 14);
+  const color = params.color || '#F08A78';
+  const direction = String(options.direction || 'south');
+  const cells = [];
+
+  // Profile views: only the near cheek (facing the viewer) is visible
+  const sides = direction === 'east' ? [1]
+    : direction === 'west' ? [-1]
+    : [-1, 1];
+
+  for (const side of sides) {
+    pushCell(cells, cx + side * 5, y, color);
+    pushCell(cells, cx + side * 6, y, color);
+    pushCell(cells, cx + side * 5, y + 1, color);
+  }
+
+  return { cells, anchors: { center: { x: cx, y } } };
+});
+
+// Flat oval shadow placed 2px below the ankle — sits on the ground plane.
+// Uses an explicit dark color so it bypasses the material ramp and always
+// renders as a fixed void-tinted dark, regardless of character skin/school.
+registerPartProfile('character.detail.castShadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 16);
+  const direction = String(options.direction || 'south');
+  const bodyAnchors = options.bodyAnchors || {};
+  const ankleY = bodyAnchors.ankleL?.y ?? 40;
+  // footBot = ankleY + 1; shadow starts 2px below that
+  const shadowTopY = ankleY + 3;
+  const color = params.color || '#1c1c2e';
+  const cells = [];
+
+  // Narrower in profile — the ground ellipse foreshortens on a side view
+  const isProfile = direction === 'east' || direction === 'west';
+  const halfWidths = isProfile
+    ? [1, 2, 2, 1]
+    : [2, 3, 3, 2];
+
+  for (let row = 0; row < halfWidths.length; row += 1) {
+    const halfW = halfWidths[row];
+    const y = shadowTopY + row;
+    for (let dx = -halfW; dx <= halfW; dx += 1) {
+      pushCell(cells, cx + dx, y, color);
+    }
+  }
+
+  return { cells, anchors: {} };
+});

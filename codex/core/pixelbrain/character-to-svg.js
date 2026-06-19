@@ -137,7 +137,9 @@ const SHADER_FILTERS = {
 // in character-accessory-profiles.js and character-detail-profiles.js.
 const PART_SHADER_FALLBACK = {
   eyeGlow: 'ice-glow', halo: 'ice-glow', wings: 'ice-glow', hairShine: 'ice-glow', cheekSigil: 'ice-glow',
+  antenna: 'ice-glow', constellation: 'ice-glow',
   crown: 'crystal-rim', pendant: 'crystal-rim', robeTrim: 'crystal-rim', mantle: 'crystal-rim',
+  visor: 'crystal-rim',
 };
 
 function shaderForPart(partId, enabled) {

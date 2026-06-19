@@ -25,10 +25,10 @@ describe('Multi-Syllable Rhyme Detection', () => {
     const w1 = PhonemeEngine.analyzeDeep('dumb');
     const w2 = PhonemeEngine.analyzeDeep('tongue');
     const match = PhonemeEngine.scoreMultiSyllableMatch(w1, w2);
-    
-    // M and NG are too distinct for a high-quality rhyme (gate on codaScore)
-    expect(match.score).toBe(0);
-    expect(match.type).toBe('none');
+
+    // M and NG share nasal quality — Lever 3 rescues them as a nasal coda slant
+    expect(match.score).toBeCloseTo(0.72, 2);
+    expect(match.type).toBe('masculine');
   });
 
   it('should handle dactylic rhymes (3+ syllables)', () => {

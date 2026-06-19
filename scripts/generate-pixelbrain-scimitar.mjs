@@ -162,7 +162,7 @@ function rasterLine(x0, y0, x1, y1, emit) {
 }
 
 function buildLightningBolt() {
-  const offsets = [+1, -2, +2, -1, +1, -2, +2, -1, 0];
+  const offsets = [+1, -1, +2, -2, +1, -1, +1, -1, 0];
   const waypoints = [];
   for (let i = 0; i < offsets.length; i += 1) {
     const y = 6 + i * 6; // rows 6..54 down the blade
@@ -175,7 +175,8 @@ function buildLightningBolt() {
     rasterLine(a.x, a.y, b.x, b.y, (x, y) => bolt.add(`${x},${y}`));
   }
   // Fork: short branch off the first waypoint toward the tip's trailing edge.
-  rasterLine(waypoints[0].x, waypoints[0].y, bladeCenterX(3) - 1, 3, (x, y) => bolt.add(`${x},${y}`));
+  // bladeHalfWidth(3) is 1, so the only safe interior x is exactly bladeCenterX(3)
+  rasterLine(waypoints[0].x, waypoints[0].y, bladeCenterX(3), 3, (x, y) => bolt.add(`${x},${y}`));
   return bolt;
 }
 

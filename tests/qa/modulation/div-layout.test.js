@@ -438,3 +438,105 @@ describe('voxel node type', () => {
     expect(errors.some(e => e.includes('unknownField'))).toBe(true);
   });
 });
+
+// =====================================================================
+// QBIT-Voxel Level 3 Step 2.4 — world node type
+// =====================================================================
+
+describe('world node type', () => {
+  const validWorldSpec = {
+    chunkSize: { w: 32, h: 32, d: 32 },
+    chunkCount: { x: 4, y: 1, z: 4 },
+    seed: 42,
+  };
+
+  it('accepts a valid world node with full worldSpec', () => {
+    const node = {
+      id: 'world-bg',
+      type: 'world',
+      role: 'world-scene',
+      layout: { width: 800, height: 600 },
+      props: { worldSpec: validWorldSpec },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors).toEqual([]);
+  });
+
+  it('accepts a world node with attenuation model and overlap radius', () => {
+    const node = {
+      id: 'world-tuned',
+      type: 'world',
+      role: 'world-scene',
+      props: {
+        worldSpec: {
+          ...validWorldSpec,
+          attenuationModel: 'phi_attenuation',
+          overlapRadius: 25,
+        },
+      },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors).toEqual([]);
+  });
+
+  it('rejects world node with wrong role', () => {
+    const node = {
+      id: 'bad-world',
+      type: 'world',
+      role: 'voxel-scene',
+      props: { worldSpec: validWorldSpec },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('world') && e.includes('world-scene'))).toBe(true);
+  });
+
+  it('rejects world node without worldSpec', () => {
+    const node = {
+      id: 'no-spec',
+      type: 'world',
+      role: 'world-scene',
+      props: {},
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('worldSpec'))).toBe(true);
+  });
+
+  it('rejects world node with non-power-of-two chunkSize', () => {
+    const node = {
+      id: 'bad-size',
+      type: 'world',
+      role: 'world-scene',
+      props: {
+        worldSpec: { ...validWorldSpec, chunkSize: { w: 30, h: 32, d: 32 } },
+      },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('chunkSize') && e.includes('power of two'))).toBe(true);
+  });
+
+  it('rejects world node with chunkCount < 1', () => {
+    const node = {
+      id: 'bad-count',
+      type: 'world',
+      role: 'world-scene',
+      props: {
+        worldSpec: { ...validWorldSpec, chunkCount: { x: 0, y: 1, z: 4 } },
+      },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('chunkCount'))).toBe(true);
+  });
+
+  it('rejects world node with invalid attenuation model', () => {
+    const node = {
+      id: 'bad-atten',
+      type: 'world',
+      role: 'world-scene',
+      props: {
+        worldSpec: { ...validWorldSpec, attenuationModel: 'made_up_model' },
+      },
+    };
+    const errors = validateDivLayout(node);
+    expect(errors.some(e => e.includes('attenuationModel'))).toBe(true);
+  });
+});

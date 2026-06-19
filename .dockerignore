@@ -1,13 +1,14 @@
 node_modules
 dist
 build
-output/videos
-output/web-game
+output/
+out/
 playwright-report
 test-results
 .git
 .gitignore
 .claude
+.codex/
 .env
 .env.*
 *.log
@@ -17,7 +18,14 @@ dict_data
 docs
 ARCHIVE/
 ARCHIVE REFERENCE DOCS/
+tests/
+OrChat/
+music/
+media/
+godot_project/
 *.sqlite
+*.sqlite-wal
+*.sqlite-shm
 *.png
 *.bmp
 *.jpg

@@ -14,6 +14,7 @@ export const PixelBrainPage = lazyWithRetry(() => import("../pages/PixelBrain/Pi
 export const CareerPage = lazyWithRetry(() => import("../pages/Career/CareerPage"), "career-page");
 export const WandPage = lazyWithRetry(() => import("../pages/Wand/WandPage.jsx"), "wand-page");
 export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandPage.jsx"), "div-wand-page");
+export const QbitWorldPage = lazyWithRetry(() => import("../pages/QbitWorld/QbitWorldPage.jsx"), "qbit-world-page");
 
 export const PhotonicBridgeLab = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge");
 export const StudioUpload = lazyWithRetry(() => import("../pages/internal/Studio/StudioUpload.jsx"), "studio-upload");
@@ -26,7 +27,7 @@ export const BlogArticlePage = lazyWithRetry(() => import("../pages/Blog/Article
 export const VisualizerReleasePage = lazyWithRetry(() => import("../pages/VisualizerRelease/VisualizerReleasePage"), "visualizer-release-page");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
-const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox", "/internal/time-lab"];
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/qbit-world", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox", "/internal/time-lab"];
 
 export const ALL_COMPONENTS = {
   "/watch": WatchPage,
@@ -41,6 +42,7 @@ export const ALL_COMPONENTS = {
   "/career": CareerPage,
   "/wand": WandPage,
   "/div-wand": DivWandPage,
+  "/qbit-world": QbitWorldPage,
   "/internal/photonic-bridge": PhotonicBridgeLab,
   "/internal/studio": StudioUpload,
   "/internal/pixel-lotus/actor-forge": ActorForgeLab,

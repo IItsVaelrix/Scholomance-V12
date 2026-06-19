@@ -9,12 +9,10 @@
 /* Base school keyframes — parameterized */
 
 @keyframes anim-breathe {
-  0%, 100% { 
-    transform: scale(1.0);
+  0%, 100% {
     box-shadow: 0 0 calc(var(--anim-glow-radius, 8px) * 0.5) var(--anim-glow-color, transparent);
   }
-  50% { 
-    transform: scale(1.015);
+  50% {
     box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent);
   }
 }
@@ -45,10 +43,10 @@
 }
 
 @keyframes anim-sawtooth {
-  0%   { transform: scale(1.0); }
-  85%  { transform: scale(1.025); }
-  90%  { transform: scale(0.98); }
-  100% { transform: scale(1.0); }
+  0%   { box-shadow: none; }
+  85%  { box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); }
+  90%  { box-shadow: 0 0 calc(var(--anim-glow-radius, 8px) * 0.3) var(--anim-glow-color, transparent); }
+  100% { box-shadow: none; }
 }
 
 @keyframes anim-square {
@@ -58,8 +56,8 @@
 }
 
 @keyframes anim-decay {
-  0% { transform: scale(1.05); opacity: 1; }
-  100% { transform: scale(1); opacity: 0.6; }
+  0% { opacity: 1; box-shadow: 0 0 var(--anim-glow-radius, 8px) var(--anim-glow-color, transparent); }
+  100% { opacity: 0.6; box-shadow: none; }
 }
 
 /* Stat overlay keyframes */

@@ -231,7 +231,9 @@ function getAdaptiveTokenWidth(
 ): number {
   return measureTextWidth(token, topology.fontFamily, topology.fontSize, {
     fontStyle: topology.fontStyle,
-    fontWeight: topology.fontWeight
+    fontWeight: topology.fontWeight,
+    letterSpacing: topology.letterSpacing,
+    wordSpacing: topology.wordSpacing,
   });
 }
 

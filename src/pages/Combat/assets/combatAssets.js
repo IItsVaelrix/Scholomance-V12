@@ -12,8 +12,10 @@
  * anti-skeuomorphic sigil mandate.
  */
 
-import { renderWandSvgUri } from './wandSvg.js';
 import { bakeAll } from '../scenes/CharacterShaderRenderer.js';
+import { combat_tileUri } from './generated/combat-tile.js';
+import { combat_torchUri } from './generated/combat-torch.js';
+import { combat_leylineUri } from './generated/combat-leyline.js';
 
 export const SCHOOL_PALETTE = {
   SONIC:   { primary: '#8a5bff', glow: '#b79bff', dark: '#1a0f33', accent: '#ffe27a' },
@@ -237,21 +239,25 @@ export function buildPillarTexture({ school = 'VOID', w = 96, h = 248 } = {}) {
 // ---------------------------------------------------------------------------
 
 export function buildCombatTextures({ school = 'SONIC' } = {}) {
-  const tileW = 128, tileH = 64;
-  const scholarW = 170, scholarH = 232;
-  const wraithW = 200, wraithH = 264;
-  const torchW = 60, torchH = 120;
+  const tileW = 256, tileH = 128;
+  const torchW = 120, torchH = 240;
+  // Fallbacks for characters (since they are dynamically baked now)
+  const scholarW = 128, scholarH = 192;
+  const wraithW = 128, wraithH = 192;
+
+  // For characters, the placeholder can just be an empty transparent URI or we rely on them baking in.
+  // Using the tile URI as a placeholder so Phaser has *something* before bakeAll finishes
   return {
-    'combat-tile':    { uri: buildTileTexture({ w: tileW, h: tileH, school }), w: tileW, h: tileH },
-    'combat-scholar': { uri: buildScholarTexture({ w: scholarW, h: scholarH }), w: scholarW, h: scholarH },
-    'combat-wraith':  { uri: buildWraithTexture({ w: wraithW, h: wraithH }), w: wraithW, h: wraithH },
-    'combat-torch':   { uri: buildTorchTexture({ w: torchW, h: torchH }), w: torchW, h: torchH },
-    'combat-leyline': { uri: buildLeylineTexture({ w: tileW, h: tileH }), w: tileW, h: tileH },
+    'combat-tile':    { uri: combat_tileUri, w: tileW, h: tileH },
+    'combat-scholar': { uri: combat_tileUri, w: scholarW, h: scholarH },
+    'combat-wraith':  { uri: combat_tileUri, w: wraithW, h: wraithH },
+    'combat-torch':   { uri: combat_torchUri, w: torchW, h: torchH },
+    'combat-leyline': { uri: combat_leylineUri, w: tileW, h: tileH },
   };
 }
 
 export function textureKeyForUnit(unit) {
-  return unit?.side === 'scholar' ? 'combat-scholar' : 'combat-wraith';
+  return unit?.id === 'player' ? 'combat-scholar' : 'combat-wraith';
 }
 
 export function buildLeylineTexture({ w = 128, h = 64 } = {}) {

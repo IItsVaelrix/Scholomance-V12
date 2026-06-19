@@ -7,6 +7,7 @@
  */
 
 import { hashString } from './shared.js';
+import { extractQBITGraph } from './qbit-node-extractor.js';
 
 function boundsForPart(partOf, partId) {
   let minX = Infinity;
@@ -79,6 +80,8 @@ export function buildGeometryAmpPayload({ spec, silhouette, construction = null 
   const roleCounts = Object.create(null);
   const partById = new Map(spec.parts.map((part) => [part.id, part]));
 
+  const qbitGraphs = extractQBITGraph(silhouette, spec.canvas);
+
   for (const part of spec.parts) {
     const bounds = boundsForPart(silhouette.partOf, part.id);
     if (!bounds) continue;
@@ -100,6 +103,7 @@ export function buildGeometryAmpPayload({ spec, silhouette, construction = null 
       outline: resolvePartField(partById, part, 'outline')?.material || null,
       bounds,
       uv: uvBounds(bounds, spec.canvas),
+      qbit: qbitGraphs.get(part.id) ?? null,
     }));
   }
 

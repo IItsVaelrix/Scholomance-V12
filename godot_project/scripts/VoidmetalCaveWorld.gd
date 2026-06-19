@@ -3,10 +3,20 @@ extends Node3D
 const TorchScene := preload("res://scripts/Torch.gd")
 const VolumeAMP := preload("res://scripts/VolumeAMP.gd")
 const InventoryClass := preload("res://scripts/Inventory.gd")
+const PixelBrainItemBuilder := preload("res://scripts/PixelBrainItemBuilder.gd")
 
 const WORLD_PATH := "res://assets/voidmetal-cave.qworld"
-const SCHOLAR_PATH := "res://assets/void-scholar-voxel.packet.json"
+const SCHOLAR_PATH := "res://assets/void-scholar-blue.packet.json"
+const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe.pbrain"
 const SCHOLAR_ART_PATH: String = "res://assets/void-scholar.svg"
+# Blue/black voxel scholar render + rig (see scratch/scholar-cells.mjs).
+const SCHOLAR_VOXEL_SIZE := 0.028
+const SCHOLAR_GROUND_Y := -0.80
+# The model's "front" (hood opening / eyes) faces the +X+Z diagonal; rotate it so
+# that diagonal aligns with the movement heading. Calibrated against the renderer.
+const SCHOLAR_FRONT_YAW_OFFSET := -PI / 4.0
+# Idle/walk sway loop period (s). Matches the 16-frame @12fps authoring loop.
+const SCHOLAR_ANIM_PERIOD := 16.0 / 12.0
 const BLOCK_REGISTRY_PATH := "res://assets/blocks/block-registry.json"
 const PLAYER_SPEED := 5.4
 const MOUSE_SENSITIVITY := 0.0025
@@ -20,11 +30,6 @@ const DEFAULT_CHUNK_SIZE_X := 12
 const DEFAULT_CHUNK_SIZE_Z := 12
 const DEFAULT_ACTIVE_CHUNK_RADIUS := 1
 const TERRAIN_ATLAS_TILE_SIZE := 32
-const VOXEL_LIGHT_RADIUS := 9.0
-const VOXEL_LIGHT_BOUNCE_RADIUS := 3.5
-const VOXEL_LIGHT_AMBIENT := 0.28
-const VOXEL_LIGHT_DIRECT := 0.72
-const VOXEL_LIGHT_BOUNCE := 0.26
 const GREEDY_FACE_SPECS := {
 	"top": {"u": "x", "v": "z"},
 	"bottom": {"u": "x", "v": "z"},
@@ -44,6 +49,12 @@ const FACE_ATLAS_ROWS := {
 const INVENTORY_MANIFEST_PATH := "res://assets/inventory/inventory-assets.manifest.json"
 const PICKAXE_REST_POS := Vector3(0.38, -0.40, -0.64)
 const PICKAXE_REST_ROT := Vector3(14.0, -16.0, 8.0)
+# Ore photonic diffusion: emissive materials, and the minimum connected-cluster
+# size that earns a real OmniLight. Below this, ore stays emissive-only (it still
+# glows + rides SSIL/fog, but casts no light). T=4 chosen from the world's actual
+# cluster distribution — see the ore-lights white paper / cluster analysis.
+const ORE_MATERIALS := [3, 4, 5]
+const ORE_LIGHT_MIN_CLUSTER := 4
 const MINING_ANIM_SPEED := 5.5
 const FLOAT_ITEM_DURATION := 0.55
 const INVENTORY_COLUMNS := 6
@@ -70,15 +81,17 @@ const STARTER_ITEMS := {
 
 var _world: Dictionary = {}
 var _occupied := {}
+# Integer-keyed mirrors (Vector3i keys) for the hot meshing path, where string
+# keys/splits dominated rebuild time. _occ maps cell -> material_id.
+var _occ := {}
 var _block_ids := {}
+var _block_ids_v := {}
 var _walkable := {}
 var _mineables := {}
 var _materials := {}
 var _block_registry: Dictionary = {}
 var _block_atlas_slots := {}
 var _terrain_chunks := {}
-var _voxel_light_cache := {}
-var _emissive_voxels: Array[Dictionary] = []
 var _terrain_root: Node3D
 var _terrain_atlas_material: StandardMaterial3D
 var _terrain_atlas_columns := 1
@@ -92,6 +105,21 @@ var _inventory_open := false
 var _third_person := false
 var _yaw := 0.0
 var _pitch := 0.0
+# Third-person orbit camera: yaw/pitch around the scholar, driven by left-drag.
+var _cam_yaw := 0.0
+var _cam_pitch := 0.5
+var _orbit_drag := false
+# Heading the avatar is currently turned to (radians); follows movement.
+var _avatar_facing := 0.0
+# Scholar rig: animatable part pivots and the looping sway phase.
+var _rig_body: Node3D
+var _rig_arm_r: Node3D
+var _rig_arm_l: Node3D
+var _rig_leg_r: Node3D
+var _rig_leg_l: Node3D
+var _rig_body_base := Vector3.ZERO
+var _rig_phase := 0.0
+var _moving := false
 var _player: CharacterBody3D
 var _camera: Camera3D
 var _avatar_root: Node3D
@@ -102,6 +130,7 @@ var _inventory_slots: Array = []
 var _placed_torches := {}
 var _sword_mesh: MeshInstance3D
 var _pickaxe_mesh: Node3D
+var _ore_lights_root: Node3D
 var _mining_anim_t := -1.0
 var _float_items: Array = []
 var _debug_tick_counter := 0
@@ -109,6 +138,13 @@ var _simulate_walk := false
 var _simulate_walk_start_pos: Vector3
 var _simulate_walk_tick := 0
 var _dirty_chunks: Array[String] = []
+# Threaded chunk remesh ("two-sided kitchen"): the main thread hands a worker a
+# self-contained snapshot, the worker builds the mesh, the main thread swaps it
+# in once WorkerThreadPool reports the task done. One task in flight at a time.
+var _mesh_task_id := -1
+var _mesh_task_chunk := ""
+var _mesh_task_mesh: ArrayMesh = null
+var _mesh_task_snapshot: Dictionary = {}
 
 func _ready() -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
@@ -124,6 +160,7 @@ func _ready() -> void:
 	_build_terrain()
 	_build_player()
 	_build_lighting()
+	_build_ore_lights()
 	_build_hud()
 	_build_inventory_ui()
 	_give_starter_items()
@@ -135,9 +172,7 @@ func _ready() -> void:
 		print("simulate-walk mode: forcing +X velocity for 60 frames")
 
 func _physics_process(delta: float) -> void:
-	if _dirty_chunks.size() > 0:
-		var chunk_key: String = _dirty_chunks.pop_front()
-		_rebuild_chunk_mesh(chunk_key)
+	_process_chunk_mesh_jobs()
 
 	if _player == null:
 		return
@@ -163,12 +198,22 @@ func _physics_process(delta: float) -> void:
 		])
 		_debug_tick_counter += 1
 
-	var basis := Basis(Vector3.UP, _yaw)
+	# In third person, movement is relative to the orbiting camera; in first
+	# person it is relative to where the player is looking.
+	var look_yaw := _cam_yaw if _third_person else _yaw
+	var basis := Basis(Vector3.UP, look_yaw)
 	var forward := -basis.z
 	var right := basis.x
 	var direction := (forward * input.y + right * input.x).normalized()
 	_player.velocity.x = direction.x * PLAYER_SPEED
 	_player.velocity.z = direction.z * PLAYER_SPEED
+
+	# Turn the third-person avatar to face the direction it is moving. The model's
+	# front is its +X+Z diagonal, so SCHOLAR_FRONT_YAW_OFFSET rotates that face
+	# onto the movement vector (otherwise it walks sideways / faces the camera).
+	_moving = direction.length() > 0.01
+	if _third_person and _moving:
+		_avatar_facing = atan2(direction.x, direction.z) + SCHOLAR_FRONT_YAW_OFFSET
 
 	if not _player.is_on_floor():
 		_player.velocity.y -= GRAVITY * delta
@@ -180,6 +225,7 @@ func _physics_process(delta: float) -> void:
 	_update_camera_transform()
 	_update_hud()
 	_tick_pickaxe_anim(delta)
+	_tick_scholar_rig(delta)
 	_tick_float_items(delta)
 
 	if _simulate_walk:
@@ -203,7 +249,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_ESCAPE:
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		elif event.keycode == KEY_C and event.alt_pressed:
+		elif event.keycode == KEY_C:
+			# Plain C (with or without Alt). Requiring Alt+C is fragile: some
+			# keyboards can't report that pair (matrix ghosting) and right-Alt
+			# (AltGr) does not set alt_pressed, so the combo silently no-ops.
 			_third_person = not _third_person
 			_update_camera_mode()
 		elif event.keycode == KEY_I:
@@ -216,14 +265,26 @@ func _unhandled_input(event: InputEvent) -> void:
 			_craft_recipe(RECIPE_SWORD)
 		elif event.keycode == KEY_E:
 			_mine_nearest_voidmetal()
-	elif event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_RIGHT and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-			_raycast_mine_block()
-		else:
-			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
-	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
-		_yaw -= event.relative.x * MOUSE_SENSITIVITY
-		_pitch = clamp(_pitch - event.relative.y * MOUSE_SENSITIVITY, -1.25, 1.15)
+	elif event is InputEventMouseButton:
+		if _third_person:
+			# Middle-drag orbits the camera; left-click stays bound to mining.
+			if event.button_index == MOUSE_BUTTON_MIDDLE:
+				_orbit_drag = event.pressed
+			elif event.pressed and (event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT):
+				_raycast_mine_block()
+		elif event.pressed:
+			if event.button_index == MOUSE_BUTTON_RIGHT and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+				_raycast_mine_block()
+			else:
+				Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+	elif event is InputEventMouseMotion:
+		if _third_person:
+			if _orbit_drag:
+				_cam_yaw -= event.relative.x * MOUSE_SENSITIVITY
+				_cam_pitch = clamp(_cam_pitch + event.relative.y * MOUSE_SENSITIVITY, -0.2, 1.35)
+		elif Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
+			_yaw -= event.relative.x * MOUSE_SENSITIVITY
+			_pitch = clamp(_pitch - event.relative.y * MOUSE_SENSITIVITY, -1.25, 1.15)
 
 func _load_json(path: String) -> Dictionary:
 	var file := FileAccess.open(path, FileAccess.READ)
@@ -239,10 +300,14 @@ func _build_lookup_tables() -> void:
 	_load_block_registry()
 
 	for solid in _world.get("gameplay", {}).get("collisionSolids", []):
+		var cell := Vector3i(int(solid.x), int(solid.y), int(solid.z))
 		var key := _key(solid.x, solid.y, solid.z)
 		var material_id: int = int(solid.materialId)
+		var bid := str(solid.get("blockId", _resolve_block_id(material_id, cell.x, cell.y, cell.z)))
 		_occupied[key] = material_id
-		_block_ids[key] = str(solid.get("blockId", _resolve_block_id(material_id, int(solid.x), int(solid.y), int(solid.z))))
+		_occ[cell] = material_id
+		_block_ids[key] = bid
+		_block_ids_v[cell] = bid
 
 	for cell in _world.get("gameplay", {}).get("walkable", []):
 		_walkable[_key(cell.x, cell.y, cell.z)] = true
@@ -250,8 +315,6 @@ func _build_lookup_tables() -> void:
 	for node in _world.get("gameplay", {}).get("mineables", []):
 		var voxel: Dictionary = node.get("voxel", {})
 		_mineables[_key(voxel.x, voxel.y, voxel.z)] = node
-
-	_build_emissive_voxel_index()
 
 	_materials = {
 		1: _make_material(Color(0.07, 0.06, 0.12), Color.BLACK),
@@ -291,7 +354,6 @@ func _build_block_atlas_slots() -> void:
 
 func _build_terrain() -> void:
 	_terrain_chunks.clear()
-	_voxel_light_cache.clear()
 	_terrain_atlas_material = _build_terrain_atlas_material()
 	_terrain_root = Node3D.new()
 	_terrain_root.name = "GeneratedTerrain"
@@ -306,10 +368,11 @@ func _build_terrain() -> void:
 		var chunk_key: String = _chunk_key_for_cell(x, z)
 		var chunk_data: Dictionary = _terrain_chunk_data(chunk_key, x, z)
 		chunk_data.solid_keys.append(key)
+		chunk_data.solid_cells.append(Vector3i(x, y, z))
 
 	for chunk_key in _terrain_chunks.keys():
 		var chunk_data: Dictionary = _terrain_chunks[chunk_key]
-		_build_greedy_chunk_mesh(chunk_data)
+		_build_greedy_chunk_mesh(chunk_data.surface_tool, chunk_data.solid_cells, _occ, _block_ids_v)
 
 	for key in _walkable.keys():
 		var parts: PackedStringArray = String(key).split(",")
@@ -359,15 +422,6 @@ func _load_chunk_settings() -> void:
 	_chunk_size_z = max(1, int(chunk_size.get("z", DEFAULT_CHUNK_SIZE_Z)))
 	_active_chunk_radius = max(0, int(chunk_info.get("activeRadius", DEFAULT_ACTIVE_CHUNK_RADIUS)))
 
-# Remove the emissive light source at a mined cell so the volume stays in sync
-# with occupancy. Without this, a mined ore keeps glowing and reads as if the
-# block were still there. Static + array-in so it is unit-testable.
-static func prune_emissive_at(emissive: Array, x: int, y: int, z: int) -> void:
-	for i in range(emissive.size() - 1, -1, -1):
-		var pos: Vector3 = emissive[i].get("position", Vector3.ZERO)
-		if int(floor(pos.x)) == x and int(floor(pos.y)) == y and int(floor(pos.z)) == z:
-			emissive.remove_at(i)
-
 # Distinct chunk keys whose mesh must be rebuilt when (x, z) is mined: the cell's
 # own chunk plus any neighbor chunk across a seam. A mined cell exposes only its
 # 6 face-neighbors, so only the 4 horizontal axis-neighbors can land in another
@@ -380,20 +434,6 @@ static func chunk_keys_for_remesh(x: int, z: int, csx: int, csz: int) -> Array:
 			keys.append(ck)
 	return keys
 
-func _build_emissive_voxel_index() -> void:
-	_emissive_voxels.clear()
-	for key in _occupied.keys():
-		var material_id: int = int(_occupied[key])
-		var emission: Color = _material_emission_color(material_id)
-		if emission == Color.BLACK:
-			continue
-		var parts: PackedStringArray = String(key).split(",")
-		_emissive_voxels.append({
-			"position": Vector3(float(parts[0]) + 0.5, float(parts[1]) + 0.5, float(parts[2]) + 0.5),
-			"color": emission,
-			"material_id": material_id,
-		})
-
 func _terrain_chunk_data(chunk_key: String, x: int, z: int) -> Dictionary:
 	if not _terrain_chunks.has(chunk_key):
 		var chunk_x: int = int(floor(float(x) / float(_chunk_size_x)))
@@ -405,6 +445,7 @@ func _terrain_chunk_data(chunk_key: String, x: int, z: int) -> Dictionary:
 			"chunk_z": chunk_z,
 			"surface_tool": st,
 			"solid_keys": [],
+			"solid_cells": [],
 			"floor_keys": [],
 			"node": null,
 			"static_body": null,
@@ -412,16 +453,18 @@ func _terrain_chunk_data(chunk_key: String, x: int, z: int) -> Dictionary:
 		}
 	return _terrain_chunks[chunk_key]
 
-func _build_greedy_chunk_mesh(chunk_data: Dictionary) -> void:
+# Pure: builds geometry into `st` from a self-contained snapshot (cells + occ +
+# block_ids). Reads no mutable instance state, so it is safe to run on a worker
+# thread. _resolve_block_id/_atlas_uvs touch only load-time-immutable data.
+func _build_greedy_chunk_mesh(st: SurfaceTool, cells: Array, occ: Dictionary, block_ids: Dictionary) -> void:
 	var groups: Dictionary = {}
-	for solid_key in chunk_data.solid_keys:
-		var parts: PackedStringArray = String(solid_key).split(",")
-		var x: int = int(parts[0])
-		var y: int = int(parts[1])
-		var z: int = int(parts[2])
-		var material_id: int = int(_occupied[solid_key])
-		var block_id: String = str(_block_ids.get(solid_key, _resolve_block_id(material_id, x, y, z)))
-		for face in _exposed_faces(x, y, z):
+	for cell in cells:
+		var x: int = cell.x
+		var y: int = cell.y
+		var z: int = cell.z
+		var material_id: int = int(occ.get(cell, 1))
+		var block_id: String = str(block_ids.get(cell, _resolve_block_id(material_id, x, y, z)))
+		for face in _exposed_faces(occ, x, y, z):
 			var axes: Dictionary = GREEDY_FACE_SPECS[face]
 			var plane: int = _face_plane(face, x, y, z)
 			var u: int = _axis_value(str(axes.u), x, y, z)
@@ -447,7 +490,7 @@ func _build_greedy_chunk_mesh(chunk_data: Dictionary) -> void:
 			group.max_v = max(int(group.max_v), v)
 
 	for group_key in groups.keys():
-		_emit_greedy_group(chunk_data.surface_tool, groups[group_key])
+		_emit_greedy_group(st, groups[group_key])
 
 func _emit_greedy_group(st: SurfaceTool, group: Dictionary) -> void:
 	var visited: Dictionary = {}
@@ -487,14 +530,12 @@ func _add_merged_face(st: SurfaceTool, face: String, material_id: int, block_id:
 	var verts: Array[Vector3] = _merged_face_vertices(face, plane, u, v, width, height)
 	var normal: Vector3 = _face_normal(face)
 	var uvs: Array[Vector2] = _atlas_uvs(block_id, face)
-	var colors: Array[Color] = [
-		_voxel_light_at(verts[0], normal, material_id),
-		_voxel_light_at(verts[1], normal, material_id),
-		_voxel_light_at(verts[2], normal, material_id),
-		_voxel_light_at(verts[3], normal, material_id),
-	]
-	_add_triangle(st, verts[0], verts[1], verts[2], normal, uvs[0], uvs[1], uvs[2], colors[0], colors[1], colors[2])
-	_add_triangle(st, verts[0], verts[2], verts[3], normal, uvs[0], uvs[2], uvs[3], colors[0], colors[2], colors[3])
+	# Lighting is handled by the GPU (environment SSIL/SSAO + scene lights). The
+	# terrain material does not use vertex colors as albedo, so per-vertex CPU
+	# lighting here was discarded by the renderer — flat white, no compute.
+	var c := Color.WHITE
+	_add_triangle(st, verts[0], verts[1], verts[2], normal, uvs[0], uvs[1], uvs[2], c, c, c)
+	_add_triangle(st, verts[0], verts[2], verts[3], normal, uvs[0], uvs[2], uvs[3], c, c, c)
 
 func _merged_face_vertices(face: String, plane: int, u: int, v: int, width: int, height: int) -> Array[Vector3]:
 	match face:
@@ -604,31 +645,133 @@ func _build_player() -> void:
 	_avatar_root.name = "VoidScholarAvatar"
 	_player.add_child(_avatar_root)
 
+# Builds the third-person avatar from the blue/black void-scholar voxel packet
+# (scratch/scholar-cells.mjs export). Each animatable part (body / armR / armL) is
+# its own pivot Node3D holding per-material MultiMesh cubes, so the GDScript rig
+# (_tick_scholar_rig) can swing the arms and bob the body — the live 3D equivalent
+# of the authored keyframes. The staff is dropped; the right hand holds the pickaxe.
 func _build_scholar_avatar() -> Node3D:
 	var root := Node3D.new()
-	var sprite := Sprite3D.new()
+	var packet_data := _load_json(SCHOLAR_PATH)
+	if packet_data.is_empty():
+		push_error("Scholar voxel packet failed to load: %s" % SCHOLAR_PATH)
+		return root
 
-	var art_file: FileAccess = FileAccess.open(SCHOLAR_ART_PATH, FileAccess.READ)
-	if art_file:
-		var image: Image = Image.new()
-		var load_result: Error = image.load_svg_from_string(art_file.get_as_text())
-		if load_result == OK:
-			sprite.texture = ImageTexture.create_from_image(image)
-	else:
-		var file: FileAccess = FileAccess.open("res://assets/void-scholar-voxel.preview.5.svg", FileAccess.READ)
-		if file:
-			var fallback_image: Image = Image.new()
-			fallback_image.load_svg_from_string(file.get_as_text())
-			sprite.texture = ImageTexture.create_from_image(fallback_image)
-	
-	sprite.pixel_size = 0.0021
-	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
-	sprite.shaded = true
-	sprite.alpha_cut = Sprite3D.ALPHA_CUT_DISCARD
-	root.add_child(sprite)
-	root.scale = Vector3(1.0, 1.0, 1.0)
-	root.position = Vector3(0.0, 0.0, 0.0)
+	var vs := SCHOLAR_VOXEL_SIZE
+	var mats: Dictionary = packet_data.get("materials", {})
+	var voxels: Array = packet_data.get("voxels", [])
+	var pivots: Dictionary = packet_data.get("pivots", {})
+
+	# Center the column on the body pivot (x,z) and stand the feet on the ground.
+	var body_piv: Dictionary = pivots.get("body", {"x": 0, "y": 0, "z": 0})
+	var off := Vector3(-float(body_piv.x) * vs, SCHOLAR_GROUND_Y, -float(body_piv.z) * vs)
+
+	# One shared material per id; one shared cube mesh for every instance.
+	var mat_nodes := {}
+	for mat_id_str in mats.keys():
+		var m_data: Dictionary = mats[mat_id_str]
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(str(m_data.get("colorHint", "#ffffff")))
+		mat.roughness = 0.82
+		var energy: float = float(m_data.get("energy", 0.0))
+		if energy > 0.0:
+			mat.emission_enabled = true
+			mat.emission = mat.albedo_color
+			mat.emission_energy_multiplier = energy * 2.5
+		mat_nodes[int(mat_id_str)] = mat
+
+	var box_mesh := BoxMesh.new()
+	box_mesh.size = Vector3(vs, vs, vs)
+
+	# Bucket voxels by animation block, then by material within each block.
+	var by_block := {}
+	for vox in voxels:
+		var blk := str(vox.get("block", "body"))
+		var mid: int = int(vox.get("materialId", 1))
+		if not by_block.has(blk):
+			by_block[blk] = {}
+		if not by_block[blk].has(mid):
+			by_block[blk][mid] = []
+		by_block[blk][mid].append(vox)
+
+	# A pivot Node3D per block; its children (the MultiMeshes) are positioned
+	# relative to the pivot so rotating the pivot rotates the part about it.
+	var pivot_nodes := {}
+	for blk in by_block.keys():
+		var pg: Dictionary = pivots.get(blk, body_piv)
+		var pivot_local := Vector3(float(pg.x) * vs, float(pg.y) * vs, float(pg.z) * vs) + off
+		var pivot_node := Node3D.new()
+		pivot_node.name = "rig_" + blk
+		pivot_node.position = pivot_local
+		for mid in by_block[blk].keys():
+			var vox_list: Array = by_block[blk][mid]
+			var mm := MultiMesh.new()
+			mm.transform_format = MultiMesh.TRANSFORM_3D
+			mm.mesh = box_mesh
+			mm.instance_count = vox_list.size()
+			for i in range(vox_list.size()):
+				var v = vox_list[i]
+				var world_local := Vector3(float(v.x) * vs, float(v.y) * vs, float(v.z) * vs) + off + Vector3(vs, vs, vs) * 0.5
+				mm.set_instance_transform(i, Transform3D(Basis(), world_local - pivot_local))
+			var mmi := MultiMeshInstance3D.new()
+			mmi.multimesh = mm
+			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+			mmi.custom_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
+			if mat_nodes.has(mid):
+				mmi.material_override = mat_nodes[mid]
+			pivot_node.add_child(mmi)
+		root.add_child(pivot_node)
+		pivot_nodes[blk] = pivot_node
+
+	_rig_body = pivot_nodes.get("body")
+	_rig_arm_r = pivot_nodes.get("armR")
+	_rig_arm_l = pivot_nodes.get("armL")
+	_rig_leg_r = pivot_nodes.get("legR")
+	_rig_leg_l = pivot_nodes.get("legL")
+	if _rig_body:
+		_rig_body_base = _rig_body.position
+
+	# The pickaxe is parented to the right arm so it swings with the sleeve. Hand
+	# voxels sit ~18 cells below the shoulder pivot; place the grip there.
+	if _rig_arm_r:
+		var held := _build_pickaxe_node()
+		held.name = "AvatarPickaxe"
+		held.scale = Vector3(0.30, 0.30, 0.30)
+		held.position = Vector3(0.02, -0.52, 0.10)
+		held.rotation_degrees = Vector3(14.0, -38.0, 70.0)
+		_rig_arm_r.add_child(held)
+
 	return root
+
+# Drives the scholar's sway loop: body bob/sway about the feet and opposite-phase
+# arm swings about the shoulders. Amplitudes lift while walking and settle to a
+# subtle idle when standing. Only runs in third person (the avatar is hidden in FP).
+func _tick_scholar_rig(delta: float) -> void:
+	if _rig_body == null or not _third_person:
+		return
+	if _moving:
+		_rig_phase = fmod(_rig_phase + delta * TAU / SCHOLAR_ANIM_PERIOD, TAU)
+		var s := sin(_rig_phase)
+		_rig_body.position = _rig_body_base + Vector3(0.0, 1.2 * SCHOLAR_VOXEL_SIZE * s, 0.0)
+		_rig_body.rotation.y = deg_to_rad(3.0 * s)
+		# Arms and the opposite legs swing in phase (right arm with left leg).
+		if _rig_arm_r:
+			_rig_arm_r.rotation.x = deg_to_rad(20.0 * s)
+		if _rig_arm_l:
+			_rig_arm_l.rotation.x = deg_to_rad(-20.0 * s)
+		if _rig_leg_r:
+			_rig_leg_r.rotation.x = deg_to_rad(-18.0 * s)
+		if _rig_leg_l:
+			_rig_leg_l.rotation.x = deg_to_rad(18.0 * s)
+	else:
+		# Standing still: ease every part back to its rest pose and hold there.
+		var k := clampf(delta * 9.0, 0.0, 1.0)
+		_rig_phase = 0.0
+		_rig_body.position = _rig_body.position.lerp(_rig_body_base, k)
+		_rig_body.rotation.y = lerp_angle(_rig_body.rotation.y, 0.0, k)
+		for part in [_rig_arm_r, _rig_arm_l, _rig_leg_r, _rig_leg_l]:
+			if part:
+				part.rotation.x = lerp_angle(part.rotation.x, 0.0, k)
 
 func _build_lighting() -> void:
 	var environment := WorldEnvironment.new()
@@ -668,14 +811,118 @@ func _build_lighting() -> void:
 	directional.rotation_degrees = Vector3(-48, -36, 0)
 	add_child(directional)
 
-	for point in [[8, 10], [18, 11], [24, 24], [34, 27], [39, 35], [12, 36], [25, 38]]:
-		var light := OmniLight3D.new()
-		light.light_color = Color(0.36, 0.9, 1.0)
-		light.light_energy = 2.6
-		light.light_volumetric_fog_energy = 1.8
-		light.omni_range = 10.0
-		light.position = Vector3(point[0] + 0.5, 3.4, point[1] + 0.5)
-		add_child(light)
+func _build_ore_lights() -> void:
+	if _ore_lights_root == null or not is_instance_valid(_ore_lights_root):
+		_ore_lights_root = Node3D.new()
+		_ore_lights_root.name = "OreClusterLights"
+		add_child(_ore_lights_root)
+
+	for child in _ore_lights_root.get_children():
+		_ore_lights_root.remove_child(child)
+		child.queue_free()
+
+	var clusters := _ore_light_clusters()
+	var spawned := 0
+	for cluster in clusters:
+		if int(cluster.get("size", 0)) < ORE_LIGHT_MIN_CLUSTER:
+			continue
+		_spawn_ore_cluster_light(cluster, spawned)
+		spawned += 1
+
+	if "--ore-light-trace" in OS.get_cmdline_user_args():
+		print("Ore lights: T=%d spawned=%d scanned_clusters=%d" % [ORE_LIGHT_MIN_CLUSTER, spawned, clusters.size()])
+
+func _ore_light_clusters() -> Array:
+	var visited := {}
+	var clusters: Array = []
+
+	for raw_cell in _occ.keys():
+		var start_cell: Vector3i = raw_cell
+		if visited.has(start_cell):
+			continue
+
+		var material_id := int(_occ.get(start_cell, 0))
+		if not ORE_MATERIALS.has(material_id):
+			continue
+
+		var stack: Array[Vector3i] = [start_cell]
+		var cells: Array[Vector3i] = []
+		var center_sum := Vector3.ZERO
+		var photonic_mass := 0.0
+		visited[start_cell] = true
+
+		while not stack.is_empty():
+			var cell: Vector3i = stack.pop_back()
+			cells.append(cell)
+			center_sum += Vector3(float(cell.x) + 0.5, float(cell.y) + 0.5, float(cell.z) + 0.5)
+			photonic_mass += _ore_photonic_weight(material_id)
+
+			for neighbor in _ore_neighbors(cell):
+				if visited.has(neighbor):
+					continue
+				if int(_occ.get(neighbor, -1)) != material_id:
+					continue
+				visited[neighbor] = true
+				stack.append(neighbor)
+
+		var size := cells.size()
+		if size > 0:
+			clusters.append({
+				"material_id": material_id,
+				"size": size,
+				"center": center_sum / float(size),
+				"photonic_mass": photonic_mass,
+			})
+
+	return clusters
+
+func _ore_neighbors(cell: Vector3i) -> Array[Vector3i]:
+	return [
+		cell + Vector3i(1, 0, 0),
+		cell + Vector3i(-1, 0, 0),
+		cell + Vector3i(0, 1, 0),
+		cell + Vector3i(0, -1, 0),
+		cell + Vector3i(0, 0, 1),
+		cell + Vector3i(0, 0, -1),
+	]
+
+func _spawn_ore_cluster_light(cluster: Dictionary, index: int) -> void:
+	var material_id := int(cluster.get("material_id", 3))
+	var size := int(cluster.get("size", 1))
+	var center: Vector3 = cluster.get("center", Vector3.ZERO)
+	var photonic_mass := float(cluster.get("photonic_mass", float(size)))
+
+	var light := OmniLight3D.new()
+	light.name = "OreClusterLight_%02d_m%d_s%d" % [index, material_id, size]
+	light.light_color = _ore_light_color(material_id)
+	light.light_energy = clampf(0.55 + pow(photonic_mass, 0.72) * 0.42, 1.0, 4.8)
+	light.light_volumetric_fog_energy = light.light_energy * 0.55
+	light.omni_range = clampf(3.4 + sqrt(photonic_mass) * 1.25, 5.0, 11.0)
+	light.shadow_enabled = false
+	light.position = center + Vector3(0.0, 0.18, 0.0)
+	_ore_lights_root.add_child(light)
+
+func _ore_photonic_weight(material_id: int) -> float:
+	match material_id:
+		3:
+			return 1.0
+		4:
+			return 0.65
+		5:
+			return 0.35
+		_:
+			return 0.0
+
+func _ore_light_color(material_id: int) -> Color:
+	match material_id:
+		3:
+			return Color(0.50, 0.24, 1.0)
+		4:
+			return Color(0.52, 0.92, 1.0)
+		5:
+			return Color(0.16, 0.78, 0.86)
+		_:
+			return Color(0.50, 0.24, 1.0)
 
 func _build_hud() -> void:
 	var layer := CanvasLayer.new()
@@ -778,7 +1025,7 @@ func _build_inventory_ui() -> void:
 
 	var footer := Label.new()
 	footer.name = "InventoryFooter"
-	footer.text = "I close  |  E mine nearby voidmetal  |  Alt+C inspect gear"
+	footer.text = "I close  |  E mine nearby voidmetal  |  C toggle camera"
 	footer.position = Vector2(526, 494)
 	footer.add_theme_font_size_override("font_size", 13)
 	footer.add_theme_color_override("font_color", Color(0.68, 0.72, 0.84))
@@ -793,23 +1040,42 @@ func _update_camera_mode() -> void:
 	# it in third person so it does not float over the scene alongside the avatar.
 	if _pickaxe_mesh:
 		_pickaxe_mesh.visible = not _third_person
+	if _third_person:
+		# Seed the orbit behind the player and free the cursor so it can be
+		# dragged. First person recaptures the cursor for mouse-look.
+		_cam_yaw = _yaw
+		# Start with the scholar's back to the camera (front -Z points away).
+		_avatar_facing = _cam_yaw
+		_orbit_drag = false
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	elif not _inventory_open:
+		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 	_update_camera_transform()
 	_update_hud()
 
 func _update_camera_transform() -> void:
 	if _camera == null:
 		return
+	# The physics body itself never yaws. Look/orientation is carried by the
+	# camera (first person) or the avatar (third person) so the two modes have
+	# independent camera behaviour and the camera is not welded to the body.
+	_player.rotation.y = 0.0
 	if _third_person:
-		var back := Vector3(sin(_yaw), 0.0, cos(_yaw)) * THIRD_PERSON_DISTANCE
-		_camera.position = Vector3(0.0, THIRD_PERSON_HEIGHT, 0.0) + back
-		_camera.rotation = Vector3(-0.25, 0.0, 0.0)
-		_camera.look_at(_player.global_position + Vector3(0, 0.9, 0), Vector3.UP)
+		# Orbit camera: positioned on a sphere around the scholar's chest using
+		# the left-drag yaw/pitch, always looking back at him. Swing all the way
+		# round to see his face. Camera is parented to the (unrotated) body, so
+		# the local offset is also the world offset.
+		var pivot := Vector3(0.0, 0.9, 0.0)
+		var cp := cos(_cam_pitch)
+		var offset := Vector3(sin(_cam_yaw) * cp, sin(_cam_pitch), cos(_cam_yaw) * cp) * THIRD_PERSON_DISTANCE
+		_camera.position = pivot + offset
+		_camera.look_at(_player.global_position + pivot, Vector3.UP)
 		if _avatar_root:
-			_avatar_root.rotation.y = PI
+			_avatar_root.rotation.y = _avatar_facing
 	else:
+		# First person: the camera carries the full yaw + pitch look.
 		_camera.position = Vector3(0.0, 0.72, 0.0)
-		_camera.rotation = Vector3(_pitch, 0.0, 0.0)
-	_player.rotation.y = _yaw
+		_camera.rotation = Vector3(_pitch, _yaw, 0.0)
 
 func _update_hud() -> void:
 	if _hud_label == null:
@@ -827,7 +1093,7 @@ func _update_hud() -> void:
 		prompt += "   [T] Place torch"
 	if voidmetal_carried >= 2 and stick_carried >= 1 and sword_carried == 0:
 		prompt += "   [K] Craft sword"
-	_hud_label.text = "%s\nWASD move  Mouse look  Alt+C camera  I inventory  E mine  T torch  K craft  Esc cursor\nVoidmetal nodes: %d | Voidmetal %d | Torch %d | Stick %d | Sword %d | Torches placed: %d\n%s" % [
+	_hud_label.text = "%s\nWASD move  Mouse look  C camera (MMB-drag orbit)  I inventory  E mine  T torch  K craft  Esc cursor\nVoidmetal nodes: %d | Voidmetal %d | Torch %d | Stick %d | Sword %d | Torches placed: %d\n%s" % [
 		mode,
 		voidmetal_nodes,
 		voidmetal_carried,
@@ -881,14 +1147,8 @@ func _mine_nearest_voidmetal() -> void:
 			best_distance = distance
 	if best_key != "" and best_distance <= 3.2:
 		print("Mined voidmetal: %s" % JSON.stringify(_mineables[best_key]))
-		var node: Dictionary = _mineables[best_key]
 		var parts_m := best_key.split(",")
-		_spawn_float_item(Vector3(float(parts_m[0]), float(parts_m[1]), float(parts_m[2])), 3)
-		_inv.add("voidmetal_ore", int(node.get("yield", 1)))
-		_mineables.erase(best_key)
-		_mining_anim_t = 0.0
-		_update_inventory_ui()
-		_update_hud()
+		_mine_block_at(int(parts_m[0]), int(parts_m[1]), int(parts_m[2]))
 
 func _place_torch_at_feet() -> void:
 	if _player == null:
@@ -1011,19 +1271,20 @@ func _texture_from_asset(asset_key: String) -> Texture2D:
 		return null
 	return ImageTexture.create_from_image(image)
 
-func _exposed_faces(x: int, y: int, z: int) -> Array:
+func _exposed_faces(occ: Dictionary, x: int, y: int, z: int) -> Array:
+	# Integer-keyed neighbour tests against the supplied occupancy snapshot.
 	var faces := []
-	if not _occupied.has(_key(x + 1, y, z)):
+	if not occ.has(Vector3i(x + 1, y, z)):
 		faces.append("east")
-	if not _occupied.has(_key(x - 1, y, z)):
+	if not occ.has(Vector3i(x - 1, y, z)):
 		faces.append("west")
-	if not _occupied.has(_key(x, y + 1, z)):
+	if not occ.has(Vector3i(x, y + 1, z)):
 		faces.append("top")
-	if not _occupied.has(_key(x, y - 1, z)):
+	if not occ.has(Vector3i(x, y - 1, z)):
 		faces.append("bottom")
-	if not _occupied.has(_key(x, y, z + 1)):
+	if not occ.has(Vector3i(x, y, z + 1)):
 		faces.append("south")
-	if not _occupied.has(_key(x, y, z - 1)):
+	if not occ.has(Vector3i(x, y, z - 1)):
 		faces.append("north")
 	return faces
 
@@ -1069,14 +1330,9 @@ func _add_cube_face(st: SurfaceTool, x: int, y: int, z: int, face: String, mater
 
 	var block_id := _resolve_block_id(material_id, x, y, z)
 	var uvs: Array[Vector2] = _atlas_uvs(block_id, face)
-	var colors: Array[Color] = [
-		_voxel_light_at(verts[0], normal, material_id),
-		_voxel_light_at(verts[1], normal, material_id),
-		_voxel_light_at(verts[2], normal, material_id),
-		_voxel_light_at(verts[3], normal, material_id),
-	]
-	_add_triangle(st, verts[0], verts[1], verts[2], normal, uvs[0], uvs[1], uvs[2], colors[0], colors[1], colors[2])
-	_add_triangle(st, verts[0], verts[2], verts[3], normal, uvs[0], uvs[2], uvs[3], colors[0], colors[2], colors[3])
+	var c := Color.WHITE
+	_add_triangle(st, verts[0], verts[1], verts[2], normal, uvs[0], uvs[1], uvs[2], c, c, c)
+	_add_triangle(st, verts[0], verts[2], verts[3], normal, uvs[0], uvs[2], uvs[3], c, c, c)
 
 func _add_triangle(st: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, normal: Vector3, uv_a: Vector2, uv_b: Vector2, uv_c: Vector2, color_a: Color, color_b: Color, color_c: Color) -> void:
 	st.set_normal(normal)
@@ -1230,135 +1486,6 @@ func _atlas_uvs(block_id: String, face: String) -> Array[Vector2]:
 	var v1: float = (float((face_row + 1) * TERRAIN_ATLAS_TILE_SIZE) - inset) / atlas_h
 	return [Vector2(u0, v1), Vector2(u0, v0), Vector2(u1, v0), Vector2(u1, v1)]
 
-func _voxel_light_at(vertex: Vector3, normal: Vector3, material_id: int) -> Color:
-	var key: String = "%d,%d,%d:%d,%d,%d:%d" % [
-		int(round(vertex.x * 4.0)),
-		int(round(vertex.y * 4.0)),
-		int(round(vertex.z * 4.0)),
-		int(round(normal.x)),
-		int(round(normal.y)),
-		int(round(normal.z)),
-		material_id,
-	]
-	if _voxel_light_cache.has(key):
-		return _voxel_light_cache[key]
-
-	var sample_pos: Vector3 = vertex + normal * 0.08
-	var ao: float = _ambient_occlusion_at(sample_pos, normal)
-	var light: Color = Color(VOXEL_LIGHT_AMBIENT, VOXEL_LIGHT_AMBIENT, VOXEL_LIGHT_AMBIENT, 1.0)
-	light = light + _direct_voxel_light(sample_pos, normal)
-	light = light + _bounce_voxel_light(sample_pos, normal, material_id)
-	light.r = clamp(light.r * ao, 0.08, 1.45)
-	light.g = clamp(light.g * ao, 0.08, 1.45)
-	light.b = clamp(light.b * ao, 0.08, 1.45)
-	_voxel_light_cache[key] = light
-	return light
-
-func _ambient_occlusion_at(sample_pos: Vector3, normal: Vector3) -> float:
-	var blocked := 0
-	var probes: Array[Vector3] = [
-		normal + Vector3.RIGHT,
-		normal + Vector3.LEFT,
-		normal + Vector3.FORWARD,
-		normal + Vector3.BACK,
-		normal + Vector3.UP,
-	]
-	for probe in probes:
-		var probe_pos: Vector3 = sample_pos + probe.normalized() * 0.62
-		if _occupied.has(_key(int(floor(probe_pos.x)), int(floor(probe_pos.y)), int(floor(probe_pos.z)))):
-			blocked += 1
-	return clamp(1.0 - float(blocked) * 0.105, 0.42, 1.0)
-
-func _direct_voxel_light(sample_pos: Vector3, normal: Vector3) -> Color:
-	var light: Color = Color.BLACK
-	for source in _emissive_voxels:
-		var source_pos: Vector3 = source.position
-		var to_source: Vector3 = source_pos - sample_pos
-		var distance: float = to_source.length()
-		if distance <= 0.01 or distance > VOXEL_LIGHT_RADIUS:
-			continue
-		var direction: Vector3 = to_source / distance
-		var facing: float = clamp(normal.dot(direction), 0.0, 1.0)
-		if facing <= 0.0:
-			continue
-		if _is_voxel_occluded(sample_pos, source_pos):
-			continue
-		var attenuation: float = pow(1.0 - distance / VOXEL_LIGHT_RADIUS, 2.0)
-		var source_color: Color = source.color
-		light += source_color * (attenuation * facing * VOXEL_LIGHT_DIRECT)
-	return light
-
-func _bounce_voxel_light(sample_pos: Vector3, normal: Vector3, material_id: int) -> Color:
-	var bounce: Color = Color.BLACK
-	var directions: Array[Vector3] = [
-		(normal + Vector3.RIGHT * 0.45).normalized(),
-		(normal + Vector3.LEFT * 0.45).normalized(),
-		(normal + Vector3.FORWARD * 0.45).normalized(),
-		(normal + Vector3.BACK * 0.45).normalized(),
-		normal.normalized(),
-	]
-	for direction in directions:
-		var hit: Dictionary = _trace_voxel_cone(sample_pos + normal * 0.12, direction, VOXEL_LIGHT_BOUNCE_RADIUS)
-		if hit.is_empty():
-			continue
-		var hit_material_id: int = int(hit.get("material_id", material_id))
-		var hit_distance: float = float(hit.get("distance", VOXEL_LIGHT_BOUNCE_RADIUS))
-		var tint: Color = _atlas_base_color(hit_material_id)
-		var attenuation: float = pow(1.0 - hit_distance / VOXEL_LIGHT_BOUNCE_RADIUS, 2.0)
-		bounce += tint * (attenuation * VOXEL_LIGHT_BOUNCE / float(directions.size()))
-	return bounce
-
-func _trace_voxel_cone(origin: Vector3, direction: Vector3, max_distance: float) -> Dictionary:
-	var step_size := 0.7
-	var distance := step_size
-	while distance <= max_distance:
-		var cone_radius: float = max(0.35, distance * 0.28)
-		var center: Vector3 = origin + direction * distance
-		var offsets: Array[Vector3] = [
-			Vector3.ZERO,
-			Vector3(cone_radius, 0, 0),
-			Vector3(-cone_radius, 0, 0),
-			Vector3(0, cone_radius, 0),
-			Vector3(0, 0, cone_radius),
-			Vector3(0, 0, -cone_radius),
-		]
-		for offset in offsets:
-			var p: Vector3 = center + offset
-			var key: String = _key(int(floor(p.x)), int(floor(p.y)), int(floor(p.z)))
-			if _occupied.has(key):
-				return {
-					"material_id": int(_occupied[key]),
-					"distance": distance,
-				}
-		distance += step_size
-	return {}
-
-func _is_voxel_occluded(from_pos: Vector3, to_pos: Vector3) -> bool:
-	var delta: Vector3 = to_pos - from_pos
-	var distance: float = delta.length()
-	if distance <= 0.01:
-		return false
-	var direction: Vector3 = delta / distance
-	var step_size := 0.85
-	var traveled := step_size
-	while traveled < distance - 0.8:
-		var p: Vector3 = from_pos + direction * traveled
-		if _occupied.has(_key(int(floor(p.x)), int(floor(p.y)), int(floor(p.z)))):
-			return true
-		traveled += step_size
-	return false
-
-func _material_emission_color(material_id: int) -> Color:
-	match material_id:
-		3:
-			return Color(0.35, 0.16, 1.0)
-		4:
-			return Color(0.32, 0.95, 1.0)
-		5:
-			return Color(0.12, 0.76, 0.92)
-		_:
-			return Color.BLACK
-
 func _update_chunk_visibility() -> void:
 	if _terrain_chunks.is_empty():
 		return
@@ -1417,79 +1544,86 @@ func _spawn_pickaxe_in_hand() -> void:
 		return
 	if _camera == null:
 		return
-	_pickaxe_mesh = Node3D.new()
+	_pickaxe_mesh = _build_pickaxe_node()
 	_pickaxe_mesh.name = "HeldPickaxe"
-
-	var wood_mat := StandardMaterial3D.new()
-	wood_mat.albedo_color = Color(0.26, 0.17, 0.09)
-	wood_mat.roughness = 0.91
-
-	var metal_mat := StandardMaterial3D.new()
-	metal_mat.albedo_color = Color(0.50, 0.43, 0.66)
-	metal_mat.metallic = 0.94
-	metal_mat.roughness = 0.16
-	metal_mat.emission_enabled = true
-	metal_mat.emission = Color(0.18, 0.10, 0.40)
-	metal_mat.emission_energy_multiplier = 0.55
-
-	# Handle — tapered hardwood cylinder
-	var handle := MeshInstance3D.new()
-	var handle_mesh := CylinderMesh.new()
-	handle_mesh.top_radius = 0.021
-	handle_mesh.bottom_radius = 0.030
-	handle_mesh.height = 0.66
-	handle.mesh = handle_mesh
-	handle.material_override = wood_mat
-	handle.position = Vector3(0.0, -0.04, 0.0)
-	_pickaxe_mesh.add_child(handle)
-
-	# Ferrule — metal ring at the head end of the handle
-	var ferrule := MeshInstance3D.new()
-	var ferrule_mesh := CylinderMesh.new()
-	ferrule_mesh.top_radius = 0.036
-	ferrule_mesh.bottom_radius = 0.030
-	ferrule_mesh.height = 0.07
-	ferrule.mesh = ferrule_mesh
-	ferrule.material_override = metal_mat
-	ferrule.position = Vector3(0.0, 0.28, 0.0)
-	_pickaxe_mesh.add_child(ferrule)
-
-	# Head body — horizontal bar connecting the two pick points
-	var bar := MeshInstance3D.new()
-	var bar_mesh := BoxMesh.new()
-	bar_mesh.size = Vector3(0.38, 0.072, 0.072)
-	bar.mesh = bar_mesh
-	bar.material_override = metal_mat
-	bar.position = Vector3(0.0, 0.36, 0.0)
-	_pickaxe_mesh.add_child(bar)
-
-	# Left pick — tapered spike
-	var pick_l_mesh := CylinderMesh.new()
-	pick_l_mesh.top_radius = 0.0
-	pick_l_mesh.bottom_radius = 0.038
-	pick_l_mesh.height = 0.22
-	var pick_l := MeshInstance3D.new()
-	pick_l.mesh = pick_l_mesh
-	pick_l.material_override = metal_mat
-	pick_l.rotation_degrees = Vector3(0.0, 0.0, 90.0)
-	pick_l.position = Vector3(-0.27, 0.36, 0.0)
-	_pickaxe_mesh.add_child(pick_l)
-
-	# Right pick — tapered spike (mirror)
-	var pick_r_mesh := CylinderMesh.new()
-	pick_r_mesh.top_radius = 0.0
-	pick_r_mesh.bottom_radius = 0.038
-	pick_r_mesh.height = 0.22
-	var pick_r := MeshInstance3D.new()
-	pick_r.mesh = pick_r_mesh
-	pick_r.material_override = metal_mat
-	pick_r.rotation_degrees = Vector3(0.0, 0.0, -90.0)
-	pick_r.position = Vector3(0.27, 0.36, 0.0)
-	_pickaxe_mesh.add_child(pick_r)
-
 	_pickaxe_mesh.position = PICKAXE_REST_POS
 	_pickaxe_mesh.rotation_degrees = PICKAXE_REST_ROT
 	_camera.add_child(_pickaxe_mesh)
+
+# Builds the generated PixelBrain voidmetal pickaxe as a self-contained
+# Node3D with no positioning or parenting applied. Used both for the first-person
+# camera viewmodel and the third-person avatar's held copy.
+func _build_pickaxe_node() -> Node3D:
+	# Chunky voxel pickaxe (matches the game's voxel language): a curved twin-pick
+	# head built from cubes, a glowing rune eye, and a haft — extruded in Z for
+	# real thickness so it never reads as toothpicks or a flat slab.
+	var pick := Node3D.new()
+	pick.name = "VoidmetalPickaxe"
+	var cs := 0.045
+
+	var wood := StandardMaterial3D.new()
+	wood.albedo_color = Color(0.11, 0.10, 0.14)
+	wood.roughness = 0.92
+
+	var metal := StandardMaterial3D.new()
+	metal.albedo_color = Color(0.42, 0.47, 0.62)
+	metal.metallic = 0.92
+	metal.roughness = 0.28
+	metal.emission_enabled = true
+	metal.emission = Color(0.20, 0.13, 0.46)
+	metal.emission_energy_multiplier = 0.30
+
+	var rune := StandardMaterial3D.new()
+	rune.albedo_color = Color(0.62, 0.90, 1.0)
+	rune.roughness = 0.3
+	rune.emission_enabled = true
+	rune.emission = Color(0.45, 0.85, 1.0)
+	rune.emission_energy_multiplier = 2.8
+
+	# Side-profile voxel layout (x right, y up). Each arm sweeps out and down to a
+	# point so the silhouette is a curved double pick — broad, not spindly.
+	var head := [
+		Vector2i(-1, 1), Vector2i(1, 1), Vector2i(-1, 2), Vector2i(1, 2), Vector2i(0, 0),
+		Vector2i(2, 1), Vector2i(3, 1), Vector2i(3, 0), Vector2i(4, 0), Vector2i(4, -1), Vector2i(5, -1), Vector2i(5, -2),
+		Vector2i(-2, 1), Vector2i(-3, 1), Vector2i(-3, 0), Vector2i(-4, 0), Vector2i(-4, -1), Vector2i(-5, -1), Vector2i(-5, -2),
+	]
+	var eye := [Vector2i(0, 1), Vector2i(0, 2)]
+	var haft := []
+	for hy in range(-1, -11, -1):
+		haft.append(Vector2i(0, hy))
+
+	# Head + rune are 3 voxels deep; the haft is 1 deep (a slim handle).
+	_pickaxe_cubes(pick, _extrude_xy(head, [-1, 0, 1]), metal, cs)
+	_pickaxe_cubes(pick, _extrude_xy(eye, [-1, 0, 1]), rune, cs)
+	_pickaxe_cubes(pick, _extrude_xy(haft, [0]), wood, cs)
+	return pick
+
+# Turns a list of (x,y) cells into 3D cube positions across the given z layers.
+func _extrude_xy(cells_xy: Array, z_layers: Array) -> Array:
+	var out: Array = []
+	for c in cells_xy:
+		for z in z_layers:
+			out.append(Vector3(float(c.x), float(c.y), float(z)))
+	return out
+
+# One MultiMesh of unit cubes (in cell units, scaled by cs) sharing a material.
+func _pickaxe_cubes(parent: Node3D, cells: Array, mat: StandardMaterial3D, cs: float) -> void:
+	if cells.is_empty():
+		return
+	var box := BoxMesh.new()
+	box.size = Vector3(cs, cs, cs)
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = box
+	mm.instance_count = cells.size()
+	for i in range(cells.size()):
+		mm.set_instance_transform(i, Transform3D(Basis(), (cells[i] as Vector3) * cs))
+	var mmi := MultiMeshInstance3D.new()
+	mmi.multimesh = mm
+	mmi.material_override = mat
+	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	mmi.custom_aabb = AABB(Vector3(-1, -1, -1), Vector3(2, 2, 2))
+	parent.add_child(mmi)
 
 func _tick_pickaxe_anim(delta: float) -> void:
 	if _mining_anim_t < 0.0 or _pickaxe_mesh == null:
@@ -1572,9 +1706,15 @@ func _raycast_mine_block() -> void:
 func _mine_block_at(vx: int, vy: int, vz: int) -> void:
 	var key := _key(vx, vy, vz)
 	var mat_id: int = int(_occupied.get(key, 1))
+	var yield_count := 1
+	if _mineables.has(key):
+		var mineable_node: Dictionary = _mineables[key]
+		yield_count = int(mineable_node.get("yield", 1))
 	_occupied.erase(key)
+	_occ.erase(Vector3i(vx, vy, vz))
+	_block_ids_v.erase(Vector3i(vx, vy, vz))
 	_block_ids.erase(key)
-	prune_emissive_at(_emissive_voxels, vx, vy, vz)
+	_mineables.erase(key)
 
 	var chunk_key := _chunk_key_for_cell(vx, vz)
 	_remove_block_collider(chunk_key, vx, vy, vz)
@@ -1585,9 +1725,11 @@ func _mine_block_at(vx: int, vy: int, vz: int) -> void:
 	_spawn_float_item(Vector3(vx, vy, vz), mat_id)
 	_mining_anim_t = 0.0
 	if mat_id == 3:
-		_inv.add("voidmetal_ore", 1)
+		_inv.add("voidmetal_ore", yield_count)
 		_update_inventory_ui()
 		_update_hud()
+	if ORE_MATERIALS.has(mat_id):
+		_build_ore_lights()
 	print("Mined block at: %s" % _key(vx, vy, vz))
 
 func _remove_block_collider(chunk_key: String, x: int, y: int, z: int) -> void:
@@ -1603,27 +1745,77 @@ func _remove_block_collider(chunk_key: String, x: int, y: int, z: int) -> void:
 	var solid_key := _key(x, y, z)
 	var solid_keys: Array = chunk_data.get("solid_keys", [])
 	solid_keys.erase(solid_key)
+	var solid_cells: Array = chunk_data.get("solid_cells", [])
+	solid_cells.erase(Vector3i(x, y, z))
 
-func _rebuild_chunk_mesh(chunk_key: String) -> void:
+# Head chef: collect a finished mesh and swap it in, then hand the next dirty
+# chunk to the worker. One task in flight, so reads/writes of the shared job
+# slots are ordered by WorkerThreadPool's completion barrier — no locks needed.
+func _process_chunk_mesh_jobs() -> void:
+	if _mesh_task_id != -1 and WorkerThreadPool.is_task_completed(_mesh_task_id):
+		WorkerThreadPool.wait_for_task_completion(_mesh_task_id)
+		var done_chunk := _mesh_task_chunk
+		var mesh := _mesh_task_mesh
+		_mesh_task_id = -1
+		_mesh_task_chunk = ""
+		_mesh_task_mesh = null
+		_mesh_task_snapshot = {}
+		# If the chunk was mined again while building, the result is stale — skip
+		# it and let the queued rebuild produce the current geometry.
+		if not _dirty_chunks.has(done_chunk):
+			_apply_chunk_mesh(done_chunk, mesh)
+	if _mesh_task_id == -1 and _dirty_chunks.size() > 0:
+		_dispatch_chunk_mesh(_dirty_chunks.pop_front())
+
+# Photocopy the chunk's inputs onto a self-contained tray and slide it to the
+# worker. occ is duplicated (neighbour culling); block ids are gathered for just
+# this chunk's cells (cheap) rather than copying the whole world map.
+func _dispatch_chunk_mesh(chunk_key: String) -> void:
+	var chunk_data: Dictionary = _terrain_chunks.get(chunk_key, {})
+	if chunk_data.is_empty() or chunk_data.get("node") == null:
+		return
+	var cells: Array = (chunk_data.solid_cells as Array).duplicate()
+	var bids := {}
+	# Bounded occupancy: this chunk's cells plus their occupied face-neighbours —
+	# all that face-culling needs. Far cheaper than copying the whole world map.
+	var occ_snap := {}
+	for c in cells:
+		bids[c] = _block_ids_v.get(c, "")
+		occ_snap[c] = true
+		for n in [Vector3i(c.x + 1, c.y, c.z), Vector3i(c.x - 1, c.y, c.z), Vector3i(c.x, c.y + 1, c.z), Vector3i(c.x, c.y - 1, c.z), Vector3i(c.x, c.y, c.z + 1), Vector3i(c.x, c.y, c.z - 1)]:
+			if _occ.has(n):
+				occ_snap[n] = true
+	_mesh_task_snapshot = {"cells": cells, "occ": occ_snap, "block_ids": bids}
+	_mesh_task_chunk = chunk_key
+	_mesh_task_mesh = null
+	_mesh_task_id = WorkerThreadPool.add_task(_threaded_chunk_build)
+
+# Sous chef (worker thread): builds the mesh purely from the snapshot tray. Reads
+# no mutable instance state; result goes in the out-slot for the head chef.
+func _threaded_chunk_build() -> void:
+	var snap: Dictionary = _mesh_task_snapshot
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_build_greedy_chunk_mesh(st, snap.cells, snap.occ, snap.block_ids)
+	st.generate_normals()
+	_mesh_task_mesh = st.commit()
+
+# Main-thread mesh swap (scene-tree touch only happens here). Reuses the existing
+# MeshInstance instead of reallocating a node.
+func _apply_chunk_mesh(chunk_key: String, mesh: ArrayMesh) -> void:
 	var chunk_data: Dictionary = _terrain_chunks.get(chunk_key, {})
 	if chunk_data.is_empty():
 		return
 	var chunk_node: Node3D = chunk_data.get("node")
 	if chunk_node == null:
 		return
-	for child in chunk_node.get_children():
-		if child is MeshInstance3D:
-			child.queue_free()
-	_voxel_light_cache.clear()
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	chunk_data["surface_tool"] = st
-	_build_greedy_chunk_mesh(chunk_data)
-	st.generate_normals()
-	var mesh: ArrayMesh = st.commit()
+	var mesh_instance: MeshInstance3D = chunk_node.get_node_or_null("AtlasTerrain")
 	if mesh != null:
-		var mesh_instance := MeshInstance3D.new()
-		mesh_instance.name = "AtlasTerrain"
+		if mesh_instance == null:
+			mesh_instance = MeshInstance3D.new()
+			mesh_instance.name = "AtlasTerrain"
+			mesh_instance.material_override = _terrain_atlas_material
+			chunk_node.add_child(mesh_instance)
 		mesh_instance.mesh = mesh
-		mesh_instance.material_override = _terrain_atlas_material
-		chunk_node.add_child(mesh_instance)
+	elif mesh_instance != null:
+		mesh_instance.mesh = null

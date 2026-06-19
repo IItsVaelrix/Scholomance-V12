@@ -95,7 +95,17 @@ export function validateRetinaInput(input) {
       throw new Error('Photonic Retina dimensions.height must be positive');
     }
 
-    dimensions = Object.freeze({ width, height });
+    const dimensionFields = { width, height };
+
+    if (input.dimensions?.depth !== undefined) {
+      const depth = Number(input.dimensions.depth);
+      if (!Number.isFinite(depth) || depth <= 0) {
+        throw new Error('Photonic Retina dimensions.depth must be positive');
+      }
+      dimensionFields.depth = depth;
+    }
+
+    dimensions = Object.freeze(dimensionFields);
   }
 
   return Object.freeze({

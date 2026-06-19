@@ -245,6 +245,160 @@
         "role": "walkable_glyph",
         "lightRadius": 3
       }
+    },
+    "grimstone_block": {
+      "id": "grimstone_block",
+      "label": "Grimstone Block",
+      "materialId": 1,
+      "faces": {
+        "top": "res://assets/blocks/grimstone_block_top.png",
+        "side": "res://assets/blocks/grimstone_block_side.png",
+        "bottom": "res://assets/blocks/grimstone_block_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/grimstone_block_top_aa4x.png",
+        "side": "res://assets/blocks/grimstone_block_side_aa4x.png",
+        "bottom": "res://assets/blocks/grimstone_block_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 1,
+        "neighborhood": "bedrock",
+        "weight": 0.6
+      }
+    },
+    "grimstone_mossy": {
+      "id": "grimstone_mossy",
+      "label": "Grimstone Mossy",
+      "materialId": 1,
+      "faces": {
+        "top": "res://assets/blocks/grimstone_mossy_top.png",
+        "side": "res://assets/blocks/grimstone_mossy_side.png",
+        "bottom": "res://assets/blocks/grimstone_mossy_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/grimstone_mossy_top_aa4x.png",
+        "side": "res://assets/blocks/grimstone_mossy_side_aa4x.png",
+        "bottom": "res://assets/blocks/grimstone_mossy_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 1,
+        "neighborhood": "surface_outcrop",
+        "weight": 0.4
+      }
+    },
+    "peat_damp": {
+      "id": "peat_damp",
+      "label": "Peat Damp",
+      "materialId": 2,
+      "faces": {
+        "top": "res://assets/blocks/peat_damp_top.png",
+        "side": "res://assets/blocks/peat_damp_side.png",
+        "bottom": "res://assets/blocks/peat_damp_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/peat_damp_top_aa4x.png",
+        "side": "res://assets/blocks/peat_damp_side_aa4x.png",
+        "bottom": "res://assets/blocks/peat_damp_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 2,
+        "neighborhood": "subsurface",
+        "weight": 0.55
+      }
+    },
+    "peat_dry": {
+      "id": "peat_dry",
+      "label": "Peat Dry",
+      "materialId": 2,
+      "faces": {
+        "top": "res://assets/blocks/peat_dry_top.png",
+        "side": "res://assets/blocks/peat_dry_side.png",
+        "bottom": "res://assets/blocks/peat_dry_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/peat_dry_top_aa4x.png",
+        "side": "res://assets/blocks/peat_dry_side_aa4x.png",
+        "bottom": "res://assets/blocks/peat_dry_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 2,
+        "neighborhood": "surface_soil",
+        "weight": 0.45
+      }
+    },
+    "ash_grass": {
+      "id": "ash_grass",
+      "label": "Ash Grass",
+      "materialId": 3,
+      "faces": {
+        "top": "res://assets/blocks/ash_grass_top.png",
+        "side": "res://assets/blocks/ash_grass_side.png",
+        "bottom": "res://assets/blocks/ash_grass_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/ash_grass_top_aa4x.png",
+        "side": "res://assets/blocks/ash_grass_side_aa4x.png",
+        "bottom": "res://assets/blocks/ash_grass_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 3,
+        "neighborhood": "cap",
+        "weight": 1
+      }
+    },
+    "grimwood_log": {
+      "id": "grimwood_log",
+      "label": "Grimwood Log",
+      "materialId": 4,
+      "faces": {
+        "top": "res://assets/blocks/grimwood_log_top.png",
+        "side": "res://assets/blocks/grimwood_log_side.png",
+        "bottom": "res://assets/blocks/grimwood_log_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/grimwood_log_top_aa4x.png",
+        "side": "res://assets/blocks/grimwood_log_side_aa4x.png",
+        "bottom": "res://assets/blocks/grimwood_log_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 4,
+        "role": "harvestable_tree",
+        "weight": 1
+      }
+    },
+    "ruins_brick": {
+      "id": "ruins_brick",
+      "label": "Ruins Brick",
+      "materialId": 5,
+      "faces": {
+        "top": "res://assets/blocks/ruins_brick_top.png",
+        "side": "res://assets/blocks/ruins_brick_side.png",
+        "bottom": "res://assets/blocks/ruins_brick_bottom.png"
+      },
+      "upscaledFaces": {
+        "top": "res://assets/blocks/ruins_brick_top_aa4x.png",
+        "side": "res://assets/blocks/ruins_brick_side_aa4x.png",
+        "bottom": "res://assets/blocks/ruins_brick_bottom_aa4x.png"
+      },
+      "upscaledTileSize": 128,
+      "emission": null,
+      "rules": {
+        "materialId": 5,
+        "role": "ruin_wall",
+        "weight": 1
+      }
     }
   }
 }

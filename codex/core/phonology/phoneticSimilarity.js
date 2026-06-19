@@ -82,11 +82,17 @@ export const PhoneticSimilarity = {
     if (a1.join('') === a2.join('')) return 1.0;
     if (a1.length === 0 || a2.length === 0) return 0.0;
     const r1 = [...a1].reverse(), r2 = [...a2].reverse();
-    let totalScore = 0;
+    const minLen = Math.min(r1.length, r2.length);
     const maxLen = Math.max(r1.length, r2.length);
-    for (let i = 0; i < Math.min(r1.length, r2.length); i++) {
+    let totalScore = 0;
+    for (let i = 0; i < minLen; i++) {
       totalScore += this.getPhonemeSimilarity(r1[i], r2[i]);
     }
-    return totalScore / maxLen;
+    // Score against the shorter suffix: if the terminal consonants all match,
+    // that IS a rhyme — dividing by maxLen would wrongly penalise it.
+    // Apply a modest excess penalty for the unmatched leading consonants.
+    const suffixScore = totalScore / minLen;
+    const excessPenalty = ((maxLen - minLen) / maxLen) * 0.25;
+    return Math.max(0, suffixScore - excessPenalty);
   }
 };

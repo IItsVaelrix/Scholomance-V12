@@ -333,6 +333,17 @@ const COLLAB_MIGRATIONS = [
             `);
         },
     },
+    {
+        version: 16,
+        name: 'add_checksum_to_bug_reports',
+        up(database) {
+            try {
+                database.exec(`ALTER TABLE collab_bug_reports ADD COLUMN checksum TEXT`);
+            } catch (e) {
+                if (!e.message.includes('duplicate column name')) throw e;
+            }
+        },
+    },
 ];
 
 let db; // The wrapper
@@ -1077,7 +1088,7 @@ async function getBugReport(id) {
 const ALLOWED_BUG_COLUMNS = new Set([
     'title', 'summary', 'status', 'priority', 'assigned_agent_id',
     'category', 'severity', 'module_id', 'error_code_hex',
-    'bytecode', 'checksum_verified', 'parseable', 'auto_fixable',
+    'bytecode', 'checksum', 'checksum_verified', 'parseable', 'auto_fixable',
     'decoded_context', 'recovery_hints', 'observed_behavior',
     'expected_behavior', 'repro_steps', 'environment', 'attachments',
     'related_task_id', 'related_pipeline_id', 'related_activity_id',

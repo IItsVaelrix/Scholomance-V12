@@ -354,7 +354,10 @@ export class DeepRhymeEngine {
     if (this.shouldSkipLexicalRepetition(wordA, wordB)) return;
     const normA = this.normalizeWord(wordA.word);
     const normB = this.normalizeWord(wordB.word);
-    if (normA && normB && FUNCTION_WORDS.has(normA) && FUNCTION_WORDS.has(normB)) return;
+    // When no syntax layer is present, filter function-function pairs early.
+    // When a syntax layer is active, let the gate decide (it tracks suppressed/weakened counts
+    // and grants the both_function_line_end_exception for end-rhyme pairs).
+    if (!this.syntaxLayerContext && normA && normB && FUNCTION_WORDS.has(normA) && FUNCTION_WORDS.has(normB)) return;
     const pairKey = this.getPairKey(wordA, wordB);
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);

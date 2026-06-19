@@ -1,6 +1,30 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runG2PJury, runVerificationTests } from '../../../../codex/core/phonology/g2p/g2p.adapter.js';
-import { validateG2PIntegration, checkCandidateDeduplication, checkCandidateStability } from './g2p.adapter.test.js';
+
+function validateG2PIntegration({ verdict, diagnostics }) {
+  if (!verdict || typeof verdict.ok !== 'boolean') {
+    return { passed: false, reason: 'verdict.ok must be boolean' };
+  }
+  if (!Array.isArray(verdict.candidates)) {
+    return { passed: false, reason: 'verdict.candidates must be array' };
+  }
+  if (!Array.isArray(verdict.votes)) {
+    return { passed: false, reason: 'verdict.votes must be boolean' };
+  }
+  if (!diagnostics || typeof diagnostics.latencyMs !== 'number') {
+    return { passed: false, reason: 'diagnostics.latencyMs must be number' };
+  }
+  return { passed: true };
+}
+
+async function checkCandidateStability(word, runFn, times) {
+  const results = await Promise.all(Array.from({ length: times }, () => runFn(word)));
+  const keys = results.map(candidates =>
+    candidates.map(c => c.phonemes.join(' ')).sort().join('|')
+  );
+  const stable = keys.every(k => k === keys[0]);
+  return { stable, runs: keys };
+}
 
 describe('G2P Jury Adapter', () => {
   beforeEach(() => {
@@ -64,7 +88,7 @@ describe('G2P Jury Adapter', () => {
   });
 
   it('checks candidate stability across multiple runs', async () => {
-    const stability = checkCandidateStability('KELDOMN', (word) => {
+    const stability = await checkCandidateStability('KELDOMN', (word) => {
       return runG2PJury(word).then(r => r.verdict.candidates);
     }, 5);
     expect(stability.stable).toBe(true);

@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   createDivWandArtifact,
   createPixelBrainArtifact,
+  createQbitWorldArtifact,
   createWandArtifact,
   DIVWAND_GODOT_KIND,
   GODOT_ARTIFACT_VERSION,
   PIXELBRAIN_GODOT_KIND,
+  QBIT_WORLD_GODOT_KIND,
   WAND_GODOT_KIND,
 } from '../../src/lib/godot-export/artifactSchemas.js';
 
@@ -56,5 +58,17 @@ describe('Godot artifact schemas', () => {
     expect(artifact.kind).toBe(DIVWAND_GODOT_KIND);
     expect(artifact.version).toBe(1);
     expect(artifact.valid).toBe(false);
+  });
+
+  it('creates QBIT world artifacts for Godot import', () => {
+    const artifact = createQbitWorldArtifact({
+      schoolWeights: { VOID: 1 },
+      faces: [{ id: 'face-1' }],
+    });
+
+    expect(artifact.kind).toBe(QBIT_WORLD_GODOT_KIND);
+    expect(artifact.version).toBe(GODOT_ARTIFACT_VERSION);
+    expect(artifact.schoolWeights).toEqual({ VOID: 1 });
+    expect(artifact.faces).toEqual([{ id: 'face-1' }]);
   });
 });

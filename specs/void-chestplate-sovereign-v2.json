@@ -1,0 +1,72 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "void.chestplate.sovereign.v2",
+  "class": "armor",
+  "archetype": "chestplate",
+  "canvas": { "width": 64, "height": 80, "gridSize": 1 },
+  "seed": 317,
+  "bytecode": "VW-VOID-SOUL-TRANSCENDENT",
+  "bands": 8,
+  "parts": [
+    {
+      "id": "body",
+      "profile": "armor.chestplate.void_royal_human",
+      "params": {
+        "shoulderWidth": 48,
+        "chestWidth": 40,
+        "waistWidth": 28,
+        "torsoHeight": 56,
+        "topY": 10,
+        "neckWidth": 10,
+        "neckDepth": 8
+      },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "left_pauldron",
+      "profile": "armor.pauldron.void_reference_human",
+      "params": { "side": "left" },
+      "attach": { "parent": "body", "at": "leftShoulder" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "right_pauldron",
+      "profile": "armor.pauldron.void_reference_human",
+      "params": { "side": "right" },
+      "attach": { "parent": "body", "at": "rightShoulder" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" }
+    },
+    {
+      "id": "collar",
+      "profile": "armor.collar.high_void",
+      "attach": { "parent": "body", "at": "top" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "spectral" }
+    },
+    {
+      "id": "mantle",
+      "profile": "armor.panel.void_reference_mantle",
+      "attach": { "parent": "body", "at": "leftShoulder" },
+      "fill": { "material": "void_cloth" },
+      "outline": { "material": "void_gold", "anchor": "deep" }
+    },
+    {
+      "id": "harness",
+      "profile": "armor.panel.void_reference_harness",
+      "attach": { "parent": "body", "at": "centerChest" },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "void_gold", "anchor": "body" },
+      "motif": {
+        "kind": "bolt",
+        "fork": true,
+        "core": { "material": "void_core", "anchor": "whiteCore" },
+        "glow": { "material": "void_rune_glow", "anchor": "spectral" }
+      }
+    }
+  ],
+  "proportions": { "profile": "ceremonial_exaggerated" },
+  "shader": { "kind": "motif-energize", "resonanceDefault": 0.9 }
+}

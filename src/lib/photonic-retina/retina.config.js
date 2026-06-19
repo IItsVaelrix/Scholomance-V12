@@ -12,6 +12,7 @@ export const RETINA_SOURCE_KINDS = Object.freeze({
   FORMULA: 'formula',
   COLORS: 'colors',
   BRUSH_STROKE: 'brush-stroke',
+  QBIT_FIELD: 'qbit-field',
 });
 
 export const RETINA_QUANTIZATION_KINDS = Object.freeze({

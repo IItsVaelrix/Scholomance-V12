@@ -26,7 +26,7 @@ describe('G2P Schemas and Tally', () => {
     };
 
     const score = computeWeightedScore(vote);
-    expect(score).toBeCloseTo(0.028, 3);
+    expect(score).toBeCloseTo(0.063, 3);
   });
 
   it('tallyJuryVotes aggregates scores by candidate key', () => {
@@ -42,8 +42,8 @@ describe('G2P Schemas and Tally', () => {
 
     const aggregate = tallyJuryVotes(candidates, votes);
 
-    expect(aggregate['W ER1 D']).toBeCloseTo(0.028, 3);
-    expect(aggregate['W AO1 R D']).toBeCloseTo(0.0168, 3);
+    expect(aggregate['W ER1 D']).toBeCloseTo(0.063, 3);
+    expect(aggregate['W AO1 R D']).toBeCloseTo(0.0288, 3);
   });
 
   it('resolveWinner selects highest aggregate then shortest', () => {
@@ -62,24 +62,26 @@ describe('G2P Schemas and Tally', () => {
     expect(winner.aggregate).toBeCloseTo(0.5, 3);
   });
 
-  it('resolveWinner tie-breaks by phonotactic then source confidence', () => {
+  it('resolveWinner tie-breaks by length then phonotactic then source confidence', () => {
     const candidates = [
       { id: 'c1', word: 'WORD', phonemes: ['W', 'ER1', 'D'], source: 'rule', generatedBy: 'rule-v1', confidence: 0.6 },
-      { id: 'c2', word: 'WORD', phonemes: ['W', 'AO1', 'R', 'D'], source: 'rule', generatedBy: 'rule-v1', confidence: 0.7 },
+      { id: 'c2', word: 'WORD', phonemes: ['W', 'AO1', 'D'], source: 'rule', generatedBy: 'rule-v1', confidence: 0.7 },
     ];
 
     const aggregate = {
       'W ER1 D': 1.0,
-      'W AO1 R D': 1.0,
+      'W AO1 D': 1.0,
     };
 
     const votes = [
       { candidateKey: 'W ER1 D', jurorId: 'PHONOTACTIC', tokenWeight: 0.8, confidence: 0.9, stageSignal: 1, syntaxModifier: 1, rationale: 'r', fidelityGrade: 'A' },
-      { candidateKey: 'W AO1 R D', jurorId: 'SYNTACTIC', tokenWeight: 0.5, confidence: 0.9, stageSignal: 1, syntaxModifier: 1, rationale: 'r', fidelityGrade: 'A' },
+      { candidateKey: 'W AO1 D', jurorId: 'SYNTACTIC', tokenWeight: 0.5, confidence: 0.9, stageSignal: 1, syntaxModifier: 1, rationale: 'r', fidelityGrade: 'A' },
     ];
 
+    // Equal aggregate and equal length (3): phonotactic score breaks the tie.
+    // c1 has a PHONOTACTIC vote; c2 does not → c1 wins.
     const winner = resolveWinner(candidates, aggregate, votes);
-    expect(winner.phonemes).toEqual(['W', 'AO1', 'R', 'D']);
+    expect(winner.phonemes).toEqual(['W', 'ER1', 'D']);
   });
 
   it('isValidVote rejects malformed votes', () => {

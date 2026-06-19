@@ -1,0 +1,530 @@
+{
+  "schemaVersion": "scholomance.video.v1",
+  "trackId": "polarity",
+  "bpm": 93,
+  "offsetMs": 1200,
+  "lyricsHash": "966ea3407b9ab6ee",
+  "wordOffsetMs": 14000,
+  "scenes": [
+    {
+      "id": "scene-00-threshold",
+      "title": "Magnetic Threshold",
+      "startMs": 0,
+      "endMs": 6000,
+      "mode": "threshold",
+      "dominantSchools": ["VOID", "DIVINATION"],
+      "assets": [
+        "pb_polarity_field_v1",
+        "pb_charge_arc_gold_v1",
+        "pb_charge_arc_blue_v1",
+        "pb_wordgrid_ghost_v1"
+      ],
+      "camera": {
+        "kind": "lock",
+        "intensity": 0.15,
+        "easing": "smoothstep"
+      },
+      "atmosphere": {
+        "saturation": 0.32,
+        "vignette": 0.55,
+        "aurora": 0.16,
+        "grain": 0.12,
+        "rain": 0,
+        "embers": 0.08,
+        "voidDrain": 0.42,
+        "chromaSplit": 0.08
+      },
+      "typography": {
+        "layout": "emblem",
+        "glyphGhosts": true,
+        "trailAmount": 0.12,
+        "maxVisibleWords": 1,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": ["Polarity"],
+      "notes": "Title seed only. Let the magnetic arcs establish the core visual law."
+    },
+    {
+      "id": "scene-01-drought-heart",
+      "title": "The Drought Heart",
+      "startMs": 6000,
+      "endMs": 22000,
+      "mode": "drought",
+      "dominantSchools": ["NECROMANCY", "ALCHEMY"],
+      "assets": [
+        "pb_heart_parchment_cracked_v1",
+        "pb_drought_fissure_set_v1",
+        "pb_bard_mouth_sigil_v1",
+        "pb_vaelrix_bust_shadow_v1"
+      ],
+      "camera": {
+        "kind": "push",
+        "intensity": 0.38,
+        "easing": "smoothstep"
+      },
+      "atmosphere": {
+        "saturation": 0.45,
+        "vignette": 0.48,
+        "aurora": 0.12,
+        "grain": 0.18,
+        "rain": 0,
+        "embers": 0.2,
+        "voidDrain": 0.18,
+        "chromaSplit": 0.04
+      },
+      "typography": {
+        "layout": "centerPulse",
+        "glyphGhosts": true,
+        "trailAmount": 0.18,
+        "maxVisibleWords": 6,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "Lyrical rapper",
+        "spilling my heart out",
+        "heart bringing large droughts",
+        "bard mouth"
+      ]
+    },
+    {
+      "id": "scene-02-black-lotus",
+      "title": "Black Lotus Text-Gnosis",
+      "startMs": 22000,
+      "endMs": 38000,
+      "mode": "lotus",
+      "dominantSchools": ["DIVINATION", "SONIC", "ALCHEMY"],
+      "assets": [
+        "pb_black_lotus_card_v1",
+        "pb_breath_text_stream_v1",
+        "pb_focus_iris_v1",
+        "pb_chestplate_fracture_v1"
+      ],
+      "camera": {
+        "kind": "snapZoom",
+        "intensity": 0.52,
+        "easing": "easeOutCubic",
+        "shakeOnDownbeat": true
+      },
+      "atmosphere": {
+        "saturation": 0.68,
+        "vignette": 0.38,
+        "aurora": 0.3,
+        "grain": 0.12,
+        "rain": 0,
+        "embers": 0.35,
+        "voidDrain": 0.12,
+        "chromaSplit": 0.1
+      },
+      "typography": {
+        "layout": "impactStack",
+        "glyphGhosts": true,
+        "trailAmount": 0.22,
+        "maxVisibleWords": 7,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "Card up my sleeve",
+        "black Lotus",
+        "breath flows like text-gnosis",
+        "chest broken"
+      ]
+    },
+    {
+      "id": "scene-03-tragedy-darker",
+      "title": "Tragedy Darker",
+      "startMs": 38000,
+      "endMs": 51000,
+      "mode": "tragedy",
+      "dominantSchools": ["VOID", "NECROMANCY"],
+      "assets": [
+        "pb_false_king_shadow_v1",
+        "pb_web_agony_overlay_v1",
+        "pb_grief_shroud_v1"
+      ],
+      "camera": {
+        "kind": "pull",
+        "intensity": 0.36,
+        "easing": "easeInOutSine"
+      },
+      "atmosphere": {
+        "saturation": 0.22,
+        "vignette": 0.7,
+        "aurora": 0.04,
+        "grain": 0.2,
+        "rain": 0.05,
+        "embers": 0.08,
+        "voidDrain": 0.68,
+        "chromaSplit": 0.06
+      },
+      "typography": {
+        "layout": "splitPolarity",
+        "glyphGhosts": true,
+        "trailAmount": 0.16,
+        "maxVisibleWords": 5,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "actually Arthur",
+        "agony Parker",
+        "killing Ben",
+        "tragedy darker"
+      ],
+      "notes": "Keep references archetypal, not literal."
+    },
+    {
+      "id": "scene-04-golden-fist",
+      "title": "Golden Fist Selection",
+      "startMs": 51000,
+      "endMs": 66000,
+      "mode": "gold",
+      "dominantSchools": ["WILL", "SONIC"],
+      "assets": [
+        "pb_golden_fist_gauntlet_v1",
+        "pb_target_silhouette_strip_v1",
+        "pb_flow_pressure_ring_v1"
+      ],
+      "camera": {
+        "kind": "push",
+        "intensity": 0.75,
+        "easing": "easeOutCubic",
+        "shakeOnDownbeat": true
+      },
+      "atmosphere": {
+        "saturation": 0.82,
+        "vignette": 0.24,
+        "aurora": 0.2,
+        "grain": 0.08,
+        "rain": 0,
+        "embers": 0.72,
+        "voidDrain": 0,
+        "chromaSplit": 0.07
+      },
+      "typography": {
+        "layout": "impactStack",
+        "glyphGhosts": true,
+        "trailAmount": 0.18,
+        "maxVisibleWords": 7,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "Golden Fist",
+        "Eenie Miney Moe",
+        "Teeny Tiny poets",
+        "flow like this"
+      ]
+    },
+    {
+      "id": "scene-05-retro-war-room",
+      "title": "Magnavox Sciamachy",
+      "startMs": 66000,
+      "endMs": 89000,
+      "mode": "retro-war",
+      "dominantSchools": ["SONIC", "ABJURATION", "VOID"],
+      "assets": [
+        "pb_crt_wall_magnavox_v1",
+        "pb_cannonball_impact_v1",
+        "pb_muzzle_flash_glyph_v1",
+        "pb_shadow_duelist_set_v1",
+        "pb_scanline_overprint_v1"
+      ],
+      "camera": {
+        "kind": "parallax",
+        "intensity": 0.46,
+        "easing": "smoothstep"
+      },
+      "atmosphere": {
+        "saturation": 0.52,
+        "vignette": 0.42,
+        "aurora": 0.09,
+        "grain": 0.36,
+        "rain": 0,
+        "embers": 0.38,
+        "voidDrain": 0.16,
+        "chromaSplit": 0.16
+      },
+      "typography": {
+        "layout": "arena",
+        "glyphGhosts": true,
+        "trailAmount": 0.26,
+        "maxVisibleWords": 8,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "Beretta Pops",
+        "Magavox",
+        "box rappers",
+        "sciamachy"
+      ]
+    },
+    {
+      "id": "scene-06-skull-dragon",
+      "title": "Dragon in the Skull",
+      "startMs": 89000,
+      "endMs": 118000,
+      "mode": "skull-dragon",
+      "dominantSchools": ["NECROMANCY", "WILL", "VOID"],
+      "assets": [
+        "pb_battle_steed_v1",
+        "pb_broken_glyph_debris_v1",
+        "pb_open_skull_shell_v1",
+        "pb_skull_dragon_core_v1",
+        "pb_bleeding_script_eruption_v1"
+      ],
+      "camera": {
+        "kind": "crane",
+        "intensity": 0.68,
+        "easing": "easeOutCubic",
+        "shakeOnDownbeat": true
+      },
+      "atmosphere": {
+        "saturation": 0.58,
+        "vignette": 0.58,
+        "aurora": 0.22,
+        "grain": 0.2,
+        "rain": 0.03,
+        "embers": 0.54,
+        "voidDrain": 0.34,
+        "chromaSplit": 0.12
+      },
+      "typography": {
+        "layout": "flood",
+        "glyphGhosts": true,
+        "trailAmount": 0.3,
+        "maxVisibleWords": 8,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "battle steed",
+        "war zone",
+        "feed the dragon in my skull",
+        "it has to bleed"
+      ]
+    },
+    {
+      "id": "scene-07-gravity-machine",
+      "title": "Gravity Machine",
+      "startMs": 118000,
+      "endMs": 141000,
+      "mode": "gravity-machine",
+      "dominantSchools": ["DIVINATION", "SONIC", "ALCHEMY"],
+      "assets": [
+        "pb_gravity_well_v1",
+        "pb_oil_gasoline_splash_v1",
+        "pb_algorithm_grid_v1",
+        "pb_sand_effigy_v1",
+        "pb_water_serpent_v1",
+        "pb_hook_waveform_v1"
+      ],
+      "camera": {
+        "kind": "orbit",
+        "intensity": 0.54,
+        "easing": "smoothstep"
+      },
+      "atmosphere": {
+        "saturation": 0.64,
+        "vignette": 0.36,
+        "aurora": 0.28,
+        "grain": 0.12,
+        "rain": 0.18,
+        "embers": 0.34,
+        "voidDrain": 0.08,
+        "chromaSplit": 0.14
+      },
+      "typography": {
+        "layout": "orbit",
+        "glyphGhosts": true,
+        "trailAmount": 0.24,
+        "maxVisibleWords": 7,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "The pull is gravity",
+        "onto the beat like gasoline",
+        "algorithmically I'm grand",
+        "water to a Sandman",
+        "allergic to a hook"
+      ]
+    },
+    {
+      "id": "scene-08-fibonacci-pressure",
+      "title": "Fibonacci Pressure",
+      "startMs": 141000,
+      "endMs": 166000,
+      "mode": "fibonacci-pressure",
+      "dominantSchools": ["DIVINATION", "ALCHEMY", "SONIC"],
+      "assets": [
+        "pb_heavy_hands_v1",
+        "pb_sawed_musket_v1",
+        "pb_firehose_text_jet_v1",
+        "pb_emotion_fabric_strip_v1",
+        "pb_fibonacci_lattice_spiral_v1",
+        "pb_enemy_mask_leak_v1"
+      ],
+      "camera": {
+        "kind": "push",
+        "intensity": 0.62,
+        "easing": "easeOutCubic",
+        "shakeOnDownbeat": true
+      },
+      "atmosphere": {
+        "saturation": 0.74,
+        "vignette": 0.3,
+        "aurora": 0.38,
+        "grain": 0.16,
+        "rain": 0.1,
+        "embers": 0.44,
+        "voidDrain": 0.06,
+        "chromaSplit": 0.1
+      },
+      "typography": {
+        "layout": "flood",
+        "glyphGhosts": true,
+        "trailAmount": 0.34,
+        "maxVisibleWords": 9,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "heavy hands",
+        "deadly slam poetry",
+        "fire hose",
+        "designer clothes",
+        "fibonacci codes"
+      ]
+    },
+    {
+      "id": "scene-09-monarch-fire",
+      "title": "Monarch Fire Pit",
+      "startMs": 166000,
+      "endMs": 183000,
+      "mode": "monarch-fire",
+      "dominantSchools": ["WILL", "NECROMANCY", "ABJURATION"],
+      "assets": [
+        "pb_fire_pit_ritual_v1",
+        "pb_crown_monarch_shadow_v1",
+        "pb_heart_shutdown_pulse_v1",
+        "pb_pentabyte_pyramid_v1",
+        "pb_beast_eye_mask_v1"
+      ],
+      "camera": {
+        "kind": "crane",
+        "intensity": 0.72,
+        "easing": "easeOutCubic"
+      },
+      "atmosphere": {
+        "saturation": 0.78,
+        "vignette": 0.46,
+        "aurora": 0.2,
+        "grain": 0.16,
+        "rain": 0,
+        "embers": 0.85,
+        "voidDrain": 0.12,
+        "chromaSplit": 0.06
+      },
+      "typography": {
+        "layout": "impactStack",
+        "glyphGhosts": true,
+        "trailAmount": 0.2,
+        "maxVisibleWords": 7,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "fire pit",
+        "monarch",
+        "heart off",
+        "pentabyte pyramid",
+        "I'm a beast"
+      ]
+    },
+    {
+      "id": "scene-10-black-hole-flood",
+      "title": "Black Hole Dam Break",
+      "startMs": 183000,
+      "endMs": 195000,
+      "mode": "black-hole-flood",
+      "dominantSchools": ["VOID", "SONIC", "DIVINATION"],
+      "assets": [
+        "pb_sleet_puddle_name_v1",
+        "pb_vox_boxer_ring_v1",
+        "pb_xo_grid_arena_v1",
+        "pb_capsule_relic_v1",
+        "pb_black_hole_core_v1",
+        "pb_dam_break_flood_v1"
+      ],
+      "camera": {
+        "kind": "snapZoom",
+        "intensity": 0.82,
+        "easing": "easeOutCubic",
+        "shakeOnDownbeat": true
+      },
+      "atmosphere": {
+        "saturation": 0.5,
+        "vignette": 0.62,
+        "aurora": 0.24,
+        "grain": 0.2,
+        "rain": 0.42,
+        "embers": 0.18,
+        "voidDrain": 0.54,
+        "chromaSplit": 0.22
+      },
+      "typography": {
+        "layout": "flood",
+        "glyphGhosts": true,
+        "trailAmount": 0.42,
+        "maxVisibleWords": 10,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "puddle during sleet",
+        "tic tac toe",
+        "black hole rhymes",
+        "dam broke",
+        "BYE"
+      ]
+    },
+    {
+      "id": "scene-11-recovery-polarity",
+      "title": "Recovery Polarity",
+      "startMs": 195000,
+      "endMs": 254000,
+      "mode": "recovery-polarity",
+      "dominantSchools": ["ALCHEMY", "ABJURATION", "DIVINATION"],
+      "assets": [
+        "pb_gold_mine_cavern_v1",
+        "pb_recovery_rain_v1",
+        "pb_petrichor_vapor_v1",
+        "pb_monster_silhouette_v1",
+        "pb_syllable_crown_v1",
+        "pb_polarity_emblem_final_v1"
+      ],
+      "camera": {
+        "kind": "pull",
+        "intensity": 0.5,
+        "easing": "easeInOutSine"
+      },
+      "atmosphere": {
+        "saturation": 0.7,
+        "vignette": 0.28,
+        "aurora": 0.46,
+        "grain": 0.08,
+        "rain": 0.72,
+        "embers": 0.08,
+        "voidDrain": 0,
+        "chromaSplit": 0.04
+      },
+      "typography": {
+        "layout": "emblem",
+        "glyphGhosts": true,
+        "trailAmount": 0.16,
+        "maxVisibleWords": 4,
+        "emphasizePunchlines": true
+      },
+      "anchorLyrics": [
+        "gold mine",
+        "Recovery won't die",
+        "petrichor go by",
+        "syllable King",
+        "Polarity"
+      ]
+    }
+  ]
+}

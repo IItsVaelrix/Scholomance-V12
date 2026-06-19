@@ -36,6 +36,16 @@ function findStart(cellSet) {
   return `${sx},${sy}`; // top-left corner of topmost-leftmost cell
 }
 
+function comparePointKeys(a, b) {
+  const [ax, ay] = a.split(',').map(Number);
+  const [bx, by] = b.split(',').map(Number);
+  return ay - by || ax - bx;
+}
+
+function edgeKey(a, b) {
+  return comparePointKeys(a, b) <= 0 ? `${a}|${b}` : `${b}|${a}`;
+}
+
 function walkChain(adj, startKey, visited) {
   const vertices = [];
   let current = startKey;
@@ -64,6 +74,60 @@ function walkChain(adj, startKey, visited) {
   }
 
   return vertices;
+}
+
+function walkContour(adj, startKey, visitedEdges) {
+  const vertices = [];
+  let current = startKey;
+  let prev = null;
+
+  for (let i = 0; i < adj.size * 8; i++) {
+    vertices.push(current.split(',').map(Number));
+
+    const neighbors = (adj.get(current) || [])
+      .filter((next) => !visitedEdges.has(edgeKey(current, next)))
+      .sort((a, b) => {
+        if (a === prev) return 1;
+        if (b === prev) return -1;
+        return comparePointKeys(a, b);
+      });
+
+    const next = neighbors[0];
+    if (!next) break;
+
+    visitedEdges.add(edgeKey(current, next));
+    prev = current;
+    current = next;
+    if (current === startKey) break;
+  }
+
+  return vertices;
+}
+
+function contourFromVertices(vertices, smooth, tension) {
+  const simplified = simplifyPolygon(vertices);
+  const segments = smooth && simplified.length >= 3
+    ? catmullRomSegments(simplified, tension)
+    : [];
+  return { vertices: simplified, segments };
+}
+
+function traceContours(adj, smooth, tension) {
+  const visitedEdges = new Set();
+  const contours = [];
+  const keys = Array.from(adj.keys()).sort(comparePointKeys);
+
+  for (const key of keys) {
+    const hasOpenEdge = (adj.get(key) || []).some((next) => !visitedEdges.has(edgeKey(key, next)));
+    if (!hasOpenEdge) continue;
+
+    const vertices = walkContour(adj, key, visitedEdges);
+    if (vertices.length >= 3) {
+      contours.push(contourFromVertices(vertices, smooth, tension));
+    }
+  }
+
+  return contours;
 }
 
 function simplifyPolygon(vertices) {
@@ -128,35 +192,26 @@ function catmullRomSegments(vertices, tension) {
  * @param {object}      [options]
  * @param {boolean}     [options.smooth=true]    — emit Catmull-Rom segments
  * @param {number}      [options.tension=0.4]    — curve tension (0=sharp, 1=loose)
- * @returns {{ vertices: [number,number][], segments: object[] }}
+ * @returns {{ vertices: [number,number][], segments: object[], contours: object[] }}
  */
 export function traceBoundary(cellSet, options = {}) {
   const { smooth = true, tension = 0.4 } = options;
 
-  if (!cellSet || cellSet.size === 0) return { vertices: [], segments: [] };
+  if (!cellSet || cellSet.size === 0) return { vertices: [], segments: [], contours: [] };
 
   const adj = buildEdgeAdjacency(cellSet);
-  if (adj.size === 0) return { vertices: [], segments: [] };
+  if (adj.size === 0) return { vertices: [], segments: [], contours: [] };
+
+  const contours = traceContours(adj, smooth, tension);
+  if (contours.length > 0) {
+    const primary = contours[0];
+    return { vertices: primary.vertices, segments: primary.segments, contours };
+  }
 
   const startKey = findStart(cellSet);
   const visited = new Set();
-  let allVertices = walkChain(adj, startKey, visited);
+  const allVertices = walkChain(adj, startKey, visited);
 
-  // Walk any disconnected islands (remaining unvisited vertices)
-  for (const key of adj.keys()) {
-    if (!visited.has(key)) {
-      const extraVertices = walkChain(adj, key, visited);
-      if (extraVertices.length >= 3) {
-        allVertices = allVertices.concat(extraVertices);
-      }
-    }
-  }
-
-  allVertices = simplifyPolygon(allVertices);
-
-  const segments = smooth && allVertices.length >= 3
-    ? catmullRomSegments(allVertices, tension)
-    : [];
-
-  return { vertices: allVertices, segments };
+  const fallback = contourFromVertices(allVertices, smooth, tension);
+  return { vertices: fallback.vertices, segments: fallback.segments, contours: [fallback] };
 }

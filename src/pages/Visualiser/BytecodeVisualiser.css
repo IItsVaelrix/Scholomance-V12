@@ -467,6 +467,52 @@
   .bcv-lyrics { columns: 1; }
 }
 
+/* ── Mobile: karaoke-only view ──────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Strip everything except title + lyrics + transport */
+  .bcv-rightpage,
+  .bcv-disco-nav,
+  .bcv-eyebrow,
+  .bcv-artist,
+  .bcv-album,
+  .bcv-trackhead,
+  .bcv-provenance,
+  .bcv-annotations-layer { display: none; }
+
+  .bcv-spread { min-height: auto; }
+
+  /* Leftpage becomes a flex column so lyrics stretch and transport anchors bottom */
+  .bcv-leftpage {
+    min-height: calc(100dvh - var(--nav-rail-height, 48px));
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    overflow-y: visible;
+    border-bottom: none;
+  }
+
+  .bcv-tracktitle { font-size: clamp(1.1rem, 5vw, 1.5rem); margin-bottom: 1rem; }
+
+  /* Lyrics fill remaining height and scroll internally */
+  .bcv-lyrics {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 0;
+  }
+
+  .bcv-lyrics li { font-size: 1.05rem; line-height: 2; }
+
+  .bcv-player {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(212, 175, 55, 0.15);
+    margin-bottom: 0;
+  }
+
+  .bcv-transport { padding-bottom: 0.5rem; }
+}
+
 /* ── Shareable Resonance Card ────────────────────────────────────────────── */
 
 .rcard-page {

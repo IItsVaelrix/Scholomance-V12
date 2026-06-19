@@ -112,7 +112,7 @@ export function generateRuleCandidates(word) {
   if (digraphCandidate) {
     addUniqueCandidate(results, seenPhonemes, {
       word: upper,
-      phonemes: digraphCandidate,
+      phonemes: digraphCandidate.phonemes,
       source: CANDIDATE_SOURCES.RULE,
       generatedBy: 'rule-v1-digraph',
       confidence: 0.55,
@@ -123,7 +123,7 @@ export function generateRuleCandidates(word) {
   if (magicECandidate) {
     addUniqueCandidate(results, seenPhonemes, {
       word: upper,
-      phonemes: magicECandidate,
+      phonemes: magicECandidate.phonemes,
       source: CANDIDATE_SOURCES.RULE,
       generatedBy: 'rule-v1-magic-e',
       confidence: 0.5,
@@ -134,7 +134,7 @@ export function generateRuleCandidates(word) {
   if (suffixCandidate) {
     addUniqueCandidate(results, seenPhonemes, {
       word: upper,
-      phonemes: suffixCandidate,
+      phonemes: suffixCandidate.phonemes,
       source: CANDIDATE_SOURCES.RULE,
       generatedBy: 'rule-v1-suffix',
       confidence: 0.45,
@@ -145,7 +145,7 @@ export function generateRuleCandidates(word) {
   if (vowelCandidate) {
     addUniqueCandidate(results, seenPhonemes, {
       word: upper,
-      phonemes: vowelCandidate,
+      phonemes: vowelCandidate.phonemes,
       source: CANDIDATE_SOURCES.RULE,
       generatedBy: 'rule-v1-vowel-family',
       confidence: 0.4,

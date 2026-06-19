@@ -175,6 +175,10 @@ import {
 } from '../../codex/core/pixelbrain/qbit-phosphorylation.js';
 
 import {
+  createSpriteCache as codexCreateSpriteCache,
+} from '../../codex/core/pixelbrain/qbit-sprite-cache.js';
+
+import {
   buildConstructionGuideCells as codexBuildConstructionGuideCells,
 } from '../../codex/core/pixelbrain/construction-guides.js';
 
@@ -214,6 +218,10 @@ import {
 import {
   buildColorIntensityPayload as codexBuildColorIntensityPayload,
 } from '../../codex/core/pixelbrain/color-intensity-rating-microprocessor.js';
+
+import {
+  compileEffectsBytecode as codexCompileEffectsBytecode,
+} from '../../codex/core/pixelbrain/character-bytecode-compiler.js';
 
 // --- Custom Shaders System (NEW) ---
 import {
@@ -269,6 +277,7 @@ export const ERROR_SEVERITY = codexERROR_SEVERITY;
 export const MODULE_IDS = codexMODULE_IDS;
 export const ERROR_CODES = codexERROR_CODES;
 export const decodeBytecodeError = codexDecodeBytecodeError;
+export const compileEffectsBytecode = codexCompileEffectsBytecode;
 
 export const DEFAULT_SHADER_UNIFORMS = codexDEFAULT_SHADER_UNIFORMS;
 export const DEFAULT_FRAGMENT_SOURCE = codexDEFAULT_FRAGMENT_SOURCE;
@@ -686,6 +695,7 @@ export { LayerOpCommand, rehydrateEditorCommand };
 export const PhosphorylationCommand = codexPhosphorylationCommand;
 export const createPhosphorylationCommand = codexCreatePhosphorylationCommand;
 export const buildKinase = codexBuildKinase;
+export const createSpriteCache = codexCreateSpriteCache;
 
 // Construction guides (00_Reference geometry for shields / radials)
 export const buildConstructionGuideCells = codexBuildConstructionGuideCells;

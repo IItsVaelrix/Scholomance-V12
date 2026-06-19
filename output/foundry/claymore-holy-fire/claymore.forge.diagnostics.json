@@ -1,0 +1,12 @@
+{
+  "spec": {
+    "file": "/home/deck/Downloads/Scholomance-V12-main/specs/claymore-holy-fire.json",
+    "id": "claymore.holy_fire.v1",
+    "hash": "fnv1a_091be050"
+  },
+  "shader": null,
+  "cells": 788,
+  "motifCells": 0,
+  "fillHash": "fnv1a_a83a3e4e",
+  "assetPacketId": "pbasset_d0014fc5"
+}

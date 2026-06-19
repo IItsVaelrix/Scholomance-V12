@@ -2,9 +2,12 @@ export function classifyVectorCodec(packet) {
   // Rotation fit: random-rotation scores highest because it approximates the Johnson-Lindenstrauss
   // transform, which photonic MACs can execute as dense matrix-vector multiply. Hadamard is
   // structured and slightly less amenable to photonic parallelism. Polar is intermediate.
+  // signed-hash-rotation is the deterministic Photonic Retina variant — same JL-style ±1
+  // mixing applied via a hash, so it scores alongside random-rotation.
   const rotationFit = {
     none: 0.25,
     'random-rotation': 0.9,
+    'signed-hash-rotation': 0.88,
     hadamard: 0.82,
     polar: 0.76,
     custom: 0.5,
@@ -23,8 +26,12 @@ export function classifyVectorCodec(packet) {
 
   // Residual fit: QJL sign-bit sketching is linear and photonic-compatible. Residual codebooks
   // require table lookups that are electronic-bound. None is acceptable — no residual needed.
+  // For qbit-field packets specifically, residual correction is unnecessary because the
+  // energy field is smooth-by-construction (Gaussian-correlated, no high-frequency noise).
+  // Treat residualKind=none as a strong fit instead of a default-acceptable one.
+  const noneResidualFit = packet.sourceKind === 'qbit-field' ? 0.75 : 0.45;
   const residualFit = {
-    none: 0.45,
+    none: noneResidualFit,
     qjl: 0.82,
     'sign-bit': 0.75,
     'residual-codebook': 0.62,

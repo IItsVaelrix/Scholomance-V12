@@ -450,6 +450,99 @@ registerPartProfile('orb.ring', (params = {}, options = {}) => {
   return { cells, anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } } };
 });
 
+// ORB.PERFECT — mathematically pure circle, no asymmetric drips or missing pixels.
+registerPartProfile('orb.perfect', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const cells = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      if (x * x + y * y <= r * r) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + Math.floor(r * 0.8) } } };
+});
+
+// ORB.PERFECT_SHADOW — lower-right rim shading of the perfect circle.
+registerPartProfile('orb.perfect_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const cells = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d <= r && d >= r - 3 && (x > 0 || y > 0)) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+// ORB.PERFECT_DEEP_SHADOW — bottom-right corner of the perfect circle.
+registerPartProfile('orb.perfect_deep_shadow', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const cells = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      if (x * x + y * y <= r * r && x + y > Math.floor(r * 0.67)) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+// ORB.PERFECT_FROST — upper-left rim of the perfect circle.
+registerPartProfile('orb.perfect_frost', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const cells = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d <= r && d >= r - 3 && x < -2 && y < 0) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy + r } } };
+});
+
+// ORB.CORONA — full symmetric rim band of exact width around a perfect circle.
+// All cells at Euclidean dist in [r-width, r]. No gaps, no quadrant breaks.
+registerPartProfile('orb.corona', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const width = roundInt(params.width ?? 2);
+  const cells = [];
+  for (let y = -r; y <= r; y++) {
+    for (let x = -r; x <= r; x++) {
+      const d = Math.sqrt(x * x + y * y);
+      if (d <= r && d >= r - width) cells.push({ x: cx + x, y: cy + y });
+    }
+  }
+  return { cells, anchors: { center: { x: cx, y: cy }, base: { x: cx, y: cy } } };
+});
+
+// ORB.RING.SYMMETRIC — true elliptical ring, no quadrant gaps, perfectly centered.
+registerPartProfile('orb.ring.symmetric', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const r = roundInt(params.r ?? 9);
+  const outerR = r + 2;
+  const innerR = r + 1;
+  const aspect = 0.85;
+  const cells = [];
+  for (let y = cy - outerR; y <= cy + outerR; y++) {
+    for (let x = cx - outerR; x <= cx + outerR; x++) {
+      const d = Math.hypot(x - cx, (y - cy) * aspect);
+      if (d >= innerR && d <= outerR) cells.push({ x, y });
+    }
+  }
+  return { cells, anchors: { base: { x: cx, y: cy }, center: { x: cx, y: cy } } };
+});
+
 // ORB.RING_GLOW — 1px larger bleed layer for the spectral halo.
 registerPartProfile('orb.ring_glow', (params = {}, options = {}) => {
   const cx = roundInt(params.cx ?? 0);
@@ -1685,7 +1778,7 @@ registerPartProfile('ui.arcane.frame', (params = {}, options = {}) => {
   const glowH = h - thickness * 3;
   for (let x = thickness * 1.5; x < w - thickness * 1.5; x++) {
     for (let y = thickness * 1.5; y < h - thickness * 1.5; y++) {
-      if (Math.random() < 0.3) {
+      if ((hashString(`${Math.floor(x)}:${Math.floor(y)}`) / 0xffffffff) < 0.3) {
         cells.push({ x: Math.floor(x), y: Math.floor(y), color: '#4A2C6A' });
       }
     }
@@ -1739,7 +1832,7 @@ registerPartProfile('ui.hotbar.bar', (params = {}, options = {}) => {
   const frame = getPartProfile('ui.arcane.frame')({ width: w, height: h, thickness: 6 }, options);
   // Add horizontal energy lines for futuristic flow (crimson pulse lines)
   for (let x = 8; x < w - 8; x += 4) {
-    if (Math.random() > 0.6) {
+    if ((hashString(`bar:${x}`) / 0xffffffff) > 0.6) {
       frame.cells.push({ x, y: Math.floor(h / 2) - 1, color: '#8B1E3D' });
       frame.cells.push({ x, y: Math.floor(h / 2) + 1, color: '#8B1E3D' });
     }
@@ -1759,7 +1852,7 @@ registerPartProfile('ui.slot', (params = {}, options = {}) => {
   for (let x = 6; x < size - 6; x++) {
     for (let y = 6; y < size - 6; y++) {
       if (Math.abs(x - cx) + Math.abs(y - cy) < size / 3) {
-        if (Math.random() < 0.4) frame.cells.push({ x, y, color: '#4A2C6A' });
+        if ((hashString(`slot:${x}:${y}`) / 0xffffffff) < 0.4) frame.cells.push({ x, y, color: '#4A2C6A' });
       }
     }
   }
@@ -1796,7 +1889,7 @@ registerPartProfile('ui.minimap.border', (params = {}, options = {}) => {
     for (let y = cy - r + 4; y <= cy + r - 4; y++) {
       if ((x - cx) ** 2 + (y - cy) ** 2 < (r - 4) ** 2) {
         cells.push({ x, y, color: '#11111A' });
-        if (Math.random() < 0.1) cells.push({ x, y, color: '#4A2C6A' });
+        if ((hashString(`mm:${x}:${y}`) / 0xffffffff) < 0.1) cells.push({ x, y, color: '#4A2C6A' });
       }
     }
   }
@@ -1907,6 +2000,153 @@ registerPartProfile('motif.harmonic_channels', (params = {}, options = {}) => {
     anchors: {
       base: { x: cx, y: cy },
       center: { x: cx, y: cy },
+    },
+  };
+});
+
+
+// ── SCHOLMINE PICKAXE PROFILES ───────────────────────────────────────
+// Minecraft-readable tool silhouette, authored as lattice parts so the
+// Godot viewmodel is only a projection of the PixelBrain asset packet.
+
+registerPartProfile('tool.pickaxe.head.minecraft_void', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const y0 = roundInt(params.y ?? 8);
+  const rows = [
+    { y: -2, ranges: [[-2, 2]] },
+    { y: -1, ranges: [[-6, 6]] },
+    { y: 0, ranges: [[-12, 12]] },
+    { y: 1, ranges: [[-16, -7], [-5, 5], [7, 16]] },
+    { y: 2, ranges: [[-20, -12], [-4, 4], [12, 20]] },
+    { y: 3, ranges: [[-24, -16], [-3, 3], [16, 24]] },
+    { y: 4, ranges: [[-27, -20], [-2, 2], [20, 27]] },
+    { y: 5, ranges: [[-29, -23], [-2, 2], [23, 29]] },
+    { y: 6, ranges: [[-30, -25], [-1, 1], [25, 30]] },
+    { y: 7, ranges: [[-30, -27], [27, 30]] },
+    { y: 8, ranges: [[-30, -28], [28, 30]] },
+    { y: 9, ranges: [[-29, -28], [28, 29]] },
+  ];
+  const cells = [];
+  const seen = new Set();
+  const place = (x, y) => {
+    const key = String(x) + ',' + String(y);
+    if (seen.has(key)) return;
+    seen.add(key);
+    cells.push({ x, y });
+  };
+  for (const row of rows) {
+    for (const [from, to] of row.ranges) {
+      for (let dx = from; dx <= to; dx += 1) place(cx + dx, y0 + row.y);
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: y0 + 6 },
+      center: { x: cx, y: y0 + 1 },
+      left_tip: { x: cx - 29, y: y0 + 9 },
+      right_tip: { x: cx + 29, y: y0 + 9 },
+      rune_track: { x: cx, y: y0 + 2 },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.handle.diagonal', (params = {}, options = {}) => {
+  const length = roundInt(params.length ?? 38);
+  const dxTotal = roundInt(params.dx ?? -25);
+  const thickness = Math.max(0, roundInt(params.thickness ?? 1));
+  const cells = [];
+  const seen = new Set();
+  const place = (x, y) => {
+    const key = String(x) + ',' + String(y);
+    if (seen.has(key)) return;
+    seen.add(key);
+    cells.push({ x, y });
+  };
+  for (let i = 0; i <= length; i += 1) {
+    const t = i / Math.max(1, length);
+    const cx = Math.round(dxTotal * t);
+    const cy = i;
+    for (let ox = -thickness; ox <= thickness; ox += 1) {
+      for (let oy = -thickness; oy <= thickness; oy += 1) {
+        if (Math.abs(ox) + Math.abs(oy) <= thickness + 1) place(cx + ox, cy + oy);
+      }
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: 0, y: 0 },
+      tip: { x: dxTotal, y: length },
+      center: { x: Math.round(dxTotal / 2), y: Math.round(length / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.handle.wrap', (params = {}, options = {}) => {
+  const length = roundInt(params.length ?? 38);
+  const dxTotal = roundInt(params.dx ?? -25);
+  const spacing = Math.max(3, roundInt(params.spacing ?? 6));
+  const cells = [];
+  const seen = new Set();
+  const place = (x, y) => {
+    const key = String(x) + ',' + String(y);
+    if (seen.has(key)) return;
+    seen.add(key);
+    cells.push({ x, y });
+  };
+  for (let i = 4; i <= length - 3; i += spacing) {
+    const t = i / Math.max(1, length);
+    const cx = Math.round(dxTotal * t);
+    for (let offset = -2; offset <= 2; offset += 1) {
+      place(cx + offset, i - offset);
+      place(cx + offset, i - offset + 1);
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: 0, y: 0 },
+      tip: { x: dxTotal, y: length },
+      center: { x: Math.round(dxTotal / 2), y: Math.round(length / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.collar.socket', (params = {}, options = {}) => {
+  const half = roundInt(params.half ?? 5);
+  const height = roundInt(params.height ?? 6);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const inset = y === 0 || y === height - 1 ? 1 : 0;
+    for (let x = -half + inset; x <= half - inset; x += 1) cells.push({ x, y });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: 0, y: 0 },
+      tip: { x: 0, y: height - 1 },
+      center: { x: 0, y: Math.floor(height / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.void_inlay', (params = {}, options = {}) => {
+  const span = roundInt(params.span ?? 15);
+  const cells = [];
+  for (let dx = -span; dx <= span; dx += 1) {
+    if (dx % 2 === 0) cells.push({ x: dx, y: 0 });
+    if (Math.abs(dx) % 5 === 0) cells.push({ x: dx, y: 1 });
+  }
+  for (let dy = -2; dy <= 2; dy += 1) {
+    cells.push({ x: -5, y: dy });
+    cells.push({ x: 5, y: dy });
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: 0, y: 0 },
+      center: { x: 0, y: 0 },
     },
   };
 });

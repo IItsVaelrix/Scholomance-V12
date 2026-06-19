@@ -1397,9 +1397,31 @@ const ScrollEditor = forwardRef(/**
                                 position: 'absolute',
                                 inset: 0,
                                 '--w': color || undefined,
+                                pointerEvents: isLatticeGrid ? 'auto' : 'none',
+                                cursor: isLatticeGrid ? 'pointer' : 'default',
                               }}
                               data-char-start={charStart}
                               aria-hidden="true"
+                              onClick={(e) => {
+                                if (isLatticeGrid) {
+                                  e.stopPropagation();
+                                  onWordActivate?.({
+                                    word: token,
+                                    normalizedWord: clean,
+                                    trigger: 'truesight_tap',
+                                    analysis: analysis || null,
+                                    charStart,
+                                    charEnd,
+                                    lineIndex,
+                                    wordIndex,
+                                    vowelFamily: wordVowelFamily,
+                                    terminalVowelFamily: rhymeVowelFamily,
+                                    school: truesight?.school || null,
+                                    color,
+                                    anchorRect: e.currentTarget.getBoundingClientRect(),
+                                  });
+                                }
+                              }}
                             />
                             <AnimatedSurface
                               as="span"
@@ -1408,7 +1430,7 @@ const ScrollEditor = forwardRef(/**
                               className={[
                                'truesight-word-inner',
                                'pixel-brain-chip',
-                                shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
+                               shouldColor ? 'grimoire-word' : 'grimoire-word--grey',
                                 decoded?.className || '',
                                 isLineHighlighted ? 'grimoire-word--rhyme-highlight' : '',
                                 isMisspelled ? 'grimoire-word--misspelled' : '',
@@ -1649,9 +1671,31 @@ const ScrollEditor = forwardRef(/**
                                 position: 'absolute',
                                 inset: 0,
                                 '--w': color || undefined,
+                                pointerEvents: isLatticeGrid ? 'auto' : 'none',
+                                cursor: isLatticeGrid ? 'pointer' : 'default',
                               }}
                               data-char-start={charStart}
                               aria-hidden="true"
+                              onClick={(e) => {
+                                if (isLatticeGrid) {
+                                  e.stopPropagation();
+                                  onWordActivate?.({
+                                    word: token,
+                                    normalizedWord: clean,
+                                    trigger: 'truesight_tap',
+                                    analysis: analysis || null,
+                                    charStart,
+                                    charEnd,
+                                    lineIndex: li,
+                                    wordIndex,
+                                    vowelFamily: wordVowelFamily,
+                                    terminalVowelFamily: rhymeVowelFamily,
+                                    school: truesight?.school || null,
+                                    color,
+                                    anchorRect: e.currentTarget.getBoundingClientRect(),
+                                  });
+                                }
+                              }}
                             />
                             <AnimatedSurface
                               as="span"

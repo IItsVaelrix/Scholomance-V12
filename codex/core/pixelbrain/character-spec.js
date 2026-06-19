@@ -139,6 +139,27 @@ function normalizeClothing(raw) {
   return Object.freeze(out);
 }
 
+function normalizeProfileParts(rawParts, fieldName) {
+  if (!Array.isArray(rawParts)) return Object.freeze([]);
+  const seen = new Set();
+  const out = [];
+  for (const raw of rawParts) {
+    if (!raw || typeof raw !== 'object') continue;
+    const id = String(raw.id || '').trim();
+    if (!id) throw err(`${fieldName} part id is required`);
+    if (seen.has(id)) throw err(`duplicate ${fieldName} id "${id}"`);
+    seen.add(id);
+    const profile = String(raw.profile || '').trim();
+    if (!profile) throw err(`${fieldName} "${id}" profile is required`);
+    out.push(deepFreeze({
+      id,
+      profile,
+      params: raw.params && typeof raw.params === 'object' ? { ...raw.params } : Object.freeze({}),
+    }));
+  }
+  return Object.freeze(out);
+}
+
 export function normalizeCharacterSpec(input = {}) {
   if (!input || typeof input !== 'object') {
     throw err('spec must be an object', { input });
@@ -164,6 +185,11 @@ export function normalizeCharacterSpec(input = {}) {
   const face = normalizeFace(input.face);
   const hair = normalizeHair(input.hair);
   const clothing = normalizeClothing(input.clothing);
+  const accessories = normalizeProfileParts(input.accessories, 'accessory');
+  const details = normalizeProfileParts(input.details, 'detail');
+  const combatProfile = input.combatProfile && typeof input.combatProfile === 'object'
+    ? deepFreeze({ ...input.combatProfile })
+    : null;
 
   const spec = {
     contract: CHARACTER_SPEC_VERSION,
@@ -179,6 +205,9 @@ export function normalizeCharacterSpec(input = {}) {
     face,
     hair,
     clothing,
+    accessories,
+    details,
+    ...(combatProfile ? { combatProfile } : {}),
     ...(materials ? { materials } : {}),
   };
 

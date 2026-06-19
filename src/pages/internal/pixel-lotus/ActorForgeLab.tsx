@@ -24,16 +24,18 @@ const FACING_TO_DIRECTION: Record<IsoFacing, CardinalDirection> = {
 };
 
 const BODY_PROFILES = [
+  { id: 'character.body.chibi.starboundEsper', label: 'Starbound Esper Chibi' },
   { id: 'character.body.human.feminine', label: 'Feminine' },
   { id: 'character.body.human.masculine', label: 'Masculine' },
   { id: 'character.body.human.androgynous', label: 'Androgynous' },
 ];
 
-const SKIN_MATERIALS = ['skin_light', 'skin_medium', 'skin_dark', 'skin_voidborne'];
-const HAIR_MATERIALS = ['hair_black', 'hair_brown', 'hair_blonde', 'hair_red', 'hair_void'];
-const EYE_MATERIALS = ['eye_brown', 'eye_blue', 'eye_green', 'eye_void_glow'];
+const SKIN_MATERIALS = ['skin_apricot_signal', 'skin_light', 'skin_medium', 'skin_dark', 'skin_voidborne'];
+const HAIR_MATERIALS = ['hair_midnight_teal', 'hair_copper_arcade', 'hair_black', 'hair_brown', 'hair_blonde', 'hair_red', 'hair_void'];
+const EYE_MATERIALS = ['eye_psychic_cobalt', 'eye_brown', 'eye_blue', 'eye_green', 'eye_void_glow'];
 
 const HAIR_PROFILES = [
+  'character.hair.cometSweep',
   'character.hair.short',
   'character.hair.mediumStraight',
   'character.hair.longStraight',
@@ -44,6 +46,7 @@ const HAIR_PROFILES = [
 ];
 
 const EYE_PROFILES = [
+  'character.face.eye.humanSoft',
   'character.face.eye.round',
   'character.face.eye.almond',
   'character.face.eye.narrow',
@@ -51,22 +54,58 @@ const EYE_PROFILES = [
 ];
 
 const TOP_PROFILES = [
+  'character.clothing.top.starboundJacket',
   'character.clothing.top.beginnerRobe',
   'character.clothing.top.beginnerTunic',
   'character.clothing.top.beginnerShirt',
 ];
 
 const BOTTOM_PROFILES = [
+  'character.clothing.bottom.psychicStreetShorts',
   'character.clothing.bottom.beginnerPants',
   'character.clothing.bottom.beginnerSkirt',
   'character.clothing.bottom.beginnerLeggings',
 ];
 
 const SHOES_PROFILES = [
+  'character.clothing.shoes.cometBoots',
   'character.clothing.shoes.beginnerBoots',
   'character.clothing.shoes.beginnerSandals',
   'character.clothing.shoes.beginnerSlippers',
 ];
+
+const STYLE_PRESETS = {
+  starboundEsper: {
+    label: 'Starbound Esper',
+    body: 'character.body.chibi.starboundEsper',
+    skin: 'skin_apricot_signal',
+    hair: 'character.hair.cometSweep',
+    hairColor: 'hair_midnight_teal',
+    eyes: 'character.face.eye.humanSoft',
+    eyeColor: 'eye_psychic_cobalt',
+    top: 'character.clothing.top.starboundJacket',
+    bottom: 'character.clothing.bottom.psychicStreetShorts',
+    shoes: 'character.clothing.shoes.cometBoots',
+    presentation: { gender: 'androgynous', heightClass: 'short', buildClass: 'average' },
+    bytecode: 'VW-STARBOUND-ESPER-CHIBI',
+  },
+  academy: {
+    label: 'Academy Scholar',
+    body: 'character.body.human.feminine',
+    skin: 'skin_light',
+    hair: 'character.hair.longStraight',
+    hairColor: 'hair_brown',
+    eyes: 'character.face.eye.almond',
+    eyeColor: 'eye_brown',
+    top: 'character.clothing.top.beginnerRobe',
+    bottom: 'character.clothing.bottom.beginnerPants',
+    shoes: 'character.clothing.shoes.beginnerBoots',
+    presentation: { gender: 'feminine', heightClass: 'average', buildClass: 'average' },
+    bytecode: 'VW-SCHOLAR-COMMON-RESONANT',
+  },
+} as const;
+
+type StylePresetId = keyof typeof STYLE_PRESETS;
 
 const profileLabel = (profileId: string) => {
   const tail = profileId.split('.').pop() || profileId;
@@ -97,13 +136,14 @@ export default function ActorForgeLab() {
 
   const navigate = useNavigate();
   const [characterName, setCharacterName] = useState('Apprentice Scholar');
+  const [stylePreset, setStylePreset] = useState<StylePresetId>('starboundEsper');
 
-  const [bodyProfile, setBodyProfile] = useState(BODY_PROFILES[0].id);
-  const [skin, setSkin] = useState('skin_light');
-  const [hairProfile, setHairProfile] = useState('character.hair.longStraight');
-  const [hairColor, setHairColor] = useState('hair_brown');
-  const [eyeProfile, setEyeProfile] = useState('character.face.eye.almond');
-  const [eyeColor, setEyeColor] = useState('eye_brown');
+  const [bodyProfile, setBodyProfile] = useState(STYLE_PRESETS.starboundEsper.body);
+  const [skin, setSkin] = useState(STYLE_PRESETS.starboundEsper.skin);
+  const [hairProfile, setHairProfile] = useState(STYLE_PRESETS.starboundEsper.hair);
+  const [hairColor, setHairColor] = useState(STYLE_PRESETS.starboundEsper.hairColor);
+  const [eyeProfile, setEyeProfile] = useState(STYLE_PRESETS.starboundEsper.eyes);
+  const [eyeColor, setEyeColor] = useState(STYLE_PRESETS.starboundEsper.eyeColor);
   const [top, setTop] = useState(TOP_PROFILES[0]);
   const [bottom, setBottom] = useState(BOTTOM_PROFILES[0]);
   const [shoes, setShoes] = useState(SHOES_PROFILES[0]);
@@ -122,31 +162,55 @@ export default function ActorForgeLab() {
     }
   }, [showCinematic]);
 
+  const applyStylePreset = (presetId: StylePresetId) => {
+    const preset = STYLE_PRESETS[presetId];
+    setStylePreset(presetId);
+    setBodyProfile(preset.body);
+    setSkin(preset.skin);
+    setHairProfile(preset.hair);
+    setHairColor(preset.hairColor);
+    setEyeProfile(preset.eyes);
+    setEyeColor(preset.eyeColor);
+    setTop(preset.top);
+    setBottom(preset.bottom);
+    setShoes(preset.shoes);
+  };
+
   const forge = useMemo(() => {
+    const preset = STYLE_PRESETS[stylePreset];
+    const isStarboundEsper = stylePreset === 'starboundEsper';
     const spec = {
       contract: 'CHARACTER-SPEC-v1',
-      id: `forge.custom.${bodyProfile.split('.').pop()}.v1`,
+      id: `forge.custom.${stylePreset}.${bodyProfile.split('.').pop()}.v1`,
       class: 'character',
       archetype: 'human',
       canvas: { width: 32, height: 48, gridSize: 1 },
       seed,
-      bytecode: 'VW-SCHOLAR-COMMON-RESONANT',
-      presentation: { gender: 'feminine', heightClass: 'average', buildClass: 'average' },
+      bytecode: preset.bytecode,
+      presentation: preset.presentation,
       directions: ['south', 'east', 'north', 'west'],
       materials: { skin, hair: hairColor, eyes: eyeColor },
-      body: { profile: bodyProfile },
+      body: { profile: bodyProfile, params: isStarboundEsper ? { compact: 0.72 } : {} },
       face: [
-        { id: 'leftEye', profile: eyeProfile, attach: { parent: 'body', at: 'face.eyeLeft' } },
-        { id: 'rightEye', profile: eyeProfile, attach: { parent: 'body', at: 'face.eyeRight' } },
-        { id: 'nose', profile: 'character.face.nose.small', attach: { parent: 'body', at: 'face.nose' } },
-        { id: 'mouth', profile: 'character.face.mouth.small', attach: { parent: 'body', at: 'face.mouth' } },
+        { id: 'leftEye', profile: eyeProfile, params: isStarboundEsper ? { iris: eyeColor } : {}, attach: { parent: 'body', at: 'face.eyeLeft' } },
+        { id: 'rightEye', profile: eyeProfile, params: isStarboundEsper ? { iris: eyeColor } : {}, attach: { parent: 'body', at: 'face.eyeRight' } },
+        { id: 'nose', profile: isStarboundEsper ? 'character.face.nose.humanSoft' : 'character.face.nose.small', attach: { parent: 'body', at: 'face.nose' } },
+        { id: 'mouth', profile: isStarboundEsper ? 'character.face.mouth.humanSoft' : 'character.face.mouth.small', attach: { parent: 'body', at: 'face.mouth' } },
       ],
-      hair: { profile: hairProfile, params: { color: hairColor }, attach: { parent: 'body', at: 'headTop' } },
+      hair: { profile: hairProfile, params: { color: hairColor, streak: 'neon_mint_signal' }, attach: { parent: 'body', at: 'headTop' } },
       clothing: [
-        { id: 'bottom', profile: bottom },
-        { id: 'top', profile: top },
-        { id: 'shoes', profile: shoes },
+        { id: 'bottom', profile: bottom, params: { color: 'cloth_psychic_denim', trim: 'trim_comet_gold' } },
+        { id: 'top', profile: top, params: { color: 'cloth_star_jacket', trim: 'trim_comet_gold', signal: 'neon_mint_signal' } },
+        { id: 'shoes', profile: shoes, params: { color: 'leather_brown', trim: 'trim_comet_gold' } },
       ],
+      accessories: isStarboundEsper ? [
+        { id: 'antenna', profile: 'character.accessory.signalAntenna', params: { stem: 'trim_comet_gold', signal: 'neon_mint_signal' } },
+      ] : [],
+      details: isStarboundEsper ? [
+        { id: 'constellation', profile: 'character.detail.jacketConstellation', params: { color: 'neon_mint_signal', gold: 'trim_comet_gold' } },
+        { id: 'cheekBlush', profile: 'character.detail.cheekPixelBlush', params: { color: '#F08A78' } },
+        { id: 'shadow', profile: 'character.detail.castShadow', params: { color: '#1c1c2e' } },
+      ] : [],
     };
     try {
       const character = forgeCharacter(spec, {});
@@ -154,7 +218,7 @@ export default function ActorForgeLab() {
     } catch (e) {
       return { character: null, error: e instanceof Error ? e.message : String(e) };
     }
-  }, [bodyProfile, skin, hairProfile, hairColor, eyeProfile, eyeColor, top, bottom, shoes, seed]);
+  }, [stylePreset, bodyProfile, skin, hairProfile, hairColor, eyeProfile, eyeColor, top, bottom, shoes, seed]);
 
   const direction = FACING_TO_DIRECTION[facing];
 
@@ -167,18 +231,6 @@ export default function ActorForgeLab() {
     const sheet = forge.character?.spritesheet;
     return sheet ? pngToDataUrl(sheet) : null;
   }, [forge]);
-
-  const svgPreviewUrl = useMemo(() => {
-    if (!forge.character) return null;
-    try {
-      const spec = { ...forge.character.spec, directions: ['south'] };
-      const result = forgeCharacter(spec, { renderer: 'illustrated', scale: 8 } as any) as any;
-      if (!result.svg) return null;
-      return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(result.svg)));
-    } catch {
-      return null;
-    }
-  }, [forge.character]);
 
   const facingOptions: IsoFacing[] = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
 
@@ -282,17 +334,6 @@ export default function ActorForgeLab() {
               <img src={sheetUrl} alt="4-direction spritesheet" />
             </div>
           )}
-          {svgPreviewUrl && (
-            <div className="svg-preview-panel">
-              <div className="svg-preview-label">Illustrated ✦</div>
-              <img
-                src={svgPreviewUrl}
-                alt="Illustrated character preview"
-                className="svg-preview-img"
-                style={{ imageRendering: 'auto' }}
-              />
-            </div>
-          )}
         </div>
 
         <div className="panel controls-panel">
@@ -307,6 +348,19 @@ export default function ActorForgeLab() {
               value={characterName}
               onChange={e => setCharacterName(e.target.value)}
             />
+          </div>
+
+          <div className="control-group">
+            <label htmlFor="style-preset-selector">Art Style</label>
+            <select
+              id="style-preset-selector"
+              value={stylePreset}
+              onChange={e => applyStylePreset(e.target.value as StylePresetId)}
+            >
+              {(Object.entries(STYLE_PRESETS) as Array<[StylePresetId, typeof STYLE_PRESETS[StylePresetId]]>).map(([id, preset]) => (
+                <option key={id} value={id}>{preset.label}</option>
+              ))}
+            </select>
           </div>
 
           <div className="control-group">
@@ -489,6 +543,7 @@ export default function ActorForgeLab() {
 {JSON.stringify(forge.character ? {
   id: forge.character.spec.id,
   displayName: characterName,
+  artStyle: STYLE_PRESETS[stylePreset].label,
   specHash: forge.character.specHash,
   totalCells: forge.character.diagnostics.totalCells,
   paletteSizes: forge.character.diagnostics.paletteSizes,

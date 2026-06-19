@@ -660,3 +660,27 @@
   height: 100%;
   display: block;
 }
+
+/* Obsidian Choir album cover — typographic polish */
+#cover-canvas #title-vaelrix .div-elem-title {
+  font-family: var(--font-display, 'Cinzel', Georgia, serif);
+  font-size: clamp(2.5rem, 5.4vw, 4.5rem);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #f4ede4;
+  text-align: center;
+  text-shadow: 0 0 18px rgba(117, 247, 255, 0.78);
+}
+
+#cover-canvas #subtitle-crystal.div-elem-badge {
+  font-size: 0.85rem;
+  letter-spacing: 0.28em;
+  color: #75f7ff;
+  text-shadow: 0 0 14px rgba(117, 247, 255, 0.52);
+  padding: 6px 16px;
+}
+
+#cover-canvas #gold-frame {
+  background: transparent !important;
+  pointer-events: none;
+}
