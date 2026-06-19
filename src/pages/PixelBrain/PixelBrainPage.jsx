@@ -25,6 +25,8 @@ import {
   buildConstructionGuideCells,
   generatePixelArtFromImage,
   analyzeImageToFormula,
+  runForgeCraftGate,
+  runForgeCraftGateWithBlueprint,
 } from "../../lib/pixelbrain.adapter.js";
 
 import { LayerStackPanel } from "./components/LayerStackPanel.jsx";
@@ -32,6 +34,7 @@ import { IndexedPalettePanel } from "./components/IndexedPalettePanel.jsx";
 import MentorCritiquePanel from "./components/MentorCritiquePanel.jsx";
 import { AMPApplyPanel } from "./components/AMPApplyPanel.jsx";
 import { ReferencePanel } from "./components/ReferencePanel.jsx";
+import { ForgeGatePanel } from "./components/ForgeGatePanel.jsx";
 
 const TemplateEditor = lazy(() => import('./components/TemplateEditor.jsx'));
 const PixelBrainTerminal = lazy(() => import('./PixelBrainTerminal.jsx'));
@@ -45,6 +48,7 @@ export default function PixelBrainPage() {
   const [showPalettePanel, setShowPalettePanel] = useState(true);
   const [showAmpPanel, setShowAmpPanel] = useState(true);
   const [showRefPanel, setShowRefPanel] = useState(true);
+  const [showForgeGatePanel, setShowForgeGatePanel] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
 
   // For AMP non-destructive preview (addresses "no live/preview for AMPs")
@@ -449,6 +453,36 @@ export default function PixelBrainPage() {
     URL.revokeObjectURL(url);
   };
 
+  // Forge Craft Gate — runs an ITEM-SPEC-v1 through the PixelBrain Immunity gate
+  // via the adapter (no direct codex import). Returns the normalized verdict to
+  // the panel, which renders the bytecode-grade PASS/FAIL in-world.
+  const handleRunForgeGate = useCallback((spec) => {
+    const verdict = runForgeCraftGate(spec);
+    setShowForgeGatePanel(true);
+    setPageNotice(
+      verdict.ok
+        ? `FORGE GATE PASSED — ${verdict.vaccine}`
+        : `FORGE GATE BLOCKED — ${verdict.bytecode || ''} ${verdict.reason || ''}`.trim()
+    );
+    return verdict;
+  }, []);
+
+  // Silhouette Blueprint Gate — grades the forged solid's three shadows (and any
+  // animation poses) against a sealed .silh via the adapter. Returns the normalized
+  // verdict (with the offending view/phase on a FAIL) to the panel for its chip row.
+  const handleRunForgeGateWithBlueprint = useCallback((spec, silhText) => {
+    const verdict = runForgeCraftGateWithBlueprint(spec, silhText);
+    setShowForgeGatePanel(true);
+    setPageNotice(
+      verdict.ok
+        ? `BLUEPRINT SEALED — ${verdict.vaccine}`
+        : `BLUEPRINT BLOCKED — ${verdict.bytecode || ''} ${verdict.reason || ''}${
+            verdict.view ? ` (${verdict.view}${verdict.phase ? `/${verdict.phase}` : ''})` : ''
+          }`.trim()
+    );
+    return verdict;
+  }, []);
+
   // Exports of the live canvas, via the editor's own (tested) export paths.
   const handleRealExport = (format) => {
     const editor = editorRef.current;
@@ -627,6 +661,9 @@ export default function PixelBrainPage() {
         </button>
         <button className="pb-action-btn" onClick={exportDeterministicRecipe} title="Machine-readable full recipe + command log + AMP params for exact reproduction in foundry or another session">
           EXPORT RECIPE (Forge Spec)
+        </button>
+        <button className="pb-action-btn pb-pixelbrain-btn" onClick={() => setShowForgeGatePanel(true)} title="Run an ITEM-SPEC-v1 through the PixelBrain Forge Craft Gate (Immunity): lattice, readability, determinism, material authority. Emits bytecode-grade PASS/FAIL.">
+          FORGE GATE
         </button>
 
         <button className="pb-action-btn" onClick={() => setShowTerminal(!showTerminal)}>
@@ -885,10 +922,27 @@ export default function PixelBrainPage() {
             </div>
           )}
 
+          {/* Forge Craft Gate — Immunity verdict surface for ITEM-SPEC-v1 assets */}
+          {showForgeGatePanel && (
+            <div className="pb-panel" style={{ flex: '0 0 auto' }}>
+              <div className="pb-panel-header">
+                FORGE GATE <button onClick={() => setShowForgeGatePanel(false)} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer' }}>×</button>
+              </div>
+              <div className="pb-panel-body">
+                <ForgeGatePanel onRunGate={handleRunForgeGate} onRunBlueprint={handleRunForgeGateWithBlueprint} />
+              </div>
+            </div>
+          )}
+
           <div style={{ padding: 6 }}>
             {!showPixelBrainPanel && (
               <button className="pb-action-btn" style={{ width: '100%' }} onClick={() => setShowPixelBrainPanel(true)}>
                 Show PixelBrain Tools
+              </button>
+            )}
+            {!showForgeGatePanel && (
+              <button className="pb-action-btn" style={{ width: '100%', marginTop: 4 }} onClick={() => setShowForgeGatePanel(true)}>
+                SHOW FORGE GATE (immunity)
               </button>
             )}
             {!showAmpPanel && (
