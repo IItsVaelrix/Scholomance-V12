@@ -121,3 +121,12 @@ diagnostic_report.json
 # forced-alignment pipeline (scripts/align_lyrics.py)
 .venv-align/
 tmp/
+
+# Rust / build output (regenerable — never commit)
+target/
+**/target/
+
+# Generated media / build artifacts (regenerable — keep local only)
+output/videos/*.mp4
+out/*.mp4
+*.mp4
