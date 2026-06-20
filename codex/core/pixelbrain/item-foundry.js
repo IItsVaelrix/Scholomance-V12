@@ -23,7 +23,14 @@
  * and runs.
  */
 
-import { deflateSync } from 'node:zlib';
+// PNG IDAT compression needs zlib, which only exists under Node. Loaded lazily
+// behind a runtime guard so this module stays importable in the browser (Vite
+// externalises node:zlib, so a static import throws on load). PNG *file* export
+// is a Node-only path — the browser previews via canvas and never deflates here.
+let deflateSync = null;
+if (typeof process !== 'undefined' && process.versions != null && process.versions.node) {
+  ({ deflateSync } = await import('node:zlib'));
+}
 
 import { sketchToSilhouette, runSketchAMP, applyConstructionLines } from './sketch-amp.js';
 import { forgeArmor } from './factory/armor-factory.js';
@@ -37,6 +44,9 @@ registerClassFactory('weapon', '*', forgeWeapon);
 registerClassFactory('shield', '*', forgeShield);
 registerClassFactory('jewelry', '*', forgeJewelry);
 import { executeRoute } from './microprocessor-route.js';
+import { computeStructuralEnergy } from './structural-energy.js';
+import { liftToVolume, buildPartParams } from './volume-lift-amp.js';
+import { serializeItemVoxelPacket } from './item-voxel-packet.js';
 import { applyHolyFireMotif } from './holyfire-motif-amp.js';
 import { validateMirroredTrimByClass } from './mirrored-trim-validator.js';
 import { buildSquareSharpnessContrastPayload } from './square-sharpness-contrast-amp.js';
@@ -238,6 +248,34 @@ function crc32(buf) {
  *   assetPacket, godotArtifact, godotShader, phaserPipeline, png
  * }}
  */
+/**
+ * VolumeLiftAMP bridge: map painted 2D fills into structural-lift input cells.
+ * Distinct quantized colours become small material ids so the serialized item
+ * packet keeps the painted palette (sibling of PB-VOXEL-CHAR's material table).
+ * STRUCTURAL energy is recomputed per-part downstream; any glow energy rides through.
+ */
+function fillsToVolumeCells(coordinates) {
+  const colorToId = new Map();
+  const materials = {};
+  const cells = coordinates.map((c) => {
+    const color = String(c.color || '#000000').toUpperCase();
+    let materialId = colorToId.get(color);
+    if (materialId == null) {
+      materialId = colorToId.size + 1; // 1-based; 0 = empty
+      colorToId.set(color, materialId);
+      materials[materialId] = { id: `mat${materialId}`, colorHint: color };
+    }
+    return {
+      x: c.snappedX ?? c.x,
+      y: c.snappedY ?? c.y,
+      partId: c.partId,
+      materialId,
+      energies: Array.isArray(c.energies) ? c.energies : [],
+    };
+  });
+  return { cells, materials };
+}
+
 export function forgeItemAsset(rawSpec, opts = {}) {
   const spec = normalizeItemSpec(rawSpec);
   validateItemSpec(spec);
@@ -458,6 +496,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
   // Validate route / loud failures
   let routeDiagnostics = { ok: true, failures: [] };
   let expansion = null;
+  let routeVolume = null;
 
   const factoryFn = getClassFactory(spec.class, spec.archetype);
   if (factoryFn) {
@@ -474,6 +513,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
 
     const results = executeRoute(routeBundle.routeDefinition, context);
     routeDiagnostics = results.diagnostics;
+    routeVolume = results?.voxel?.volume || null;
 
     // ── Mirrored trim pair validation (three-level symmetry) ──────────
     // Run AFTER the seam-based route to add structural symmetry checks
@@ -492,6 +532,45 @@ export function forgeItemAsset(rawSpec, opts = {}) {
      if (template.chestplateDiagnostics && template.chestplateDiagnostics.diagnostics) {
          template.chestplateDiagnostics.diagnostics = template.chestplateDiagnostics.diagnostics.filter(d => !d.code.includes('EXPORT_READY'));
      }
+  }
+
+  // 7b. VolumeLiftAMP — the route step emits voxel.volume (PDR STRUCT-ENERGY-LIFT).
+  //     If the route did not emit it (older routes), lift inline as fallback.
+  let volume = null;
+  let voxelPacket = null;
+  if (opts.includeVolume !== false) {
+    try {
+      if (routeVolume) {
+        volume = routeVolume;
+      } else {
+        const dims = { width: spec.canvas.width, height: spec.canvas.height };
+        const partParams = buildPartParams(spec);
+        const { cells: liftCells } = fillsToVolumeCells(polished);
+        const energized = computeStructuralEnergy(liftCells, dims);
+        volume = liftToVolume(energized, { dims, partParams });
+      }
+      // Build materials table for voxel packet serialization.
+      // Route-emitted volumes carry a _colorToMaterialId map; fallback to fillsToVolumeCells.
+      let voxelMaterials;
+      if (volume._colorToMaterialId) {
+        voxelMaterials = {};
+        for (const [color, id] of volume._colorToMaterialId) {
+          voxelMaterials[id] = { id: `mat${id}`, colorHint: color };
+        }
+      } else {
+        const result = fillsToVolumeCells(polished);
+        voxelMaterials = result.materials;
+      }
+      voxelPacket = serializeItemVoxelPacket(volume, {
+        id: spec.id,
+        bytecode: spec.bytecode,
+        materials: voxelMaterials,
+      });
+    } catch (e) {
+      volume = null;
+      voxelPacket = null;
+      routeDiagnostics = { ...routeDiagnostics, volumeLift: { ok: false, error: e.message } };
+    }
   }
 
   // 8. Godot artifact + shader exports
@@ -571,6 +650,8 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     godotShader,
     phaserPipeline,
     png,
+    volume,
+    voxelPacket,
   });
 }
 

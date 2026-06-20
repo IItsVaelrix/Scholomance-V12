@@ -12,6 +12,7 @@ import { expandShapeGrammar } from '../shape-grammar-engine.js';
 import { HOLYFIRE_MOTIF_AMP_SEAM } from '../holyfire-motif-amp.js';
 import { SDF_SHAPE_AMP_SEAM } from '../sdf-shape-amp.js';
 import { NOISE_FILL_AMP_SEAM } from '../noise-fill-amp.js';
+import { createVolumeLiftStep } from '../volume-lift-amp.js';
 
 const holyPaladinGrammar = {
   id: 'weapon.sword.holy-paladin-v1',
@@ -150,6 +151,18 @@ export function forgeWeapon(spec, skeleton) {
           },
           execute: () => {},
         },
+        createVolumeLiftStep({
+          dims: { width: spec.canvas.width, height: spec.canvas.height },
+          partParams: (spec.parts || []).reduce((acc, part) => {
+            const vol = part.volume || {};
+            acc[part.id] = {
+              profile: vol.profile || 'flat',
+              maxDepth: Number.isFinite(vol.maxDepth) ? vol.maxDepth : 1,
+              steps: vol.steps,
+            };
+            return acc;
+          }, {}),
+        }),
       ],
     };
     return { routeDefinition, expansion };

@@ -25,6 +25,7 @@ import {
 import { resolveOAuthIdentity } from '../oauth/oauth.link.js';
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000; // a handshake older than 10 min is stale
+const KNOWN_OAUTH_PROVIDERS = new Set(['google']);
 
 /** Escape a value before interpolating it into HTML. */
 function escapeHtml(value) {
@@ -36,15 +37,40 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+function providerLabel(provider) {
+  if (provider === 'google') return 'Google';
+  return String(provider || 'OAuth').replace(/^\w/, (char) => char.toUpperCase());
+}
+
+function sendProviderUnavailablePage(reply, provider, appBase) {
+  const safeProvider = escapeHtml(providerLabel(provider));
+  const safeAuthUrl = escapeHtml(`${appBase}/auth`);
+
+  reply.status(503).type('text/html; charset=utf-8');
+  return `<!doctype html>
+<html>
+  <head>
+    <title>${safeProvider} sign-in unavailable</title>
+  </head>
+  <body>
+    <main>
+      <h1>${safeProvider} sign-in is not configured</h1>
+      <p>This Scholomance server does not have ${safeProvider} OAuth credentials configured yet.</p>
+      <p>You can still create an account with email and password.</p>
+      <p><a href="${safeAuthUrl}">Return to Scholomance registration</a></p>
+    </main>
+  </body>
+</html>`;
+}
+
 export async function oauthRoutes(fastify, options = {}) {
   const { serverBaseUrl, publicAppUrl } = options;
   const enabled = getEnabledProviders({ serverBaseUrl });
 
   if (enabled.length === 0) {
     fastify.log.info(
-      '[OAUTH] No providers configured (set e.g. GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET to enable). Routes not mounted.',
+      '[OAUTH] No providers configured (set e.g. GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET to enable). Disabled-provider routes remain mounted.',
     );
-    return;
   }
 
   const enabledNames = new Set(enabled.map((p) => p.provider));
@@ -57,6 +83,9 @@ export async function oauthRoutes(fastify, options = {}) {
   fastify.get('/:provider', async (request, reply) => {
     const { provider } = request.params;
     if (!enabledNames.has(provider)) {
+      if (KNOWN_OAUTH_PROVIDERS.has(provider)) {
+        return sendProviderUnavailablePage(reply, provider, appBase);
+      }
       return reply.status(404).send({ message: 'Unknown OAuth provider' });
     }
     const cfg = getProviderConfig(provider, { serverBaseUrl });
@@ -248,6 +277,9 @@ export async function oauthRoutes(fastify, options = {}) {
   fastify.get('/:provider/callback', async (request, reply) => {
     const { provider } = request.params;
     if (!enabledNames.has(provider)) {
+      if (KNOWN_OAUTH_PROVIDERS.has(provider)) {
+        return sendProviderUnavailablePage(reply, provider, appBase);
+      }
       return reply.status(404).send({ message: 'Unknown OAuth provider' });
     }
     const cfg = getProviderConfig(provider, { serverBaseUrl });

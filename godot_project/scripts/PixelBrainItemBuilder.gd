@@ -1,15 +1,59 @@
 extends RefCounted
 
+const VoxelModelBuilder := preload("res://scripts/VoxelModelBuilder.gd")
+
 const ARTIFACT_KIND := "scholomance.pixelbrain.godot.v1"
 
+# Loads a PixelBrain item artifact and builds it as a Node3D. PB-VOXEL-ITEM
+# packets (true 3D — authored sculpts or the structural-energy lift) render
+# through the shared voxel renderer; the flat-extrude path is retired for items
+# and kept only as a fallback for the legacy 2D coordinate artifact (PDR
+# SCHOL-ENC-PDR-STRUCT-ENERGY-LIFT-v1.0).
 static func build_extruded_item(path: String, options: Dictionary = {}) -> Node3D:
+	var artifact := _load_artifact(path)
+	if artifact.is_empty():
+		var empty := Node3D.new()
+		empty.name = str(options.get("name", "PixelBrainItem"))
+		_add_fallback(empty)
+		return empty
+	if _is_voxel_packet(artifact):
+		return _build_voxel_item(artifact, options)
+	return _build_extruded_legacy(artifact, path, options)
+
+# A true-3D voxel packet carries a `voxels` array (PB-VOXEL-*), unlike the legacy
+# 2D `coordinates` artifact.
+static func _is_voxel_packet(artifact: Dictionary) -> bool:
+	if not artifact.has("voxels"):
+		return false
+	return artifact.get("voxels") is Array
+
+static func _build_voxel_item(packet: Dictionary, options: Dictionary) -> Node3D:
+	var cs := float(options.get("cell_size", 0.016))
+	var dims: Dictionary = packet.get("dimensions", {})
+	var w := float(dims.get("width", 0.0))
+	var h := float(dims.get("height", 0.0))
+	var d := float(dims.get("depth", 0.0))
+	# Authored model-space packets are y-up; lifted (image-space) packets are y-down.
+	var flip_y := str(packet.get("space", "image")) != "model"
+	var origin := Vector3(-w, -h, -d) * 0.5 * cs
+	var root := VoxelModelBuilder.build_node(packet, {
+		"cell_size": cs,
+		"flip_y": flip_y,
+		"default_block": "item",
+		"origin": origin,
+	})
+	root.name = str(options.get("name", "PixelBrainItem"))
+	if root.get_child_count() == 0:
+		_add_fallback(root)
+	var root_scale: Variant = options.get("scale", Vector3.ONE)
+	if root_scale is Vector3:
+		root.scale = root_scale
+	return root
+
+static func _build_extruded_legacy(artifact: Dictionary, path: String, options: Dictionary) -> Node3D:
 	var root := Node3D.new()
 	root.name = str(options.get("name", "PixelBrainItem"))
 
-	var artifact := _load_artifact(path)
-	if artifact.is_empty():
-		_add_fallback(root)
-		return root
 	if str(artifact.get("kind", "")) != ARTIFACT_KIND:
 		push_error("PixelBrainItemBuilder: unsupported artifact kind at " + path)
 		_add_fallback(root)

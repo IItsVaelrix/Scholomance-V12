@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, forwardRef, useImperativeHandle, useMemo, startTransition } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "../../hooks/useTheme.jsx";
 import IntelliSense from "../../components/IntelliSense.jsx";
@@ -319,7 +319,6 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   title?: string,
  *   isEditable?: boolean,
  *   isTruesight?: boolean,
- *   isLatticeGrid?: boolean,
  *   isPredictive?: boolean,
  *   disabled?: boolean,
  *   onContentChange?: (content: string) => void,
@@ -377,7 +376,6 @@ const ScrollEditor = forwardRef(/**
   title: initialTitle = "",
   isEditable: propIsEditable = false,
   isTruesight: propIsTruesight = false,
-  isLatticeGrid = false,
   isPredictive = false,
   disabled = false,
   onContentChange,
@@ -548,7 +546,11 @@ const ScrollEditor = forwardRef(/**
     // measurement entirely — the injected topology IS the authoritative state.
     if (forceTopology) return undefined;
     // EDIT mode types rapidly — skip continuous measurement while composing.
-    if (activeIdeMode === "EDIT") return undefined;
+    // BUT never skip when Truesight is on: the annotation overlay positions every
+    // word box against this topology, so starving it leaves the lattice unable to
+    // instantiate. (The ResizeObserver below fires on size/font change, not on
+    // keystrokes, so this doesn't re-measure per letter.)
+    if (activeIdeMode === "EDIT" && !isTruesight) return undefined;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -575,12 +577,67 @@ const ScrollEditor = forwardRef(/**
     };
   }, [updateTypography, forceTopology, activeIdeMode]);
 
+  // Chunked relayout: each raw line's measured token geometry is cached by its
+  // text, so typing only re-measures the edited line — the rest are reused. The
+  // whole lattice no longer regenerates per keystroke, which is what let us drop
+  // the typing-freeze (and the desync it caused) on the input path below.
+  const overlayLineCacheRef = useRef({ sig: '', map: new Map() });
   const { overlayLines, allOverlayTokens } = useMemo(() => {
     if (!adaptiveTopology || !Number.isFinite(containerWidth) || containerWidth <= 0) {
       return { overlayLines: [], allOverlayTokens: [] };
     }
-    const result = buildTruesightOverlayLines(contentForOverlay, containerWidth, adaptiveTopology);
-    return { overlayLines: result.lines, allOverlayTokens: result.allTokens };
+    const t = adaptiveTopology;
+    // Any font/width change invalidates every cached measurement.
+    const sig = `${containerWidth}|${t.fontFamily}|${t.fontSize}|${t.fontStyle}|${t.fontWeight}|${t.letterSpacing}|${t.wordSpacing}`;
+    const cacheBox = overlayLineCacheRef.current;
+    if (cacheBox.sig !== sig) {
+      cacheBox.sig = sig;
+      cacheBox.map = new Map();
+    }
+    const cache = cacheBox.map;
+
+    const rawLines = String(contentForOverlay || "").split("\n");
+    const seen = new Set();
+    const lines = [];
+    let absoluteOffset = 0;
+    let globalVisualLineIndex = 0;
+
+    for (let rawLineIndex = 0; rawLineIndex < rawLines.length; rawLineIndex += 1) {
+      const lineText = rawLines[rawLineIndex];
+      seen.add(lineText);
+      // Per-line geometry is independent (token x/width are line-local); only the
+      // absolute char offset and visual-line index are stitched in per render.
+      let lineVisuals = cache.get(lineText);
+      if (!lineVisuals) {
+        lineVisuals = buildTruesightOverlayLines(lineText, containerWidth, t).lines;
+        cache.set(lineText, lineVisuals);
+      }
+      for (const vl of lineVisuals) {
+        const offset = absoluteOffset;
+        lines.push({
+          ...vl,
+          lineIndex: globalVisualLineIndex,
+          rawLineIndex,
+          absoluteStart: offset,
+          tokens: vl.tokens.map((tok) => ({
+            ...tok,
+            globalCharStart: offset + tok.localStart,
+            lineIndex: rawLineIndex,
+          })),
+        });
+        globalVisualLineIndex += 1;
+      }
+      absoluteOffset += lineText.length + 1;
+    }
+
+    // Keep the cache bounded to the document's live lines.
+    if (cache.size > rawLines.length * 2 + 64) {
+      for (const key of cache.keys()) {
+        if (!seen.has(key)) cache.delete(key);
+      }
+    }
+
+    return { overlayLines: lines, allOverlayTokens: lines.flatMap((l) => l.tokens) };
   }, [contentForOverlay, containerWidth, adaptiveTopology]);
 
   const lineSyllableCounts = useMemo(() => {
@@ -1086,14 +1143,14 @@ const ScrollEditor = forwardRef(/**
     setContent(nextValue);
     emitCursorChange(event.target);
     
-    // TYPING FREEZE: If Truesight is active, we delay the overlay update 
-    // to prevent DOM re-mounting and caret drift during rapid input.
+    // Keep the annotation lattice in lockstep with the text. The per-line layout
+    // cache makes the rebuild cheap (only the edited line re-measures), so instead
+    // of freezing the overlay for 400ms (which left the word boxes desynced from
+    // the text mid-type) we update it every keystroke. Staging it in a transition
+    // keeps the keystroke itself non-blocking — the caret stays on the synchronous
+    // `content` update above; the overlay catches up within a frame.
     if (isTruesight) {
-      isTypingRef.current = true;
-      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = setTimeout(() => {
-        syncOverlayToContent(nextValue);
-      }, 400);
+      startTransition(() => setContentForOverlay(nextValue));
     } else {
       setContentForOverlay(nextValue);
     }
@@ -1220,8 +1277,15 @@ const ScrollEditor = forwardRef(/**
             <div
               ref={wordBackgroundLayerRef}
               className={`word-background-layer${isReadOnlyTruesight ? ' word-background-layer--interactive' : ''}`}
-              style={cursorSync?.overlayStyles}
-              aria-hidden={!isReadOnlyTruesight}
+              style={{
+                ...cursorSync?.overlayStyles,
+                // Edit + Truesight: lift the overlay above the textarea but keep the
+                // LAYER click-through — only the word shells (pointer-events:auto)
+                // catch clicks; whitespace/empty space falls through to the textarea
+                // so caret placement, scrolling and typing all still work.
+                ...(isTruesight && isEditable ? { zIndex: 'var(--z-above)', pointerEvents: 'none' } : {}),
+              }}
+              aria-hidden={!isReadOnlyTruesight && !isEditable}
               onScroll={handleOverlayScroll}
             >
               <div>
@@ -1236,7 +1300,7 @@ const ScrollEditor = forwardRef(/**
                       className={`truesight-line truesight-line--${lineType}${isLineDimmed ? ' truesight-line--dimmed' : ''}${isHighlighted ? ' truesight-line--highlighted' : ''}`}
                       style={{ position: 'relative', height: `${lineHeightPx}px` }}
                     >
-                      {tokens.map(({ token, localStart, localEnd, globalCharStart, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {tokens.map(({ token, localStart, localEnd, globalCharStart, lineIndex, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }, tokIdx, tokArr) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
                         const clean = isWord ? token.trim().toUpperCase() : "";
                         
@@ -1256,6 +1320,14 @@ const ScrollEditor = forwardRef(/**
                         const pixelX = tokenX || 0;
                         const pixelWidth = tokenWidth || null;
                         const annotationWidth = Math.max(1, pixelWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
+                        // Tile the clickable box to the next glyph token's left edge so
+                        // the entire word — including its trailing edge — is hittable.
+                        // Each word div then abuts the next with no dead zone, mirroring
+                        // the procedural overlay formula (token.x is cumulative width).
+                        const nextGlyph = tokArr.slice(tokIdx + 1).find((t) => !t.isWhitespace);
+                        const hitWidth = (nextGlyph && Number.isFinite(nextGlyph.x))
+                          ? Math.max(annotationWidth, nextGlyph.x - pixelX)
+                          : annotationWidth;
 
                         const commonStyle = {
                           position: 'absolute',
@@ -1265,11 +1337,9 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
-                          const isPunctuation = !isWhitespace;
                           return (
                             <span
                               key={localStart}
-                              className={(isPunctuation && isLatticeGrid) ? 'truesight-puncta--lattice' : undefined}
                               style={{
                                 ...commonStyle,
                                 pointerEvents: 'none',
@@ -1304,7 +1374,7 @@ const ScrollEditor = forwardRef(/**
                           '--w': color || undefined,
                           ...(decoded?.style || {}),
                           pointerEvents: 'auto',
-                          cursor: 'pointer',
+                          cursor: 'help',
                           ...(isLineHighlighted ? { backgroundColor: 'rgba(101, 31, 255, 0.13)', borderRadius: '0.5rem' } : {}),
                         };
 
@@ -1322,9 +1392,9 @@ const ScrollEditor = forwardRef(/**
                               ...wordStyle,
                               position: 'absolute',
                               left: `${pixelX}px`,
-                              width: `${annotationWidth}px`,
+                              width: `${hitWidth}px`,
                               height: `${lineHeightPx}px`,
-                              cursor: 'pointer',
+                              cursor: 'help',
                               display: 'inline-block',
                             }}
                             onMouseDown={(event) => {
@@ -1346,23 +1416,14 @@ const ScrollEditor = forwardRef(/**
                                 color,
                                 anchorRect: event.currentTarget.getBoundingClientRect(),
                               });
-                            }}
-                            onMouseEnter={(event) => {
-                              onWordActivate?.({
-                                word: token,
-                                normalizedWord: clean,
-                                trigger: 'truesight_hover',
-                                analysis: analysis || null,
-                                charStart,
-                                charEnd,
-                                lineIndex,
-                                wordIndex,
-                                vowelFamily: wordVowelFamily,
-                                terminalVowelFamily: rhymeVowelFamily,
-                                school: truesight?.school || null,
-                                color,
-                                anchorRect: event.currentTarget.getBoundingClientRect(),
-                              });
+                              // While editing, a word click opens the tooltip AND drops
+                              // the caret into the word so you can keep typing there —
+                              // the shell intercepted the click, so place the caret by hand.
+                              if (isEditable && textareaRef.current) {
+                                const ta = textareaRef.current;
+                                ta.focus();
+                                try { ta.setSelectionRange(charStart, charStart); } catch (_) { /* noop */ }
+                              }
                             }}
                             onKeyDown={(e) => {
                               if (e.key === 'Enter' || e.key === ' ') {
@@ -1388,7 +1449,6 @@ const ScrollEditor = forwardRef(/**
                             <span
                               className={[
                                 'truesight-annotation-box',
-                                isLatticeGrid ? 'truesight-annotation-box--lattice' : 'truesight-annotation-box--hidden',
                                 shouldColor ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
                                 isLineHighlighted ? 'truesight-annotation-box--highlighted' : '',
                                 isMisspelled ? 'truesight-annotation-box--misspelled' : '',
@@ -1397,31 +1457,11 @@ const ScrollEditor = forwardRef(/**
                                 position: 'absolute',
                                 inset: 0,
                                 '--w': color || undefined,
-                                pointerEvents: isLatticeGrid ? 'auto' : 'none',
-                                cursor: isLatticeGrid ? 'pointer' : 'default',
+                                pointerEvents: 'none',
+                                cursor: 'default',
                               }}
                               data-char-start={charStart}
                               aria-hidden="true"
-                              onClick={(e) => {
-                                if (isLatticeGrid) {
-                                  e.stopPropagation();
-                                  onWordActivate?.({
-                                    word: token,
-                                    normalizedWord: clean,
-                                    trigger: 'truesight_tap',
-                                    analysis: analysis || null,
-                                    charStart,
-                                    charEnd,
-                                    lineIndex,
-                                    wordIndex,
-                                    vowelFamily: wordVowelFamily,
-                                    terminalVowelFamily: rhymeVowelFamily,
-                                    school: truesight?.school || null,
-                                    color,
-                                    anchorRect: e.currentTarget.getBoundingClientRect(),
-                                  });
-                                }
-                              }}
                             />
                             <AnimatedSurface
                               as="span"
@@ -1472,7 +1512,10 @@ const ScrollEditor = forwardRef(/**
                                   fontWeight: 'bold',
                                   cursor: 'help',
                                   zIndex: 10,
-                                  boxShadow: '0 0 8px rgba(255, 77, 77, 0.6)'
+                                  boxShadow: '0 0 8px rgba(255, 77, 77, 0.6)',
+                                  // Purely visual: the word shell owns all interaction,
+                                  // so the orb never intercepts hover/click on the word.
+                                  pointerEvents: 'none',
                                 }}
                                 onMouseEnter={(e) => {
                                   const r = e.currentTarget.getBoundingClientRect();
@@ -1541,7 +1584,7 @@ const ScrollEditor = forwardRef(/**
                       transition={{ type: "spring", stiffness: 140, damping: 20, mass: 0.8, restDelta: 0.001 }}
                       style={{ willChange: "transform, opacity", contain: "layout paint style", position: 'absolute', height: `${lineHeightPx}px`, left: '1%', right: '1%' }}
                     >
-                      {lineData.tokens.map(({ token, localStart, localEnd, globalCharStart, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }) => {
+                      {lineData.tokens.map(({ token, localStart, localEnd, globalCharStart, wordIndex, x: tokenX, width: tokenWidth, isWhitespace }, tokIdx, tokArr) => {
                         const isWord = WORD_TOKEN_REGEX.test(token) && !isWhitespace;
                         const commonStyle = {
                           position: 'absolute',
@@ -1583,6 +1626,12 @@ const ScrollEditor = forwardRef(/**
                         const color = truesight?.color || null;
                         const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
                         const annotationWidth = Math.max(1, tokenWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
+                        // Tile each word's clickable box to the next glyph token (see
+                        // the primary overlay path) so the whole word is hittable.
+                        const nextGlyph = tokArr.slice(tokIdx + 1).find((t) => !t.isWhitespace);
+                        const hitWidth = (nextGlyph && Number.isFinite(nextGlyph.x))
+                          ? Math.max(annotationWidth, nextGlyph.x - (tokenX || 0))
+                          : annotationWidth;
 
                         const isMultiSyllable = (shouldColor || wordVowelFamily) && (decoded?.syllableDepth >= 2);
                         const isRichMultiSyllable = (shouldColor || wordVowelFamily) && (decoded?.syllableDepth >= 3);
@@ -1598,9 +1647,9 @@ const ScrollEditor = forwardRef(/**
                             style={{
                               position: 'absolute',
                               left: `${tokenX}px`,
-                              width: `${annotationWidth}px`,
+                              width: `${hitWidth}px`,
                               height: `${lineHeightPx}px`,
-                              cursor: 'pointer',
+                              cursor: 'help',
                               display: 'inline-block',
                             }}
                             onMouseDown={(event) => {
@@ -1611,23 +1660,6 @@ const ScrollEditor = forwardRef(/**
                                 word: token,
                                 normalizedWord: clean,
                                 trigger: 'truesight_tap',
-                                analysis: analysis || null,
-                                charStart,
-                                charEnd,
-                                lineIndex: li,
-                                wordIndex,
-                                vowelFamily: wordVowelFamily,
-                                terminalVowelFamily: rhymeVowelFamily,
-                                school: truesight?.school || null,
-                                color,
-                                anchorRect: event.currentTarget.getBoundingClientRect(),
-                              });
-                            }}
-                            onMouseEnter={(event) => {
-                              onWordActivate?.({
-                                word: token,
-                                normalizedWord: clean,
-                                trigger: 'truesight_hover',
                                 analysis: analysis || null,
                                 charStart,
                                 charEnd,
@@ -1664,38 +1696,17 @@ const ScrollEditor = forwardRef(/**
                             <span
                               className={[
                                 'truesight-annotation-box',
-                                isLatticeGrid ? 'truesight-annotation-box--lattice' : 'truesight-annotation-box--hidden',
                                 (shouldColor || wordVowelFamily) ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
                               ].filter(Boolean).join(' ')}
                               style={{
                                 position: 'absolute',
                                 inset: 0,
                                 '--w': color || undefined,
-                                pointerEvents: isLatticeGrid ? 'auto' : 'none',
-                                cursor: isLatticeGrid ? 'pointer' : 'default',
+                                pointerEvents: 'none',
+                                cursor: 'default',
                               }}
                               data-char-start={charStart}
                               aria-hidden="true"
-                              onClick={(e) => {
-                                if (isLatticeGrid) {
-                                  e.stopPropagation();
-                                  onWordActivate?.({
-                                    word: token,
-                                    normalizedWord: clean,
-                                    trigger: 'truesight_tap',
-                                    analysis: analysis || null,
-                                    charStart,
-                                    charEnd,
-                                    lineIndex: li,
-                                    wordIndex,
-                                    vowelFamily: wordVowelFamily,
-                                    terminalVowelFamily: rhymeVowelFamily,
-                                    school: truesight?.school || null,
-                                    color,
-                                    anchorRect: e.currentTarget.getBoundingClientRect(),
-                                  });
-                                }
-                              }}
                             />
                             <AnimatedSurface
                               as="span"

@@ -71,6 +71,39 @@ motion-li {
   will-change: opacity, transform;
 }
 
+/* Cross-engine compositor baseline: Chrome, Firefox, and WebKit all honor
+   the standard transform path, while Safari still benefits from the prefixed
+   properties during accelerated scrolling and panel transitions. */
+motion-div,
+motion-section,
+motion-article,
+motion-aside,
+motion-header,
+motion-footer,
+motion-nav,
+motion-main,
+motion-span,
+motion-button,
+motion-ul,
+motion-li,
+[class*="framer-"],
+[data-framer-motion],
+.intellisense-popup,
+.intellisense-suggestion,
+.floating-panel,
+.word-tooltip,
+.tooltip-content,
+.nav-transition,
+.page-transition,
+.aurora-layer,
+.vignette-overlay,
+.scanlines-overlay {
+  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
 /* V12 PERFORMANCE: AMP-driven GPU promotion */
 .pixel-brain-chip,
 .truesight-word,
@@ -347,6 +380,11 @@ body::before {
 }
 
 /* === GLOBAL SCROLLBARS === */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

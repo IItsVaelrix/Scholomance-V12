@@ -128,13 +128,6 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
   const rawLines = String(content || "").split("\n");
   const visualLines: any[] = [];
   
-  const fontOptions = { 
-    fontStyle: topology.fontStyle, 
-    fontWeight: topology.fontWeight,
-    letterSpacing: topology.letterSpacing,
-    wordSpacing: topology.wordSpacing,
-  };
-
   let globalVisualLineIndex = 0;
   let absoluteOffset = 0;
 
@@ -148,6 +141,19 @@ export function buildTruesightOverlayLines(content: string, containerWidth: numb
     let lineType = "normal";
     if (lineText.startsWith("#")) lineType = "heading";
     else if (lineText.startsWith("- ") || lineText.startsWith("* ")) lineType = "list-item";
+
+    // BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT fix:
+    // Line containers (e.g. .truesight-line--heading { font-weight:700 }) affect
+    // the rendered advance of descendant word spans. Measurement must match the
+    // effective font for the line so absolute positions + hit boxes align.
+    const lineFontWeight = lineType === 'heading' ? '700' : (topology.fontWeight || '400');
+    const lineFontStyle = topology.fontStyle || 'normal';
+    const fontOptions = {
+      fontStyle: lineFontStyle,
+      fontWeight: lineFontWeight,
+      letterSpacing: topology.letterSpacing,
+      wordSpacing: topology.wordSpacing,
+    };
 
     const matches = [...lineText.matchAll(LINE_TOKEN_REGEX)];
     

@@ -171,9 +171,6 @@ export default function ReadPage() {
   const [isTruesight, setIsTruesight] = useState(
     () => readPersistedBooleanSetting('truesightEnabled') ?? settings?.truesightEnabled ?? false
   );
-  const [isLatticeGrid, setIsLatticeGrid] = useState(
-    () => readPersistedBooleanSetting('latticeGridEnabled') ?? settings?.latticeGridEnabled ?? false
-  );
   const [isPredictive, setIsPredictive] = useState(true);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
   const [analysisMode, setAnalysisMode] = useState(settings?.analysisMode ?? ANALYSIS_MODES.NONE);
@@ -347,14 +344,6 @@ export default function ReadPage() {
     setMirrored((prev) => {
       const next = !prev;
       updateSettings({ mirroredEnabled: next });
-      return next;
-    });
-  }, [updateSettings]);
-
-  const handleToggleLatticeGrid = useCallback(() => {
-    setIsLatticeGrid((prev) => {
-      const next = !prev;
-      updateSettings({ latticeGridEnabled: next });
       return next;
     });
   }, [updateSettings]);
@@ -653,8 +642,8 @@ export default function ReadPage() {
 
     if (activation.normalizedWord) {
       setSessionWords((prev) => {
-        if (prev.length > 0 && prev[prev.length - 1] === activation.normalizedWord) return prev;
-        const next = [...prev, activation.normalizedWord].slice(-20);
+        if (prev.length > 0 && prev[prev.length - 1]?.word === activation.normalizedWord) return prev;
+        const next = [...prev, { word: activation.normalizedWord }].slice(-20);
         setSessionIndex(next.length - 1);
         return next;
       });
@@ -691,7 +680,7 @@ export default function ReadPage() {
   const handleSessionNavigate = useCallback((direction) => {
     const nextIndex = sessionIndex + direction;
     if (nextIndex >= 0 && nextIndex < sessionWords.length) {
-      const nextWord = sessionWords[nextIndex];
+      const nextWord = sessionWords[nextIndex]?.word;
       setSessionIndex(nextIndex);
       setLookupOverride(null);
       resetWordLookup();
@@ -837,8 +826,6 @@ export default function ReadPage() {
     <ToolsSidebar
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
-      isLatticeGrid={isLatticeGrid}
-      onToggleLatticeGrid={handleToggleLatticeGrid}
       isPredictive={isPredictive}
       onTogglePredictive={handleTogglePredictive}
       mirrored={mirrored}
@@ -975,17 +962,6 @@ export default function ReadPage() {
                     {mirrored ? 'On' : 'Off'}
                   </button>
                 </div>
-                <div className="settings-panel-row">
-                  <span>Lattice Grid</span>
-                  <button
-                    type="button"
-                    className={`settings-toggle${isLatticeGrid ? ' settings-toggle--on' : ''}`}
-                    aria-pressed={isLatticeGrid}
-                    onClick={handleToggleLatticeGrid}
-                  >
-                    {isLatticeGrid ? 'On' : 'Off'}
-                  </button>
-                </div>
               </div>
             </div>
           </FloatingPanel>
@@ -1035,7 +1011,6 @@ export default function ReadPage() {
                 isEditable={isEditable}
                 disabled={false}
                 isTruesight={isTruesight}
-                isLatticeGrid={isLatticeGrid}
                 isPredictive={isPredictive}
                 predict={predict}
                 getCompletions={getCompletions}
@@ -1130,8 +1105,6 @@ export default function ReadPage() {
           onClose={() => { haptic('dismiss'); setIsHexSheetOpen(false); }}
           isTruesight={isTruesight}
           onToggleTruesight={handleToggleTruesight}
-          isLatticeGrid={isLatticeGrid}
-          onToggleLatticeGrid={handleToggleLatticeGrid}
           isPredictive={isPredictive}
           onTogglePredictive={handleTogglePredictive}
           mirrored={mirrored}
@@ -1290,8 +1263,6 @@ export default function ReadPage() {
                     <ToolsSidebar
                       isTruesight={isTruesight}
                       onToggleTruesight={handleToggleTruesight}
-                      isLatticeGrid={isLatticeGrid}
-                      onToggleLatticeGrid={handleToggleLatticeGrid}
                       isPredictive={isPredictive}
                       onTogglePredictive={handleTogglePredictive}
                       mirrored={mirrored}
@@ -1359,7 +1330,6 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
-                    isLatticeGrid={isLatticeGrid}
                     isPredictive={isPredictive}
                     predict={predict}
                     getCompletions={getCompletions}

@@ -28,7 +28,7 @@ class ProcessorBridge {
   async execute(id, payload, context = {}, options = {}) {
     // AMP special handler - delegates to animation AMP
     if (id === 'amp.run') {
-      const { runAnimationAmp } = await import('../animation/amp/runAnimationAmp.js');
+      const { runAnimationAmp } = await import('../animation/amp/runAnimationAmp.ts');
       return await runAnimationAmp(payload);
     }
 

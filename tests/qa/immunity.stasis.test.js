@@ -168,6 +168,58 @@ async function main() {
     if (hit) throw new Error('QUANT-0102 should be exempt in test files.');
   });
 
+  // --- LING-0F08: Truesight lattice metric drift (CSS-only) ---
+
+  await runTest('Innate: LING-0F08 catches advance-metric on a measured overlay word', () => {
+    const content = '.ide-layout-wrapper .vb-rarity--rare { font-weight: 600; letter-spacing: 0.01em; }';
+    const hit = scanInnate(content, 'src/pages/Read/IDE.css').find(v => v.ruleId === 'LING-0F08');
+    if (!hit) throw new Error('LING-0F08 missed font-weight on .vb-rarity--rare.');
+    if (hit.context.property !== 'font-weight' || hit.context.value !== '600') {
+      throw new Error(`LING-0F08 context wrong: ${JSON.stringify(hit.context)}`);
+    }
+  });
+
+  await runTest('Innate: LING-0F08 allows glow-only rarity signifier', () => {
+    const content = '.ide-layout-wrapper .vb-rarity--rare { text-shadow: 0 0 4px currentColor; }';
+    const hit = scanInnate(content, 'src/pages/Read/IDE.css').find(v => v.ruleId === 'LING-0F08');
+    if (hit) throw new Error('LING-0F08 false-flagged a glow-only (text-shadow) rule.');
+  });
+
+  await runTest('Innate: LING-0F08 ignores :not() non-word filler spans', () => {
+    // The de-emphasized filler is EXCLUDED from the measured lattice; font-size on it is safe.
+    const content =
+      '.truesight-line span:not(.truesight-word):not(.grimoire-word) { font-size: 0.85em; }';
+    const hit = scanInnate(content, 'src/pages/Read/IDE.css').find(v => v.ruleId === 'LING-0F08');
+    if (hit) throw new Error('LING-0F08 false-flagged a :not(.truesight-word) filler selector.');
+  });
+
+  await runTest('Innate: LING-0F08 still catches a word qualified by :not()', () => {
+    const content = '.truesight-word:not(.truesight-word-shell) { letter-spacing: 2px; }';
+    const hit = scanInnate(content, 'src/pages/Read/IDE.css').find(v => v.ruleId === 'LING-0F08');
+    if (!hit) throw new Error('LING-0F08 missed letter-spacing on .truesight-word:not(...).');
+  });
+
+  await runTest('Innate: LING-0F08 respects the overlay-metrics escape hatch', () => {
+    const content =
+      '/* IMMUNE_ALLOW: overlay-metrics */\n.vb-rarity--rare { font-weight: 600; }';
+    const hit = scanInnate(content, 'src/pages/Read/IDE.css').find(v => v.ruleId === 'LING-0F08');
+    if (hit) throw new Error('LING-0F08 ignored the overlay-metrics allow annotation.');
+  });
+
+  await runTest('Innate: LING-0F08 is CSS-only (does not scan JS/TS)', () => {
+    const content = '.vb-rarity--rare { font-weight: 600; }';
+    const hit = scanInnate(content, 'src/pages/Read/ReadPage.jsx').find(v => v.ruleId === 'LING-0F08');
+    if (hit) throw new Error('LING-0F08 should not run on non-CSS files.');
+  });
+
+  await runTest('Innate: repair.overlay-metrics.inherit is registered', async () => {
+    const { getRepair } = await import('../../codex/core/immunity/repair.recommendations.js');
+    const repair = getRepair('repair.overlay-metrics.inherit');
+    if (!repair || repair.key !== 'repair.overlay-metrics.inherit') {
+      throw new Error('LING-0F08 repairKey resolves to the unknown stub (not registered).');
+    }
+  });
+
   console.log('\n--- 🛡️ IMMUNITY STASIS SUMMARY ---');
   console.log('INNATE BARRIER:  STABLE');
   console.log('ADAPTIVE LAYER:  RESONATING');

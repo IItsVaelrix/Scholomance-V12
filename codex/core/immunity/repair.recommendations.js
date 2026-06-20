@@ -202,6 +202,25 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     references: ['AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY'],
     canonical: 'color = bytecode.color ?? resonanceColor(rhymeKey)  // single authority + scoped rhyme override',
   },
+
+  'repair.overlay-metrics.inherit': {
+    key: 'repair.overlay-metrics.inherit',
+    title: 'Keep measured Truesight overlay-word glyph advance equal to the canvas measurement',
+    suggestions: [
+      'Signify rarity / emphasis on a measured overlay word with GLOW (text-shadow, color, filter) — never with font-weight, letter-spacing, font-size, or text-transform, which change the rendered glyph advance the canvas measured.',
+      'If a word class must carry a metric property, set it to `inherit` so the painted advance matches the wrapper base font (adaptiveWhitespaceGrid) the box was measured at.',
+      'To style the non-word filler between words, target it through a `:not(.truesight-word):not(.grimoire-word)…` complement selector — those spans are excluded from the measured lattice, so metric changes on them are safe.',
+    ],
+    constraints: [
+      'A measured overlay word stays positioned by its canvas measureText() box; the painted glyphs must not drift out of it.',
+      'Any advance-changing metric property on a measured-word selector must resolve to `inherit`.',
+    ],
+    invariants: [
+      'measureText(word @ base font) === painted advance(word) — boxes stay in sync, the whole word stays clickable, later words do not drift.',
+    ],
+    references: ['BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT'],
+    canonical: '.vb-rarity--rare { text-shadow: 0 0 4px currentColor; }  /* glow, not font-weight/letter-spacing */',
+  },
 });
 
 /**

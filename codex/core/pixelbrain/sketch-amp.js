@@ -17,6 +17,7 @@
 
 import { clampNumber, hslToHex } from './shared.js';
 import { estimateNormals } from './normal-estimation.js';
+import { ENERGY_TYPES } from './voxel-volume.js';
 
 const DEFAULT_BANDS = 4;
 const MIN_BANDS = 2;
@@ -156,6 +157,9 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
         slot = Math.min(lastSlot, Math.max(0, Math.round(norm * lastSlot)));
       }
 
+      // Emit, don't hide: the chamfer field IS a normalized STRUCTURAL energy
+      // field (dist / spine), the depth/mass currency VolumeLiftAMP consumes.
+      // `norm` is the whole-silhouette single-part form of clamp(dist/R_part).
       coordinates.push({
         x,
         y,
@@ -170,6 +174,8 @@ export function sketchToSilhouette(occupied, dimensions, options = {}) {
         shading: shadingClass,
         nx: hasLight ? normals[i].nx : 0,
         ny: hasLight ? normals[i].ny : 0,
+        structuralEnergy: norm,
+        energies: [{ type: ENERGY_TYPES.STRUCTURAL, value: norm }],
       });
     }
   }

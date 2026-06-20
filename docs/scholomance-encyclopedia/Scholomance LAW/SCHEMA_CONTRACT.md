@@ -7,11 +7,33 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.26** | Last updated: 2026-06-07
+**Version: 1.28** | Last updated: 2026-06-19
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: PixelBrain silhouette blueprint and three-view shadow gate contract
+- Version: 1.27 -> 1.28
+- Changed fields: registered `PB-SILH-BLUEPRINT-v1` as the serialized `.silh` silhouette blueprint artifact; ratified the legal `.silh` grammar directives; extended `PixelBrainCraftGateAudit.target` with `silhouetteBlueprint` and `silhouetteAnimation` audits for rest-pose shadow matching and animation lockstep verification
+- Breaking: no
+- Claude impact: `/pixelbrain` surfaces may load `.silh` text only through the adapter seam and render normalized per-view/per-phase verdicts after the backend contract lands; UI must not treat PNG previews or shaders as silhouette authority
+- Gemini impact: parser, projection, scanner, forge-gate, and CLI tests must assert digest stability, legal directive validation, front/side/top integer shadow comparison, grid mismatch failures, and animation lockstep/rigid invariant failures using existing `PB-ERR-v1` categories
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: PixelBrain item voxel artifact and craft gate audit contract
+- Version: 1.26 -> 1.27
+- Changed fields: registered `PB-VOXEL-ITEM-v1` as the serialized item voxel artifact emitted from `forgeItemAsset().voxelPacket`; documented the sibling in-memory `VoxelVolume` shape emitted as `forgeItemAsset().volume`; added the CLI-only `PixelBrainCraftGateReport` contract for future forge asset immunity gates without reserving a new persisted bytecode family
+- Breaking: no
+- Claude impact: Godot/UI consumers may read `PB-VOXEL-ITEM-v1` only as a serialized boundary artifact; `/pixelbrain` surfaces must not treat in-memory `VoxelVolume` buffers or PNG previews as canonical persistence
+- Gemini impact: forge/foundry tests must assert voxel packet determinism, y->z->x voxel ordering, material table authority, energy range/type validity, and craft-gate failures for malformed voxel packets
 
 ---
 
@@ -228,6 +250,174 @@ interface ChunkedWorldVolume {
 type EnergyType = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
 // 0=RESONANT, 1=PHOTONIC, 2=STRUCTURAL, 3=THERMAL,
 // 4=KINETIC, 5=ENTROPIC, 6=SHIELDING, 7=RADIANT
+
+// PixelBrain item voxel lift contracts.
+// `VoxelVolume` is the in-memory buffer emitted as `forgeItemAsset().volume`.
+// It is not a JSON persistence boundary. `PB-VOXEL-ITEM-v1` is the serialized
+// item voxel artifact emitted as `forgeItemAsset().voxelPacket`.
+interface VoxelVolume {
+  width: number;              // positive integer
+  height: number;             // positive integer
+  depth: number;              // positive integer
+  cells: Uint16Array;         // cell material id in upper 12 bits; flags in lower 4 bits
+  energyField: Float32Array;  // same length as cells; each value clamped 0..1
+  energyTypes: Uint8Array;    // same length as cells; values match EnergyType
+  tags: Map<string, unknown>;
+  diagnostics?: {
+    amp: "pixelbrain.volume-lift-amp";
+    version: string;
+    cellCount: number;
+    voxelCount: number;
+    centrePlane: number;
+  };
+}
+
+interface PixelBrainItemVoxelMaterial {
+  id: string;                 // stable material table id, e.g. "mat1"
+  colorHint?: string;         // optional uppercase "#RRGGBB" source-palette hint
+  registryMaterialId?: string | null;
+  source?: "registry" | "source-palette" | "generated" | "unknown";
+}
+
+interface PixelBrainItemVoxel {
+  x: number;                  // integer, 0 <= x < dimensions.width
+  y: number;                  // integer, 0 <= y < dimensions.height
+  z: number;                  // integer, 0 <= z < dimensions.depth
+  materialId: number;         // positive integer; 0 is reserved for empty
+  energy?: number;            // optional, clamped 0..1
+  energyType?: EnergyType;    // required when energy is present
+}
+
+interface PixelBrainItemVoxelPacket {
+  contract: "PB-VOXEL-ITEM-v1";
+  schemaVersion: "0.1.0";
+  id: string;                 // source ITEM-SPEC-v1 id or stable artifact id
+  bytecode: string | null;    // source item bytecode, not a PB-VOXEL checksum
+  dimensions: {
+    width: number;            // positive integer
+    height: number;           // positive integer
+    depth: number;            // positive integer
+  };
+  pivots?: Record<string, { x: number; y: number; z: number }>;
+  materials: Record<string, PixelBrainItemVoxelMaterial>;
+  voxels: PixelBrainItemVoxel[]; // occupied voxels only, sorted by y -> z -> x
+}
+
+type SilhouetteBlueprintView = "front" | "side" | "top";
+
+interface SilhouetteBlueprintAnimationPose {
+  phase: string;
+  rotateDeg: number;          // integer-snapped Z/front-plane rotation peak
+}
+
+interface SilhouetteBlueprintAnimation {
+  id: string;
+  durationMs: number;
+  loop: number | "infinite";
+  poses: SilhouetteBlueprintAnimationPose[];
+}
+
+interface SilhouetteBlueprintViewContour {
+  contour: [number, number][]; // closed integer polygon in the view lattice
+  maskDigest: string;          // sha256 over canonical filled mask keys
+}
+
+interface SilhouetteBlueprint {
+  contract: "PB-SILH-BLUEPRINT-v1";
+  schemaVersion: "0.1.0";
+  id: string;
+  source: string | null;
+  grid: {
+    width: number;            // matches voxelPacket.dimensions.width
+    height: number;           // matches voxelPacket.dimensions.height
+    depth: number;            // matches voxelPacket.dimensions.depth
+  };
+  snap: "integer";
+  tolerance: Record<SilhouetteBlueprintView, number>;
+  views: Record<SilhouetteBlueprintView, SilhouetteBlueprintViewContour>;
+  animation: SilhouetteBlueprintAnimation | null;
+  digest: string;             // sha256(canonicalStringify(blueprint_without_digest))
+}
+
+interface PixelBrainCraftGateAudit {
+  id: string;
+  target:
+    | "itemSpec"
+    | "route"
+    | "lattice"
+    | "construction"
+    | "silhouetteReadability"
+    | "pixelLogic"
+    | "materialAuthority"
+    | "determinism"
+    | "volume"
+    | "voxelPacket"
+    | "silhouetteBlueprint"
+    | "silhouetteAnimation"
+    | "export";
+  severity: "FATAL" | "CRIT" | "WARN" | "INFO";
+  ok: boolean;
+  message: string;
+  bytecodeError?: string;     // PB-ERR-v1 when ok=false
+  evidence?: Record<string, unknown>;
+}
+
+interface PixelBrainCraftGateReport {
+  contract: "pixelbrain.craft-gate.v1"; // CLI/internal report, not a persisted bytecode family
+  schemaVersion: "0.1.0";
+  source: {
+    path: string | null;
+    specId: string | null;
+    artifactKind: "ITEM-SPEC-v1" | "pixelbrain.asset.v1" | "PB-VOXEL-ITEM-v1";
+  };
+  strict: boolean;
+  status: "pass" | "fail";
+  summary: {
+    audits: number;
+    failures: number;
+    warnings: number;
+    fatal: number;
+  };
+  audits: PixelBrainCraftGateAudit[];
+  bytecodeErrors: string[];   // extracted PB-ERR-v1 failures for immune memory
+}
+
+/*
+PixelBrain item voxel invariants:
+- `VoxelVolume` is process memory only. It may contain typed arrays and maps and must not be persisted as JSON.
+- `PixelBrainItemVoxelPacket` is the transport/persistence boundary for lifted item voxels.
+- `voxels` contains occupied voxels only. Empty cells are represented by absence, never by `materialId: 0`.
+- `voxels` order is canonical: ascending `y`, then ascending `z`, then ascending `x`.
+- Every voxel coordinate is integer and within `dimensions`.
+- Every `materialId` is a positive integer and must resolve to `materials[String(materialId)]`.
+- `materials[*].colorHint`, when present, must be uppercase `#RRGGBB` and must trace to a registry anchor or to the source-palette quantization produced by the foundry bridge.
+- `energy` and `energyType` travel as a pair. If one is present, the other is required. `energy` is clamped `0..1`; `energyType` must be one of `EnergyType`.
+- VolumeLiftAMP may read only `EnergyType.STRUCTURAL` (`2`) to create depth. RADIANT/PHOTONIC channels may be carried for emission but cannot add mass.
+- `PixelBrainCraftGateReport` is the report shape for the planned CLI gate. It does not reserve `PB-FORGE-GATE-v1`; failures continue to use `PB-ERR-v1`, and learned cures may use `PB-XP-v1`.
+*/
+
+/*
+PixelBrain silhouette blueprint invariants:
+- `SilhouetteBlueprint` is the serialized `.silh` contract for item silhouette intent.
+- `PB-SILH-BLUEPRINT-v1` is a contract marker, not a new bytecode family. No `PB-SILH-*` encoder or persisted bytecode family is reserved.
+- Blocking blueprint, projection, mould, or animation failures continue to use `PB-ERR-v1`; successful immunity passes may emit `PB-XP-v1`.
+- The digest excludes only the `digest` field itself and hashes canonical key-sorted JSON for all other blueprint fields, including tolerance and animation poses.
+- `grid` maps exactly to `voxelPacket.dimensions`: width -> x, height -> y, depth -> z.
+- `front` shadows collapse z into `(x,y)`, `side` shadows collapse x into `(z,y)`, and `top` shadows collapse y into `(x,z)`.
+- `front` is the v1 forge mould and may require exact tolerance `0`; `side` and `top` are inspector views unless a later schema version authorizes side/top moulding.
+- Every contour point is an integer pair inside or on the intended view lattice and is filled by deterministic even-odd winding before comparison.
+- Animation verification applies the same deterministic transform to both the voxel solid and the sealed shadow, then checks Hamming tolerance plus rigid invariants such as voxel-count conservation and single connected component.
+*/
+
+/*
+`.silh` grammar law:
+- A valid blueprint starts with `SILH_START` and ends with `SILH_END`.
+- Legal form directives are `ID`, `SOURCE`, `GRID w h d`, `SNAP integer`, `TOLERANCE front N side N top N`, `VIEW front|side|top`, and `CONTOUR x,y ...`.
+- A valid blueprint must include exactly the canonical three views: `front`, `side`, and `top`.
+- Optional animation is delimited by `ANIM_START` and `ANIM_END` and delegates motion vocabulary to the existing animation blueprint parser. v1 gate consumers normalize it to `{ id, durationMs, loop, poses }`.
+- Legal guard directives are `CONSTRAINT DETERMINISTIC true` and `QA INVARIANT <name>`.
+- No live AI, network, wall-clock time, `Math.random`, PNG render, or shader output may be used as gate authority after the `.silh` artifact is sealed.
+*/
 
 interface ScholoCandyEqPreset {
   version: 2;
@@ -1896,6 +2086,8 @@ Backward compatible until: [date or "immediate breaking change"]
 | 1.24 | 2026-04-22 | Added catalog audio upload ingestion data contracts | no |
 | 1.25 | 2026-05-13 | Upgraded catalog and persistence layers | no |
 | 1.26 | 2026-06-07 | Added Eq Preset V2 schema and persistence endpoints | no |
+| 1.27 | 2026-06-19 | Registered `PB-VOXEL-ITEM-v1`, documented the in-memory `VoxelVolume` sibling, and added the CLI-only PixelBrain craft gate report contract | no |
+| 1.28 | 2026-06-19 | Registered `PB-SILH-BLUEPRINT-v1`, ratified the `.silh` grammar, and extended PixelBrain craft gate audits for silhouette blueprint and animation lockstep verification | no |
 
 ---
 

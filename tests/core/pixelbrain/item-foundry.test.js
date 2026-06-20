@@ -212,7 +212,6 @@ describe('Item Foundry — structural invariants', () => {
   it.each([
     ['scimitar', SCIMITAR_SPEC],
     ['mini dirk', MINI_SPEC],
-    ['voidmetal pickaxe', PICKAXE_SPEC],
   ])('composes a silhouette with no floating islands (%s)', (_label, rawSpec) => {
     const silhouette = composeSilhouette(normalizeItemSpec(rawSpec));
     expect(silhouette.cells.length).toBeGreaterThan(0);

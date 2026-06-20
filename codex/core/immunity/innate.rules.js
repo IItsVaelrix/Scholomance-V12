@@ -333,7 +333,89 @@ export const INNATE_RULES = [
       return { matched: true, context: { tell: hit.tell, incident: 'AUDIT-2026-06-04-COLOR-AUTHORITY-DISPARITY' } };
     },
   },
+  {
+    id: 'LING-0F08',
+    name: 'Truesight lattice metric drift (CSS changes measured overlay glyph advance)',
+    category: ERROR_CATEGORIES.LINGUISTIC,
+    errorCode: ERROR_CODES.IMMUNE_KNOWN_VIOLATION_LITERAL,
+    severity: ERROR_SEVERITY.CRIT,
+    moduleId: MODULE_IDS.IMMUNITY,
+    repairKey: 'repair.overlay-metrics.inherit',
+    detector: (content, filePath) => {
+      // CSS-only antigen (BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT). The
+      // Truesight overlay positions every word box from a canvas measureText()
+      // taken at the wrapper's BASE font (adaptiveWhitespaceGrid). If any CSS rule
+      // on a measured overlay-word class changes the rendered glyph ADVANCE
+      // (font-*, letter/word-spacing, text-transform, tab-size) to anything but
+      // `inherit`, the painted word stops matching its measured box → the
+      // annotation lattice desyncs (only part of a word is clickable; later words
+      // drift). Also: ancestor containers (e.g. .truesight-line--heading) that set
+      // metric props must be mirrored in measurement (see adaptiveWhitespaceGrid).
+      // Vector/adaptive immunity can't see CSS, so this is pinned as a
+      // deterministic literal (cf. LING-0F07). Escape hatch: `IMMUNE_ALLOW: overlay-metrics`.
+      if (!String(filePath || '').replace(/\\/g, '/').endsWith('.css')) return false;
+      if (content.includes('IMMUNE_ALLOW: overlay-metrics')) return false;
+      return detectOverlayMetricDrift(content);
+    },
+  },
 ];
+
+// Classes applied to the MEASURED Truesight overlay word text. Their rendered
+// glyph advance must equal the canvas measurement, so advance-changing metric
+// properties on them must stay `inherit`. (`truesight-word-shell` is the JS-sized
+// hit box, but it shares the `truesight-word` class, so metric changes cascade to
+// the glyphs it wraps.)
+const OVERLAY_WORD_SELECTOR = /\.(?:truesight-word|truesight-word-inner|grimoire-word|pixel-brain-chip|vb-effect--|vb-anchor|vb-rarity--|vb-school--|word--multi-rhyme|word--rhyme)/;
+
+// Properties that change a glyph run's advance width (what measureText measures).
+const ADVANCE_METRIC_PROPS = [
+  'font', 'font-family', 'font-size', 'font-weight', 'font-style', 'font-stretch',
+  'letter-spacing', 'word-spacing', 'text-transform', 'tab-size',
+];
+
+/**
+ * Scan CSS for a rule on a measured overlay-word selector that sets an
+ * advance-changing metric property to anything other than `inherit`.
+ * @returns {false | { matched: true, context: object }}
+ */
+function detectOverlayMetricDrift(content) {
+  // Drop comments so commented-out rules don't trip the gate.
+  const css = String(content).replace(/\/\*[\s\S]*?\*\//g, '');
+  // Innermost rule blocks: selectors and bodies hold no braces, so this also
+  // correctly extracts rules nested inside @media.
+  const blockRe = /([^{}]+)\{([^{}]*)\}/g;
+  let block;
+  while ((block = blockRe.exec(css)) !== null) {
+    const selector = block[1];
+    const body = block[2];
+    // `:not(.truesight-word)` EXCLUDES a measured word — it does not target it.
+    // Strip negation groups first so `span:not(.truesight-word)` (the de-emphasized
+    // non-word filler) is not mistaken for a rule on the word itself. A word class
+    // surviving the strip means the selector positively targets a measured word.
+    const positiveSelector = selector.replace(/:not\([^)]*\)/g, '');
+    if (!OVERLAY_WORD_SELECTOR.test(positiveSelector)) continue;
+    // ::before/::after generate their own boxes; they don't change the word's advance.
+    if (/::(?:before|after)/.test(selector)) continue;
+    for (const prop of ADVANCE_METRIC_PROPS) {
+      const propRe = new RegExp(`(?:^|;|\\{|\\s)${escapeForRegex(prop)}\\s*:\\s*([^;}]+)`, 'i');
+      const declared = propRe.exec(body);
+      if (!declared) continue;
+      const value = declared[1].replace(/!important/i, '').trim().toLowerCase();
+      if (value && value !== 'inherit') {
+        return {
+          matched: true,
+          context: {
+            selector: selector.trim().replace(/\s+/g, ' ').slice(0, 80),
+            property: prop,
+            value,
+            incident: 'BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT',
+          },
+        };
+      }
+    }
+  }
+  return false;
+}
 
 function escapeForRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

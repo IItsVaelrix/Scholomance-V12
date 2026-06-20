@@ -31,6 +31,7 @@ import { userPersistence } from './user.persistence.js';
 import { collabPersistence } from './collab/collab.persistence.js';
 import { collabRoutes } from './collab/collab.routes.js';
 import { collabMcpHttpRoutes } from './collab/mcp-http.routes.js';
+import { collabMcpOAuthRoutes } from './collab/mcp-oauth.routes.js';
 import { startAgentQaSweep, stopAgentQaSweep } from './collab/collab.agent-qa.js';
 import { wordLookupRoutes } from './routes/wordLookup.routes.js';
 import { panelAnalysisRoutes } from './routes/panelAnalysis.routes.js';
@@ -1112,6 +1113,7 @@ if (ENABLE_COLLAB_API) {
             restApi.register(collabRoutes, { prefix: '/collab' });
         });
 
+        instance.register(collabMcpOAuthRoutes);
         instance.register(collabMcpHttpRoutes);
     });
     startAgentQaSweep();

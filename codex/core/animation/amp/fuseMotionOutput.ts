@@ -124,12 +124,20 @@ export function fuseMotionOutput(
       const dim = activeConfig.vectorDimension ?? 256;
       const vector = vectorizeMotion(output, dim);
       const quantized = quantizeVectorJS(vector);
-      const hexData = Array.from(quantized.data)
-        .map(b => b.toString(16).padStart(2, '0'))
+
+      // Firefox compatibility: quantized.data is expected to be Uint8Array-like.
+      // If something else slips through (e.g. ArrayBuffer/Buffer/string), fall back.
+      const bytes = quantized?.data;
+      if (!bytes || typeof bytes.length !== 'number') {
+        throw new Error(`quantized.data is not a byte array (type=${typeof bytes})`);
+      }
+
+      const hexData = Array.from(bytes)
+        .map((b: number) => b.toString(16).padStart(2, '0'))
         .join('');
-      
+
       const backend = activeConfig.vectorBackend === 'wasm' ? 'wasm' : 'js';
-      
+
       output.quantizedSignature = {
         data: hexData,
         norm: quantized.norm,
@@ -139,8 +147,12 @@ export function fuseMotionOutput(
         backend,
       };
     } catch (err: any) {
-      output.diagnostics.push(`Vector quantization failed: ${err.message}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      output.diagnostics.push(`Vector quantization failed (fallback): ${msg}`);
       output.diagnostics.push(`PB-ERR-v1-STATE-WARN-VECTOR-0204: Fallback triggered`);
+
+      // Hard fallback: keep AMP output usable even when quantization fails.
+      delete (output as any).quantizedSignature;
     }
   }
 
@@ -155,7 +167,8 @@ export function fuseMotionOutput(
     output.success = false;
     const errorMsg = `Output validation failed: ${validation.error.message}`;
     output.diagnostics.push(errorMsg);
-    if (import.meta.env?.DEV || process.env.NODE_ENV === 'test') {
+    const isTestEnv = typeof process !== 'undefined' && process.env?.NODE_ENV === 'test';
+    if (import.meta.env?.DEV || isTestEnv) {
       console.error('[AnimationAMP] Validation Error:', JSON.stringify(validation.error.format(), null, 2));
     }
   }

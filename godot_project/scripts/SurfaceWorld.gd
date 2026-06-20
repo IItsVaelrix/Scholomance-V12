@@ -4,10 +4,11 @@ const TorchScene := preload("res://scripts/Torch.gd")
 const VolumeAMP := preload("res://scripts/VolumeAMP.gd")
 const InventoryClass := preload("res://scripts/Inventory.gd")
 const PixelBrainItemBuilder := preload("res://scripts/PixelBrainItemBuilder.gd")
+const VoxelModelBuilder := preload("res://scripts/VoxelModelBuilder.gd")
 
 const WORLD_PATH := "res://assets/surface-world.qworld"
 const SCHOLAR_PATH := "res://assets/void-scholar-voxel.packet.json"
-const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe.pbrain"
+const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe_sculpt.pbrain"
 const BLOCK_REGISTRY_PATH := "res://assets/blocks/block-registry.json"
 const PLAYER_SPEED := 5.4
 const MOUSE_SENSITIVITY := 0.0025
@@ -617,76 +618,20 @@ func _build_player() -> void:
 	_player.add_child(_avatar_root)
 
 func _build_scholar_avatar() -> Node3D:
-	var root := Node3D.new()
 	var packet_data := _load_json(SCHOLAR_PATH)
 	if packet_data.is_empty():
-		print("ERROR: Scholar packet is empty or failed to load!")
-		return root
-		
-	var mats: Dictionary = packet_data.get("materials", {})
-	var voxels: Array = packet_data.get("voxels", [])
-	print("SUCCESS: Loaded Scholar packet! Found " + str(voxels.size()) + " voxels and " + str(mats.size()) + " materials.")
-	
-	var VOXEL_SIZE := 0.05
+		push_error("Scholar packet is empty or failed to load: %s" % SCHOLAR_PATH)
+		return Node3D.new()
+
+	# One shared voxel renderer for scholar and items (PDR Risk #2: don't copy).
+	var vs := 0.05
 	var dim: Dictionary = packet_data.get("dimensions", {"width": 18, "height": 34, "depth": 10})
-	var offset_x = -float(dim.width) * VOXEL_SIZE / 2.0
-	var offset_y = -0.825
-	var offset_z = -float(dim.depth) * VOXEL_SIZE / 2.0
-	
-	var mat_nodes := {}
-	var mat_multimeshes := {}
-	
-	for mat_id_str in mats.keys():
-		var m_data = mats[mat_id_str]
-		var mat := StandardMaterial3D.new()
-		var color := Color(str(m_data.get("colorHint", "#ffffff")))
-		mat.albedo_color = color
-		mat.roughness = 0.8
-		mat_nodes[int(mat_id_str)] = mat
-		
-	for vox in voxels:
-		var mid: int = int(vox.get("materialId", 1))
-		if not mat_multimeshes.has(mid):
-			mat_multimeshes[mid] = []
-		mat_multimeshes[mid].append(vox)
-		var energy: float = float(vox.get("energy", 0.0))
-		if energy > 0.0 and mat_nodes.has(mid):
-			var m: StandardMaterial3D = mat_nodes[mid]
-			m.emission_enabled = true
-			m.emission = m.albedo_color
-			m.emission_energy_multiplier = energy * 2.5
-			
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = Vector3(VOXEL_SIZE, VOXEL_SIZE, VOXEL_SIZE)
-	
-	for mid in mat_multimeshes.keys():
-		var vox_list: Array = mat_multimeshes[mid]
-		var mm := MultiMesh.new()
-		mm.transform_format = MultiMesh.TRANSFORM_3D
-		mm.mesh = box_mesh
-		mm.instance_count = vox_list.size()
-		
-		for i in range(vox_list.size()):
-			var v = vox_list[i]
-			var px = float(v.x) * VOXEL_SIZE + offset_x + (VOXEL_SIZE / 2.0)
-			var py = float(v.y) * VOXEL_SIZE + offset_y + (VOXEL_SIZE / 2.0)
-			var pz = float(v.z) * VOXEL_SIZE + offset_z + (VOXEL_SIZE / 2.0)
-			
-			var basis := Basis()
-			var t := Transform3D(basis, Vector3(px, py, pz))
-			mm.set_instance_transform(i, t)
-			
-		var mmi := MultiMeshInstance3D.new()
-		mmi.multimesh = mm
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-		mmi.custom_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
-		if mat_nodes.has(mid):
-			mmi.material_override = mat_nodes[mid]
-		root.add_child(mmi)
-		
-	root.scale = Vector3(1.0, 1.0, 1.0)
-	root.position = Vector3(0.0, 0.0, 0.0)
-	return root
+	var origin := Vector3(-float(dim.width) * vs / 2.0, -0.825, -float(dim.depth) * vs / 2.0)
+	return VoxelModelBuilder.build_node(packet_data, {
+		"cell_size": vs,
+		"origin": origin,
+		"default_block": "body",
+	})
 
 func _build_lighting() -> void:
 	var environment := WorldEnvironment.new()
@@ -1480,8 +1425,7 @@ func _spawn_pickaxe_in_hand() -> void:
 
 func _build_pickaxe_node() -> Node3D:
 	return PixelBrainItemBuilder.build_extruded_item(PICKAXE_ARTIFACT_PATH, {
-		"cell_size": 0.016,
-		"depth": 0.056,
+		"cell_size": 0.011,
 		"name": "VoidmetalPickaxe"
 	})
 

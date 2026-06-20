@@ -91,6 +91,15 @@ import {
   exportCharacterToPixelLotusActor as codexExportCharacterToPixelLotusActor,
 } from '../../codex/core/pixelbrain/character-foundry.js';
 
+// --- Forge Craft Gate (PixelBrain Immunity, task 7aff0e39) ---
+import {
+  runForgeCraftGate as codexRunForgeCraftGate,
+} from '../../codex/core/pixelbrain/forge-craft-gate.js';
+
+import {
+  parseSilhouetteBlueprint as codexParseSilhouetteBlueprint,
+} from '../../codex/core/pixelbrain/silhouette-blueprint.js';
+
 // --- Lattice Grid Engine (NEW) ---
 import {
   generateLatticeGrid as codexGenerateLatticeGrid,
@@ -278,6 +287,52 @@ export const MODULE_IDS = codexMODULE_IDS;
 export const ERROR_CODES = codexERROR_CODES;
 export const decodeBytecodeError = codexDecodeBytecodeError;
 export const compileEffectsBytecode = codexCompileEffectsBytecode;
+
+/**
+ * Run the PixelBrain Forge Craft Gate over an ITEM-SPEC-v1 spec and return a
+ * normalized, UI-safe verdict. The codex gate throws a BytecodeError on any
+ * blocking immunity failure; the UI must never see raw codex error instances,
+ * so we catch and flatten to a plain result the surface can render.
+ *
+ * @returns {{ ok: boolean, vaccine?: string, bytecode?: string, reason?: string, detail?: object }}
+ */
+export function runForgeCraftGate(spec) {
+  try {
+    const result = codexRunForgeCraftGate(spec);
+    return { ok: true, vaccine: result.vaccine, bundle: result.bundle };
+  } catch (err) {
+    const detail = typeof err?.toJSON === 'function' ? err.toJSON() : null;
+    return {
+      ok: false,
+      bytecode: err?.bytecode || null,
+      reason: detail?.context?.reason || err?.message || 'Forge craft gate failure',
+      detail,
+    };
+  }
+}
+
+export function runForgeCraftGateWithBlueprint(spec, silhText) {
+  try {
+    const blueprint = codexParseSilhouetteBlueprint(silhText);
+    const result = codexRunForgeCraftGate(spec, { blueprint });
+    return {
+      ok: true,
+      vaccine: result.vaccine,
+      bundle: result.bundle,
+      digest: blueprint.digest,
+    };
+  } catch (err) {
+    const detail = typeof err?.toJSON === 'function' ? err.toJSON() : null;
+    return {
+      ok: false,
+      bytecode: err?.bytecode || null,
+      reason: detail?.context?.reason || err?.message || 'Silhouette blueprint gate failure',
+      view: detail?.context?.view || null,
+      phase: detail?.context?.phase || null,
+      detail,
+    };
+  }
+}
 
 export const DEFAULT_SHADER_UNIFORMS = codexDEFAULT_SHADER_UNIFORMS;
 export const DEFAULT_FRAGMENT_SOURCE = codexDEFAULT_FRAGMENT_SOURCE;
@@ -902,4 +957,3 @@ export {
   VAELRIX_VOID_ARMOR_POLISH_PROFILE,
   rehydrateVoidChestplateCells,
 };
-

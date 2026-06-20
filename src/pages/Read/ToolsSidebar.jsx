@@ -8,8 +8,6 @@ import './IDE.css';
  * @typedef {{
  *   isTruesight: boolean,
  *   onToggleTruesight: () => void,
- *   isLatticeGrid?: boolean,
- *   onToggleLatticeGrid?: () => void,
  *   isPredictive: boolean,
  *   onTogglePredictive: () => void,
  *   mirrored: boolean,
@@ -31,8 +29,6 @@ import './IDE.css';
 export default function ToolsSidebar({
   isTruesight,
   onToggleTruesight,
-  isLatticeGrid = false,
-  onToggleLatticeGrid,
   isPredictive,
   onTogglePredictive,
   mirrored,
@@ -84,26 +80,6 @@ export default function ToolsSidebar({
           <span className="tool-icon"><EyeIcon /></span>
           <span className="tool-label">Truesight</span>
           <span className={`status-dot ${isTruesight ? 'on' : 'off'}`} aria-hidden="true" />
-        </button>
-        <button
-          type="button"
-          className={`sidebar-tool-btn ${isLatticeGrid ? 'active' : ''}`}
-          aria-pressed={isLatticeGrid}
-          disabled={!isTruesight}
-          title={isTruesight ? undefined : 'Requires Truesight — the lattice annotates the Truesight overlay'}
-          onClick={onToggleLatticeGrid}
-        >
-          <span className="tool-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: 20, height: 20 }}>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <path d="M9 3v18" />
-              <path d="M15 3v18" />
-              <path d="M3 9h18" />
-              <path d="M3 15h18" />
-            </svg>
-          </span>
-          <span className="tool-label">Lattice Grid</span>
-          <span className={`status-dot ${isLatticeGrid ? 'on' : 'off'}`} aria-hidden="true" />
         </button>
         <button
           type="button"

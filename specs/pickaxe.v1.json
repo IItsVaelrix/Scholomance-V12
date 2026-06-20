@@ -1,0 +1,54 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "pickaxe.v1",
+  "class": "weapon",
+  "archetype": "pickaxe",
+  "canvas": { "width": 64, "height": 64, "gridSize": 1 },
+  "seed": 42,
+  "bytecode": "VW-VOID-PK-TRANSCENDENT",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "head_core",
+      "profile": "pk.head",
+      "params": { "cx": 32, "y0": 6 },
+      "fill": { "material": "voidsteel" },
+      "outline": { "material": "silver", "anchor": "spectral" },
+      "volume": { "profile": "ridge", "maxDepth": 4 }
+    },
+    {
+      "id": "void_inlay",
+      "profile": "pk.inlay",
+      "params": { "cx": 0, "cy": 0 },
+      "attach": { "parent": "head_core", "at": "rune_track" },
+      "fill": { "material": "void_rune_glow", "anchor": "frost" },
+      "volume": { "profile": "flat", "maxDepth": 1 }
+    },
+    {
+      "id": "collar",
+      "profile": "pk.collar",
+      "params": { "half": 8, "height": 5 },
+      "attach": { "parent": "head_core", "at": "base" },
+      "fill": { "material": "void_gold", "anchor": "body" },
+      "outline": { "material": "silver", "anchor": "frost" },
+      "volume": { "profile": "bevel", "maxDepth": 3 }
+    },
+    {
+      "id": "handle",
+      "profile": "pk.handle",
+      "params": { "half": 3, "length": 26 },
+      "attach": { "parent": "collar", "at": "base" },
+      "fill": { "material": "bark" },
+      "outline": { "material": "voidsteel", "anchor": "deep" },
+      "volume": { "profile": "round", "maxDepth": 2 }
+    },
+    {
+      "id": "handle_wrap",
+      "profile": "pk.wrap",
+      "params": { "half": 4, "length": 26, "spacing": 6, "bandWidth": 3 },
+      "attach": { "parent": "collar", "at": "base" },
+      "fill": { "material": "void_gold", "anchor": "body" },
+      "volume": { "profile": "flat", "maxDepth": 3 }
+    }
+  ]
+}

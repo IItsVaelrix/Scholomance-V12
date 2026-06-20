@@ -293,11 +293,23 @@ export function generateSilhouetteFromImage(imageAnalysis, canvasSize) {
   const offsetX = (canvasWidth - srcWidth * scale) / 2;
   const offsetY = (canvasHeight - srcHeight * scale) / 2;
 
-  // Simple edge detection: check if alpha > 128 and has at least one transparent neighbor
+  // Background detection for opaque images (no alpha channel)
+  const backgroundTolerance = 18;
+  const background = detectOpaqueBorderBackground(pixelData, srcWidth, srcHeight, 128);
+
+  // Edge detection: foreground pixels that have at least one background neighbor.
+  // For images with alpha: background = transparent (alpha < 128).
+  // For opaque images: background = detected border color.
   for (let y = 0; y < srcHeight; y++) {
     for (let x = 0; x < srcWidth; x++) {
       const idx = (y * srcWidth + x) * 4;
-      if (pixelData[idx + 3] < 128) continue;
+      const alpha = Number(pixelData[idx + 3]) || 0;
+      if (alpha < 128) continue;
+
+      const r = pixelData[idx];
+      const g = pixelData[idx + 1];
+      const b = pixelData[idx + 2];
+      if (background && colorDistance({ r, g, b }, background) <= backgroundTolerance) continue;
 
       let isEdge = false;
       const neighbors = [
@@ -310,9 +322,14 @@ export function generateSilhouetteFromImage(imageAnalysis, canvasSize) {
           break;
         }
         const nidx = (ny * srcWidth + nx) * 4;
-        if (pixelData[nidx + 3] < 128) {
-          isEdge = true;
-          break;
+        const nAlpha = Number(pixelData[nidx + 3]) || 0;
+        if (nAlpha < 128) { isEdge = true; break; }
+        if (background) {
+          const nr = pixelData[nidx], ng = pixelData[nidx + 1], nb = pixelData[nidx + 2];
+          if (colorDistance({ r: nr, g: ng, b: nb }, background) <= backgroundTolerance) {
+            isEdge = true;
+            break;
+          }
         }
       }
 

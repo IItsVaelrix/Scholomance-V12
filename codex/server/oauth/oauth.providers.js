@@ -21,13 +21,12 @@ function trimTrailingSlash(value) {
   return String(value || '').replace(/\/+$/, '');
 }
 
-function isDevMockActive() {
-  const isProd = process.env.NODE_ENV === 'production';
-  const isTest = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
-  // Deny by default. The mock consent screen issues a session for ANY typed email,
-  // so it must be an explicit opt-in (ENABLE_DEV_AUTH=true) — never something that
-  // switches itself on just because NODE_ENV happens not to be 'production'.
-  return !isProd && !isTest && process.env.ENABLE_DEV_AUTH === 'true';
+function isDevMockActive(env = process.env) {
+  const isProd = env.NODE_ENV === 'production';
+  const isTest = env.NODE_ENV === 'test' || env.VITEST === 'true';
+  // Mock OAuth issues a session for ANY typed email. Keep it separate from
+  // ENABLE_DEV_AUTH so local Google sign-in cannot silently become fake Google.
+  return !isProd && !isTest && env.ENABLE_MOCK_OAUTH === 'true';
 }
 
 /**
@@ -41,7 +40,7 @@ export function getProviderConfig(provider, { serverBaseUrl, env = process.env }
   let clientId = env[def.clientIdEnv];
   let clientSecret = env[def.clientSecretEnv];
   if (!clientId || !clientSecret) {
-    if (isDevMockActive()) {
+    if (isDevMockActive(env)) {
       clientId = `mock-${provider}-client-id`;
       clientSecret = `mock-${provider}-client-secret`;
     } else {

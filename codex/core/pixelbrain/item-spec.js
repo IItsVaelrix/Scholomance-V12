@@ -387,6 +387,7 @@ function normalizePart(raw, index, canvas, seen) {
   const motif = raw.motif ? deepFreeze({ ...raw.motif }) : null;
   const wrap = raw.wrap ? deepFreeze({ ...raw.wrap }) : null;
   const glow = raw.glow ? deepFreeze({ ...raw.glow }) : null;
+  const volume = raw.volume ? deepFreeze({ ...raw.volume }) : null;
 
   if (raw.shading !== undefined && !SHADING_MODES.includes(raw.shading)) {
     throw err(`part.shading must be one of: ${SHADING_MODES.join(', ')}`, {
@@ -414,6 +415,7 @@ function normalizePart(raw, index, canvas, seen) {
     motif,
     wrap,
     ...(glow ? { glow } : {}),
+    ...(volume ? { volume } : {}),
     // Hash back-compat: only present when declared (see normalizeLight note).
     ...(raw.shading !== undefined ? { shading: raw.shading } : {}),
   });

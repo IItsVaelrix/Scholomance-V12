@@ -56,6 +56,9 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-12-jewelry-amp-pdr.md`](./2026-06-12-jewelry-amp-pdr.md) | Draft | PixelBrain + Item Foundry + Jewelry + AMP Migration | High |
 | [`2026-06-12-sketchamp-construction-line-microprocessor-pdr.md`](./2026-06-12-sketchamp-construction-line-microprocessor-pdr.md) | Draft | PixelBrain + Sketching + Reference Layer + AMP + Microprocessor + Aseprite Bridge + Item Foundry | High |
 | [`2026-06-12-pixelbrain-deterministic-shape-grammar-router-pdr.md`](./2026-06-12-pixelbrain-deterministic-shape-grammar-router-pdr.md) | Implemented | PixelBrain + Shape Grammar + Construction Skeletons + Microprocessor Router + Deterministic Asset Pipeline | Critical |
+| [`2026-06-12-pixelbrain-character-creator-pdr.md`](./2026-06-12-pixelbrain-character-creator-pdr.md) | Proposed | PixelBrain + Character Creator + Phaser + Godot + Pixel Lotus Combat | High |
+| [`2026-06-12-pixelbrain-holy-fire-paladin-sword-pdr.md`](./2026-06-12-pixelbrain-holy-fire-paladin-sword-pdr.md) | Proposed / Implementation Ready | Weapon item class + Item Foundry + Shape Grammar + Shader Integration | High |
+| [`2026-06-12-pixelbrain-sdf-and-coherent-noise-integration-pdr.md`](./2026-06-12-pixelbrain-sdf-and-coherent-noise-integration-pdr.md) | Implemented | PixelBrain + SDF + Coherent Noise + Item Foundry | High |
 | [`Animation-Audit-PDR-6-10-2026.md`](./Animation-Audit-PDR-6-10-2026.md) | Draft | Animation Audit + UI Runtime | High |
 | [`a2a_universal_interoperability_pdr.md`](./a2a_universal_interoperability_pdr.md) | Draft | world-law expansion | Unclassified |
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
@@ -103,6 +106,9 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`scholomance_collab_console_ui_pdr.md`](./scholomance_collab_console_ui_pdr.md) | COMPLETE (Phases 1-4) | Architectural + Structural + Behavioral | Unclassified |
 | [`PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md`](./PDR-2026-06-07-SCHOLOCANDY-21ST-CENTURY-EVOLUTION.md) | Draft | Architectural · UI + Rendering · DSP · Persistence · World-Law | High |
 | [`2026-06-11-super-depth-analysis-channel-pdr.md`](./2026-06-11-super-depth-analysis-channel-pdr.md) | Draft | UI + Analysis Workflow + Privacy Boundary + Runtime Orchestration | High |
+| [`2026-06-15-pixelbrain-animation-encoding-white-paper.md`](./2026-06-15-pixelbrain-animation-encoding-white-paper.md) | White Paper | PixelBrain + Aseprite + Animation Encoding | High |
+| [`2026-06-15-pixelbrain-volume-container-and-blender-bridge-pdr.md`](./2026-06-15-pixelbrain-volume-container-and-blender-bridge-pdr.md) | Proposed | PixelBrain + Schema Contract + External Asset Bridge + Adapter Layer | High |
+| [`2026-06-16-substrate-lens-voxel-inspector-pdr.md`](./2026-06-16-substrate-lens-voxel-inspector-pdr.md) | Proposed | DivWand UI + QBIT-Voxel Layer 4 Companion + Inspector Tooling | Medium |
 | [`scholomance_rpg_lore_sheet_pdr.md`](./scholomance_rpg_lore_sheet_pdr.md) | Canon Draft 1 | Architectural + Behavioral + Lore Infrastructure | Unclassified |
 | [`thorough_ai_combat_pdr.md`](./thorough_ai_combat_pdr.md) | Implemented | Combat + AI + VerseIR + UI | Critical |
 | [`truesight_surface_remediation_pdr.md`](./truesight_surface_remediation_pdr.md) | In Progress | Rendering + Runtime + UI + Performance | Critical |
@@ -111,6 +117,13 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-11-discography-nav-bandcamp-pdr.md`](./2026-06-11-discography-nav-bandcamp-pdr.md) | Draft | Architectural \| UI \| Behavioral | High |
 | [`2026-06-16-qbit-voxel-level3-multi-biome-pdr.md`](./2026-06-16-qbit-voxel-level3-multi-biome-pdr.md) | Proposed | QBIT-Voxel \| Chunked Volume \| Cross-Chunk Energy Propagation \| Wand Composite Formula | High |
 | [`2026-06-17-qbit-3d-lattice-unification_pdr.md`](./2026-06-17-qbit-3d-lattice-unification_pdr.md) | Draft | QBIT-Voxel \| 3D Lattice \| Lifting Faces to Volume \| 2D Projection as Derived View \| Godot 3D Game World | High |
+| [`2026-06-18-voxedit-conventions-adoption-pdr.md`](./2026-06-18-voxedit-conventions-adoption-pdr.md) | Draft | QBIT-Voxel \| Authoring Standards \| Pivots & Rigging \| Build-Plane | High |
+| [`2026-06-19-mining-performance-and-item-forge-white-paper.md`](./2026-06-19-mining-performance-and-item-forge-white-paper.md) | Draft | Mining Performance \| Item Forge \| Godot Runtime | High |
+| [`2026-06-19-structural-energy-lift-volumeamp-pdr.md`](./2026-06-19-structural-energy-lift-volumeamp-pdr.md) | Draft | QBIT-Voxel \| Foundry Stage \| Energy Transduction \| 2D→3D Lift | High |
+| [`2026-06-19-pixelbrain-craft-gate-immunity-pdr.md`](./2026-06-19-pixelbrain-craft-gate-immunity-pdr.md) | Draft | PixelBrain \| Immunity \| CLI Gate \| Forge QA | High |
+| [`2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md`](./2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md) | Ratified | PixelBrain \| Immunity \| Blueprint Language \| Three-View Shadow Gate \| Animation | High |
+| [`Polarity PDR.md`](./Polarity%20PDR.md) | Draft | Polarity Music Video + PixelBrain Cinematic Lyric Video | High |
+| [`Polarity Spec PDR.md`](./Polarity%20Spec%20PDR.md) | Draft | Polarity Music Video + Technical Implementation Spec | High |
 
 ---
 

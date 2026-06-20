@@ -4,10 +4,11 @@ const TorchScene := preload("res://scripts/Torch.gd")
 const VolumeAMP := preload("res://scripts/VolumeAMP.gd")
 const InventoryClass := preload("res://scripts/Inventory.gd")
 const PixelBrainItemBuilder := preload("res://scripts/PixelBrainItemBuilder.gd")
+const VoxelModelBuilder := preload("res://scripts/VoxelModelBuilder.gd")
 
 const WORLD_PATH := "res://assets/voidmetal-cave.qworld"
 const SCHOLAR_PATH := "res://assets/void-scholar-blue.packet.json"
-const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe.pbrain"
+const PICKAXE_ARTIFACT_PATH := "res://assets/items/voidmetal_pickaxe_sculpt.pbrain"
 const SCHOLAR_ART_PATH: String = "res://assets/void-scholar.svg"
 # Blue/black voxel scholar render + rig (see scratch/scholar-cells.mjs).
 const SCHOLAR_VOXEL_SIZE := 0.028
@@ -651,77 +652,28 @@ func _build_player() -> void:
 # (_tick_scholar_rig) can swing the arms and bob the body — the live 3D equivalent
 # of the authored keyframes. The staff is dropped; the right hand holds the pickaxe.
 func _build_scholar_avatar() -> Node3D:
-	var root := Node3D.new()
 	var packet_data := _load_json(SCHOLAR_PATH)
 	if packet_data.is_empty():
 		push_error("Scholar voxel packet failed to load: %s" % SCHOLAR_PATH)
-		return root
+		return Node3D.new()
 
 	var vs := SCHOLAR_VOXEL_SIZE
-	var mats: Dictionary = packet_data.get("materials", {})
-	var voxels: Array = packet_data.get("voxels", [])
 	var pivots: Dictionary = packet_data.get("pivots", {})
 
 	# Center the column on the body pivot (x,z) and stand the feet on the ground.
 	var body_piv: Dictionary = pivots.get("body", {"x": 0, "y": 0, "z": 0})
 	var off := Vector3(-float(body_piv.x) * vs, SCHOLAR_GROUND_Y, -float(body_piv.z) * vs)
 
-	# One shared material per id; one shared cube mesh for every instance.
-	var mat_nodes := {}
-	for mat_id_str in mats.keys():
-		var m_data: Dictionary = mats[mat_id_str]
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(str(m_data.get("colorHint", "#ffffff")))
-		mat.roughness = 0.82
-		var energy: float = float(m_data.get("energy", 0.0))
-		if energy > 0.0:
-			mat.emission_enabled = true
-			mat.emission = mat.albedo_color
-			mat.emission_energy_multiplier = energy * 2.5
-		mat_nodes[int(mat_id_str)] = mat
-
-	var box_mesh := BoxMesh.new()
-	box_mesh.size = Vector3(vs, vs, vs)
-
-	# Bucket voxels by animation block, then by material within each block.
-	var by_block := {}
-	for vox in voxels:
-		var blk := str(vox.get("block", "body"))
-		var mid: int = int(vox.get("materialId", 1))
-		if not by_block.has(blk):
-			by_block[blk] = {}
-		if not by_block[blk].has(mid):
-			by_block[blk][mid] = []
-		by_block[blk][mid].append(vox)
-
-	# A pivot Node3D per block; its children (the MultiMeshes) are positioned
-	# relative to the pivot so rotating the pivot rotates the part about it.
-	var pivot_nodes := {}
-	for blk in by_block.keys():
-		var pg: Dictionary = pivots.get(blk, body_piv)
-		var pivot_local := Vector3(float(pg.x) * vs, float(pg.y) * vs, float(pg.z) * vs) + off
-		var pivot_node := Node3D.new()
-		pivot_node.name = "rig_" + blk
-		pivot_node.position = pivot_local
-		for mid in by_block[blk].keys():
-			var vox_list: Array = by_block[blk][mid]
-			var mm := MultiMesh.new()
-			mm.transform_format = MultiMesh.TRANSFORM_3D
-			mm.mesh = box_mesh
-			mm.instance_count = vox_list.size()
-			for i in range(vox_list.size()):
-				var v = vox_list[i]
-				var world_local := Vector3(float(v.x) * vs, float(v.y) * vs, float(v.z) * vs) + off + Vector3(vs, vs, vs) * 0.5
-				mm.set_instance_transform(i, Transform3D(Basis(), world_local - pivot_local))
-			var mmi := MultiMeshInstance3D.new()
-			mmi.multimesh = mm
-			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-			mmi.custom_aabb = AABB(Vector3(-2, -2, -2), Vector3(4, 4, 4))
-			if mat_nodes.has(mid):
-				mmi.material_override = mat_nodes[mid]
-			pivot_node.add_child(mmi)
-		root.add_child(pivot_node)
-		pivot_nodes[blk] = pivot_node
+	# Geometry comes from the shared voxel renderer; this function keeps only the
+	# scholar-specific rig wiring below (PDR Risk #2: one renderer, not a copy).
+	var built := VoxelModelBuilder.build(packet_data, {
+		"cell_size": vs,
+		"origin": off,
+		"default_block": "body",
+		"fallback_pivot": Vector3(float(body_piv.x), float(body_piv.y), float(body_piv.z)),
+	})
+	var root: Node3D = built["root"]
+	var pivot_nodes: Dictionary = built["pivots"]
 
 	_rig_body = pivot_nodes.get("body")
 	_rig_arm_r = pivot_nodes.get("armR")
@@ -1550,80 +1502,16 @@ func _spawn_pickaxe_in_hand() -> void:
 	_pickaxe_mesh.rotation_degrees = PICKAXE_REST_ROT
 	_camera.add_child(_pickaxe_mesh)
 
-# Builds the generated PixelBrain voidmetal pickaxe as a self-contained
-# Node3D with no positioning or parenting applied. Used both for the first-person
-# camera viewmodel and the third-person avatar's held copy.
+# Builds the voidmetal pickaxe as a self-contained Node3D with no positioning or
+# parenting applied. Used for both the first-person viewmodel and the third-person
+# avatar's held copy. The geometry is the true-3D authored sculpt
+# (scratch/pickaxe-cells.mjs → PB-VOXEL-ITEM), rendered through the same voxel
+# renderer as the scholar — real depth and a genuine eye hole, not an extruded slab.
 func _build_pickaxe_node() -> Node3D:
-	# Chunky voxel pickaxe (matches the game's voxel language): a curved twin-pick
-	# head built from cubes, a glowing rune eye, and a haft — extruded in Z for
-	# real thickness so it never reads as toothpicks or a flat slab.
-	var pick := Node3D.new()
-	pick.name = "VoidmetalPickaxe"
-	var cs := 0.045
-
-	var wood := StandardMaterial3D.new()
-	wood.albedo_color = Color(0.11, 0.10, 0.14)
-	wood.roughness = 0.92
-
-	var metal := StandardMaterial3D.new()
-	metal.albedo_color = Color(0.42, 0.47, 0.62)
-	metal.metallic = 0.92
-	metal.roughness = 0.28
-	metal.emission_enabled = true
-	metal.emission = Color(0.20, 0.13, 0.46)
-	metal.emission_energy_multiplier = 0.30
-
-	var rune := StandardMaterial3D.new()
-	rune.albedo_color = Color(0.62, 0.90, 1.0)
-	rune.roughness = 0.3
-	rune.emission_enabled = true
-	rune.emission = Color(0.45, 0.85, 1.0)
-	rune.emission_energy_multiplier = 2.8
-
-	# Side-profile voxel layout (x right, y up). Each arm sweeps out and down to a
-	# point so the silhouette is a curved double pick — broad, not spindly.
-	var head := [
-		Vector2i(-1, 1), Vector2i(1, 1), Vector2i(-1, 2), Vector2i(1, 2), Vector2i(0, 0),
-		Vector2i(2, 1), Vector2i(3, 1), Vector2i(3, 0), Vector2i(4, 0), Vector2i(4, -1), Vector2i(5, -1), Vector2i(5, -2),
-		Vector2i(-2, 1), Vector2i(-3, 1), Vector2i(-3, 0), Vector2i(-4, 0), Vector2i(-4, -1), Vector2i(-5, -1), Vector2i(-5, -2),
-	]
-	var eye := [Vector2i(0, 1), Vector2i(0, 2)]
-	var haft := []
-	for hy in range(-1, -11, -1):
-		haft.append(Vector2i(0, hy))
-
-	# Head + rune are 3 voxels deep; the haft is 1 deep (a slim handle).
-	_pickaxe_cubes(pick, _extrude_xy(head, [-1, 0, 1]), metal, cs)
-	_pickaxe_cubes(pick, _extrude_xy(eye, [-1, 0, 1]), rune, cs)
-	_pickaxe_cubes(pick, _extrude_xy(haft, [0]), wood, cs)
-	return pick
-
-# Turns a list of (x,y) cells into 3D cube positions across the given z layers.
-func _extrude_xy(cells_xy: Array, z_layers: Array) -> Array:
-	var out: Array = []
-	for c in cells_xy:
-		for z in z_layers:
-			out.append(Vector3(float(c.x), float(c.y), float(z)))
-	return out
-
-# One MultiMesh of unit cubes (in cell units, scaled by cs) sharing a material.
-func _pickaxe_cubes(parent: Node3D, cells: Array, mat: StandardMaterial3D, cs: float) -> void:
-	if cells.is_empty():
-		return
-	var box := BoxMesh.new()
-	box.size = Vector3(cs, cs, cs)
-	var mm := MultiMesh.new()
-	mm.transform_format = MultiMesh.TRANSFORM_3D
-	mm.mesh = box
-	mm.instance_count = cells.size()
-	for i in range(cells.size()):
-		mm.set_instance_transform(i, Transform3D(Basis(), (cells[i] as Vector3) * cs))
-	var mmi := MultiMeshInstance3D.new()
-	mmi.multimesh = mm
-	mmi.material_override = mat
-	mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
-	mmi.custom_aabb = AABB(Vector3(-1, -1, -1), Vector3(2, 2, 2))
-	parent.add_child(mmi)
+	return PixelBrainItemBuilder.build_extruded_item(PICKAXE_ARTIFACT_PATH, {
+		"cell_size": 0.011,
+		"name": "VoidmetalPickaxe",
+	})
 
 func _tick_pickaxe_anim(delta: float) -> void:
 	if _mining_anim_t < 0.0 or _pickaxe_mesh == null:

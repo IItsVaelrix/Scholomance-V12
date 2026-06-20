@@ -40,6 +40,7 @@
   padding: 0 var(--space-4, 1rem);
   border-bottom: 1px solid var(--ritual-border, hsla(43, 48%, 48%, 0.22));
   background: var(--ritual-abyss, rgba(9, 9, 22, 0.95));
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   z-index: var(--z-system);
 }
@@ -312,6 +313,7 @@
   min-width: 200px;
   padding: var(--space-3, 0.75rem) var(--space-4, 1rem);
   background: rgba(6, 4, 18, 0.94);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   border: 1px solid hsla(43, 48%, 48%, 0.18);
   border-radius: var(--radius-lg, 0.75rem);
@@ -2551,6 +2553,7 @@
     radial-gradient(circle at 50% 48%, color-mix(in srgb, var(--oracle-school-color) 22%, transparent), transparent 36%),
     radial-gradient(circle at 50% 48%, rgba(255, 220, 128, 0.08), transparent 56%),
     rgba(1, 2, 8, 0.42);
+  -webkit-backdrop-filter: blur(1.5px);
   backdrop-filter: blur(1.5px);
 }
 
@@ -2906,6 +2909,7 @@
   background: var(--ritual-panel, rgba(5, 4, 16, 0.88));
   border: 1px solid var(--ritual-border, hsla(43, 48%, 48%, 0.14));
   border-radius: var(--radius-lg, 0.75rem);
+  -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
   z-index: var(--z-above);
 }
@@ -3584,6 +3588,16 @@
   box-sizing: border-box;
 }
 
+.ide-layout-wrapper .editor-textarea,
+.ide-layout-wrapper .sidebar-content,
+.ide-layout-wrapper .oracle-feed,
+.ide-layout-wrapper .sidebar-tools,
+.ide-layout-wrapper .rhyme-connections-list {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+  scrollbar-gutter: stable;
+}
+
 .ide-layout-wrapper .editor-textarea::-webkit-scrollbar,
 .ide-layout-wrapper .sidebar-content::-webkit-scrollbar,
 .ide-layout-wrapper .oracle-feed::-webkit-scrollbar,
@@ -3759,6 +3773,7 @@
   z-index: var(--z-above);
   opacity: 1;
   overflow: hidden;
+  scrollbar-width: none;
   scrollbar-color: transparent transparent;
   box-sizing: border-box;
   tab-size: 2;
@@ -3846,6 +3861,13 @@
   color: #ffd700;
   font-weight: 700;
 }
+/* NOTE (BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT):
+   This font-weight affects advance width of all descendant .truesight-word spans.
+   The adaptive grid measurement in buildTruesightOverlayLines now matches it
+   per-line (heading => 700). Do not introduce other advance-changing properties
+   (letter-spacing, font-style, text-transform, etc.) on line containers without
+   also updating the measurement side. */
+
 
 .truesight-line--list-item {
   color: #b0c4de;
@@ -3938,29 +3960,37 @@
 
 .ide-layout-wrapper {
   contain: layout paint style;
-  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
 /* Editor container — promote to GPU layer */
 .ide-layout-wrapper .editor-textarea-wrapper {
   contain: layout paint;
-  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
 }
 
 /* Textarea — GPU accelerated scrolling */
 .ide-layout-wrapper .editor-textarea {
-  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  will-change: scroll-position;
+  will-change: transform, scroll-position;
 }
 
 /* Truesight overlay — GPU accelerated for word-by-word rendering */
 .ide-layout-wrapper .truesight-overlay {
-  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  will-change: scroll-position;
+  will-change: transform, scroll-position;
   contain: layout paint;
 }
 
@@ -3985,6 +4015,30 @@
 }
 
 .ide-layout-wrapper .truesight-ghost-line {
+}
+
+@supports (-webkit-overflow-scrolling: touch) {
+  .ide-layout-wrapper .editor-textarea,
+  .ide-layout-wrapper .markdown-rendered,
+  .ide-layout-wrapper .truesight-overlay,
+  .ide-mobile-panel-stage,
+  .ide-sheet-content {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ide-layout-wrapper,
+  .ide-layout-wrapper .editor-textarea-wrapper,
+  .ide-layout-wrapper .editor-textarea,
+  .ide-layout-wrapper .truesight-overlay,
+  .ide-layout-wrapper .truesight-line,
+  .ide-layout-wrapper .truesight-word,
+  .ide-layout-wrapper .grimoire-word {
+    -webkit-transform: none;
+    transform: none;
+    will-change: auto;
+  }
 }
 
 /* ──────────────────────────────────────────────────────────────────────────
@@ -4042,14 +4096,16 @@
 .ide-layout-wrapper .vb-school--alchemy { --vb-school-glow: var(--alchemy-primary); }
 .ide-layout-wrapper .vb-school--will { --vb-school-glow: var(--will-primary); }
 
-/* Bytecode Rarity Signifiers */
+/* Bytecode Rarity Signifiers.
+   Rarity is signified by GLOW only — never by font-weight / letter-spacing, which
+   would change the rendered glyph advance and desync it from the canvas-measured
+   Truesight lattice (boxes drift, only part of a word stays clickable). Enforced
+   by immunity rule LING-0F08 (BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT). */
 .ide-layout-wrapper .vb-rarity--rare {
-  font-weight: 600;
-  letter-spacing: 0.01em;
+  text-shadow: 0 0 4px color-mix(in srgb, currentColor 45%, transparent);
 }
 .ide-layout-wrapper .vb-rarity--inexplicable {
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  text-shadow: 0 0 8px color-mix(in srgb, currentColor 65%, transparent);
 }
 
 /* Rhyme highlight underline — GPU accelerated */
@@ -4436,6 +4492,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     inset 0 0 30px rgba(201, 168, 76, 0.03),
     0 0 calc(var(--is-music-active, 0) * (8px + var(--active-signal-level, 0) * 12px)) var(--active-school-glow);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
   backdrop-filter: blur(20px) saturate(1.2);
   overflow: hidden;
   min-width: 220px;
@@ -4854,6 +4911,9 @@
   position: absolute;
   inset: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -4866,6 +4926,7 @@
   padding-bottom: max(0px, env(safe-area-inset-bottom));
   background: rgba(6, 5, 18, 0.97);
   border-top: 1px solid color-mix(in srgb, var(--read-accent) 18%, rgba(255, 255, 255, 0.06));
+  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
   flex-shrink: 0;
 }
@@ -4932,6 +4993,7 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   z-index: calc(var(--z-overlay, 100) - 1);
 }
@@ -4974,6 +5036,9 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
 }
 

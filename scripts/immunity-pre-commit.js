@@ -62,14 +62,14 @@ function getStagedFiles() {
   return result.stdout
     .split('\n')
     .map(f => f.trim())
-    .filter(f => f && /\.(js|jsx|ts|tsx)$/.test(f));
+    .filter(f => f && /\.(js|jsx|ts|tsx|css)$/.test(f));
 }
 
 /**
  * Get all tracked source files.
  */
 function getAllSourceFiles() {
-  const result = spawnSync('git', ['ls-files', '--cached', '*.{js,jsx,ts,tsx}'], {
+  const result = spawnSync('git', ['ls-files', '--cached', '*.{js,jsx,ts,tsx,css}'], {
     encoding: 'utf8',
     shell: true,
   });
@@ -79,7 +79,7 @@ function getAllSourceFiles() {
   return result.stdout
     .split('\n')
     .map(f => f.trim())
-    .filter(f => f && /\.(js|jsx|ts|tsx)$/.test(f));
+    .filter(f => f && /\.(js|jsx|ts|tsx|css)$/.test(f));
 }
 
 /**
@@ -127,7 +127,9 @@ async function runScan(files) {
     if (!content) continue;
 
     const innateViolations = scanInnate(content, file);
-    const adaptiveViolations = await scanAdaptive(content);
+    // CSS is scanned by innate (deterministic) rules only; the adaptive
+    // vector immunity reads code phonosemantics, not stylesheets.
+    const adaptiveViolations = file.endsWith('.css') ? [] : await scanAdaptive(content);
 
     const fileResults = {
       innate: innateViolations,

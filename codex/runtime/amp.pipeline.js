@@ -8,7 +8,7 @@
  */
 
 import { on, emit } from './eventBus.js';
-import { getAmpStatus } from '../core/animation/amp/runAnimationAmp.js';
+import { getAmpStatus } from '../core/animation/amp/runAnimationAmp.ts';
 
 // Track all active animations for the inspector
 let activeAnimations = new Map();

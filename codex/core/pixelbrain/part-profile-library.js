@@ -2363,3 +2363,159 @@ registerPartProfile('tree.foliage.top', (params = {}, options = {}) => {
     },
   };
 });
+
+// ── VOID PICKAXE REV2 PROFILES ───────────────────────────────────────
+// Proper parametric pickaxe: curved arms with quadratic taper,
+// chunky central block, straight handle, heavy collar, runic inlay.
+
+registerPartProfile('tool.pickaxe.head.void_heavy', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? Math.floor((options.canvas?.width ?? 64) / 2));
+  const yTop = roundInt(params.yTop ?? 0);
+
+  // Unified head shape: each row declares one or two contiguous x-ranges.
+  // Arms curve outward and upward from the central block. Block is solid.
+  const rows = [
+    // Arms — tips are sharp and far apart, widening toward center
+    { ranges: [[-29, -26], [26, 29]] },        // y+0: tips
+    { ranges: [[-29, -23], [23, 29]] },        // y+1
+    { ranges: [[-28, -20], [20, 28]] },        // y+2
+    { ranges: [[-27, -16], [16, 27]] },        // y+3
+    { ranges: [[-25, -13], [13, 25]] },        // y+4
+    { ranges: [[-23, -10], [10, 23]] },        // y+5
+    { ranges: [[-20, -8],  [8, 20]] },         // y+6: arms nearly merged
+    // Block — solid rectangular mass where handle mounts
+    { ranges: [[-7, 7]] },                     // y+7
+    { ranges: [[-7, 7]] },                     // y+8
+    { ranges: [[-7, 7]] },                     // y+9
+    { ranges: [[-7, 7]] },                     // y+10
+    { ranges: [[-7, 7]] },                     // y+11
+    { ranges: [[-7, 7]] },                     // y+12
+    { ranges: [[-7, 7]] },                     // y+13
+    // Bottom taper into collar
+    { ranges: [[-6, 6]] },                     // y+14
+    { ranges: [[-5, 5]] },                     // y+15
+    { ranges: [[-4, 4]] },                     // y+16
+  ];
+
+  const cells = [];
+  const seen = new Set();
+  const place = (x, y) => {
+    const key = String(x) + ',' + String(y);
+    if (seen.has(key)) return;
+    seen.add(key);
+    cells.push({ x, y });
+  };
+
+  for (let i = 0; i < rows.length; i += 1) {
+    const y = yTop + i;
+    for (const [from, to] of rows[i].ranges) {
+      for (let dx = from; dx <= to; dx += 1) place(cx + dx, y);
+    }
+  }
+
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: yTop + rows.length - 1 },
+      tip_left: { x: cx - 29, y: yTop },
+      tip_right: { x: cx + 29, y: yTop },
+      center: { x: cx, y: Math.round(yTop + 8) },
+      rune_track: { x: cx, y: yTop + 9 },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.handle.void_straight', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 30);
+  const half = roundInt(params.half ?? 3);
+  const cells = [];
+  for (let y = 0; y < length; y += 1) {
+    for (let x = cx - half; x <= cx + half; x += 1) {
+      cells.push({ x, y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: 0 },
+      tip: { x: cx, y: length - 1 },
+      center: { x: cx, y: Math.floor(length / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.handle.void_wrap', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const length = roundInt(params.length ?? 30);
+  const half = roundInt(params.half ?? 4);
+  const spacing = roundInt(params.spacing ?? 5);
+  const bandWidth = roundInt(params.bandWidth ?? 3);
+  const cells = [];
+  for (let y = 4; y < length - 4; y += spacing) {
+    for (let row = 0; row < bandWidth; row += 1) {
+      if (y + row >= length) break;
+      for (let x = cx - half; x <= cx + half; x += 1) {
+        cells.push({ x, y: y + row });
+      }
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: 0 },
+      tip: { x: cx, y: length - 1 },
+      center: { x: cx, y: Math.floor(length / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.collar.void_heavy', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const half = roundInt(params.half ?? 8);
+  const height = roundInt(params.height ?? 5);
+  const cells = [];
+  for (let y = 0; y < height; y += 1) {
+    const isTop = y === 0;
+    const isBot = y === height - 1;
+    const inset = (isTop || isBot) ? 1 : 0;
+    for (let x = cx - half + inset; x <= cx + half - inset; x += 1) {
+      cells.push({ x, y });
+    }
+  }
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: height - 1 },
+      tip: { x: cx, y: 0 },
+      center: { x: cx, y: Math.floor(height / 2) },
+    },
+  };
+});
+
+registerPartProfile('tool.pickaxe.inlay.void_runes', (params = {}, options = {}) => {
+  const cx = roundInt(params.cx ?? 0);
+  const cy = roundInt(params.cy ?? 0);
+  const cells = [];
+  const seen = new Set();
+  const place = (x, y) => {
+    const key = String(x) + ',' + String(y);
+    if (seen.has(key)) return;
+    seen.add(key);
+    cells.push({ x, y });
+  };
+  // Clean horizontal rune stripe across the head block
+  for (let dx = -6; dx <= 6; dx += 1) {
+    place(cx + dx, cy);
+  }
+  // Small diamond eye at center
+  place(cx, cy - 1);
+  place(cx, cy + 1);
+  return {
+    cells,
+    anchors: {
+      base: { x: cx, y: cy },
+      center: { x: cx, y: cy },
+    },
+  };
+});

@@ -37,6 +37,18 @@ import { BugRecoveryModule } from './components/Wings/BugRecoveryModule.jsx';
 import { BugQueueRail } from './components/Wings/BugQueueRail.jsx';
 import { BugLatticeMap } from './components/Terminal/BugLatticeMap.jsx';
 import { DiagnosticGhost } from './components/Common/GhostIcon.jsx';
+import { isActiveCriticalBug, activeCriticalIds, hasUnacknowledgedCritical } from './bug-status.js';
+
+const SEEN_CRITICAL_BUGS_KEY = 'collab:seen-critical-bugs';
+
+function loadSeenCriticalIds() {
+    try {
+        const raw = JSON.parse(localStorage.getItem(SEEN_CRITICAL_BUGS_KEY) || '[]');
+        return new Set(Array.isArray(raw) ? raw : []);
+    } catch {
+        return new Set();
+    }
+}
 
 import './CollabPage.css';
 
@@ -267,6 +279,10 @@ export default function CollabPage() {
     // Real-time activity state
     const [newActivityCount, setNewActivityCount] = useState(0);
     const [lastActivityId, setLastActivityId] = useState(null);
+
+    // Critical-bug alert acknowledgement (persisted so the pulse doesn't nag on
+    // every navigation back to this page — only unseen open criticals re-fire).
+    const [seenCriticalIds, setSeenCriticalIds] = useState(loadSeenCriticalIds);
     
     // Drawer state
     const [selectedTask, setSelectedTask] = useState(null);
@@ -492,6 +508,19 @@ export default function CollabPage() {
             refresh({ silent: true });
         }
     }, [activeTab, refresh]);
+
+    // Acknowledge open criticals when the bugs tab is viewed; persist so the
+    // pulsing alert stays quiet across navigation and only re-fires for new ones.
+    useEffect(() => {
+        if (activeTab !== 'bugs') return;
+        const ids = activeCriticalIds(bugs);
+        setSeenCriticalIds(new Set(ids));
+        try {
+            localStorage.setItem(SEEN_CRITICAL_BUGS_KEY, JSON.stringify(ids));
+        } catch {
+            /* localStorage unavailable — alert simply won't persist acknowledgement */
+        }
+    }, [activeTab, bugs]);
 
     // Handle filter change
     const handleFilterChange = useCallback((key, value) => {
@@ -860,7 +889,9 @@ export default function CollabPage() {
         },
         bugs: {
             total: bugs.length,
-            critical: bugs.filter(b => b.severity === 'CRIT' || b.severity === 'FATAL').length,
+            // Open criticals only — resolved/closed bugs must not keep the
+            // bugs-tab alert pulsing (see bug-status.js).
+            critical: bugs.filter(isActiveCriticalBug).length,
         },
         blocked: {
             count: tasks.filter(t => t.status === 'blocked').length,
@@ -1103,7 +1134,7 @@ export default function CollabPage() {
                                 {tab.key === 'activity' && newActivityCount > 0 && (
                                     <span className="collab-tab-btn__badge">{newActivityCount}</span>
                                 )}
-                                {tab.key === 'bugs' && metrics.bugs.critical > 0 && activeTab !== 'bugs' && (
+                                {tab.key === 'bugs' && activeTab !== 'bugs' && hasUnacknowledgedCritical(bugs, seenCriticalIds) && (
                                     <span className="collab-tab-btn__badge collab-tab-btn__badge--critical">!</span>
                                 )}
                             </button>
