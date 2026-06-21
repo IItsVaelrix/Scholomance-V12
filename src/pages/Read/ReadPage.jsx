@@ -25,6 +25,7 @@ import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL, getSchoolsByUnlock } from "../../data/
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { parseBooleanEnvFlag } from "../../hooks/useCODExPipeline.jsx";
 import { patternColor } from "../../lib/patternColor.js";
+import { resolveResonanceConnections } from "../../lib/truesight/resolveResonanceConnections.js";
 import { getCachedWord, setCachedWord, pruneOldCaches } from "../../lib/platform/wordCache.js";
 import { getAuroraLevel, cycleAuroraLevel, useAuroraLevel } from "../../lib/atmosphere/aurora.ts";
 import { useAutoSave } from "../../hooks/useAutoSave.js";
@@ -38,7 +39,7 @@ import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
 import WordTooltip from "../../components/WordTooltip.jsx";
 import { TruesightDebugColorPanel } from "../../components/TruesightDebugColorPanel/TruesightDebugColorPanel.jsx";
 
-import ScrollEditor from "./ScrollEditor.jsx";
+import ScrollEditor from "../../lib/lexical/LexicalScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
 import { ANALYSIS_MODES } from "../../lib/truesight/compiler/analysisModes";
 import { TopBar, StatusBar } from "./IDEChrome.jsx";
@@ -170,6 +171,9 @@ export default function ReadPage() {
   // Use settings for initial state if available
   const [isTruesight, setIsTruesight] = useState(
     () => readPersistedBooleanSetting('truesightEnabled') ?? settings?.truesightEnabled ?? false
+  );
+  const [isLatticeGrid, setIsLatticeGrid] = useState(
+    () => readPersistedBooleanSetting('latticeGridEnabled') ?? settings?.latticeGridEnabled ?? false
   );
   const [isPredictive, setIsPredictive] = useState(true);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
@@ -336,6 +340,14 @@ export default function ReadPage() {
     });
   }, [updateSettings]);
 
+  const handleToggleLatticeGrid = useCallback(() => {
+    setIsLatticeGrid((prev) => {
+      const next = !prev;
+      updateSettings({ latticeGridEnabled: next });
+      return next;
+    });
+  }, [updateSettings]);
+
   const handleTogglePredictive = useCallback(() => {
     setIsPredictive((prev) => !prev);
   }, []);
@@ -390,11 +402,44 @@ export default function ReadPage() {
 
   const infoBeamConnections = useMemo(() => {
     if (!infoBeamEnabled || !infoBeamFamily) return [];
-    const all = Array.isArray(deepAnalysis?.syntaxLayer?.allConnections)
-      ? deepAnalysis.syntaxLayer.allConnections
-      : [];
-    return all.filter((c) => c.groupLabel === infoBeamFamily);
+    const { connections } = resolveResonanceConnections(deepAnalysis);
+    return connections.filter((c) => c.groupLabel === infoBeamFamily);
   }, [infoBeamEnabled, infoBeamFamily, deepAnalysis]);
+
+  // Resonance gate for word colouring: only words that participate in a
+  // rhyme/assonance connection get coloured (the rest stay grey), so colour
+  // marks resonance instead of every content word ("Skittles" fix). Always
+  // returns a Set — empty when analysis ran but found nothing resonant, OR
+  // when no connection source exists on the live synthesis path (server
+  // offline / local fallback). The two are distinguished by `resonanceDegraded`
+  // below; the gate itself stays strict (grey) in both cases so the offline
+  // state can never reintroduce the over-colouring bug. The connection source
+  // is read path-agnostically (see SCD64 GATE_DATA_ABSENT 03030742...).
+  const resonantCharStarts = useMemo(() => {
+    const { connections } = resolveResonanceConnections(deepAnalysis);
+
+    const MIN_RESONANCE_SCORE = 0.95;
+    const qualifies = (c) => (Number(c?.score) || 0) >= MIN_RESONANCE_SCORE;
+    const set = new Set();
+
+    for (const c of connections) {
+      if (!qualifies(c)) continue;
+      if (Number.isFinite(c?.wordA?.charStart)) set.add(c.wordA.charStart);
+      if (Number.isFinite(c?.wordB?.charStart)) set.add(c.wordB.charStart);
+    }
+
+    return set;
+  }, [deepAnalysis]);
+
+  // True when analysis has arrived but the live synthesis path carries no
+  // connection source at all (the GATE_DATA_ABSENT condition). Drives the
+  // quiet "resonance offline" signal so a grey editor reads as "analysis
+  // unavailable" rather than "broken". Loading (no deepAnalysis yet) is NOT
+  // degraded — it's just not-ready.
+  const resonanceDegraded = useMemo(() => {
+    if (!deepAnalysis) return false;
+    return !resolveResonanceConnections(deepAnalysis).sourcePresent;
+  }, [deepAnalysis]);
 
   const scrollLines = useMemo(
     () => truesightContent.split("\n"),
@@ -826,6 +871,8 @@ export default function ReadPage() {
     <ToolsSidebar
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
+      isLatticeGrid={isLatticeGrid}
+      onToggleLatticeGrid={handleToggleLatticeGrid}
       isPredictive={isPredictive}
       onTogglePredictive={handleTogglePredictive}
       mirrored={mirrored}
@@ -951,6 +998,11 @@ export default function ReadPage() {
                     {isTruesight ? 'On' : 'Off'}
                   </button>
                 </div>
+                {isTruesight && resonanceDegraded && (
+                  <div className="settings-panel-note settings-panel-note--offline" role="status">
+                    Resonance offline — analysis unavailable; words shown in plain ink.
+                  </div>
+                )}
                 <div className="settings-panel-row">
                   <span>Symmetrical</span>
                   <button
@@ -1011,6 +1063,7 @@ export default function ReadPage() {
                 isEditable={isEditable}
                 disabled={false}
                 isTruesight={isTruesight}
+                isLatticeGrid={isLatticeGrid}
                 isPredictive={isPredictive}
                 predict={predict}
                 getCompletions={getCompletions}
@@ -1018,11 +1071,13 @@ export default function ReadPage() {
                 getSpellingSuggestions={getSpellingSuggestions}
                 predictorReady={predictorReady}
                 plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                tokenWeights={scoreData?.tokenWeights || null}
                 onContentChange={handleEditorContentChange}
                 onTitleChange={handleEditorTitleChange}
                 analyzedWords={analyzedWords}
                 analyzedWordsByIdentity={analyzedWordsByIdentity}
                 analyzedWordsByCharStart={analyzedWordsByCharStart}
+                resonantCharStarts={resonantCharStarts}
                 lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                 highlightedLines={effectiveHighlightedLines}
                 pinnedLines={pinnedLines}
@@ -1105,6 +1160,8 @@ export default function ReadPage() {
           onClose={() => { haptic('dismiss'); setIsHexSheetOpen(false); }}
           isTruesight={isTruesight}
           onToggleTruesight={handleToggleTruesight}
+          isLatticeGrid={isLatticeGrid}
+          onToggleLatticeGrid={handleToggleLatticeGrid}
           isPredictive={isPredictive}
           onTogglePredictive={handleTogglePredictive}
           mirrored={mirrored}
@@ -1330,6 +1387,7 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
+                    isLatticeGrid={isLatticeGrid}
                     isPredictive={isPredictive}
                     predict={predict}
                     getCompletions={getCompletions}
@@ -1337,11 +1395,13 @@ export default function ReadPage() {
                     getSpellingSuggestions={getSpellingSuggestions}
                     predictorReady={predictorReady}
                     plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                    tokenWeights={scoreData?.tokenWeights || null}
                     onContentChange={handleEditorContentChange}
                     onTitleChange={handleEditorTitleChange}
                     analyzedWords={analyzedWords}
                     analyzedWordsByIdentity={analyzedWordsByIdentity}
                     analyzedWordsByCharStart={analyzedWordsByCharStart}
+                    resonantCharStarts={resonantCharStarts}
                     lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                     highlightedLines={effectiveHighlightedLines}
                     pinnedLines={pinnedLines}

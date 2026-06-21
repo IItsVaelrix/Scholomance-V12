@@ -2,12 +2,22 @@ import { CANDIDATE_SOURCES, MAX_CANDIDATES, generateCandidateId } from '../schem
 import { generateSubstringCandidates } from './substring.candidate.generator.js';
 import { generateRuleCandidates } from './rule.candidate.generator.js';
 import { retrieveVectorNNPhonemeCandidates } from './vector-nn.candidate.generator.js';
+import { generateCompoundCandidates } from './compound.candidate.generator.js';
 
-export { generateRuleCandidates, generateSubstringCandidates, retrieveVectorNNPhonemeCandidates };
+export { generateRuleCandidates, generateSubstringCandidates, retrieveVectorNNPhonemeCandidates, generateCompoundCandidates };
 
 export function generateCandidates(word, cmuEntries) {
   const upper = String(word || '').toUpperCase().replace(/[^A-Z]/g, '');
   if (!upper) return [];
+
+  const compoundCandidates = generateCompoundCandidates(upper, cmuEntries);
+  
+  // If compound candidates exist, they represent exact dict-word concatenations 
+  // (i.e. 'FALLSINLINE' -> 'FALLS' + 'IN' + 'LINE'), which should take absolute priority
+  // over random substrings and NN hallucinations.
+  if (compoundCandidates.length > 0) {
+    return dedupeCandidates([...compoundCandidates]).slice(0, MAX_CANDIDATES);
+  }
 
   const ruleCandidates = generateRuleCandidates(upper);
   const substringCandidates = generateSubstringCandidates(upper, cmuEntries);

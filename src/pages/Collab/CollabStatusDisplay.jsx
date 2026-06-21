@@ -3,7 +3,7 @@
  * Adapted from PixelBrain StatusDisplay
  */
 
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   CheckIcon,
   LoadingIcon,
@@ -13,6 +13,7 @@ import {
 } from "../../components/Icons.jsx";
 import { isBytecode } from '../../lib/bytecode-error.adapter.js';
 import { decodeBytecodeError } from '../../lib/pixelbrain.adapter.js';
+import { isActiveCriticalBug } from './bug-status.js';
 
 const STATUS_CONFIG = {
   idle: {
@@ -48,46 +49,45 @@ const STATUS_CONFIG = {
 };
 
 export default function CollabStatusDisplay({ status, conflict, context, bugs = [] }) {
+  const reduceMotion = useReducedMotion();
   const config = STATUS_CONFIG[status] || STATUS_CONFIG.idle;
   const Icon = config.icon;
 
-  const criticalBugs = bugs.filter(b => b.severity === 'CRIT' || b.severity === 'FATAL');
-  const hasFatal = bugs.some(b => b.severity === 'FATAL');
+  const activeCriticalBugs = bugs.filter(isActiveCriticalBug);
+  const hasFatal = activeCriticalBugs.some(b => b.severity === 'FATAL');
 
   return (
     <>
-      {criticalBugs.length > 0 && (
+      {activeCriticalBugs.length > 0 && (
         <motion.div 
-            className={`incident-banner ${hasFatal ? 'incident-banner--fatal' : ''}`}
-            initial={{ height: 0, opacity: 0 }}
+            className={`incident-banner incident-banner--${hasFatal ? 'critical' : 'warning'}`}
+            initial={reduceMotion ? false : { height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
-            style={{
-                background: hasFatal ? 'var(--color-collab-error)' : 'var(--color-collab-warning)',
-                color: '#000',
-                padding: '8px 16px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                fontSize: '12px',
-                fontWeight: 'bold',
-                fontFamily: 'var(--font-collab-mono)',
-                zIndex: 100,
-                boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
-            }}
+            role="alert"
+            aria-live="assertive"
         >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <motion.span 
-                    animate={{ opacity: [1, 0.4, 1] }} 
-                    transition={{ duration: 1, repeat: Infinity }}
-                    style={{ fontSize: '16px' }}
+            <div className="incident-banner__body">
+                <motion.span
+                    className="incident-banner__icon-shell"
+                    animate={reduceMotion ? undefined : { opacity: [1, 0.52, 1] }}
+                    transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+                    aria-hidden="true"
                 >
-                    ⚠️
+                    <WarningIcon className="incident-banner__icon" />
                 </motion.span>
-                <span>{`${hasFatal ? 'VOID COLLAPSE DETECTED' : 'SYSTEM INCIDENT DETECTED'} // ${criticalBugs.length} CRITICAL ARTIFACTS`}</span>
+                <div className="incident-banner__content">
+                    <span className="incident-banner__kicker">
+                        {hasFatal ? 'VOID COLLAPSE DETECTED' : 'SYSTEM INCIDENT DETECTED'}
+                    </span>
+                    <span className="incident-banner__text">
+                        {activeCriticalBugs.length} critical artifact{activeCriticalBugs.length === 1 ? '' : 's'} require review
+                    </span>
+                </div>
             </div>
-            <button 
+            <button
+                type="button"
+                className="incident-banner__action"
                 onClick={() => window.dispatchEvent(new CustomEvent('collab:switch-tab', { detail: 'bugs' }))}
-                style={{ background: '#000', color: '#fff', border: 'none', padding: '4px 12px', borderRadius: '4px', fontSize: '10px', cursor: 'pointer' }}
             >
                 VIEW ARTIFACTS
             </button>

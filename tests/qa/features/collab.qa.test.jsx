@@ -25,6 +25,7 @@ vi.mock('framer-motion', () => ({
         header: ({ children, ...props }) => <header {...props}>{children}</header>,
     },
     AnimatePresence: ({ children }) => <>{children}</>,
+    useReducedMotion: () => false,
 }));
 
 describe('AgentStatus', () => {

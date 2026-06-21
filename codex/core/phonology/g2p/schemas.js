@@ -38,6 +38,7 @@ export const VECTOR_NN_SEED = 1337;
 export const CANDIDATE_SOURCES = Object.freeze({
   RULE: 'rule',
   SUBSTRING: 'substring',
+  COMPOUND: 'compound',
   VECTOR_NN: 'vector-nn',
 });
 

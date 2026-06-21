@@ -1,9 +1,8 @@
 {
   "mcpServers": {
     "scholomance-collab": {
-      "command": "node",
-      "args": ["--env-file=.env", "codex/server/collab/mcp-bridge-entry.js"],
-      "cwd": "/home/deck/Downloads/Scholomance-V12-main"
+      "type": "http",
+      "url": "http://localhost:8080/mcp"
     }
   }
 }

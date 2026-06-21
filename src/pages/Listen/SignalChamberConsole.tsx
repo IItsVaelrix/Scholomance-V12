@@ -174,16 +174,16 @@ export const SignalChamberConsole: React.FC<SignalChamberConsoleProps> = ({
 
       const sharedGame = getSharedPhaserGame();
       if (!sharedGame) {
-        // Game not ready yet — use RAF for instant check on next frame
-        let rafId = requestAnimationFrame(function checkGame() {
+        if (typeof globalThis.requestAnimationFrame === 'undefined') return;
+        let rafId = globalThis.requestAnimationFrame(function checkGame() {
           const game = getSharedPhaserGame();
           if (game && game.scene.isActive('SignalChamberScene')) {
             onGameReady(game);
           } else {
-            rafId = requestAnimationFrame(checkGame);
+            rafId = globalThis.requestAnimationFrame(checkGame);
           }
         });
-        return () => cancelAnimationFrame(rafId);
+        return () => globalThis.cancelAnimationFrame(rafId);
       }
 
       onGameReady(sharedGame);

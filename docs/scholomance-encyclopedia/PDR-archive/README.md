@@ -122,6 +122,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-19-structural-energy-lift-volumeamp-pdr.md`](./2026-06-19-structural-energy-lift-volumeamp-pdr.md) | Draft | QBIT-Voxel \| Foundry Stage \| Energy Transduction \| 2D→3D Lift | High |
 | [`2026-06-19-pixelbrain-craft-gate-immunity-pdr.md`](./2026-06-19-pixelbrain-craft-gate-immunity-pdr.md) | Draft | PixelBrain \| Immunity \| CLI Gate \| Forge QA | High |
 | [`2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md`](./2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md) | Ratified | PixelBrain \| Immunity \| Blueprint Language \| Three-View Shadow Gate \| Animation | High |
+| [`2026-06-20-memory-cell-osmosis-pdr.md`](./2026-06-20-memory-cell-osmosis-pdr.md) | Implemented | Architectural \| Immune System \| Diagnostic Memory \| TurboQuant Substrate | High |
 | [`Polarity PDR.md`](./Polarity%20PDR.md) | Draft | Polarity Music Video + PixelBrain Cinematic Lyric Video | High |
 | [`Polarity Spec PDR.md`](./Polarity%20Spec%20PDR.md) | Draft | Polarity Music Video + Technical Implementation Spec | High |
 

@@ -779,9 +779,12 @@ export async function createPanelAnalysisService(options = {}) {
     try {
       const uniqueWords = [...new Set(text.match(WORD_REGEX_GLOBAL) || [])];
       if (typeof PhonemeEngine.primeAuthorityBatch === 'function') {
-        void PhonemeEngine.primeAuthorityBatch(uniqueWords);
+        await PhonemeEngine.primeAuthorityBatch(uniqueWords);
+        if (typeof PhonemeEngine.primeG2PBatch === 'function') {
+          await PhonemeEngine.primeG2PBatch(uniqueWords);
+        }
       } else {
-        void PhonemeEngine.ensureAuthorityBatch(uniqueWords);
+        await PhonemeEngine.ensureAuthorityBatch(uniqueWords);
       }
 
       const analyzedDoc = analyzeText(text);

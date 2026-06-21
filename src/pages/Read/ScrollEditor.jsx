@@ -18,6 +18,22 @@ import { resolveOverlayPlacement } from "../../lib/truesight/overlay-placement.j
 const MAX_CONTENT_LENGTH = 50000;
 const DEFAULT_LINE_HEIGHT = 24;
 
+const sanitizeTruesightStyle = (styleObj) => {
+  if (!styleObj) return {};
+  const copy = { ...styleObj };
+  const forbidden = [
+    'letterSpacing', 'wordSpacing', 'fontWeight', 'fontStyle',
+    'fontFamily', 'fontSize', 'lineHeight', 'textTransform',
+    'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+    'border', 'borderWidth', 'borderStyle'
+  ];
+  for (const prop of forbidden) {
+    delete copy[prop];
+  }
+  return copy;
+};
+
 function normalizeWordToken(token) {
   return cleanVisualiserWord(token).toUpperCase();
 }
@@ -184,6 +200,15 @@ function getMeasurementContext(measurement) {
     if (typeof document === 'undefined') return null;
     measurement.canvas = document.createElement('canvas');
     measurement.ctx = measurement.canvas.getContext('2d');
+    // Match the textarea's text-rendering:geometricPrecision shaping so caret
+    // measurement uses the same fractional glyph advances the browser renders
+    // (canvas defaults to optimizeSpeed, which grid-fits advances to integers).
+    if (measurement.ctx && 'textRendering' in measurement.ctx) {
+      measurement.ctx.textRendering = 'geometricPrecision';
+    }
+    if (measurement.ctx && 'fontKerning' in measurement.ctx) {
+      measurement.ctx.fontKerning = 'normal';
+    }
   }
   return measurement.ctx;
 }
@@ -341,6 +366,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   getSpellingSuggestions?: ((word: string, ctx: any, n: number) => Promise<string[]>) | null,
  *   predictorReady?: boolean,
  *   plsPhoneticFeatures?: object | null,
+ *   tokenWeights?: Record<string, number> | null,
  *   theme?: object | null,
  *   forceTopology?: object | null,
  *   initialContainerWidth?: number | null,
@@ -398,6 +424,7 @@ const ScrollEditor = forwardRef(/**
   getSpellingSuggestions = null,
   predictorReady = false,
   plsPhoneticFeatures = null,
+  tokenWeights = null,
   theme = null,
   // Test-injection seams (bug a2812103) — let JSDOM-bound tests bypass real
   // layout measurement. Production code never passes these.
@@ -408,6 +435,7 @@ const ScrollEditor = forwardRef(/**
   onBlur,
   mirrored = false,
   allowLegacyWordFallback = true,
+  isLatticeGrid = false,
 }, ref) => {
   const { theme: activeTheme } = useTheme();
 
@@ -446,6 +474,7 @@ const ScrollEditor = forwardRef(/**
   const [isGhostPinned, setIsGhostPinned] = useState(false);
   const [ghostData, setGhostData] = useState(null);
   const [bytecodeArtifacts, setBytecodeArtifacts] = useState([]);
+  const [isQuarantined, setIsQuarantined] = useState(false);
 
   const editorContainerRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -794,6 +823,112 @@ const ScrollEditor = forwardRef(/**
     });
   }, [hoveredMisspelling, spellcheckSuggestions]);
 
+  // Keep a stable ref of tokens so the biological loop doesn't get cancelled by React renders
+  const allOverlayTokensRef = useRef([]);
+  useEffect(() => {
+    allOverlayTokensRef.current = allOverlayTokens;
+  }, [allOverlayTokens]);
+
+  // T-CELL & MACROPHAGE: Biological Immune Loop
+  useEffect(() => {
+    if (!isTruesight || !wordBackgroundLayerRef.current) return;
+    
+    let tCellScan;
+    const immuneSweep = () => {
+      const renderedSpans = wordBackgroundLayerRef.current.querySelectorAll('.truesight-word');
+      const expectedWords = allOverlayTokensRef.current.filter(t => !t.isWhitespace && WORD_TOKEN_REGEX.test(t.token));
+      if (renderedSpans.length > 0 && renderedSpans.length !== expectedWords.length) {
+        console.error(`[T-CELL 🚨] DOM ALIGNMENT FAILURE! Expected ${expectedWords.length} words, found ${renderedSpans.length}. Executing Quarantine.`);
+        setIsQuarantined(true);
+        
+        // Dispatch exosome to the Immune System Server
+        fetch('/api/diagnostic/exosome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schemaVersion: 1,
+            checksum: `tcell-dom-${Date.now()}`,
+            epicenter_node: "ScrollEditor.jsx",
+            resolution_status: "QUARANTINED",
+            context: {
+              error: `DOM ALIGNMENT FAILURE! Expected ${expectedWords.length} words, found ${renderedSpans.length}.`,
+              type: "STRUCTURAL_FAULT",
+              code: "PB-ERR-v1-TRUESIGHT-DOM-MISMATCH"
+            }
+          })
+        }).catch(err => console.error("T-Cell dispatch failed:", err));
+      } else {
+        setIsQuarantined(false);
+        
+        // ---------------------------------------------------------
+        // MACROPHAGE: Spectral Color Integrity Scan
+        // ---------------------------------------------------------
+        let phagocytosisExecuted = false;
+        
+        renderedSpans.forEach((span, i) => {
+          const expectedWord = expectedWords[i];
+          const renderedColor = span.style.getPropertyValue('--w') || span.style.color;
+          
+          // Detect malformed colors (e.g. string "undefined", "NaN", or null incorrectly cast)
+          if (renderedColor === 'undefined' || renderedColor.includes('NaN')) {
+            phagocytosisExecuted = true;
+            console.error(`[MACROPHAGE 🦠] Spectral Leak at Word ${i} ("${expectedWord.token}"). Engulfing corrupted color: ${renderedColor}`);
+            
+            // Execute Phagocytosis: Override the corrupted inline styles with neutral gray
+            span.style.setProperty('--w', 'hsl(0, 0%, 50%)', 'important');
+            span.style.setProperty('color', 'hsl(0, 0%, 50%)', 'important');
+            
+            // Deep Diagnostic Report Generation
+            const diagnosticReport = {
+              version: 'v2',
+              category: 'SPECTRAL_PIPELINE',
+              severity: 'CRITICAL',
+              errorCode: 'PB-ERR-v1-TRUESIGHT-CHROMA-BLEED',
+              cellId: 'VERSE_IR_RENDERER',
+              checkId: 'VISUAL_BYTECODE_FIDELITY',
+              context: {
+                word: expectedWord.token,
+                renderedColor: renderedColor,
+                spatialTopology: { layer: 'CHROMATIC_DOM', domIndex: i },
+                rootCauseAnalysis: "Failed to resolve Biophysical Metrics during VerseIR Amplification. Viseme Mapping returned NaN or undefined."
+              },
+              timestamp: new Date().toISOString()
+            };
+
+            console.log(`\n=== 🔬 DEEP SPECTRAL DIAGNOSTIC REPORT ===`);
+            console.log(JSON.stringify(diagnosticReport, null, 2));
+            console.log(`==========================================\n`);
+
+            // Dispatch exosome to the Immune System Server
+            fetch('/api/diagnostic/exosome', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                schemaVersion: 2,
+                checksum: `macrophage-chroma-${Date.now()}-${i}`,
+                epicenter_node: "ScrollEditor.jsx",
+                resolution_status: "PHAGOCYTIZED",
+                diagnosticReport
+              })
+            }).catch(err => console.error("Macrophage dispatch failed:", err));
+          }
+        });
+        
+        if (phagocytosisExecuted) {
+           console.log(`[MACROPHAGE 🦠] 🧼 Color misalignments neutralized. Rendering payload wiped to neutral gray.`);
+        }
+      }
+      
+      // Schedule the next tick in 500ms
+      tCellScan = setTimeout(immuneSweep, 500);
+    };
+    
+    // Start the biological loop
+    tCellScan = setTimeout(immuneSweep, 500);
+    
+    return () => clearTimeout(tCellScan);
+  }, [isTruesight]);
+
   useEffect(() => {
     if (!hoveredMisspelling || !getSpellingSuggestions) {
       setSpellcheckSuggestions([]);
@@ -1073,13 +1208,19 @@ const ScrollEditor = forwardRef(/**
     const lineIndex = lines.length - 1;
     const currentLineText = lines[lineIndex] || "";
 
-    // Build context for PLS
+    // Build context for PLS.
+    // tokenWeights: per-token document-importance weights from the analysis
+    // pipeline second pass (TF-IDF × syllable salience × positional decay).
+    // The ranker blends these 30/70 with provider scores so rare content words
+    // rank above stop words and high-frequency filler tokens.
     const context = {
       text: value,
       cursorOffset: pos,
       lineIndex,
       currentLineText,
       prefix,
+      plsPhoneticFeatures: plsPhoneticFeatures || null,
+      tokenWeights: tokenWeights || null,
     };
 
     // Use syntax layer for HHM context
@@ -1124,7 +1265,7 @@ const ScrollEditor = forwardRef(/**
       if (!tx) return;
       setCursorCoords(getCaretViewportCoords(caretMeasurementRef.current, tx, prefix, adaptiveTopology));
     });
-  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, checkSpelling, getSpellingSuggestions, adaptiveTopology]);
+  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, checkSpelling, getSpellingSuggestions, adaptiveTopology, plsPhoneticFeatures, tokenWeights]);
 
   const handleContentChange = useCallback((event) => {
     const nextValue = event.target.value;
@@ -1337,9 +1478,12 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
+                          const isPunct = !isWhitespace;
+                          const punctaClass = (isLatticeGrid && isPunct) ? 'truesight-puncta--lattice' : '';
                           return (
                             <span
                               key={localStart}
+                              className={punctaClass || undefined}
                               style={{
                                 ...commonStyle,
                                 pointerEvents: 'none',
@@ -1359,12 +1503,13 @@ const ScrollEditor = forwardRef(/**
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const truesight = wordTruesight(token);
                         const shouldColor = Boolean(truesight);
-                        
+
                         // V12 PERFORMANCE: Use precomputed values from Synthesis Kernel
-                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
-                        
-                        const color = truesight?.color || null;
-                        const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
+                        const decoded = (bytecode && shouldColor && !isQuarantined) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+
+                        const color = (!isQuarantined && truesight?.color) ? truesight.color : null;
+
+                        const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) && !isQuarantined ? analysis : null;
 
                         const isLineHighlighted = highlightedLinesSet.has(lineIndex);
 
@@ -1452,6 +1597,7 @@ const ScrollEditor = forwardRef(/**
                                 shouldColor ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
                                 isLineHighlighted ? 'truesight-annotation-box--highlighted' : '',
                                 isMisspelled ? 'truesight-annotation-box--misspelled' : '',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : '',
                               ].filter(Boolean).join(' ')}
                               style={{
                                 position: 'absolute',
@@ -1483,7 +1629,7 @@ const ScrollEditor = forwardRef(/**
                                 justifyContent: 'center',
                                 color: color || undefined,
                                 '--w': color || undefined,
-                                ...(decoded?.style || {}),
+                                ...sanitizeTruesightStyle(decoded?.style),
                                 pointerEvents: 'none',
                                 '--chip-delay': `${wordIndex * 30}ms`
                               }}
@@ -1594,9 +1740,12 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
+                          const isPunct = !isWhitespace;
+                          const punctaClass = (isLatticeGrid && isPunct) ? 'truesight-puncta--lattice' : '';
                           return (
                             <span 
                               key={`vghost-${globalCharStart}`} 
+                              className={punctaClass || undefined}
                               style={{ ...commonStyle, color: 'transparent' }}
                               data-char-start={globalCharStart}
                             >
@@ -1619,7 +1768,7 @@ const ScrollEditor = forwardRef(/**
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const truesight = wordTruesight(token);
                         const shouldColor = Boolean(truesight);
-                        
+
                         // V12 PERFORMANCE: Use precomputed values
                         const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
 
@@ -1697,6 +1846,7 @@ const ScrollEditor = forwardRef(/**
                               className={[
                                 'truesight-annotation-box',
                                 (shouldColor || wordVowelFamily) ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : '',
                               ].filter(Boolean).join(' ')}
                               style={{
                                 position: 'absolute',
@@ -1728,7 +1878,7 @@ const ScrollEditor = forwardRef(/**
                                 justifyContent: 'center',
                                 color: color || undefined,
                                 '--w': color || undefined,
-                                ...(decoded?.style || {}),
+                                ...sanitizeTruesightStyle(decoded?.style),
                                 pointerEvents: 'none',
                                 '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
                               }}

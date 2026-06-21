@@ -5,7 +5,7 @@
  */
 
 import { PhonemeEngine } from "../phonology/phoneme.engine.js";
-import { RHYME_TYPES } from "../constants/data/rhymeScheme.patterns.js";
+import { RHYME_TYPES, RHYME_SUBTYPES } from "../constants/data/rhymeScheme.patterns.js";
 import { normalizeVowelFamily } from "../phonology/vowelFamily.js";
 import { WORD_REGEX_GLOBAL } from "../constants/regex.js";
 import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.js";
@@ -30,7 +30,10 @@ const RHYME_THRESHOLD = 0.60;
 const ASSONANCE_THRESHOLD = 0.5;
 const STRESSED_ASSONANCE_SCORE = 0.62;
 const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
-const TRUESIGHT_RHYME_TYPES = new Set(['perfect', 'near', 'slant', 'identity']);
+const TRUESIGHT_RHYME_TYPES = new Set([
+  ...Object.values(RHYME_TYPES).map(t => t.id),
+  ...Object.values(RHYME_SUBTYPES || {}).map(t => t.id)
+]);
 const IGNORE_IDENTICAL_WORD_RHYMES = true;
 const FUNCTION_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'else', 'than',
@@ -109,10 +112,11 @@ export class DeepRhymeEngine {
     const endRhymeConnections = this.findEndRhymeConnections(lines);
     const internalRhymeConnections = lines.flatMap(l => l.internalRhymes);
     const crossLineAssonanceConnections = this.findCrossLineAssonanceConnections(lines, endRhymeConnections);
+    const phraseConnections = await this.findPhraseConnections(verseIR);
     const { rhymeGroups, schemePattern } = this.buildRhymeGroups(lines, endRhymeConnections);
     this.assignGroupLabels(endRhymeConnections, rhymeGroups);
 
-    const allConnections = [...endRhymeConnections, ...internalRhymeConnections, ...crossLineAssonanceConnections];
+    const allConnections = [...endRhymeConnections, ...internalRhymeConnections, ...crossLineAssonanceConnections, ...phraseConnections];
     const result = {
       lines,
       endRhymeConnections,
@@ -225,6 +229,86 @@ export class DeepRhymeEngine {
     if (!syntaxLayer) return null;
     const identityKey = `${lineIndex}:${wordIndex}:${charStart}`;
     return syntaxLayer.tokenByIdentity?.get?.(identityKey) || syntaxLayer.tokenByCharStart?.get?.(charStart) || null;
+  }
+
+  async findPhraseConnections(verseIR) {
+    const phraseNodes = [];
+    const multiTokenWindows = verseIR.syllableWindows.filter(w => w.tokenSpan[0] !== w.tokenSpan[1]);
+    
+    const phraseStrings = [...new Set(multiTokenWindows.map(w => 
+        verseIR.rawText.substring(w.charStart, w.charEnd).replace(/[^A-Za-z]/g, '').toUpperCase()
+    ))];
+    
+    if (typeof this.engine.primeG2PBatch === 'function' && phraseStrings.length > 0) {
+        await this.engine.primeG2PBatch(phraseStrings);
+    }
+    
+    for (const w of multiTokenWindows) {
+        const tokenCount = w.tokenSpan[1] - w.tokenSpan[0] + 1;
+        if (tokenCount > 4) continue;
+
+        const phraseStr = verseIR.rawText.substring(w.charStart, w.charEnd);
+        const cleanStr = phraseStr.replace(/[^A-Za-z]/g, '').toUpperCase();
+        if (!cleanStr) continue;
+
+        const analysis = this.engine.analyzeDeep(cleanStr);
+        if (!analysis || analysis.syllableCount < 2) continue;
+
+        const firstToken = verseIR.tokens[w.tokenSpan[0]];
+        const lastToken = verseIR.tokens[w.tokenSpan[1]];
+        if (!firstToken || !lastToken) continue;
+
+        phraseNodes.push({
+            word: phraseStr,
+            analysis,
+            lineIndex: firstToken.lineIndex,
+            wordIndex: firstToken.tokenIndexInLine,
+            charStart: w.charStart,
+            charEnd: w.charEnd,
+            tokenSpan: w.tokenSpan,
+            syllableLength: analysis.syllableCount
+        });
+    }
+
+    const connections = [];
+    for (let i = 0; i < phraseNodes.length; i++) {
+        for (let j = i + 1; j < phraseNodes.length; j++) {
+            const nodeA = phraseNodes[i];
+            const nodeB = phraseNodes[j];
+
+            if (nodeA.charEnd > nodeB.charStart && nodeA.charStart < nodeB.charEnd) continue;
+            
+            if (nodeA.word.toLowerCase() === nodeB.word.toLowerCase()) continue;
+
+            const match = this.engine.scoreMultiSyllableMatch(nodeA.analysis, nodeB.analysis);
+            if (match && match.syllablesMatched >= 2 && match.score >= 0.6) {
+                connections.push({
+                    type: 'phrase_compound',
+                    subtype: match.type || 'none',
+                    score: match.score,
+                    syllablesMatched: match.syllablesMatched,
+                    phoneticWeight: match.syllablesMatched * match.score,
+                    wordA: {
+                        lineIndex: nodeA.lineIndex,
+                        wordIndex: nodeA.wordIndex,
+                        charStart: nodeA.charStart,
+                        charEnd: nodeA.charEnd,
+                        word: nodeA.word
+                    },
+                    wordB: {
+                        lineIndex: nodeB.lineIndex,
+                        wordIndex: nodeB.wordIndex,
+                        charStart: nodeB.charStart,
+                        charEnd: nodeB.charEnd,
+                        word: nodeB.word
+                    },
+                    groupLabel: null,
+                    syntax: { gate: 'allow', multiplier: 1, reasons: ['phrase_connection'] }
+                });
+            }
+        }
+    }
+    return connections;
   }
 
   findInternalRhymes(words) {
@@ -361,7 +445,7 @@ export class DeepRhymeEngine {
     const pairKey = this.getPairKey(wordA, wordB);
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);
-    const syntaxGate = this.syntaxLayerContext ? this.evaluateSyntaxGate(wordA, wordB) : null;
+    const syntaxGate = this.evaluateSyntaxGate(wordA, wordB);
     if (syntaxGate) {
       this.recordSyntaxGateDecision(syntaxGate);
       if (syntaxGate.gate === SYNTAX_GATES.SUPPRESS) return;
@@ -373,10 +457,15 @@ export class DeepRhymeEngine {
   evaluateSyntaxGate(wordA, wordB) {
     const tokenA = wordA?.syntaxToken || null;
     const tokenB = wordB?.syntaxToken || null;
-    if (!this.syntaxLayerContext) return { gate: SYNTAX_GATES.ALLOW, multiplier: 1, reasons: ['no_syntax_layer'] };
-    if (!tokenA && !tokenB) return { gate: SYNTAX_GATES.ALLOW, multiplier: 1, reasons: ['missing_syntax_token'] };
-    const aFunction = tokenA?.role === 'function', bFunction = tokenB?.role === 'function';
-    const aLineEnd = tokenA?.lineRole === 'line_end', bLineEnd = tokenB?.lineRole === 'line_end';
+    if (!tokenA && !tokenB && !this.syntaxLayerContext && !FUNCTION_WORDS.has(this.normalizeWord(wordA?.word)) && !FUNCTION_WORDS.has(this.normalizeWord(wordB?.word))) return { gate: SYNTAX_GATES.ALLOW, multiplier: 1, reasons: ['no_syntax_layer_and_not_function'] };
+    const normA = this.normalizeWord(wordA?.word);
+    const normB = this.normalizeWord(wordB?.word);
+    const aFunction = tokenA?.role === 'function' || (!tokenA && FUNCTION_WORDS.has(normA));
+    const bFunction = tokenB?.role === 'function' || (!tokenB && FUNCTION_WORDS.has(normB));
+    
+    // We can't know line_end precisely without syntax tokens sometimes, but we have lineIndex
+    const aLineEnd = tokenA ? tokenA.lineRole === 'line_end' : false;
+    const bLineEnd = tokenB ? tokenB.lineRole === 'line_end' : false;
     const hasFunctionNonEnd = (aFunction && !aLineEnd) || (bFunction && !bLineEnd);
     const isInternalPair = wordA?.lineIndex === wordB?.lineIndex;
     const hasLineAnchor = aLineEnd || bLineEnd || !isInternalPair;
@@ -390,7 +479,7 @@ export class DeepRhymeEngine {
     }
 
     if (hasFunctionNonEnd) {
-      if (phoneticAffinity.sharedStressedFamily && hasLineAnchor) return { gate: SYNTAX_GATES.ALLOW_WEAK, multiplier: 0.97, reasons: ['contains_function_non_terminal', 'phonetic_affinity_override'] };
+      if (phoneticAffinity.sharedStressedFamily && hasLineAnchor) return { gate: SYNTAX_GATES.ALLOW_WEAK, multiplier: 0.94, reasons: ['contains_function_non_terminal', 'phonetic_affinity_override'] };
       return { gate: SYNTAX_GATES.ALLOW_WEAK, multiplier: 0.88, reasons: ['contains_function_non_terminal'] };
     }
     return { gate: SYNTAX_GATES.ALLOW, multiplier: 1, reasons: ['default_allow'] };
@@ -413,7 +502,8 @@ export class DeepRhymeEngine {
   isTruesightRhymeConnection(connection) {
     if (!connection) return false;
     if (!TRUESIGHT_RHYME_TYPES.has(connection.type)) return false;
-    return Number(connection.score) >= RHYME_THRESHOLD;
+    const threshold = connection.type === 'assonance' ? ASSONANCE_THRESHOLD : RHYME_THRESHOLD;
+    return Number(connection.score) >= threshold;
   }
 
   shouldSkipLexicalRepetition(wordA, wordB) {
@@ -435,9 +525,9 @@ export class DeepRhymeEngine {
       const analysis = word?.analysis;
       if (!analysis) continue;
       if (analysis.rhymeKey) addToBucket(`rhyme:${analysis.rhymeKey}`, word);
-      const terminalVowel = this.getTerminalVowelFamilyRaw(analysis);
+      const terminalVowel = this.getTerminalVowelFamily(analysis);
       if (terminalVowel) addToBucket(`vowel:${terminalVowel}`, word);
-      const stressedVowel = this.getPrimaryStressedVowelFamilyRaw(analysis);
+      const stressedVowel = this.getPrimaryStressedVowelFamily(analysis);
       if (stressedVowel) addToBucket(`stress:${stressedVowel}`, word);
     }
     return buckets;

@@ -7,11 +7,22 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.28** | Last updated: 2026-06-19
+**Version: 1.29** | Last updated: 2026-06-20
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Memory Cell Osmosis TurboQuant receptor contract
+- Version: 1.28 -> 1.29
+- Changed fields: added `MemoryCellPacket`, `MemoryCellVectorPacket`, `MemoryCellMembrane`, `MemoryCellOsmosisObservation`, and `MemoryCellOsmosisResult`; registered `SCHOL-MEMCELL-v1` and `SCHOL-MEMCELL-OSMOSIS-v1` as internal diagnostic-memory contracts for anomaly-only receptor evaluation
+- Breaking: no
+- Claude impact: no required UI change; future UI may render osmosis anomaly results only as backend/core-derived diagnostics, never as client-authoritative decisions
+- Gemini impact: immunity tests should assert deterministic packet checksums, baseline drift detection, antigen match detection, silent non-anomalies, and `PB-ERR-v1` failures for malformed packets
 
 ---
 
@@ -195,6 +206,85 @@ These are the current shared shapes used across `codex/core/`, `src/types/`, and
 
 ```ts
 type BytecodeXPSourceKind = "error" | "health" | "cccb";
+
+type MemoryCellFamily = "health" | "error" | "runtime" | "schema" | "render" | "qa" | "immunity";
+type MemoryCellMode = "baseline" | "antigen";
+type MemoryCellOsmosisStatus = "silent" | "anomaly";
+type MemoryCellAnomalyKind = "none" | "baseline_drift" | "antigen_match" | "concentration";
+
+interface MemoryCellVectorPacket {
+  algorithm: "turboquant-js";
+  dimensions: 128;
+  seed: number;
+  dataB64: string;            // base64 encoding of TurboQuant Uint8Array data
+  norm: number;               // original vector norm emitted by TurboQuant
+  checksum: string;           // sha256 over algorithm, dimensions, seed, dataB64, norm
+}
+
+interface MemoryCellMembrane {
+  similarityFloor: number;    // clamped 0..1; baseline minimum or antigen activation floor
+  driftCeiling: number;       // clamped 0..1; baseline drift activation ceiling
+  concentrationLimit: number; // clamped 0..1; cascade activation limit
+}
+
+interface MemoryCellPacket {
+  contract: "SCHOL-MEMCELL-v1";
+  schemaVersion: "0.1.0";
+  id: string;
+  family: MemoryCellFamily;
+  mode: MemoryCellMode;
+  vector: MemoryCellVectorPacket;
+  membrane: MemoryCellMembrane;
+  sourceBytecode: string | null;
+  stableContext: Record<string, unknown>;
+  checksum: string;           // sha256 over all stable packet fields except checksum
+}
+
+interface MemoryCellOsmosisObservation {
+  vector?: number[] | Float32Array;
+  quantized?: MemoryCellVectorPacket;
+  bugReport?: {
+    symptoms?: string[];
+    filePaths?: string[];
+    layerHint?: string | null;
+    layer?: string | null;
+    errorMessages?: string[];
+    errorMessage?: string;
+  };
+  concentration?: number;     // caller-supplied local signal concentration, clamped 0..1
+  sourceBytecode?: string | null;
+}
+
+interface MemoryCellOsmosisResult {
+  contract: "SCHOL-MEMCELL-OSMOSIS-v1";
+  schemaVersion: "0.1.0";
+  cellId: string;
+  status: MemoryCellOsmosisStatus;
+  anomalyKind: MemoryCellAnomalyKind;
+  similarity: number;
+  drift: number;
+  concentration: number;
+  confidence: number;
+  checksum: string;
+  bytecodeError?: string;     // PB-ERR-v1 when evaluation fails before a valid result
+}
+
+/*
+Memory Cell Osmosis invariants:
+- Memory cells are passive anomaly receptors. They never recommend repairs,
+  mutate their vector memory, or become client-authoritative.
+- `baseline` mode flags drift when similarity falls below `similarityFloor`
+  or drift rises above `driftCeiling`.
+- `antigen` mode flags known-bad resonance when similarity meets or exceeds
+  `similarityFloor`.
+- `concentrationLimit` may flag cascades independent of vector similarity.
+- Packet and result checksums exclude wall-clock time, runtime duration, and
+  volatile probe metadata.
+- Raw user-authored scroll content must not be stored in `stableContext`.
+- Malformed packet construction or evaluation failures use `PB-ERR-v1` under
+  the IMMUNE/VECTOR modules; successful anomaly results are structured data,
+  not errors by themselves.
+*/
 
 // QBIT-Voxel Level 3 (The World) — multi-chunk world packet.
 // Implements PDR `2026-06-16-qbit-voxel-level3-multi-biome-pdr.md` §3.3.

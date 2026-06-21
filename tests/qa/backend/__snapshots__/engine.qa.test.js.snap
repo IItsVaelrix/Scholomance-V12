@@ -5,12 +5,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "alliteration": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "EY-open/A-N",
-        "IH-open/EY-open/A-N",
-        "IH-open/IH-open/EY-open/A-N",
+        "AA-N",
+        "EY-open/AA-N",
+        "IH-open/EY-open/AA-N",
+        "IH-open/IH-open/EY-open/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "01010",
       "syllableCount": 5,
       "syllables": [
@@ -19,7 +19,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -47,7 +47,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "SH",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -64,7 +64,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 5,
       "vowelFamily": "EY",
     },
@@ -253,16 +253,16 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "EY-open",
-        "A-open/EY-open",
-        "A-open/A-open/EY-open",
-        "AE-open/A-open/A-open/EY-open",
+        "AA-open/EY-open",
+        "AA-open/AA-open/EY-open",
+        "AE-S/AA-open/AA-open/EY-open",
       ],
       "rhymeKey": "EY-open",
       "stressPattern": "0001",
       "syllableCount": 4,
       "syllables": [
         {
-          "coda": "",
+          "coda": "S",
           "onset": "",
           "stress": 0,
           "vowel": "AE0",
@@ -270,17 +270,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "",
-          "onset": "STR",
+          "onset": "TR",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
           "onset": "N",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -431,12 +431,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "binary": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "EY-open",
-        "AE-open/EY-open",
-        "IH-open/AE-open/EY-open",
+        "IY-open",
+        "AE-open/IY-open",
+        "IH-open/AE-open/IY-open",
       ],
-      "rhymeKey": "EY-open",
-      "stressPattern": "001",
+      "rhymeKey": "IY-open",
+      "stressPattern": "000",
       "syllableCount": 3,
       "syllables": [
         {
@@ -456,9 +456,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         {
           "coda": "",
           "onset": "R",
-          "stress": 1,
-          "vowel": "AY1",
-          "vowelFamily": "EY",
+          "stress": 0,
+          "vowel": "IY0",
+          "vowelFamily": "IY",
         },
       ],
     },
@@ -470,19 +470,19 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "N",
         "AE0",
         "R",
-        "AY1",
+        "IY0",
       ],
-      "rhymeKey": "EY-open",
+      "rhymeKey": "IY-open",
       "syllableCount": 3,
-      "vowelFamily": "EY",
+      "vowelFamily": "IH",
     },
   },
   "bough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-G",
+        "AA-G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -491,7 +491,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "B",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -502,18 +502,18 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "cacophony": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "EY-open",
-        "A-open/EY-open",
-        "A-open/A-open/EY-open",
-        "AE-open/A-open/A-open/EY-open",
+        "AA-open/EY-open",
+        "AA-open/AA-open/EY-open",
+        "AE-open/AA-open/AA-open/EY-open",
       ],
       "rhymeKey": "EY-open",
       "stressPattern": "0001",
@@ -531,14 +531,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
           "onset": "F",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -600,7 +600,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-KS",
-        "A-open/AE-KS",
+        "AA-open/AE-KS",
       ],
       "rhymeKey": "AE-KS",
       "stressPattern": "01",
@@ -611,7 +611,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "KS",
@@ -641,8 +641,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-L",
-        "A-open/AE-L",
-        "A-open/A-open/AE-L",
+        "AA-open/AE-L",
+        "AA-open/AA-open/AE-L",
       ],
       "rhymeKey": "AE-L",
       "stressPattern": "001",
@@ -653,14 +653,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
           "onset": "L",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "L",
@@ -690,25 +690,25 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "constellation": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "EY-open/A-N",
-        "AE-L/EY-open/A-N",
-        "A-N/AE-L/EY-open/A-N",
+        "AA-N",
+        "EY-open/AA-N",
+        "AE-L/EY-open/AA-N",
+        "AA-NS/AE-L/EY-open/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "0010",
       "syllableCount": 4,
       "syllables": [
         {
-          "coda": "N",
+          "coda": "NS",
           "onset": "K",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "L",
-          "onset": "ST",
+          "onset": "T",
           "stress": 0,
           "vowel": "EH0",
           "vowelFamily": "AE",
@@ -725,7 +725,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "SH",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -745,7 +745,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 4,
       "vowelFamily": "EY",
     },
@@ -754,7 +754,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-NT",
-        "A-N/AE-NT",
+        "AA-N/AE-NT",
       ],
       "rhymeKey": "AE-NT",
       "stressPattern": "01",
@@ -765,7 +765,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "NT",
@@ -795,9 +795,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "cough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-G",
+        "AA-G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -806,7 +806,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -817,9 +817,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "cringe": {
@@ -906,9 +906,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "dough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-G",
+        "AA-G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -917,7 +917,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "D",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -928,17 +928,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "ebullient": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "EY-NT",
-        "A-L/EY-NT",
-        "AE-open/A-L/EY-NT",
+        "AA-L/EY-NT",
+        "AE-open/AA-L/EY-NT",
       ],
       "rhymeKey": "EY-NT",
       "stressPattern": "001",
@@ -956,7 +956,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "B",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "NT",
@@ -1089,8 +1089,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
       "extendedRhymeKeys": [
         "AE-SM",
         "IH-open/AE-SM",
-        "A-open/IH-open/AE-SM",
-        "AE-N/A-open/IH-open/AE-SM",
+        "AA-open/IH-open/AE-SM",
+        "AE-N/AA-open/IH-open/AE-SM",
       ],
       "rhymeKey": "AE-SM",
       "stressPattern": "0001",
@@ -1108,7 +1108,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "TH",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -1148,8 +1148,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "EY-open",
-        "A-open/EY-open",
-        "AE-N/A-open/EY-open",
+        "AA-open/EY-open",
+        "AE-N/AA-open/EY-open",
       ],
       "rhymeKey": "EY-open",
       "stressPattern": "001",
@@ -1167,7 +1167,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "TR",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -1391,17 +1391,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "extraordinary": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "EY-open",
-        "AE-open/EY-open",
-        "IH-open/AE-open/EY-open",
-        "A-R/IH-open/AE-open/EY-open",
+        "IY-open",
+        "AE-open/IY-open",
+        "IH-open/AE-open/IY-open",
+        "AA-R/IH-open/AE-open/IY-open",
       ],
-      "rhymeKey": "EY-open",
-      "stressPattern": "000001",
+      "rhymeKey": "IY-open",
+      "stressPattern": "000000",
       "syllableCount": 6,
       "syllables": [
         {
-          "coda": "K",
+          "coda": "KSTR",
           "onset": "",
           "stress": 0,
           "vowel": "EH0",
@@ -1409,7 +1409,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "",
-          "onset": "STR",
+          "onset": "",
           "stress": 0,
           "vowel": "AE0",
           "vowelFamily": "AE",
@@ -1419,7 +1419,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -1438,9 +1438,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         {
           "coda": "",
           "onset": "R",
-          "stress": 1,
-          "vowel": "AY1",
-          "vowelFamily": "EY",
+          "stress": 0,
+          "vowel": "IY0",
+          "vowelFamily": "IY",
         },
       ],
     },
@@ -1460,27 +1460,27 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "N",
         "AE0",
         "R",
-        "AY1",
+        "IY0",
       ],
-      "rhymeKey": "EY-open",
+      "rhymeKey": "IY-open",
       "syllableCount": 6,
-      "vowelFamily": "EY",
+      "vowelFamily": "AE",
     },
   },
   "fastidious": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "A-open/A-S",
-        "IY-open/A-open/A-S",
-        "IH-open/IY-open/A-open/A-S",
+        "AA-S",
+        "AA-open/AA-S",
+        "IY-open/AA-open/AA-S",
+        "IH-open/IY-open/AA-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "00001",
       "syllableCount": 5,
       "syllables": [
         {
-          "coda": "",
+          "coda": "S",
           "onset": "F",
           "stress": 0,
           "vowel": "AE0",
@@ -1488,7 +1488,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "",
-          "onset": "ST",
+          "onset": "T",
           "stress": 0,
           "vowel": "IH0",
           "vowelFamily": "IH",
@@ -1505,14 +1505,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "S",
           "onset": "",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -1530,9 +1530,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 5,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "fire": {
@@ -1689,22 +1689,22 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "IH-NG",
-        "A-open/IH-NG",
+        "AA-S/IH-NG",
       ],
       "rhymeKey": "IH-NG",
       "stressPattern": "10",
       "syllableCount": 2,
       "syllables": [
         {
-          "coda": "",
+          "coda": "S",
           "onset": "G",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "NG",
-          "onset": "ST",
+          "onset": "T",
           "stress": 0,
           "vowel": "IH0",
           "vowelFamily": "IH",
@@ -1723,7 +1723,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
       ],
       "rhymeKey": "IH-NG",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "gnat": {
@@ -1761,7 +1761,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-M",
-        "A-open/AE-M",
+        "AA-open/AE-M",
       ],
       "rhymeKey": "AE-M",
       "stressPattern": "01",
@@ -1772,7 +1772,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "G",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "M",
@@ -1802,22 +1802,22 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
       "extendedRhymeKeys": [
         "AE-R",
         "AE-open/AE-R",
-        "A-open/AE-open/AE-R",
+        "AA-S/AE-open/AE-R",
       ],
       "rhymeKey": "AE-R",
       "stressPattern": "001",
       "syllableCount": 3,
       "syllables": [
         {
-          "coda": "",
+          "coda": "S",
           "onset": "G",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
-          "onset": "SS",
+          "onset": "S",
           "stress": 0,
           "vowel": "AE0",
           "vowelFamily": "AE",
@@ -1951,10 +1951,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "halcyon": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "AE-L/A-N",
+        "AA-N",
+        "AE-L/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -1970,7 +1970,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "KY",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -1985,17 +1985,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "hour": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
+        "AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -2004,7 +2004,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "H",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2015,9 +2015,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "hype": {
@@ -2188,10 +2188,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "ion": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "IY-open/A-N",
+        "AA-N",
+        "IY-open/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "00",
       "syllableCount": 2,
       "syllables": [
@@ -2207,7 +2207,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2218,7 +2218,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 2,
       "vowelFamily": "IY",
     },
@@ -2259,14 +2259,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "IH-NTH",
-        "AE-BY/IH-NTH",
+        "AE-BYR/IH-NTH",
       ],
       "rhymeKey": "IH-NTH",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
         {
-          "coda": "BY",
+          "coda": "BYR",
           "onset": "L",
           "stress": 0,
           "vowel": "AE0",
@@ -2274,7 +2274,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "NTH",
-          "onset": "R",
+          "onset": "",
           "stress": 1,
           "vowel": "IH1",
           "vowelFamily": "IH",
@@ -2361,11 +2361,11 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "luminous": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "IH-open/A-S",
-        "A-open/IH-open/A-S",
+        "AA-S",
+        "IH-open/AA-S",
+        "AA-open/IH-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "000",
       "syllableCount": 3,
       "syllables": [
@@ -2374,7 +2374,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "L",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -2388,7 +2388,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "N",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2403,9 +2403,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 3,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "matrix": {
@@ -2453,12 +2453,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "mellifluous": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "A-open/A-S",
-        "IH-open/A-open/A-S",
-        "AE-L/IH-open/A-open/A-S",
+        "AA-S",
+        "AA-open/AA-S",
+        "IH-open/AA-open/AA-S",
+        "AE-L/IH-open/AA-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "0000",
       "syllableCount": 4,
       "syllables": [
@@ -2481,14 +2481,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "FL",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "S",
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2506,7 +2506,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 4,
       "vowelFamily": "AE",
     },
@@ -2555,8 +2555,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "IH-K",
-        "A-open/IH-K",
-        "AE-open/A-open/IH-K",
+        "AA-open/IH-K",
+        "AE-open/AA-open/IH-K",
       ],
       "rhymeKey": "IH-K",
       "stressPattern": "001",
@@ -2574,7 +2574,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "M",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "K",
@@ -2605,10 +2605,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "murmur": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
-        "A-R/A-R",
+        "AA-R",
+        "AA-R/AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -2617,14 +2617,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "M",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "R",
           "onset": "M",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2638,17 +2638,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "nebula": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-open",
-        "A-open/AE-open",
-        "AE-open/A-open/AE-open",
+        "AA-open/AE-open",
+        "AE-open/AA-open/AE-open",
       ],
       "rhymeKey": "AE-open",
       "stressPattern": "001",
@@ -2666,7 +2666,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "B",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -2696,7 +2696,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-KT",
-        "A-open/AE-KT",
+        "AA-open/AE-KT",
       ],
       "rhymeKey": "AE-KT",
       "stressPattern": "01",
@@ -2707,7 +2707,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "KT",
@@ -2736,12 +2736,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "obsidian": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "IY-open/A-N",
-        "IH-open/IY-open/A-N",
-        "A-open/IH-open/IY-open/A-N",
+        "AA-N",
+        "IY-open/AA-N",
+        "IH-open/IY-open/AA-N",
+        "AA-open/IH-open/IY-open/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "0100",
       "syllableCount": 4,
       "syllables": [
@@ -2750,7 +2750,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -2771,7 +2771,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2787,7 +2787,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 4,
       "vowelFamily": "IH",
     },
@@ -2795,10 +2795,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "occult": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-LT",
-        "A-K/A-LT",
+        "AA-LT",
+        "AA-K/AA-LT",
       ],
-      "rhymeKey": "A-LT",
+      "rhymeKey": "AA-LT",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -2807,14 +2807,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "LT",
           "onset": "K",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2828,16 +2828,16 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "L",
         "T",
       ],
-      "rhymeKey": "A-LT",
+      "rhymeKey": "AA-LT",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "orbit": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "IH-T",
-        "A-R/IH-T",
+        "AA-R/IH-T",
       ],
       "rhymeKey": "IH-T",
       "stressPattern": "01",
@@ -2848,7 +2848,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "T",
@@ -2927,12 +2927,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "parsimonious": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "A-open/A-S",
-        "IY-open/A-open/A-S",
-        "A-open/IY-open/A-open/A-S",
+        "AA-S",
+        "AA-open/AA-S",
+        "IY-open/AA-open/AA-S",
+        "AA-open/IY-open/AA-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "000001",
       "syllableCount": 6,
       "syllables": [
@@ -2955,7 +2955,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "M",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -2969,14 +2969,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "S",
           "onset": "",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -2996,9 +2996,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 6,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "perfect": {
@@ -3046,11 +3046,11 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "petrichor": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
-        "IH-open/A-R",
-        "AE-open/IH-open/A-R",
+        "AA-R",
+        "IH-open/AA-R",
+        "AE-open/IH-open/AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "001",
       "syllableCount": 3,
       "syllables": [
@@ -3073,7 +3073,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "CH",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3089,19 +3089,19 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 3,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "pharaoh": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-H",
-        "AE-open/A-H",
-        "AE-open/AE-open/A-H",
+        "AA-H",
+        "AE-open/AA-H",
+        "AE-open/AE-open/AA-H",
       ],
-      "rhymeKey": "A-H",
+      "rhymeKey": "AA-H",
       "stressPattern": "001",
       "syllableCount": 3,
       "syllables": [
@@ -3124,7 +3124,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3138,20 +3138,20 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "H",
       ],
-      "rhymeKey": "A-H",
+      "rhymeKey": "AA-H",
       "syllableCount": 3,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "phenomenon": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-N",
-        "AE-open/A-N",
-        "A-open/AE-open/A-N",
-        "AE-open/A-open/AE-open/A-N",
+        "AA-N",
+        "AE-open/AA-N",
+        "AA-open/AE-open/AA-N",
+        "AE-open/AA-open/AE-open/AA-N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "stressPattern": "0001",
       "syllableCount": 4,
       "syllables": [
@@ -3167,7 +3167,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "N",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -3181,7 +3181,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "N",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3198,9 +3198,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "N",
       ],
-      "rhymeKey": "A-N",
+      "rhymeKey": "AA-N",
       "syllableCount": 4,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "phoneme": {
@@ -3382,10 +3382,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "quantum": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-M",
-        "AE-N/A-M",
+        "AA-M",
+        "AE-N/AA-M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -3401,7 +3401,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3416,17 +3416,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "queue": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-open",
-        "A-open/AE-open",
-        "AE-open/A-open/AE-open",
+        "AA-open/AE-open",
+        "AE-open/AA-open/AE-open",
       ],
       "rhymeKey": "AE-open",
       "stressPattern": "100",
@@ -3444,7 +3444,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -3473,8 +3473,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "IH-K",
-        "A-open/IH-K",
-        "IH-open/A-open/IH-K",
+        "AA-open/IH-K",
+        "IH-open/AA-open/IH-K",
       ],
       "rhymeKey": "IH-K",
       "stressPattern": "001",
@@ -3492,7 +3492,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "KS",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "K",
@@ -3634,12 +3634,12 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "refrigerator": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
-        "AE-open/A-R",
-        "AE-open/AE-open/A-R",
-        "IH-open/AE-open/AE-open/A-R",
+        "AA-R",
+        "AE-open/AA-R",
+        "AE-open/AE-open/AA-R",
+        "IH-open/AE-open/AE-open/AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "00001",
       "syllableCount": 5,
       "syllables": [
@@ -3676,7 +3676,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3696,9 +3696,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 5,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "refuse": {
@@ -3744,10 +3744,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "rhythm": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-M",
-        "IH-open/A-M",
+        "AA-M",
+        "IH-open/AA-M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "stressPattern": "10",
       "syllableCount": 2,
       "syllables": [
@@ -3763,7 +3763,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "DH",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3776,7 +3776,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "syllableCount": 2,
       "vowelFamily": "IH",
     },
@@ -3784,9 +3784,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "rough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-G",
+        "AA-G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -3795,7 +3795,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "R",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -3806,9 +3806,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "scalar": {
@@ -3856,8 +3856,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-NS",
-        "A-open/AE-NS",
-        "OW-open/A-open/AE-NS",
+        "AA-open/AE-NS",
+        "OW-open/AA-open/AE-NS",
       ],
       "rhymeKey": "AE-NS",
       "stressPattern": "101",
@@ -3875,7 +3875,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "L",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "NS",
@@ -4046,9 +4046,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "slough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-G",
+        "AA-G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -4057,7 +4057,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "SL",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4069,19 +4069,19 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AW1",
         "G",
       ],
-      "rhymeKey": "A-G",
+      "rhymeKey": "AA-G",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "sonorous": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "A-open/A-S",
-        "A-open/A-open/A-S",
+        "AA-S",
+        "AA-open/AA-S",
+        "AA-open/AA-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "000",
       "syllableCount": 3,
       "syllables": [
@@ -4090,21 +4090,21 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
           "onset": "N",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "S",
           "onset": "R",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4119,9 +4119,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 3,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "spectral": {
@@ -4170,10 +4170,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "spectrum": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-M",
-        "AE-K/A-M",
+        "AA-M",
+        "AE-K/AA-M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -4189,7 +4189,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "TR",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4205,16 +4205,16 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "subtle": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-open",
-        "A-B/AE-open",
+        "AA-B/AE-open",
       ],
       "rhymeKey": "AE-open",
       "stressPattern": "01",
@@ -4225,7 +4225,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4255,9 +4255,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-open",
-        "A-open/AE-open",
-        "AE-R/A-open/AE-open",
-        "A-open/AE-R/A-open/AE-open",
+        "AA-open/AE-open",
+        "AE-R/AA-open/AE-open",
+        "AA-open/AE-R/AA-open/AE-open",
       ],
       "rhymeKey": "AE-open",
       "stressPattern": "0001",
@@ -4268,7 +4268,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "R",
@@ -4282,7 +4282,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "N",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4316,7 +4316,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
       "extendedRhymeKeys": [
         "IH-T",
         "AE-open/IH-T",
-        "A-R/AE-open/IH-T",
+        "AA-R/AE-open/IH-T",
       ],
       "rhymeKey": "IH-T",
       "stressPattern": "001",
@@ -4327,7 +4327,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4364,9 +4364,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "sus": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
+        "AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -4375,7 +4375,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4386,17 +4386,17 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "synecdoche": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-open",
-        "A-open/AE-open",
-        "AE-open/A-open/AE-open",
+        "AA-open/AE-open",
+        "AE-open/AA-open/AE-open",
       ],
       "rhymeKey": "AE-open",
       "stressPattern": "001",
@@ -4414,7 +4414,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "KD",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4447,8 +4447,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "OW-P",
-        "AE-open/OW-P",
-        "AE-open/AE-open/OW-P",
+        "AE-S/OW-P",
+        "AE-open/AE-S/OW-P",
       ],
       "rhymeKey": "OW-P",
       "stressPattern": "001",
@@ -4462,7 +4462,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "vowelFamily": "AE",
         },
         {
-          "coda": "",
+          "coda": "S",
           "onset": "L",
           "stress": 0,
           "vowel": "EH0",
@@ -4470,7 +4470,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "P",
-          "onset": "SK",
+          "onset": "K",
           "stress": 1,
           "vowel": "OW1",
           "vowelFamily": "OW",
@@ -4497,10 +4497,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "tensor": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
-        "AE-N/A-R",
+        "AA-R",
+        "AE-N/AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -4516,7 +4516,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "S",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4530,18 +4530,18 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "thaumaturgy": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "EY-open",
-        "A-R/EY-open",
-        "AE-open/A-R/EY-open",
-        "AO-open/AE-open/A-R/EY-open",
+        "AA-R/EY-open",
+        "AE-open/AA-R/EY-open",
+        "AO-open/AE-open/AA-R/EY-open",
       ],
       "rhymeKey": "EY-open",
       "stressPattern": "0001",
@@ -4566,7 +4566,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4628,9 +4628,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "tough": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-F",
+        "AA-F",
       ],
-      "rhymeKey": "A-F",
+      "rhymeKey": "AA-F",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -4639,7 +4639,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4650,20 +4650,20 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "F",
       ],
-      "rhymeKey": "A-F",
+      "rhymeKey": "AA-F",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "ubiquitous": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-S",
-        "IH-open/A-S",
-        "IH-open/IH-open/A-S",
-        "A-open/IH-open/IH-open/A-S",
+        "AA-S",
+        "IH-open/AA-S",
+        "IH-open/IH-open/AA-S",
+        "AA-open/IH-open/IH-open/AA-S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "stressPattern": "0000",
       "syllableCount": 4,
       "syllables": [
@@ -4672,7 +4672,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4693,7 +4693,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4710,9 +4710,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH0",
         "S",
       ],
-      "rhymeKey": "A-S",
+      "rhymeKey": "AA-S",
       "syllableCount": 4,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "university": {
@@ -4732,7 +4732,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "",
@@ -4786,11 +4786,11 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "vacuum": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-M",
-        "A-open/A-M",
-        "AE-open/A-open/A-M",
+        "AA-M",
+        "AA-open/AA-M",
+        "AE-open/AA-open/AA-M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "stressPattern": "001",
       "syllableCount": 3,
       "syllables": [
@@ -4806,14 +4806,14 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "K",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "M",
           "onset": "",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4827,9 +4827,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AH1",
         "M",
       ],
-      "rhymeKey": "A-M",
+      "rhymeKey": "AA-M",
       "syllableCount": 3,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "vaelrix": {
@@ -4886,10 +4886,10 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "vector": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-R",
-        "AE-K/A-R",
+        "AA-R",
+        "AE-K/AA-R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "stressPattern": "01",
       "syllableCount": 2,
       "syllables": [
@@ -4905,7 +4905,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "T",
           "stress": 1,
           "vowel": "AA1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -4919,9 +4919,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "AA1",
         "R",
       ],
-      "rhymeKey": "A-R",
+      "rhymeKey": "AA-R",
       "syllableCount": 2,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "vibe": {
@@ -4959,8 +4959,8 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
       "extendedRhymeKeys": [
         "UW-D",
         "IH-open/UW-D",
-        "IH-open/IH-open/UW-D",
-        "IH-open/IH-open/IH-open/UW-D",
+        "IH-S/IH-open/UW-D",
+        "IH-open/IH-S/IH-open/UW-D",
       ],
       "rhymeKey": "UW-D",
       "stressPattern": "0001",
@@ -4974,7 +4974,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "vowelFamily": "IH",
         },
         {
-          "coda": "",
+          "coda": "S",
           "onset": "K",
           "stress": 0,
           "vowel": "IH0",
@@ -4982,7 +4982,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         },
         {
           "coda": "",
-          "onset": "SS",
+          "onset": "S",
           "stress": 0,
           "vowel": "IH0",
           "vowelFamily": "IH",
@@ -5049,7 +5049,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
     "analyzeDeep": {
       "extendedRhymeKeys": [
         "AE-KS",
-        "A-R/AE-KS",
+        "AA-R/AE-KS",
       ],
       "rhymeKey": "AE-KS",
       "stressPattern": "01",
@@ -5060,7 +5060,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "V",
           "stress": 0,
           "vowel": "AA0",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
         {
           "coda": "KS",
@@ -5121,9 +5121,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
   "wound": {
     "analyzeDeep": {
       "extendedRhymeKeys": [
-        "A-ND",
+        "AA-ND",
       ],
-      "rhymeKey": "A-ND",
+      "rhymeKey": "AA-ND",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -5132,7 +5132,7 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
           "onset": "W",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "A",
+          "vowelFamily": "AA",
         },
       ],
     },
@@ -5144,9 +5144,9 @@ exports[`CODEx Phoneme Engine Accuracy (QA) > Golden set analysis contract snaps
         "N",
         "D",
       ],
-      "rhymeKey": "A-ND",
+      "rhymeKey": "AA-ND",
       "syllableCount": 1,
-      "vowelFamily": "A",
+      "vowelFamily": "AA",
     },
   },
   "yacht": {

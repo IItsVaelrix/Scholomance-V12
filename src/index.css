@@ -4,6 +4,51 @@
 @import './animations.css';
 
 /* ========================================
+   SELF-HOSTED FONTS — Crimson Pro (reading/scroll font)
+   Variable woff2 (wght 200–900) served locally from /public/fonts so the
+   editor text + canvas measurement render from identical, network-independent
+   font files on every platform. Replaces the Google Fonts CDN dependency for
+   this family (see index.html). latin + latin-ext subsets cover English +
+   accented Latin; rarer glyphs fall back to the serif stack.
+   ======================================== */
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/crimson-pro/crimson-pro-normal-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/crimson-pro/crimson-pro-normal-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/crimson-pro/crimson-pro-italic-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Crimson Pro';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/crimson-pro/crimson-pro-italic-latinext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+  --font-scroll: 'Crimson Pro', Georgia, 'Liberation Serif', 'DejaVu Serif', serif;
+}
+
+/* ========================================
    GPU ACCELERATION GLOBAL OPTIMIZATIONS
    Promote animated elements to GPU layers
    ======================================== */
@@ -832,6 +877,20 @@ body::after {
 .rail-link--user {
   padding: var(--space-1);
   border-radius: var(--radius-full);
+}
+
+.rail-link--logout {
+  color: var(--text-tertiary);
+}
+
+.rail-link--logout:hover {
+  color: var(--danger, #f87171);
+  border-color: color-mix(in srgb, var(--danger, #f87171) 24%, transparent);
+}
+
+.rail-link--logout:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 /* Menu button */
@@ -1671,6 +1730,25 @@ h6 { font-size: var(--text-base); }
     background var(--transition-fast),
     color var(--transition-fast),
     transform var(--transition-fast);
+}
+
+.nav-mobile-link--button {
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-mobile-link--button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.nav-mobile-link--logout {
+  border-color: color-mix(in srgb, var(--danger, #f87171) 18%, rgba(255, 255, 255, 0.08));
+}
+
+.nav-mobile-link--logout .nav-mobile-link-state {
+  color: var(--danger, #f87171);
 }
 
 .nav-mobile-link-copy {

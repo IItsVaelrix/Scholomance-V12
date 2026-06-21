@@ -53,12 +53,36 @@ if (import.meta.env.DEV) {
   const CombatGodotSpike = React.lazy(() =>
     import("./pages/CombatGodotSpike/CombatGodotSpike.jsx")
   );
+  const ImmuneHarness = React.lazy(() =>
+    import("./pages/_dev/ImmuneHarness.jsx")
+  );
+  const LexicalHarness = React.lazy(() =>
+    import("./pages/_dev/LexicalHarness.jsx")
+  );
   devSpikeRoutes = [
     {
       path: "combat-godot-spike",
       element: (
         <React.Suspense fallback={null}>
           <CombatGodotSpike />
+        </React.Suspense>
+      ),
+    },
+    {
+      // TrueSight Immune Probe harness (SPATIAL-IMMUNE-DIAGNOSTICS.md).
+      path: "__immune/truesight",
+      element: (
+        <React.Suspense fallback={null}>
+          <ImmuneHarness />
+        </React.Suspense>
+      ),
+    },
+    {
+      // Lexical editor typing-diagnosis harness.
+      path: "__immune/lexical",
+      element: (
+        <React.Suspense fallback={null}>
+          <LexicalHarness />
         </React.Suspense>
       ),
     },

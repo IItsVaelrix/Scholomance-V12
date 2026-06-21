@@ -250,6 +250,22 @@ export function rankCandidates(generatorResults, scorerResults, weights, context
   const currentLineText = (context?.currentLineWords || []).join(' ');
   const ranked = [];
 
+  // If the analysis pipeline stamped per-token document weights, use them to
+  // modulate the first-pass score.  A token's weight captures its TF-IDF
+  // importance, syllable salience, and positional significance — things that
+  // no individual provider knows about the full document.
+  //
+  // Blending strategy:
+  //   contextScore = firstPassScore × (TOKEN_WEIGHT_BLEND + tokenWeight × (1 - TOKEN_WEIGHT_BLEND))
+  //
+  // With TOKEN_WEIGHT_BLEND = 0.7, provider scores dominate (70%) but
+  // document importance modulates the remaining 30%.  This keeps the ranker
+  // responsive to real-time phonetic signals while eliminating the flat
+  // treatment of stop words and rare content words.
+  const TOKEN_WEIGHT_BLEND = 0.70;
+  const tokenWeightsMap = context?.tokenWeights;
+  const hasTokenWeights = tokenWeightsMap && typeof tokenWeightsMap === 'object';
+
   for (const entry of candidateMap.values()) {
     const firstPassScore =
       w.rhyme * entry.scores.rhyme +
@@ -265,12 +281,40 @@ export function rankCandidates(generatorResults, scorerResults, weights, context
       ? `${currentLineText} ${entry.token}`
       : entry.token;
 
+    // Apply document-context token weight if available.
+    let finalScore = firstPassScore;
+    let appliedTokenWeight = null;
+
+    if (hasTokenWeights) {
+      const normalizedToken = entry.token.toLowerCase();
+      const tw = tokenWeightsMap[normalizedToken];
+
+      if (typeof tw === 'number' && Number.isFinite(tw)) {
+        appliedTokenWeight = tw;
+
+        if (tw === 0) {
+          // Hard floor: stop words and zero-weight tokens cannot rank.
+          finalScore = 0;
+        } else {
+          // Blend: provider score (70%) + document-importance modulation (30%).
+          finalScore = clamp(
+            firstPassScore * (TOKEN_WEIGHT_BLEND + tw * (1 - TOKEN_WEIGHT_BLEND)),
+            0,
+            1
+          );
+        }
+      }
+      // If tw is undefined, the token wasn't in the analyzed document — leave
+      // firstPassScore unchanged so generator-only candidates still rank.
+    }
+
     ranked.push({
       token: entry.token,
-      score: firstPassScore,
+      score: finalScore,
       scores: { ...entry.scores },
       badges: entry.badges,
       ghostLine,
+      ...(appliedTokenWeight !== null ? { tokenWeight: appliedTokenWeight } : {}),
       ...(entry.arbiter ? { arbiter: { ...entry.arbiter } } : {}),
     });
   }

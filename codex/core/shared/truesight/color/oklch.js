@@ -16,7 +16,14 @@
  */
 export function oklchToHex(l, c, h) {
   const { r, g, b } = oklchToRgb(l, c, h);
-  const toHex = (v) => Math.max(0, Math.min(255, Math.round(v * 255))).toString(16).padStart(2, '0');
+  // NaN-total backstop: a non-finite channel becomes 0x00 rather than the
+  // string "NaN" (Math.round(NaN).toString(16) === 'NaN'), so this function can
+  // never emit an invalid "#NaN…" color. See PB-ERR-v1-TRUESIGHT-CHROMA-BLEED.
+  const toHex = (v) => {
+    const n = Number(v);
+    const byte = Number.isFinite(n) ? Math.max(0, Math.min(255, Math.round(n * 255))) : 0;
+    return byte.toString(16).padStart(2, '0');
+  };
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
@@ -62,7 +69,9 @@ export function deltaE(c1, c2) {
 }
 
 function clamp(v, min, max) {
-  return Math.max(min, Math.min(max, v));
+  const n = Number(v);
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
 }
 
 // IEC 61966-2-1: linear light → gamma-encoded sRGB

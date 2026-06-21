@@ -133,10 +133,16 @@ export function quantizeVectorJS(vector, seed = 42) {
   }
 
   const norm = Math.sqrt(sumSq);
-  if (norm > 0) {
-    for (let i = 0; i < dim; i += 1) {
-      vec[i] /= norm;
-    }
+  // Honest zero: a zero-norm vector has no direction. Compressing it would map
+  // every dim to the 4-bit code for 0 (a CONSTANT non-zero "ghost" pattern,
+  // since the dequant map has no exact zero), which then scores a spurious,
+  // fixed similarity against any query. Emit an empty signature instead so the
+  // comparison primitive treats it as silence.
+  if (norm === 0) {
+    return { data: new Uint8Array(0), norm: 0 };
+  }
+  for (let i = 0; i < dim; i += 1) {
+    vec[i] /= norm;
   }
 
   for (let i = 0; i < dim; i += 1) {

@@ -30,6 +30,7 @@ function Toggle({ label, value, onToggle, haptic }) {
 export default function MobileHexSheet({
   isOpen, onClose,
   isTruesight, onToggleTruesight,
+  isLatticeGrid, onToggleLatticeGrid,
   isPredictive, onTogglePredictive,
   mirrored, onToggleMirrored,
   analysisMode, onModeChange,
@@ -45,6 +46,7 @@ export default function MobileHexSheet({
         <section className="ide-hex-section">
           <h3 className="ide-hex-section-title">Optics</h3>
           <Toggle label="Truesight"    value={isTruesight}   onToggle={onToggleTruesight}  haptic={haptic} />
+          <Toggle label="WordToolTip" value={isLatticeGrid} onToggle={onToggleLatticeGrid} haptic={haptic} />
           <Toggle label="Symmetrical"  value={mirrored}       onToggle={onToggleMirrored}   haptic={haptic} />
           <Toggle label="Predictive"   value={isPredictive}  onToggle={onTogglePredictive} haptic={haptic} />
         </section>

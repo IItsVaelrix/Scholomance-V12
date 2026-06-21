@@ -796,7 +796,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         caseSensitive: z.boolean().default(false).describe('Whether the search should be case-sensitive'),
         includePattern: z.string().optional().describe('Glob pattern for files to include (e.g. "*.js")'),
         excludePattern: z.string().optional().describe('Glob pattern for files to exclude'),
-        limit: z.number().default(20).describe('Maximum number of matches to return'),
+        limit: z.number().default(75).describe('Maximum number of matches to return (total across all files)'),
     }, ({ query, ...options }) => {
         console.error(`[MCP] Executing Forensic Search: "${query}"`);
         return forensicSearch(query, options);

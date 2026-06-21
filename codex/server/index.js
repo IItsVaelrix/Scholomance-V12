@@ -928,6 +928,29 @@ fastify.get('/api/audio-files', async (request, reply) => {
     }
 });
 
+fastify.post('/api/diagnostic/exosome', async (request, reply) => {
+    try {
+        const payload = request.body;
+        const id = payload.checksum || crypto.randomUUID().substring(0, 8);
+        const fileName = `tcell-${id}.resonance.json`;
+        const filePath = path.join(process.cwd(), 'public/data/resonance', fileName);
+        
+        // Ensure the directory exists
+        const dir = path.dirname(filePath);
+        if (!existsSync(dir)) {
+            mkdirSync(dir, { recursive: true });
+        }
+        
+        require('fs').writeFileSync(filePath, JSON.stringify(payload, null, 2));
+        fastify.log.info({ checksum: id }, '[IMMUNE] T-Cell Exosome saved to disk');
+        
+        return reply.send({ success: true, id, file: fileName });
+    } catch (err) {
+        fastify.log.error({ err }, '[IMMUNE] Failed to process incoming exosome');
+        return reply.code(500).send({ success: false, error: err.message });
+    }
+});
+
 fastify.post('/api/upload', async (request, reply) => {
     const authorization = authorizeAudioRouteRequest(request);
     if (!authorization.authorized) {

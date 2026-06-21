@@ -4,10 +4,11 @@
  * Adapted from PixelBrain architecture
  */
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { z } from 'zod';
 import { useAuth } from '../../hooks/useAuth.jsx';
+import { ClipboardList, Plus, UserPlus, Workflow, X } from 'lucide-react';
 
 // New components
 import CollabStatusDisplay from './CollabStatusDisplay.jsx';
@@ -80,6 +81,34 @@ function getAgentConnectionState(agent, nowMs) {
         return 'idle';
     }
     return 'connected';
+}
+
+function formatActivityTimestamp(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return 'just now';
+    const normalized = raw.includes('T') ? raw : `${raw.replace(' ', 'T')}Z`;
+    const parsed = Date.parse(normalized);
+    if (!Number.isFinite(parsed)) return 'just now';
+    const diffMs = Math.max(0, Date.now() - parsed);
+    if (diffMs < 60_000) return 'just now';
+    if (diffMs < 3_600_000) return `${Math.floor(diffMs / 60_000)}m ago`;
+    if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)}h ago`;
+    return `${Math.floor(diffMs / 86_400_000)}d ago`;
+}
+
+function TelemetryValue({ value, className = '' }) {
+    const reduceMotion = useReducedMotion();
+    return (
+        <motion.span
+            key={String(value)}
+            className={`telemetry-value ${className}`.trim()}
+            initial={reduceMotion ? false : { opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: 'easeOut' }}
+        >
+            {value}
+        </motion.span>
+    );
 }
 
 // Zod schemas (enhanced from original)
@@ -275,6 +304,8 @@ export default function CollabPage() {
     const [nowMs, setNowMs] = useState(() => Date.now());
     const [localAgentId, setLocalAgentId] = useState(() => localStorage.getItem('collab:local-agent-id'));
     const [isArchiveMode, setIsArchiveMode] = useState(false);
+    const [quickMenuOpen, setQuickMenuOpen] = useState(false);
+    const [openRegisterSignal, setOpenRegisterSignal] = useState(0);
 
     // Real-time activity state
     const [newActivityCount, setNewActivityCount] = useState(0);
@@ -320,6 +351,24 @@ export default function CollabPage() {
     const [bugDuplicateState, setBugDuplicateState] = useState(null); // { bugId, input }
 
     const canvasRef = useRef(null);
+
+    const openTaskCreator = useCallback(() => {
+        setActiveTab('tasks');
+        setShowCreateTask(true);
+        setQuickMenuOpen(false);
+    }, []);
+
+    const openPipelineCreator = useCallback(() => {
+        setActiveTab('pipelines');
+        setShowCreatePipeline(true);
+        setQuickMenuOpen(false);
+    }, []);
+
+    const openAgentRegister = useCallback(() => {
+        setActiveTab('agents');
+        setOpenRegisterSignal((signal) => signal + 1);
+        setQuickMenuOpen(false);
+    }, []);
 
     // Tab switching event listener
     useEffect(() => {
@@ -913,15 +962,20 @@ export default function CollabPage() {
                 return (
                     <div className="viewport-content viewport-content--overview">
                         <MetricsGrid metrics={metrics} />
-                        <div className="overview-quickstart">
-                            <h3 className="quickstart-title">Quick Start</h3>
-                            <ol className="quickstart-steps">
-                                <li>Register agents: <code>node scripts/collab-client.js register --name &quot;Agent&quot; --role backend</code></li>
-                                <li>Create tasks from the Tasks tab or <code>POST /collab/tasks</code></li>
-                                <li>Agents claim tasks: <code>node scripts/collab-client.js claim &lt;id&gt;</code></li>
-                                <li>Start pipelines: <code>POST /collab/pipelines</code> with type <code>code_review_test</code></li>
-                            </ol>
-                        </div>
+                        {agentPresence.length === 0 && (
+                            <div className="overview-empty-state">
+                                <span className="overview-empty-state__sigil" aria-hidden="true" />
+                                <h3 className="overview-empty-state__title">No agents in the void... yet.</h3>
+                                <button
+                                    type="button"
+                                    className="overview-empty-state__action"
+                                    onClick={openAgentRegister}
+                                    aria-label="Open agent registration wizard"
+                                >
+                                    Summon New Agent
+                                </button>
+                            </div>
+                        )}
                     </div>
                 );
             
@@ -1028,7 +1082,12 @@ export default function CollabPage() {
             case 'agents':
                 return (
                     <div className="viewport-content viewport-content--agents">
-                        <AgentStatus agents={agents} nowMs={nowMs} onRefresh={refresh} />
+                        <AgentStatus
+                            agents={agents}
+                            nowMs={nowMs}
+                            onRefresh={refresh}
+                            openRegisterSignal={openRegisterSignal}
+                        />
                     </div>
                 );
             
@@ -1283,35 +1342,35 @@ export default function CollabPage() {
                         <div className="telemetry-metrics">
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Connected</span>
-                                <span className="telemetry-value">{metrics.agents.connected}</span>
+                                <TelemetryValue value={metrics.agents.connected} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Disconnected</span>
-                                <span className="telemetry-value telemetry-value--dim">{metrics.agents.disconnected}</span>
+                                <TelemetryValue value={metrics.agents.disconnected} className="telemetry-value--dim" />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Busy</span>
-                                <span className="telemetry-value">{metrics.agents.busy}</span>
+                                <TelemetryValue value={metrics.agents.busy} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Active Tasks</span>
-                                <span className="telemetry-value">{metrics.tasks.active}</span>
+                                <TelemetryValue value={metrics.tasks.active} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Bugs</span>
-                                <span className={`telemetry-value ${metrics.bugs.critical > 0 ? 'telemetry-value--error' : ''}`}>{metrics.bugs.total}</span>
+                                <TelemetryValue value={metrics.bugs.total} className={metrics.bugs.critical > 0 ? 'telemetry-value--error' : ''} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Pipelines</span>
-                                <span className="telemetry-value">{metrics.pipelines.running}</span>
+                                <TelemetryValue value={metrics.pipelines.running} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">File Locks</span>
-                                <span className="telemetry-value">{metrics.locks.active}</span>
+                                <TelemetryValue value={metrics.locks.active} />
                             </div>
                             <div className="telemetry-row">
                                 <span className="telemetry-label">Blocked</span>
-                                <span className="telemetry-value telemetry-value--warning">{metrics.blocked.count}</span>
+                                <TelemetryValue value={metrics.blocked.count} className="telemetry-value--warning" />
                             </div>
                         </div>
                     </div>
@@ -1322,7 +1381,10 @@ export default function CollabPage() {
                         <div className="telemetry-activity">
                             {activity.slice(0, 5).map(entry => (
                                 <div key={entry.id} className="telemetry-activity-entry">
-                                    <span className="activity-agent">{entry.agent_id || 'system'}</span>
+                                    <div className="telemetry-activity-entry__head">
+                                        <span className="activity-agent">{entry.agent_id || 'system'}</span>
+                                        <span className="activity-time">{formatActivityTimestamp(entry.created_at)}</span>
+                                    </div>
                                     <span className="activity-action">{entry.action}</span>
                                 </div>
                             ))}
@@ -1336,21 +1398,62 @@ export default function CollabPage() {
                     <div className="telemetry-section">
                         <div className="telemetry-header">QUICK ACTIONS</div>
                         <div className="quick-actions-vertical">
-                            <button className="quick-action-btn--vertical" onClick={() => {
-                                setActiveTab('tasks');
-                                setShowCreateTask(true);
-                            }}>
+                            <button className="quick-action-btn--vertical" onClick={openTaskCreator}>
+                                <ClipboardList aria-hidden="true" />
                                 CREATE TASK
                             </button>
-                            <button className="quick-action-btn--vertical" onClick={() => {
-                                setActiveTab('pipelines');
-                                setShowCreatePipeline(true);
-                            }}>
+                            <button className="quick-action-btn--vertical" onClick={openAgentRegister}>
+                                <UserPlus aria-hidden="true" />
+                                REGISTER AGENT
+                            </button>
+                            <button className="quick-action-btn--vertical" onClick={openPipelineCreator}>
+                                <Workflow aria-hidden="true" />
                                 START PIPELINE
                             </button>
                         </div>
                     </div>
                 </motion.aside>
+            </div>
+
+            <div className={`collab-fab ${quickMenuOpen ? 'collab-fab--open' : ''}`}>
+                <AnimatePresence>
+                    {quickMenuOpen && (
+                        <motion.div
+                            id="collab-quick-action-menu"
+                            className="collab-fab__menu"
+                            role="menu"
+                            aria-label="Quick actions"
+                            initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                            transition={{ duration: 0.18, ease: 'easeOut' }}
+                        >
+                            <button type="button" role="menuitem" className="collab-fab__menu-item" onClick={openTaskCreator}>
+                                <ClipboardList aria-hidden="true" />
+                                <span>Create Task</span>
+                            </button>
+                            <button type="button" role="menuitem" className="collab-fab__menu-item" onClick={openAgentRegister}>
+                                <UserPlus aria-hidden="true" />
+                                <span>Register Agent</span>
+                            </button>
+                            <button type="button" role="menuitem" className="collab-fab__menu-item" onClick={openPipelineCreator}>
+                                <Workflow aria-hidden="true" />
+                                <span>Start Pipeline</span>
+                            </button>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+                <button
+                    type="button"
+                    className="collab-fab__button"
+                    onClick={() => setQuickMenuOpen((open) => !open)}
+                    aria-label={quickMenuOpen ? 'Close quick actions' : 'Open quick actions'}
+                    aria-expanded={quickMenuOpen}
+                    aria-controls="collab-quick-action-menu"
+                    title={quickMenuOpen ? 'Close quick actions' : 'Quick actions'}
+                >
+                    {quickMenuOpen ? <X aria-hidden="true" /> : <Plus aria-hidden="true" />}
+                </button>
             </div>
 
             {/* Filing Cabinet Entry Point */}

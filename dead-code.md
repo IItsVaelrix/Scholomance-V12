@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-06-16T19:10:40.077Z
+Generated at: 2026-06-21T19:21:00.323Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -14,17 +14,29 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/combat/combat-sfx.events.js
 - [ ] src/combat/combat-sfx.mapping.js
 - [ ] src/components/ParaEQ/presets/factoryScrolls.ts
+- [ ] src/core/scd64/RuleRegistry.js
+- [ ] src/core/scd64/RuleRegistry.ts
+- [ ] src/core/scd64/compareSCD64.ts
+- [ ] src/core/scd64/constants.ts
+- [ ] src/core/scd64/decodeSCD64.ts
+- [ ] src/core/scd64/generateSCD64FromSlots.ts
+- [ ] src/core/scd64/glossary.ts
+- [ ] src/core/scd64/parseSCD64.ts
+- [ ] src/diagnostics/scd64/SCD64HoverTooltip.tsx
+- [ ] src/diagnostics/scd64/SCD64LogRenderer.tsx
 - [ ] src/game/iso/contracts/index.ts
 - [ ] src/game/iso/contracts/isoActor.schema.ts
 - [ ] src/game/iso/contracts/isoTile.schema.ts
 - [ ] src/game/iso/math/isoHitTest.ts
 - [ ] src/hooks/useAudioForge.js
+- [ ] src/hooks/useBattleSession.js
 - [ ] src/hooks/useColorCodex.js
 - [ ] src/kits/channel-zero-ui-kit/components/CodeRuneBlock.tsx
 - [ ] src/kits/channel-zero-ui-kit/components/SkillArticleTemplate.tsx
 - [ ] src/kits/channel-zero-ui-kit/examples/ArticlePage.tsx
 - [ ] src/kits/channel-zero-ui-kit/examples/BlogIndexPage.tsx
 - [ ] src/lib/animation-types.js
+- [ ] src/lib/combatApi.js
 - [ ] src/lib/config/flags.js
 - [ ] src/lib/css/schoolStyles.js
 - [ ] src/lib/godot/frame-printer/adapters/toGodotRuntimeJson.ts
@@ -49,26 +61,49 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/lib/photonic-quantization/photonic-types.js
 - [ ] src/lib/reference.engine.js
 - [ ] src/lib/render-engine.js
+- [ ] src/lib/syntacticIntegrity.js
 - [ ] src/lib/truesight/color/visemeMapping.js
 - [ ] src/lib/truesight/compiler/verseIRSerialization.js
+- [ ] src/lib/truesight/immune/collectTruesightNodes.js
+- [ ] src/pages/Combat/BattleArena.jsx
 - [ ] src/pages/Combat/BattleChrome.jsx
 - [ ] src/pages/Combat/CombatLog.jsx
+- [ ] src/pages/Combat/LegacyCombatPage.jsx
 - [ ] src/pages/Combat/OpponentDisplay.jsx
+- [ ] src/pages/Combat/OracleScribe.jsx
 - [ ] src/pages/Combat/SigilEntity.jsx
 - [ ] src/pages/Combat/TurnTimer.jsx
+- [ ] src/pages/Combat/assets/combatAssets.js
+- [ ] src/pages/Combat/assets/generated/combat-leyline.js
+- [ ] src/pages/Combat/assets/generated/combat-tile.js
+- [ ] src/pages/Combat/assets/generated/combat-torch.js
 - [ ] src/pages/Combat/assets/wandSvg.js
+- [ ] src/pages/Combat/combatBridge.js
 - [ ] src/pages/Combat/combatGoldenHarness.js
 - [ ] src/pages/Combat/components/ActionBar.jsx
 - [ ] src/pages/Combat/components/ActionHintStrip.jsx
 - [ ] src/pages/Combat/components/BottomCommandBand.jsx
 - [ ] src/pages/Combat/components/CombatRundownModal.jsx
 - [ ] src/pages/Combat/components/EnemyDetailsModal.jsx
+- [ ] src/pages/Combat/components/ExtractionScribe.jsx
 - [ ] src/pages/Combat/components/ScholarStatusPanel.jsx
+- [ ] src/pages/Combat/components/ShaderArenaBackdrop.jsx
 - [ ] src/pages/Combat/components/TileInspector.jsx
 - [ ] src/pages/Combat/components/WordToolTip.jsx
+- [ ] src/pages/Combat/hooks/useBoardCursor.js
 - [ ] src/pages/Combat/hooks/useCombatAnimationQueue.js
+- [ ] src/pages/Combat/hooks/useCombatBoard.js
 - [ ] src/pages/Combat/hooks/useSpellBubbles.js
+- [ ] src/pages/Combat/hooks/useSpellScoringFlow.js
 - [ ] src/pages/Combat/render/motionDescriptors.js
+- [ ] src/pages/Combat/scenes/CharacterShaderRenderer.js
+- [ ] src/pages/Combat/scenes/ResonanceScene.js
+- [ ] src/pages/Combat/state/combatActions.js
+- [ ] src/pages/Combat/state/combatBoardTypes.js
+- [ ] src/pages/Combat/state/combatBoardUtils.js
+- [ ] src/pages/Combat/state/combatPreviewUtils.js
+- [ ] src/pages/Combat/state/combatSelectors.js
+- [ ] src/pages/Combat/state/useCombatUIState.js
 - [ ] src/pages/Landing/storm/dbm.js
 - [ ] src/pages/Landing/storm/dbm.worker.js
 - [ ] src/pages/PixelBrain/amps/chromaticTransmutationAmp.js
@@ -155,6 +190,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/video/types.ts
 - [ ] src/video/useBeatClock.ts
 - [ ] src/vite-env.d.ts
+- [ ] codex/cli/scholo-immune.js
 - [ ] codex/core/archive/truesight/color/visemeMapping.ARCHIVED.js
 - [ ] codex/core/audio-forge/affinity-audio-profiles.js
 - [ ] codex/core/audio-forge/audio-bytecode-error.js
@@ -167,70 +203,56 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/audio-forge/pb-sfx.checksum.js
 - [ ] codex/core/audio-forge/pb-sfx.schema.js
 - [ ] codex/core/audio-forge/sfx-event-mappings.js
+- [ ] codex/core/battle.schemas.js
+- [ ] codex/core/combat.exegesis.js
+- [ ] codex/core/combat.session.js
 - [ ] codex/core/diagnostic/QbitProbeEnrichment.js
+- [ ] codex/core/diagnostic/SpatialImmunePrototype.js
+- [ ] codex/core/diagnostic/chromaticImmuneProbe.js
 - [ ] codex/core/diagnostic/index.js
+- [ ] codex/core/diagnostic/resonanceAntibody.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
+- [ ] codex/core/diagnostic/truesightImmuneProbe.js
 - [ ] codex/core/immunity/clerical-raid.substrate.js
 - [ ] codex/core/immunity/harkov-mutation.engine.js
+- [ ] codex/core/immunity/memory-cell-osmosis.js
 - [ ] codex/core/immunity/memory-infusion.engine.js
 - [ ] codex/core/immunity/phoneme-prion.engine.js
 - [ ] codex/core/immunity/protein-probe.engine.js
 - [ ] codex/core/immunity/semantic-editor.js
+- [ ] codex/core/immunity/spatial-immune-orchestrator.js
 - [ ] codex/core/immunity/syntax-tokenizer.js
 - [ ] codex/core/jit/acquisition-matrix.js
 - [ ] codex/core/jit/g2p.js
 - [ ] codex/core/jit/index.js
 - [ ] codex/core/jit/pipeline.js
 - [ ] codex/core/jit/router.js
+- [ ] codex/core/leyline.engine.js
 - [ ] codex/core/modulation/planner/div-layout-registrar.js
 - [ ] codex/core/modulation/planner/formula-registrar.js
+- [ ] codex/core/opponent.engine.js
 - [ ] codex/core/phonology/dictionary.web-worker.js
 - [ ] codex/core/phonology/dictionary.worker.js
 - [ ] codex/core/phonology/g2p/jurors/index.js
 - [ ] codex/core/phonology/prosodic-metronome.js
-- [ ] codex/core/pixelbrain/armor-proportion-validator.js
 - [ ] codex/core/pixelbrain/character-face-composer.js
-- [ ] codex/core/pixelbrain/chestplate-amp.js
-- [ ] codex/core/pixelbrain/chestplate-bevel-amp.js
-- [ ] codex/core/pixelbrain/chestplate-fidelity-pipeline.js
-- [ ] codex/core/pixelbrain/chestplate-surface-texture-amp.js
-- [ ] codex/core/pixelbrain/crystal-core-amp.js
-- [ ] codex/core/pixelbrain/detail-budget.js
-- [ ] codex/core/pixelbrain/facet-amp.js
-- [ ] codex/core/pixelbrain/factory/armor-factory.js
-- [ ] codex/core/pixelbrain/factory/jewelry-factory.js
-- [ ] codex/core/pixelbrain/factory/shield-factory.js
-- [ ] codex/core/pixelbrain/factory/weapon-factory.js
-- [ ] codex/core/pixelbrain/factory-registry.js
 - [ ] codex/core/pixelbrain/flame-tip-amp.js
 - [ ] codex/core/pixelbrain/flame-tip-ca.js
-- [ ] codex/core/pixelbrain/geometry-amp.js
-- [ ] codex/core/pixelbrain/heraldry-amp.js
-- [ ] codex/core/pixelbrain/heraldry-library.js
-- [ ] codex/core/pixelbrain/holyfire-motif-amp.js
 - [ ] codex/core/pixelbrain/image-to-semantic-bridge.js
-- [ ] codex/core/pixelbrain/item-effect-shader.js
-- [ ] codex/core/pixelbrain/item-foundry.js
-- [ ] codex/core/pixelbrain/item-spec.js
-- [ ] codex/core/pixelbrain/jewelry-amp.js
-- [ ] codex/core/pixelbrain/microprocessor-route.js
-- [ ] codex/core/pixelbrain/mirrored-trim-validator.js
-- [ ] codex/core/pixelbrain/motif-engraver.js
-- [ ] codex/core/pixelbrain/palette-quantization-amp.js
-- [ ] codex/core/pixelbrain/pixel-aa-amp.js
-- [ ] codex/core/pixelbrain/qbit-node-extractor.js
-- [ ] codex/core/pixelbrain/region-fill-amp.js
+- [ ] codex/core/pixelbrain/mining-patch.js
+- [ ] codex/core/pixelbrain/qbit-bridge.js
+- [ ] codex/core/pixelbrain/qbit-field-rle.js
 - [ ] codex/core/pixelbrain/render-fidelity-pipeline.js
-- [ ] codex/core/pixelbrain/seam-contract.js
-- [ ] codex/core/pixelbrain/selout-amp.js
 - [ ] codex/core/pixelbrain/shadow-amp.js
-- [ ] codex/core/pixelbrain/shape-grammar-engine.js
-- [ ] codex/core/pixelbrain/shield-rim-amp.js
-- [ ] codex/core/pixelbrain/shield-volume-amp.js
-- [ ] codex/core/pixelbrain/silhouette-composer.js
+- [ ] codex/core/pixelbrain/silhouette-scan.js
 - [ ] codex/core/pixelbrain/tonation-amp.js
 - [ ] codex/core/pixelbrain/vector-amp.js
 - [ ] codex/core/pixelbrain/volume-amp.js
+- [ ] codex/core/pixelbrain/voxel-axes.js
+- [ ] codex/core/pixelbrain/voxel-block.js
+- [ ] codex/core/pixelbrain/voxel-keyframe.js
+- [ ] codex/core/pixelbrain/voxel-pivot.js
+- [ ] codex/core/pixelbrain/voxel-rig.js
 - [ ] codex/core/scholotime/scholotime.export-plan.js
 - [ ] codex/core/scholotime/scholotime.phaser-adapter.js
 - [ ] codex/core/scholotime/scholotime.pixelbrain-adapter.js
@@ -261,6 +283,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `EqPresetV2` in `src/components/ParaEQ/hooks/useEqPreset.ts`
 - [ ] `FACTORY_SCROLLS` in `src/components/ParaEQ/presets/factoryScrolls.ts`
 - [ ] `getFactoryScrolls` in `src/components/ParaEQ/presets/factoryScrolls.ts`
+- [ ] `SCD64DiagnosticMatch` in `src/core/scd64/RuleRegistry.ts`
+- [ ] `SCD64Rule` in `src/core/scd64/RuleRegistry.ts`
+- [ ] `compareSCD64ByBlocks` in `src/core/scd64/compareSCD64.ts`
+- [ ] `lookupSCD64BlocksInMCP` in `src/core/scd64/decodeSCD64.ts`
+- [ ] `buildSCD64Glossary` in `src/core/scd64/glossary.ts`
+- [ ] `SCD64GlossaryEntry` in `src/core/scd64/types.ts`
 - [ ] `XP_SOURCES` in `src/data/progression_constants.js`
 - [ ] `getSchoolById` in `src/data/schools.js`
 - [ ] `isSchoolUnlocked` in `src/data/schools.js`
@@ -270,6 +298,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSchoolBadgeClass` in `src/data/schools.js`
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
+- [ ] `SCD64LogRenderer` in `src/diagnostics/scd64/SCD64LogRenderer.tsx`
 - [ ] `createIsoActorState` in `src/game/iso/contracts/isoActor.schema.ts`
 - [ ] `TERRAIN_TYPES` in `src/game/iso/contracts/isoTile.schema.ts`
 - [ ] `createIsoTile` in `src/game/iso/contracts/isoTile.schema.ts`
@@ -279,6 +308,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `hitTestScreenPoint` in `src/game/iso/math/isoHitTest.ts`
 - [ ] `resolveIsoTileAtScreenPoint` in `src/game/iso/math/isoProjection.ts`
 - [ ] `isActorMoving` in `src/game/iso/math/isoProjection.ts`
+- [ ] `Vec2` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `Aabb` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `SweptAabbHit` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `SweptAabbResolution` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `translateAabb` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `intersectsAabb` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `sweepAabb` in `src/game/iso/math/sweptAabb.ts`
 - [ ] `useColorCodex` in `src/hooks/useColorCodex.js`
 - [ ] `setGodotExportFlag` in `src/hooks/useGodotExportFlag.js`
 - [ ] `GODOT_EXPORT_FLAG_CHANGED_EVENT` in `src/hooks/useGodotExportFlag.js`
@@ -322,6 +358,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `PIXELBRAIN_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
 - [ ] `WAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
 - [ ] `DIVWAND_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
+- [ ] `QBIT_WORLD_GODOT_KIND` in `src/lib/godot-export/artifactSchemas.js`
 - [ ] `buildPixelBrainGodotExport` in `src/lib/godot-export/pixelbrainGodotExport.js`
 - [ ] `VOID_SCENE_WIDTH` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `VOID_SCENE_HEIGHT` in `src/lib/godot-export/voidArenaConstants.ts`
@@ -333,6 +370,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `VOID_MAX_EXPOSURE_PERCENT` in `src/lib/godot-export/voidArenaConstants.ts`
 - [ ] `buildSingularityTriggerFrames` in `src/lib/godot-export/voidSingularityTrigger.ts`
 - [ ] `isLikelyDynamicImportFailure` in `src/lib/lazyWithRetry.js`
+- [ ] `applyDecoded` in `src/lib/lexical/TruesightNode.js`
+- [ ] `removeDecoded` in `src/lib/lexical/TruesightNode.js`
+- [ ] `buildIdentityKey` in `src/lib/lexical/charStart.js`
 - [ ] `init_panic_hook` in `src/lib/math/quantization/rust-kernel/pkg/turboquant_bridge.js`
 - [ ] `PATTERN_COLORS` in `src/lib/patternColor.js`
 - [ ] `loadPhaserRuntime` in `src/lib/phaser/phaser-runtime.adapter.js`
@@ -349,10 +389,15 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSafeContext` in `src/lib/render-engine.js`
 - [ ] `ALL_COMPONENTS` in `src/lib/routes.js`
 - [ ] `getAvailablePageComponents` in `src/lib/routes.js`
+- [ ] `isHttpError` in `src/lib/truesight/synthesisErrorPolicy.js`
+- [ ] `isRateLimitError` in `src/lib/truesight/synthesisErrorPolicy.js`
+- [ ] `artifactHasConnections` in `src/lib/truesight/synthesisErrorPolicy.js`
 - [ ] `readWandFill` in `src/lib/wandPixelbrainBridge.js`
 - [ ] `clearWandFill` in `src/lib/wandPixelbrainBridge.js`
 - [ ] `ArticleSection` in `src/pages/Blog/articles.tsx`
 - [ ] `ARTICLES` in `src/pages/Blog/articles.tsx`
+- [ ] `RESOLVED_BUG_STATUSES` in `src/pages/Collab/bug-status.js`
+- [ ] `isBugResolved` in `src/pages/Collab/bug-status.js`
 - [ ] `buildTileTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `buildScholarTexture` in `src/pages/Combat/assets/combatAssets.js`
 - [ ] `buildWraithTexture` in `src/pages/Combat/assets/combatAssets.js`
@@ -574,14 +619,29 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
 - [ ] `TEMPLATE_VOCAB` in `codex/core/commentary/phrase-bank.js`
 - [ ] `MODEL_CORPUS` in `codex/core/commentary/phrase-bank.js`
-- [ ] `RHYME_SUBTYPES` in `codex/core/constants/data/rhymeScheme.patterns.js`
 - [ ] `getSonicStationTrackPool` in `codex/core/constants/data/sonicStationBuckets.js`
 - [ ] `getDefaultSonicStationTrackUrl` in `codex/core/constants/data/sonicStationBuckets.js`
-- [ ] `SCHOOL_TO_ENERGY` in `codex/core/constants/schools.js`
 - [ ] `deepFreezeClone` in `codex/core/diagnostic/BytecodeHealth.js`
+- [ ] `SPECTRAL_Z` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `validateColor` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `traceChromaProvenance` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `shedChromaExosome` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `sweepChromaCorpus` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `runChromaticScan` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `summarizeChromaReport` in `codex/core/diagnostic/chromaticImmuneProbe.js`
 - [ ] `DEFAULT_SKIP_DIRS` in `codex/core/diagnostic/diagnostic-file-source.js`
 - [ ] `DEFAULT_READABLE_EXT` in `codex/core/diagnostic/diagnostic-file-source.js`
 - [ ] `normalizeScanLimits` in `codex/core/diagnostic/diagnostic-file-source.js`
+- [ ] `DEFAULT_RESONANCE_DIR` in `codex/core/diagnostic/resonanceAntibody.js`
+- [ ] `writeResonanceAntibody` in `codex/core/diagnostic/resonanceAntibody.js`
+- [ ] `INVARIANTS` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `scanInvariants` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `buildExosome` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `shedExosomes` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `seedField` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `locateRootNode` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `runImmuneScan` in `codex/core/diagnostic/truesightImmuneProbe.js`
+- [ ] `summarizeReport` in `codex/core/diagnostic/truesightImmuneProbe.js`
 - [ ] `abyssalResonanceHeuristic` in `codex/core/heuristics/abyssal_resonance.js`
 - [ ] `verseIRAmplifierHeuristic` in `codex/core/heuristics/verseir_amplifier.js`
 - [ ] `verifyAdaptiveDeterminism` in `codex/core/immunity/adaptive.scanner.js`
@@ -596,7 +656,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `merlinReportToPattern` in `codex/core/immunity/clerical-raid.learning.js`
 - [ ] `SEED_STATS` in `codex/core/immunity/clerical-raid.patterns.js`
 - [ ] `LAYER_NAMES` in `codex/core/immunity/clerical-raid.schema.js`
-- [ ] `symptomsToVector` in `codex/core/immunity/clerical-raid.vector.js`
 - [ ] `detectLayer` in `codex/core/immunity/clerical-raid.vector.js`
 - [ ] `detectLawViolations` in `codex/core/immunity/clerical-raid.vector.js`
 - [ ] `assignAgent` in `codex/core/immunity/clerical-raid.vector.js`
@@ -607,6 +666,26 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `MEMORY_CELL_CONTRACT` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_OSMOSIS_CONTRACT` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_SCHEMA_VERSION` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_VECTOR_DIMENSIONS` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_VECTOR_ALGORITHM` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_FAMILIES` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `MEMORY_CELL_MODES` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `DEFAULT_MEMORY_CELL_MEMBRANE` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `IDE_WHITESPACE_CELL_ID` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `DEFAULT_IDE_WHITESPACE_TOLERANCE_PX` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `createMemoryCellPacket` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `verifyMemoryCellPacket` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `checksumMemoryCellPacket` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `evaluateMemoryCellOsmosis` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `scanMemoryCells` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `checksumOsmosisResult` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `buildIdeWhitespaceVector` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `buildIdeWhitespaceBaselineCell` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `evaluateIdeWhitespaceOsmosis` in `codex/core/immunity/memory-cell-osmosis.js`
+- [ ] `deriveIdeWhitespaceConcentration` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `extractMemoryAntigens` in `codex/core/immunity/memory-infusion.engine.js`
 - [ ] `validatePrivacy` in `codex/core/immunity/memory-infusion.engine.js`
 - [ ] `PRION_SIGNATURES` in `codex/core/immunity/phoneme-prion.engine.js`
@@ -615,6 +694,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `MEANING_RULES` in `codex/core/immunity/semantic-editor.js`
 - [ ] `inferContextTags` in `codex/core/immunity/semantic-editor.js`
 - [ ] `editCode` in `codex/core/immunity/semantic-editor.js`
+- [ ] `SCD64_COLOR_DRAGON_GLOSSARY` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `SpatialImmuneOrchestrator` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `generateColorDragonSCD64` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `getFirstColorDragonSCD64` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `collectRealTruesightEvidence` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `generateSCD64ForFamily` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `runTrueSightSCD64Sweep` in `codex/core/immunity/spatial-immune-orchestrator.js`
 - [ ] `tokenizeToStates` in `codex/core/immunity/syntax-tokenizer.js`
 - [ ] `createAcquisitionMatrix` in `codex/core/jit/acquisition-matrix.js`
 - [ ] `createG2PCompatibilityChecker` in `codex/core/jit/g2p.js`
@@ -668,6 +754,16 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `NEGOTIATION_THRESHOLD` in `codex/core/pixelbrain/biome-coherence-amp.js`
 - [ ] `MAX_NEGOTIATION_PASSES` in `codex/core/pixelbrain/biome-coherence-amp.js`
 - [ ] `getNeighbors6` in `codex/core/pixelbrain/biome-coherence-amp.js`
+- [ ] `maxRadiusFor` in `codex/core/pixelbrain/block-school-bridge.js`
+- [ ] `getOrBuildBasis` in `codex/core/pixelbrain/block-school-bridge.js`
+- [ ] `schoolAt` in `codex/core/pixelbrain/block-school-bridge.js`
+- [ ] `invalidateBasis` in `codex/core/pixelbrain/block-school-bridge.js`
+- [ ] `prewarmBasis` in `codex/core/pixelbrain/block-school-bridge.js`
+- [ ] `BLOCK_TAXONOMY` in `codex/core/pixelbrain/block-taxonomy.js`
+- [ ] `SCHOOL_FALLBACK` in `codex/core/pixelbrain/block-taxonomy.js`
+- [ ] `cellHash` in `codex/core/pixelbrain/block-taxonomy.js`
+- [ ] `planeToVoxel` in `codex/core/pixelbrain/build-plane.js`
+- [ ] `voxelToPlane` in `codex/core/pixelbrain/build-plane.js`
 - [ ] `createTypeMismatchError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
@@ -733,6 +829,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `FLAME_TIP_CA_ID` in `codex/core/pixelbrain/flame-tip-ca.js`
 - [ ] `FLAME_TIP_CA_VERSION` in `codex/core/pixelbrain/flame-tip-ca.js`
 - [ ] `applyFlameTipCellularAutomata` in `codex/core/pixelbrain/flame-tip-ca.js`
+- [ ] `auditSilhouetteBlueprint` in `codex/core/pixelbrain/forge-craft-gate.js`
 - [ ] `evaluateFibonacciGrid` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateParametricCurve` in `codex/core/pixelbrain/formula-to-coordinates.js`
 - [ ] `evaluateGridProjection` in `codex/core/pixelbrain/formula-to-coordinates.js`
@@ -757,7 +854,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `HERALDRY_MICROPROCESSOR_ID` in `codex/core/pixelbrain/heraldry-amp.js`
 - [ ] `HERALDRY_MICROPROCESSOR_VERSION` in `codex/core/pixelbrain/heraldry-amp.js`
 - [ ] `HOLLOW_THRESHOLD` in `codex/core/pixelbrain/hollowness-amp.js`
+- [ ] `HOLLOW_ENERGY_MIN` in `codex/core/pixelbrain/hollowness-amp.js`
 - [ ] `computeHollownessAMP` in `codex/core/pixelbrain/hollowness-amp.js`
+- [ ] `buildSurfaceLockSet` in `codex/core/pixelbrain/hollowness-amp.js`
 - [ ] `HOLYFIRE_MOTIF_AMP_ID` in `codex/core/pixelbrain/holyfire-motif-amp.js`
 - [ ] `HOLYFIRE_MOTIF_AMP_VERSION` in `codex/core/pixelbrain/holyfire-motif-amp.js`
 - [ ] `extractEdgePoints` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
@@ -768,19 +867,19 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `generateIdleAnimationConfig` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `transcribeSourcePixelData` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `generateSilhouetteFromImage` in `codex/core/pixelbrain/image-to-pixel-art.js`
-- [ ] `fillShapeWithEvenOddWinding` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `fillShape` in `codex/core/pixelbrain/image-to-pixel-art.js`
 - [ ] `imageToPixelBrainParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `mergeImageAndNLUParams` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `generatePaletteFromImage` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
 - [ ] `extractCoordinateHints` in `codex/core/pixelbrain/image-to-semantic-bridge.js`
-- [ ] `ISO_TILE_SIZE` in `codex/core/pixelbrain/iso-projector.js`
 - [ ] `renderBounds` in `codex/core/pixelbrain/iso-projector.js`
-- [ ] `forgeItemAsset` in `codex/core/pixelbrain/item-foundry.js`
 - [ ] `renderBundlePng` in `codex/core/pixelbrain/item-foundry.js`
 - [ ] `ITEM_SPEC_VERSION` in `codex/core/pixelbrain/item-spec.js`
 - [ ] `categoryOf` in `codex/core/pixelbrain/item-spec.js`
+- [ ] `ITEM_VOXEL_CONTRACT` in `codex/core/pixelbrain/item-voxel-packet.js`
+- [ ] `ITEM_VOXEL_SCHEMA_VERSION` in `codex/core/pixelbrain/item-voxel-packet.js`
 - [ ] `DEFAULT_EMISSION_FACTOR` in `codex/core/pixelbrain/material-registry.js`
+- [ ] `applyMiningPatch` in `codex/core/pixelbrain/mining-patch.js`
 - [ ] `MIRRORED_TRIM_VALIDATOR_ID` in `codex/core/pixelbrain/mirrored-trim-validator.js`
 - [ ] `MIRRORED_TRIM_VALIDATOR_VERSION` in `codex/core/pixelbrain/mirrored-trim-validator.js`
 - [ ] `MIRRORED_TRIM_PAIRS` in `codex/core/pixelbrain/mirrored-trim-validator.js`
@@ -812,15 +911,26 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `generatePermutationTable` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `perlin2D` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `getTexturePalette` in `codex/core/pixelbrain/procedural-noise.js`
-- [ ] `DEFAULT_DECAY` in `codex/core/pixelbrain/qbit-field.js`
-- [ ] `DEFAULT_ITERATIONS` in `codex/core/pixelbrain/qbit-field.js`
+- [ ] `buildQbitFieldRetinaInput` in `codex/core/pixelbrain/qbit-bridge.js`
+- [ ] `routeQbitFieldToPhotonicBridge` in `codex/core/pixelbrain/qbit-bridge.js`
+- [ ] `QBIT_BRIDGE_DEFAULTS` in `codex/core/pixelbrain/qbit-bridge.js`
+- [ ] `decodeEnergyFieldRLE` in `codex/core/pixelbrain/qbit-field-rle.js`
+- [ ] `QBIT_RLE_INTERNALS` in `codex/core/pixelbrain/qbit-field-rle.js`
 - [ ] `MATERIAL_THRESHOLDS` in `codex/core/pixelbrain/qbit-field.js`
 - [ ] `COLLAPSE_THRESHOLD` in `codex/core/pixelbrain/qbit-phosphorylation.js`
+- [ ] `QBIT_WORLD_SIZE` in `codex/core/pixelbrain/qbit-world-game-loop.js`
+- [ ] `ENERGY_TYPE_NAMES` in `codex/core/pixelbrain/qbit-world-game-loop.js`
 - [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/raster-jitter-filter.js`
 - [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/raster-jitter-filter.js`
 - [ ] `assertDeterministic` in `codex/core/pixelbrain/region-fill-amp.js`
 - [ ] `runPixelBrainRenderFidelityPipeline` in `codex/core/pixelbrain/render-fidelity-pipeline.js`
 - [ ] `RENDERERS` in `codex/core/pixelbrain/renderer-registry.js`
+- [ ] `collectSchoolTagDeltas` in `codex/core/pixelbrain/school-tag-amp.js`
+- [ ] `weightedEnergyMixProperty` in `codex/core/pixelbrain/scroll-to-voxel-world.js`
+- [ ] `assignSeedEnergyTypes` in `codex/core/pixelbrain/scroll-to-voxel-world.js`
+- [ ] `applySchoolWeightsToSeeds` in `codex/core/pixelbrain/scroll-to-voxel-world.js`
+- [ ] `deriveQbitParametersFromSchools` in `codex/core/pixelbrain/scroll-to-voxel-world.js`
+- [ ] `SCROLL_TO_VOXEL_INTERNALS` in `codex/core/pixelbrain/scroll-to-voxel-world.js`
 - [ ] `sdfInside` in `codex/core/pixelbrain/sdf-evaluator.js`
 - [ ] `SDF_SHAPE_AMP_VERSION` in `codex/core/pixelbrain/sdf-shape-amp.js`
 - [ ] `createShaderUniformError` in `codex/core/pixelbrain/shader-errors.js`
@@ -831,9 +941,17 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `SHADOW_AMP_VERSION` in `codex/core/pixelbrain/shadow-amp.js`
 - [ ] `goldenSection` in `codex/core/pixelbrain/shared.js`
 - [ ] `fibonacciSequence` in `codex/core/pixelbrain/shared.js`
+- [ ] `SILH_CONTRACT` in `codex/core/pixelbrain/silhouette-blueprint.js`
+- [ ] `SILH_SCHEMA_VERSION` in `codex/core/pixelbrain/silhouette-blueprint.js`
+- [ ] `canonicalStringify` in `codex/core/pixelbrain/silhouette-blueprint.js`
+- [ ] `digestBlueprint` in `codex/core/pixelbrain/silhouette-blueprint.js`
 - [ ] `assertConnected` in `codex/core/pixelbrain/silhouette-composer.js`
+- [ ] `traceContour` in `codex/core/pixelbrain/silhouette-scan.js`
+- [ ] `buildSilhFormBlock` in `codex/core/pixelbrain/silhouette-scan.js`
 - [ ] `SQUARE_SHARPNESS_CONTRAST_AMP_ID` in `codex/core/pixelbrain/square-sharpness-contrast-amp.js`
 - [ ] `SQUARE_SHARPNESS_CONTRAST_VERSION` in `codex/core/pixelbrain/square-sharpness-contrast-amp.js`
+- [ ] `STRUCTURAL_ENERGY_VERSION` in `codex/core/pixelbrain/structural-energy.js`
+- [ ] `chamferDistanceField` in `codex/core/pixelbrain/structural-energy.js`
 - [ ] `cropToOpaqueRegion` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `emitSymmetryBytecode` in `codex/core/pixelbrain/symmetry-amp.js`
 - [ ] `rotationalBreaker` in `codex/core/pixelbrain/symmetry-amp.js`
@@ -863,12 +981,34 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `REQUIRED_PARTS` in `codex/core/pixelbrain/void-chestplate-profile.js`
 - [ ] `VOLUME_AMP_ID` in `codex/core/pixelbrain/volume-amp.js`
 - [ ] `VOLUME_AMP_VERSION` in `codex/core/pixelbrain/volume-amp.js`
+- [ ] `VOLUME_LIFT_AMP_ID` in `codex/core/pixelbrain/volume-lift-amp.js`
+- [ ] `VOLUME_LIFT_AMP_VERSION` in `codex/core/pixelbrain/volume-lift-amp.js`
+- [ ] `VOLUME_LIFT_PROFILES` in `codex/core/pixelbrain/volume-lift-amp.js`
+- [ ] `profileValue` in `codex/core/pixelbrain/volume-lift-amp.js`
+- [ ] `liftCellToDepths` in `codex/core/pixelbrain/volume-lift-amp.js`
+- [ ] `AXES` in `codex/core/pixelbrain/voxel-axes.js`
+- [ ] `UP_AXIS` in `codex/core/pixelbrain/voxel-axes.js`
+- [ ] `HANDEDNESS` in `codex/core/pixelbrain/voxel-axes.js`
+- [ ] `blockBBox` in `codex/core/pixelbrain/voxel-block.js`
+- [ ] `createBlock` in `codex/core/pixelbrain/voxel-block.js`
+- [ ] `isDeltaAllowed` in `codex/core/pixelbrain/voxel-delta.js`
+- [ ] `FPS_DEFAULT` in `codex/core/pixelbrain/voxel-keyframe.js`
+- [ ] `frameAt` in `codex/core/pixelbrain/voxel-keyframe.js`
+- [ ] `composeTransform` in `codex/core/pixelbrain/voxel-keyframe.js`
+- [ ] `applyTransform` in `codex/core/pixelbrain/voxel-keyframe.js`
+- [ ] `isPivot3D` in `codex/core/pixelbrain/voxel-pivot.js`
+- [ ] `ROTATION_ORDER` in `codex/core/pixelbrain/voxel-rig.js`
+- [ ] `createRig` in `codex/core/pixelbrain/voxel-rig.js`
+- [ ] `addNode` in `codex/core/pixelbrain/voxel-rig.js`
+- [ ] `worldPivot` in `codex/core/pixelbrain/voxel-rig.js`
+- [ ] `skeletonToRig` in `codex/core/pixelbrain/voxel-rig.js`
 - [ ] `SENTINEL_MATERIAL_ID` in `codex/core/pixelbrain/voxel-volume.js`
 - [ ] `SEED_CONFIGS` in `codex/core/pixelbrain/wand-seed-lift.js`
 - [ ] `liftToVoxelSeeds` in `codex/core/pixelbrain/wand-seed-lift.js`
 - [ ] `classifyCoordInRegions` in `codex/core/pixelbrain/wand-seed-lift.js`
 - [ ] `liftToMultiRegionVoxelSeeds` in `codex/core/pixelbrain/wand-seed-lift.js`
 - [ ] `generateFibonacciInRegion` in `codex/core/pixelbrain/wand-seed-lift.js`
+- [ ] `WORLD_GLOW_OPACITY` in `codex/core/pixelbrain/world-render-options.js`
 - [ ] `RHYME_ASTROLOGY_API_VERSION` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_MODES` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `RHYME_ASTROLOGY_QUERY_DEFAULTS` in `codex/core/rhyme-astrology/contracts.js`

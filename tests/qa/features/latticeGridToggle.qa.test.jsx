@@ -47,7 +47,7 @@ function sidebarProps(overrides = {}) {
 }
 
 function latticeButton() {
-  return screen.getByRole('button', { name: /Lattice Grid/ });
+  return screen.getByRole('button', { name: /WordToolTip/ });
 }
 
 describe('ToolsSidebar — Lattice Grid toggle', () => {
@@ -106,12 +106,12 @@ describe('ScrollEditor — lattice annotation boxes', () => {
     });
   });
 
-  it('hides annotation boxes when the lattice is off', () => {
+  it('hides the --lattice class when the WordToolTip is off', () => {
     const { container } = renderEditor(false);
     const boxes = container.querySelectorAll('.truesight-annotation-box');
     expect(boxes.length).toBeGreaterThan(0);
     boxes.forEach(box => {
-      expect(box.classList.contains('truesight-annotation-box--hidden')).toBe(true);
+      expect(box.classList.contains('truesight-annotation-box--lattice')).toBe(false);
     });
   });
 

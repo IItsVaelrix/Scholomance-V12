@@ -26,7 +26,28 @@ const TURSO_URL = process.env.TURSO_ABYSS_DB_URL;
 const TURSO_TOKEN = process.env.TURSO_ABYSS_DB_TOKEN;
 
 const ABYSS_MIGRATIONS = [
-  // ... (migrations remain same) ...
+  {
+    version: 1,
+    name: '001-initial-abyss-schema',
+    up: (db) => {
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS word_entropy (
+          word TEXT PRIMARY KEY,
+          usage_count_7d REAL NOT NULL DEFAULT 0,
+          last_used INTEGER,
+          current_multiplier REAL NOT NULL DEFAULT 1.0
+        );
+      `).run();
+      db.prepare(`
+        CREATE TABLE IF NOT EXISTS combat_traces (
+          trace_id TEXT PRIMARY KEY,
+          occurred_at INTEGER NOT NULL,
+          token_count INTEGER NOT NULL,
+          average_multiplier REAL NOT NULL
+        );
+      `).run();
+    }
+  }
 ];
 
 function createLogger(log) {

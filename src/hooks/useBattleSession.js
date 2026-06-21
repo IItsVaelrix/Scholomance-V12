@@ -386,10 +386,16 @@ async function resolvePlayerCombatProfile({
     }
   );
 
+  // CONNECTIVE TISSUE: propagate tokenWeights so that any PLS-driven
+  // completion requests made during battle use the same document-importance
+  // weights as the main scroll editor. Without this, the battle fallback
+  // path discards the second-pass weights that analysis.pipeline stamps.
+  const tokenWeights = analyzedDoc.parsed?.tokenWeights ?? null;
+
   return {
     analyzedDoc,
     verseIR: scoreData?.verseIR || (scoreData?.verseIRAmplifier ? { verseIRAmplifier: scoreData.verseIRAmplifier } : null),
-    scoreData,
+    scoreData: tokenWeights ? { ...scoreData, tokenWeights } : scoreData,
   };
 }
 

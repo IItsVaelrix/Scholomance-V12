@@ -2,8 +2,8 @@
  * AgentStatus — live presence surface for connected and disconnected agents
  */
 
-import { motion } from 'framer-motion';
-import { useState, useCallback } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import AgentLoginModal from './AgentLoginModal.jsx';
 import AgentRegisterWizard from './AgentRegisterWizard.jsx';
 
@@ -94,6 +94,8 @@ function buildPresenceSummary(agents) {
 }
 
 function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDeleteClick, pendingDeleteId }) {
+    const reduceMotion = useReducedMotion();
+
     return (
         <section className="agents-section">
             <div className="agents-section__header">
@@ -105,11 +107,12 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
             ) : (
                 <motion.div
                     className="agents-grid"
+                    role="list"
                     initial="hidden"
                     animate="visible"
                     variants={{
                         visible: {
-                            transition: { staggerChildren: 0.04 },
+                            transition: { staggerChildren: reduceMotion ? 0 : 0.04 },
                         },
                     }}
                 >
@@ -117,49 +120,33 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
                         <motion.article
                             key={agent.id}
                             className={`agent-card agent-card--${agent.connectionState}`}
+                            role="listitem"
+                            aria-label={`${agent.name} ${STATUS_LABELS[agent.connectionState] || agent.connectionState} agent status`}
                             variants={{
                                 hidden: { opacity: 0, scale: 0.97 },
                                 visible: { opacity: 1, scale: 1 },
                             }}
-                            whileHover={{ y: -2 }}
+                            whileHover={reduceMotion ? undefined : { y: -2 }}
                         >
-                            <div className="agent-card__header">
-                                <span
-                                    className={`agent-card__indicator agent-card__indicator--${agent.connectionState}`}
-                                    aria-label={`Presence: ${STATUS_LABELS[agent.connectionState] || agent.connectionState}`}
-                                />
-                                <div className="agent-card__identity">
-                                    <div className="agent-card__name-row">
-                                        <span className="agent-card__name">{agent.name}</span>
-                                        {agent.framework_origin && (
-                                            <span 
-                                                className="agent-card__framework-sigil" 
-                                                title={`Framework: ${agent.framework_origin}`}
-                                            >
-                                                {FRAMEWORK_ICONS[String(agent.framework_origin || '').toLowerCase()] || '◈'}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <span className="agent-card__presence">{STATUS_LABELS[agent.connectionState] || agent.connectionState}</span>
+                            <span
+                                className={`agent-card__indicator agent-card__indicator--${agent.connectionState}`}
+                                aria-label={`Presence: ${STATUS_LABELS[agent.connectionState] || agent.connectionState}`}
+                            />
+
+                            <div className="agent-card__identity">
+                                <div className="agent-card__name-row">
+                                    <span className="agent-card__name">{agent.name}</span>
+                                    {agent.framework_origin && (
+                                        <span
+                                            className="agent-card__framework-sigil"
+                                            title={`Framework: ${agent.framework_origin}`}
+                                        >
+                                            {FRAMEWORK_ICONS[String(agent.framework_origin || '').toLowerCase()] || '◈'}
+                                        </span>
+                                    )}
                                 </div>
-                                <div className="agent-card__actions">
-                                    <button
-                                        className="agent-card__login-btn"
-                                        onClick={(e) => onLoginClick(e, agent.id)}
-                                        aria-label={`Log in ${agent.name}`}
-                                        title="Log in this agent"
-                                    >
-                                        Log In
-                                    </button>
-                                    <button
-                                        className={`agent-card__delete-btn${pendingDeleteId === agent.id ? ' agent-card__delete-btn--confirm' : ''}`}
-                                        onClick={(e) => onDeleteClick(e, agent.id)}
-                                        aria-label={pendingDeleteId === agent.id ? `Confirm remove ${agent.name}` : `Delete ${agent.name}`}
-                                        title={pendingDeleteId === agent.id ? 'Click again to confirm removal' : 'Remove this agent'}
-                                    >
-                                        {pendingDeleteId === agent.id ? '?' : '×'}
-                                    </button>
-                                </div>
+                                <span className="agent-card__id">{agent.id}</span>
+                                <span className="agent-card__presence">{STATUS_LABELS[agent.connectionState] || agent.connectionState}</span>
                             </div>
 
                             <div className="agent-card__meta">
@@ -167,13 +154,15 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
                                 <span className="agent-card__heartbeat">{agent.freshnessText}</span>
                             </div>
 
-                            {agent.capabilities && agent.capabilities.length > 0 && (
-                                <div className="agent-card__caps">
-                                    {agent.capabilities.map((cap) => (
+                            <div className="agent-card__caps">
+                                {agent.capabilities && agent.capabilities.length > 0 ? (
+                                    agent.capabilities.map((cap) => (
                                         <span key={cap} className="agent-card__cap-tag">{cap}</span>
-                                    ))}
-                                </div>
-                            )}
+                                    ))
+                                ) : (
+                                    <span className="agent-card__cap-tag agent-card__cap-tag--empty">none</span>
+                                )}
+                            </div>
 
                             <div className="agent-card__footer">
                                 <span className="agent-card__last-seen">
@@ -185,6 +174,25 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
                                     </span>
                                 )}
                             </div>
+
+                            <div className="agent-card__actions">
+                                <button
+                                    className="agent-card__login-btn"
+                                    onClick={(e) => onLoginClick(e, agent.id)}
+                                    aria-label={`Log in ${agent.name}`}
+                                    title="Log in this agent"
+                                >
+                                    Log In
+                                </button>
+                                <button
+                                    className={`agent-card__delete-btn${pendingDeleteId === agent.id ? ' agent-card__delete-btn--confirm' : ''}`}
+                                    onClick={(e) => onDeleteClick(e, agent.id)}
+                                    aria-label={pendingDeleteId === agent.id ? `Confirm remove ${agent.name}` : `Delete ${agent.name}`}
+                                    title={pendingDeleteId === agent.id ? 'Click again to confirm removal' : 'Remove this agent'}
+                                >
+                                    {pendingDeleteId === agent.id ? '?' : '×'}
+                                </button>
+                            </div>
                         </motion.article>
                     ))}
                 </motion.div>
@@ -193,12 +201,13 @@ function AgentSection({ title, subtitle, agents, emptyText, onLoginClick, onDele
     );
 }
 
-export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onError }) {
+export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onError, openRegisterSignal = 0 }) {
     const [loginModalOpen, setLoginModalOpen] = useState(false);
     const [selectedAgentId, setSelectedAgentId] = useState(null);
     const [deleteStatus, setDeleteStatus] = useState(null); // { type: 'success' | 'error', message: string }
     const [registerWizardOpen, setRegisterWizardOpen] = useState(false);
     const [pendingDeleteId, setPendingDeleteId] = useState(null);
+    const previousRegisterSignalRef = useRef(openRegisterSignal);
 
     const handleLoginClick = useCallback((e, agentId) => {
         e.stopPropagation();
@@ -244,6 +253,12 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
         window.dispatchEvent(new CustomEvent('collab:agent-registered', { detail: agent }));
     }, [onRefresh]);
 
+    useEffect(() => {
+        if (openRegisterSignal === previousRegisterSignalRef.current) return;
+        previousRegisterSignalRef.current = openRegisterSignal;
+        setRegisterWizardOpen(true);
+    }, [openRegisterSignal]);
+
     if (!agents || agents.length === 0) {
         return (
             <>
@@ -252,20 +267,17 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                 >
-                    <h3 className="agents-empty-title">No Agents Registered</h3>
+                    <h3 className="agents-empty-title">No agents in the void... yet.</h3>
                     <p className="agents-empty-text">
-                        The ritual chamber is empty. Summon the first agent to begin collaboration.
+                        The ritual chamber is quiet.
                     </p>
                     <button
                         className="agents-empty-register-btn"
                         onClick={() => setRegisterWizardOpen(true)}
                         aria-label="Open agent registration wizard"
                     >
-                        + Register Agent
+                        Summon New Agent
                     </button>
-                    <p className="agents-empty-cli-hint">
-                        Or via CLI: <code>node scripts/collab-client.js register --name &quot;Agent&quot; --role backend</code>
-                    </p>
                 </motion.div>
                 <AgentLoginModal
                     isOpen={loginModalOpen}
