@@ -17,7 +17,9 @@
 set -euo pipefail
 
 BIN="${1:?usage: ensure-ollama.sh <path-to-ollama-binary>}"
-TARBALL_URL="https://ollama.com/download/ollama-linux-amd64.tgz"
+# Official Linux/amd64 release is a zstd tarball (bin/ollama + lib/ollama/...).
+# "latest" redirect always resolves to the newest published release asset.
+TARBALL_URL="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tar.zst"
 
 # Already installed and runnable? Nothing to do — this is the common fast path.
 if [ -x "$BIN" ] && "$BIN" --version >/dev/null 2>&1; then
@@ -28,8 +30,8 @@ echo "ensure-ollama: '$BIN' missing — installing Ollama..."
 
 # Need network to fetch the tarball; bail clearly if offline (Restart=always
 # on the unit will retry once connectivity returns).
-if ! curl -sf --max-time 5 https://ollama.com >/dev/null 2>&1; then
-    echo "ensure-ollama: no network to ollama.com yet; will retry on next start." >&2
+if ! curl -sf --max-time 5 https://github.com >/dev/null 2>&1; then
+    echo "ensure-ollama: no network to github.com yet; will retry on next start." >&2
     exit 1
 fi
 
@@ -41,12 +43,17 @@ if ! mkdir -p "$PREFIX" 2>/dev/null || [ ! -w "$PREFIX" ]; then
     exit 1
 fi
 
-TGZ="$(mktemp "${TMPDIR:-/tmp}/ollama-XXXXXX.tgz")"
-trap 'rm -f "$TGZ"' EXIT
+TARBALL="$(mktemp "${TMPDIR:-/tmp}/ollama-XXXXXX.tar.zst")"
+trap 'rm -f "$TARBALL"' EXIT
 echo "ensure-ollama: downloading $TARBALL_URL ..."
-curl -fSL "$TARBALL_URL" -o "$TGZ"
+curl -fSL "$TARBALL_URL" -o "$TARBALL"
 echo "ensure-ollama: unpacking into $PREFIX ..."
-tar -xzf "$TGZ" -C "$PREFIX"
+# Prefer tar's built-in zstd; fall back to piping through the zstd CLI.
+if tar --help 2>/dev/null | grep -q -- --zstd; then
+    tar --zstd -xf "$TARBALL" -C "$PREFIX"
+else
+    zstd -dc "$TARBALL" | tar -x -C "$PREFIX"
+fi
 
 if [ -x "$BIN" ] && "$BIN" --version >/dev/null 2>&1; then
     echo "ensure-ollama: installed → $("$BIN" --version 2>/dev/null | head -1)"
