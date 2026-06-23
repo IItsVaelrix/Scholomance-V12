@@ -118,7 +118,9 @@ class OllamaBridge:
 
     def _check_ollama(self):
         if not shutil.which("ollama"):
-            print("⚠️  Ollama not found and API unreachable. Install: curl -fsSL https://ollama.com/install.sh | sh")
+            print("⚠️  Ollama not found. Install the .tar.zst release to a big drive:")
+            print("   curl -fSL https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tar.zst | tar --zstd -x -C /run/media/deck/<DRIVE>/")
+            print("   Then export OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama")
             sys.exit(1)
         try:
             r = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=5)

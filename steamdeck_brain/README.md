@@ -63,8 +63,13 @@
 ./chip_boot.sh
 
 # Or manually:
-# 1. Install Ollama (if not present)
-curl -fsSL https://ollama.com/install.sh | sh
+# 1. Install Ollama to a big drive (if not present) — never to /usr/local,
+#    that lives on the small system SSD. The bootstrap script handles this
+#    automatically; this is the explicit version for documentation:
+curl -fSL https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tar.zst \
+    | tar --zstd -x -C /run/media/deck/<DRIVE>/
+export OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama
+export OLLAMA_MODELS=/run/media/deck/<DRIVE>/ollama/models
 
 # 2. Start Ollama
 ollama serve &

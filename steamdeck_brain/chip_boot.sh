@@ -28,6 +28,83 @@ SUBSTRATE_DB="${SUBSTRATE_DIR}/memory.sqlite"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 KNOWLEDGE_DIR="${SCRIPT_DIR}/knowledge"
 
+# Big-drive Ollama layout. Mirrors install.sh's resolution order so this
+# bootstrap and the systemd path stay aligned.
+#   1. OLLAMA_BIN env override (e.g. /run/media/deck/<DRIVE>/ollama/bin/ollama)
+#   2. $HOME/.config/scholomance-brain.env OLLAMA_BIN= line
+#   3. First writable big-drive mount under /run/media/deck/*/ollama/bin/ollama
+#   4. $HOME/ollama/bin/ollama (last-resort big-ish location)
+OLLAMA_TARBALL_URL="https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tar.zst"
+
+resolve_ollama_bin() {
+    if [[ -n "${OLLAMA_BIN:-}" ]] && [ -x "$OLLAMA_BIN" ]; then
+        echo "$OLLAMA_BIN"; return
+    fi
+    if [[ -f "$HOME/.config/scholomance-brain.env" ]]; then
+        local from_env
+        from_env="$(sed -n 's/^OLLAMA_BIN=//p' "$HOME/.config/scholomance-brain.env" | tail -1)"
+        if [[ -n "$from_env" ]] && [ -x "$from_env" ]; then
+            echo "$from_env"; return
+        fi
+    fi
+    if [[ -d /run/media/deck ]]; then
+        local mnt
+        for mnt in /run/media/deck/*/ollama/bin/ollama; do
+            [ -x "$mnt" ] && { echo "$mnt"; return; }
+        done
+    fi
+    if [ -x "$HOME/ollama/bin/ollama" ]; then
+        echo "$HOME/ollama/bin/ollama"
+    fi
+}
+
+bootstrap_ollama() {
+    # Pick a writable prefix on a non-system drive.
+    local prefix=""
+    if [[ -d /run/media/deck ]]; then
+        local mnt
+        for mnt in /run/media/deck/*; do
+            [ -d "$mnt" ] && [ -w "$mnt" ] && { prefix="$mnt/ollama"; break; }
+        done
+    fi
+    if [[ -z "$prefix" ]] && [ -w "$HOME" ]; then
+        prefix="$HOME/ollama"
+    fi
+    if [[ -z "$prefix" ]]; then
+        echo -e "${RED}  No writable big-drive mount or \$HOME; cannot install Ollama.${NC}" >&2
+        return 1
+    fi
+
+    mkdir -p "$prefix"
+    local tarball
+    tarball="$(mktemp "${TMPDIR:-/tmp}/ollama-XXXXXX.tar.zst")"
+    echo -e "${YELLOW}  Downloading $OLLAMA_TARBALL_URL into $prefix ...${NC}"
+    if ! curl -fSL --max-time 120 "$OLLAMA_TARBALL_URL" -o "$tarball"; then
+        echo -e "${RED}  Download failed. Check network.${NC}" >&2
+        rm -f "$tarball"
+        return 1
+    fi
+    if tar --help 2>/dev/null | grep -q -- --zstd; then
+        tar --zstd -xf "$tarball" -C "$prefix"
+    else
+        zstd -dc "$tarball" | tar -x -C "$prefix"
+    fi
+    rm -f "$tarball"
+
+    export OLLAMA_BIN="$prefix/bin/ollama"
+    mkdir -p "$(dirname "$HOME/.config/scholomance-brain.env")"
+    if [[ -f "$HOME/.config/scholomance-brain.env" ]] && grep -q '^OLLAMA_BIN=' "$HOME/.config/scholomance-brain.env"; then
+        sed -i "s|^OLLAMA_BIN=.*|OLLAMA_BIN=$OLLAMA_BIN|" "$HOME/.config/scholomance-brain.env"
+    else
+        echo "OLLAMA_BIN=$OLLAMA_BIN" >> "$HOME/.config/scholomance-brain.env"
+    fi
+    if ! { [[ -f "$HOME/.config/scholomance-brain.env" ]] && grep -q '^OLLAMA_MODELS=' "$HOME/.config/scholomance-brain.env"; }; then
+        echo "OLLAMA_MODELS=$prefix/models" >> "$HOME/.config/scholomance-brain.env"
+    fi
+    export OLLAMA_MODELS="$prefix/models"
+    PATH="$prefix/bin:$PATH"
+}
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -65,12 +142,18 @@ echo "  Python $(python3 --version) ✓"
 
 # ─── Step 2: Check/Install Ollama ───────────────────────────────────────────
 echo -e "${YELLOW}[2/6]${NC} Checking Ollama..."
-if ! command -v ollama &>/dev/null; then
-    echo -e "${YELLOW}  Ollama not found. Installing...${NC}"
-    curl -fsSL https://ollama.com/install.sh | sh
-    echo -e "${GREEN}  Ollama installed.${NC}"
+RESOLVED_BIN="$(resolve_ollama_bin || true)"
+if [[ -n "$RESOLVED_BIN" ]] && [ -x "$RESOLVED_BIN" ]; then
+    export OLLAMA_BIN="$RESOLVED_BIN"
+    PATH="$(dirname "$RESOLVED_BIN"):$PATH"
+    echo -e "${GREEN}  Ollama $("$RESOLVED_BIN" --version 2>/dev/null) at $RESOLVED_BIN ✓${NC}"
 else
-    echo -e "${GREEN}  Ollama $(ollama --version 2>/dev/null || echo 'found') ✓${NC}"
+    echo -e "${YELLOW}  Ollama not found. Installing to big drive...${NC}"
+    if ! bootstrap_ollama; then
+        echo -e "${RED}  Ollama install failed.${NC}"
+        exit 1
+    fi
+    echo -e "${GREEN}  Ollama $("$OLLAMA_BIN" --version 2>/dev/null) installed to $OLLAMA_BIN ✓${NC}"
 fi
 
 # ─── Step 3: Start Ollama Server ────────────────────────────────────────────
