@@ -21,7 +21,7 @@ WorkingDirectory=@SCRIPT_DIR@
 # Optional overrides: drop KEY=VALUE lines (BRAIN_MODEL, BRAIN_DB, BRAIN_PORT,
 # BRAIN_PERSONALITY, BRAIN_EXTRA_ARGS) into this file. "-" = ok if missing.
 EnvironmentFile=-%h/.config/scholomance-brain.env
-Environment=BRAIN_MODEL=qwen3.5:9b
+Environment=BRAIN_MODEL=qwen3:8b
 Environment=BRAIN_PORT=9090
 Environment=BRAIN_DB=%h/.substrate/memory.sqlite
 # Wait (best-effort) for Ollama's API before launching so the daemon's eager
