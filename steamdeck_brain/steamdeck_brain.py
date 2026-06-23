@@ -53,7 +53,7 @@ from action_engine import ActionEngine
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-DEFAULT_MODEL = "phi3:mini"
+DEFAULT_MODEL = "qwen2.5:1.5b"  # 1.5B fits Steam Deck 16 GB RAM; 9B OOMs on subsequent loads
 DEFAULT_SUBSTRATE_DB = "~/.substrate/memory.sqlite"
 DEFAULT_SYSTEM_PROMPT = """You are an augmented intelligence running on a Steam Deck.
 You have access to an external memory substrate (Cortex) that provides relevant 

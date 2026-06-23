@@ -48,7 +48,7 @@ class BrainBridgeService:
                 return None
         return self._client
 
-    def start_daemon(self, model: str = "phi3:mini", substrate_db: str = "~/.substrate/memory.sqlite"):
+    def start_daemon(self, model: str = "qwen2.5:1.5b", substrate_db: str = "~/.substrate/memory.sqlite"):
         """Start the brain daemon in background."""
         steamdeck_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         brain_dir = os.path.join(os.path.dirname(os.path.dirname(steamdeck_dir)), "steamdeck_brain")
@@ -109,7 +109,7 @@ class BrainBridgeService:
                 brain_dir = os.path.join(os.path.dirname(os.path.dirname(steamdeck_dir)), "steamdeck_brain")
                 script = os.path.join(brain_dir, "steamdeck_brain.py")
 
-                cmd = ["python3", script, "-q", query]
+                cmd = ["python3", script, "-q", query, "--model", "qwen2.5:1.5b"]
                 if compare:
                     cmd.append("--compare")
                 try:

@@ -36,7 +36,7 @@ from steamdeck_brain import BrainBridge
 # ─── Config ──────────────────────────────────────────────────────────────────
 
 DEFAULT_PORT = 9090
-DEFAULT_MODEL = "phi3:mini"
+DEFAULT_MODEL = "qwen2.5:1.5b"  # 1.5B fits Steam Deck 16 GB; 9B OOMs on subsequent loads
 
 # Global bridge (single instance)
 _bridge: Optional[BrainBridge] = None
