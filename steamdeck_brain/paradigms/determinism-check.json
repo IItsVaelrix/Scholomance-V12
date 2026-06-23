@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "determinism-check",
+  "version": "0.1.0",
+  "priority": 10,
+  "match": {
+    "patterns": [
+      "(deterministic|random|seed|nondeterministic|environment.dependent|global.state|race.condition|Math.random|Date.now|performance.now|flaky)"
+    ],
+    "keywords": [
+      "Math.random",
+      "Date.now",
+      "performance.now",
+      "nondeterministic",
+      "unstable",
+      "flaky",
+      "race",
+      "global state",
+      "hidden state",
+      "ambient time",
+      "unstable iteration",
+      "SeededRandom",
+      "deterministic"
+    ]
+  },
+  "steps": [
+    {
+      "source": "file-system",
+      "query": "Math.random|Date.now|performance.now",
+      "paths": [
+        "src/",
+        "codex/"
+      ],
+      "label": "Grep for nondeterministic primitives",
+      "max_results": 10,
+      "retrieve_as": "violations"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity violations",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "substrate",
+      "query": "determinism fix for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Past fixes",
+      "retrieve_as": "history"
+    }
+  ],
+  "system_suffix": "DETERMINISM: same input + same state + same config = same output. Forbidden in critical paths: Math.random without seed, ambient time, unstable iteration order, hidden global state, race-dependent output, silent fallback paths. Branching IS allowed. Nondeterministic branching is FORBIDDEN. Entropy enters through unnamed state.",
+  "checksum": "48bf420d"
+}

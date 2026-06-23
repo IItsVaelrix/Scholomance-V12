@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "archive-audit",
+  "version": "0.1.0",
+  "priority": 7,
+  "match": {
+    "patterns": [
+      "(archive|encyclopedia|index|catalog|PDR|PIR|white.paper).*(check|audit|hygiene|status|missing|clean|broken)",
+      "(is|are).*(PDR|PIR|white.paper|bug.report).*(indexed|tracked|cataloged|listed|missing)"
+    ],
+    "keywords": [
+      "archive",
+      "encyclopedia",
+      "PDR",
+      "PIR",
+      "hygiene",
+      "catalog",
+      "index",
+      "white paper",
+      "bug report",
+      "missing",
+      "untracked",
+      "audit"
+    ]
+  },
+  "steps": [
+    {
+      "source": "substrate",
+      "query": "archive hygiene rules for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Hygiene rules",
+      "retrieve_as": "rules"
+    },
+    {
+      "source": "glossary",
+      "query": "archive",
+      "label": "Archive glossary",
+      "max_results": 5,
+      "retrieve_as": "glossary"
+    },
+    {
+      "source": "file-system",
+      "query": "archive hygiene",
+      "paths": [
+        "docs/"
+      ],
+      "label": "Archive docs",
+      "max_results": 5,
+      "retrieve_as": "docs"
+    }
+  ],
+  "system_suffix": "ARCHIVE HYGIENE: Project memory must be indexed, current, and searchable. Every PDR, PIR, white paper, bug report, architecture decision, schema change, and law change must appear in the encyclopedia catalog. Missing entries create false amnesia. An unindexed law is a forgotten law.",
+  "checksum": "cfd37e8a"
+}
