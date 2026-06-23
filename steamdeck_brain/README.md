@@ -114,7 +114,7 @@ Override defaults without editing the units by dropping `KEY=VALUE` lines into
 Or run the daemon manually (foreground):
 
 ```bash
-python3 brain_daemon.py --model phi3:mini --port 9090
+python3 brain_daemon.py --model qwen3.5:9b --port 9090
 ```
 
 ## Usage Examples
