@@ -130,3 +130,13 @@ target/
 output/videos/*.mp4
 out/*.mp4
 *.mp4
+
+# Generated pixelbrain / foundry outputs
+output/
+
+# Vite build output
+build/
+
+# SteamDeck brain runtime
+steamdeck_brain/__pycache__/
+*.pyc
