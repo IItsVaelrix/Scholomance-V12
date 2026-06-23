@@ -47,7 +47,9 @@ detect_python() {
     command -v python3
 }
 PYTHON="$(detect_python)"
-OLLAMA_BIN="$(command -v ollama || true)"
+# OLLAMA_BIN can be overridden (e.g. a big-drive install not on PATH):
+#   OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama ./install.sh
+OLLAMA_BIN="${OLLAMA_BIN:-$(command -v ollama || true)}"
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   🧠  Installing Scholomance Brain — always-on systemd units  ║${NC}"

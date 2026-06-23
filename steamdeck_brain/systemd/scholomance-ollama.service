@@ -12,6 +12,10 @@ Wants=network-online.target
 
 [Service]
 Type=simple
+# Shared override file (same one the brain unit reads). Put model storage on a
+# big drive with:  OLLAMA_MODELS=/run/media/deck/<DRIVE>/ollama/models
+# and/or point at a relocated server with:  OLLAMA_HOST=127.0.0.1:11434
+EnvironmentFile=-%h/.config/scholomance-brain.env
 ExecStart=@OLLAMA_BIN@ serve
 Restart=always
 RestartSec=3
