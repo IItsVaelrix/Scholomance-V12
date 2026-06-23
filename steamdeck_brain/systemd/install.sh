@@ -47,9 +47,32 @@ detect_python() {
     command -v python3
 }
 PYTHON="$(detect_python)"
-# OLLAMA_BIN can be overridden (e.g. a big-drive install not on PATH):
-#   OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama ./install.sh
-OLLAMA_BIN="${OLLAMA_BIN:-$(command -v ollama || true)}"
+ENSURE_OLLAMA="$SCRIPT_DIR/ensure-ollama.sh"
+
+# Where Ollama (binary + models) must live. Resolution order:
+#   1. OLLAMA_BIN env override on this invocation
+#   2. OLLAMA_BIN= line persisted in ~/.config/scholomance-brain.env
+#   3. fall back to whatever is on PATH (system drive — only if nothing set)
+# Once set via (1), it is PERSISTED to the env file so future launches/reruns
+# and the systemd units keep using the big drive without re-specifying it.
+ENV_FILE="$HOME/.config/scholomance-brain.env"
+_env_ollama_bin=""
+[[ -f "$ENV_FILE" ]] && _env_ollama_bin="$(sed -n 's/^OLLAMA_BIN=//p' "$ENV_FILE" | tail -1)"
+OLLAMA_BIN="${OLLAMA_BIN:-${_env_ollama_bin:-$(command -v ollama || true)}}"
+
+if [[ -n "$OLLAMA_BIN" ]]; then
+    # Persist the chosen location so it survives reruns and reboots.
+    mkdir -p "$(dirname "$ENV_FILE")"
+    if [[ -f "$ENV_FILE" ]] && grep -q '^OLLAMA_BIN=' "$ENV_FILE"; then
+        sed -i "s|^OLLAMA_BIN=.*|OLLAMA_BIN=$OLLAMA_BIN|" "$ENV_FILE"
+    else
+        echo "OLLAMA_BIN=$OLLAMA_BIN" >> "$ENV_FILE"
+    fi
+    # Default model storage next to the binary (big drive) unless already set.
+    if ! { [[ -f "$ENV_FILE" ]] && grep -q '^OLLAMA_MODELS=' "$ENV_FILE"; }; then
+        echo "OLLAMA_MODELS=$(dirname "$(dirname "$OLLAMA_BIN")")/models" >> "$ENV_FILE"
+    fi
+fi
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║   🧠  Installing Scholomance Brain — always-on systemd units  ║${NC}"
@@ -62,10 +85,20 @@ echo ""
 
 [[ -f "$BRAIN_DAEMON" ]] || { echo -e "${RED}Error: $BRAIN_DAEMON not found.${NC}"; exit 1; }
 if [[ -z "$OLLAMA_BIN" ]]; then
-    echo -e "${YELLOW}⚠  ollama not on PATH. Install it first (see chip_boot.sh) — the${NC}"
-    echo -e "${YELLOW}   ollama unit will fail to start until it is available.${NC}"
-    OLLAMA_BIN="ollama"
+    echo -e "${RED}Error: no Ollama install location set.${NC}"
+    echo -e "${YELLOW}Ollama must live on your big drive — specify where, e.g.:${NC}"
+    echo    "    OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama $0"
+    echo -e "${YELLOW}It is persisted afterward, and ensure-ollama.sh will auto-install${NC}"
+    echo -e "${YELLOW}Ollama there (binary + models) on first launch if it's missing.${NC}"
+    exit 1
 fi
+# Guard against an install pointed at the small system/partitioned drive.
+case "$OLLAMA_BIN" in
+    /usr/*|/bin/*|/sbin/*)
+        echo -e "${YELLOW}⚠  OLLAMA_BIN is on the system drive ($OLLAMA_BIN).${NC}"
+        echo -e "${YELLOW}   You asked for the big drive — pass OLLAMA_BIN=/run/media/deck/<DRIVE>/ollama/bin/ollama${NC}"
+        echo -e "${YELLOW}   Continuing in 4s (Ctrl-C to abort)…${NC}"; sleep 4 ;;
+esac
 
 mkdir -p "$UNIT_DIR"
 
@@ -74,6 +107,7 @@ render() {  # render <template> <dest>
         -e "s|@SCRIPT_DIR@|$BRAIN_DIR|g" \
         -e "s|@BRAIN_DAEMON@|$BRAIN_DAEMON|g" \
         -e "s|@OLLAMA_BIN@|$OLLAMA_BIN|g" \
+        -e "s|@ENSURE_OLLAMA@|$ENSURE_OLLAMA|g" \
         "$1" > "$2"
 }
 
