@@ -50,6 +50,7 @@ from substrate_engine import ingest_file
 from embed_providers import HybridEmbedProvider
 from cortex import Cortex
 from action_engine import ActionEngine
+from paradigm_router import ParadigmRouter
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -241,6 +242,15 @@ class BrainBridge:
         print("⚙️  Initializing Action Engine (Tools, Task Queue, Self-Correction)...")
         self.action_engine = ActionEngine(self)
 
+        # Boot Retrieval Paradigm Router (bytecode-checksummed pipeline engine)
+        self.paradigm_router = None
+        try:
+            self.paradigm_router = ParadigmRouter()
+            paradigms_loaded = len(self.paradigm_router.paradigms) if self.paradigm_router else 0
+            print(f"🧭 ParadigmRouter: {paradigms_loaded} paradigms loaded")
+        except Exception as e:
+            print(f"   ⚠️  ParadigmRouter: {e}")
+
         print(f"✅ Bridge ready | {model} | personality={personality or 'none'} | multi-hop={multi_hop}")
 
     def _load_personality(self, name: str):
@@ -261,10 +271,28 @@ class BrainBridge:
 
     def ask(self, query: str, show_context: bool = False) -> str:
         """
-        Full pipeline: Cortex.retrieve() -> inject -> Ollama.generate() -> Cortex.learn().
+        Full pipeline: ParadigmRouter → Cortex.retrieve() → inject → Ollama.generate() → Cortex.learn().
         """
+        # Step 0: Classify query against retrieval paradigms
+        paradigm_result = None
+        paradigm_suffix = ""
+        if self.paradigm_router:
+            try:
+                paradigm_result = self.paradigm_router.run_pipeline(query)
+                paradigm_suffix = paradigm_result.get("system_suffix", "")
+            except Exception:
+                pass
+
         # Step 1: Retrieve with L1/L2 cache + multi-hop
         memories, context = self.cortex.retrieve(query, top_k=self.top_k, multi_hop=self.multi_hop)
+
+        # Merge paradigm retrieval artifacts into the context
+        if paradigm_result and paradigm_result.get("final_prompt_context"):
+            paradigm_context = paradigm_result["final_prompt_context"]
+            if context.strip():
+                context = f"{context}\n\n{paradigm_context}"
+            else:
+                context = paradigm_context
 
         if show_context and context.strip():
             print("\n📦 Cortex context:")
@@ -275,8 +303,12 @@ class BrainBridge:
         # Step 2: Build prompt
         prompt = f"{context}\n\n---\n\n{query}" if context.strip() else query
 
-        # Step 3: Generate
-        response = self.model.generate(prompt, system=self.system_prompt,
+        # Step 3: Generate — attach paradigm reasoning chain to system prompt
+        system = self.system_prompt
+        if paradigm_suffix:
+            system = f"{system}\n\n---\n\n{paradigm_suffix}"
+
+        response = self.model.generate(prompt, system=system,
                                        temperature=self.temperature, max_tokens=self.max_tokens)
 
         # Step 4: Memory consolidation (learn from interaction)

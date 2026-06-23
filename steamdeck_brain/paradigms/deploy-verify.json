@@ -1,0 +1,50 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "deploy-verify",
+  "version": "0.1.0",
+  "priority": 7,
+  "match": {
+    "patterns": [
+      "(deploy|ship|release|push|production|live|ready).*(repo|code|site|app|build)",
+      "(build|polish|typecheck|lint).*(pass|fail|error|status)",
+      "is (the )?(repo|site|build|server) (ready|good|clean|deployable)"
+    ],
+    "keywords": [
+      "deploy",
+      "ready",
+      "production",
+      "live",
+      "polish",
+      "build",
+      "typecheck",
+      "lint",
+      "push",
+      "ship",
+      "release"
+    ]
+  },
+  "steps": [
+    {
+      "source": "polish",
+      "query": "{query}",
+      "label": "Polish gate",
+      "retrieve_as": "polish"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "substrate",
+      "query": "deployment checklist {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Deploy memory",
+      "retrieve_as": "checklist"
+    }
+  ],
+  "system_suffix": "CHAIN: check polish status \u2192 check immunity \u2192 verify environment variables \u2192 list blockers. Be explicit: PASS/FAIL for each gate. Do not say 'ready' unless all gates pass.",
+  "checksum": "982d6056"
+}

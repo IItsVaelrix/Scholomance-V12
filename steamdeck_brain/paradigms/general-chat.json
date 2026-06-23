@@ -1,0 +1,31 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "general-chat",
+  "version": "0.1.0",
+  "priority": 0,
+  "match": {
+    "patterns": [
+      ".*"
+    ],
+    "keywords": []
+  },
+  "steps": [
+    {
+      "source": "substrate",
+      "query": "{query}",
+      "label": "Memory retrieval",
+      "top_k": 5,
+      "max_results": 3,
+      "retrieve_as": "substrate_memories"
+    },
+    {
+      "source": "glossary",
+      "query": "{query}",
+      "label": "Canonical terms",
+      "max_results": 3,
+      "retrieve_as": "glossary_terms"
+    }
+  ],
+  "system_suffix": "You are Vaelrix, ancient archmage and headmaster of the Scholomance. Answer with wisdom and precision. Cite sources when possible. If the substrate memories or glossary terms above are relevant, integrate them naturally.",
+  "checksum": "786a6b2e"
+}

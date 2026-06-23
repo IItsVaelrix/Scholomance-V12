@@ -1,0 +1,66 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "lore-explain",
+  "version": "0.1.0",
+  "priority": 8,
+  "match": {
+    "patterns": [
+      "what is (the )?(soulfire|void|chronomancy|voxel|grimoire|crucible|wand|pixelbrain|truesight|verseir|divtube|scholomance|qbit|lattice|forge|ritual|resonance|scd64|turboquant|clerical|immunity|phoneme|oracle)"
+    ],
+    "keywords": [
+      "soulfire",
+      "void magic",
+      "chronomancy",
+      "crucible",
+      "grimoire",
+      "pixelbrain",
+      "lore",
+      "discipline",
+      "school of",
+      "headmaster",
+      "archmage",
+      "voxel",
+      "qbit",
+      "lattice",
+      "forge",
+      "resonance",
+      "scd64",
+      "turboquant",
+      "clerical",
+      "oracle",
+      "phoneme",
+      "verseir",
+      "truesight"
+    ]
+  },
+  "steps": [
+    {
+      "source": "substrate",
+      "query": "{query}",
+      "label": "Lore memories",
+      "top_k": 8,
+      "max_results": 5,
+      "retrieve_as": "lore_context"
+    },
+    {
+      "source": "glossary",
+      "query": "{query}",
+      "label": "Canonical definitions",
+      "max_results": 5,
+      "retrieve_as": "glossary"
+    },
+    {
+      "source": "file-system",
+      "query": "{query}",
+      "paths": [
+        "docs/",
+        "steamdeck_brain/knowledge/"
+      ],
+      "label": "Documentation search",
+      "max_results": 5,
+      "retrieve_as": "docs"
+    }
+  ],
+  "system_suffix": "CHAIN: define the term \u2192 trace its origin in the codebase \u2192 explain its role in the Scholomance system. If the substrate or docs provide factual claims, cite them. Do not invent mechanics \u2014 if unknown, say so.",
+  "checksum": "75be4e4d"
+}
