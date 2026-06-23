@@ -27,6 +27,7 @@ from tui.services.prompt_service import PromptService
 from tui.services.scd64_service import scd64_service
 from tui.services.substrate_osmosis_service import SubstrateOsmosisService
 from tui.services.env_config import write_key
+from tui.services.brain_bridge_service import BrainBridgeService
 from tui.screens.video_forge_screen import VideoForgeScreen
 
 # ── Scholomance palette ──────────────────────────────────────────────
@@ -512,6 +513,7 @@ class DivTubeAgentApp(App):
         self.substrate = SubstrateOsmosisService(self.memory)
         self.archive = ArchiveBridge()
         self.prompt = PromptService()
+        self.brain = BrainBridgeService(port=9092)  # Vaelrix brain daemon
         self.cmd_history = []
         self.cmd_index = 0
         # ── agent run controller (Esc to stop) ───────────────────────
@@ -1192,6 +1194,30 @@ class DivTubeAgentApp(App):
 
         r("/daemon-start", handle_daemon_start, "Start brain daemon for persistent queries", "/daemon-start")
         r("/daemon-stop", handle_daemon_stop, "Stop brain daemon", "/daemon-stop")
+
+        def handle_vaelrix(ui, args):
+            text = " ".join(args).strip()
+            if not text:
+                ui.log_msg(f"[{GOLD}]Use /vaelrix <question> to ask Vaelrix.[/]")
+                return
+            ui.log_msg(f"\n[bold {PURPLE}]✦ VAELRIX ✦[/]")
+            bar = ui.query_one("#loading-bar")
+            bar.styles.display = "block"
+            bar.progress = 0
+
+            def callback(response):
+                def _write():
+                    bar.progress = 100
+                    ui.set_timer(2.0, lambda: setattr(bar.styles, "display", "none"))
+                    if response:
+                        ui.log_msg(f"[{GOLD}]{response}[/]")
+                    else:
+                        ui.log_msg(f"[{WARNING}]Vaelrix returned an empty response.[/]")
+                ui.call_from_thread(_write)
+
+            ui.brain.ask(text, callback)
+
+        r("/vaelrix", handle_vaelrix, "Ask Vaelrix (SteamDeck brain)", "/vaelrix <question>")
 
     def setup_turbo_commands(self):
         """TurboQuant SEO plugin commands (spec v1.0, phases 0-3)."""
