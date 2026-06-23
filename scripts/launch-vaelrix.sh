@@ -64,7 +64,10 @@ export PATH="$(dirname "${OLLAMA_BIN}"):${PATH}"
 # Vaelrix defaults: headmaster persona + the Qwen 3.5 9B model the brain
 # service is configured for. Both can be overridden via env or by passing
 # --personality / --model as brain args after `--`.
-: "${VAELRIX_MODEL:=qwen3.5:9b}"
+# Default to 1.5B for Steam Deck reliability. The 9B model works but the
+# llama-server worker OOMs on subsequent loads with ~6.3 GB VRAM pressure
+# on the 16 GB shared APU. Override with: VAELRIX_MODEL=qwen3.5:9b
+: "${VAELRIX_MODEL:=qwen2.5:1.5b}"
 export VAELRIX_MODEL
 
 cd "${BRAIN_DIR}"
