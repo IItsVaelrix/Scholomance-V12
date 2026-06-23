@@ -16,7 +16,13 @@ import { resolveOverlayPlacement } from "../../lib/truesight/overlay-placement.j
 
 
 const MAX_CONTENT_LENGTH = 50000;
-const DEFAULT_LINE_HEIGHT = 24;
+// Matches the CSS --editor-content-line-height: 1.9 at the default
+// --editor-content-font-size: clamp(1.02rem,1.2vw,1.12rem) ≈ 16px.
+// When adaptiveTopology hasn't computed yet (e.g. single-line content before
+// the ResizeObserver fires), this keeps the gutter at the correct height so
+// it doesn't jump from 24px → 30.4px when the first keystroke triggers
+// topology recalculation.
+const DEFAULT_LINE_HEIGHT = 30.4;
 
 const sanitizeTruesightStyle = (styleObj) => {
   if (!styleObj) return {};

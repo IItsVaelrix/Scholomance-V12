@@ -34,6 +34,12 @@
   },
   "steps": [
     {
+      "source": "file-read",
+      "query": "{query}",
+      "label": "Read referenced files",
+      "retrieve_as": "referenced_files"
+    },
+    {
       "source": "substrate",
       "query": "bug fix for {query}",
       "label": "Bug memory",
@@ -64,8 +70,14 @@
       "query": "{query}",
       "label": "Immunity violations",
       "retrieve_as": "immunity"
+    },
+    {
+      "source": "self-critique",
+      "query": "{query}",
+      "prompt": "Does this fix introduce side effects? Check dependencies, imports, and the Vaelrix Law of Determinism.",
+      "label": "Self-critique"
     }
   ],
-  "system_suffix": "CHAIN: identify the error \u2192 trace to source file \u2192 check Cleri RAID for known patterns \u2192 propose fix with code. Include bytecode error code if applicable. Self-critique: does the fix introduce new side effects?",
-  "checksum": "e0d49851"
+  "system_suffix": "CHAIN: read any files mentioned in the query \u2192 identify the error \u2192 trace to source \u2192 check Cleri RAID \u2192 propose fix with real code from the files above. Self-critique: does the fix introduce new side effects?",
+  "checksum": "2569bf4b"
 }

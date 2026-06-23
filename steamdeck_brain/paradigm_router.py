@@ -85,6 +85,7 @@ class ParadigmRouter:
             "glossary":        self._step_glossary,
             "cleri":           self._step_cleri,
             "file-system":     self._step_file_system,
+            "file-read":       self._step_file_read,
             "codebase-search": self._step_codebase_search,
             "self-critique":   self._step_self_critique,
             "rhyme-engine":    self._step_rhyme_engine,
@@ -318,6 +319,65 @@ class ParadigmRouter:
         except Exception:
             pass
         return {"source": "File System", "content": ""}
+
+    def _step_file_read(self, query: str, step: dict, context: dict, router) -> dict:
+        """Read referenced files mentioned in the query. Extracts paths like
+        'Gutter.jsx', 'src/pages/Read/Gutter.jsx', or '@codex/server/index.js'."""
+        import re
+        # Extract file path patterns: .ext filenames, relative paths, @-prefixed paths
+        file_patterns = re.findall(r'(?:@|at\s+)?([a-zA-Z_/][a-zA-Z0-9_/. -]*\.(?:jsx?|tsx?|py|css|json|md|sh|toml|html))', query, re.IGNORECASE)
+        if not file_patterns:
+            return {"source": "File Read", "content": ""}
+
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+        results = []
+        seen = set()
+        for pattern in file_patterns[:5]:
+            pattern = pattern.strip()
+            if pattern in seen:
+                continue
+            seen.add(pattern)
+            # Try direct match first
+            full = os.path.join(project_root, pattern)
+            if os.path.isfile(full):
+                try:
+                    with open(full, "r") as f:
+                        content = f.read()
+                    if len(content) > 2000:
+                        content = content[:2000] + "\n... [truncated]"
+                    results.append(f"## {pattern}\n```\n{content}\n```")
+                except Exception:
+                    pass
+                continue
+            # Try find by basename
+            try:
+                import subprocess
+                basename = os.path.basename(pattern)
+                proc = subprocess.run(
+                    ["find", project_root, "-name", basename, "-not", "-path", "*/node_modules/*",
+                     "-not", "-path", "*/__pycache__/*", "-not", "-path", "*/.venv/*"],
+                    capture_output=True, text=True, timeout=10,
+                )
+                for line in proc.stdout.strip().split("\n"):
+                    line = line.strip()
+                    if not line or not os.path.isfile(line):
+                        continue
+                    try:
+                        with open(line, "r") as f:
+                            content = f.read()
+                        if len(content) > 2000:
+                            content = content[:2000] + "\n... [truncated]"
+                        rel = os.path.relpath(line, project_root)
+                        results.append(f"## {rel}\n```\n{content}\n```")
+                    except Exception:
+                        pass
+                    break  # Just first match per pattern
+            except Exception:
+                pass
+
+        if results:
+            return {"source": "Referenced Files", "content": "\n\n".join(results[:3])}
+        return {"source": "File Read", "content": ""}
 
     def _step_codebase_search(self, query: str, step: dict, context: dict, router) -> dict:
         """Search codebase using the Scholomance collab service."""
