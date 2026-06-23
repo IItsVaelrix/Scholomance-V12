@@ -88,8 +88,11 @@ if command -v loginctl >/dev/null 2>&1; then
 fi
 
 systemctl --user daemon-reload
-systemctl --user enable --now "$OLLAMA_UNIT"
-systemctl --user enable --now "$BRAIN_UNIT"
+# enable for autostart, then restart so re-runs pick up edited units/models
+# (enable --now is a no-op on an already-running unit and would keep the old config).
+systemctl --user enable "$OLLAMA_UNIT" "$BRAIN_UNIT"
+systemctl --user restart "$OLLAMA_UNIT"
+systemctl --user restart "$BRAIN_UNIT"
 
 echo ""
 echo -e "${GREEN}✔ Installed and started.${NC}"
