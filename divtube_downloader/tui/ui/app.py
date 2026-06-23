@@ -27,7 +27,6 @@ from tui.services.prompt_service import PromptService
 from tui.services.scd64_service import scd64_service
 from tui.services.substrate_osmosis_service import SubstrateOsmosisService
 from tui.services.env_config import write_key
-from tui.services.brain_bridge_service import BrainBridgeService
 from tui.screens.video_forge_screen import VideoForgeScreen
 
 # ── Scholomance palette ──────────────────────────────────────────────
@@ -513,7 +512,6 @@ class DivTubeAgentApp(App):
         self.substrate = SubstrateOsmosisService(self.memory)
         self.archive = ArchiveBridge()
         self.prompt = PromptService()
-        self.brain = BrainBridgeService(port=9092)  # Vaelrix brain daemon
         self.cmd_history = []
         self.cmd_index = 0
         # ── agent run controller (Esc to stop) ───────────────────────
@@ -1205,17 +1203,33 @@ class DivTubeAgentApp(App):
             bar.styles.display = "block"
             bar.progress = 0
 
-            def callback(response):
-                def _write():
-                    bar.progress = 100
-                    ui.set_timer(2.0, lambda: setattr(bar.styles, "display", "none"))
-                    if response:
-                        ui.log_msg(f"[{GOLD}]{response}[/]")
-                    else:
-                        ui.log_msg(f"[{WARNING}]Vaelrix returned an empty response.[/]")
-                ui.call_from_thread(_write)
+            def run():
+                import urllib.request, urllib.error, json as _json
+                try:
+                    data = _json.dumps({"query": text}).encode()
+                    req = urllib.request.Request(
+                        "http://127.0.0.1:9090/ask",
+                        data=data,
+                        headers={"Content-Type": "application/json"},
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(req, timeout=120) as resp:
+                        body = _json.loads(resp.read().decode())
+                        response = body.get("response", "[Empty]")
 
-            ui.brain.ask(text, callback)
+                    def _write():
+                        bar.progress = 100
+                        ui.set_timer(2.0, lambda: setattr(bar.styles, "display", "none"))
+                        ui.log_msg(f"[{GOLD}]{response}[/]")
+                    ui.call_from_thread(_write)
+                except Exception as e:
+                    def _write():
+                        bar.progress = 100
+                        ui.set_timer(2.0, lambda: setattr(bar.styles, "display", "none"))
+                        ui.log_msg(f"[{ERROR}]Vaelrix unreachable: {e}\n[#6B7280]Is the daemon running on :9090?[/]")
+                    ui.call_from_thread(_write)
+
+            threading.Thread(target=run, daemon=True).start()
 
         r("/vaelrix", handle_vaelrix, "Ask Vaelrix (SteamDeck brain)", "/vaelrix <question>")
 
