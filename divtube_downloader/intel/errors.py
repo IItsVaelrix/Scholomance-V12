@@ -1,0 +1,19 @@
+YTSEO_INVALID_URL = "YTSEO_INVALID_URL"
+YTSEO_THUMBNAIL_FETCH_FAILED = "YTSEO_THUMBNAIL_FETCH_FAILED"
+YTSEO_MISSING_TELEMETRY = "YTSEO_MISSING_TELEMETRY"
+YTSEO_INVALID_VIDEO_ANALYSIS_SCHEMA = "YTSEO_INVALID_VIDEO_ANALYSIS_SCHEMA"
+YTSEO_REFERENCE_LIBRARY_MISSING = "YTSEO_REFERENCE_LIBRARY_MISSING"
+YTSEO_SCORING_VERSION_MISMATCH = "YTSEO_SCORING_VERSION_MISMATCH"
+
+_MODULE_ID = "YTSEO"
+
+
+def make_error(code, message, severity="WARN", context=None):
+    return {
+        "category": "YTSEO",
+        "severity": severity,
+        "moduleId": _MODULE_ID,
+        "errorCode": code,
+        "message": message,
+        "context": context or {},
+    }

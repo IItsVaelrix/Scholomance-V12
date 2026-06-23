@@ -11,8 +11,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { TruesightWordNode, $isTruesightWordNode } from './TruesightNode';
 import TruesightPlugin from './TruesightPlugin';
 import CursorAndIntelliSensePlugin from './CursorAndIntelliSensePlugin';
+import RitualPredictionPlugin from './RitualPredictionPlugin';
 import Gutter from "../../pages/Read/Gutter.jsx";
 import IntelliSense from '../../components/IntelliSense.jsx';
+import RitualPredictionTooltip from '../../components/RitualPredictionTooltip.jsx';
+import { buildRitualPrediction } from '../../lib/ritualPredictionTooltip.js';
 import { evaluateSCD64CircuitBreaker } from '../../core/scd64/circuitBreaker';
 
 const lexicalTheme = {
@@ -175,6 +178,56 @@ function EditablePlugin({ isEditable }) {
   return null;
 }
 
+// Syncs the gutter's translateY transform to match the ContentEditable's scroll
+// position. We attach directly to the Lexical root element (ContentEditable)
+// because all ancestor wrappers use overflow:hidden and never fire scroll events.
+function GutterScrollSyncPlugin({ gutterRef }) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    return editor.registerRootListener((rootElement, prevRootElement) => {
+      // Remove listener from old root.
+      if (prevRootElement) {
+        prevRootElement.removeEventListener('scroll', prevRootElement.__gutterScroll);
+        delete prevRootElement.__gutterScroll;
+      }
+      // Attach listener to new root.
+      if (rootElement) {
+        const onScroll = () => {
+          gutterRef.current?.syncScroll?.(rootElement.scrollTop);
+        };
+        rootElement.__gutterScroll = onScroll;
+        rootElement.addEventListener('scroll', onScroll, { passive: true });
+        // Sync immediately in case content is already scrolled.
+        gutterRef.current?.syncScroll?.(rootElement.scrollTop);
+      }
+    });
+  }, [editor, gutterRef]);
+  return null;
+}
+
+// Measures the actual rendered height of a single Lexical paragraph (= one line)
+// and reports it upward so the Gutter rows stay pixel-accurate.
+function LineHeightPlugin({ onLineHeight }) {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    const measure = () => {
+      const root = editor.getRootElement();
+      if (!root) return;
+      const para = root.querySelector('p, [class*="paragraph"]');
+      if (!para) return;
+      const h = para.offsetHeight;
+      if (h > 0) onLineHeight(h);
+    };
+    // Measure once after first render and again after each update.
+    const unregister = editor.registerUpdateListener(() => {
+      requestAnimationFrame(measure);
+    });
+    requestAnimationFrame(measure);
+    return unregister;
+  }, [editor, onLineHeight]);
+  return null;
+}
+
 function SavePlugin({ onSave, title }) {
   const [editor] = useLexicalComposerContext();
   useEffect(() => {
@@ -285,10 +338,18 @@ const LexicalScrollEditor = forwardRef(({
 }, ref) => {
   const editorContainerRef = useRef(null);
   const lexicalEditorRef = useRef(null);
+  const gutterRef = useRef(null);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [measuredLineHeight, setMeasuredLineHeight] = useState(32);
+  const handleLineHeight = useCallback((h) => {
+    setMeasuredLineHeight(h);
+  }, []);
   const [cursorCoords, setCursorCoords] = useState({ x: 0, y: 0, lineIndex: 0, colIndex: 0 });
   const [intellisenseSuggestions, setIntellisenseSuggestions] = useState([]);
   const [intellisenseIndex, setIntellisenseIndex] = useState(0);
   const [currentPrefix, setCurrentPrefix] = useState('');
+  const [ritualPrediction, setRitualPrediction] = useState(null);
+  const [ritualAnchor, setRitualAnchor] = useState(null);
   
   // Expose the API Bridge expected by ReadPage.jsx
   useImperativeHandle(ref, () => ({
@@ -461,9 +522,47 @@ const LexicalScrollEditor = forwardRef(({
     setIntellisenseSuggestions([]);
   }, [currentPrefix]);
 
+  const handleRitualPredictionRequest = useCallback((request) => {
+    try {
+      const prediction = buildRitualPrediction({
+        word: request.word,
+        line: 0,
+        column: 0,
+        contextLine: request.contextLine || '',
+        surroundingText: request.contextLine || '',
+      });
+      setRitualPrediction(prediction);
+      setRitualAnchor(request.anchorRect);
+    } catch {
+      setRitualPrediction(null);
+      setRitualAnchor(null);
+    }
+  }, []);
+
+  const handleCloseRitualPrediction = useCallback(() => {
+    setRitualPrediction(null);
+    setRitualAnchor(null);
+  }, []);
+
   const activeIdeMode = isTruesight ? "TRUESIGHT" : (isEditable ? "EDIT" : "NEUTRAL");
   const lines = (content || "").split('\n');
   const totalLines = lines.length;
+
+  // Keep viewportHeight in sync with the editor container so the gutter clips correctly.
+  useEffect(() => {
+    const container = editorContainerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(() => {
+      setViewportHeight(container.clientHeight);
+    });
+    ro.observe(container);
+    setViewportHeight(container.clientHeight);
+    return () => ro.disconnect();
+  }, []);
+
+  // Sync the gutter track position whenever the editor scrolls.
+  // NOTE: This is now handled inside GutterScrollSyncPlugin via registerRootListener
+  // because the wrapper div uses overflow:hidden and never fires scroll events.
 
   const syllablesPerLine = useMemo(() => {
     // Prefer the authoritative per-line counts ReadPage already computes
@@ -558,11 +657,13 @@ const LexicalScrollEditor = forwardRef(({
       >
         <div className="editor-textarea-wrapper" style={{ display: 'flex', flexDirection: 'row', height: '100%', minHeight: 0 }}>
         <Gutter
+          ref={gutterRef}
           totalLines={totalLines}
           currentLine={cursorCoords.lineIndex + 1 || 1}
           syllablesPerLine={syllablesPerLine}
           activeIdeMode={activeIdeMode}
-          lineHeightPx={32}
+          lineHeightPx={measuredLineHeight}
+          viewportHeight={viewportHeight || undefined}
         />
         <div ref={editorContainerRef} className="editor-textarea-wrapper" style={{ flex: 1, position: 'relative', minWidth: 0 }}>
           <div className={`lexical-wrapper ${isTruesight ? 'truesight-active' : ''}`} style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -570,7 +671,7 @@ const LexicalScrollEditor = forwardRef(({
               <EditablePlugin isEditable={isEditable} />
               <ExternalContentSyncPlugin content={content} />
               <PlainTextPlugin
-                contentEditable={<ContentEditable className="editor-textarea lexical-content-editable" style={{ minHeight: '100%', outline: 'none', whiteSpace: 'pre-wrap', position: 'relative', zIndex: 10 }} />}
+                contentEditable={<ContentEditable className="editor-textarea lexical-content-editable" style={{ outline: 'none', whiteSpace: 'pre-wrap', zIndex: 10 }} />}
                 placeholder={<div className="editor-placeholder">Inscribe thy verses...</div>}
               />
               <SavePlugin onSave={onSave} title={title} />
@@ -579,6 +680,7 @@ const LexicalScrollEditor = forwardRef(({
               <LineDecorationPlugin highlightedLines={highlightedLines} pinnedLines={pinnedLines} />
               <TruesightPlugin analyzedDocument={analyzedDocument} isTruesight={isTruesight} isQuarantined={isQuarantined} analyzedWordsByCharStart={analyzedWordsByCharStart} analyzedWordsByIdentity={analyzedWordsByIdentity} theme={theme} resonantCharStarts={resonantCharStarts} />
               <WordClickPlugin onWordActivate={onWordActivate} analyzedDocument={analyzedDocument} />
+              <RitualPredictionPlugin onRitualPredictionRequest={handleRitualPredictionRequest} />
               
               <CursorAndIntelliSensePlugin 
                 onCursorPositionChange={setCursorCoords}
@@ -597,6 +699,8 @@ const LexicalScrollEditor = forwardRef(({
               />
 
               <OnChangePlugin onChange={handleChange} />
+              <GutterScrollSyncPlugin gutterRef={gutterRef} />
+              <LineHeightPlugin onLineHeight={handleLineHeight} />
               <HistoryPlugin />
             </LexicalComposer>
 
@@ -610,6 +714,16 @@ const LexicalScrollEditor = forwardRef(({
                   onHover={setIntellisenseIndex}
                   ghostLine={intellisenseSuggestions[intellisenseIndex]?.ghostLine || null}
                   badges={intellisenseSuggestions[intellisenseIndex]?.badges || []}
+                />
+              )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+              {ritualPrediction && ritualAnchor && (
+                <RitualPredictionTooltip
+                  prediction={ritualPrediction}
+                  anchorRect={ritualAnchor}
+                  onClose={handleCloseRitualPrediction}
                 />
               )}
             </AnimatePresence>

@@ -1,0 +1,57 @@
+{
+  "metadata": {
+    "title": "Vaelrix - Face of the Enderman",
+    "thumbnail_concept": "A shadowy Vaelrix silhouette with glowing purple Enderman eyes, fractured obsidian skin, and a warped Minecraft-inspired void portal behind him. High contrast, eerie, readable at mobile size.",
+    "niche": "gaming music / dark rap / Minecraft-inspired cinematic lyric visualizer",
+    "target_duration_minutes": 3.5
+  },
+  "narrative": {
+    "hook_script": "They said don't look it in the eyes. But I did. Now the void knows my name, and every block I break sounds like something breaking inside me.",
+    "core_conflict": "Vaelrix becomes the Face of the Enderman, caught between human pain and void-born transformation. The video asks whether staring into the monster turns you into it, or reveals what was already there.",
+    "call_to_action": "At 95%, after the final void-glitch blackout, display: 'Subscribe before the portal closes.'"
+  },
+  "segments": [
+    {
+      "time_percent": "0-10%",
+      "action": "Cold open on black screen with distant teleport sounds. Purple eyes flicker open. Vaelrix silhouette appears inside a broken obsidian frame as the hook begins.",
+      "pacing": "Fast",
+      "b_roll": "Glitching Enderman eyes, block particles, purple static, close-up typography synced to syllables."
+    },
+    {
+      "time_percent": "10-25%",
+      "action": "Establish the transformation: Vaelrix walks through a corrupted overworld where trees bend toward him and shadows stretch like arms.",
+      "pacing": "Medium",
+      "b_roll": "Minecraft-inspired terrain, corrupted grass blocks, floating obsidian shards, slow camera drift."
+    },
+    {
+      "time_percent": "25-45%",
+      "action": "The first lyrical escalation. Each bar causes the environment to fracture. The Enderman presence becomes less external and more mirrored in Vaelrix himself.",
+      "pacing": "Fast",
+      "b_roll": "Word impacts crack the screen, purple waveform pulses, teleport cuts between overworld and End dimension."
+    },
+    {
+      "time_percent": "45-60%",
+      "action": "Mid-song descent. The visualizer enters the void. Vaelrix faces dozens of Enderman figures that copy his movements like a chorus of shadow selves.",
+      "pacing": "Slow",
+      "b_roll": "Floating islands, chorus fruit glow, mirrored silhouettes, low-gravity camera rotation."
+    },
+    {
+      "time_percent": "60-78%",
+      "action": "The beat intensifies. Vaelrix stops running and stares directly into the camera. The Enderman eyes become his eyes.",
+      "pacing": "Fast",
+      "b_roll": "Aggressive kinetic typography, rapid portal flashes, purple-black energy tearing across the frame."
+    },
+    {
+      "time_percent": "78-92%",
+      "action": "Final confrontation. The human and Enderman forms overlap until the audience cannot tell which one is original.",
+      "pacing": "Fast",
+      "b_roll": "Split-face composition, obsidian crown motif, bass-synced screen distortion, particle storms."
+    },
+    {
+      "time_percent": "92-100%",
+      "action": "The music drops into a final eerie tail. Vaelrix disappears, leaving only the glowing eyes in darkness. CTA appears after the last teleport sound.",
+      "pacing": "Slow",
+      "b_roll": "Void blackout, lingering purple eyes, final title card, subscribe prompt."
+    }
+  ]
+}

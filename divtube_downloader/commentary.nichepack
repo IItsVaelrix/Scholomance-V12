@@ -1,0 +1,24 @@
+{
+  "commentary": {
+    "optimal_length_min": 35,
+    "optimal_length_max": 60,
+    "power_words": [
+      "drama",
+      "response",
+      "apology",
+      "exposed",
+      "truth",
+      "why",
+      "ruined",
+      "cancelled",
+      "is over",
+      "fall of"
+    ],
+    "target_uppercase_ratio": 0.25,
+    "baseline_search_terms": [
+      "video essay",
+      "commentary",
+      "drama"
+    ]
+  }
+}

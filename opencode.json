@@ -1,5 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "references": {
+    "codebase_root": {
+      "path": ".",
+      "description": "Full Scholomance codebase root"
+    }
+  },
   "mcp": {
     "scholomance-collab": {
       "type": "local",

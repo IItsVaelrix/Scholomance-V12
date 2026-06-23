@@ -25,6 +25,7 @@ export const ScholoTimeLabPage = lazyWithRetry(() => import("../pages/internal/S
 export const BlogIndexPage = lazyWithRetry(() => import("../pages/Blog/BlogIndexPage"), "blog-index-page");
 export const BlogArticlePage = lazyWithRetry(() => import("../pages/Blog/ArticlePage"), "blog-article-page");
 export const VisualizerReleasePage = lazyWithRetry(() => import("../pages/VisualizerRelease/VisualizerReleasePage"), "visualizer-release-page");
+export const OraclePage = lazyWithRetry(() => import("../pages/Oracle/OraclePage.jsx"), "oracle-page");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
 const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/div-wand", "/qbit-world", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox", "/internal/time-lab"];
@@ -51,6 +52,7 @@ export const ALL_COMPONENTS = {
   "/blog": BlogIndexPage,
   "/blog/:slug": BlogArticlePage,
   "/release": VisualizerReleasePage,
+  "/oracle": OraclePage,
 };
 
 /**

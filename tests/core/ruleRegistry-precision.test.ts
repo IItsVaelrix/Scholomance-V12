@@ -51,4 +51,16 @@ describe("RuleRegistry RESONANCE_GHOST precision (assignment-context)", () => {
     `;
     expect(scan(code).filter(isGhost)).toHaveLength(1);
   });
+
+  it("recognizes a Map-built resonance gate as the fix (Set→Map tiered-gate migration)", () => {
+    // The gate is now a tiered Map. A legacy-looking reset is suppressed when
+    // the tiered gate construction (new Map / buildResonanceGate) is present.
+    const code = `
+      function build() {
+        resonantCharStarts = [];                       // legacy-looking reset
+        resonantCharStarts = buildResonanceGate(conns); // tiered gate = the fix
+      }
+    `;
+    expect(scan(code).filter(isGhost)).toHaveLength(0);
+  });
 });

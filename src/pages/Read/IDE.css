@@ -3393,8 +3393,8 @@
 .line-number {
   font-size: var(--text-2xs);
   color: hsla(43, 48%, 48%, 0.6);
-  min-width: 30px;
-  text-align: right;
+  min-width: 22px;
+  text-align: center;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
 }
@@ -3402,6 +3402,17 @@
 .gutter-row--current .line-number {
   color: var(--read-accent);
   font-weight: 700;
+}
+
+/* Symmetric line marker — small filled diamond, replaces the old ".)" suffix. */
+.gutter-tick {
+  flex-shrink: 0;
+  fill: hsla(43, 48%, 48%, 0.5);
+  transition: fill 0.12s ease;
+}
+
+.gutter-row--current .gutter-tick {
+  fill: var(--read-accent);
 }
 
 /* Syllable bars — one small bar per syllable, indented after the line number. */
@@ -3712,6 +3723,33 @@
   -webkit-text-fill-color: currentColor;
 }
 
+/* Lexical ContentEditable: fill the wrapper and scroll like the classic textarea. */
+.ide-layout-wrapper .lexical-content-editable {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  caret-color: var(--read-accent);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+  scrollbar-gutter: stable;
+  padding: var(--editor-content-padding-y) var(--editor-content-padding-x);
+  font-size: var(--editor-content-font-size);
+  line-height: var(--editor-content-line-height);
+  font-family: var(--font-scroll, "Crimson Pro", Georgia, "Liberation Serif", "DejaVu Serif", serif);
+}
+
+/* Zero out browser paragraph margins so every line — including blank ones —
+   is exactly one line-height tall. This is what makes the gutter row heights
+   match the editor content precisely. */
+.ide-layout-wrapper .lexical-content-editable .editor-paragraph {
+  margin: 0;
+  padding: 0;
+  min-height: 1lh; /* guarantees blank paragraphs are still one line tall */
+}
+
 .ide-layout-wrapper .editor-textarea--foreground {
   z-index: var(--z-above);
 }
@@ -3942,6 +3980,22 @@
 .ide-layout-wrapper .grimoire-word--grey.grimoire-word--interactive:hover {
   color: #e4e1eb;
   background: rgba(30, 32, 48, 0.6);
+}
+
+/* Assonance tier — the quiet vowel-echo color. Renders the inline school tint
+   at a reduced intensity with no glow, so assonance reads as a subordinate
+   palette beneath the louder rhyme (--active) tier rather than competing with
+   it. The animated glow is withheld upstream (decodedStyle is skipped for the
+   assonance tier in TruesightPlugin), so this only needs to soften the tint. */
+.ide-layout-wrapper .grimoire-word--assonant {
+  opacity: 0.6;
+  text-shadow: none;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+/* Hovering an assonance word brings its vowel color to full strength. */
+.ide-layout-wrapper .grimoire-word--assonant:hover {
+  opacity: 1;
 }
 
 .ide-layout-wrapper .truesight-word:hover,

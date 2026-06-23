@@ -5,6 +5,17 @@ import './IDE.css';
 // Max syllable bar segments before we just show the number (keeps the gutter tidy).
 const MAX_BARS = 8;
 
+// Symmetric line marker — a small filled diamond that replaces the old asymmetric
+// ".)" suffix and divides the line number from the syllable bars. Fill/opacity
+// come from CSS (.gutter-tick), brightening on the current line.
+function GutterTick() {
+  return (
+    <svg className="gutter-tick" viewBox="0 0 8 8" width="7" height="7" aria-hidden="true">
+      <path d="M4 0 L8 4 L4 8 L0 4 Z" />
+    </svg>
+  );
+}
+
 const Gutter = forwardRef(function Gutter({
   overlayLines = [],
   lineCounts = [],
@@ -90,7 +101,8 @@ const Gutter = forwardRef(function Gutter({
               className={`gutter-row${isCurrent ? ' gutter-row--current' : ''}`}
               style={rowStyle}
             >
-              <span className="line-number">{row.lineNumber != null ? `${row.lineNumber}.)` : ''}</span>
+              <span className="line-number">{row.lineNumber != null ? row.lineNumber : ''}</span>
+              {row.lineNumber != null && <GutterTick />}
               {renderSyllables(row.syllables)}
             </div>
           );

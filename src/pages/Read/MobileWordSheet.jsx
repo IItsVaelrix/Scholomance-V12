@@ -1,42 +1,36 @@
 import MobileBottomSheet from './MobileBottomSheet.jsx';
-import WordTooltip from '../../components/WordTooltip.jsx';
+import RitualPredictionTooltip from '../../components/RitualPredictionTooltip.jsx';
 import { useHaptic } from '../../hooks/useHaptic.ts';
 
 export default function MobileWordSheet({
   isOpen, onClose,
-  wordData, analysis,
-  isLoading, error,
-  onSuggestionClick,
+  word, contextLine,
+  onTransmute,
   sessionHistory, sessionIndex, onSessionNavigate,
   hapticEnabled = false,
 }) {
   const { haptic } = useHaptic(hapticEnabled);
 
-  function handleSuggestionClick(word) {
+  function handleTransmute(chosenWord) {
     haptic('select');
     setTimeout(() => haptic('success'), 40);
-    onSuggestionClick(word);
+    onTransmute?.(chosenWord);
     onClose();
   }
 
   return (
     <MobileBottomSheet isOpen={isOpen} onClose={onClose}>
       <div className="ide-word-sheet">
-        {wordData && (
-          <WordTooltip
-            wordData={wordData}
-            analysis={analysis}
-            isLoading={isLoading}
-            error={error}
-            x={0}
-            y={0}
-            onDrag={() => {}}
+        {word && (
+          <RitualPredictionTooltip
+            word={word}
+            contextLine={contextLine}
+            isEmbedded={true}
             onClose={onClose}
-            onSuggestionClick={handleSuggestionClick}
+            onTransmute={onTransmute ? handleTransmute : undefined}
             sessionHistory={sessionHistory}
             sessionIndex={sessionIndex}
             onSessionNavigate={onSessionNavigate}
-            isEmbedded={true}
           />
         )}
       </div>

@@ -27,9 +27,13 @@ import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.
  */
 
 const RHYME_THRESHOLD = 0.60;
-const ASSONANCE_THRESHOLD = 0.5;
+const ASSONANCE_THRESHOLD = 0.45;
 const STRESSED_ASSONANCE_SCORE = 0.62;
 const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
+// Cross-line assonance: full pairwise scan for same-vowel buckets up to this
+// size; larger buckets fall back to document-adjacent pairs only, bounding the
+// pairwise work in vowel-dense text.
+const ASSONANCE_BUCKET_FULL_SCAN_MAX = 16;
 const TRUESIGHT_RHYME_TYPES = new Set([
   ...Object.values(RHYME_TYPES).map(t => t.id),
   ...Object.values(RHYME_SUBTYPES || {}).map(t => t.id)
@@ -233,7 +237,19 @@ export class DeepRhymeEngine {
 
   async findPhraseConnections(verseIR) {
     const phraseNodes = [];
-    const multiTokenWindows = verseIR.syllableWindows.filter(w => w.tokenSpan[0] !== w.tokenSpan[1]);
+    // Dedup identical windows (same char span) up front. syllableWindows can
+    // emit the same multi-token span repeatedly; without this the pairwise scan
+    // below is O(dupWindows^2), producing tens of thousands of duplicate
+    // phrase_compound connections (≈138k on a 500-word verse) that cost
+    // analyzeDeep calls, memory, and downstream vectorization for no new signal.
+    const seenWindowSpans = new Set();
+    const multiTokenWindows = verseIR.syllableWindows.filter(w => {
+      if (w.tokenSpan[0] === w.tokenSpan[1]) return false;
+      const spanKey = `${w.charStart}:${w.charEnd}`;
+      if (seenWindowSpans.has(spanKey)) return false;
+      seenWindowSpans.add(spanKey);
+      return true;
+    });
     
     const phraseStrings = [...new Set(multiTokenWindows.map(w => 
         verseIR.rawText.substring(w.charStart, w.charEnd).replace(/[^A-Za-z]/g, '').toUpperCase()
@@ -364,43 +380,40 @@ export class DeepRhymeEngine {
       existingPairKeys.add(this.getPairKey(conn.wordA, conn.wordB));
     }
 
-    // Collect all words from all lines as candidates.
-    // Only 2+ syllable words are eligible as anchors to reduce noise.
-    const multiSylWords = [];
+    // Collect all words from all lines as candidates. Monosyllabic content
+    // words now participate as anchors too (not only multisyllabic): a vowel
+    // echo between short words is genuine assonance, and the tiered gate
+    // renders assonance as a quiet tint, so the old noise-reduction
+    // restriction is unnecessary. A per-family bucket cap bounds the work.
     const allWords = [];
     for (const line of lines) {
       for (const word of line.words) {
         if (!word.analysis) continue;
         allWords.push(word);
-        if ((word.analysis.syllableCount || 1) >= 2) multiSylWords.push(word);
       }
     }
 
-    if (multiSylWords.length < 2) return connections;
+    if (allWords.length < 2) return connections;
 
-    // Build stressed-vowel family buckets from multisyllabic anchor words.
+    // Build stressed-vowel family buckets from every analyzed word.
     const stressBuckets = new Map();
-    for (const word of multiSylWords) {
+    for (const word of allWords) {
       const family = this.getPrimaryStressedVowelFamily(word.analysis);
       if (!family) continue;
       if (!stressBuckets.has(family)) stressBuckets.set(family, []);
       stressBuckets.get(family).push(word);
     }
 
-    // Also add monosyllabic content words into the buckets as secondary targets.
-    for (const word of allWords) {
-      if ((word.analysis.syllableCount || 1) >= 2) continue; // already added
-      const family = this.getPrimaryStressedVowelFamily(word.analysis);
-      if (!family) continue;
-      if (stressBuckets.has(family)) stressBuckets.get(family).push(word);
-    }
-
     const seenPairs = new Set(existingPairKeys);
 
     for (const [, groupWords] of stressBuckets) {
       if (groupWords.length < 2) continue;
+      // Full pairwise scan for normal buckets; for very large same-vowel
+      // buckets, fall back to document-adjacent pairs only to bound the work.
+      const fullScan = groupWords.length <= ASSONANCE_BUCKET_FULL_SCAN_MAX;
       for (let i = 0; i < groupWords.length; i++) {
-        for (let j = i + 1; j < groupWords.length; j++) {
+        const jEnd = fullScan ? groupWords.length : Math.min(groupWords.length, i + 2);
+        for (let j = i + 1; j < jEnd; j++) {
           const wA = groupWords[i], wB = groupWords[j];
 
           // Skip same-line pairs — already handled by findInternalRhymes.
@@ -409,11 +422,10 @@ export class DeepRhymeEngine {
           // Skip if BOTH are end-words — already handled by findEndRhymeConnections.
           if (endWordCharStarts.has(wA.charStart) && endWordCharStarts.has(wB.charStart)) continue;
 
-          // Require at least one word to have 2+ syllables (the anchor).
-          const aMulti = (wA.analysis.syllableCount || 1) >= 2;
-          const bMulti = (wB.analysis.syllableCount || 1) >= 2;
-          if (!aMulti && !bMulti) continue;
-
+          // Interior cross-line vowel echoes. Only the ones the scorer classes
+          // as type:'assonance' (and that clear the gate's assonance floor)
+          // tint; near/perfect-scored echoes are not promoted, keeping the
+          // assonance palette from over-representing.
           this.pushConnectionIfValid(wA, wB, connections, seenPairs);
         }
       }

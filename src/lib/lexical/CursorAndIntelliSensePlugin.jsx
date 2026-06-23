@@ -2,6 +2,33 @@ import { useEffect } from 'react';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
 import { $getSelection, $isRangeSelection, COMMAND_PRIORITY_HIGH, KEY_DOWN_COMMAND, KEY_ARROW_DOWN_COMMAND, KEY_ARROW_UP_COMMAND, KEY_TAB_COMMAND, KEY_ENTER_COMMAND, KEY_ESCAPE_COMMAND } from 'lexical';
 
+/**
+ * Reconstruct the document text from the start up to the cursor by walking up
+ * from the anchor node, prepending each previous sibling's text. A paragraph
+ * sibling contributes a single '\n' line boundary (line 48 below). The cursor's
+ * line is then `text.split('\n').length - 1`.
+ *
+ * Pure (only uses the Lexical node read API: getKey/getType/getTextContent/
+ * getPreviousSibling/getParent) so it is unit-testable with plain fake nodes.
+ *
+ * @param {object} anchorNode - the selection anchor node
+ * @param {string} localTextBeforeCursor - text within the anchor before the cursor
+ * @returns {string}
+ */
+export function buildTextBeforeCursor(anchorNode, localTextBeforeCursor) {
+  let fullTextBeforeCursor = localTextBeforeCursor;
+  let curr = anchorNode;
+  while (curr !== null && curr.getKey() !== 'root') {
+    let prev = curr.getPreviousSibling();
+    while (prev !== null) {
+      fullTextBeforeCursor = prev.getTextContent() + (prev.getType() === 'paragraph' ? '\n' : '') + fullTextBeforeCursor;
+      prev = prev.getPreviousSibling();
+    }
+    curr = curr.getParent();
+  }
+  return fullTextBeforeCursor;
+}
+
 export default function CursorAndIntelliSensePlugin({
   onCursorPositionChange,
   onCursorChange,
@@ -40,19 +67,7 @@ export default function CursorAndIntelliSensePlugin({
         const prefix = lastWordMatch ? lastWordMatch[1] : '';
 
         // Compute global line and col
-        let fullTextBeforeCursor = localTextBeforeCursor;
-        let curr = anchorNode;
-        while (curr !== null && curr.getKey() !== 'root') {
-          let prev = curr.getPreviousSibling();
-          while (prev !== null) {
-            fullTextBeforeCursor = prev.getTextContent() + (prev.getType() === 'paragraph' ? '\n' : '') + fullTextBeforeCursor;
-            prev = prev.getPreviousSibling();
-          }
-          curr = curr.getParent();
-          if (curr && curr.getType() === 'paragraph' && curr.getPreviousSibling()) {
-            fullTextBeforeCursor = '\n' + fullTextBeforeCursor;
-          }
-        }
+        const fullTextBeforeCursor = buildTextBeforeCursor(anchorNode, localTextBeforeCursor);
 
         const lines = fullTextBeforeCursor.split('\n');
         const lineIndex = lines.length - 1;

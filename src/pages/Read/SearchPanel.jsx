@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { useWordLookup } from '../../hooks/useWordLookup.jsx';
+import { useOracleQuery } from '../../hooks/useOracleQuery.jsx';
 import { usePredictor } from '../../hooks/usePredictor.jsx';
 import ErrorBoundary from '../../components/shared/ErrorBoundary.jsx';
 import OracleSignalFallback from '../../components/shared/OracleSignalFallback.jsx';
@@ -175,7 +176,7 @@ function SearchPanelInner({
   const [castSignal, setCastSignal] = useState(null);
 
   // — Mode state —
-  const [mode, setMode] = useState('WORD'); // 'WORD' | 'CORPUS'
+  const [mode, setMode] = useState('WORD'); // 'WORD' | 'CORPUS' | 'QUERY'
 
   // — CORPUS mode state —
   const [corpusResults, setCorpusResults] = useState([]);
@@ -196,6 +197,15 @@ function SearchPanelInner({
     reset,
     source,
   } = useWordLookup();
+
+  const {
+    query: executeQuery,
+    data: queryData,
+    isLoading: isQueryLoading,
+    status: queryStatus,
+    error: queryError,
+    reset: resetQuery,
+  } = useOracleQuery();
 
   const { checkSpelling, getSpellingSuggestions } = usePredictor();
   const [searchMisspelling, setSearchMisspelling] = useState(null);
@@ -409,8 +419,12 @@ function SearchPanelInner({
       if (!normalized) return;
       triggerSubmitCast(normalized);
       void performLookup(normalized);
+    } else if (mode === 'QUERY') {
+      const trimmed = query.trim();
+      if (!trimmed) return;
+      void executeQuery(trimmed, { verseIR: null, tokenWeights: null }); // TODO: Pass actual telemetry if available
     }
-  }, [performLookup, query, mode, triggerSubmitCast]);
+  }, [performLookup, query, mode, triggerSubmitCast, executeQuery]);
 
   const handleClear = useCallback(() => {
     userOverrideRef.current = false;
@@ -428,7 +442,8 @@ function SearchPanelInner({
       castTimeoutRef.current = null;
     }
     reset();
-  }, [reset]);
+    resetQuery();
+  }, [reset, resetQuery]);
 
   const handleSuggestionSelect = useCallback((word) => {
     void performLookup(word);
@@ -452,7 +467,9 @@ function SearchPanelInner({
       window.clearTimeout(castTimeoutRef.current);
       castTimeoutRef.current = null;
     }
-  }, []);
+    reset();
+    resetQuery();
+  }, [reset, resetQuery]);
 
   const statusTone = error
     ? 'error'
@@ -492,8 +509,8 @@ function SearchPanelInner({
         },
       };
 
-  const isLoadingChamber = mode === 'WORD' ? isLoading : isCorpusLoading;
-  const currentStatusTone = mode === 'WORD' ? statusTone : (isCorpusLoading ? 'loading' : corpusError ? 'error' : corpusResults.length ? 'resolved' : 'idle');
+  const isLoadingChamber = mode === 'WORD' ? isLoading : mode === 'QUERY' ? isQueryLoading : isCorpusLoading;
+  const currentStatusTone = mode === 'WORD' ? statusTone : mode === 'QUERY' ? queryStatus : (isCorpusLoading ? 'loading' : corpusError ? 'error' : corpusResults.length ? 'resolved' : 'idle');
   const oracleLinkStrength = currentStatusTone === 'loading'
     ? 0.35
     : currentStatusTone === 'error'
@@ -507,7 +524,7 @@ function SearchPanelInner({
       className={`search-panel search-panel--oracle search-panel--${variant}`}
       data-school={schoolTheme.id}
       data-oracle-scanline={schoolTheme.scanline}
-      data-status={mode === 'WORD' ? statusTone : (isCorpusLoading ? 'loading' : corpusError ? 'error' : corpusResults.length ? 'resolved' : 'idle')}
+      data-status={currentStatusTone}
     >
       <div
         className={[
@@ -552,6 +569,14 @@ function SearchPanelInner({
             >
               CORPUS
             </button>
+            <button
+              type="button"
+              className={`oracle-mode-btn${mode === 'QUERY' ? ' oracle-mode-btn--active' : ''}`}
+              onClick={() => handleSwitchMode('QUERY')}
+              aria-pressed={mode === 'QUERY'}
+            >
+              QUERY
+            </button>
           </div>
         </div>
 
@@ -572,11 +597,13 @@ function SearchPanelInner({
             placeholder={
               mode === 'CORPUS'
                 ? 'search the literary archive...'
-                : 'summon a word, echo family, or meaning shard'
+                : mode === 'QUERY'
+                  ? 'ask the oracle a question about your verse...'
+                  : 'summon a word, echo family, or meaning shard'
             }
             autoComplete="off"
             spellCheck="false"
-            aria-label={mode === 'CORPUS' ? 'Search the corpus archive' : 'Search the lexicon oracle'}
+            aria-label={mode === 'CORPUS' ? 'Search the corpus archive' : mode === 'QUERY' ? 'Ask the Oracle' : 'Search the lexicon oracle'}
           />
           {query && (
             <button type="button" className="oracle-query-clear" onClick={handleClear} aria-label="Clear query">
@@ -586,6 +613,11 @@ function SearchPanelInner({
           {mode === 'WORD' && (
             <button type="submit" className="oracle-query-submit" aria-label="Resolve word in the Lexicon Oracle">
               resolve
+            </button>
+          )}
+          {mode === 'QUERY' && (
+            <button type="submit" className="oracle-query-submit" aria-label="Consult the Lexicon Oracle">
+              consult
             </button>
           )}
         </form>
@@ -623,6 +655,18 @@ function SearchPanelInner({
               </span>
               <span className="oracle-signal-pill">
                 query::{resolvedLookupWord || '--'}
+              </span>
+            </>
+          ) : mode === 'QUERY' ? (
+            <>
+              <span className="oracle-signal-pill">
+                {isQueryLoading ? 'divining' : queryError ? 'fault' : queryData ? 'resolved' : 'standby'}
+              </span>
+              <span className="oracle-signal-pill">
+                tokens::{queryData?.recommendedTokens?.length || '--'}
+              </span>
+              <span className="oracle-signal-pill">
+                query::{query ? (query.length > 20 ? query.slice(0, 20) + '...' : query) : '--'}
               </span>
             </>
           ) : (
@@ -692,8 +736,93 @@ function SearchPanelInner({
         <div className="oracle-feed" role="region" aria-live="polite" aria-label={`Lexicon terminal output – ${inputIdRef.current}`}>
           <AnimatePresence mode="wait">
 
-            {/* ═══ CORPUS MODE ═══ */}
-            {mode === 'CORPUS' ? (
+            {/* ═══ QUERY MODE ═══ */}
+            {mode === 'QUERY' ? (
+              isQueryLoading ? (
+                <motion.div
+                  key="query-loading"
+                  className="oracle-boot"
+                  {...revealMotion}
+                  transition={{ duration: 0.24 }}
+                >
+                  {BOOT_LINES.map((line, index) => (
+                    <motion.div
+                      key={`query-boot-${index}`}
+                      className="oracle-boot-line"
+                      initial={prefersReducedMotion ? false : { opacity: 0, x: -8 }}
+                      animate={prefersReducedMotion ? false : { opacity: 1, x: 0 }}
+                      transition={prefersReducedMotion ? undefined : { delay: index * 0.09, duration: 0.22 }}
+                    >
+                      <span className="oracle-boot-prompt">&gt;&gt;</span>
+                      <span>{line.replace('INIT', 'DIVINING')}</span>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : queryError ? (
+                <motion.div
+                  key="query-error"
+                  className="oracle-stack"
+                  {...revealMotion}
+                  transition={{ duration: 0.24 }}
+                >
+                  <OracleSignalFallback status="disconnected" error={queryError} />
+                </motion.div>
+              ) : queryData ? (
+                <motion.div
+                  key="query-results"
+                  className="oracle-stack"
+                  {...revealMotion}
+                  transition={{ duration: 0.24 }}
+                >
+                  <motion.section className="oracle-section" {...streamMotionProps}>
+                    <div className="oracle-section-head">
+                      <span className="oracle-section-index">01</span>
+                      <span className="oracle-section-label">Divination</span>
+                    </div>
+                    <motion.div className="oracle-corpus-snippet-text" {...streamLineMotionProps} style={{ padding: '0.5rem 1rem' }}>
+                      {queryData.responseText}
+                    </motion.div>
+                  </motion.section>
+                  
+                  {queryData.recommendedTokens && queryData.recommendedTokens.length > 0 && (
+                    <motion.section className="oracle-section" {...streamMotionProps}>
+                      <div className="oracle-section-head">
+                        <span className="oracle-section-index">02</span>
+                        <span className="oracle-section-label">Recommended Forms</span>
+                      </div>
+                      <motion.div className="oracle-suggestion-row" style={{ padding: '0.5rem 1rem' }} {...streamLineMotionProps}>
+                        {queryData.recommendedTokens.map(token => (
+                          <button
+                            key={token}
+                            type="button"
+                            className="oracle-suggestion-chip"
+                            onClick={() => handleCorpusTokenLookup(token)}
+                          >
+                            {token}
+                          </button>
+                        ))}
+                      </motion.div>
+                    </motion.section>
+                  )}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="query-idle"
+                  className="oracle-idle"
+                  {...revealMotion}
+                  transition={{ duration: 0.24 }}
+                >
+                  <p className="oracle-idle-title">Ask the Oracle.</p>
+                  <p className="oracle-idle-copy">
+                    The Oracle perceives the rhythm and tone of your verse. Ask it for guidance, stylistic advice, or structural adjustments. Max 200 words.
+                  </p>
+                  <div className="oracle-idle-prompt">
+                    <span>&gt;&gt;</span>
+                    <span>try: My verse feels too heavy. How can I lighten the final line?</span>
+                  </div>
+                </motion.div>
+              )
+            ) : mode === 'CORPUS' ? (
               isCorpusLoading ? (
                 <motion.div
                   key="corpus-loading"

@@ -165,13 +165,15 @@ describe('Lexical Truesight — annotation per-word (regression probe)', () => {
     expect(truesightSpans.length).toBe(5);
   });
 
-  it('resonantCharStarts Set with correct charStarts colors only resonant words, not whole lines', async () => {
+  it('tiered resonance gate Map colors only gated words, by tier, not whole lines', async () => {
     const analyzedWordsByCharStart = {
       0: { token: 'Alpha', vowelFamily: 'AE' },
       6: { token: 'beta', vowelFamily: 'EY' },
       11: { token: 'gamma', vowelFamily: 'AE' },
     };
-    const resonantCharStarts = new Set([0, 11]); // Alpha and gamma are resonant, beta is not
+    // Alpha = rhyme tier (--active), gamma = assonance tier (--assonant),
+    // beta = ungated (--grey).
+    const resonantCharStarts = new Map([[0, 'rhyme'], [11, 'assonance']]);
 
     const { container } = render(
       <LexicalScrollEditor
@@ -188,29 +190,16 @@ describe('Lexical Truesight — annotation per-word (regression probe)', () => {
     });
 
     const truesightSpans = container.querySelectorAll('.grimoire-word');
-    const coloredSpans = container.querySelectorAll('.grimoire-word--active');
+    const activeSpans = container.querySelectorAll('.grimoire-word--active');
+    const assonantSpans = container.querySelectorAll('.grimoire-word--assonant');
     const greySpans = container.querySelectorAll('.grimoire-word--grey');
 
-    console.log('---- resonant Set DOM dump ----');
-    console.log(`  total grimoire-word: ${truesightSpans.length}`);
-    console.log(`  --active (should be 2): ${coloredSpans.length}`);
-    console.log(`  --grey (should be 1): ${greySpans.length}`);
-    for (let i = 0; i < truesightSpans.length; i += 1) {
-      const span = truesightSpans[i];
-      console.log(`  span[${i}]: text="${span.textContent}" class="${span.className}"`);
-    }
-
-    // EXPECTED: 3 words, 2 colored (--active), 1 grey (--grey).
-    // CURRENT: 3 words, 2 colored, 0 grey — the regular branch creates a
-    // TruesightWordNode with empty truesightClass for non-resonant words,
-    // and the active branch (which would add --grey) doesn't fire on the
-    // newly-created node because Lexical's `replace` doesn't auto-mark
-    // the new node dirty. This is the root cause of the "annotation goes
-    // per line" symptom: non-resonant words have NO class, so they look
-    // like plain text, and the user perceives the annotation as applying
-    // only to whole lines (the resonant words).
+    // EXPECTED: 3 words — 1 rhyme (--active, Alpha), 1 assonance (--assonant,
+    // gamma), 1 ungated (--grey, beta). Non-resonant words must still carry an
+    // explicit class so the annotation does not read as whole-line coloring.
     expect(truesightSpans.length).toBe(3);
-    expect(coloredSpans.length).toBe(2);
+    expect(activeSpans.length).toBe(1);
+    expect(assonantSpans.length).toBe(1);
     expect(greySpans.length).toBe(1);
   });
 
@@ -223,7 +212,7 @@ describe('Lexical Truesight — annotation per-word (regression probe)', () => {
       0: { token: 'Alpha', vowelFamily: 'AE' },
       6: { token: 'beta', vowelFamily: 'EY' },
     };
-    const resonantCharStarts = new Set([0]);
+    const resonantCharStarts = new Map([[0, 'rhyme']]);
 
     const { container } = render(
       <LexicalScrollEditor

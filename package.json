@@ -100,7 +100,9 @@
     "polish": "node scripts/production-polish.js full",
     "polish:quick": "node scripts/production-polish.js quick",
     "polish:ci": "node scripts/production-polish.js full --ci",
-    "scd64:intellisense": "npx tsx scripts/scd64-intellisense.ts"
+    "scd64:intellisense": "npx tsx scripts/scd64-intellisense.ts",
+    "chatbot": "cd nlp_chatbot && ./venv/bin/uvicorn server.api:app --reload --port 8000",
+    "chatbot:app": "cd nlp_chatbot && ./venv/bin/python client/terminal.py"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

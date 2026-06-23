@@ -72,6 +72,10 @@ const FIX_PATTERNS: Record<string, RegExp[]> = {
   ],
   RESONANCE_GHOST: [
     /resonantCharStarts\s*=\s*new Set\(/,
+    // The gate is now a tiered Map built by buildResonanceGate; either the Map
+    // construction or the builder call is a valid "gate constructed" signal.
+    /resonantCharStarts\s*=\s*new Map\(/,
+    /buildResonanceGate/,
     /MIN_RESONANCE_SCORE/
   ]
 };

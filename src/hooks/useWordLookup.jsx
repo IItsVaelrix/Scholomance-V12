@@ -27,7 +27,7 @@ function makeOracleError(category, code, severity, message) {
   return { category, code, severity, message };
 }
 
-const ORACLE_ERRORS = {
+export const ORACLE_ERRORS = {
   NOT_FOUND: makeOracleError('NOT_FOUND', 'WORD_NOT_FOUND', 'INFO', 'Word not found in the archive.'),
   DENIED: makeOracleError('AUTH', 'LEXICON_ACCESS_DENIED', 'WARN', 'Lexicon access denied.'),
   WARMING: makeOracleError('INITIALIZING', 'ORACLE_WARMING', 'INFO', 'The Oracle is warming. Try again shortly.'),

@@ -13,41 +13,13 @@ import { decodeBytecode } from '../../lib/truesight/bytecodeRenderer.js';
 // multi-word lines never tokenize/colour. Non-global so .exec has no lastIndex.
 const WORD_MATCH_REGEX = new RegExp(WORD_PATTERN);
 
-// Loud-failure invariant: when the resonance gate is set but no charStart
-// in the document matches any entry, the upstream analysis convention has
-// drifted from the Lexical convention (Prion #1). Log a one-shot warning so
-// the bug is visible in dev. In production the words simply stay uncolored
-// rather than silently applying a wrong-position analysis.
-let _gateConventionsDriftWarned = false;
-function warnGateConventionsDrift(globalCharStart, resonantSetSize) {
-  if (_gateConventionsDriftWarned) return;
-  if (typeof console === 'undefined' || !console.warn) return;
-  _gateConventionsDriftWarned = true;
-  console.warn(
-    '[Truesight] Resonance gate Set has no charStart matching the Lexical document. ' +
-    'Upstream analysis (compileVerseToIR) and Lexical (charStart.js) may disagree on the ' +
-    'paragraph-joined-with-\\n convention. Probe charStart=' + globalCharStart +
-    ', resonantSetSize=' + resonantSetSize + '. ' +
-    'Words will render uncolored until the conventions align — see tests/qa/features/charStart-convention.test.jsx.'
-  );
-}
-
-// Module-scoped flag so the dev-only warning is a one-shot, never per-word spam.
-let _driftDetectorSampled = false;
-function maybeWarnIfGateConventionDrifted(analyzedWordsByCharStart, resonantCharStarts, currentCharStart) {
-  if (_driftDetectorSampled) return;
-  if (!(resonantCharStarts instanceof Set) || resonantCharStarts.size === 0) return;
-  
-  // Only sample if the analysis is fully populated.
-  if (!analyzedWordsByCharStart || analyzedWordsByCharStart.size === 0) return;
-
-  _driftDetectorSampled = true;
-  // We check analyzedWordsByCharStart. If the word isn't even in the base analysis,
-  // we might have a drift or it might just be an unanalyzed new word.
-  // To avoid spurious warnings during typing, we just skip warning here, or check if
-  // NONE of the resonantCharStarts are in the document.
-  // Since we only process one node at a time, we can't easily check the whole document.
-  // We'll remove the spurious warning, but keep the function signature.
+// The tiered resonance gate is a Map<charStart, 'rhyme' | 'assonance'>.
+// 'rhyme' = full school color + glow (the historical active tier).
+// 'assonance' = soft school tint, no glow (the quiet vowel-echo tier).
+// Build the per-word class for a resolved tier.
+function tierColorClass(school, tier) {
+  const tierClass = tier === 'assonance' ? 'grimoire-word--assonant' : 'grimoire-word--active';
+  return `grimoire-word--${school} ${tierClass}`;
 }
 
 export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, isTruesight, isQuarantined, analyzedWordsByCharStart, analyzedWordsByIdentity, theme, resonantCharStarts }) {
@@ -94,8 +66,6 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
     const transformListener = (textNode) => {
       const { isQuarantined, analyzedWordsByCharStart, analyzedWordsByIdentity, theme, resonantCharStarts } = inputsRef.current;
 
-      const isResonantAt = (cs) => !(resonantCharStarts instanceof Set) || resonantCharStarts.has(cs);
-
       if (!isTruesight) {
         if ($isTruesightWordNode(textNode)) {
           textNode.replace($createTextNode(textNode.getTextContent()));
@@ -111,24 +81,20 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
       if ($isTruesightWordNode(textNode)) {
         if (WORD_TOKEN_REGEX.test(textContent)) {
           const globalCharStart = computeCharStartFromLexical(textNode);
-          maybeWarnIfGateConventionDrifted(inputsRef.current.analyzedWordsByCharStart, resonantCharStarts, globalCharStart);
 
           const tokenData = lookupTokenData(textNode, textContent);
 
           const wordInfo = wordTruesight(textContent);
           const tokenInfo = tokenTruesight(tokenData || { token: textContent }, textContent);
 
+          const isGated = resonantCharStarts instanceof Map;
+          const tier = isGated ? (resonantCharStarts.get(globalCharStart) || null) : 'rhyme';
+
           let truesight = wordInfo;
           let shouldColor = false;
-
-          if (resonantCharStarts instanceof Set) {
-            if (resonantCharStarts.has(globalCharStart)) {
-              truesight = tokenInfo;
-              shouldColor = true;
-            } else {
-              truesight = wordInfo;
-              shouldColor = false;
-            }
+          if (isGated) {
+            shouldColor = tier !== null;
+            truesight = shouldColor ? tokenInfo : wordInfo;
           } else {
             truesight = wordInfo;
             shouldColor = Boolean(wordInfo);
@@ -138,14 +104,16 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
 
           let truesightClass = '';
           if (shouldColor) {
-            truesightClass = `grimoire-word--${truesight.school} grimoire-word--active`;
+            truesightClass = tierColorClass(truesight.school, tier);
           } else if (truesight) {
             truesightClass = 'grimoire-word--grey';
           }
 
           if (textNode.__color !== color || textNode.__truesightClass !== truesightClass) {
             const bytecode = tokenData?.bytecode;
-            const decodedStyle = (bytecode && shouldColor && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
+            // The animated glow (decoded bytecode style) is the rhyme tier's
+            // signal; the assonance tier shows only the soft school tint.
+            const decodedStyle = (bytecode && shouldColor && tier !== 'assonance' && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
             const updatedNode = $createTruesightWordNode(textContent, color, truesightClass, decodedStyle, false, tokenData);
             textNode.replace(updatedNode);
           }
@@ -179,24 +147,20 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
       }
 
       const globalCharStart = computeCharStartFromLexical(targetNode);
-      maybeWarnIfGateConventionDrifted(resonantCharStarts, globalCharStart);
 
       const tokenData = lookupTokenData(targetNode, word);
 
       const wordInfo = wordTruesight(word);
       const tokenInfo = tokenTruesight(tokenData || { token: word }, word);
 
+      const isGated = resonantCharStarts instanceof Map;
+      const tier = isGated ? (resonantCharStarts.get(globalCharStart) || null) : 'rhyme';
+
       let truesight = wordInfo;
       let shouldColor = false;
-
-      if (resonantCharStarts instanceof Set) {
-        if (resonantCharStarts.has(globalCharStart)) {
-          truesight = tokenInfo;
-          shouldColor = true;
-        } else {
-          truesight = wordInfo;
-          shouldColor = false;
-        }
+      if (isGated) {
+        shouldColor = tier !== null;
+        truesight = shouldColor ? tokenInfo : wordInfo;
       } else {
         truesight = wordInfo;
         shouldColor = Boolean(wordInfo);
@@ -216,13 +180,15 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
       // and tests/qa/features/charStart-convention.test.jsx for the guards.
       let truesightClass = '';
       if (shouldColor) {
-        truesightClass = `grimoire-word--${truesight.school} grimoire-word--active`;
+        truesightClass = tierColorClass(truesight.school, tier);
       } else if (truesight) {
         truesightClass = 'grimoire-word--grey';
       }
 
       const bytecode = tokenData?.bytecode;
-      const decodedStyle = (bytecode && shouldColor && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
+      // The animated glow is the rhyme tier's signal; the assonance tier shows
+      // only the soft school tint.
+      const decodedStyle = (bytecode && shouldColor && tier !== 'assonance' && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
 
       const truesightNode = $createTruesightWordNode(word, color, truesightClass, decodedStyle, false, tokenData);
       targetNode.replace(truesightNode);
@@ -260,7 +226,6 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
   useEffect(() => {
     if (prevResonantRef.current !== resonantCharStarts) {
       prevResonantRef.current = resonantCharStarts;
-      _driftDetectorSampled = false;
       // The gate changed (e.g. async analysis filled the resonant Set after
       // first render). Re-run the transform over EVERY word-bearing node so
       // existing words re-evaluate against the new Set. Marking only

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   User,
   LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -23,6 +24,7 @@ const ICON_MAP = {
   listen: Headphones,
   read: BookOpen,
   visualiser: Activity,
+  oracle: MessageSquare,
 };
 
 const ROUTE_COPY = {
@@ -30,6 +32,7 @@ const ROUTE_COPY = {
   listen: "Tune stations, broadcasts, and ambient transmission.",
   read: "Compose scrolls and inspect their hidden anatomy.",
   visualiser: "Kinetic lyric visualiser — phoneme school colors, beat sync.",
+  oracle: "Consult the Oracle for Lyrical Analysis.",
   blog: "Read transmissions, skills, verdicts, and whitepapers.",
   pixelbrain: "Neural network visualization and metadata mapping.",
   career: "Transmute professional experience into high-acuity sigils.",

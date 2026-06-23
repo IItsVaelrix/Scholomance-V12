@@ -34,6 +34,7 @@ import { collabMcpHttpRoutes } from './collab/mcp-http.routes.js';
 import { collabMcpOAuthRoutes } from './collab/mcp-oauth.routes.js';
 import { startAgentQaSweep, stopAgentQaSweep } from './collab/collab.agent-qa.js';
 import { wordLookupRoutes } from './routes/wordLookup.routes.js';
+import { oracleRoutes } from './routes/oracle.routes.js';
 import { panelAnalysisRoutes } from './routes/panelAnalysis.routes.js';
 import { grimdesignRoutes } from './routes/grimdesign.routes.js';
 import { combatRoutes } from './routes/combat.routes.js';
@@ -1082,6 +1083,7 @@ fastify.addHook('onSend', async (request, _reply, payload) => {
 });
 
 fastify.register(wordLookupRoutes);
+fastify.register(oracleRoutes, { prefix: '/api/oracle' });
 fastify.register(grimdesignRoutes);
 await fastify.register(panelAnalysisRoutes, {
     enableRhymeAstrology: fastify.featureFlags?.rhymeAstrology,

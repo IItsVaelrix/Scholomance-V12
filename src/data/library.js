@@ -46,6 +46,7 @@ export const LINKS = [
   { id: "listen",     path: "/listen",     label: "Listen" },
   { id: "read",       path: "/read",       label: "Scribe" },
   { id: "visualiser", path: "/visualiser", label: "Visualiser" },
+  { id: "oracle",     path: "/oracle",     label: "Oracle" },
   { id: "blog",       path: "/blog",       label: "Blog" },
 ];
 
