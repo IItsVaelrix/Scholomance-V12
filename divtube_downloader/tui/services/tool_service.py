@@ -1,7 +1,6 @@
 import json
 import os
 import subprocess
-import fnmatch
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 BRIDGE_SCRIPT = os.path.join(PROJECT_ROOT, "divtube_downloader", "scripts", "scholomance-bridge.mjs")
@@ -42,12 +41,75 @@ def _safe_path(path):
 
 SUCCESS_TAG = "[#7CFF8B]"
 
+
+class _FileCache:
+    """In-memory file content cache with mtime invalidation.
+    Prevents redundant disk reads when AIs re-reference the same files."""
+
+    def __init__(self, max_entries=300):
+        self._entries = {}
+
+    def read(self, path):
+        try:
+            mtime = os.path.getmtime(path)
+        except OSError:
+            self._entries.pop(path, None)
+            return None
+        if path in self._entries:
+            e = self._entries[path]
+            if e["mtime"] == mtime:
+                e["atime"] = __import__("time").time()
+                return e["content"]
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        except Exception:
+            return None
+        if len(self._entries) >= self.max_entries:
+            oldest = min(self._entries, key=lambda k: self._entries[k].get("atime", 0))
+            del self._entries[oldest]
+        self._entries[path] = {
+            "content": content,
+            "mtime": mtime,
+            "atime": __import__("time").time(),
+        }
+        return content
+
+    def stats(self):
+        return {"entries": len(self._entries)}
+
+
+_tui_file_cache = _FileCache()
+
 def _safe_cmd(cmd_str):
     """Reject dangerous shell operators."""
     dangerous = [";", "&&", "||", "|", "`", "$(", "${", ">", "<", "&"]
     for d in dangerous:
         if d in cmd_str:
             return False
+    return True
+
+
+# ── CLI Gate Keeper ───────────────────────────────────
+# Prevents rapid-fire tool calls and file re-reads
+try:
+    from ..core.gate_keeper import gate as _gate
+except ImportError:
+    try:
+        from divtube_downloader.tui.core.gate_keeper import gate as _gate
+    except ImportError:
+        _gate = None
+
+
+def _gate_check(tool_name, kwargs, callback=None):
+    """Run gate check. Returns True if allowed, False if blocked."""
+    if _gate is None:
+        return True
+    verdict = _gate.check(tool_name, kwargs)
+    if verdict.is_blocked:
+        if callback:
+            callback(f"  [#FF5C7A]⛔ GATE BLOCKED[/] [{verdict.reason}] {verdict.message}")
+        return False
     return True
 
 
@@ -938,6 +1000,10 @@ class ToolService:
 
 
     def execute_tool(self, tool_name, kwargs, callback=None):
+        # ── CLI Gate: cooldown + redundancy check ────────────
+        if not _gate_check(tool_name, kwargs, callback):
+            return f"⛔ Gate blocked '{tool_name}': check your cadence."
+        # ──────────────────────────────────────────────────────
         if tool_name == "read_file":
             return self._read_file(kwargs, callback)
         elif tool_name == "search_code":
@@ -1027,11 +1093,13 @@ class ToolService:
         if not safe or not os.path.isfile(safe):
             return f"Error: File not found or path escapes project root: {raw_path}"
         try:
-            with open(safe, "r", errors="replace") as f:
-                lines = f.readlines()
+            content = _tui_file_cache.read(safe)
+            if content is None:
+                return f"Error: could not read {raw_path}"
+            lines = content.split("\n")
             total = len(lines)
             shown = lines[:max_lines]
-            result = "".join(shown)
+            result = "\n".join(shown)
             if total > max_lines:
                 result += f"\n... ({total - max_lines} more lines, use --max-lines to increase)"
             if callback:
@@ -1187,7 +1255,7 @@ class ToolService:
                 return f"No files found matching '{query}' (excluding ignored dirs)."
                 
             # Convert to relative paths
-            rel_lines = [os.path.relpath(l, PROJECT_ROOT) for l in filtered_lines]
+            rel_lines = [os.path.relpath(line, PROJECT_ROOT) for line in filtered_lines]
             
             truncated = rel_lines[:max_results]
             body = "\n".join(truncated)
@@ -1630,7 +1698,7 @@ class ToolService:
         result = _run_bridge("immunity-status")
         if isinstance(result, dict) and "error" not in result:
             if callback:
-                callback(f"  [#7CFF8B]✓[/] immunity_status")
+                callback("  [#7CFF8B]✓[/] immunity_status")
             return json.dumps(result, indent=2, default=str)[:2000]
         return self._fmt_bridge("immunity_status", result, callback)
 
@@ -1785,7 +1853,7 @@ class ToolService:
             args.extend(["--agent-id", kwargs["agent_id"]])
         result = _run_bridge("memory-get", *args)
         if isinstance(result, dict) and "error" not in result:
-            val = result.get("value", result.get("data", ""))
+            result.get("value", result.get("data", ""))
             if callback:
                 callback(f"  [#7CFF8B]✓[/] memory_get('{key}')")
             return json.dumps(result, indent=2, default=str)

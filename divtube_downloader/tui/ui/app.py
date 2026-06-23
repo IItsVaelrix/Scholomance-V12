@@ -7,8 +7,23 @@ from textual.containers import Vertical
 from textual.widgets import Static, Input
 from textual import events, on
 import threading
+import os
 
 from tui.ui.layout import get_layout
+from tui.core.command_parser import CommandRegistry
+from tui.services.agent_service import AgentService
+from tui.services.memory_service import MemoryService
+from tui.services.export_service import ExportService
+from tui.services.config_service import ConfigService
+from tui.services.content_critic_service import ContentCriticService
+from tui.services.turboquant_service import TurboQuantService
+from tui.services.video_forge_service import VideoForgeService
+from tui.services.cleri_bridge import CleriBridge
+from tui.services.bytecode_bridge import BytecodeHealthBridge
+from tui.services.archive_bridge import ArchiveBridge
+from tui.services.prompt_service import PromptService
+from tui.services.env_config import write_key
+from tui.screens.video_forge_screen import VideoForgeScreen
 
 # ── Scholomance palette ──────────────────────────────────────────────
 BACKGROUND = "#0B0C10"
@@ -39,7 +54,6 @@ EXT_LANG = {
 
 def _guess_language(filename: str) -> str:
     """Best-effort language guess from a file extension for Syntax highlighting."""
-    import os
     ext = os.path.splitext(filename)[1].lower()
     return EXT_LANG.get(ext, "text")
 
@@ -57,20 +71,6 @@ SCHOLOMANCE_THEME = Theme(
     error=ERROR,
     dark=True,
 )
-from tui.core.command_parser import CommandRegistry
-from tui.services.agent_service import AgentService
-from tui.services.memory_service import MemoryService
-from tui.services.export_service import ExportService
-from tui.services.config_service import ConfigService
-from tui.services.content_critic_service import ContentCriticService
-from tui.services.turboquant_service import TurboQuantService
-from tui.services.video_forge_service import VideoForgeService
-from tui.services.cleri_bridge import CleriBridge
-from tui.services.bytecode_bridge import BytecodeHealthBridge
-from tui.services.archive_bridge import ArchiveBridge
-from tui.services.prompt_service import PromptService
-from tui.screens.video_forge_screen import VideoForgeScreen
-
 
 def _flags(args, value_flags):
     """Split args into (positionals, {flag: value}).
@@ -123,7 +123,8 @@ class FileSelectScreen(ModalScreen[str]):
         self.files = []
         if self.archive:
             return
-        import subprocess, os
+        import subprocess
+        import os
         cwd = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         try:
             out = subprocess.check_output(["git", "ls-files"], text=True, cwd=cwd)
@@ -319,7 +320,7 @@ class DivTubeAgentApp(App):
     
     #center-panel { width: 1fr; background: #0B0C10; padding: 0 1; }
 
-    #chat-log {
+    .chat-log-cls {
         background: #0B0C10;
         color: #E2E8F0;
         border: round #DC143C;                      /* Crimson */
@@ -475,7 +476,7 @@ class DivTubeAgentApp(App):
 
     def setup_commands(self):
         def handle_clear(ui, args):
-            ui.query_one("#chat-log").clear()
+            ui._get_active_chat().clear()
 
         def handle_code(ui, args):
             if not args:
@@ -501,12 +502,14 @@ class DivTubeAgentApp(App):
         self.registry.register("/memory", lambda ui, args: ui.log_msg(f"Memory Cells: {ui.memory.count()}"), "Show memory", "/memory")
 
         def handle_deploy(ui, args):
-            ui.log_msg(f"\n[bold #B388FF]⚡ Deploying...[/]")
+            ui.log_msg("\n[bold #B388FF]⚡ Deploying...[/]")
             def run():
-                import subprocess, os
-                proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                import subprocess
+                import os
+                proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
                 try:
-                    result = subprocess.run(["npm", "run", "deploy"], cwd=proj_root, capture_output=True, text=True)
+                    cmd = ["bash", "-ic", "npm run deploy"]
+                    result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
                     if result.returncode == 0:
                         ui.log_msg(f"\n[bold #7CFF8B]✓ Deployment successful[/]\n{result.stdout[-1000:]}")
                     else:
@@ -517,6 +520,64 @@ class DivTubeAgentApp(App):
             threading.Thread(target=run, daemon=True).start()
 
         self.registry.register("/deploy", handle_deploy, "Deploy app (npm run deploy)", "/deploy")
+
+        def handle_polish(ui, args):
+            ui.log_msg("\n[bold #B388FF]✨ Running Production Polish...[/]")
+            def run():
+                import subprocess
+                import os
+                proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                try:
+                    import shlex
+                    args_str = " ".join(shlex.quote(a) for a in args)
+                    bash_cmd = f"node scripts/production-polish.js {args_str}"
+                    cmd = ["bash", "-ic", bash_cmd]
+                    result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
+                    output = result.stdout + "\n" + result.stderr
+                    # Limit output to prevent UI freeze, showing the bottom (most relevant part)
+                    if len(output) > 4000:
+                        output = "... [truncated] ...\n" + output[-4000:]
+                    if result.returncode == 0:
+                        ui.log_msg(f"\n[bold #7CFF8B]✓ Polish complete[/]\n{output}")
+                    else:
+                        ui.log_msg(f"\n[bold #FF5C7A]✗ Polish failed (code {result.returncode})[/]\n{output}")
+                except Exception as e:
+                    ui.log_msg(f"\n[bold #FF5C7A]✗ Polish error: {e}[/]")
+            import threading
+            threading.Thread(target=run, daemon=True).start()
+
+        self.registry.register("/polish", handle_polish, "Run production polish script", "/polish [quick|full|force] [--ci]")
+
+        def create_python_check_command(name, python_cmd, desc, usage_text):
+            def handler(ui, args):
+                ui.log_msg(f"\n[bold #B388FF]⚡ Running {name}...[/]")
+                def run():
+                    import subprocess
+                    import os
+                    # We run this in the python project root: divtube_downloader
+                    proj_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    try:
+                        # Find the virtual environment binaries
+                        venv_bin = os.path.join(proj_root, ".venv", "bin")
+                        cmd_path = os.path.join(venv_bin, python_cmd[0])
+                        cmd = [cmd_path] + python_cmd[1:] + args
+                        result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
+                        output = result.stdout + "\n" + result.stderr
+                        if len(output) > 4000:
+                            output = "... [truncated] ...\n" + output[-4000:]
+                        if result.returncode == 0:
+                            ui.log_msg(f"\n[bold #7CFF8B]✓ {name} complete[/]\n{output}")
+                        else:
+                            ui.log_msg(f"\n[bold #FF5C7A]✗ {name} failed (code {result.returncode})[/]\n{output}")
+                    except Exception as e:
+                        ui.log_msg(f"\n[bold #FF5C7A]✗ {name} error: {e}[/]")
+                import threading
+                threading.Thread(target=run, daemon=True).start()
+            self.registry.register(f"/{name}", handler, desc, usage_text)
+
+        create_python_check_command("lint", ["ruff", "check", "."], "Run Ruff (Python Linter)", "/lint")
+        create_python_check_command("test", ["python", "-m", "pytest", "tests/"], "Run Pytest", "/test")
+        create_python_check_command("typecheck", ["mypy", "."], "Run Mypy", "/typecheck")
 
         def handle_critique(ui, args):
             file_path = args[0] if args else "test_content.json"
@@ -591,7 +652,9 @@ class DivTubeAgentApp(App):
         self.registry.register("/scholomance", handle_scholomance, "Scholomance Intel", "/scholomance <f>")
 
         def handle_apply_patch(ui, args):
-            import os, json, re
+            import os
+            import json
+            import re
             if not args:
                 ui.log_msg(f"[{ERROR}]Usage:[/] /apply-patch <file.json>")
                 return
@@ -634,7 +697,8 @@ class DivTubeAgentApp(App):
                 parts = re.split(r'\.|\[', path.replace(']', ''))
                 curr = obj
                 for i, part in enumerate(parts[:-1]):
-                    if not part: continue
+                    if not part:
+                        continue
                     idx = int(part) if part.isdigit() else part
                     curr = curr[idx]
                 last_part = int(parts[-1]) if parts[-1].isdigit() else parts[-1]
@@ -660,7 +724,8 @@ class DivTubeAgentApp(App):
         self.registry.register("/apply-patch", handle_apply_patch, "Apply AI Patches", "/apply-patch <f>")
 
         def handle_thumbnail(ui, args):
-            import os, threading
+            import os
+            import threading
             if not args:
                 ui.log_msg(f"[{ERROR}]Usage:[/] /thumbnail <path_to_image>")
                 return
@@ -670,7 +735,8 @@ class DivTubeAgentApp(App):
                 return
                 
             # Attempt to show the image externally
-            import platform, subprocess
+            import platform
+            import subprocess
             try:
                 if platform.system() == 'Darwin':
                     subprocess.Popen(['open', path])
@@ -695,12 +761,12 @@ class DivTubeAgentApp(App):
                     
                     color = "#FF5C7A" if score < 50 else "#FFD166" if score < 75 else "#7CFF8B"
                     
-                    msg = f"\n[bold magenta]❖ THUMBNAIL INTEL GRADE ❖[/]\n"
+                    msg = "\n[bold magenta]❖ THUMBNAIL INTEL GRADE ❖[/]\n"
                     msg += f"File: {os.path.basename(path)}\n"
                     msg += f"Score: [bold {color}]{score}/100[/]\n"
                     
                     if result.flags:
-                        msg += f"\n[bold #FFD166]Warnings & Flags:[/]\n"
+                        msg += "\n[bold #FFD166]Warnings & Flags:[/]\n"
                         for flag in result.flags:
                             msg += f"  - [{flag.code}] {flag.message}\n"
                     else:
@@ -729,11 +795,11 @@ class DivTubeAgentApp(App):
                 result = analyze_title(analysis)
                 score = result.score or 0
                 color = "#FF5C7A" if score < 50 else "#FFD166" if score < 75 else "#7CFF8B"
-                msg = f"\n[bold magenta]❖ TITLE INTEL GRADE ❖[/]\n"
+                msg = "\n[bold magenta]❖ TITLE INTEL GRADE ❖[/]\n"
                 msg += f"Title: \"{title_text}\"\n"
                 msg += f"Score: [bold {color}]{score}/100[/]\n"
                 m = result.metrics
-                msg += f"\n[bold #B388FF]Breakdown:[/]\n"
+                msg += "\n[bold #B388FF]Breakdown:[/]\n"
                 msg += f"  Length: {m.get('length', '?')} chars ({'✓' if m.get('length', 99) <= 50 else '⚠ over 60 → mobile truncation'})\n"
                 hook = m.get('hasHook', False)
                 msg += f"  Hook: {'✓' if hook else '✗'} in first 3 words\n"
@@ -744,11 +810,11 @@ class DivTubeAgentApp(App):
                 msg += f"  Clarity: {m.get('clarity', 0):.0%}\n"
                 msg += f"  Uniqueness: {m.get('uniqueness', 0):.0%}\n"
                 if result.flags:
-                    msg += f"\n[bold #FFD166]Flags:[/]\n"
+                    msg += "\n[bold #FFD166]Flags:[/]\n"
                     for flag in result.flags:
                         msg += f"  - [{flag.code}] {flag.message}\n"
                 else:
-                    msg += f"\n[bold #7CFF8B]✔ No issues detected.[/]\n"
+                    msg += "\n[bold #7CFF8B]✔ No issues detected.[/]\n"
                 ui.log_msg(msg)
             except Exception as e:
                 ui.log_msg(f"[{ERROR}]Title analysis failed:[/] {e}")
@@ -761,6 +827,8 @@ class DivTubeAgentApp(App):
                     def on_selected(model_name):
                         if model_name:
                             ui.critic_service.active_model = model_name
+                            ui.prompt.set_model(model_name)
+                            write_key("OPENCODE_MODEL", model_name)
                             ui.log_msg(f"[bold {SUCCESS}]✔ Active default model set to:[/] {model_name}")
                     # Only show free models to ensure the user can actually use them
                     ui.push_screen(ModelSelectScreen(free_models, []), on_selected)
@@ -775,18 +843,15 @@ class DivTubeAgentApp(App):
                 return
                 
             key = args[0]
-            import os
-            with open(".env", "a") as f:
-                f.write(f"\nCUSTOM_API_KEY={key}\n")
-            os.environ["CUSTOM_API_KEY"] = key
+            write_key("CUSTOM_API_KEY", key)
             
-            ui.log_msg(f"[bold {SUCCESS}]✔ API Key securely saved to .env![/] You now have full access to your provider's models.")
+            ui.log_msg(f"[bold {SUCCESS}]✔ API Key securely saved![/] This key will persist across restarts.")
             
         self.registry.register("/apikey", handle_apikey, "Set API Key", "/apikey <key>")
 
         def handle_provider(ui, args):
             if not args:
-                ui.log_msg(f"[{ERROR}]Usage:[/] /provider <openai|xai|opencode|custom_base_url>")
+                ui.log_msg(f"[{ERROR}]Usage:[/] /provider <openai|xai|opencode|router|gemini|blackbox|custom_base_url>")
                 return
             provider = args[0].lower()
             base_url = ""
@@ -794,25 +859,56 @@ class DivTubeAgentApp(App):
             if provider == "openai":
                 base_url = "https://api.openai.com/v1"
                 models_url = "https://api.openai.com/v1"
+                default_model = "gpt-4o"
             elif provider == "xai":
                 base_url = "https://api.x.ai/v1"
                 models_url = "https://api.x.ai/v1"
+                default_model = "grok-beta"
             elif provider == "opencode":
                 base_url = "https://opencode.ai/zen/v1"
                 models_url = "https://opencode.ai/zen/v1"
+                default_model = "big-pickle"
+            elif provider == "router":
+                base_url = "https://openrouter.ai/api/v1"
+                models_url = "https://openrouter.ai/api/v1"
+                default_model = "google/gemini-2.5-pro"
+            elif provider == "blackbox":
+                base_url = "https://api.blackbox.ai/v1"
+                models_url = "https://api.blackbox.ai/v1"
+                default_model = "blackboxai"
+            elif provider == "gemini" or provider == "google":
+                base_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+                models_url = "https://generativelanguage.googleapis.com/v1beta/openai"
+                default_model = "gemini-2.5-flash"
             else:
                 base_url = args[0]
                 models_url = args[0]
-                
-            import os
-            with open(".env", "a") as f:
-                f.write(f"\nCUSTOM_API_BASE={base_url}\nCUSTOM_MODELS_URL={models_url}\n")
-            os.environ["CUSTOM_API_BASE"] = base_url
-            os.environ["CUSTOM_MODELS_URL"] = models_url
-            
-            ui.log_msg(f"[bold {SUCCESS}]✔ API Provider set to:[/] {base_url}\nUse /apikey to set your key, then /model to see the newly available models.")
+                default_model = ""
+
+            write_key("CUSTOM_API_BASE", base_url)
+            write_key("CUSTOM_MODELS_URL", models_url)
+            if default_model:
+                write_key("OPENCODE_MODEL", default_model)
+                os.environ["OPENCODE_MODEL"] = default_model
+                ui.critic_service.active_model = default_model
+                ui.prompt.set_model(default_model)
+                model_msg = f"\n[bold {SUCCESS}]✔ Auto-set default model to:[/] {default_model}"
+            else:
+                model_msg = ""
+
+            ui.log_msg(f"[bold {SUCCESS}]✔ API Provider set to:[/] {base_url}{model_msg}\n[{WARNING}]⚠ Saved API key may not work with this provider.[/] Use /apikey to set a matching key, then /model to see available models.")
             
         self.registry.register("/provider", handle_provider, "Set API Provider", "/provider <name_or_url>")
+
+        def handle_release(ui, args):
+            try:
+                from tui.core.gate_keeper import gate
+                gate.reset()
+                ui.log_msg(f"[bold {SUCCESS}]✔ Internal tool gates and API cooldown blocks released.[/]")
+            except ImportError:
+                ui.log_msg(f"[bold {SUCCESS}]✔ API blocks released.[/]")
+
+        self.registry.register("/release", handle_release, "Release API 429 and tool gates", "/release")
 
         def handle_forge(ui, args):
             if not args:
@@ -831,28 +927,43 @@ class DivTubeAgentApp(App):
             if any(isinstance(s, VideoForgeScreen) for s in ui.screen_stack):
                 ui.pop_screen()
             else:
-                ui.log_msg(f"[#6B7280]Already on DivTube home. Use /forge to open the Video Forge editor.[/]")
+                ui.log_msg("[#6B7280]Already on DivTube home. Use /forge to open the Video Forge editor.[/]")
 
         self.registry.register("/divtube", handle_divtube, "Return to DivTube", "/divtube")
 
         def handle_prompt(ui, args):
             text = " ".join(args)
             if not text:
-                ui.log_msg(f"[#FF5C7A]Usage: /prompt <your message>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /prompt <your message>[/]")
                 return
-            ui.prompt.prompt(text, ui.log_msg, state_callback=ui.set_ai_state, controller=ui)
+            try:
+                active_tab = ui.query_one("#agent-tabs").active
+                agent_id = active_tab.split("-")[1] if active_tab else "divtube"
+            except Exception:
+                agent_id = "divtube"
+            ui.prompt.prompt(text, ui.log_msg, state_callback=ui.set_ai_state, controller=ui, agent_id=agent_id)
 
         def handle_prompt_model(ui, args):
             model = " ".join(args).strip()
             if not model:
-                ui.log_msg(f"[#FF5C7A]Usage: /prompt-model <model_name>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /prompt-model <model_name>[/]")
                 return
+            import os
             ui.prompt.set_model(model)
+            ui.critic_service.active_model = model
+            os.environ["OPENCODE_MODEL"] = model
+            with open(".env", "a") as f:
+                f.write(f"\nOPENCODE_MODEL={model}\n")
             ui.log_msg(f"[bold #7CFF8B]✔ AI model set to:[/] {model}")
 
         def handle_prompt_clear(ui, args):
-            ui.prompt.clear_history()
-            ui.log_msg(f"[#7CFF8B]✔ Conversation history cleared.[/]")
+            try:
+                active_tab = ui.query_one("#agent-tabs").active
+                agent_id = active_tab.split("-")[1] if active_tab else "divtube"
+            except Exception:
+                agent_id = "divtube"
+            ui.prompt.clear_history(agent_id=agent_id)
+            ui.log_msg(f"[#7CFF8B]✔ Conversation history cleared for {agent_id}.[/]")
 
         self.registry.register("/prompt",        handle_prompt,       "Chat with AI agent",        "/prompt <message>")
         self.registry.register("/prompt-model",  handle_prompt_model, "Set AI model for /prompt",  "/prompt-model <name>")
@@ -863,6 +974,39 @@ class DivTubeAgentApp(App):
         self.setup_health_commands()
 
         self.setup_turbo_commands()
+        self.setup_daemon_commands()
+
+    def setup_daemon_commands(self):
+        """Brain daemon control commands."""
+        r = self.registry.register
+
+        def handle_daemon_start(ui, args):
+            ui.log_msg(f"[{PURPLE}]Starting brain daemon...[/]")
+            def run():
+                try:
+                    from tui.services.brain_bridge_service import BrainBridgeService
+                    svc = BrainBridgeService()
+                    result = svc.start_daemon()
+                    if "error" in result:
+                        ui.log_msg(f"[{ERROR}]Failed to start daemon:[/] {result['error']}")
+                    else:
+                        ui.log_msg(f"[{SUCCESS}]✔ Brain daemon started[/] on port {svc.port} (PID: {result['pid']})")
+                except Exception as e:
+                    ui.log_msg(f"[{ERROR}]Error:[/] {e}")
+            threading.Thread(target=run, daemon=True).start()
+
+        def handle_daemon_stop(ui, args):
+            ui.log_msg(f"[{WARNING}]Stopping brain daemon...[/]")
+            try:
+                from tui.services.brain_bridge_service import BrainBridgeService
+                svc = BrainBridgeService()
+                svc.stop_daemon()
+                ui.log_msg(f"[{SUCCESS}]✔ Brain daemon stopped.[/]")
+            except Exception as e:
+                ui.log_msg(f"[{ERROR}]Error:[/] {e}")
+
+        r("/daemon-start", handle_daemon_start, "Start brain daemon for persistent queries", "/daemon-start")
+        r("/daemon-stop", handle_daemon_stop, "Stop brain daemon", "/daemon-stop")
 
     def setup_turbo_commands(self):
         """TurboQuant SEO plugin commands (spec v1.0, phases 0-3)."""
@@ -970,21 +1114,21 @@ class DivTubeAgentApp(App):
         def handle_cleri_scan(ui, args):
             text = " ".join(args).strip()
             if not text:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-scan \"symptom text\"[/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-scan \"symptom text\"[/]")
                 return
             ui.cleri.scan(text, ui.log_msg)
 
         def handle_cleri_diagnose(ui, args):
             report = args[0] if args else None
             if not report:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-diagnose <bug.json>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-diagnose <bug.json>[/]")
                 return
             ui.cleri.diagnose(report, ui.log_msg)
 
         def handle_cleri_train(ui, args):
             pattern = args[0] if args else None
             if not pattern:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-train <pattern.json>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-train <pattern.json>[/]")
                 return
             ui.cleri.train(pattern, ui.log_msg)
 
@@ -994,19 +1138,19 @@ class DivTubeAgentApp(App):
         def handle_cleri_probe(ui, args):
             text = " ".join(args).strip()
             if not text:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-probe \"text\" [--mode prion][/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-probe \"text\" [--mode prion][/]")
                 return
             ui.cleri.probe(text, ui.log_msg)
 
         def handle_cleri_agent_query(ui, args):
             if len(args) < 2:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-agent-query <codex|claude|gemini|merlin> <bug.json>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-agent-query <codex|claude|gemini|merlin> <bug.json>[/]")
                 return
             ui.cleri.agent_query(args[0], args[1], ui.log_msg)
 
         def handle_cleri_merlin_ingest(ui, args):
             if not args:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-merlin-ingest <bug.json> [--no-train][/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-merlin-ingest <bug.json> [--no-train][/]")
                 return
             no_train = "--no-train" in args
             report = [a for a in args if not a.startswith("--")]
@@ -1037,13 +1181,13 @@ class DivTubeAgentApp(App):
 
         def handle_cleri_feedback(ui, args):
             if len(args) < 2:
-                ui.log_msg(f"[#FF5C7A]Usage: /cleri-feedback <pattern-id> --confirm|--reject[/]")
+                ui.log_msg("[#FF5C7A]Usage: /cleri-feedback <pattern-id> --confirm|--reject[/]")
                 return
             pid = args[0]
             confirm = "--confirm" in args
             reject = "--reject" in args
             if confirm == reject:
-                ui.log_msg(f"[#FF5C7A]Specify exactly one: --confirm or --reject[/]")
+                ui.log_msg("[#FF5C7A]Specify exactly one: --confirm or --reject[/]")
                 return
             ui.cleri.feedback(pid, confirm, ui.log_msg)
 
@@ -1051,7 +1195,7 @@ class DivTubeAgentApp(App):
             ui.cleri.rebuild_index(ui.log_msg)
 
         def handle_cleri_repl(ui, args):
-            ui.log_msg(f"[#FFD700]CLERI REPL[/] [#6B7280]— enter symptom text, blank to exit.[/]")
+            ui.log_msg("[#FFD700]CLERI REPL[/] [#6B7280]— enter symptom text, blank to exit.[/]")
             text = " ".join(args).strip()
             if text:
                 ui.cleri.scan(text, ui.log_msg)
@@ -1081,14 +1225,14 @@ class DivTubeAgentApp(App):
         def handle_archive_search(ui, args):
             query = " ".join(args).strip()
             if not query:
-                ui.log_msg(f"[#FF5C7A]Usage: /archive-search <query>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /archive-search <query>[/]")
                 return
             ui.archive.search(query, ui.log_msg)
 
         def handle_archive_neighbors(ui, args):
             path = " ".join(args).strip()
             if not path:
-                ui.log_msg(f"[#FF5C7A]Usage: /archive-neighbors <file_path>[/]")
+                ui.log_msg("[#FF5C7A]Usage: /archive-neighbors <file_path>[/]")
                 return
             ui.archive.neighbors(path, ui.log_msg)
 
@@ -1108,7 +1252,7 @@ class DivTubeAgentApp(App):
 
         def handle_health_emit(ui, args):
             if len(args) < 2:
-                ui.log_msg(f"[#FF5C7A]Usage: /health-emit <cellId> <checkId> [--module <mod>][/]")
+                ui.log_msg("[#FF5C7A]Usage: /health-emit <cellId> <checkId> [--module <mod>][/]")
                 return
             cell_id = args[0]
             check_id = args[1]
@@ -1165,6 +1309,11 @@ class DivTubeAgentApp(App):
             cmd = self.registry.commands.get(name)
             if cmd:
                 self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
+        self.log_msg(f"[{purple}]Brain Daemon[/]")
+        for name in ("/daemon-start", "/daemon-stop"):
+            cmd = self.registry.commands.get(name)
+            if cmd:
+                self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
         self.log_msg(f"[{purple}]Session[/] /clear · /exit")
 
     def compose(self):
@@ -1196,8 +1345,8 @@ class DivTubeAgentApp(App):
 
     def set_ai_state(self, state):
         def _update():
-            chat = self.query_one("#chat-log")
-            base_title = "✦ DIVTUBE COCKPIT ✦"
+            chat = self._get_active_chat()
+            base_title = str(chat.border_title).split("  [")[0] if chat.border_title else "✦ COCKPIT ✦"
             if state == "thinking":
                 chat.border_title = f"{base_title}  [bold #3b82f6]ᗣ THINKING[/]"
             elif state == "looking":
@@ -1235,9 +1384,20 @@ class DivTubeAgentApp(App):
         import threading
         threading.Thread(target=_task, daemon=True).start()
 
+    def _get_active_chat(self):
+        try:
+            tabs = self.query_one("#agent-tabs")
+            active = tabs.active
+            if active:
+                tab_id = active.split("-")[1]
+                return self.query_one(f"#chat-{tab_id}")
+        except Exception:
+            pass
+        return self.query_one("#chat-divtube")
+
     def log_msg(self, msg):
         def _write():
-            chat = self.query_one("#chat-log")
+            chat = self._get_active_chat()
             chat.write(msg)
         if self._thread_id == threading.get_ident():
             _write()
@@ -1297,19 +1457,14 @@ class DivTubeAgentApp(App):
                 except Exception as exc:
                     self.log_msg(f"[#FF5C7A]✗ Cannot read {full}: {exc}[/]")
                     return
-                ext = os.path.splitext(full)[1].lower()
-                lang_map = {"js":"js","jsx":"jsx","ts":"ts","tsx":"tsx",
-                            "py":"python","json":"json","md":"markdown",
-                            "css":"css","html":"html","yml":"yaml","yaml":"yaml",
-                            "gradle":"groovy","java":"java","sql":"sql","sh":"bash"}
-                lang = lang_map.get(ext.lstrip("."), "")
+                os.path.splitext(full)[1].lower()
                 short = os.path.relpath(full, project_root)
                 self.log_msg(f"\n[bold #B388FF]📎 @{short}[/] [#6B7280]({len(content)} B)[/]")
-                self.log_msg(f"[#4B0082]━━━ file ──────────────────[/]")
+                self.log_msg("[#4B0082]━━━ file ──────────────────[/]")
                 self.log_msg(f"[#E2E8F0]{content[:5000]}[/]")
                 if len(content) > 5000:
                     self.log_msg(f"[#6B7280]… ({len(content) - 5000} more bytes)[/]")
-                self.log_msg(f"[#4B0082]━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n")
+                self.log_msg("[#4B0082]━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n")
             else:
                 self.log_msg(f"[#FF5C7A]✗ File not found: {full}[/]")
             return
@@ -1319,7 +1474,7 @@ class DivTubeAgentApp(App):
             self.registry.parse_and_execute(val, self)
         else:
             if "youtube.com" in val or "youtu.be" in val:
-                self.log_msg(f"[#6B7280]Auto-detecting URL… running analysis.[/]")
+                self.log_msg("[#6B7280]Auto-detecting URL… running analysis.[/]")
                 self.agent.run_command("1", val, self.log_msg, self)
             else:
                 self.registry.parse_and_execute(f"/prompt {val}", self)
@@ -1353,7 +1508,7 @@ class DivTubeAgentApp(App):
             input_widget = self.query_one("#command-input")
             if not input_widget.has_focus:
                 return
-        except:
+        except Exception:
             return
 
         if event.key == "up":
@@ -1436,7 +1591,6 @@ class DivTubeAgentApp(App):
 
         if len(matches) == 1:
             # auto-complete
-            suffix = matches[0][len(file_prefix):]
             new_val = val[:start] + "@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/") + val[cursor:]
             input_widget.value = new_val
             input_widget.cursor_position = start + len("@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/"))

@@ -4,44 +4,23 @@ import threading
 import urllib.request
 import urllib.error
 
+from tui.services.env_config import get_config, get_model
 from tui.services.memory_service import MemoryService
 from tui.services.tool_service import ToolService
+from tui.utils.throttle import llm_throttle
 
 class ContentCriticService:
     def __init__(self):
-        self.active_model = "grok-build-0.1"
+        self.active_model = get_model() or "grok-build-0.1"
         self.memory = MemoryService()
         self.tools = ToolService()
-    def _get_api_config(self):
-        api_key = os.environ.get("CUSTOM_API_KEY")
-        base_url = os.environ.get("CUSTOM_API_BASE", "https://opencode.ai/zen/v1")
-        models_url = os.environ.get("CUSTOM_MODELS_URL", "https://opencode.ai/zen/v1")
-        
-        if os.path.exists(".env"):
-            with open(".env", "r") as f:
-                for line in f:
-                    if line.startswith("CUSTOM_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
-                    elif line.startswith("CUSTOM_API_BASE="):
-                        base_url = line.split("=", 1)[1].strip()
-                    elif line.startswith("CUSTOM_MODELS_URL="):
-                        models_url = line.split("=", 1)[1].strip()
-        
-        if not api_key:
-            api_key = os.environ.get("OPENCODE_API_KEY")
-            if not api_key and os.path.exists(".env"):
-                with open(".env", "r") as f:
-                    for line in f:
-                        if line.startswith("OPENCODE_API_KEY="):
-                            api_key = line.split("=", 1)[1].strip()
-        return api_key, base_url, models_url
 
     def get_models(self, callback, on_fetched=None):
         def run():
-            api_key, base_url, models_url = self._get_api_config()
+            api_key, base_url, models_url = get_config()
             
             if not api_key:
-                callback("[red]Error: No API Key found. Run '/provider' to set it up.[/]")
+                callback("[red]Error: No API Key found. Run '/apikey <key>' to set it.[/]")
                 return
 
             callback(f"[#6B7280]Fetching available models from {models_url}...[/]")
@@ -51,7 +30,7 @@ class ContentCriticService:
             req.add_header("User-Agent", "curl/8.5.0")
             
             try:
-                with urllib.request.urlopen(req) as response:
+                with urllib.request.urlopen(req, timeout=15) as response:
                     res_body = response.read()
                     res_json = json.loads(res_body)
                     
@@ -91,10 +70,10 @@ class ContentCriticService:
                 callback(f"[red]Error reading file:[/] {e}", success=False, is_final=True)
                 return
 
-            api_key, base_url, models_url = self._get_api_config()
+            api_key, base_url, models_url = get_config()
             
             if not api_key:
-                callback("[red]Error: No API Key found. Run '/provider' to set it up.[/]", success=False, is_final=True)
+                callback("[red]Error: No API Key found. Run '/apikey <key>' to set it.[/]", success=False, is_final=True)
                 return
 
             callback(f"[#6B7280]Analyzing '{file_path}' via {base_url}...[/]", success=True, is_final=False)
@@ -131,7 +110,9 @@ class ContentCriticService:
                 req = urllib.request.Request(url, method="POST")
                 req.add_header("Authorization", f"Bearer {api_key}")
                 req.add_header("Content-Type", "application/json")
-                req.add_header("User-Agent", "curl/8.5.0")
+                req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+                req.add_header("HTTP-Referer", "https://github.com/DivTube")
+                req.add_header("X-Title", "DivTube Cockpit")
                 
                 data = json.dumps(payload).encode('utf-8')
                 with urllib.request.urlopen(req, data=data) as response:
@@ -142,13 +123,19 @@ class ContentCriticService:
                 use_tools = True
                 for turn in range(MAX_TURNS):
                     try:
+                        llm_throttle.wait()
                         res_json = do_api_call(messages, use_tools)
                     except urllib.error.HTTPError as e:
                         err_msg = e.read().decode('utf-8')
-                        if use_tools and (e.code == 400 or "support" in err_msg.lower() or "tool" in err_msg.lower()):
+                        if use_tools and (e.code in (400, 501) or "support" in err_msg.lower() or "tool" in err_msg.lower() or "not implemented" in err_msg.lower()):
+                            callback(f"[dim][#6B7280]API returned {e.code} with tools — retrying without tool calling. Error: {err_msg[:300]}[/][/]")
                             # Fallback without tools if the model doesn't support them
                             use_tools = False
-                            res_json = do_api_call(messages, use_tools)
+                            llm_throttle.wait()
+                            try:
+                                res_json = do_api_call(messages, use_tools)
+                            except urllib.error.HTTPError as e2:
+                                raise Exception(f"API Error ({e2.code}) after tool fallback: {e2.read().decode('utf-8')}")
                         else:
                             raise Exception(f"API Error ({e.code}): {err_msg}")
                     
@@ -161,7 +148,16 @@ class ContentCriticService:
                             messages.append(message)
                             for tool_call in message["tool_calls"]:
                                 func_name = tool_call["function"]["name"]
-                                func_args = json.loads(tool_call["function"]["arguments"])
+                                try:
+                                    func_args = json.loads(tool_call["function"]["arguments"])
+                                    import rich.panel, rich.syntax
+                                    args_str = json.dumps(func_args, indent=2)
+                                    syntax = rich.syntax.Syntax(args_str, "json", theme="monokai", word_wrap=True)
+                                    panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/]", border_style="#B48EAD", expand=False)
+                                    callback(panel, success=True, is_final=False)
+                                except Exception:
+                                    func_args = {}
+                                    callback(f"  [bold #FFD700]⚡[/] [#B48EAD]{func_name}()[/] -> [red]ERROR PARSING ARGS[/]", success=False, is_final=False)
                                 
                                 def log_tool(msg):
                                     callback(msg, success=True, is_final=False)
@@ -210,7 +206,12 @@ class ContentCriticService:
                 callback("[red]Error: Exceeded maximum tool iterations (3 turns).[/]", success=False, is_final=True)
             except urllib.error.HTTPError as e:
                 err_msg = e.read().decode('utf-8').replace('[', '\\[')
-                callback(f"[red]API Error ({e.code}):[/] {err_msg}", success=False, is_final=True)
+                if e.code == 429:
+                    callback(f"[red]API Error (429): Too Many Requests.[/]\n[italic]This means you have hit a rate limit or are out of credits with the provider.\nWait a moment, or ensure your account is funded.[/]", success=False, is_final=True)
+                elif e.code == 503:
+                    callback(f"[red]API Error (503): Service Unavailable.[/]\n[italic]The AI provider is currently overloaded or down. Please try again later, or switch to a different provider.[/]", success=False, is_final=True)
+                else:
+                    callback(f"[red]API Error ({e.code}):[/] {err_msg}", success=False, is_final=True)
             except Exception as e:
                 err_str = str(e).replace('[', '\\[')
                 callback(f"[red]Request Error:[/] {err_str}", success=False, is_final=True)

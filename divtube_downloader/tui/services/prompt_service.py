@@ -4,7 +4,9 @@ import threading
 import urllib.request
 import urllib.error
 
+from tui.services.env_config import get_config, get_model
 from tui.services.tool_service import ToolService
+from tui.utils.throttle import llm_throttle
 
 
 GOLD    = "#FFD700"
@@ -16,31 +18,10 @@ MUTED   = "#6B7280"
 
 class PromptService:
     def __init__(self):
-        self.active_model = "big-pickle"
-        self.history = []
+        self.active_model = get_model() or "big-pickle"
+        self.history = {}
         self.max_history = 20
         self.tools = ToolService()
-
-    def _get_api_config(self):
-        api_key = os.environ.get("CUSTOM_API_KEY")
-        base_url = os.environ.get("CUSTOM_API_BASE", "https://opencode.ai/zen/v1")
-
-        if os.path.exists(".env"):
-            with open(".env", "r") as f:
-                for line in f:
-                    if line.startswith("CUSTOM_API_KEY="):
-                        api_key = line.split("=", 1)[1].strip()
-                    elif line.startswith("CUSTOM_API_BASE="):
-                        base_url = line.split("=", 1)[1].strip()
-
-        if not api_key:
-            api_key = os.environ.get("OPENCODE_API_KEY")
-            if not api_key and os.path.exists(".env"):
-                with open(".env", "r") as f:
-                    for line in f:
-                        if line.startswith("OPENCODE_API_KEY="):
-                            api_key = line.split("=", 1)[1].strip()
-        return api_key, base_url
 
     def _mem_read(self, key):
         raw = self.tools.execute_tool("memory_get", {"key": key}, lambda m: None)
@@ -71,7 +52,7 @@ class PromptService:
             if not data or not isinstance(data, dict):
                 lines.append(f"  - {entry.get('name','?')}: {desc} (not loaded)")
                 continue
-            content = data.get("content", "")
+            data.get("content", "")
             lines.append(f"  - {entry.get('name','?')} [{key}]: {desc}")
             bsc = data.get("bytecode_search_code", "")
             if bsc:
@@ -116,13 +97,15 @@ class PromptService:
         req = urllib.request.Request(url, method="POST")
         req.add_header("Authorization", f"Bearer {api_key}")
         req.add_header("Content-Type", "application/json")
-        req.add_header("User-Agent", "DivTube/1.0")
+        req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+        req.add_header("HTTP-Referer", "https://github.com/DivTube")
+        req.add_header("X-Title", "DivTube Cockpit")
 
         data = json.dumps(payload).encode("utf-8")
         with urllib.request.urlopen(req, data=data) as response:
             return json.loads(response.read())
 
-    def prompt(self, text, callback, system_hint=None, model=None, state_callback=None, controller=None):
+    def prompt(self, text, callback, system_hint=None, model=None, state_callback=None, controller=None, agent_id="divtube"):
         def set_state(s):
             if state_callback:
                 state_callback(s)
@@ -130,7 +113,81 @@ class PromptService:
         def run():
             token = controller.begin_agent() if controller else None
             try:
-                api_key, base_url = self._get_api_config()
+                if agent_id == "vaelrix":
+                    import sys, os
+                    brain_dir = "/home/deck/Downloads/Scholomance-V12-main/steamdeck_brain"
+                    parent = os.path.dirname(brain_dir)
+                    if parent not in sys.path:
+                        sys.path.insert(0, parent)
+
+                    # Step 1: reuse cached daemon client if we have one
+                    if hasattr(self, "_vaelrix_brain") and self._vaelrix_brain is not None:
+                        client = self._vaelrix_brain
+                        try:
+                            response = client.ask(text)
+                            if response and not response.startswith("[Error"):
+                                set_state("responding")
+                                callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](daemon)[/]\n")
+                                if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
+                                    callback.__self__.typewriter_log_msg(response)
+                                else:
+                                    from rich.markdown import Markdown
+                                    callback(Markdown(response))
+                                set_state("idle")
+                                return
+                        except Exception:
+                            # Daemon died; invalidate cache and try fresh boot
+                            self._vaelrix_brain = None
+
+                    # Step 2: try connecting to daemon for the first time
+                    try:
+                        from steamdeck_brain.brain_bridge_client import BrainBridgeClient
+                        client = BrainBridgeClient(port=9090)
+                        if client.is_available():
+                            response = client.ask(text)
+                            if response and not response.startswith("[Error"):
+                                # Cache the live client for subsequent calls
+                                self._vaelrix_brain = client
+                                set_state("responding")
+                                callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](daemon)[/]\n")
+                                if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
+                                    callback.__self__.typewriter_log_msg(response)
+                                else:
+                                    from rich.markdown import Markdown
+                                    callback(Markdown(response))
+                                set_state("idle")
+                                return
+                    except Exception:
+                        pass
+
+                    # Step 3: cold-boot fallback (daemon unavailable)
+                    from steamdeck_brain.steamdeck_brain import BrainBridge
+                    callback(f"\n[{MUTED}]Booting Vaelrix Cortex (daemon unavailable — cold boot)...[/]")
+                    bridge = BrainBridge(personality="Vaelrix")
+                    set_state("thinking")
+                    response = bridge.ask(text)
+                    set_state("responding")
+                    if response:
+                        if agent_id not in self.history:
+                            self.history[agent_id] = []
+                        self.history[agent_id].append({"role": "user", "content": text})
+                        self.history[agent_id].append({"role": "assistant", "content": response})
+                        if len(self.history[agent_id]) > self.max_history * 2:
+                            self.history[agent_id] = self.history[agent_id][-(self.max_history * 2):]
+
+                        callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](SteamDeck Brain)[/]\n")
+                        if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
+                            callback.__self__.typewriter_log_msg(response)
+                        else:
+                            from rich.markdown import Markdown
+                            callback(Markdown(response))
+                            callback("\n")
+                    else:
+                        callback("(empty response)\n")
+                    set_state("idle")
+                    return
+
+                api_key, base_url, _ = get_config()
 
                 if not api_key:
                     callback(f"[{ERROR}]No API Key found. Set one via /provider and /apikey.[/]")
@@ -139,9 +196,12 @@ class PromptService:
                 model_name = model or self.active_model
                 system_prompt = self._build_system_prompt(system_hint)
 
+                if agent_id not in self.history:
+                    self.history[agent_id] = []
+
                 messages = [
                     {"role": "system", "content": system_prompt},
-                    *self.history[-(self.max_history * 2):],
+                    *self.history[agent_id][-(self.max_history * 2):],
                     {"role": "user", "content": text}
                 ]
 
@@ -155,13 +215,33 @@ class PromptService:
                         set_state("idle")
                         return
                     set_state("thinking")
+                    llm_throttle.wait()
                     try:
                         res_json = self._call_api(messages, model_name, base_url, api_key, use_tools)
                     except urllib.error.HTTPError as e:
                         err_body = e.read().decode("utf-8", errors="replace")
-                        if use_tools and (e.code == 400 or "support" in err_body.lower() or "tool" in err_body.lower()):
+                        if use_tools and (e.code in (400, 501) or "support" in err_body.lower() or "tool" in err_body.lower() or "not implemented" in err_body.lower()):
+                            callback(f"[dim]{MUTED}]API returned {e.code} with tools — retrying without tool calling. Error: {err_body[:300]}[/]")
                             use_tools = False
-                            res_json = self._call_api(messages, model_name, base_url, api_key, use_tools)
+                            llm_throttle.wait()
+                            try:
+                                res_json = self._call_api(messages, model_name, base_url, api_key, use_tools)
+                            except urllib.error.HTTPError as e2:
+                                err_body2 = e2.read().decode("utf-8", errors="replace")
+                                if e2.code == 503:
+                                    callback(f"[{ERROR}]API Error (503): Service Unavailable.[/]\n[italic]The AI provider is currently overloaded or down.[/]\n\n[red]Details:[/] {err_body2}")
+                                else:
+                                    callback(f"[{ERROR}]API Error ({e2.code}): {err_body2}[/]")
+                                set_state("idle")
+                                return
+                        elif e.code == 429:
+                            callback(f"[{ERROR}]API Error (429): Too Many Requests.[/]\n[italic]This means you have hit a rate limit or are out of credits with the provider.\nWait a moment, or ensure your account is funded.[/]")
+                            set_state("idle")
+                            return
+                        elif e.code == 503:
+                            callback(f"[{ERROR}]API Error (503): Service Unavailable.[/]\n[italic]The AI provider is currently overloaded or down. Please try again later, or switch to a different provider using the /provider command.[/]")
+                            set_state("idle")
+                            return
                         else:
                             raise
 
@@ -192,10 +272,14 @@ class PromptService:
                             def log_tool(msg):
                                 callback(msg)
 
-                            callback(
-                                f"  [bold {GOLD}]⚡[/] [{PURPLE}]{func_name}[/]"
-                                + (f"({json.dumps(func_args)})" if func_args is not None else "() -> ERROR")
-                            )
+                            import rich.panel, rich.syntax
+                            if func_args is not None:
+                                args_str = json.dumps(func_args, indent=2)
+                                syntax = rich.syntax.Syntax(args_str, "json", theme="monokai", word_wrap=True)
+                                panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/]", border_style="#B48EAD", expand=False)
+                                callback(panel)
+                            else:
+                                callback(f"  [bold #FFD700]⚡[/] [#B48EAD]{func_name}()[/] -> [red]ERROR[/]")
 
                             result_str = str(tool_result)[:32000]
                             messages.append({
@@ -208,7 +292,6 @@ class PromptService:
                             if hasattr(callback, "__self__") and hasattr(callback.__self__, "show_code"):
                                 try:
                                     # Try formatting as JSON if it's a dict or parsable JSON string
-                                    import json
                                     if isinstance(tool_result, dict) or isinstance(tool_result, list):
                                         disp_str = json.dumps(tool_result, indent=2)
                                     else:
@@ -216,15 +299,29 @@ class PromptService:
                                 except Exception:
                                     disp_str = result_str
                                 callback.__self__.show_code(disp_str, filename=f"{func_name}_output", language="json")
+
+                            import time
+                            time.sleep(1.0) # Prevent 429 rate limit death spirals
+                            
+                            if "⛔ GATE" in result_str:
+                                # Count gate blocks to prevent infinite loops
+                                self._gate_blocks = getattr(self, "_gate_blocks", 0) + 1
+                                if self._gate_blocks >= 3:
+                                    callback(f"[bold {ERROR}]Agent stopped due to repeated GateKeeper blocks.[/]")
+                                    set_state("idle")
+                                    self._gate_blocks = 0
+                                    return
+                            else:
+                                self._gate_blocks = 0
                         continue
 
                     set_state("responding")
                     reply = message.get("content", "")
                     if reply:
-                        self.history.append({"role": "user", "content": text})
-                        self.history.append({"role": "assistant", "content": reply})
-                        if len(self.history) > self.max_history * 2:
-                            self.history = self.history[-(self.max_history * 2):]
+                        self.history[agent_id].append({"role": "user", "content": text})
+                        self.history[agent_id].append({"role": "assistant", "content": reply})
+                        if len(self.history[agent_id]) > self.max_history * 2:
+                            self.history[agent_id] = self.history[agent_id][-(self.max_history * 2):]
 
                     callback(f"\n[bold {GOLD}]❖ AI RESPONSE ❖[/] [{MUTED}]({model_name})[/]\n")
                     if reply:
@@ -254,11 +351,14 @@ class PromptService:
                 if controller:
                     controller.end_agent()
 
-        import threading
         threading.Thread(target=run).start()
 
     def set_model(self, model_name):
         self.active_model = model_name
 
-    def clear_history(self):
-        self.history.clear()
+    def clear_history(self, agent_id=None):
+        if agent_id and agent_id in self.history:
+            self.history[agent_id].clear()
+        elif not agent_id:
+            self.history.clear()
+
