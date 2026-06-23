@@ -1,7 +1,4 @@
 import unittest
-import tempfile
-import os
-import json
 
 from video_forge.ffmpeg_command_builder import FfmpegCommandBuilder
 from video_forge.schema import VideoProject, MediaItem, TimelineClip, EffectOp

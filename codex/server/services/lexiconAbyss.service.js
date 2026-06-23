@@ -30,6 +30,7 @@ const ABYSS_MIGRATIONS = [
     version: 1,
     name: '001-initial-abyss-schema',
     up: (db) => {
+      // eslint-disable-next-line no-restricted-syntax
       db.prepare(`
         CREATE TABLE IF NOT EXISTS word_entropy (
           word TEXT PRIMARY KEY,
@@ -38,6 +39,7 @@ const ABYSS_MIGRATIONS = [
           current_multiplier REAL NOT NULL DEFAULT 1.0
         );
       `).run();
+      // eslint-disable-next-line no-restricted-syntax
       db.prepare(`
         CREATE TABLE IF NOT EXISTS combat_traces (
           trace_id TEXT PRIMARY KEY,

@@ -1,5 +1,5 @@
 /**
- * BugRecoveryModule — AI-led Recovery Hints
+ * BugRecoveryModule - AI-led Recovery Hints
  * Surfaces deterministic steps for resolving a bytecode error.
  */
 

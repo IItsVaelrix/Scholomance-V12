@@ -550,5 +550,281 @@
     },
     "fixedForever": true,
     "categoryChecksum": "71545D78F76BA67B"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 0,
+    "slotName": "BUGCLASS",
+    "hexCode": "0556B940",
+    "versionByte": "05",
+    "predictedVersionByte": "E5",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "SCORE_DRIFT:ranker-score-diverges-from-reference-token-weight",
+    "canonicalDerivationString": "BUGCLASS:SCORE_DRIFT:ranker-score-diverges-from-reference-token-weight",
+    "humanMeaning": "Ranker score diverges from the reference token weight (over- or under-weighted).",
+    "jsonFormulaTemplate": {
+      "name": "bugclass"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "875952C1F00C7BAE"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 1,
+    "slotName": "COORDSYS",
+    "hexCode": "3FC62C2E",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "reference-weight-tfidf-syllable-position-vs-ranker-aggregate-of-8-providers",
+    "canonicalDerivationString": "COORDSYS:reference-weight-tfidf-syllable-position-vs-ranker-aggregate-of-8-providers",
+    "humanMeaning": "Reference weight (TF-IDF × syllable salience × position) vs the ranker aggregate of 8 providers.",
+    "jsonFormulaTemplate": {
+      "name": "coordsys"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "1AAAE82E213FE27E"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 2,
+    "slotName": "INVARIANT",
+    "hexCode": "406E44A9",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "abs-rankerScore-minus-referenceWeight-within-deviationThreshold-for-auditable-tokens",
+    "canonicalDerivationString": "INVARIANT:abs-rankerScore-minus-referenceWeight-within-deviationThreshold-for-auditable-tokens",
+    "humanMeaning": "|rankerScore − referenceWeight| must stay within the deviation threshold for auditable tokens.",
+    "jsonFormulaTemplate": {
+      "name": "invariant"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "46B64EC739CBCBC5"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 3,
+    "slotName": "MAGNITUDE",
+    "hexCode": "6C040072",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "abs-deviation>0.25+meanAbsoluteDeviation+worstTokenDelta",
+    "canonicalDerivationString": "MAGNITUDE:abs-deviation>0.25+meanAbsoluteDeviation+worstTokenDelta",
+    "humanMeaning": "|deviation| exceeds the threshold (default 0.25); mean absolute deviation and worst-token delta quantify it.",
+    "jsonFormulaTemplate": {
+      "name": "magnitude"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "D8E225F023F5B61A"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 4,
+    "slotName": "MASKING",
+    "hexCode": "9018E39D",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "provider-level-weights-conceal-per-token-miscalibration-until-final-list",
+    "canonicalDerivationString": "MASKING:provider-level-weights-conceal-per-token-miscalibration-until-final-list",
+    "humanMeaning": "Provider-level weights conceal per-token miscalibration until the final ranked list.",
+    "jsonFormulaTemplate": {
+      "name": "masking"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "AA18EF06E5F4EE6E"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 5,
+    "slotName": "GATE",
+    "hexCode": "4ECBF7AB",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "referenceWeight>=MIN_AUDITABLE_WEIGHT-0.05+token-was-ranked",
+    "canonicalDerivationString": "GATE:referenceWeight>=MIN_AUDITABLE_WEIGHT-0.05+token-was-ranked",
+    "humanMeaning": "Token is auditable (referenceWeight ≥ MIN_AUDITABLE_WEIGHT 0.05) and was actually ranked.",
+    "jsonFormulaTemplate": {
+      "name": "gate"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "75B597F6C50D0139"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 6,
+    "slotName": "PROPAGATE",
+    "hexCode": "57B24D49",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "provider-scoring-to-ranker-DEFAULT_WEIGHTS-to-ranked-list-to-output",
+    "canonicalDerivationString": "PROPAGATE:provider-scoring-to-ranker-DEFAULT_WEIGHTS-to-ranked-list-to-output",
+    "humanMeaning": "Divergence propagates: provider scoring → ranker DEFAULT_WEIGHTS → ranked list → output.",
+    "jsonFormulaTemplate": {
+      "name": "propagate"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "51A764F3B8646176"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "SCORE_DRIFT",
+    "slotIndex": 7,
+    "slotName": "VERDICT",
+    "hexCode": "E8606C87",
+    "category": "SCORE_DRIFT",
+    "canonicalMeaning": "diagnose-only+over-or-under-weighted+inspect-provider-vs-DEFAULT_WEIGHTS",
+    "canonicalDerivationString": "VERDICT:diagnose-only+over-or-under-weighted+inspect-provider-vs-DEFAULT_WEIGHTS",
+    "humanMeaning": "Diagnose-only. Over- or under-weighted; inspect the provider vs ranker DEFAULT_WEIGHTS.",
+    "jsonFormulaTemplate": {
+      "name": "verdict"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "2E96D2C8622DA893"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 0,
+    "slotName": "BUGCLASS",
+    "hexCode": "068DAB57",
+    "versionByte": "06",
+    "predictedVersionByte": "E6",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "GHOST_LOGIC:syntactic-similarity-conceals-semantic-divergence",
+    "canonicalDerivationString": "BUGCLASS:GHOST_LOGIC:syntactic-similarity-conceals-semantic-divergence",
+    "humanMeaning": "Syntactic similarity conceals semantic divergence: two near-identical constructs, only one is correct.",
+    "jsonFormulaTemplate": {
+      "name": "bugclass"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "1F27677CCA45E1F4"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 1,
+    "slotName": "COORDSYS",
+    "hexCode": "3058F2BF",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "identifier-namespace+scope-chain+lookalike-variable-pair",
+    "canonicalDerivationString": "COORDSYS:identifier-namespace+scope-chain+lookalike-variable-pair",
+    "humanMeaning": "Identifier namespace + scope chain: the pair of lookalike variable or property names that are confused.",
+    "jsonFormulaTemplate": {
+      "name": "coordsys"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "3496ED9CC23077E4"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 2,
+    "slotName": "INVARIANT",
+    "hexCode": "36D82A40",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "two-syntactically-valid-constructs-must-not-be-confused-when-only-one-carries-correct-semantics",
+    "canonicalDerivationString": "INVARIANT:two-syntactically-valid-constructs-must-not-be-confused-when-only-one-carries-correct-semantics",
+    "humanMeaning": "The developer intended construct A but typed construct B; both are syntactically valid but only A carries correct semantics.",
+    "jsonFormulaTemplate": {
+      "name": "invariant"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "BDBFEF8C4ADA77EA"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 3,
+    "slotName": "MAGNITUDE",
+    "hexCode": "D0AF9DA8",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "confusionRate>=0.85+typechecker-silent+eye-passes-review",
+    "canonicalDerivationString": "MAGNITUDE:confusionRate>=0.85+typechecker-silent+eye-passes-review",
+    "humanMeaning": "Confusion rate is high (>=0.85); type-checker and linter are silent; code review passes.",
+    "jsonFormulaTemplate": {
+      "name": "magnitude"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "F646C7CFE8D0A3A3"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 4,
+    "slotName": "MASKING",
+    "hexCode": "F5B466A2",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "syntactic-validity-of-both-forms+similar-identifier-length-and-prefix",
+    "canonicalDerivationString": "MASKING:syntactic-validity-of-both-forms+similar-identifier-length-and-prefix",
+    "humanMeaning": "Both forms are syntactically valid with similar identifier length, prefix, and structure — invisible to automation.",
+    "jsonFormulaTemplate": {
+      "name": "masking"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "B0C3B7FF7B0A005C"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 5,
+    "slotName": "GATE",
+    "hexCode": "10FA1BA9",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "code-review-gate-silent+type-checker-gate-silent+linter-gate-silent",
+    "canonicalDerivationString": "GATE:code-review-gate-silent+type-checker-gate-silent+linter-gate-silent",
+    "humanMeaning": "Code review gate is silent. Type-checker gate is silent. Linter gate is silent. Only semantic diff catches it.",
+    "jsonFormulaTemplate": {
+      "name": "gate"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "D5572BF0E08C480F"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 6,
+    "slotName": "PROPAGATE",
+    "hexCode": "3F55C475",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "developer-keystroke-to-wrong-identifier-to-silent-logic-drift-to-wrong-output",
+    "canonicalDerivationString": "PROPAGATE:developer-keystroke-to-wrong-identifier-to-silent-logic-drift-to-wrong-output",
+    "humanMeaning": "Developer keystroke → wrong identifier → silent logic drift → wrong output, with no error thrown.",
+    "jsonFormulaTemplate": {
+      "name": "propagate"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "E8E42FD7BA413CED"
+  },
+  {
+    "schema": "SCD64_GLOSSARY_ENTRY",
+    "schemaVersion": 1,
+    "family": "GHOST_LOGIC",
+    "slotIndex": 7,
+    "slotName": "VERDICT",
+    "hexCode": "619D3107",
+    "category": "GHOST_LOGIC",
+    "canonicalMeaning": "diagnose-only+semantic-diff-required+surface-similarity-is-the-mask",
+    "canonicalDerivationString": "VERDICT:diagnose-only+semantic-diff-required+surface-similarity-is-the-mask",
+    "humanMeaning": "Diagnose-only. Semantic diff required. Surface similarity IS the mask — there is no bug without the resemblance.",
+    "jsonFormulaTemplate": {
+      "name": "verdict"
+    },
+    "fixedForever": true,
+    "categoryChecksum": "D92558D20B6B8FD9"
   }
 ]

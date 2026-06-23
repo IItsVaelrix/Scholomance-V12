@@ -19,7 +19,7 @@ const MIN_HEIGHT = 120;
 const DEFAULT_WIDTH = 300;
 
 /**
- * IntelliSense — Grimoire-styled autocomplete with resize support.
+ * IntelliSense - Grimoire-styled autocomplete with resize support.
  * Floating enchanted parchment fragment with gold-leaf edges.
  */
 const IntelliSense = memo(function IntelliSense({
@@ -103,7 +103,7 @@ const IntelliSense = memo(function IntelliSense({
       exit={{ opacity: 0, y: -6, scale: 0.97 }}
       transition={{ duration: 0.18, ease: [0.34, 1.56, 0.64, 1] }}
     >
-      {/* Decorative top edge — gold leaf line */}
+      {/* Decorative top edge - gold leaf line */}
       <div className="intellisense-gilding" aria-hidden="true" />
 
       {/* Ghost-line preview */}
@@ -179,7 +179,7 @@ const IntelliSense = memo(function IntelliSense({
         })}
       </div>
 
-      {/* Resize handle — styled as corner flourish */}
+      {/* Resize handle - styled as corner flourish */}
       <div
         className="intellisense-resize"
         onMouseDown={onResizeStart}

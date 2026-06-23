@@ -185,7 +185,7 @@ export const ERROR_CODES = Object.freeze({
   FORMULA_EVAL_FAIL: 0x0B02,
   FORMULA_INVALID_SYNTAX: 0x0B03,
 
-  // LINGUISTIC errors (0x0C00–0x0CFF) — World-law violations
+  // LINGUISTIC errors (0x0C00-0x0CFF) -- World-law violations
   PHONEMIC_SATURATION: 0x0C01,
   RESONANCE_MISMATCH: 0x0C02,
   METER_DEGRADATION: 0x0C03,
@@ -193,13 +193,13 @@ export const ERROR_CODES = Object.freeze({
   VOWEL_FAMILY_MISMATCH: 0x0C05,
   LEGALITY_VIOLATION: 0x0C06,
 
-  // COMBAT errors (0x0D00–0x0DFF) — Arena failures
+  // COMBAT errors (0x0D00-0x0DFF) -- Arena failures
   FORCE_DISSIPATION: 0x0D01,
   ENTROPIC_REPETITION: 0x0D02,
   MANA_VOID_EXCEPTION: 0x0D03,
   SPELL_CASCADE_FAILURE: 0x0D04,
 
-  // UI_STASIS errors (0x0E00–0x0EFF) — Interface freeze detection
+  // UI_STASIS errors (0x0E00-0x0EFF) -- Interface freeze detection
   CLICK_HANDLER_STALL: 0x0E01,
   ANIMATION_LIFECYCLE_HANG: 0x0E02,
   EVENT_LISTENER_LEAK: 0x0E03,
@@ -209,7 +209,7 @@ export const ERROR_CODES = Object.freeze({
   INTERVAL_TIMER_LEAK: 0x0E07,
   TRANSITION_INTERRUPT: 0x0E08,
 
-  // IMMUNITY errors (0x0F00–0x0FFF) — Immune system inflammatory responses
+  // IMMUNITY errors (0x0F00-0x0FFF) -- Immune system inflammatory responses
   IMMUNE_INNATE_BLOCK: 0x0F01,           // Layer 1 pattern violation
   IMMUNE_ADAPTIVE_BLOCK: 0x0F02,         // Layer 2 pathogen vector match
   IMMUNE_FORBIDDEN_IMPORT: 0x0F03,       // UI -> codex layering violation (LING-0F03)
@@ -221,6 +221,7 @@ export const ERROR_CODES = Object.freeze({
   IMMUNE_CELL_WALL_VIOLATION: 0x0F09,    // Internal domain boundary breach
   IMMUNE_APOPTOSIS_SIGNAL: 0x0F0A,       // Domain self-destruct / self-signal
   IMMUNE_OVERRIDE_VELOCITY: 0x0F0B,      // Threshold of IMMUNE_ALLOW annotations exceeded in single file
+  IMMUNE_SYNTAX_PRION: 0x0F0C,           // Stray character / structural syntax deformity (SYNTAX-0F0C)
   TEST_MISSING: 0x0F10,                  // Module has no corresponding test file
   TEST_FIXTURE_ANTIPATTERN: 0x0F11,       // Test fixture antipattern detected
 

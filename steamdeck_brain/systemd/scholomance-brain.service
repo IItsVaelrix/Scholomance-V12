@@ -1,0 +1,38 @@
+[Unit]
+# ─────────────────────────────────────────────────────────────────────────────
+# scholomance-brain.service — SteamDeck Brain HTTP daemon (always-on)
+# ─────────────────────────────────────────────────────────────────────────────
+# Keeps brain_daemon.py (http://127.0.0.1:9090) alive at all times, independent
+# of the DivTube TUI. DivTube connects to this daemon over HTTP; it does not own
+# its lifecycle. Restart=always covers crashes; WantedBy=default.target + linger
+# (see install.sh) covers reboots and headless boots.
+#
+# This file is a TEMPLATE: @PYTHON@, @SCRIPT_DIR@ and @BRAIN_DAEMON@ are
+# substituted by install.sh.
+Description=Scholomance SteamDeck Brain daemon (Cortex + Ollama bridge)
+# Ollama is the brain's only runtime dependency; bind to it but stay resilient
+# if it is managed elsewhere (Wants, not Requires, so the brain still retries).
+Wants=scholomance-ollama.service
+After=scholomance-ollama.service network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@SCRIPT_DIR@
+# Optional overrides: drop KEY=VALUE lines (BRAIN_MODEL, BRAIN_DB, BRAIN_PORT,
+# BRAIN_PERSONALITY, BRAIN_EXTRA_ARGS) into this file. "-" = ok if missing.
+EnvironmentFile=-%h/.config/scholomance-brain.env
+Environment=BRAIN_MODEL=phi3:mini
+Environment=BRAIN_PORT=9090
+Environment=BRAIN_DB=%h/.substrate/memory.sqlite
+# Wait (best-effort) for Ollama's API before launching so the daemon's eager
+# OllamaBridge check doesn't sys.exit on a cold boot. Times out after 60s and
+# lets Restart=always handle the rest.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do curl -sf http://localhost:11434/api/tags >/dev/null 2>&1 && exit 0; sleep 1; done; exit 0'
+ExecStart=@PYTHON@ @BRAIN_DAEMON@ --model ${BRAIN_MODEL} --port ${BRAIN_PORT} --db ${BRAIN_DB} $BRAIN_EXTRA_ARGS
+Restart=always
+RestartSec=5
+# Don't give up: keep retrying indefinitely (e.g. while Ollama pulls a model).
+StartLimitIntervalSec=0
+
+[Install]
+WantedBy=default.target

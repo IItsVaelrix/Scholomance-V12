@@ -67,6 +67,7 @@ Foundational mandates and contracts that govern agents and systems.
 - [`scholomance-feedback.md`](./Scholomance%20LAW/scholomance-feedback/scholomance-feedback.md)
 - [`vaelrix-law-debug.skill`](./Scholomance%20LAW/vaelrix-law-debug.skill)
 - [`vaelrix-law.skill`](./Scholomance%20LAW/vaelrix-law.skill)
+- [`Screenshot_20260620_091832.png`](./Scholomance%20LAW/Screenshot_20260620_091832.png)
 
 ### Scholomance Bug Reports
 
@@ -89,6 +90,7 @@ The forensic record of failures, fixes, and lessons learned.
 - [`BUG-2026-05-09-REJECTED-WATER-SOURCE.md`](./Scholomance%20Bug%20Reports/BUG-2026-05-09-REJECTED-WATER-SOURCE.md)
 - [`BUG-2026-06-04-VECTOR-AMP-FIDELITY-ALIGNMENT.md`](./Scholomance%20Bug%20Reports/BUG-2026-06-04-VECTOR-AMP-FIDELITY-ALIGNMENT.md)
 - [`BUG-2026-06-03-SQLITE-BUSY-STATE-DRIFT.md`](./Scholomance%20Bug%20Reports/BUG-2026-06-03-SQLITE-BUSY-STATE-DRIFT.md)
+- [`BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT.md`](./Scholomance%20Bug%20Reports/BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT.md)
 - [`BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md`](./Scholomance%20Bug%20Reports/BUG-FIX-PLAN-2026-04-26-DISCONNECTED-LOGIC.md)
 - [`BUG-TEMPLATE.md`](./Scholomance%20Bug%20Reports/BUG-TEMPLATE.md)
 
@@ -160,6 +162,13 @@ Reality after implementation.
 - [`PIR-20260611-TRUESIGHT-WORDTOOLTIP-HIERARCHY.md`](./post-implementation-reports/PIR-20260611-TRUESIGHT-WORDTOOLTIP-HIERARCHY.md)
 - [`PIR-20260611-WAND-PIXELBRAIN-BRIDGE-HARDENING.md`](./post-implementation-reports/PIR-20260611-WAND-PIXELBRAIN-BRIDGE-HARDENING.md)
 - [`PIR-20260611-embedded-truesight-tooltips.md`](./post-implementation-reports/PIR-20260611-embedded-truesight-tooltips.md)
+- [`PIR-20260620-COLLAB-GRIMDESIGN-CONSOLE.md`](./post-implementation-reports/PIR-20260620-COLLAB-GRIMDESIGN-CONSOLE.md)
+- [`PIR-20260620-LOCAL-OAUTH-MOCK-DISABLE.md`](./post-implementation-reports/PIR-20260620-LOCAL-OAUTH-MOCK-DISABLE.md)
+- [`PIR-20260620-MCP-OAUTH-COMPAT.md`](./post-implementation-reports/PIR-20260620-MCP-OAUTH-COMPAT.md)
+- [`PIR-20260620-MCP-OAUTH-LLM-CLIENTS.md`](./post-implementation-reports/PIR-20260620-MCP-OAUTH-LLM-CLIENTS.md)
+- [`PIR-20260620-MEMORY-CELL-OSMOSIS.md`](./post-implementation-reports/PIR-20260620-MEMORY-CELL-OSMOSIS.md)
+- [`PIR-20260620-NAV-LOGOUT.md`](./post-implementation-reports/PIR-20260620-NAV-LOGOUT.md)
+- [`PIR-20260620-OAUTH-DISABLED-ROUTE.md`](./post-implementation-reports/PIR-20260620-OAUTH-DISABLED-ROUTE.md)
 - [`dead-code.md`](./post-implementation-reports/dead-code.md)
 - [`Wand_RAID_UX_Audit_Report.md`](./Wand_RAID_UX_Audit_Report.md)
 - [`UX Report/Scrying_Orb_Landing_UX_Report.md`](./UX%20Report/Scrying_Orb_Landing_UX_Report.md)
@@ -189,6 +198,8 @@ Deep technical analysis, operating manuals, and specialist briefs.
 - [`MCP_INTEGRATION_GUIDE.md`](./Scholomance%20White%20Papers/MCP_INTEGRATION_GUIDE.md)
 - [`TURBOQUANT-SERVICE-MANUAL.md`](./Scholomance%20White%20Papers/TURBOQUANT-SERVICE-MANUAL.md)
 - [`TURBOQUANT_WHITE_PAPER.md`](./Scholomance%20White%20Papers/TURBOQUANT_WHITE_PAPER.md)
+- [`TURBOQUANT-WHITE-PAPER.md`](./Scholomance%20White%20Papers/TURBOQUANT-WHITE-PAPER.md)
+- [`SCD64_White_Paper.md`](./Scholomance%20White%20Papers/SCD64_White_Paper.md)
 - [`opencode.md`](./Scholomance%20White%20Papers/opencode.md)
 - [`BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md`](./Scholomance%20White%20Papers/BEGINNER_GUIDE_TO_SCHOLOMANCE_ENGINE.md)
 - [`SHADER_FORGE_WHITE_PAPER.md`](./Scholomance%20White%20Papers/SHADER_FORGE_WHITE_PAPER.md)
@@ -324,7 +335,5 @@ Bug reports follow this structure:
 - [`PIR-20260527-GODOT-PAINTING-DOCK-PHASES-0-3.md`](./post-implementation-reports/PIR-20260527-GODOT-PAINTING-DOCK-PHASES-0-3.md)
 - [`BUG-REPORT-2026-05-10-ZOD-API-CORRUPTION.md`](./reports/BUG-REPORT-2026-05-10-ZOD-API-CORRUPTION.md)
 - [`scholomance_collab.sqlite`](./scholomance_collab.sqlite)
-- [`scholomance_collab.sqlite-shm`](./scholomance_collab.sqlite-shm)
-- [`scholomance_collab.sqlite-wal`](./scholomance_collab.sqlite-wal)
 - [`test_output.log`](./test_output.log)
 - [`SCHOLOMANCE-FAIRLY-ODD-WAND-v1(1).md`](./SCHOLOMANCE-FAIRLY-ODD-WAND-v1%281%29.md)

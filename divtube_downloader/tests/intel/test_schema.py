@@ -1,6 +1,5 @@
 import unittest
 from intel.schema import (
-    VideoAnalysis, VideoOverview, TagIntelligence, VideoTelemetry,
     load_analysis_from_json, SeoCritiqueResult, Flag, DeterminismInfo,
     SCHEMA_VERSION, SCORING_VERSION, RULESET_VERSION,
 )

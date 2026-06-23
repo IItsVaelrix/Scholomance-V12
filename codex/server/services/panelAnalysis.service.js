@@ -25,6 +25,7 @@ import { attachVerseIRAmplifier } from '../../core/verseir-amplifier/index.js';
 import { enhanceVerseIRWithServerPolicy } from './verseirAmplifier.service.js';
 import { createPhonemicOracleService } from './phonemicOracle.service.js';
 import { resolveRhymeAstrologyArtifactPaths } from '../utils/rhymeAstrologyPaths.js';
+import { createLexiconAdapter } from '../adapters/lexicon.sqlite.adapter.js';
 
 const DEFAULT_RHYME_ASTROLOGY_ANCHOR_LIMIT = 14;
 const DEFAULT_RHYME_ASTROLOGY_MATCH_LIMIT = 6;
@@ -33,6 +34,47 @@ const DEFAULT_RHYME_ASTROLOGY_MAX_CLUSTERS = 4;
 const DEFAULT_RHYME_ASTROLOGY_BUCKET_CAP = 200;
 const DEFAULT_RHYME_ASTROLOGY_CACHE_SIZE = 500;
 const DEFAULT_RHYME_ASTROLOGY_WINDOW_LIMIT = 12;
+
+// Resolve the dictionary DB path the same way the server boot does. We need
+// it here so the panel analysis can talk to the in-process lexicon adapter
+// and lift authoritative `rhyme_family` values into the rhyme engine.
+function resolveLexiconDbPath() {
+  const raw = process.env.SCHOLOMANCE_DICT_PATH;
+  if (raw && raw.trim()) return raw.trim();
+  return './scholomance_dict.sqlite';
+}
+
+let cachedLexiconAdapter = null;
+function getLexiconAdapterForRhyme() {
+  if (cachedLexiconAdapter) return cachedLexiconAdapter;
+  cachedLexiconAdapter = createLexiconAdapter(resolveLexiconDbPath(), { log: console });
+  return cachedLexiconAdapter;
+}
+
+/**
+ * Build a self-targeting ScholomanceDictionaryAPI-shaped object. The panel
+ * analysis service lives in the same process as the lexicon adapter, so we
+ * can serve `lookupBatch` directly from the DB instead of round-tripping
+ * HTTP back to our own /api/lexicon endpoint. The shape matches what
+ * `DeepRhymeEngine.primeRhymeFamilies` expects: `{ lookupBatch(words) →
+ * { families: { WORD: "FAMILY" } } }`.
+ */
+function buildSelfDictionaryAPI({ log } = {}) {
+  return {
+    async lookupBatch(words) {
+      const adapter = getLexiconAdapterForRhyme();
+      const list = Array.isArray(words) ? words.filter(Boolean) : [];
+      if (list.length === 0) return { families: {} };
+      try {
+        const families = adapter.batchLookupFamilies(list);
+        return { families: families || {} };
+      } catch (err) {
+        log?.warn?.({ err: err?.message || String(err) }, '[PanelAnalysisService] batchLookupFamilies failed; rhyme engine will fall back to local scoring');
+        return { families: {} };
+      }
+    },
+  };
+}
 
 function parsePositiveInt(value, fallback) {
   const parsed = Number(value);
@@ -799,6 +841,15 @@ export async function createPanelAnalysisService(options = {}) {
           ? { syntaxLayer, authorityMode: 'background' }
           : { authorityMode: 'background' }
       );
+
+      // Authoritative rhyme-family pass: if the Scholomance Dictionary API
+      // is configured and reachable, prime the engine's family cache from
+      // the live lexicon (`POST /api/lexicon/lookup-batch`). Words sharing
+      // a family will then be classified as `perfect` regardless of local
+      // phoneme thresholds. Silent failure: the engine falls back to its
+      // local scorer if the API is down or returns an error.
+      const dictionaryAPI = options.scholomanceDictionaryAPI || buildSelfDictionaryAPI({ log });
+      await deepRhymeEngine.primeRhymeFamilies(uniqueWords, dictionaryAPI);
       const verseIR = await enhanceVerseIRWithServerPolicy(compileVerseToIR(text, {
         phonemeEngine: PhonemeEngine,
         mode: deepAnalysis?.compiler?.mode || 'balanced',

@@ -5,9 +5,6 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from video_forge import SCHEMA_VERSION, DETERMINISM_VERSION
-from video_forge.presets import PRESETS
-from video_forge.effects import EFFECTS
-from video_forge.transitions import TRANSITIONS
 
 
 @dataclass
@@ -185,14 +182,14 @@ def to_dict(project: VideoProject) -> dict:
             "startOffset": a.start_offset, "trackType": a.track_type,
             "fadeInSecs": a.fade_in_secs, "fadeOutSecs": a.fade_out_secs,
         }
-    def _ledger_to_dict(l: RenderLedger) -> dict:
+    def _ledger_to_dict(ledger: RenderLedger) -> dict:
         return {
-            "renderId": l.render_id, "preset": l.preset,
-            "ffmpegCommand": l.ffmpeg_command, "ffmpegVersion": l.ffmpeg_version,
-            "outputPath": l.output_path, "status": l.status,
-            "errors": l.errors, "warnings": l.warnings,
-            "startedAt": l.started_at, "completedAt": l.completed_at,
-            "durationSecs": l.duration_secs, "recipeHash": l.recipe_hash,
+            "renderId": ledger.render_id, "preset": ledger.preset,
+            "ffmpegCommand": ledger.ffmpeg_command, "ffmpegVersion": ledger.ffmpeg_version,
+            "outputPath": ledger.output_path, "status": ledger.status,
+            "errors": ledger.errors, "warnings": ledger.warnings,
+            "startedAt": ledger.started_at, "completedAt": ledger.completed_at,
+            "durationSecs": ledger.duration_secs, "recipeHash": ledger.recipe_hash,
         }
     return {
         "schemaVersion": project.schema_version,

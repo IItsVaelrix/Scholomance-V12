@@ -1,5 +1,5 @@
 /**
- * LATTICE GRID (Read page) QA — annotation lattice toggle
+ * LATTICE GRID (Read page) QA - annotation lattice toggle
  *
  * Pins the contract for the ToolsSidebar "Lattice Grid" tool: toggle state is
  * exposed to assistive tech, the dependency on Truesight is communicated
@@ -50,7 +50,7 @@ function latticeButton() {
   return screen.getByRole('button', { name: /WordToolTip/ });
 }
 
-describe('ToolsSidebar — Lattice Grid toggle', () => {
+describe('ToolsSidebar - Lattice Grid toggle', () => {
   it('exposes toggle state via aria-pressed and passes axe', async () => {
     const { container, rerender } = render(<ToolsSidebar {...sidebarProps()} />);
     expect(latticeButton()).toHaveAttribute('aria-pressed', 'false');
@@ -80,7 +80,7 @@ describe('ToolsSidebar — Lattice Grid toggle', () => {
   });
 });
 
-describe('ScrollEditor — lattice annotation boxes', () => {
+describe('ScrollEditor - lattice annotation boxes', () => {
   const renderEditor = (isLatticeGrid) => render(
     <ThemeProvider>
       <ScrollEditor

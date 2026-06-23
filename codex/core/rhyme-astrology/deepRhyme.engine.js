@@ -73,6 +73,103 @@ export class DeepRhymeEngine {
     this.analysisCache = new Map();
     this.syntaxLayerContext = null;
     this.syntaxGateCounters = null;
+    // Authoritative rhyme families pulled from the Scholomance Dictionary API
+    // (POST /api/lexicon/lookup-batch returns word → rhyme_family). When a
+    // family is present for both ends of a pair, it outranks the local
+    // phoneme similarity threshold for `perfect`. Populated via
+    // `primeRhymeFamilies(words, dictionaryAPI)` before the analysis runs.
+    this.rhymeFamilyCache = new Map();
+  }
+
+  /**
+   * Set a single word's authoritative rhyme family. Pass `null` to record a
+   * confirmed no-family (e.g. dictionary confirmed the word exists but has no
+   * recorded rhyme family) so the lookup won't be retried.
+   */
+  setRhymeFamily(word, family) {
+    if (!word) return;
+    const key = String(word).trim().toLowerCase();
+    if (!key) return;
+    this.rhymeFamilyCache.set(key, family || null);
+  }
+
+  /**
+   * Bulk-set authoritative rhyme families from a `{ word: family }` map.
+   * Convenience wrapper around `setRhymeFamily`.
+   */
+  setRhymeFamilies(map) {
+    if (!map || typeof map !== 'object') return;
+    for (const [word, family] of Object.entries(map)) {
+      this.setRhymeFamily(word, family);
+    }
+  }
+
+  /**
+   * Get the cached authoritative rhyme family for a word, or `null` when the
+   * cache has no record. The cache is intentionally untyped so callers can
+   * distinguish "never looked up" from "looked up and had no family".
+   */
+  getRhymeFamily(word) {
+    if (!word) return undefined;
+    const key = String(word).trim().toLowerCase();
+    if (!key) return undefined;
+    return this.rhymeFamilyCache.has(key)
+      ? this.rhymeFamilyCache.get(key)
+      : undefined;
+  }
+
+  hasRhymeFamilyLookup(word) {
+    if (!word) return false;
+    const key = String(word).trim().toLowerCase();
+    return this.rhymeFamilyCache.has(key);
+  }
+
+  /**
+   * Populate the cache by calling `dictionaryAPI.lookupBatch(words)`. The
+   * expected return shape is `{ families: { WORD: "FAMILY" } }` (Scholomance
+   * Dictionary API). Words that already have a cached entry are skipped to
+   * avoid a network round-trip on re-analysis. Failures degrade silently:
+   * the engine falls back to its local phoneme scoring.
+   *
+   * @param {string[]} words — words to look up
+   * @param {{ lookupBatch?: (words: string[]) => Promise<{ families?: Record<string,string> }> }} [dictionaryAPI]
+   * @returns {Promise<{ requested: number, cached: number, families: number }>}
+   */
+  async primeRhymeFamilies(words, dictionaryAPI) {
+    if (!dictionaryAPI || typeof dictionaryAPI.lookupBatch !== 'function') {
+      return { requested: 0, cached: 0, families: 0 };
+    }
+    const unique = Array.from(new Set(
+      (Array.isArray(words) ? words : [])
+        .map((w) => String(w || '').trim())
+        .filter(Boolean),
+    ));
+    const missing = unique.filter((w) => !this.rhymeFamilyCache.has(w.toLowerCase()));
+    if (missing.length === 0) {
+      return { requested: unique.length, cached: unique.length, families: 0 };
+    }
+    let payload;
+    try {
+      payload = await dictionaryAPI.lookupBatch(missing);
+    } catch (err) {
+      return { requested: unique.length, cached: unique.length - missing.length, families: 0, error: err?.message || String(err) };
+    }
+    const families = (payload && typeof payload === 'object' && payload.families) || {};
+    let resolved = 0;
+    for (const word of missing) {
+      const family = families[word] || families[word.toUpperCase()] || families[word.toLowerCase()] || null;
+      this.setRhymeFamily(word, family);
+      if (family) resolved += 1;
+    }
+    return { requested: unique.length, cached: unique.length, families: resolved };
+  }
+
+  /**
+   * Clear the authoritative rhyme-family cache. Useful between documents or
+   * when the dictionary API endpoint rotates.
+   */
+  clearRhymeFamilies() {
+    this.rhymeFamilyCache.clear();
   }
 
   /**
@@ -587,22 +684,56 @@ export class DeepRhymeEngine {
     if (!analysisA || !analysisB) return null;
     const normalizedA = this.normalizeWord(wordA.word), normalizedB = this.normalizeWord(wordB.word);
     const isIdentity = normalizedA === normalizedB;
+    // Authoritative dictionary family check FIRST. If the Scholomance
+    // Dictionary API confirmed both words share a rhyme family, that
+    // contract is a stronger `perfect` signal than any local phoneme
+    // threshold. The local scorer still runs to compute the score
+    // (heuristic for ordering), but the type is forced to perfect.
+    const dictionaryFamilyMatch = !isIdentity
+      ? this.matchDictionaryFamily(wordA.word, wordB.word)
+      : null;
     const multiMatch = this.engine.scoreMultiSyllableMatch(analysisA, analysisB);
     const stressedAssonanceScore = multiMatch.syllablesMatched === 0 ? this.scoreStressedAssonance(analysisA, analysisB) : 0;
-    if (!isIdentity && multiMatch.syllablesMatched === 0 && stressedAssonanceScore <= 0) return null;
+    if (!isIdentity && multiMatch.syllablesMatched === 0 && stressedAssonanceScore <= 0 && !dictionaryFamilyMatch) return null;
     let baseScore = Math.max(Number(multiMatch.score) || 0, stressedAssonanceScore);
     if (isIdentity) baseScore = 1.0;
+    if (dictionaryFamilyMatch) {
+      // Lift the score to PERFECT floor when the dictionary agrees. Words
+      // the lexicon considers "same family" are canonically a perfect rhyme
+      // even if local phoneme math undervalues the match (e.g. shared
+      // rhyme_family with a final consonant swap).
+      baseScore = Math.max(baseScore, RHYME_TYPES.PERFECT.minScore);
+    }
     const multiplier = Number(syntaxGate?.multiplier);
     const connectionScore = baseScore * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
     const syllablesMatched = multiMatch.syllablesMatched > 0 ? multiMatch.syllablesMatched : (stressedAssonanceScore > 0 ? 1 : 0);
     const weightA = this.calculatePhoneticWeight(analysisA), weightB = this.calculatePhoneticWeight(analysisB);
     let type = 'consonance';
+    let subtype = multiMatch.type;
     if (isIdentity) type = 'identity';
-    else if (connectionScore >= RHYME_TYPES.PERFECT.minScore) type = 'perfect';
+    else if (dictionaryFamilyMatch) {
+      type = 'perfect';
+      subtype = 'dictionary';
+    } else if (connectionScore >= RHYME_TYPES.PERFECT.minScore) type = 'perfect';
     else if (connectionScore >= RHYME_TYPES.NEAR.minScore) type = 'near';
     else if (connectionScore >= RHYME_TYPES.SLANT.minScore) type = 'slant';
     else if (connectionScore >= RHYME_TYPES.ASSONANCE.minScore) type = 'assonance';
-    return { type, subtype: multiMatch.type, score: connectionScore, syllablesMatched, phoneticWeight: (weightA + weightB) / 2, wordA: { lineIndex: wordA.lineIndex, wordIndex: wordA.wordIndex, charStart: wordA.charStart, charEnd: wordA.charEnd, word: wordA.word }, wordB: { lineIndex: wordB.lineIndex, wordIndex: wordB.wordIndex, charStart: wordB.charStart, charEnd: wordB.charEnd, word: wordB.word }, groupLabel: null, syntax: syntaxGate ? { gate: syntaxGate.gate || SYNTAX_GATES.ALLOW, multiplier: multiplier, reasons: Array.isArray(syntaxGate.reasons) ? syntaxGate.reasons : [] } : undefined };
+    return { type, subtype, score: connectionScore, syllablesMatched, phoneticWeight: (weightA + weightB) / 2, wordA: { lineIndex: wordA.lineIndex, wordIndex: wordA.wordIndex, charStart: wordA.charStart, charEnd: wordA.charEnd, word: wordA.word }, wordB: { lineIndex: wordB.lineIndex, wordIndex: wordB.wordIndex, charStart: wordB.charStart, charEnd: wordB.charEnd, word: wordB.word }, groupLabel: null, dictionaryFamily: dictionaryFamilyMatch || undefined, syntax: syntaxGate ? { gate: syntaxGate.gate || SYNTAX_GATES.ALLOW, multiplier: multiplier, reasons: Array.isArray(syntaxGate.reasons) ? syntaxGate.reasons : [] } : undefined };
+  }
+
+  /**
+   * Look up the cached authoritative rhyme family for both words. Returns the
+   * shared family string when both ends have a non-null family and they
+   * match, otherwise `null`. Distinguishes "cache miss" (return null,
+   * caller should fall back to local scoring) from "cache hit, no family"
+   * (also null, but a different fallback story).
+   */
+  matchDictionaryFamily(wordA, wordB) {
+    const a = this.getRhymeFamily(wordA);
+    const b = this.getRhymeFamily(wordB);
+    if (a === undefined || b === undefined) return null; // at least one was never looked up
+    if (!a || !b) return null;
+    return a === b ? a : null;
   }
 
   buildRhymeGroups(lines, connections) {

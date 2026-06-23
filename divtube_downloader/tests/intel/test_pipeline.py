@@ -7,8 +7,7 @@ from intel.schema import (
     ChannelSnapshot, CommentPulse, load_analysis_from_json,
 )
 from intel.pipeline import run_critique
-from intel.references import load_all_references
-from tests.intel.fixtures.generator import make_high_contrast_png, make_blank_png
+from tests.intel.fixtures.generator import make_high_contrast_png
 
 
 def _make_full_analysis():

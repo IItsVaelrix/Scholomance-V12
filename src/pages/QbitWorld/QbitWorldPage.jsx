@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 import { useMemo, useState } from 'react';
 import { Download, Hammer, Layers, RotateCcw } from 'lucide-react';
 

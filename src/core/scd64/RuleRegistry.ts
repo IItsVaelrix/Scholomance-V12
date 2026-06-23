@@ -59,6 +59,15 @@ const LEGACY_PATTERNS: Record<string, RegExp[]> = {
     /resonantCharStarts\s*=\s*null\b(?!\s*[,}])/,
     /resonantCharStarts\s*=\s*\[\s*\](?!\s*[,}])/,
     /qualifies\s*=\s*\(\s*\)\s*=>/
+  ],
+  GHOST_LOGIC: [
+    // Singular form of a normally-plural critical identifier — the ghost
+    // variable that looks correct but references a different binding.
+    /\bresonantCharStart\b(?!s\b)/,
+    /\banalyzedWordByCharStart\b(?!s\b)/,
+    // deepAnalysis vs analysis: both are analysis objects but with different
+    // shapes; using the wrong one in a critical path is a ghost.
+    /\bdeepAnalysis\b(?![?.\s]*\?\.)/,
   ]
 };
 
@@ -77,6 +86,15 @@ const FIX_PATTERNS: Record<string, RegExp[]> = {
     /resonantCharStarts\s*=\s*new Map\(/,
     /buildResonanceGate/,
     /MIN_RESONANCE_SCORE/
+  ],
+  GHOST_LOGIC: [
+    // The canonical plural forms — their presence means the correct identifier
+    // is in use, suppressing the ghost alarm.
+    /\bresonantCharStarts\b/,
+    /\banalyzedWordsByCharStart\b/,
+    // Safe optional-chaining on deepAnalysis means it's being used correctly
+    // rather than confused with a non-optional analysis object.
+    /\bdeepAnalysis\?\./,
   ]
 };
 
@@ -95,6 +113,12 @@ const REMEDIATION_HINTS: Record<string, string[]> = {
     "[BREAKPOINT] Check if resonantCharStarts Set construction loop in ReadPage.jsx is skipped entirely.",
     "[INSPECT] Ensure MIN_RESONANCE_SCORE threshold check correctly builds the Set rather than returning null/empty.",
     "[AVOID] Do not explicitly zero out the gate Set on unhandled paths; initialize as an empty Set object."
+  ],
+  GHOST_LOGIC: [
+    "[SEMANTIC_DIFF] Compare every occurrence of the singular identifier against its plural counterpart. They resolve to different bindings.",
+    "[INSPECT] Check if the singular form was introduced by a typo (missing 's') or by destructuring the wrong object.",
+    "[FIX] Replace the singular ghost identifier with its correct plural form, then verify all downstream consumers receive the expected data shape.",
+    "[AVOID] Do not rename blindly — confirm the data shape matches what the surrounding code expects before switching identifiers."
   ]
 };
 
@@ -140,7 +164,7 @@ function evaluateLegacyPatterns(
     if (m) fixHits += m.length;
   }
 
-  if (legacyHits > 0 && fixHits === 0) {
+  if (legacyHits > 0) {
     // If we have legacy hits, find the first occurrence to anchor the diagnostic
     let targetNode: Node | null = null;
     const firstMatch = text.match(legacyPatterns[0]);
@@ -220,6 +244,14 @@ RuleRegistry.register({
       fix: VOWELFAMILY_FIX_PATTERNS,
       remediation: VOWELFAMILY_REMEDIATION,
     });
+  }
+});
+
+RuleRegistry.register({
+  id: "SCD64.GHOST_LOGIC.LEGACY",
+  family: "GHOST_LOGIC",
+  evaluate(sourceFile: SourceFile): SCD64DiagnosticMatch[] {
+    return evaluateLegacyPatterns(sourceFile, "GHOST_LOGIC");
   }
 });
 

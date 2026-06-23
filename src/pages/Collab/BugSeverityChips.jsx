@@ -1,5 +1,5 @@
 /**
- * BugSeverityChips — Visual chips for bug severity
+ * BugSeverityChips - Visual chips for bug severity
  */
 
 const SEVERITY_COLORS = {

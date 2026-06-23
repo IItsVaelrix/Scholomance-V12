@@ -170,7 +170,7 @@ export default function ToolsSidebar({
         <div className="sidebar-footer">
           <div className="analyzing-indicator">
             <span className="analyzing-spinner" aria-hidden="true" />
-            Analyzing…
+            Analyzing...
           </div>
         </div>
       )}

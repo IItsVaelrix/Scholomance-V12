@@ -72,7 +72,7 @@ export const GrimoireSpread: React.FC<{ view?: GrimoireView }> = ({ view: viewPr
   );
 
   if (error) return <div className="grimoire-shell grimoire-error">⚠ {error}</div>;
-  if (!view) return <div className="grimoire-shell grimoire-loading">Opening the tome…</div>;
+  if (!view) return <div className="grimoire-shell grimoire-loading">Opening the tome...</div>;
 
   const { artist, release, track, leftPage, rightPage } = view;
   const prov = leftPage.provenance;
@@ -93,7 +93,7 @@ export const GrimoireSpread: React.FC<{ view?: GrimoireView }> = ({ view: viewPr
       </nav>
 
       <div className="grimoire-book">
-        {/* ── LEFT PAGE — VERSES & VERITAS ─────────────────────────────── */}
+        {/* ── LEFT PAGE - VERSES & VERITAS ─────────────────────────────── */}
         <section className="page page--left" aria-label="Song details and lyrics">
           <header className="page-cartouche">✦ Verses &amp; Veritas ✦</header>
           <h1 className="song-title">{track.title}</h1>
@@ -107,9 +107,9 @@ export const GrimoireSpread: React.FC<{ view?: GrimoireView }> = ({ view: viewPr
           <div className="meta-grid">
             <div className="meta-col">
               <Meta label="Duration" value={fmtTime(track.durationMs)} />
-              <Meta label="BPM" value={track.bpm != null ? String(Math.round(track.bpm)) : '—'} />
-              <Meta label="Key" value={track.musicalKey ?? '—'} />
-              <Meta label="Genre" value={track.genre ?? '—'} />
+              <Meta label="BPM" value={track.bpm != null ? String(Math.round(track.bpm)) : ' - '} />
+              <Meta label="Key" value={track.musicalKey ?? ' - '} />
+              <Meta label="Genre" value={track.genre ?? ' - '} />
             </div>
             {prov && (
               <div className="meta-col provenance">
@@ -123,7 +123,7 @@ export const GrimoireSpread: React.FC<{ view?: GrimoireView }> = ({ view: viewPr
                 {prov.humanEditRatio != null && (
                   <div className="prov-row"><span>Human edit</span><b>{Math.round(prov.humanEditRatio * 100)}%</b></div>
                 )}
-                <div className="prov-row"><span>Stems</span><b>{prov.stemsAvailable ? 'available' : '—'}</b></div>
+                <div className="prov-row"><span>Stems</span><b>{prov.stemsAvailable ? 'available' : ' - '}</b></div>
               </div>
             )}
           </div>
@@ -161,14 +161,14 @@ export const GrimoireSpread: React.FC<{ view?: GrimoireView }> = ({ view: viewPr
           </div>
         </section>
 
-        {/* ── RIGHT PAGE — BYTECODE VISUALISER ─────────────────────────── */}
+        {/* ── RIGHT PAGE - BYTECODE VISUALISER ─────────────────────────── */}
         <section className="page page--right" aria-label="Deterministic visual experience">
           <header className="page-cartouche page-cartouche--arc">✦ Bytecode Visualiser ✦</header>
           <div className="arc-subtitle">Deterministic Visual Experience</div>
 
           <div className="arc-body">
             <aside className="arc-readouts arc-readouts--left">
-              <Readout label="Song Fingerprint" value={track.fingerprintId ?? '—'} mono />
+              <Readout label="Song Fingerprint" value={track.fingerprintId ?? ' - '} mono />
               <Readout label="Bytecode Seed" value={rightPage.readouts?.bytecodeSeed ?? `0x${rightPage.seed.toString(16)}`} mono />
               <Readout label="Engine" value={`${rightPage.readouts?.engine?.name ?? 'GlyphCore'} v${rightPage.readouts?.engine?.version ?? '1'}`} />
               <Readout label="Archetype" value={rightPage.archetype} />
@@ -225,7 +225,7 @@ const AnnotationCard: React.FC<{ annotation: Annotation }> = ({ annotation }) =>
   const [open, setOpen] = useState(false);
   const lineLabel = annotation.startLine === annotation.endLine
     ? String(annotation.startLine + 1).padStart(2, '0')
-    : `${String(annotation.startLine + 1).padStart(2, '0')}–${String(annotation.endLine + 1).padStart(2, '0')}`;
+    : `${String(annotation.startLine + 1).padStart(2, '0')}-${String(annotation.endLine + 1).padStart(2, '0')}`;
   return (
     <div className="annotation">
       <div className="anno-head">

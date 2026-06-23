@@ -1,5 +1,5 @@
 /**
- * AnalysisResults — Display image analysis results
+ * AnalysisResults - Display image analysis results
  */
 
 import { motion } from 'framer-motion';

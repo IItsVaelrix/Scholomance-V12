@@ -8,16 +8,16 @@ const authoritative = (arpabetBase) =>
   normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[arpabetBase] || 'A');
 
 describe('Syllabifier.syllabifyDeep vowelFamily folding', () => {
-  it('folds AH to the engine family (AA), not the raw nucleus', () => {
+  it('preserves AH as its own canonical family', () => {
     const deep = Syllabifier.syllabifyDeep(['K', 'AH1', 'P']);
     expect(deep[0].vowelFamily).toBe(authoritative('AH'));
-    expect(deep[0].vowelFamily).not.toBe('AH');
+    expect(deep[0].vowelFamily).toBe('AH');
   });
 
-  it('folds the OY diphthong to its base family (OW)', () => {
+  it('preserves the OY diphthong as its own canonical family', () => {
     const deep = Syllabifier.syllabifyDeep(['B', 'OY1']);
     expect(deep[0].vowelFamily).toBe(authoritative('OY'));
-    expect(deep[0].vowelFamily).not.toBe('OY');
+    expect(deep[0].vowelFamily).toBe('OY');
   });
 
   it('leaves an already-base family (AE) unchanged', () => {

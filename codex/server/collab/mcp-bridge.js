@@ -1060,7 +1060,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
             try {
                 const abs = path.resolve(ROOT, target_file);
                 if (abs.startsWith(ROOT) && fs.existsSync(abs)) return fs.readFileSync(abs, 'utf8').slice(0, 8000);
-            } catch {}
+            } catch { /* ignore */ }
             return null;
         })() : null;
 
@@ -1119,7 +1119,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         try {
             fbSkill = fs.readFileSync(fbSkillPath, 'utf8');
             fitMatrix = fs.readFileSync(fitPath, 'utf8');
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
 
         const detectedMode = mode || (subject.toLowerCase().includes('pdr') || subject.toLowerCase().includes('spec') ? 'D' : 
                             subject.toLowerCase().includes('ui') || subject.toLowerCase().includes('component') ? 'C' : 'B');
@@ -1279,7 +1279,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         let agent = null;
         try {
             if (typeof service.getAgent === 'function') agent = await service.getAgent(agent_id);
-        } catch {}
+        } catch { /* ignore */ }
         if (!agent && !bypass_lock_check) {
             // still allow recording; strict check can be added later via ownership/locks
         }
@@ -1289,7 +1289,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         try {
             const locks = await service.listLocks ? await service.listLocks() : [];
             lockInfo = locks.find(l => l.file_path === file_path || l.file_path === `/${file_path}`);
-        } catch {}
+        } catch { /* ignore */ }
 
         const activityDetails = {
             file_path,
@@ -1389,7 +1389,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
                     actor_agent_id: 'healer',
                     note: `[HEALER] ${result.status} after ${result.iterations} iteration(s). Pattern: ${result.pattern?.name || 'none'}. Verdict: ${result.verdict}.`,
                 });
-            } catch {}
+            } catch { /* ignore */ }
         }
         return result;
     });
@@ -1402,8 +1402,8 @@ export function registerCollabMcpBridge(server, service = collabService) {
         const lawPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/VAELRIX_LAW.md');
         const preamblePath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/SHARED_PREAMBLE.md');
         let text = '';
-        try { text = fs.readFileSync(lawPath, 'utf8'); } catch {}
-        try { text += '\n\n' + fs.readFileSync(preamblePath, 'utf8'); } catch {}
+        try { text = fs.readFileSync(lawPath, 'utf8'); } catch { /* ignore */ }
+        try { text += '\n\n' + fs.readFileSync(preamblePath, 'utf8'); } catch { /* ignore */ }
 
         let excerpt = text.slice(0, max_chars);
         if (section) {
@@ -1432,7 +1432,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
     }, async ({ anomaly_name, symptoms, target_files = [], mode = 'B', additional_context }) => {
         const debugSkillPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/vaelrix_law_debug.md');
         let debugDoc = '';
-        try { debugDoc = fs.readFileSync(debugSkillPath, 'utf8'); } catch {}
+        try { debugDoc = fs.readFileSync(debugSkillPath, 'utf8'); } catch { /* ignore */ }
 
         // Auto-classify and gather basic evidence
         const classification = target_files.length > 0 ? 'Structural/Integration' : 'Behavioral';

@@ -1,5 +1,4 @@
 from textual.widgets import Static
-from textual.strip import Strip
 from textual.app import RenderResult
 from rich.text import Text
 from rich.style import Style

@@ -1,4 +1,4 @@
-from textual.widgets import Static, RichLog
+from textual.widgets import Static
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from tui.ui.widgets.glyph import AnimatedGlyph

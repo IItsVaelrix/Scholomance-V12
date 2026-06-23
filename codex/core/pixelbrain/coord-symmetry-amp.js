@@ -176,7 +176,7 @@ export function runCoordSymmetryAmp(input) {
 
   // STEP 3: Handle canonicalize mode (rebuild full symmetric set)
   if (transformMode === 'canonicalize') {
-    transformed = canonicalizeSymmetry(coordinates, symmetry, axis, debugMirrorFade);
+    transformed = canonicalizeSymmetry(coordinates, symmetry, axis, debugMirrorFade, dimensions);
     diagnostics.push(`Canonicalized symmetry (${transformed.length} total coords)`);
   }
 
@@ -321,7 +321,7 @@ function applyEmphasisFade(coord, factor) {
 /**
  * Canonicalize symmetry — rebuild full symmetric set from the governing region.
  */
-function canonicalizeSymmetry(coordinates, symmetry, axis, debugFade) {
+function canonicalizeSymmetry(coordinates, symmetry, axis, debugFade, dimensions) {
   switch (symmetry?.type) {
     case 'vertical':
       return canonicalizeMirrorPair(

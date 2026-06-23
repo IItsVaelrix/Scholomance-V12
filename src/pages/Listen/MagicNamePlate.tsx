@@ -8,7 +8,7 @@ interface MagicNamePlateProps {
 const GLYPHS = "01AEIOUYRLMNSKTDZH";
 
 /**
- * MagicNamePlate — Digitally/Magically morphs text and color.
+ * MagicNamePlate - Digitally/Magically morphs text and color.
  * Implementation for Spec v1.6
  */
 export const MagicNamePlate: React.FC<MagicNamePlateProps> = ({ name, color }) => {

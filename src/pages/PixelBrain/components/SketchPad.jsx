@@ -1,8 +1,8 @@
 /**
- * SKETCH PAD — Blank-Canvas Silhouette Authoring
+ * SKETCH PAD - Blank-Canvas Silhouette Authoring
  *
  * A from-scratch paint surface. Brush cells to draw a silhouette, optionally
- * mirror across an axis, then COMMIT — the page runs the Sketch AMP
+ * mirror across an axis, then COMMIT - the page runs the Sketch AMP
  * (distance-transform auto-shading) and hands the result to the template/fill
  * pipeline. Drag to paint, Shift-drag (or right-drag) to erase.
  */

@@ -28,7 +28,6 @@
  * returns null for them until those families are authored.
  */
 
-// @ts-ignore — JS module, no type declarations.
 import { generateSCD64ForFamily } from "../../../codex/core/immunity/spatial-immune-orchestrator.js";
 import type { TokenWeightError, TokenWeightDiagnostic } from "./tokenWeightError";
 

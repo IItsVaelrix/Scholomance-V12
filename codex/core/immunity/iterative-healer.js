@@ -361,7 +361,7 @@ export class IterativeHealer {
     }
 
     // Extract file paths from stack traces
-    const fileRegex = /(?:at\s+)?(?:file:\/\/)?([\w\/.\-]+\.(?:js|jsx|ts|tsx|mjs)):\d+:\d+/g;
+    const fileRegex = /(?:at\s+)?(?:file:\/\/)?([\w/.-]+\.(?:js|jsx|ts|tsx|mjs)):\d+:\d+/g;
     while ((m = fileRegex.exec(text)) !== null) {
       const fp = m[1];
       if (fp.includes(this.projectRoot) || fp.startsWith('/')) {

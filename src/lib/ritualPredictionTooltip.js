@@ -1,5 +1,47 @@
 import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 import { deepRhymeEngine } from '../../codex/core/rhyme-astrology/deepRhyme.engine.js';
+import { ScholomanceDictionaryAPI } from './scholomanceDictionary.api.js';
+
+// Pending prime request keyed by the engine instance, so a second tooltip open
+// in the same tab does not re-issue the same lookup while the first is in
+// flight. Cleared on success/error.
+const pendingPrimeByEngine = new WeakMap();
+
+/**
+ * Prime the rhyme engine's authoritative family cache from the live
+ * ScholomanceDictionaryAPI. This is the bridge that fixes the local-phoneme
+ * slant/perfect misclassification: words that share a `rhyme_family` in the
+ * server lexicon are perfect rhymes by contract, regardless of how the local
+ * scorer rates their ending signatures.
+ *
+ * Safe to call repeatedly: the engine's `primeRhymeFamilies` is a no-op for
+ * already-cached words, and a single in-flight promise is shared across
+ * concurrent callers (de-duped by engine identity).
+ */
+export async function primeRitualRhymeFamilies(words, engine = deepRhymeEngine) {
+  const list = Array.from(new Set(
+    (Array.isArray(words) ? words : [])
+      .map((w) => String(w || '').trim())
+      .filter(Boolean),
+  ));
+  if (list.length === 0) return { requested: 0, families: 0 };
+
+  const inFlight = pendingPrimeByEngine.get(engine);
+  if (inFlight) return inFlight;
+
+  const promise = (async () => {
+    if (!ScholomanceDictionaryAPI.isConfigured()) {
+      return { requested: list.length, families: 0, skipped: 'unconfigured' };
+    }
+    return engine.primeRhymeFamilies(list, ScholomanceDictionaryAPI);
+  })();
+  pendingPrimeByEngine.set(engine, promise);
+  try {
+    return await promise;
+  } finally {
+    pendingPrimeByEngine.delete(engine);
+  }
+}
 
 const CONNECTORS = new Set([
   'and', 'or', 'but', 'nor', 'for', 'yet', 'so', 'if', 'then', 'than',
@@ -190,6 +232,14 @@ function buildIntent(role) {
  * engine: which neighbours this word actually phonetically connects to, the
  * connection type (perfect/near/slant/assonance) and its score. This is the
  * genuinely useful payload that the old tooltip never computed.
+ *
+ * Sync path: `analyzeLine` is synchronous, but the dictionary family cache
+ * must be primed asynchronously. If the cache has not been primed yet (e.g.
+ * the tooltip opens before the prime promise resolves), the engine still
+ * produces a line analysis; the connection types in that pass fall back to
+ * local phoneme scoring until the next call after `primeRhymeFamilies`
+ * resolves. The `primeResonanceFamilies` helper in this module kicks off
+ * the prime in parallel with the analysis so the very first open is correct.
  */
 function buildResonance(contextLine, word, debugTrace) {
   const empty = { partners: [], lineAnalysisOk: false };

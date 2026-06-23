@@ -7,7 +7,7 @@ import uuid
 # Adjust path to import video_forge if run directly from within the directory
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from video_forge.schema import VideoProject, MediaItem, TimelineClip, EffectOp, TransitionOp, TextOverlayOp, AudioTrackOp
+from video_forge.schema import VideoProject, MediaItem, TimelineClip
 from video_forge.project_store import ProjectStore
 from video_forge.ffprobe_service import FFprobeService
 from video_forge.render_service import RenderService

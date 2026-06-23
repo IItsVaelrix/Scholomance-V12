@@ -337,8 +337,9 @@ The plugin supports three vectorizers, tried in order:
 
 | Command | Description |
 |---|---|
-| `/provider <name>` | Set API provider (`openai`, `xai`, `opencode`, or a custom base URL) |
+| `/provider <name>` | Set API provider (`openai`, `xai`, `opencode`, `router`, `gemini`, or a custom base URL) |
 | `/apikey <key>` | Set API key (saved to `.env`) |
+| `/release` | Release internal tool gates and API 429 cooldowns |
 
 ### Session
 

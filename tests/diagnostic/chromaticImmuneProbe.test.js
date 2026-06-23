@@ -65,10 +65,10 @@ describe('Chromatic Immune Probe — corpus fidelity (the live bug)', () => {
       phases: [0, 0.25, 0.5, 0.75, NaN, Infinity, undefined],
     });
     const report = runChromaticScan(samples);
-    // eslint-disable-next-line no-console
+     
     console.log('\n' + summarizeChromaReport(report));
     if (!report.healthy) {
-      // eslint-disable-next-line no-console
+       
       console.log('PATIENT-ZERO ' + JSON.stringify(report.patientZero.representative, null, 2));
     }
     expect(report.healthy, summarizeChromaReport(report)).toBe(true);

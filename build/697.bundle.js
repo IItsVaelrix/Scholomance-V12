@@ -2323,7 +2323,7 @@ const extractAv1CodecInfoFromPacket = (packet) => {
         const bitstream = new _shared_bitstream_js__WEBPACK_IMPORTED_MODULE_3__/* .Bitstream */ ._(data);
         // Read sequence header fields
         const seqProfile = bitstream.readBits(3);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const stillPicture = bitstream.readBits(1);
         const reducedStillPictureHeader = bitstream.readBits(1);
         let seqLevel = 0;
@@ -2708,7 +2708,7 @@ const determineVideoPacketType = (codec, decoderConfig, packetData) => {
                 if (bitstream.readBits(2) !== 2) {
                     return null;
                 }
-                ;
+                
                 const profileLowBit = bitstream.readBits(1);
                 const profileHighBit = bitstream.readBits(1);
                 const profile = (profileHighBit << 1) + profileLowBit;
@@ -2759,7 +2759,7 @@ const determineVideoPacketType = (codec, decoderConfig, packetData) => {
                 (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assertNever */ .xb)(codec);
                 (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assert */ .vA)(false);
             }
-            ;
+            
     }
 };
 var FlacBlockType;
@@ -2802,43 +2802,43 @@ const readVorbisComments = (bytes, metadataTags) => {
                 {
                     metadataTags.title ??= value;
                 }
-                ;
+                
                 break;
             case 'DESCRIPTION':
                 {
                     metadataTags.description ??= value;
                 }
-                ;
+                
                 break;
             case 'ARTIST':
                 {
                     metadataTags.artist ??= value;
                 }
-                ;
+                
                 break;
             case 'ALBUM':
                 {
                     metadataTags.album ??= value;
                 }
-                ;
+                
                 break;
             case 'ALBUMARTIST':
                 {
                     metadataTags.albumArtist ??= value;
                 }
-                ;
+                
                 break;
             case 'COMMENT':
                 {
                     metadataTags.comment ??= value;
                 }
-                ;
+                
                 break;
             case 'LYRICS':
                 {
                     metadataTags.lyrics ??= value;
                 }
-                ;
+                
                 break;
             case 'TRACKNUMBER':
                 {
@@ -2852,7 +2852,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TRACKTOTAL':
                 {
@@ -2861,7 +2861,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DISCNUMBER':
                 {
@@ -2875,7 +2875,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DISCTOTAL':
                 {
@@ -2884,7 +2884,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DATE':
                 {
@@ -2893,13 +2893,13 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.date ??= date;
                     }
                 }
-                ;
+                
                 break;
             case 'GENRE':
                 {
                     metadataTags.genre ??= value;
                 }
-                ;
+                
                 break;
             case 'METADATA_BLOCK_PICTURE':
                 {
@@ -2922,7 +2922,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         description: description || undefined,
                     });
                 }
-                ;
+                
                 break;
         }
     }
@@ -2956,37 +2956,37 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                 {
                     addCommentTag('TITLE', value);
                 }
-                ;
+                
                 break;
             case 'description':
                 {
                     addCommentTag('DESCRIPTION', value);
                 }
-                ;
+                
                 break;
             case 'artist':
                 {
                     addCommentTag('ARTIST', value);
                 }
-                ;
+                
                 break;
             case 'album':
                 {
                     addCommentTag('ALBUM', value);
                 }
-                ;
+                
                 break;
             case 'albumArtist':
                 {
                     addCommentTag('ALBUMARTIST', value);
                 }
-                ;
+                
                 break;
             case 'genre':
                 {
                     addCommentTag('GENRE', value);
                 }
-                ;
+                
                 break;
             case 'date':
                 {
@@ -2998,43 +2998,43 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                         addCommentTag('DATE', value.toISOString().slice(0, 10));
                     }
                 }
-                ;
+                
                 break;
             case 'comment':
                 {
                     addCommentTag('COMMENT', value);
                 }
-                ;
+                
                 break;
             case 'lyrics':
                 {
                     addCommentTag('LYRICS', value);
                 }
-                ;
+                
                 break;
             case 'trackNumber':
                 {
                     addCommentTag('TRACKNUMBER', value.toString());
                 }
-                ;
+                
                 break;
             case 'tracksTotal':
                 {
                     addCommentTag('TRACKTOTAL', value.toString());
                 }
-                ;
+                
                 break;
             case 'discNumber':
                 {
                     addCommentTag('DISCNUMBER', value.toString());
                 }
-                ;
+                
                 break;
             case 'discsTotal':
                 {
                     addCommentTag('DISCTOTAL', value.toString());
                 }
-                ;
+                
                 break;
             case 'images':
                 {
@@ -3072,13 +3072,13 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                         addCommentTag('METADATA_BLOCK_PICTURE', encoded);
                     }
                 }
-                ;
+                
                 break;
             case 'raw':
                 {
                     // Handled later
                 }
-                ;
+                
                 break;
             default: assertNever(key);
         }
@@ -3606,7 +3606,7 @@ const buildVideoCodecString = (codec, width, height, bitrate) => {
         const bitDepth = '08'; // 8-bit
         return `av01.${profile}.${level}${levelInfo.tier}.${bitDepth}`;
     }
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+     
     throw new TypeError(`Unhandled codec '${codec}'.`);
 };
 const generateVp9CodecConfigurationFromCodecString = (codecString) => {
@@ -3871,7 +3871,7 @@ const extractAudioCodecString = (trackInfo) => {
     }
     throw new TypeError(`Unhandled codec '${codec}'.`);
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const guessDescriptionForVideo = (decoderConfig) => {
     return undefined; // All codecs allow an undefined description
 };
@@ -4305,7 +4305,7 @@ const validateSubtitleMetadata = (metadata) => {
  */
 class CustomVideoDecoder {
     /** Returns true if and only if the decoder can decode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -4318,7 +4318,7 @@ class CustomVideoDecoder {
  */
 class CustomAudioDecoder {
     /** Returns true if and only if the decoder can decode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -4331,7 +4331,7 @@ class CustomAudioDecoder {
  */
 class CustomVideoEncoder {
     /** Returns true if and only if the encoder can encode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -4344,7 +4344,7 @@ class CustomVideoEncoder {
  */
 class CustomAudioEncoder {
     /** Returns true if and only if the encoder can encode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -4638,35 +4638,35 @@ const parseId3V2Tag = (slice, header, tags) => {
                 {
                     tags.title ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TIT3':
             case 'TT3':
                 {
                     tags.description ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TPE1':
             case 'TP1':
                 {
                     tags.artist ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TALB':
             case 'TAL':
                 {
                     tags.album ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TPE2':
             case 'TP2':
                 {
                     tags.albumArtist ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TRCK':
             case 'TRK':
@@ -4682,7 +4682,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TPOS':
             case 'TPA':
@@ -4698,7 +4698,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TCON':
             case 'TCO':
@@ -4722,7 +4722,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     }
                     tags.genre ??= genreText;
                 }
-                ;
+                
                 break;
             case 'TDRC':
             case 'TDAT':
@@ -4733,7 +4733,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.date ??= date;
                     }
                 }
-                ;
+                
                 break;
             case 'TYER':
             case 'TYE':
@@ -4744,7 +4744,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.date ??= new Date(year, 0, 1);
                     }
                 }
-                ;
+                
                 break;
             case 'USLT':
             case 'ULT':
@@ -4754,7 +4754,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     reader.readId3V2Text(encoding, frameEndPos); // Short content description
                     tags.lyrics ??= reader.readId3V2Text(encoding, frameEndPos);
                 }
-                ;
+                
                 break;
             case 'COMM':
             case 'COM':
@@ -4764,7 +4764,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     reader.readId3V2Text(encoding, frameEndPos); // Short content description
                     tags.comment ??= reader.readId3V2Text(encoding, frameEndPos);
                 }
-                ;
+                
                 break;
             case 'APIC':
             case 'PIC':
@@ -4801,13 +4801,13 @@ const parseId3V2Tag = (slice, header, tags) => {
                         });
                     }
                 }
-                ;
+                
                 break;
             default:
                 {
                     reader.pos += frame.size;
                 }
-                ;
+                
                 break;
         }
         reader.pos = frameEndPos;
@@ -5036,35 +5036,35 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TIT2', value);
                         writtenTags.add('TIT2');
                     }
-                    ;
+                    
                     break;
                 case 'description':
                     {
                         this.writeId3V2TextFrame('TIT3', value);
                         writtenTags.add('TIT3');
                     }
-                    ;
+                    
                     break;
                 case 'artist':
                     {
                         this.writeId3V2TextFrame('TPE1', value);
                         writtenTags.add('TPE1');
                     }
-                    ;
+                    
                     break;
                 case 'album':
                     {
                         this.writeId3V2TextFrame('TALB', value);
                         writtenTags.add('TALB');
                     }
-                    ;
+                    
                     break;
                 case 'albumArtist':
                     {
                         this.writeId3V2TextFrame('TPE2', value);
                         writtenTags.add('TPE2');
                     }
-                    ;
+                    
                     break;
                 case 'trackNumber':
                     {
@@ -5074,7 +5074,7 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TRCK', string);
                         writtenTags.add('TRCK');
                     }
-                    ;
+                    
                     break;
                 case 'discNumber':
                     {
@@ -5084,35 +5084,35 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TPOS', string);
                         writtenTags.add('TPOS');
                     }
-                    ;
+                    
                     break;
                 case 'genre':
                     {
                         this.writeId3V2TextFrame('TCON', value);
                         writtenTags.add('TCON');
                     }
-                    ;
+                    
                     break;
                 case 'date':
                     {
                         this.writeId3V2TextFrame('TDRC', value.toISOString().slice(0, 10));
                         writtenTags.add('TDRC');
                     }
-                    ;
+                    
                     break;
                 case 'lyrics':
                     {
                         this.writeId3V2LyricsFrame(value);
                         writtenTags.add('USLT');
                     }
-                    ;
+                    
                     break;
                 case 'comment':
                     {
                         this.writeId3V2CommentFrame(value);
                         writtenTags.add('COMM');
                     }
-                    ;
+                    
                     break;
                 case 'images':
                     {
@@ -5123,20 +5123,20 @@ class Id3V2Writer {
                             this.writeId3V2ApicFrame(image.mimeType, pictureType, description, image.data);
                         }
                     }
-                    ;
+                    
                     break;
                 case 'tracksTotal':
                 case 'discsTotal':
                     {
                         // Handled with trackNumber and discNumber respectively
                     }
-                    ;
+                    
                     break;
                 case 'raw':
                     {
                         // Handled later
                     }
-                    ;
+                    
                     break;
                 default: {
                     assertNever(key);
@@ -6042,7 +6042,7 @@ function assertDefinedSize(size) {
         throw new Error('Undefined element size is used in a place where it is not supported.');
     }
 }
-;
+
 
 
 /***/ },
@@ -7081,7 +7081,7 @@ class ColorAlphaMerger {
         this.pendingRequests = new Map();
         this.nextRequestId = 0;
         const canMakeCanvas = typeof OffscreenCanvas !== 'undefined'
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
+             
             || (typeof document !== 'undefined' && typeof document.createElement === 'function');
         if (!ColorAlphaMerger.forceCpu && canMakeCanvas && !mergerGpuUnavailable) {
             // Try the GPU path. If anything goes wrong, we silently fall back to the CPU path.
@@ -7721,7 +7721,7 @@ class AudioDecoderWrapper extends DecoderWrapper {
             let sampleTimestamp = sample.timestamp;
             if (this.expectedFirstTimestamp && this.currentTimestamp === null) {
                 this.timestampOffset = this.expectedFirstTimestamp - sampleTimestamp;
-                ;
+                
             }
             sampleTimestamp += this.timestampOffset;
             if (this.currentTimestamp === null
@@ -7854,7 +7854,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 2:
                 {
@@ -7868,7 +7868,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 3:
                 {
@@ -7882,7 +7882,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 4:
                 {
@@ -7899,7 +7899,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 8:
                 {
@@ -7910,14 +7910,14 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             default:
                 {
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assertNever */ .xb)(sampleSize);
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                 }
-                ;
+                
         }
         switch (sampleSize) {
             case 1:
@@ -7933,7 +7933,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         this.writeOutputValue = (view, byteOffset, value) => view.setUint8(byteOffset, value + 2 ** 7);
                     }
                 }
-                ;
+                
                 break;
             case 2:
                 {
@@ -7941,7 +7941,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     this.outputFormat = 's16';
                     this.writeOutputValue = (view, byteOffset, value) => view.setInt16(byteOffset, value, true);
                 }
-                ;
+                
                 break;
             case 3:
                 {
@@ -7952,7 +7952,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     // stored in s32, each sample MUST be left-shifted by 8 bits.
                     this.writeOutputValue = (view, byteOffset, value) => view.setInt32(byteOffset, value << 8, true);
                 }
-                ;
+                
                 break;
             case 4:
                 {
@@ -7966,7 +7966,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         this.writeOutputValue = (view, byteOffset, value) => view.setInt32(byteOffset, value, true);
                     }
                 }
-                ;
+                
                 break;
             case 8:
                 {
@@ -7974,16 +7974,16 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     this.outputFormat = 'f32';
                     this.writeOutputValue = (view, byteOffset, value) => view.setFloat32(byteOffset, value, true);
                 }
-                ;
+                
                 break;
             default:
                 {
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assertNever */ .xb)(sampleSize);
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                 }
-                ;
+                
         }
-        ;
+        
     }
     getDecodeQueueSize() {
         return 0;
@@ -8242,7 +8242,7 @@ class AttachedFile {
         }
     }
 }
-;
+
 const validateMetadataTags = (tags) => {
     if (!tags || typeof tags !== 'object') {
         throw new TypeError('tags must be an object.');
@@ -8714,7 +8714,7 @@ const validateAnyIterable = (iterable) => {
     }
 };
 const assertNever = (x) => {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+     
     throw new Error(`Unexpected value: ${x}`);
 };
 const getUint24 = (view, byteOffset, littleEndian) => {
@@ -8952,7 +8952,7 @@ const isWebKit = () => {
     // This even returns true for WebKit-wrapping browsers such as Chrome on iOS
     return isWebKitCache = !!(typeof navigator !== 'undefined'
         && (
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         navigator.vendor?.match(/apple/i)
             // Or, in workers:
             || (/AppleWebKit/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
@@ -8971,7 +8971,7 @@ const isChromium = () => {
         return isChromiumCache;
     }
     return isChromiumCache = !!(typeof navigator !== 'undefined'
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         && (navigator.vendor?.includes('Google Inc') || /Chrome/.test(navigator.userAgent)));
 };
 let chromiumVersionCache = null;
@@ -9212,7 +9212,7 @@ const unthrottledTimerWorkerMain = () => {
                     }, message.delay);
                     timeoutHandles.set(message.timerId, handle);
                 }
-                ;
+                
                 break;
             case 'set-interval':
                 {
@@ -9221,7 +9221,7 @@ const unthrottledTimerWorkerMain = () => {
                     }, message.delay);
                     intervalHandles.set(message.timerId, handle);
                 }
-                ;
+                
                 break;
             case 'clear-timeout':
                 {
@@ -9231,7 +9231,7 @@ const unthrottledTimerWorkerMain = () => {
                         timeoutHandles.delete(message.timerId);
                     }
                 }
-                ;
+                
                 break;
             case 'clear-interval':
                 {
@@ -9241,7 +9241,7 @@ const unthrottledTimerWorkerMain = () => {
                         intervalHandles.delete(message.timerId);
                     }
                 }
-                ;
+                
                 break;
         }
     };
@@ -9270,7 +9270,7 @@ const getUnthrottledTimerWorker = () => {
     return unthrottledTimerWorker;
 };
 const setTimeoutUnthrottled = (
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+ 
 callback, delay) => {
     if (shouldUseNativeTimers()) {
         return { id: setTimeout(callback, delay) };
@@ -9299,7 +9299,7 @@ const clearTimeoutUnthrottled = (timer) => {
     });
 };
 const setIntervalUnthrottled = (
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+ 
 callback, delay) => {
     if (shouldUseNativeTimers()) {
         return { id: setInterval(callback, delay) };
@@ -10681,7 +10681,7 @@ class VideoSample {
         if (![0, 90, 180, 270].includes(newRotation)) {
             throw new TypeError('newRotation must be 0, 90, 180, or 270.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.rotation = newRotation;
     }
     /** Sets the presentation timestamp of this video sample, in seconds. */
@@ -10689,7 +10689,7 @@ class VideoSample {
         if (!Number.isFinite(newTimestamp)) {
             throw new TypeError('newTimestamp must be a number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.timestamp = newTimestamp;
     }
     /** Sets the duration of this video sample, in seconds. */
@@ -10697,7 +10697,7 @@ class VideoSample {
         if (!Number.isFinite(newDuration) || newDuration < 0) {
             throw new TypeError('newDuration must be a non-negative number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.duration = newDuration;
     }
     /** Calls `.close()`. */
@@ -11528,7 +11528,7 @@ class AudioSample {
         if (!Number.isFinite(newTimestamp)) {
             throw new TypeError('newTimestamp must be a number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.timestamp = newTimestamp;
     }
     /** Calls `.close()`. */
@@ -11986,25 +11986,25 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                     {
                         this.metadataTags.title ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'TIT3':
                     {
                         this.metadataTags.description ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IART':
                     {
                         this.metadataTags.artist ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IPRD':
                     {
                         this.metadataTags.album ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IPRT':
                 case 'ITRK':
@@ -12020,7 +12020,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.tracksTotal ??= tracksTotal;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'ICRD':
                 case 'IDIT':
@@ -12030,7 +12030,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.date ??= date;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'YEAR':
                     {
@@ -12039,14 +12039,14 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.date ??= new Date(year, 0, 1);
                         }
                     }
-                    ;
+                    
                     break;
                 case 'IGNR':
                 case 'GENR':
                     {
                         this.metadataTags.genre ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'ICMT':
                 case 'CMNT':
@@ -12054,7 +12054,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                     {
                         this.metadataTags.comment ??= value;
                     }
-                    ;
+                    
                     break;
             }
             currentPos += 8 + chunkSize + (chunkSize & 1); // Handle padding

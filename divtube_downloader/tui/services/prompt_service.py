@@ -88,7 +88,19 @@ class PromptService:
             "messages": messages
         }
         if use_tools and self.tools.tools:
-            payload["tools"] = self.tools.tools
+            import copy
+            safe_tools = copy.deepcopy(self.tools.tools)
+            def remove_defaults(d):
+                if isinstance(d, dict):
+                    d.pop("default", None)
+                    d.pop("is_coding_action", None) # Strip our custom metadata flag
+                    for v in d.values():
+                        remove_defaults(v)
+                elif isinstance(d, list):
+                    for item in d:
+                        remove_defaults(item)
+            remove_defaults(safe_tools)
+            payload["tools"] = safe_tools
 
         url = f"{base_url}/chat/completions"
         if not url.endswith("/chat/completions"):
@@ -272,14 +284,44 @@ class PromptService:
                             def log_tool(msg):
                                 callback(msg)
 
-                            import rich.panel, rich.syntax
-                            if func_args is not None:
-                                args_str = json.dumps(func_args, indent=2)
-                                syntax = rich.syntax.Syntax(args_str, "json", theme="monokai", word_wrap=True)
-                                panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/]", border_style="#B48EAD", expand=False)
-                                callback(panel)
-                            else:
-                                callback(f"  [bold #FFD700]⚡[/] [#B48EAD]{func_name}()[/] -> [red]ERROR[/]")
+                            tool_def = next((t for t in self.tools.tools if t.get("function", {}).get("name") == func_name), {})
+                            is_coding = tool_def.get("is_coding_action", False)
+
+                            if is_coding:
+                                import rich.panel, rich.syntax, rich.console, os
+                                if func_args is not None:
+                                    if func_name == "replace_file_content" or func_name == "multi_replace_file_content":
+                                        path = func_args.get("path", "")
+                                        ext = os.path.splitext(path)[1][1:] or "text"
+                                        
+                                        # Handle standard replace_file_content
+                                        if "replacement_content" in func_args:
+                                            code = func_args.get("replacement_content", "")
+                                            syntax = rich.syntax.Syntax(code, ext, theme="monokai", word_wrap=True)
+                                            panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/] [dim]{os.path.basename(path)}[/]", border_style="#B48EAD", expand=False)
+                                            callback(panel)
+                                        
+                                        # Handle multi_replace_file_content chunks
+                                        elif "replacement_chunks" in func_args:
+                                            chunks = func_args.get("replacement_chunks", [])
+                                            for i, chunk in enumerate(chunks):
+                                                code = chunk.get("replacement_content", "")
+                                                syntax = rich.syntax.Syntax(code, ext, theme="monokai", word_wrap=True)
+                                                panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/] [dim]{os.path.basename(path)} (Chunk {i+1}/{len(chunks)})[/]", border_style="#B48EAD", expand=False)
+                                                callback(panel)
+                                                
+                                    elif func_name == "run_command":
+                                        cmd = func_args.get("command", "")
+                                        syntax = rich.syntax.Syntax(cmd, "bash", theme="monokai", word_wrap=True)
+                                        panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/]", border_style="#B48EAD", expand=False)
+                                        callback(panel)
+                                    else:
+                                        args_str = json.dumps(func_args, indent=2)
+                                        syntax = rich.syntax.Syntax(args_str, "json", theme="monokai", word_wrap=True)
+                                        panel = rich.panel.Panel(syntax, title=f"[bold #FFD700]⚡ {func_name}[/]", border_style="#B48EAD", expand=False)
+                                        callback(panel)
+                                else:
+                                    callback(f"  [bold #FFD700]⚡[/] [#B48EAD]{func_name}()[/] -> [red]ERROR[/]")
 
                             result_str = str(tool_result)[:32000]
                             messages.append({
@@ -289,7 +331,7 @@ class PromptService:
                                 "content": result_str
                             })
                             
-                            if hasattr(callback, "__self__") and hasattr(callback.__self__, "show_code"):
+                            if is_coding and hasattr(callback, "__self__") and hasattr(callback.__self__, "show_code"):
                                 try:
                                     # Try formatting as JSON if it's a dict or parsable JSON string
                                     if isinstance(tool_result, dict) or isinstance(tool_result, list):

@@ -5,7 +5,7 @@ import './IDE.css';
 // Max syllable bar segments before we just show the number (keeps the gutter tidy).
 const MAX_BARS = 8;
 
-// Symmetric line marker — a small filled diamond that replaces the old asymmetric
+// Symmetric line marker - a small filled diamond that replaces the old asymmetric
 // ".)" suffix and divides the line number from the syllable bars. Fill/opacity
 // come from CSS (.gutter-tick), brightening on the current line.
 function GutterTick() {

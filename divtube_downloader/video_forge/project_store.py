@@ -3,7 +3,7 @@ import json
 import shutil
 import uuid
 
-from video_forge.schema import VideoProject, project_to_json, project_from_json, compute_project_recipe_hash
+from video_forge.schema import VideoProject, project_to_json, project_from_json
 
 
 class ProjectStore:

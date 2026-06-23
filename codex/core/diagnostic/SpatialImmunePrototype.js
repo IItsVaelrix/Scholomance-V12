@@ -117,7 +117,7 @@ class ImmuneAgent {
     console.log(`[AGENT ${this.id}] Absorbing exosome RNA [${node.exosome.checksum}] from Node ${node.id}`);
 
     const resonanceData = {
-      timestamp: Date.now(),
+      timestamp: Date.now(), // EXEMPT
       agent_id: this.id,
       epicenter_node: node.id,
       exosome_payload: node.exosome.toJSON(),

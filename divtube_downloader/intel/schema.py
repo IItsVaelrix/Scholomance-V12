@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import Optional, Any
+from typing import Optional
 import json
 
 SCHEMA_VERSION = "YT-SEO-CRITIQUE-v1"

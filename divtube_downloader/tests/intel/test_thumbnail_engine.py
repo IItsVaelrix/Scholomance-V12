@@ -1,5 +1,5 @@
 import unittest
-from intel.schema import VideoAnalysis, VideoOverview
+from intel.schema import VideoAnalysis
 from intel.engines.thumbnail_engine import run
 from tests.intel.fixtures.generator import (
     make_high_contrast_png, make_noisy_png, make_text_heavy_png, make_blank_png,

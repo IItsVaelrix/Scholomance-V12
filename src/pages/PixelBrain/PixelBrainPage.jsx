@@ -1,11 +1,11 @@
 /**
- * PixelBrainPage — Photoshop-for-Pixels Editor
+ * PixelBrainPage - Photoshop-for-Pixels Editor
  *
  * The home view is JUST the canvas.
  * All special PixelBrain functions (Critique, Construction, Drills, Aseprite roundtrips, etc.)
  * are exposed as explicit buttons in the top bar and left toolbar.
  *
- * Aesthetic: Classic pixel art editor (dark, focused, crisp pixels) — "Photoshop but for pixels".
+ * Aesthetic: Classic pixel art editor (dark, focused, crisp pixels) - "Photoshop but for pixels".
  *
  * UI SPEC:
  * - World-law connection: The lattice is the playable surface of spatial bytecode. The editor chrome exists only to serve direct, precise manipulation of that surface and the professional discipline (construction first, critique, limited palettes, clean execution).
@@ -65,7 +65,7 @@ export default function PixelBrainPage() {
   const editorRef = useRef(null);
   const [rightActiveLayer, setRightActiveLayer] = useState(0);
 
-  // Dynamic asset for the main visual editor. Starts empty — load via Open File.
+  // Dynamic asset for the main visual editor. Starts empty - load via Open File.
   const [activeAssetPacket, setActiveAssetPacket] = useState(null);
   const [editorInstanceKey, setEditorInstanceKey] = useState(0);
 
@@ -159,7 +159,7 @@ export default function PixelBrainPage() {
 
         setPageNotice(null);
       } catch (err) {
-        setPageNotice(`IMPORT FAULT — ${err.message}`);
+        setPageNotice(`IMPORT FAULT - ${err.message}`);
       }
     };
     input.click();
@@ -171,7 +171,7 @@ export default function PixelBrainPage() {
     input.accept = 'image/*,.json,.aseprite,.ase';
 
     // Cancelling the picker means "blank project". File inputs do not fire
-    // `change` on cancel — only the `cancel` event covers this path.
+    // `change` on cancel - only the `cancel` event covers this path.
     input.oncancel = () => {
       setActiveAssetPacket(null);
       setEditorInstanceKey(k => k + 1);
@@ -196,7 +196,7 @@ export default function PixelBrainPage() {
           await editorRef.current?.importAse?.(file);
           setActiveAssetPacket(null);
         } else if (editorRef.current?.importImage) {
-          // Image — full raster import into the existing editor instance.
+          // Image - full raster import into the existing editor instance.
           // Always replace previous (including any chestplate in the tool document).
           await editorRef.current.importImage(file);
           setActiveAssetPacket(null);
@@ -211,7 +211,7 @@ export default function PixelBrainPage() {
 
         setPageNotice(null);
       } catch (err) {
-        setPageNotice(`LOAD FAULT — ${err.message}`);
+        setPageNotice(`LOAD FAULT - ${err.message}`);
       }
     };
     input.click();
@@ -257,7 +257,7 @@ export default function PixelBrainPage() {
     editor.applyReferenceGuides?.(guideCells, '00_Reference');
   };
 
-  // "Create it via Pixelbrain" — the Eclipse Ward Pauldron (user recipe) + SDF/Noise from PDR.
+  // "Create it via Pixelbrain" - the Eclipse Ward Pauldron (user recipe) + SDF/Noise from PDR.
   // Uses editor ref + new AMPs (sdf-shape + noise-fill) + layers + command history for full deterministic cockpit flow.
   // Matches the 10-step pauldron recipe (New 64x80, CNSTR, PENCIL on named layers, AMPs, polish, export recipe).
   // Cleaned: no remount/key-bump/timeout hack. Operates synchronously in-place on the live grid for reliability.
@@ -290,7 +290,7 @@ export default function PixelBrainPage() {
       createLayer('50_Final'),
     ];
 
-    // 3. Construction guides (CNSTR) — prefer the editor API
+    // 3. Construction guides (CNSTR) - prefer the editor API
     const guides = buildConstructionGuideCells ? buildConstructionGuideCells(dims) : [];
     if (editor.applyReferenceGuides) {
       editor.applyReferenceGuides(guides, '00_Reference');
@@ -361,7 +361,7 @@ export default function PixelBrainPage() {
       }));
     }
 
-    setPageNotice('Created Eclipse Ward Pauldron via PixelBrain (SDF + Noise + lattice + full recipe provenance). Command history has the steps — use EXPORT RECIPE (Forge Spec) for the machine-readable packet.');
+    setPageNotice('Created Eclipse Ward Pauldron via PixelBrain (SDF + Noise + lattice + full recipe provenance). Command history has the steps - use EXPORT RECIPE (Forge Spec) for the machine-readable packet.');
   };
 
   // Critique runs against the live canvas grid inside the mentor panel.
@@ -370,7 +370,7 @@ export default function PixelBrainPage() {
     setCritiqueToken(t => t + 1);
   };
 
-  // Void Shield Drill — timed + guided. Ends with an automatic mentor critique
+  // Void Shield Drill - timed + guided. Ends with an automatic mentor critique
   // (the critique IS the feedback; there is no separate numeric score).
   const startVoidShieldDrill = () => {
     applyConstructionGuides(); // load the drill guides onto the canvas
@@ -390,7 +390,7 @@ export default function PixelBrainPage() {
           setTimeout(() => {
             setShowPixelBrainPanel(true);
             setCritiqueToken(t => t + 1);
-            setPageNotice('DRILL COMPLETE — the mentor has critiqued the result. Findings are in the PixelBrain panel.');
+            setPageNotice('DRILL COMPLETE - the mentor has critiqued the result. Findings are in the PixelBrain panel.');
           }, 100);
           return 0;
         }
@@ -453,7 +453,7 @@ export default function PixelBrainPage() {
     URL.revokeObjectURL(url);
   };
 
-  // Forge Craft Gate — runs an ITEM-SPEC-v1 through the PixelBrain Immunity gate
+  // Forge Craft Gate - runs an ITEM-SPEC-v1 through the PixelBrain Immunity gate
   // via the adapter (no direct codex import). Returns the normalized verdict to
   // the panel, which renders the bytecode-grade PASS/FAIL in-world.
   const handleRunForgeGate = useCallback((spec) => {
@@ -461,13 +461,13 @@ export default function PixelBrainPage() {
     setShowForgeGatePanel(true);
     setPageNotice(
       verdict.ok
-        ? `FORGE GATE PASSED — ${verdict.vaccine}`
-        : `FORGE GATE BLOCKED — ${verdict.bytecode || ''} ${verdict.reason || ''}`.trim()
+        ? `FORGE GATE PASSED - ${verdict.vaccine}`
+        : `FORGE GATE BLOCKED - ${verdict.bytecode || ''} ${verdict.reason || ''}`.trim()
     );
     return verdict;
   }, []);
 
-  // Silhouette Blueprint Gate — grades the forged solid's three shadows (and any
+  // Silhouette Blueprint Gate - grades the forged solid's three shadows (and any
   // animation poses) against a sealed .silh via the adapter. Returns the normalized
   // verdict (with the offending view/phase on a FAIL) to the panel for its chip row.
   const handleRunForgeGateWithBlueprint = useCallback((spec, silhText) => {
@@ -475,8 +475,8 @@ export default function PixelBrainPage() {
     setShowForgeGatePanel(true);
     setPageNotice(
       verdict.ok
-        ? `BLUEPRINT SEALED — ${verdict.vaccine}`
-        : `BLUEPRINT BLOCKED — ${verdict.bytecode || ''} ${verdict.reason || ''}${
+        ? `BLUEPRINT SEALED - ${verdict.vaccine}`
+        : `BLUEPRINT BLOCKED - ${verdict.bytecode || ''} ${verdict.reason || ''}${
             verdict.view ? ` (${verdict.view}${verdict.phase ? `/${verdict.phase}` : ''})` : ''
           }`.trim()
     );
@@ -607,7 +607,7 @@ export default function PixelBrainPage() {
     }
   };
 
-  // ReferencePanel hands us a ready reference layer — insert it at the bottom
+  // ReferencePanel hands us a ready reference layer - insert it at the bottom
   // of the live canvas grid (replacing any previous reference layer).
   const handleCreateReferenceLayer = (refLayer) => {
     const grid = editorRef.current?.getGrid?.();
@@ -621,7 +621,7 @@ export default function PixelBrainPage() {
     applyConstructionGuides();
   };
 
-  // Tool buttons select tools on the canvas — nothing else. (They previously
+  // Tool buttons select tools on the canvas - nothing else. (They previously
   // stamped pixels into a shadow document on every click.)
   const selectTool = (tool) => {
     setActiveTool(tool);
@@ -632,7 +632,7 @@ export default function PixelBrainPage() {
 
   return (
     <div className="pb-editor">
-      {/* Top bar — every important function is a visible button */}
+      {/* Top bar - every important function is a visible button */}
       <div className="pb-topbar">
         <div className="title">PIXELBRAIN</div>
 
@@ -675,7 +675,7 @@ export default function PixelBrainPage() {
       </div>
 
       <div className="pb-main">
-        {/* Classic left toolbar — tools + the PixelBrain functions as buttons */}
+        {/* Classic left toolbar - tools + the PixelBrain functions as buttons */}
         <div className="pb-toolbar" role="toolbar" aria-label="Tools">
           <button className={`pb-tool-btn ${activeTool === 'paint' ? 'active' : ''}`} onClick={() => selectTool('paint')}>PENCIL</button>
           <button className={`pb-tool-btn ${activeTool === 'erase' ? 'active' : ''}`} onClick={() => selectTool('erase')}>ERASER</button>
@@ -690,17 +690,17 @@ export default function PixelBrainPage() {
           <button className="pb-tool-btn pb-pixelbrain-btn primary" onClick={createEclipseWardPauldronViaPixelBrain} title="Via PixelBrain (SDF+Noise)">PAULDRON</button>
         </div>
 
-        {/* THE CANVAS — this is the entire point of the page */}
+        {/* THE CANVAS - this is the entire point of the page */}
         <div className="pb-canvas-area">
           <div className="pb-canvas-viewport">
             <div className="pb-canvas-frame">
-              {/* Aseprite-like document "window" — the canvas should feel large and spacious */}
+              {/* Aseprite-like document "window" - the canvas should feel large and spacious */}
               <div className="pb-canvas-document-header">
-                {activeAssetPacket?.source?.label || activeAssetPacket?.id || 'untitled'} — {canvasGrid?.width || 64}×{canvasGrid?.height || 80}
+                {activeAssetPacket?.source?.label || activeAssetPacket?.id || 'untitled'} - {canvasGrid?.width || 64}×{canvasGrid?.height || 80}
                 {isDrillActive && <span style={{ color: '#f66', marginLeft: 8 }}>DRILL {formatDrillTime(drillSecondsLeft)}</span>}
                 <span className="pb-canvas-doc-dirty">•</span>
               </div>
-              <Suspense fallback={<div style={{ padding: 40, color: '#555', textAlign: 'center' }}>Loading pixel editor…</div>}>
+              <Suspense fallback={<div style={{ padding: 40, color: '#555', textAlign: 'center' }}>Loading pixel editor...</div>}>
                 <TemplateEditor
                   ref={editorRef}
                   key={`editor-${editorInstanceKey}`}
@@ -764,7 +764,7 @@ export default function PixelBrainPage() {
           </div>
         </div>
 
-        {/* Right side — supporting panels, all reading the live canvas grid */}
+        {/* Right side - supporting panels, all reading the live canvas grid */}
         <div className="pb-right-panels">
           {showPixelBrainPanel && (
             <div className="pb-panel">
@@ -854,7 +854,7 @@ export default function PixelBrainPage() {
             </div>
           )}
 
-          {/* AMP post-processing panel — applies adapter AMPs to the live canvas grid */}
+          {/* AMP post-processing panel - applies adapter AMPs to the live canvas grid */}
           {showAmpPanel && (
             <div className="pb-panel" style={{ flex: '0 0 auto' }}>
               <div className="pb-panel-header">
@@ -906,7 +906,7 @@ export default function PixelBrainPage() {
             </div>
           )}
 
-          {/* Reference / semantic image import panel — adds reference layers to the live canvas */}
+          {/* Reference / semantic image import panel - adds reference layers to the live canvas */}
           {showRefPanel && (
             <div className="pb-panel" style={{ flex: '0 0 auto' }}>
               <div className="pb-panel-header">
@@ -922,7 +922,7 @@ export default function PixelBrainPage() {
             </div>
           )}
 
-          {/* Forge Craft Gate — Immunity verdict surface for ITEM-SPEC-v1 assets */}
+          {/* Forge Craft Gate - Immunity verdict surface for ITEM-SPEC-v1 assets */}
           {showForgeGatePanel && (
             <div className="pb-panel" style={{ flex: '0 0 auto' }}>
               <div className="pb-panel-header">

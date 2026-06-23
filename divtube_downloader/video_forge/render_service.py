@@ -72,7 +72,6 @@ class RenderService:
                 ffmpeg_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                 text=True, cwd=out_dir,
             )
-            stderr_lines = []
             if progress_callback:
                 progress_callback("render_started", {"render_id": render_id, "preset": preset_name})
 

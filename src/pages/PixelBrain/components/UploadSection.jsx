@@ -1,5 +1,5 @@
 /**
- * UploadSection — Reference image upload with drag-and-drop
+ * UploadSection - Reference image upload with drag-and-drop
  */
 
 import { useCallback, useState, useRef, useEffect } from 'react';
@@ -105,7 +105,7 @@ export function UploadSection({ onImageUpload, analysis, onClear, uploadError })
             <div className="dropzone-content">
               <UploadIcon className="dropzone-icon" />
               <p className="dropzone-title">Offer your reference to the Void</p>
-              <p className="dropzone-hint">PNG, JPEG, BMP — Max 5MB</p>
+              <p className="dropzone-hint">PNG, JPEG, BMP - Max 5MB</p>
 
               {/* Using a div instead of label if parent handles click, or ensure label doesn't double trigger */}
               <div className="btn btn-secondary">

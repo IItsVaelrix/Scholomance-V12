@@ -410,7 +410,7 @@ export default function ReadPage() {
   // Resonance gate for word colouring: only words that participate in a
   // rhyme/assonance connection get coloured (the rest stay grey), so colour
   // marks resonance instead of every content word ("Skittles" fix). Always
-  // returns a Set — empty when analysis ran but found nothing resonant, OR
+  // returns a Set - empty when analysis ran but found nothing resonant, OR
   // when no connection source exists on the live synthesis path (server
   // offline / local fallback). The two are distinguished by `resonanceDegraded`
   // below; the gate itself stays strict (grey) in both cases so the offline
@@ -429,7 +429,7 @@ export default function ReadPage() {
   // connection source at all (the GATE_DATA_ABSENT condition). Drives the
   // quiet "resonance offline" signal so a grey editor reads as "analysis
   // unavailable" rather than "broken". Loading (no deepAnalysis yet) is NOT
-  // degraded — it's just not-ready.
+  // degraded - it's just not-ready.
   const resonanceDegraded = useMemo(() => {
     if (!deepAnalysis) return false;
     return !resolveResonanceConnections(deepAnalysis).sourcePresent;
@@ -539,7 +539,7 @@ export default function ReadPage() {
     bumpAutosaveContext(activeScrollId, activeScroll?.title, activeScrollContent);
     setEditorTitle(String(activeScroll?.title || ""));
     setEditorContent(activeScrollContent);
-    // Do NOT call issueEditorDocumentIdentity here — we are editing the same
+    // Do NOT call issueEditorDocumentIdentity here - we are editing the same
     // document already mounted in ScrollEditor. Changing the key would remount
     // it, losing scroll position and resetting adaptiveTopology (which clears
     // the Gutter's per-line syllable counts).
@@ -723,7 +723,7 @@ export default function ReadPage() {
     }));
   }, [sessionIndex, sessionWords]);
 
-  // The raw line the activated word sits on — feeds the tooltip's resonance.
+  // The raw line the activated word sits on - feeds the tooltip's resonance.
   const tooltipContextLine = useMemo(() => {
     const lineIndex = tooltipState.token?.lineIndex;
     if (!Number.isInteger(lineIndex) || lineIndex < 0) return "";
@@ -971,7 +971,7 @@ export default function ReadPage() {
                 </div>
                 {isTruesight && resonanceDegraded && (
                   <div className="settings-panel-note settings-panel-note--offline" role="status">
-                    Resonance offline — analysis unavailable; words shown in plain ink.
+                    Resonance offline - analysis unavailable; words shown in plain ink.
                   </div>
                 )}
                 <div className="settings-panel-row">
@@ -1463,7 +1463,7 @@ export default function ReadPage() {
                     {infoBeamEnabled && infoBeamFamily && (
                       <div className="right-panel-section">
                         <div className="right-panel-section-header">
-                          <span className="right-panel-section-title">InfoBeam — Group {infoBeamFamily}</span>
+                          <span className="right-panel-section-title">InfoBeam - Group {infoBeamFamily}</span>
                           <button
                             type="button"
                             className="right-panel-close"
@@ -1657,7 +1657,7 @@ export default function ReadPage() {
       {isNarrowViewport && infoBeamEnabled && infoBeamFamily && (
         <FloatingPanel
           id="infobeam-panel"
-          title={`InfoBeam — Group ${infoBeamFamily}`}
+          title={`InfoBeam - Group ${infoBeamFamily}`}
           onClose={() => setInfoBeamFamily(null)}
           defaultX={window.innerWidth - 720}
           defaultY={80}

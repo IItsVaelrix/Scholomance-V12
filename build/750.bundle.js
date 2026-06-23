@@ -76,7 +76,7 @@ class Bitstream {
         }
         this.pos = end;
     }
-    ;
+    
     readAlignedByte() {
         if (this.pos % 8 !== 0) {
             throw new Error('Bitstream is not byte-aligned.');
@@ -494,7 +494,7 @@ var metadata = __webpack_require__(5165);
 var ac3_misc = __webpack_require__(7553);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/shared/bitstream.js
 var shared_bitstream = __webpack_require__(1390);
-;// ./node_modules/mediabunny/dist/modules/src/aes.js
+// ./node_modules/mediabunny/dist/modules/src/aes.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -751,7 +751,7 @@ const createAes128CbcDecryptStream = (reader, getInit, close) => {
     });
 };
 
-;// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -1173,7 +1173,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                 {
                     this.readContiguousBoxes(slice.slice(contentStartPos, boxInfo.contentSize));
                 }
-                ;
+                
                 break;
             case 'mvhd':
                 {
@@ -1190,7 +1190,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         this.movieDurationInTimescale = (0,src_reader/* readU32Be */.cN)(slice);
                     }
                 }
-                ;
+                
                 break;
             case 'trak':
                 {
@@ -1237,7 +1237,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentTrack = null;
                 }
-                ;
+                
                 break;
             case 'tkhd':
                 {
@@ -1283,7 +1283,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     (0,misc/* assert */.vA)(rotation === 0 || rotation === 90 || rotation === 180 || rotation === 270);
                     track.rotation = rotation;
                 }
-                ;
+                
                 break;
             case 'elst':
                 {
@@ -1325,7 +1325,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         relevantEntryFound = true;
                     }
                 }
-                ;
+                
                 break;
             case 'mdhd':
                 {
@@ -1358,7 +1358,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'hdlr':
                 {
@@ -1398,7 +1398,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         };
                     }
                 }
-                ;
+                
                 break;
             case 'stbl':
                 {
@@ -1409,7 +1409,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     track.sampleTableByteOffset = startPos;
                     this.readContiguousBoxes(slice.slice(contentStartPos, boxInfo.contentSize));
                 }
-                ;
+                
                 break;
             case 'stsd':
                 {
@@ -1671,7 +1671,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         slice.filePos = sampleBoxStartPos + sampleBoxInfo.totalSize;
                     }
                 }
-                ;
+                
                 break;
             case 'frma':
                 {
@@ -1684,7 +1684,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     // Tells us what codec the encrypted track actually uses
                     track.frmaCodecString = lowercase;
                 }
-                ;
+                
                 break;
             case 'schm':
                 {
@@ -1709,7 +1709,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         console.warn(`Unsupported encryption scheme '${schemeType}'.`);
                     }
                 }
-                ;
+                
                 break;
             case 'tenc':
                 {
@@ -1739,7 +1739,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.encryptionInfo.defaultConstantIv = constantIv;
                     }
                 }
-                ;
+                
                 break;
             case 'avcC':
                 {
@@ -1750,7 +1750,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     (0,misc/* assert */.vA)(track.info);
                     track.info.codecDescription = (0,src_reader/* readBytes */.io)(slice, boxInfo.contentSize);
                 }
-                ;
+                
                 break;
             case 'hvcC':
                 {
@@ -1761,7 +1761,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     (0,misc/* assert */.vA)(track.info);
                     track.info.codecDescription = (0,src_reader/* readBytes */.io)(slice, boxInfo.contentSize);
                 }
-                ;
+                
                 break;
             case 'vpcC':
                 {
@@ -1791,7 +1791,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         matrixCoefficients,
                     };
                 }
-                ;
+                
                 break;
             case 'av1C':
                 {
@@ -1825,7 +1825,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         chromaSamplePosition,
                     };
                 }
-                ;
+                
                 break;
             case 'colr':
                 {
@@ -1849,7 +1849,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         fullRange: fullRangeFlag,
                     };
                 }
-                ;
+                
                 break;
             case 'pasp':
                 {
@@ -1870,13 +1870,13 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'wave':
                 {
                     this.readContiguousBoxes(slice.slice(contentStartPos, boxInfo.contentSize));
                 }
-                ;
+                
                 break;
             case 'esds':
                 {
@@ -1944,7 +1944,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'enda':
                 {
@@ -1955,7 +1955,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     (0,misc/* assert */.vA)(track.info?.type === 'audio');
                     track.info.pcmLittleEndian = !!((0,src_reader/* readU16Be */.mH)(slice) & 0xff); // 0xff is from FFmpeg
                 }
-                ;
+                
                 break;
             case 'pcmC':
                 {
@@ -1970,7 +1970,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     track.info.pcmLittleEndian = Boolean(formatFlags & 0x01);
                     track.info.pcmSampleSize = (0,src_reader/* readU8 */.eo)(slice);
                 }
-                ;
+                
                 break;
             case 'dOps':
                 { // Used for Opus audio
@@ -2009,7 +2009,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     track.info.numberOfChannels = outputChannelCount;
                     // Don't copy the input sample rate, irrelevant, and output sample rate is fixed
                 }
-                ;
+                
                 break;
             case 'dfLa':
                 { // Used for FLAC audio
@@ -2056,7 +2056,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     // Set the codec description to be 'fLaC' + all metadata blocks
                     track.info.codecDescription = description;
                 }
-                ;
+                
                 break;
             case 'dac3':
                 { // AC3SpecificBox
@@ -2076,7 +2076,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     }
                     track.info.numberOfChannels = codec_data/* AC3_ACMOD_CHANNEL_COUNTS */.ux[acmod] + lfeon;
                 }
-                ;
+                
                 break;
             case 'dec3':
                 { // EC3SpecificBox
@@ -2097,7 +2097,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     }
                     track.info.numberOfChannels = (0,codec_data/* getEac3ChannelCount */.zV)(config);
                 }
-                ;
+                
                 break;
             case 'stts':
                 {
@@ -2125,7 +2125,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         currentTimestamp += sampleCount * sampleDelta;
                     }
                 }
-                ;
+                
                 break;
             case 'ctts':
                 {
@@ -2150,7 +2150,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         sampleIndex += sampleCount;
                     }
                 }
-                ;
+                
                 break;
             case 'stsz':
                 {
@@ -2174,7 +2174,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.sampleTable.sampleSizes.push(sampleSize);
                     }
                 }
-                ;
+                
                 break;
             case 'stz2':
                 {
@@ -2196,7 +2196,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.sampleTable.sampleSizes.push(sampleSize);
                     }
                 }
-                ;
+                
                 break;
             case 'stss':
                 {
@@ -2220,7 +2220,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.sampleTable.keySampleIndices.unshift(0);
                     }
                 }
-                ;
+                
                 break;
             case 'stsc':
                 {
@@ -2255,7 +2255,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'stco':
                 {
@@ -2273,7 +2273,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.sampleTable.chunkOffsets.push(chunkOffset);
                     }
                 }
-                ;
+                
                 break;
             case 'co64':
                 {
@@ -2291,14 +2291,14 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.sampleTable.chunkOffsets.push(chunkOffset);
                     }
                 }
-                ;
+                
                 break;
             case 'mvex':
                 {
                     this.isFragmented = true;
                     this.readContiguousBoxes(slice.slice(contentStartPos, boxInfo.contentSize));
                 }
-                ;
+                
                 break;
             case 'mehd':
                 {
@@ -2307,7 +2307,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     const fragmentDuration = version === 1 ? (0,src_reader/* readU64Be */.th)(slice) : (0,src_reader/* readU32Be */.cN)(slice);
                     this.movieDurationInTimescale = fragmentDuration;
                 }
-                ;
+                
                 break;
             case 'trex':
                 {
@@ -2326,7 +2326,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         defaultSampleFlags,
                     });
                 }
-                ;
+                
                 break;
             case 'tfra':
                 {
@@ -2369,7 +2369,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'moof':
                 {
@@ -2384,7 +2384,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     this.lastReadFragment = this.currentFragment;
                     this.currentFragment = null;
                 }
-                ;
+                
                 break;
             case 'traf':
                 {
@@ -2432,7 +2432,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         this.currentTrack = null;
                     }
                 }
-                ;
+                
                 break;
             case 'pssh':
                 {
@@ -2447,7 +2447,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         this.psshBoxes.push(psshBox);
                     }
                 }
-                ;
+                
                 break;
             case 'tfhd':
                 {
@@ -2500,7 +2500,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         track.currentFragmentState.defaultSampleDuration = 0;
                     }
                 }
-                ;
+                
                 break;
             case 'tfdt':
                 {
@@ -2514,7 +2514,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     const baseMediaDecodeTime = version === 0 ? (0,src_reader/* readU32Be */.cN)(slice) : (0,src_reader/* readU64Be */.th)(slice);
                     track.currentFragmentState.startTimestamp = baseMediaDecodeTime;
                 }
-                ;
+                
                 break;
             case 'trun':
                 {
@@ -2622,7 +2622,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         trackData.currentTimestamp += sampleDuration;
                     }
                 }
-                ;
+                
                 break;
             case 'saiz':
                 {
@@ -2652,7 +2652,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     aux.sampleSizes = sampleSizes;
                     aux.sampleCount = sampleCount;
                 }
-                ;
+                
                 break;
             case 'saio':
                 {
@@ -2685,7 +2685,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     const aux = getOrCreateEncryptionAuxInfo(track);
                     aux.offset = offset;
                 }
-                ;
+                
                 break;
             case 'senc':
                 {
@@ -2731,7 +2731,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         sample.encryption = { iv, subsamples };
                     }
                 }
-                ;
+                
                 break;
             // Metadata section
             // https://exiftool.org/TagNames/QuickTime.html
@@ -2759,7 +2759,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                     slice.skip(-boxInfo.headerSize);
                                     this.traverseBox(slice);
                                 }
-                                ;
+                                
                                 break;
                             case '©nam':
                             case 'name':
@@ -2771,7 +2771,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.title ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©des':
                                 {
@@ -2779,7 +2779,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.description ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©ART':
                                 {
@@ -2787,7 +2787,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.artist ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©alb':
                                 {
@@ -2795,7 +2795,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.album ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'albr':
                                 {
@@ -2803,7 +2803,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.albumArtist ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©gen':
                                 {
@@ -2811,7 +2811,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.genre ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©day':
                                 {
@@ -2822,7 +2822,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         }
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©cmt':
                                 {
@@ -2830,7 +2830,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.comment ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©lyr':
                                 {
@@ -2838,12 +2838,12 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.lyrics ??= (0,isobmff_reader/* readMetadataStringShort */.$L)(slice);
                                     }
                                 }
-                                ;
+                                
                                 break;
                         }
                     }
                 }
-                ;
+                
                 break;
             case 'meta':
                 {
@@ -2863,7 +2863,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentMetadataKeys = null;
                 }
-                ;
+                
                 break;
             case 'keys':
                 {
@@ -2879,7 +2879,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                         this.currentMetadataKeys.set(i + 1, keyName);
                     }
                 }
-                ;
+                
                 break;
             case 'ilst':
                 {
@@ -2911,7 +2911,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.title ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©des':
                             case 'desc':
@@ -2923,7 +2923,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.description ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©ART':
                             case 'com.apple.quicktime.artist':
@@ -2933,7 +2933,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.artist ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©alb':
                             case 'albm':
@@ -2944,7 +2944,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.album ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'aART':
                             case 'album_artist':
@@ -2953,7 +2953,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.albumArtist ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©cmt':
                             case 'com.apple.quicktime.comment':
@@ -2963,7 +2963,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.comment ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©gen':
                             case 'gnre':
@@ -2974,7 +2974,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.genre ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©lyr':
                             case 'lyrics':
@@ -2983,7 +2983,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         this.metadataTags.lyrics ??= data;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case '©day':
                             case 'rldt':
@@ -2997,7 +2997,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         }
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'covr':
                             case 'com.apple.quicktime.artwork':
@@ -3019,7 +3019,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         });
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'track':
                                 {
@@ -3035,7 +3035,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         }
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'trkn':
                                 {
@@ -3051,7 +3051,7 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         }
                                     }
                                 }
-                                ;
+                                
                                 break;
                             case 'disc':
                             case 'disk':
@@ -3068,12 +3068,12 @@ class IsobmffDemuxer extends demuxer/* Demuxer */.B {
                                         }
                                     }
                                 }
-                                ;
+                                
                                 break;
                         }
                     }
                 }
-                ;
+                
                 break;
         }
         slice.filePos = boxEndPos;
@@ -3944,7 +3944,7 @@ const collectCryptRanges = (subsamples, cryptByteBlock, skipByteBlock) => {
 var ebml = __webpack_require__(6411);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/matroska/matroska-misc.js
 var matroska_misc = __webpack_require__(3616);
-;// ./node_modules/mediabunny/dist/modules/src/matroska/matroska-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/matroska/matroska-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -4430,7 +4430,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         // Compute the last frame's size from whatever's left
                         frameSizes.push(slice.length - (slice.bufferPos + totalUsedSize));
                     }
-                    ;
+                    
                     break;
                 case BlockLacing.FixedSize:
                     {
@@ -4441,7 +4441,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                             frameSizes.push(frameSize);
                         }
                     }
-                    ;
+                    
                     break;
                 case BlockLacing.Ebml:
                     {
@@ -4466,7 +4466,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         // Compute the last frame's size from whatever's left
                         frameSizes.push(slice.length - (slice.bufferPos + totalUsedSize));
                     }
-                    ;
+                    
                     break;
                 default: (0,misc/* assert */.vA)(false);
             }
@@ -4559,7 +4559,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                 {
                     this.isWebM = (0,ebml/* readAsciiString */.IX)(slice, size) === 'webm';
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Seek:
                 {
@@ -4572,7 +4572,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         this.currentSegment.seekEntries.pop();
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.SeekID:
                 {
@@ -4581,7 +4581,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     lastSeekEntry.id = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.SeekPosition:
                 {
@@ -4590,7 +4590,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     lastSeekEntry.segmentPosition = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TimestampScale:
                 {
@@ -4599,7 +4599,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     this.currentSegment.timestampScale = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                     this.currentSegment.timestampFactor = 1e9 / this.currentSegment.timestampScale;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Duration:
                 {
@@ -4607,7 +4607,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentSegment.duration = (0,ebml/* readFloat */.zH)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TrackEntry:
                 {
@@ -4770,7 +4770,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentTrack = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TrackNumber:
                 {
@@ -4778,7 +4778,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.id = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TrackType:
                 {
@@ -4814,7 +4814,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         };
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagEnabled:
                 {
@@ -4825,7 +4825,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         this.currentTrack = null;
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagDefault:
                 {
@@ -4833,7 +4833,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.default = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagForced:
                 {
@@ -4841,7 +4841,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.forced = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagOriginal:
                 {
@@ -4849,7 +4849,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.original = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagHearingImpaired:
                 {
@@ -4857,7 +4857,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.hearingImpaired = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagVisualImpaired:
                 {
@@ -4865,7 +4865,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.visuallyImpaired = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FlagCommentary:
                 {
@@ -4873,7 +4873,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.disposition.commentary = !!(0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CodecID:
                 {
@@ -4881,7 +4881,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.codecId = (0,ebml/* readAsciiString */.IX)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CodecPrivate:
                 {
@@ -4889,7 +4889,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.codecPrivate = (0,src_reader/* readBytes */.io)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.DefaultDuration:
                 {
@@ -4897,7 +4897,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.defaultDurationNs = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Name:
                 {
@@ -4905,7 +4905,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.name = (0,ebml/* readUnicodeString */.jR)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Language:
                 {
@@ -4920,7 +4920,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         this.currentTrack.languageCode = misc/* UNDETERMINED_LANGUAGE */.IR;
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.LanguageBCP47:
                 {
@@ -4940,7 +4940,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentTrack.hasLanguageBcp47 = true;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Video:
                 {
@@ -4948,7 +4948,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.PixelWidth:
                 {
@@ -4956,7 +4956,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.width = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.PixelHeight:
                 {
@@ -4964,7 +4964,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.height = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.DisplayWidth:
                 {
@@ -4972,7 +4972,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.displayWidth = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.DisplayHeight:
                 {
@@ -4980,7 +4980,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.displayHeight = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.DisplayUnit:
                 {
@@ -4988,7 +4988,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.displayUnit = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.AlphaMode:
                 {
@@ -4996,7 +4996,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.alphaMode = (0,ebml/* readUnsignedInt */.dl)(slice, size) === 1;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Colour:
                 {
@@ -5005,7 +5005,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     this.currentTrack.info.colorSpace = {};
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.MatrixCoefficients:
                 {
@@ -5015,7 +5015,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     const mapped = misc/* MATRIX_COEFFICIENTS_MAP_INVERSE */.fl[matrixCoefficients] ?? null;
                     this.currentTrack.info.colorSpace.matrix = mapped;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Range:
                 {
@@ -5023,7 +5023,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.colorSpace.fullRange = (0,ebml/* readUnsignedInt */.dl)(slice, size) === 2;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TransferCharacteristics:
                 {
@@ -5033,7 +5033,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     const mapped = misc/* TRANSFER_CHARACTERISTICS_MAP_INVERSE */.x_[transferCharacteristics] ?? null;
                     this.currentTrack.info.colorSpace.transfer = mapped;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Primaries:
                 {
@@ -5043,7 +5043,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     const mapped = misc/* COLOR_PRIMARIES_MAP_INVERSE */.BL[primaries] ?? null;
                     this.currentTrack.info.colorSpace.primaries = mapped;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Projection:
                 {
@@ -5051,7 +5051,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ProjectionPoseRoll:
                 {
@@ -5066,7 +5066,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         // It wasn't a valid rotation
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Audio:
                 {
@@ -5074,7 +5074,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.SamplingFrequency:
                 {
@@ -5082,7 +5082,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.sampleRate = (0,ebml/* readFloat */.zH)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Channels:
                 {
@@ -5090,7 +5090,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.numberOfChannels = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BitDepth:
                 {
@@ -5098,7 +5098,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentTrack.info.bitDepth = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CuePoint:
                 {
@@ -5107,13 +5107,13 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                     this.currentCueTime = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CueTime:
                 {
                     this.currentCueTime = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CueTrackPositions:
                 {
@@ -5127,7 +5127,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         this.currentSegment.cuePoints.pop();
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CueTrack:
                 {
@@ -5136,7 +5136,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     lastCuePoint.trackId = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.CueClusterPosition:
                 {
@@ -5146,7 +5146,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     (0,misc/* assert */.vA)(this.currentSegment);
                     lastCuePoint.clusterPosition = this.currentSegment.dataStartPos + (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Timestamp:
                 {
@@ -5154,7 +5154,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentCluster.timestamp = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.SimpleBlock:
                 {
@@ -5189,7 +5189,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         mainAdditional: null,
                     });
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockGroup:
                 {
@@ -5198,7 +5198,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                     this.currentBlock = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Block:
                 {
@@ -5226,13 +5226,13 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     };
                     trackData.blocks.push(this.currentBlock);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockAdditions:
                 {
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockMore:
                 {
@@ -5248,7 +5248,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentBlockAdditional = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockAdditional:
                 {
@@ -5256,7 +5256,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentBlockAdditional.data = (0,src_reader/* readBytes */.io)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockAddID:
                 {
@@ -5264,7 +5264,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentBlockAdditional.addId = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.BlockDuration:
                 {
@@ -5272,7 +5272,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentBlock.duration = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ReferenceBlock:
                 {
@@ -5282,20 +5282,20 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     // We ignore the actual value here, we just use the reference as an indicator for "not a key frame".
                     // This is in line with FFmpeg's behavior.
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Tag:
                 {
                     this.currentTagTargetIsMovie = true;
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.Targets:
                 {
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TargetTypeValue:
                 {
@@ -5304,7 +5304,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         this.currentTagTargetIsMovie = false;
                     }
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TagTrackUID:
             case ebml/* EBMLId */.Cl.TagEditionUID:
@@ -5313,7 +5313,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                 {
                     this.currentTagTargetIsMovie = false;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.SimpleTag:
                 {
@@ -5322,13 +5322,13 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     this.currentSimpleTagName = null;
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TagName:
                 {
                     this.currentSimpleTagName = (0,ebml/* readUnicodeString */.jR)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TagString:
                 {
@@ -5337,7 +5337,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     const value = (0,ebml/* readUnicodeString */.jR)(slice, size);
                     this.processTagValue(this.currentSimpleTagName, value);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.TagBinary:
                 {
@@ -5346,7 +5346,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     const value = (0,src_reader/* readBytes */.io)(slice, size);
                     this.processTagValue(this.currentSimpleTagName, value);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.AttachedFile:
                 {
@@ -5390,7 +5390,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentAttachedFile = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FileUID:
                 {
@@ -5398,7 +5398,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentAttachedFile.fileUid = (0,ebml/* readUnsignedBigInt */.Ry)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FileName:
                 {
@@ -5406,7 +5406,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentAttachedFile.fileName = (0,ebml/* readUnicodeString */.jR)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FileMediaType:
                 {
@@ -5414,7 +5414,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentAttachedFile.fileMediaType = (0,ebml/* readAsciiString */.IX)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FileData:
                 {
@@ -5422,7 +5422,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentAttachedFile.fileData = (0,src_reader/* readBytes */.io)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.FileDescription:
                 {
@@ -5430,7 +5430,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentAttachedFile.fileDescription = (0,ebml/* readUnicodeString */.jR)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentEncodings:
                 {
@@ -5440,7 +5440,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     // "**MUST** start with the `ContentEncoding` with the highest `ContentEncodingOrder`"
                     this.currentTrack.decodingInstructions.sort((a, b) => b.order - a.order);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentEncoding:
                 {
@@ -5455,7 +5455,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     }
                     this.currentDecodingInstruction = null;
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentEncodingOrder:
                 {
@@ -5463,7 +5463,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentDecodingInstruction.order = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentEncodingScope:
                 {
@@ -5471,7 +5471,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentDecodingInstruction.scope = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentCompression:
                 {
@@ -5484,7 +5484,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     };
                     this.readContiguousElements(slice.slice(dataStartPos, size));
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentCompAlgo:
                 {
@@ -5492,7 +5492,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentDecodingInstruction.data.algorithm = (0,ebml/* readUnsignedInt */.dl)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentCompSettings:
                 {
@@ -5500,7 +5500,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         break;
                     this.currentDecodingInstruction.data.settings = (0,src_reader/* readBytes */.io)(slice, size);
                 }
-                ;
+                
                 break;
             case ebml/* EBMLId */.Cl.ContentEncryption:
                 {
@@ -5510,7 +5510,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                         type: 'decrypt',
                     };
                 }
-                ;
+                
                 break;
         }
         slice.filePos = dataStartPos + size;
@@ -5535,22 +5535,22 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                                         currentData = newData;
                                     }
                                 }
-                                ;
+                                
                                 break;
                             default:
                                 {
                                     // Unhandled
                                 }
-                                ;
+                                
                         }
                     }
-                    ;
+                    
                     break;
                 default:
                     {
                         // Unhandled
                     }
-                    ;
+                    
             }
         }
         return currentData;
@@ -5567,49 +5567,49 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                     {
                         metadataTags.title ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'description':
                     {
                         metadataTags.description ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'artist':
                     {
                         metadataTags.artist ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'album':
                     {
                         metadataTags.album ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'album_artist':
                     {
                         metadataTags.albumArtist ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'genre':
                     {
                         metadataTags.genre ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'comment':
                     {
                         metadataTags.comment ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'lyrics':
                     {
                         metadataTags.lyrics ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'date':
                     {
@@ -5618,7 +5618,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                             metadataTags.date ??= date;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'track_number':
                 case 'part_number':
@@ -5633,7 +5633,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                             metadataTags.tracksTotal ??= tracksTotal;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'disc_number':
                 case 'disc':
@@ -5648,7 +5648,7 @@ class MatroskaDemuxer extends demuxer/* Demuxer */.B {
                             metadataTags.discsTotal ??= discsTotal;
                         }
                     }
-                    ;
+                    
                     break;
             }
         }
@@ -6127,7 +6127,7 @@ class MatroskaAudioTrackBacking extends MatroskaTrackBacking {
 var mp3_misc = __webpack_require__(2788);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/id3.js
 var id3 = __webpack_require__(7576);
-;// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-reader.js
+// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-reader.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -6166,7 +6166,7 @@ const readNextMp3FrameHeader = async (reader, startPos, until) => {
     return null;
 };
 
-;// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -6508,7 +6508,7 @@ class Mp3AudioTrackBacking {
 var ogg_misc = __webpack_require__(9730);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/ogg/ogg-reader.js
 var ogg_reader = __webpack_require__(9841);
-;// ./node_modules/mediabunny/dist/modules/src/ogg/ogg-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/ogg/ogg-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -7295,7 +7295,7 @@ const findPreviousPacketEndPosition = (pageList, startPage, startSegmentIndex) =
 var wave_demuxer = __webpack_require__(260);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/adts/adts-reader.js
 var adts_reader = __webpack_require__(8475);
-;// ./node_modules/mediabunny/dist/modules/src/adts/adts-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/adts/adts-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -7583,7 +7583,7 @@ class AdtsAudioTrackBacking {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/flac/flac-misc.js
 var flac_misc = __webpack_require__(5828);
-;// ./node_modules/mediabunny/dist/modules/src/flac/flac-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/flac/flac-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -8131,7 +8131,7 @@ class FlacAudioTrackBacking {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-misc.js
 var mpeg_ts_misc = __webpack_require__(2490);
-;// ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -8267,7 +8267,7 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
                     bitstream.skipBits(12);
                     const sectionLength = bitstream.readBits(12);
                     bitstream.skipBits(43);
-                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                     
                     const pcrPid = bitstream.readBits(13);
                     bitstream.skipBits(6);
                     // "The remaining 10 bits specify the number of bytes of the descriptors immediately following the
@@ -8320,7 +8320,7 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
                                         reorderSize: -1,
                                     };
                                 }
-                                ;
+                                
                                 break;
                             case 3 /* MpegTsStreamType.MP3_MPEG1 */:
                             case 4 /* MpegTsStreamType.MP3_MPEG2 */:
@@ -8354,7 +8354,7 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
                                         sampleRate: -1,
                                     };
                                 }
-                                ;
+                                
                                 break;
                             case 6 /* MpegTsStreamType.PRIVATE_DATA */:
                                 {
@@ -8379,7 +8379,7 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
                                         };
                                     }
                                 }
-                                ;
+                                
                                 break;
                             default: {
                                 // If we don't recognize the codec, we don't surface the track at all. This is because
@@ -8742,17 +8742,17 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
             throw new Error('Invalid TS packet sync byte. Likely an internal bug, please report this file.');
         }
         const nextTwoBytes = (0,src_reader/* readU16Be */.mH)(slice);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportErrorIndicator = nextTwoBytes >> 15;
         const payloadUnitStartIndicator = (nextTwoBytes >> 14) & 0x1;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportPriority = (nextTwoBytes >> 13) & 0x1;
         const pid = nextTwoBytes & 0x1FFF;
         const nextByte = (0,src_reader/* readU8 */.eo)(slice);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportScramblingControl = nextByte >> 6;
         const adaptationFieldControl = (nextByte >> 4) & 0x3;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const continuityCounter = nextByte & 0xF;
         return {
             payloadUnitStartIndicator,
@@ -8774,17 +8774,17 @@ class MpegTsDemuxer extends demuxer/* Demuxer */.B {
             throw new Error('Invalid TS packet sync byte. Likely an internal bug, please report this file.');
         }
         const nextTwoBytes = (bytes[1] << 8) + bytes[2];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportErrorIndicator = nextTwoBytes >> 15;
         const payloadUnitStartIndicator = (nextTwoBytes >> 14) & 0x1;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportPriority = (nextTwoBytes >> 13) & 0x1;
         const pid = nextTwoBytes & 0x1FFF;
         const nextByte = bytes[3];
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const transportScramblingControl = nextByte >> 6;
         const adaptationFieldControl = (nextByte >> 4) & 0x3;
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const continuityCounter = nextByte & 0xF;
         return {
             payloadUnitStartIndicator,
@@ -9942,7 +9942,7 @@ class PacketBuffer {
 var hls_misc = __webpack_require__(3622);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/input.js
 var src_input = __webpack_require__(2030);
-;// ./node_modules/mediabunny/dist/modules/src/segmented-input.js
+// ./node_modules/mediabunny/dist/modules/src/segmented-input.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -10309,7 +10309,7 @@ class SegmentedInputInputAudioTrackBacking extends SegmentedInputInputTrackBacki
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/source.js
 var source = __webpack_require__(4709);
-;// ./node_modules/mediabunny/dist/modules/src/hls/hls-segmented-input.js
+// ./node_modules/mediabunny/dist/modules/src/hls/hls-segmented-input.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -10951,7 +10951,7 @@ class HlsSegmentedInput extends SegmentedInput {
     }
 }
 
-;// ./node_modules/mediabunny/dist/modules/src/hls/hls-demuxer.js
+// ./node_modules/mediabunny/dist/modules/src/hls/hls-demuxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -11679,7 +11679,7 @@ const preprocessLanguageCode = (code) => {
     return languageSubtag;
 };
 
-;// ./node_modules/mediabunny/dist/modules/src/input-format.js
+// ./node_modules/mediabunny/dist/modules/src/input-format.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -11859,7 +11859,7 @@ class MatroskaInputFormat extends InputFormat {
                             return false;
                         }
                     }
-                    ;
+                    
                     break;
                 case ebml/* EBMLId */.Cl.EBMLReadVersion:
                     {
@@ -11868,7 +11868,7 @@ class MatroskaInputFormat extends InputFormat {
                             return false;
                         }
                     }
-                    ;
+                    
                     break;
                 case ebml/* EBMLId */.Cl.DocType:
                     {
@@ -11877,7 +11877,7 @@ class MatroskaInputFormat extends InputFormat {
                             return false;
                         }
                     }
-                    ;
+                    
                     break;
                 case ebml/* EBMLId */.Cl.DocTypeVersion:
                     {
@@ -11886,7 +11886,7 @@ class MatroskaInputFormat extends InputFormat {
                             return false;
                         }
                     }
-                    ;
+                    
                     break;
             }
             dataSlice.filePos = dataStartPos + size;
@@ -13149,7 +13149,7 @@ const queryInputTracks = async (tracks, query) => {
         const filterMatches = tracks.map(t => query.filter(t));
         const hasAsyncFilter = filterMatches.some(x => x instanceof Promise);
         if (hasAsyncFilter) {
-            // eslint-disable-next-line @typescript-eslint/await-thenable
+             
             const resolvedFilterMatches = await Promise.all(filterMatches);
             matched = tracks.filter((_, i) => resolvedFilterMatches[i]);
         }
@@ -13163,7 +13163,7 @@ const queryInputTracks = async (tracks, query) => {
     const sortValues = matched.map(t => query.sortBy(t));
     const hasAsyncSort = sortValues.some(x => x instanceof Promise);
     const resolvedSortValues = hasAsyncSort
-        // eslint-disable-next-line @typescript-eslint/await-thenable
+         
         ? await Promise.all(sortValues)
         : sortValues;
     return matched
@@ -14645,7 +14645,7 @@ class Source extends _misc_js__WEBPACK_IMPORTED_MODULE_0__/* .EventEmitter */ .b
     }
     /** @internal */
     _dispatchRead(start, end) {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         this.onread?.(start, end);
         this._emit('read', { start, end });
     }
@@ -15084,7 +15084,7 @@ class UrlSource extends PathedSource {
                 signal: abortController.signal,
             }), this._getRetryDelay, () => this._disposed);
             if (!response.ok) {
-                // eslint-disable-next-line @typescript-eslint/no-base-to-string
+                 
                 throw new Error(`Error fetching ${String(this._url)}: ${response.status} ${response.statusText}`);
             }
             outer: if (this._orchestrator.fileSize === null) {

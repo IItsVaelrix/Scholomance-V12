@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import BytecodeVisualiserPage from '../../src/pages/Visualiser/BytecodeVisualiserPage';
 
 beforeEach(() => {
-  // No alignment artifacts in jsdom — the hook must fall back silently.
+  // No alignment artifacts in jsdom - the hook must fall back silently.
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404, json: async () => ({}) }));
   window.history.replaceState(null, '', '/');
 });

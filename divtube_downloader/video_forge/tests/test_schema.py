@@ -1,7 +1,4 @@
-import json
 import unittest
-import tempfile
-import os
 
 from video_forge.schema import (
     VideoProject, MediaItem, TimelineClip, EffectOp, TransitionOp,

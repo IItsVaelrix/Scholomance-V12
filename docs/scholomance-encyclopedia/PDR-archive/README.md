@@ -123,6 +123,12 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-19-pixelbrain-craft-gate-immunity-pdr.md`](./2026-06-19-pixelbrain-craft-gate-immunity-pdr.md) | Draft | PixelBrain \| Immunity \| CLI Gate \| Forge QA | High |
 | [`2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md`](./2026-06-19-pixelbrain-silhouette-blueprint-gate-pdr.md) | Ratified | PixelBrain \| Immunity \| Blueprint Language \| Three-View Shadow Gate \| Animation | High |
 | [`2026-06-20-memory-cell-osmosis-pdr.md`](./2026-06-20-memory-cell-osmosis-pdr.md) | Implemented | Architectural \| Immune System \| Diagnostic Memory \| TurboQuant Substrate | High |
+| [`2026-06-20-lexical-ide-editor-parity-pdr.md`](./2026-06-20-lexical-ide-editor-parity-pdr.md) | Draft | Lexical IDE + Editor Parity | High |
+| [`2026-06-21-oracle-dynamic-query-pdr.md`](./2026-06-21-oracle-dynamic-query-pdr.md) | Draft | Oracle + Dynamic Query | High |
+| [`2026-06-21-SCD64-Predictive-IntelliSense.md`](./2026-06-21-SCD64-Predictive-IntelliSense.md) | Draft | SCD64 + Predictive IntelliSense | High |
+| [`2026-06-21-SCD64-robust-pass.md`](./2026-06-21-SCD64-robust-pass.md) | Draft | SCD64 + Robust Pass | High |
+| [`2026-06-22-pixelbrain-youtube-intelligence-seo-pdr.md`](./2026-06-22-pixelbrain-youtube-intelligence-seo-pdr.md) | Draft | PixelBrain + YouTube Intelligence + SEO | High |
+| [`SCD64-robust-pass.md`](./SCD64-robust-pass.md) | Draft | SCD64 + Robust Pass | High |
 | [`Polarity PDR.md`](./Polarity%20PDR.md) | Draft | Polarity Music Video + PixelBrain Cinematic Lyric Video | High |
 | [`Polarity Spec PDR.md`](./Polarity%20Spec%20PDR.md) | Draft | Polarity Music Video + Technical Implementation Spec | High |
 

@@ -85,6 +85,22 @@ export const BUG_FAMILIES = Object.freeze({
       { slot: 'VERDICT',   canonical: 'VERDICT:diagnose-only+over-or-under-weighted+inspect-provider-vs-DEFAULT_WEIGHTS' },
     ]),
   }),
+  GHOST_LOGIC: Object.freeze({
+    versionByte: '06',
+    predictedVersionByte: 'E6',
+    domain: 'META',
+    description: 'Two syntactically valid, near-identical code constructs where only one carries correct semantics. The compiler and type-checker are silent; the human eye reads past the difference.',
+    canonicals: Object.freeze([
+      { slot: 'BUGCLASS',  canonical: 'BUGCLASS:GHOST_LOGIC:syntactic-similarity-conceals-semantic-divergence' },
+      { slot: 'COORDSYS',  canonical: 'COORDSYS:identifier-namespace+scope-chain+lookalike-variable-pair' },
+      { slot: 'INVARIANT', canonical: 'INVARIANT:two-syntactically-valid-constructs-must-not-be-confused-when-only-one-carries-correct-semantics' },
+      { slot: 'MAGNITUDE', canonical: 'MAGNITUDE:confusionRate>=0.85+typechecker-silent+eye-passes-review' },
+      { slot: 'MASKING',   canonical: 'MASKING:syntactic-validity-of-both-forms+similar-identifier-length-and-prefix' },
+      { slot: 'GATE',      canonical: 'GATE:code-review-gate-silent+type-checker-gate-silent+linter-gate-silent' },
+      { slot: 'PROPAGATE', canonical: 'PROPAGATE:developer-keystroke-to-wrong-identifier-to-silent-logic-drift-to-wrong-output' },
+      { slot: 'VERDICT',   canonical: 'VERDICT:diagnose-only+semantic-diff-required+surface-similarity-is-the-mask' },
+    ]),
+  }),
 });
 
 const SLOT_HUMAN_MEANINGS: Record<string, Record<string, string>> = Object.freeze({
@@ -138,12 +154,22 @@ const SLOT_HUMAN_MEANINGS: Record<string, Record<string, string>> = Object.freez
     PROPAGATE: 'Divergence propagates: provider scoring → ranker DEFAULT_WEIGHTS → ranked list → output.',
     VERDICT:   'Diagnose-only. Over- or under-weighted; inspect the provider vs ranker DEFAULT_WEIGHTS.',
   }),
+  GHOST_LOGIC: Object.freeze({
+    BUGCLASS:  'Syntactic similarity conceals semantic divergence: two near-identical constructs, only one is correct.',
+    COORDSYS:  'Identifier namespace + scope chain: the pair of lookalike variable or property names that are confused.',
+    INVARIANT: 'The developer intended construct A but typed construct B; both are syntactically valid but only A carries correct semantics.',
+    MAGNITUDE: 'Confusion rate is high (>=0.85); type-checker and linter are silent; code review passes.',
+    MASKING:   'Both forms are syntactically valid with similar identifier length, prefix, and structure — invisible to automation.',
+    GATE:      'Code review gate is silent. Type-checker gate is silent. Linter gate is silent. Only semantic diff catches it.',
+    PROPAGATE: 'Developer keystroke → wrong identifier → silent logic drift → wrong output, with no error thrown.',
+    VERDICT:   'Diagnose-only. Semantic diff required. Surface similarity IS the mask — there is no bug without the resemblance.',
+  }),
 });
 
 function _humanMeaningForSlot(familyName: string, slotName: string): string {
   const familyMeanings = SLOT_HUMAN_MEANINGS[familyName];
   if (familyMeanings && familyMeanings[slotName]) return familyMeanings[slotName];
-  // @ts-ignore
+  // @ts-expect-error - indexing object with string
   return BUG_FAMILIES[familyName]?.description || 'See glossary.';
 }
 

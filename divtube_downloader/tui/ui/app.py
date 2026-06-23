@@ -4,13 +4,15 @@ from textual.theme import Theme
 from textual.widgets import OptionList
 from textual.widgets.option_list import Option
 from textual.containers import Vertical
-from textual.widgets import Static, Input
+from textual.widgets import Static, Input, TextArea
 from textual import events, on
 import threading
 import os
+import asyncio
 
 from tui.ui.layout import get_layout
 from tui.core.command_parser import CommandRegistry
+from tui.ui.widgets.command_area import CommandSubmitted
 from tui.services.agent_service import AgentService
 from tui.services.memory_service import MemoryService
 from tui.services.export_service import ExportService
@@ -22,6 +24,8 @@ from tui.services.cleri_bridge import CleriBridge
 from tui.services.bytecode_bridge import BytecodeHealthBridge
 from tui.services.archive_bridge import ArchiveBridge
 from tui.services.prompt_service import PromptService
+from tui.services.scd64_service import scd64_service
+from tui.services.substrate_osmosis_service import SubstrateOsmosisService
 from tui.services.env_config import write_key
 from tui.screens.video_forge_screen import VideoForgeScreen
 
@@ -93,21 +97,29 @@ class FileSelectScreen(ModalScreen[str]):
     CSS = """
     FileSelectScreen {
         align: center middle;
-        background: $background 50%;
+        background: rgba(15, 23, 42, 0.90);
     }
     #file-select-container {
         width: 80;
         height: 25;
-        border: solid #00BFFF;
-        background: #0B0C10;
+        border: panel #6366F1;
+        background: #1E293B;
         padding: 1 2;
+        box-sizing: border-box;
     }
     .modal-title {
         text-align: center;
         margin-bottom: 1;
+        color: #A78BFA;
     }
     #file-filter {
         margin-bottom: 1;
+        border: panel #4F46E5;
+        background: #0F172A;
+        transition: border 200ms;
+    }
+    #file-filter:focus {
+        border: panel #818CF8;
     }
     """
     IGNORE_DIRS = {"node_modules", ".git", "dist", "build", ".cache",
@@ -275,77 +287,140 @@ class ModelSelectScreen(ModalScreen[str]):
 
 class DivTubeAgentApp(App):
     CSS = '''
-    Screen { background: #0B0C10; }                 /* Obsidian */
+    Screen { 
+        background: #0F172A; 
+    }
 
-    Header { background: #15121C; color: #FFD700; text-style: bold; }
-    HeaderTitle { color: #FFD700; text-style: bold; }
-    Footer { background: #15121C; }
-    FooterKey { background: #15121C; }
-    FooterKey > .footer-key--key { color: #0B0C10; background: #FFD700; text-style: bold; }
-    FooterKey > .footer-key--description { color: #B388FF; }
-    FooterKey:hover { background: #1E1630; }
+    Header { 
+        background: #1E293B; 
+        color: #F8FAFC; 
+        text-style: bold; 
+        padding: 0 1;
+    }
+    HeaderTitle { 
+        color: #A78BFA; 
+        text-style: bold; 
+    }
+    Footer { 
+        background: #1E293B; 
+    }
+    FooterKey { 
+        background: #1E293B; 
+        color: #94A3B8;
+        transition: background 200ms, color 200ms;
+    }
+    FooterKey > .footer-key--key { 
+        color: #0F172A; 
+        background: #A78BFA; 
+        text-style: bold; 
+    }
+    FooterKey > .footer-key--description { 
+        color: #CBD5E1; 
+    }
+    FooterKey:hover { 
+        background: #334155; 
+        color: #F8FAFC;
+    }
 
     #sidebar {
         width: 32;
-        background: #121212;
-        border: round #4B0082;                      /* Indigo */
-        border-title-color: #FFD700;                /* Gold */
+        background: #1E293B;
+        border: panel #8B5CF6;
+        border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 1 1;
+        margin: 1 0 1 1;
     }
     #inspector {
-        width: 42;
-        background: #121212;
-        border: round #7851A9;                      /* Royal Purple */
-        border-title-color: #FFD700;
+        height: 1fr;
+        background: #1E293B;
+        border: panel #6366F1;
+        border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 1 1;
+        margin: 1 1 1 0;
+    }
+    #radar {
+        height: 1fr;
+        background: #0F172A;
+        border: panel #F59E0B;
+        border-title-color: #F8FAFC;
+        border-title-align: center;
+        padding: 1 1;
+        margin: 0 1 1 0;
+        text-align: center;
+        content-align: center middle;
     }
     #right-panel {
         width: 42;
-        background: #0B0C10;
+        background: #0F172A;
     }
     #code-viewer {
         height: 1fr;
-        background: #0B0C10;
-        border: round #4B0082;                      /* Indigo */
-        border-title-color: #FFD700;
+        background: #0F172A;
+        border: panel #6366F1;
+        border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
+        margin: 1 1 1 0;
     }
     
-    .sidebar-heading { margin-top: 1; margin-bottom: 0; text-style: bold; }
-    .sidebar-button { width: 100%; height: 1; border: none; background: transparent; color: #B388FF; content-align: left middle; padding-left: 2; }
-    .sidebar-button:hover { background: #1E1630; color: #FFD700; }
+    .sidebar-heading { 
+        margin-top: 1; 
+        margin-bottom: 0; 
+        text-style: bold; 
+        color: #8B5CF6; 
+        padding-left: 1;
+    }
+    .sidebar-button { 
+        width: 100%; 
+        height: 1; 
+        border: none; 
+        background: transparent; 
+        color: #94A3B8; 
+        content-align: left middle; 
+        padding-left: 2; 
+        transition: background 200ms, color 200ms;
+    }
+    .sidebar-button:hover { 
+        background: #334155; 
+        color: #A78BFA; 
+        text-style: bold; 
+    }
     
-    #center-panel { width: 1fr; background: #0B0C10; padding: 0 1; }
+    #center-panel { 
+        width: 1fr; 
+        background: #0F172A; 
+        padding: 1 1; 
+    }
 
     .chat-log-cls {
-        background: #0B0C10;
-        color: #E2E8F0;
-        border: round #DC143C;                      /* Crimson */
-        border-title-color: #FFD700;
+        background: #1E293B;
+        color: #F8FAFC;
+        border: panel #E11D48;
+        border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
-        scrollbar-color: #7851A9;
-        scrollbar-color-hover: #FFD700;
-        scrollbar-color-active: #FFD700;
-        scrollbar-background: #121212;
+        scrollbar-color: #8B5CF6;
+        scrollbar-color-hover: #A78BFA;
+        scrollbar-color-active: #A78BFA;
+        scrollbar-background: #0F172A;
         scrollbar-size-vertical: 1;
     }
     
     #typewriter-box {
-        background: #0B0C10;
-        color: #E2E8F0;
+        background: #1E293B;
+        color: #F8FAFC;
         height: auto;
         min-height: 3;
         max-height: 30;
-        border: round #FFD166;
-        border-title-color: #FFD700;
+        border: panel #F59E0B;
+        border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
         overflow-y: scroll;
         display: none;
+        margin-top: 1;
     }
     #typewriter-box.-active {
         display: block;
@@ -353,46 +428,67 @@ class DivTubeAgentApp(App):
 
     #command-input {
         dock: bottom;
-        margin-top: 1;
-        border: round #DC143C;                      /* Crimson */
-        background: #000000;
-        color: #FFD700;                             /* Gold */
-        text-style: bold;
+        width: 100%;
+        height: 3;
+        margin: 1;
+        background: #1E293B;
+        border: tall #334155;
     }
-    #command-input:focus { border: round #FFD700; } /* Gold */
+    #command-input.expanded {
+        height: 15;
+    }
+    #command-input:focus { 
+        border: panel #F43F5E; 
+    }
 
-    .cmd-list { padding: 1 0 0 0; }
-    .muted { color: #6B7280; }
-    .glyph-container { dock: bottom; content-align: center middle; padding-bottom: 1; height: 9; color: #FFD700; }
+    .cmd-list { padding: 1 0 0 1; }
+    .muted { color: #64748B; }
+    .glyph-container { 
+        dock: bottom; 
+        content-align: center middle; 
+        padding-bottom: 1; 
+        height: 9; 
+        color: #8B5CF6; 
+    }
 
     #loading-bar { display: none; height: 1; margin: 1 0; }
-    #loading-bar.working > Bar > .bar--bar { color: #DC143C; }
-    #loading-bar.finished > Bar > .bar--bar { color: #FFD700; }
-    #loading-bar.working .bar--bar { color: #DC143C; }
-    #loading-bar.finished .bar--bar { color: #FFD700; }
+    #loading-bar.working > Bar > .bar--bar { color: #E11D48; }
+    #loading-bar.finished > Bar > .bar--bar { color: #10B981; }
+    #loading-bar.working .bar--bar { color: #E11D48; }
+    #loading-bar.finished .bar--bar { color: #10B981; }
 
     ModelSelectScreen {
         align: center middle;
-        background: rgba(11,12,16,0.85);            /* Obsidian */
+        background: rgba(15, 23, 42, 0.90);
     }
     #model-dialog {
         width: 60;
         height: 20;
-        background: #121212;
-        border: round #7851A9;                      /* Royal Purple */
-        border-title-color: #FFD700;
+        background: #1E293B;
+        border: panel #8B5CF6;
+        border-title-color: #F8FAFC;
         padding: 0;
+        box-sizing: border-box;
     }
     #model-title {
-        background: #4B0082;                         /* Indigo */
-        color: #FFD700;                             /* Gold */
+        background: #334155;
+        color: #A78BFA;
         text-style: bold;
         content-align: center middle;
         width: 100%;
         padding: 1;
+        border-bottom: solid #8B5CF6;
     }
-    OptionList { background: transparent; border: none; padding: 0 1; }
-    OptionList > .option-list--option-highlighted { background: #DC143C; color: #FFD700; text-style: bold; } /* Crimson / Gold */
+    OptionList { 
+        background: transparent; 
+        border: none; 
+        padding: 1 1; 
+    }
+    OptionList > .option-list--option-highlighted { 
+        background: #334155; 
+        color: #F8FAFC; 
+        text-style: bold; 
+    }
     '''
     
     BINDINGS = [
@@ -413,6 +509,7 @@ class DivTubeAgentApp(App):
         self.forge = VideoForgeService()
         self.cleri = CleriBridge()
         self.health = BytecodeHealthBridge()
+        self.substrate = SubstrateOsmosisService(self.memory)
         self.archive = ArchiveBridge()
         self.prompt = PromptService()
         self.cmd_history = []
@@ -423,6 +520,26 @@ class DivTubeAgentApp(App):
         self._agent_busy = False
         self._agent_lock = threading.Lock()
         self.setup_commands()
+
+    async def on_mount(self):
+        await scd64_service.start()
+        
+        # Connect radar widget updates
+        def on_scd64_update(state):
+            try:
+                radar = self.query_one("#radar")
+                self.call_from_thread(radar.update_state, state)
+            except Exception:
+                pass
+        scd64_service.subscribe(on_scd64_update)
+
+        # Trigger initial radar tick loop
+        async def radar_loop():
+            while scd64_service.running:
+                await scd64_service.tick()
+                await asyncio.sleep(0.5)
+        
+        asyncio.create_task(radar_loop())
 
     # ── Agent run controller ─────────────────────────────────────────
     def begin_agent(self):
@@ -499,7 +616,70 @@ class DivTubeAgentApp(App):
         r("/code",    handle_code,                                             "View code in editor",    "/code <path>")
         self.registry.register("/analyze", lambda ui, args: ui.agent.run_command("1", args[0] if args else "", ui.log_msg, ui), "Analyze URL", "/analyze <url>")
         self.registry.register("/download", lambda ui, args: ui.agent.run_command("2", args[0] if args else "", ui.log_msg, ui), "Download URL", "/download <url>")
-        self.registry.register("/memory", lambda ui, args: ui.log_msg(f"Memory Cells: {ui.memory.count()}"), "Show memory", "/memory")
+        def handle_memory(ui, args):
+            sub = args[0].lower() if args else ""
+
+            if sub == "scan":
+                ui.log_msg(f"[bold #00E5FF]⬡ Running substrate osmosis scan...[/]")
+                ui.substrate.scan_all_async(ui.log_msg)
+                return
+
+            if sub == "status":
+                summary = ui.substrate.anomaly_summary()
+                states = ui.substrate.get_all_osmosis_states()
+                lines = [
+                    f"\n[bold #00E5FF]⬡ SUBSTRATE STATUS ⬡[/]",
+                    f"  [{SUCCESS}]●[/] Tracked cells: [{PURPLE_LT}]{summary['total_cells']}[/]",
+                    f"  [{SUCCESS}]●[/] Silent: [{SUCCESS}]{summary['silent']}[/]  Anomalous: [{ERROR}]{summary['anomalies']}[/]",
+                    f"  [{MUTED}]   Total scans: {summary['total_scans']}  Last: {summary['last_scan']}[/]",
+                ]
+                if states:
+                    lines.append("")
+                    for s in states[:10]:
+                        kind = s.get('anomaly_kind', 'none')
+                        glyph = '☣' if kind == 'antigen_match' else '⚠' if kind == 'baseline_drift' else '◉' if kind == 'concentration' else '◇'
+                        color = ERROR if s['status'] == 'anomaly' else SUCCESS
+                        lines.append(
+                            f"  [{color}]{glyph}[/] [{PURPLE_LT}]{s.get('key', s['cell_id'])}[/]  "
+                            f"[{MUTED}]sim={s['similarity']:.3f} drift={s['drift']:.3f}[/]  "
+                            f"[{color}]{s['status']}[/]"
+                        )
+                ui.log_msg("\n".join(lines))
+                return
+
+            if sub == "list":
+                cells = ui.memory.list_cells()
+                lines = [f"\n[bold {PURPLE_LT}]❖ ALL MEMORY CELLS ❖[/]"]
+                for cell in cells:
+                    osm = ui.substrate.get_cell_osmosis(cell['cell_id'])
+                    osm_tag = ""
+                    if osm and osm['status'] == 'anomaly':
+                        osm_tag = f" [{ERROR}]⚠ {osm['anomaly_kind']}[/]"
+                    elif osm:
+                        osm_tag = f" [{SUCCESS}]✓[/]"
+                    lines.append(
+                        f"  [{GOLD}]{cell['cell_id']}[/]  "
+                        f"[{PURPLE_LT}]{cell['key']}[/] = "
+                        f"[{MUTED}]{cell['preview']}[/]"
+                        f"{osm_tag}"
+                    )
+                ui.log_msg("\n".join(lines))
+                return
+
+            # Default: show stats summary
+            stats = ui.memory.cell_stats()
+            osm_summary = ui.substrate.anomaly_summary()
+            ui.log_msg(
+                f"[bold {PURPLE_LT}]Memory Cells:[/] {stats['occupied']}/{stats['capacity']} occupied  "
+                f"| [dim]{stats['dormant']} dormant[/]  "
+                f"| [dim]{stats['total_reads']} total reads[/]  "
+                f"| [dim]{stats['critiques']} critiques[/]\n"
+                f"  [bold #00E5FF]Substrate:[/] {osm_summary['total_cells']} tracked  "
+                f"| [{ERROR}]{osm_summary['anomalies']}[/] anomalies  "
+                f"| {osm_summary['total_scans']} scans\n"
+                f"  [{MUTED}]Use /memory scan · /memory status · /memory list[/]"
+            )
+        self.registry.register("/memory", handle_memory, "Show memory & substrate", "/memory [scan|status|list]")
 
         def handle_deploy(ui, args):
             ui.log_msg("\n[bold #B388FF]⚡ Deploying...[/]")
@@ -510,10 +690,12 @@ class DivTubeAgentApp(App):
                 try:
                     cmd = ["bash", "-ic", "npm run deploy"]
                     result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
+                    output = result.stdout + "\n" + result.stderr
+                    output = output.replace("[", "\\[")
                     if result.returncode == 0:
-                        ui.log_msg(f"\n[bold #7CFF8B]✓ Deployment successful[/]\n{result.stdout[-1000:]}")
+                        ui.log_msg(f"\n[bold #7CFF8B]✓ Deployment successful[/]\n{output[-1000:]}")
                     else:
-                        ui.log_msg(f"\n[bold #FF5C7A]✗ Deployment failed (code {result.returncode})[/]\n{result.stderr[-1000:]}")
+                        ui.log_msg(f"\n[bold #FF5C7A]✗ Deployment failed (code {result.returncode})[/]\n{output[-1000:]}")
                 except Exception as e:
                     ui.log_msg(f"\n[bold #FF5C7A]✗ Deployment error: {e}[/]")
             import threading
@@ -534,6 +716,8 @@ class DivTubeAgentApp(App):
                     cmd = ["bash", "-ic", bash_cmd]
                     result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
                     output = result.stdout + "\n" + result.stderr
+                    # Escape brackets to prevent Rich from attempting to parse compiler output as markup
+                    output = output.replace("[", "\\[")
                     # Limit output to prevent UI freeze, showing the bottom (most relevant part)
                     if len(output) > 4000:
                         output = "... [truncated] ...\n" + output[-4000:]
@@ -563,6 +747,7 @@ class DivTubeAgentApp(App):
                         cmd = [cmd_path] + python_cmd[1:] + args
                         result = subprocess.run(cmd, cwd=proj_root, capture_output=True, text=True)
                         output = result.stdout + "\n" + result.stderr
+                        output = output.replace("[", "\\[")
                         if len(output) > 4000:
                             output = "... [truncated] ...\n" + output[-4000:]
                         if result.returncode == 0:
@@ -1430,10 +1615,9 @@ class DivTubeAgentApp(App):
     def on_unmount(self):
         if getattr(self, "turbo", None):
             self.turbo.shutdown()
-    @on(Input.Submitted, "#command-input")
-    def handle_command_input_submitted(self, event):
+    @on(CommandSubmitted)
+    def on_command_submitted(self, event: CommandSubmitted):
         val = event.value.strip()
-        event.input.value = ""
         if val:
             if not self.cmd_history or self.cmd_history[-1] != val:
                 self.cmd_history.append(val)
@@ -1495,11 +1679,11 @@ class DivTubeAgentApp(App):
                 
             if cmd:
                 inp = self.query_one("#command-input")
-                inp.value = cmd
+                inp.text = cmd
                 inp.focus()
             else:
                 inp = self.query_one("#command-input")
-                inp.value = text
+                inp.text = text
                 inp.focus()
 
     @on(events.Key)
@@ -1514,48 +1698,48 @@ class DivTubeAgentApp(App):
         if event.key == "up":
             if self.cmd_history and self.cmd_index > 0:
                 self.cmd_index -= 1
-                input_widget.value = self.cmd_history[self.cmd_index]
-                input_widget.cursor_position = len(input_widget.value)
+                input_widget.text = self.cmd_history[self.cmd_index]
+                input_widget.cursor_location = (0, len(input_widget.text))
                 event.prevent_default()
         elif event.key == "down":
             if self.cmd_history and self.cmd_index < len(self.cmd_history) - 1:
                 self.cmd_index += 1
-                input_widget.value = self.cmd_history[self.cmd_index]
-                input_widget.cursor_position = len(input_widget.value)
+                input_widget.text = self.cmd_history[self.cmd_index]
+                input_widget.cursor_location = (0, len(input_widget.text))
                 event.prevent_default()
             elif self.cmd_history and self.cmd_index == len(self.cmd_history) - 1:
                 self.cmd_index = len(self.cmd_history)
-                input_widget.value = ""
+                input_widget.text = ""
                 event.prevent_default()
         elif event.key == "tab":
             self._complete_at_reference(input_widget)
             event.prevent_default()
-    @on(Input.Changed, "#command-input")
-    def on_command_input_changed(self, event):
-        val = event.value
-        input_widget = event.input
-        pos = input_widget.cursor_position
-        if pos > 0 and pos <= len(val) and val[pos - 1] == "@":
-            if pos == 1 or val[pos - 2] in (" ", "\t"):
+    @on(TextArea.Changed, "#command-input")
+    def on_input_changed(self, event: TextArea.Changed):
+        input_widget = event.text_area
+        val = input_widget.text
+        row, col = input_widget.cursor_location
+        if row == 0 and col > 0 and col <= len(val) and val[col - 1] == "@":
+            if col == 1 or val[col - 2] in (" ", "\t", "\n"):
                 def on_selected(path):
                     if path:
-                        new_val = val[:pos - 1] + "@" + path + " " + val[pos:]
-                        input_widget.value = new_val
-                        input_widget.cursor_position = (pos - 1) + len("@" + path + " ")
+                        new_val = val[:col - 1] + "@" + path + " " + val[col:]
+                        input_widget.text = new_val
+                        input_widget.cursor_location = (row, (col - 1) + len("@" + path + " "))
                     input_widget.focus()
                 self.push_screen(FileSelectScreen(getattr(self, "archive", None)), on_selected)
 
     def _complete_at_reference(self, input_widget):
         """Tab-complete ``@`` file references in the command input."""
         import os
-        val = input_widget.value
-        cursor = input_widget.cursor_position
+        val = input_widget.text
+        row, cursor = input_widget.cursor_location
         if cursor == 0:
             return
 
         # find the start of the current token under cursor
         start = cursor
-        while start > 0 and val[start - 1] not in (" ", "\t"):
+        while start > 0 and val[start - 1] not in (" ", "\t", "\n"):
             start -= 1
 
         token = val[start:cursor]
@@ -1592,8 +1776,8 @@ class DivTubeAgentApp(App):
         if len(matches) == 1:
             # auto-complete
             new_val = val[:start] + "@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/") + val[cursor:]
-            input_widget.value = new_val
-            input_widget.cursor_position = start + len("@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/"))
+            input_widget.text = new_val
+            input_widget.cursor_location = (row, start + len("@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/")))
         else:
             # show options in chat
             self.log_msg(f"[#6B7280]@{prefix} → {', '.join(matches)}[/]")

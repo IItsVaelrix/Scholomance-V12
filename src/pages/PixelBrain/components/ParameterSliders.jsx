@@ -1,5 +1,5 @@
 /**
- * ParameterSliders — Real-time parameter adjustment with visual feedback
+ * ParameterSliders - Real-time parameter adjustment with visual feedback
  */
 
 import { useCallback } from 'react';

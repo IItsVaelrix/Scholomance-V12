@@ -1,8 +1,7 @@
 from textual.widgets import Static
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import VerticalScroll
 from textual.app import ComposeResult
 from rich.syntax import Syntax
-from rich.text import Text
 
 
 EXT_LANG = {
@@ -98,9 +97,11 @@ class CodeBox(VerticalScroll):
             self._container.update(code)
 
         if self._filename:
-            title_widget = self.query_one(".code-title", Static)
-            if title_widget:
-                title_widget.update(f"[#B388FF]📄 {self._filename}[/]")
+            title_nodes = self.query(".code-title")
+            if title_nodes:
+                title_nodes[0].update(f"[#B388FF]📄 {self._filename}[/]")
+            else:
+                self.mount(Static(f"[#B388FF]📄 {self._filename}[/]", classes="code-title"), before=self._container)
 
     @property
     def code(self) -> str:

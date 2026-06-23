@@ -1,5 +1,5 @@
 /**
- * BugLatticeMap — Spatial Diagnostics
+ * BugLatticeMap - Spatial Diagnostics
  * Maps bug fingerprints into a deterministic 2D lattice.
  */
 

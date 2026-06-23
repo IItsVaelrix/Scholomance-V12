@@ -5,9 +5,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
   "baseline": [
     {
       "extendedRhymeKeys": [
-        "AE-open",
+        "EH-open",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -17,16 +17,16 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "TH",
           "stress": 1,
           "vowel": "EH1",
-          "vowelFamily": "AE",
+          "vowelFamily": "EH",
         },
       ],
       "word": "THE",
     },
     {
       "extendedRhymeKeys": [
-        "AA-V",
+        "AH-V",
       ],
-      "rhymeKey": "AA-V",
+      "rhymeKey": "AH-V",
       "stressPattern": "0",
       "syllableCount": 1,
       "syllables": [
@@ -36,16 +36,16 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "AA",
+          "vowelFamily": "AH",
         },
       ],
       "word": "OF",
     },
     {
       "extendedRhymeKeys": [
-        "AA-ND",
+        "AH-ND",
       ],
-      "rhymeKey": "AA-ND",
+      "rhymeKey": "AH-ND",
       "stressPattern": "0",
       "syllableCount": 1,
       "syllables": [
@@ -55,16 +55,16 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "AA",
+          "vowelFamily": "AH",
         },
       ],
       "word": "AND",
     },
     {
       "extendedRhymeKeys": [
-        "AA-open",
+        "AH-open",
       ],
-      "rhymeKey": "AA-open",
+      "rhymeKey": "AH-open",
       "stressPattern": "0",
       "syllableCount": 1,
       "syllables": [
@@ -74,7 +74,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "T",
           "stress": 0,
           "vowel": "AH0",
-          "vowelFamily": "AA",
+          "vowelFamily": "AH",
         },
       ],
       "word": "TO",
@@ -100,9 +100,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
     },
     {
       "extendedRhymeKeys": [
-        "AE-open",
+        "EH-open",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -112,7 +112,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "H",
           "stress": 1,
           "vowel": "EH1",
-          "vowelFamily": "AE",
+          "vowelFamily": "EH",
         },
       ],
       "word": "HE",
@@ -176,9 +176,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
     },
     {
       "extendedRhymeKeys": [
-        "AA-open",
+        "AW-open",
       ],
-      "rhymeKey": "AA-open",
+      "rhymeKey": "AW-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -188,7 +188,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "Y",
           "stress": 1,
           "vowel": "AW1",
-          "vowelFamily": "AA",
+          "vowelFamily": "AW",
         },
       ],
       "word": "YOU",
@@ -271,9 +271,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
     },
     {
       "extendedRhymeKeys": [
-        "AE-R",
+        "EH-R",
       ],
-      "rhymeKey": "AE-R",
+      "rhymeKey": "EH-R",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -283,16 +283,16 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "H",
           "stress": 1,
           "vowel": "EH1",
-          "vowelFamily": "AE",
+          "vowelFamily": "EH",
         },
       ],
       "word": "HER",
     },
     {
       "extendedRhymeKeys": [
-        "AE-open",
+        "EH-open",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -302,7 +302,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "SH",
           "stress": 1,
           "vowel": "EH1",
-          "vowelFamily": "AE",
+          "vowelFamily": "EH",
         },
       ],
       "word": "SHE",
@@ -385,9 +385,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
     },
     {
       "extendedRhymeKeys": [
-        "EY-open",
+        "AY-open",
       ],
-      "rhymeKey": "EY-open",
+      "rhymeKey": "AY-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -397,7 +397,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "M",
           "stress": 1,
           "vowel": "AY1",
-          "vowelFamily": "EY",
+          "vowelFamily": "AY",
         },
       ],
       "word": "MY",
@@ -423,9 +423,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
     },
     {
       "extendedRhymeKeys": [
-        "AA-T",
+        "AH-T",
       ],
-      "rhymeKey": "AA-T",
+      "rhymeKey": "AH-T",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -435,16 +435,16 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "B",
           "stress": 1,
           "vowel": "AH1",
-          "vowelFamily": "AA",
+          "vowelFamily": "AH",
         },
       ],
       "word": "BUT",
     },
     {
       "extendedRhymeKeys": [
-        "AE-open",
+        "EH-open",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "stressPattern": "1",
       "syllableCount": 1,
       "syllables": [
@@ -454,7 +454,7 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeDeep
           "onset": "B",
           "stress": 1,
           "vowel": "EH1",
-          "vowelFamily": "AE",
+          "vowelFamily": "EH",
         },
       ],
       "word": "BE",
@@ -498,9 +498,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "TH",
         "EH1",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "syllableCount": 1,
-      "vowelFamily": "AE",
+      "vowelFamily": "EH",
       "word": "THE",
     },
     {
@@ -509,9 +509,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "AH0",
         "V",
       ],
-      "rhymeKey": "AA-V",
+      "rhymeKey": "AH-V",
       "syllableCount": 1,
-      "vowelFamily": "AA",
+      "vowelFamily": "AH",
       "word": "OF",
     },
     {
@@ -521,9 +521,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "N",
         "D",
       ],
-      "rhymeKey": "AA-ND",
+      "rhymeKey": "AH-ND",
       "syllableCount": 1,
-      "vowelFamily": "AA",
+      "vowelFamily": "AH",
       "word": "AND",
     },
     {
@@ -532,9 +532,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "T",
         "AH0",
       ],
-      "rhymeKey": "AA-open",
+      "rhymeKey": "AH-open",
       "syllableCount": 1,
-      "vowelFamily": "AA",
+      "vowelFamily": "AH",
       "word": "TO",
     },
     {
@@ -554,9 +554,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "H",
         "EH1",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "syllableCount": 1,
-      "vowelFamily": "AE",
+      "vowelFamily": "EH",
       "word": "HE",
     },
     {
@@ -600,9 +600,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "Y",
         "AW1",
       ],
-      "rhymeKey": "AA-open",
+      "rhymeKey": "AW-open",
       "syllableCount": 1,
-      "vowelFamily": "AA",
+      "vowelFamily": "AW",
       "word": "YOU",
     },
     {
@@ -659,9 +659,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "EH1",
         "R",
       ],
-      "rhymeKey": "AE-R",
+      "rhymeKey": "EH-R",
       "syllableCount": 1,
-      "vowelFamily": "AE",
+      "vowelFamily": "EH",
       "word": "HER",
     },
     {
@@ -670,9 +670,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "SH",
         "EH1",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "syllableCount": 1,
-      "vowelFamily": "AE",
+      "vowelFamily": "EH",
       "word": "SHE",
     },
     {
@@ -726,9 +726,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "M",
         "AY1",
       ],
-      "rhymeKey": "EY-open",
+      "rhymeKey": "AY-open",
       "syllableCount": 1,
-      "vowelFamily": "EY",
+      "vowelFamily": "AY",
       "word": "MY",
     },
     {
@@ -750,9 +750,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "AH1",
         "T",
       ],
-      "rhymeKey": "AA-T",
+      "rhymeKey": "AH-T",
       "syllableCount": 1,
-      "vowelFamily": "AA",
+      "vowelFamily": "AH",
       "word": "BUT",
     },
     {
@@ -761,9 +761,9 @@ exports[`PhonemeEngine > Regression Contract (Corpus Sample) > keeps analyzeWord
         "B",
         "EH1",
       ],
-      "rhymeKey": "AE-open",
+      "rhymeKey": "EH-open",
       "syllableCount": 1,
-      "vowelFamily": "AE",
+      "vowelFamily": "EH",
       "word": "BE",
     },
   ],

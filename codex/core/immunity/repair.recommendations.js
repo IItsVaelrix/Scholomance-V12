@@ -1,5 +1,5 @@
 /**
- * REPAIR RECOMMENDATIONS — The Healing Layer
+ * REPAIR RECOMMENDATIONS -- The Healing Layer
  *
  * Each repair entry follows the same shape as `getRecoveryHintsForError`
  * from `codex/core/pixelbrain/bytecode-error.js`, so downstream agents
@@ -89,11 +89,11 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
 
   'repair.known-violation.cleansing': {
     key: 'repair.known-violation.cleansing',
-    title: 'Forbidden symbol — replaced during cleansing',
+    title: 'Forbidden symbol -- replaced during cleansing',
     suggestions: [
       'This symbol was removed in the Corruption Cleansing of 2026-04-26.',
       'Look up the replacement in the linked encyclopedia entry.',
-      'Do not re-introduce the symbol under a new name — that is detected by Layer 2 (adaptive).',
+      'Do not re-introduce the symbol under a new name -- that is detected by Layer 2 (adaptive).',
     ],
     constraints: ['Purged symbols must not return.'],
     invariants: ['!forbiddenSymbols.some(s => content.includes(s))'],
@@ -189,7 +189,7 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     suggestions: [
       'A per-school resolver that ignores its `school` argument is a dead skin: either honor the argument or delete the parameter and rename the function to reflect that the palette is school-invariant.',
       'The authoritative token color is `bytecode.color` from the `phonetic_color` amplifier plugin (family -> school -> hue). Treat it as the single source; reserve the rhyme resonance registry as the only override (rhyme mode).',
-      'Retire redundant generators and the deep `color = a || b || c || d || e` fallback stack — each fallback tier should resolve a distinct, documented case, not re-derive the same family hue.',
+      'Retire redundant generators and the deep `color = a || b || c || d || e` fallback stack -- each fallback tier should resolve a distinct, documented case, not re-derive the same family hue.',
     ],
     constraints: [
       'One generator owns family -> color; overrides must be explicit and scoped (e.g. rhyme resonance), not silent fallbacks.',
@@ -207,19 +207,39 @@ export const REPAIR_RECOMMENDATIONS = Object.freeze({
     key: 'repair.overlay-metrics.inherit',
     title: 'Keep measured Truesight overlay-word glyph advance equal to the canvas measurement',
     suggestions: [
-      'Signify rarity / emphasis on a measured overlay word with GLOW (text-shadow, color, filter) — never with font-weight, letter-spacing, font-size, or text-transform, which change the rendered glyph advance the canvas measured.',
+      'Signify rarity / emphasis on a measured overlay word with GLOW (text-shadow, color, filter) -- never with font-weight, letter-spacing, font-size, or text-transform, which change the rendered glyph advance the canvas measured.',
       'If a word class must carry a metric property, set it to `inherit` so the painted advance matches the wrapper base font (adaptiveWhitespaceGrid) the box was measured at.',
-      'To style the non-word filler between words, target it through a `:not(.truesight-word):not(.grimoire-word)…` complement selector — those spans are excluded from the measured lattice, so metric changes on them are safe.',
+      'To style the non-word filler between words, target it through a `:not(.truesight-word):not(.grimoire-word)...` complement selector -- those spans are excluded from the measured lattice, so metric changes on them are safe.',
     ],
     constraints: [
       'A measured overlay word stays positioned by its canvas measureText() box; the painted glyphs must not drift out of it.',
       'Any advance-changing metric property on a measured-word selector must resolve to `inherit`.',
     ],
     invariants: [
-      'measureText(word @ base font) === painted advance(word) — boxes stay in sync, the whole word stays clickable, later words do not drift.',
+      'measureText(word @ base font) === painted advance(word) -- boxes stay in sync, the whole word stays clickable, later words do not drift.',
     ],
     references: ['BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT'],
     canonical: '.vb-rarity--rare { text-shadow: 0 0 4px currentColor; }  /* glow, not font-weight/letter-spacing */',
+  },
+
+  'repair.syntax-prion.sanitize': {
+    key: 'repair.syntax-prion.sanitize',
+    title: 'Remove stray characters that break syntax before the parser even runs',
+    suggestions: [
+      'Delete invisible / zero-width characters -- they are invisible in editors but break parsers.',
+      'Replace smart quotes / em-dashes with ASCII equivalents (e.g. curly quotes -> straight, em-dash -> --).',
+      'Check for copy-paste artifacts from LLMs or word processors that introduce typographic unicode.',
+    ],
+    constraints: [
+      'All source files must consist of standard printable ASCII + expected Unicode for string literals.',
+      'No zero-width, non-joiner, BOM, soft-hyphen, or bidirectional-override characters allowed.',
+    ],
+    invariants: [
+      'No character in [\\u200B-\\u200F, \\uFEFF, \\u00AD, \\u2060-\\u2064]',
+      'No character in [\\u201C\\u201D\\u2018\\u2019\\u2014\\u2013\\u00A0\\u2026]',
+    ],
+    references: ['ARCH-2026-04-26-IMMUNE-SYSTEM.md'],
+    canonical: null,
   },
 });
 

@@ -103,7 +103,10 @@ export function LayerStackPanel({
         return (
           <div
             key={idx}
+            role="button"
+            tabIndex={0}
             onClick={() => onActiveLayerChange && onActiveLayerChange(idx)}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onActiveLayerChange && onActiveLayerChange(idx); }}
             style={{
               display: 'flex',
               alignItems: 'center',

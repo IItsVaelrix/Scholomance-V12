@@ -101,11 +101,7 @@ function findOptimalSplit(intervocalic) {
     const onsetValid = Phonotactics.validateOnset(onset).valid;
     const codaValid = Phonotactics.validateCoda(coda).valid;
     
-    // Additionally check SSP for both onset and coda
-    const onsetSSP = hasRisingSonority(onset);
-    const codaSSP = hasFallingSonority(coda);
-    
-    if (onsetValid && codaValid && onsetSSP && codaSSP) {
+    if (onsetValid && codaValid) {
       return splitAt;
     }
   }

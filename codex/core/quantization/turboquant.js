@@ -43,6 +43,10 @@ export function dequantize4BitToF32(value) {
 /**
  * Estimates the inner product between two TurboQuant-compressed buffers.
  *
+ * Both buffers empty means both source vectors had zero norm ("silence"
+ * emitted by quantizeVectorJS). Two silent vectors are identical by
+ * definition, so they score a perfect match rather than 0.
+ *
  * @param {Uint8Array} b1
  * @param {Uint8Array} b2
  * @param {number} n1
@@ -50,6 +54,13 @@ export function dequantize4BitToF32(value) {
  * @returns {number}
  */
 export function estimateInnerProduct(b1, b2, n1, n2) {
+  // Honest silence: a zero-norm vector emits an empty signature. If both
+  // sides are silence, they are by definition identical, so report a perfect
+  // match (n1*n2) rather than 0. Mixed silence/real still returns 0 so a real
+  // motion never accidentally matches a motionless archetype.
+  if (b1 && b2 && b1.length === 0 && b2.length === 0) {
+    return n1 * n2;
+  }
   if (!b1 || !b2 || b1.length === 0 || b2.length === 0 || b1.length !== b2.length) {
     return 0;
   }
@@ -62,7 +73,7 @@ export function estimateInnerProduct(b1, b2, n1, n2) {
     const byte2 = b2[i];
 
     // Direct lookup from precomputed float map
-    sum += (DEQUANT_MAP[byte1 >> 4] * DEQUANT_MAP[byte2 >> 4]) + 
+    sum += (DEQUANT_MAP[byte1 >> 4] * DEQUANT_MAP[byte2 >> 4]) +
            (DEQUANT_MAP[byte1 & 0x0f] * DEQUANT_MAP[byte2 & 0x0f]);
   }
 

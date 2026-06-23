@@ -1,0 +1,22 @@
+[Unit]
+# ─────────────────────────────────────────────────────────────────────────────
+# scholomance-ollama.service — Ollama inference server (SteamDeck Brain dep)
+# ─────────────────────────────────────────────────────────────────────────────
+# Supervises `ollama serve` so the brain daemon's only runtime dependency is
+# always available. Installed/enabled by install.sh as a systemd --user unit.
+#
+# This file is a TEMPLATE: @OLLAMA_BIN@ is substituted by install.sh.
+Description=Ollama inference server (Scholomance Brain dependency)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=@OLLAMA_BIN@ serve
+Restart=always
+RestartSec=3
+# Ollama keeps the model warm; give it room and don't OOM-kill aggressively.
+OOMScoreAdjust=-200
+
+[Install]
+WantedBy=default.target

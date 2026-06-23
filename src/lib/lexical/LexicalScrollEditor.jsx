@@ -27,7 +27,7 @@ const lexicalTheme = {
 };
 
 // Each scroll line is its own paragraph, but Lexical's root.getTextContent()
-// joins top-level blocks with '\n\n' — which doubled newlines on every save/change.
+// joins top-level blocks with '\n\n' - which doubled newlines on every save/change.
 // Join blocks with a single '\n' so the round-tripped content matches the source.
 // Must be called within a Lexical read/update context.
 function $getScrollText() {
@@ -472,7 +472,7 @@ const LexicalScrollEditor = forwardRef(({
 
     let suggestionsList = [];
 
-    // Spelling corrections first — independent of the predictor, so they surface
+    // Spelling corrections first - independent of the predictor, so they surface
     // even when predictive completion is off or not yet ready.
     if (checkSpelling && getSpellingSuggestions) {
       try {
@@ -580,6 +580,7 @@ const LexicalScrollEditor = forwardRef(({
       });
       return count;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content, analyzedDocument, lineSyllableCounts]);
 
   const isQuarantined = useMemo(() => {
@@ -734,5 +735,7 @@ const LexicalScrollEditor = forwardRef(({
     </div>
   );
 });
+
+LexicalScrollEditor.displayName = 'LexicalScrollEditor';
 
 export default LexicalScrollEditor;

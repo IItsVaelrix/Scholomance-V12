@@ -1,5 +1,5 @@
 /**
- * ActivityFeed — Chronological activity timeline
+ * ActivityFeed - Chronological activity timeline
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -41,7 +41,7 @@ function formatTime(dateStr) {
 }
 
 /**
- * HeartbeatPulse — animated heart that pulses for 1.5s
+ * HeartbeatPulse - animated heart that pulses for 1.5s
  */
 function HeartbeatPulse({ agentId }) {
     return (
@@ -133,7 +133,7 @@ export default function ActivityFeed({ activity }) {
                     className={`activity-live-toggle ${isLive ? 'activity-live-toggle--active' : ''}`}
                     onClick={() => setIsLive(prev => !prev)}
                     aria-label={isLive ? 'Pause live updates' : 'Resume live updates'}
-                    title={isLive ? 'Live updates active — click to pause' : 'Live updates paused — click to resume'}
+                    title={isLive ? 'Live updates active - click to pause' : 'Live updates paused - click to resume'}
                 >
                     <span className="activity-live__dot" />
                     {isLive ? 'LIVE' : 'PAUSED'}

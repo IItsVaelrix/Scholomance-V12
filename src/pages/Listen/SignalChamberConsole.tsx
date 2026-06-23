@@ -1,8 +1,8 @@
 /**
- * SignalChamberConsole.tsx — React mount for SignalChamberScene
+ * SignalChamberConsole.tsx - React mount for SignalChamberScene
  * ─────────────────────────────────────────────────────────────
  * Attaches to the shared Phaser game created by AlchemicalLabBackground.
- * Does NOT create its own game — uses the unified game instance.
+ * Does NOT create its own game - uses the unified game instance.
  * 
  * This component:
  * - Gets SignalChamberScene from shared game
@@ -21,7 +21,7 @@ import { useAmbientPlayer } from '../../hooks/useAmbientPlayer';
 import { getSharedPhaserGame } from './AlchemicalLabBackground';
 import { getSchoolAudioConfig } from '../../lib/ambient/schoolAudio.config';
 // The scene class is created inside buildSignalChamberScene(Phaser), so there
-// is no exported class to import — this structural type is the console's
+// is no exported class to import - this structural type is the console's
 // contract with the scene instance.
 type SignalChamberSceneType = {
   onPlayPause?: () => void;
@@ -89,7 +89,7 @@ export const SignalChamberConsole: React.FC<SignalChamberConsoleProps> = ({
 
   const currentSchoolId = overrideSchoolId || rawSchoolId;
 
-  // ── Animation AMP Integration — DISABLED for stability ──────────────────
+  // ── Animation AMP Integration - DISABLED for stability ──────────────────
 
   // const orbIntent = useMemo(() => ({
   //   version: 'v1.0',
@@ -174,16 +174,25 @@ export const SignalChamberConsole: React.FC<SignalChamberConsoleProps> = ({
 
       const sharedGame = getSharedPhaserGame();
       if (!sharedGame) {
-        if (typeof globalThis.requestAnimationFrame === 'undefined') return;
-        let rafId = globalThis.requestAnimationFrame(function checkGame() {
+        // Guard against both undefined and non-callable values (jsdom/test
+        // environments sometimes leave a non-function sentinel on globalThis).
+        const raf = globalThis.requestAnimationFrame;
+        if (typeof raf !== 'function') return;
+        let rafId = raf(function checkGame() {
           const game = getSharedPhaserGame();
           if (game && game.scene.isActive('SignalChamberScene')) {
             onGameReady(game);
           } else {
-            rafId = globalThis.requestAnimationFrame(checkGame);
+            const next = globalThis.requestAnimationFrame;
+            if (typeof next === 'function') {
+              rafId = next(checkGame);
+            }
           }
         });
-        return () => globalThis.cancelAnimationFrame(rafId);
+        return () => {
+          const caf = globalThis.cancelAnimationFrame;
+          if (typeof caf === 'function') caf(rafId);
+        };
       }
 
       onGameReady(sharedGame);
@@ -254,7 +263,7 @@ export const SignalChamberConsole: React.FC<SignalChamberConsoleProps> = ({
         aria-hidden="true"
       />
 
-      {/* Live spectral mandala overlay — reacts to the playing audio, hued to
+      {/* Live spectral mandala overlay - reacts to the playing audio, hued to
           the active school. Synthetic spectrum when paused so the orb stays alive. */}
       <div className="signal-chamber-fft" aria-hidden="true">
         <BytecodeVisualiser

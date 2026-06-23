@@ -99,14 +99,14 @@ test('TrueSight styling does not morph glyph advance width', async ({ page }) =>
     });
   }, WORDS);
 
-  // eslint-disable-next-line no-console
+   
   console.log('\nCROSS-MODE ADVANCE DELTA');
   for (const r of results) {
-    // eslint-disable-next-line no-console
+     
     console.log(`  ${r.word.padEnd(15)} plain=${r.plain}  styled=${r.styled}  Δ=${r.delta}px`);
   }
   const worst = results.reduce((m, r) => Math.max(m, r.delta), 0);
-  // eslint-disable-next-line no-console
+   
   console.log(`  worst Δ = ${worst.toFixed(3)}px`);
 
   for (const r of results) {

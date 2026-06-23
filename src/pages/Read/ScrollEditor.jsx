@@ -190,7 +190,7 @@ function emitWordActivation(trigger, wordPayload, anchorRect, onWordActivate) {
 }
 
 // ── Pillar 5: De-jittered caret measurement ──────────────────────────────────
-// A single persistent, offscreen canvas measures text — no per-keystroke DOM
+// A single persistent, offscreen canvas measures text - no per-keystroke DOM
 // allocation, so typing produces no GC churn. Computed font styles and a
 // per-character width matrix are cached and invalidated only on an explicit
 // layout-shift trigger (see invalidateCaretMeasurementCache).
@@ -380,7 +380,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
 
 /**
  * Handle exposed via forwardRef. Callers may only call methods listed here.
- * If a method is not in this typedef it does not exist on the ref — add it
+ * If a method is not in this typedef it does not exist on the ref - add it
  * here and to useImperativeHandle together or not at all.
  *
  * @typedef {{
@@ -426,7 +426,7 @@ const ScrollEditor = forwardRef(/**
   plsPhoneticFeatures = null,
   tokenWeights = null,
   theme = null,
-  // Test-injection seams (bug a2812103) — let JSDOM-bound tests bypass real
+  // Test-injection seams (bug a2812103) - let JSDOM-bound tests bypass real
   // layout measurement. Production code never passes these.
   forceTopology = null,
   initialContainerWidth = null,
@@ -572,9 +572,9 @@ const ScrollEditor = forwardRef(/**
 
   useLayoutEffect(() => {
     // When forceTopology is supplied (e.g., JSDOM tests), skip real
-    // measurement entirely — the injected topology IS the authoritative state.
+    // measurement entirely - the injected topology IS the authoritative state.
     if (forceTopology) return undefined;
-    // EDIT mode types rapidly — skip continuous measurement while composing.
+    // EDIT mode types rapidly - skip continuous measurement while composing.
     // BUT never skip when Truesight is on: the annotation overlay positions every
     // word box against this topology, so starving it leaves the lattice unable to
     // instantiate. (The ResizeObserver below fires on size/font change, not on
@@ -586,7 +586,7 @@ const ScrollEditor = forwardRef(/**
     // Initial measurement covers Gutter alignment in all non-EDIT modes.
     updateTypography(true);
 
-    // NEUTRAL is static — initial measurement is sufficient; skip observer.
+    // NEUTRAL is static - initial measurement is sufficient; skip observer.
     if (activeIdeMode === "NEUTRAL") return undefined;
 
     // TRUESIGHT needs continuous tracking for overlay layout.
@@ -604,10 +604,11 @@ const ScrollEditor = forwardRef(/**
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateTypography, forceTopology, activeIdeMode]);
 
   // Chunked relayout: each raw line's measured token geometry is cached by its
-  // text, so typing only re-measures the edited line — the rest are reused. The
+  // text, so typing only re-measures the edited line - the rest are reused. The
   // whole lattice no longer regenerates per keystroke, which is what let us drop
   // the typing-freeze (and the desync it caused) on the input path below.
   const overlayLineCacheRef = useRef({ sig: '', map: new Map() });
@@ -1110,7 +1111,7 @@ const ScrollEditor = forwardRef(/**
     onCursorChange?.({ line, col, offset: pos });
   }, [onCursorChange, activeIdeMode]);
 
-  // Pillar 5: explicit cache-invalidation trigger — flush cached glyph metrics
+  // Pillar 5: explicit cache-invalidation trigger - flush cached glyph metrics
   // when a physical layout shift (adaptive topology / Truesight scale) occurs.
   useEffect(() => {
     invalidateCaretMeasurementCache(caretMeasurementRef.current);
@@ -1288,7 +1289,7 @@ const ScrollEditor = forwardRef(/**
     // cache makes the rebuild cheap (only the edited line re-measures), so instead
     // of freezing the overlay for 400ms (which left the word boxes desynced from
     // the text mid-type) we update it every keystroke. Staging it in a transition
-    // keeps the keystroke itself non-blocking — the caret stays on the synchronous
+    // keeps the keystroke itself non-blocking - the caret stays on the synchronous
     // `content` update above; the overlay catches up within a frame.
     if (isTruesight) {
       startTransition(() => setContentForOverlay(nextValue));
@@ -1309,6 +1310,7 @@ const ScrollEditor = forwardRef(/**
     completionsTimeoutRef.current = setTimeout(() => {
       updateCompletions(nextValue, pos);
     }, 120);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emitCursorChange, onContentChange, updateCompletions, isTruesight, syncOverlayToContent]);
 
   const editorMotionProps = reducedMotion
@@ -1421,7 +1423,7 @@ const ScrollEditor = forwardRef(/**
               style={{
                 ...cursorSync?.overlayStyles,
                 // Edit + Truesight: lift the overlay above the textarea but keep the
-                // LAYER click-through — only the word shells (pointer-events:auto)
+                // LAYER click-through - only the word shells (pointer-events:auto)
                 // catch clicks; whitespace/empty space falls through to the textarea
                 // so caret placement, scrolling and typing all still work.
                 ...(isTruesight && isEditable ? { zIndex: 'var(--z-above)', pointerEvents: 'none' } : {}),
@@ -1462,7 +1464,7 @@ const ScrollEditor = forwardRef(/**
                         const pixelWidth = tokenWidth || null;
                         const annotationWidth = Math.max(1, pixelWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
                         // Tile the clickable box to the next glyph token's left edge so
-                        // the entire word — including its trailing edge — is hittable.
+                        // the entire word - including its trailing edge - is hittable.
                         // Each word div then abuts the next with no dead zone, mirroring
                         // the procedural overlay formula (token.x is cumulative width).
                         const nextGlyph = tokArr.slice(tokIdx + 1).find((t) => !t.isWhitespace);
@@ -1562,7 +1564,7 @@ const ScrollEditor = forwardRef(/**
                                 anchorRect: event.currentTarget.getBoundingClientRect(),
                               });
                               // While editing, a word click opens the tooltip AND drops
-                              // the caret into the word so you can keep typing there —
+                              // the caret into the word so you can keep typing there  - 
                               // the shell intercepted the click, so place the caret by hand.
                               if (isEditable && textareaRef.current) {
                                 const ta = textareaRef.current;

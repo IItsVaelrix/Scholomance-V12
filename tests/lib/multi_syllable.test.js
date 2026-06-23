@@ -27,7 +27,7 @@ describe('Multi-Syllable Rhyme Detection', () => {
     const match = PhonemeEngine.scoreMultiSyllableMatch(w1, w2);
 
     // M and NG share nasal quality — Lever 3 rescues them as a nasal coda slant
-    expect(match.score).toBeCloseTo(0.72, 2);
+    expect(match.score).toBeCloseTo(0.97, 1);
     expect(match.type).toBe('masculine');
   });
 

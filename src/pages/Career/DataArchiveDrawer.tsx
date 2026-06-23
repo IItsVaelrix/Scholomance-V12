@@ -2,11 +2,11 @@ import { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 /**
- * DataArchiveDrawer — the "Data Archive" surface for a generated Sigil.
+ * DataArchiveDrawer - the "Data Archive" surface for a generated Sigil.
  *
  * Renders the itemized, plain-language record (from assembleDataArchive) explaining why
  * every change was made and for what purpose. Inline slide-in drawer; closes on backdrop
- * click or Escape. Read-only and presentational — all data is computed upstream.
+ * click or Escape. Read-only and presentational - all data is computed upstream.
  */
 
 export interface ArchiveEntry {
@@ -75,7 +75,7 @@ export default function DataArchiveDrawer({ open, archive, onClose }: DataArchiv
             className="archive-drawer"
             role="dialog"
             aria-modal="true"
-            aria-label="Data Archive — change rationale"
+            aria-label="Data Archive - change rationale"
             initial={{ x: '100%' }}
             animate={{ x: 0 }}
             exit={{ x: '100%' }}

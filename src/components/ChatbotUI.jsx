@@ -10,7 +10,7 @@ export function ChatbotUI({ title = "Oracle Memory Terminal" }) {
 
   useEffect(() => {
     // Generate a simple unique ID for the session
-    setSessionId(Math.random().toString(36).substring(2, 15));
+    setSessionId(Math.random().toString(36).substring(2, 15)); // EXEMPT IMMUNE_ALLOW: math-random - UI session id
     setMessages([{ sender: 'bot', text: 'The Oracle awakens. What do you seek?' }]);
   }, []);
 
@@ -51,7 +51,7 @@ export function ChatbotUI({ title = "Oracle Memory Terminal" }) {
   };
 
   const handleClear = () => {
-    setSessionId(Math.random().toString(36).substring(2, 15));
+    setSessionId(Math.random().toString(36).substring(2, 15)); // EXEMPT IMMUNE_ALLOW: math-random - UI session id
     setMessages([{ sender: 'bot', text: 'Memory cleared. A new thread begins.' }]);
   };
 

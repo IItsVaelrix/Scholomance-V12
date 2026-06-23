@@ -28,6 +28,9 @@ export const combatBridge = new CombatBridge();
 const RELAY_URL =
   import.meta.env.VITE_COMBAT_RELAY_URL || 'ws://127.0.0.1:3001';
 
+let combatSocket = null;
+let pendingInitPacket = null;
+
 let commandHandler = null;
 
 export function connectCombatBridge() {

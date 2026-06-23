@@ -1,5 +1,6 @@
+/* eslint-disable react/no-unescaped-entities */
 /**
- * Blog article registry — one entry per published post.
+ * Blog article registry - one entry per published post.
  * Content is authored here; ArticlePage.tsx routes to the right entry by slug.
  */
 
@@ -58,7 +59,7 @@ const EMERGENT_DISPARITY: Article = {
           </p>
           <p>
             The goal is not to fix what is broken. The goal is to find <strong>latent boons</strong>
-            — small architectural bridges that make the system more coherent, powerful, reusable,
+             -  small architectural bridges that make the system more coherent, powerful, reusable,
             testable, or future-proof.
           </p>
           <p>
@@ -130,7 +131,7 @@ const EMERGENT_DISPARITY: Article = {
       content: (
         <>
           <p>
-            <strong>Step 1 — Establish Codebase Fundamentals.</strong> Identify the project's core
+            <strong>Step 1 - Establish Codebase Fundamentals.</strong> Identify the project's core
             primitives: runtime entry points, state ownership, event systems, config files, constants
             and registries, schemas and types, rendering layers, engine logic, persistence
             boundaries, test infrastructure, naming conventions, cross-module imports, error
@@ -138,7 +139,7 @@ const EMERGENT_DISPARITY: Article = {
           </p>
           <p>Output a short "fundamental map" before scanning for disparities.</p>
           <p>
-            <strong>Step 2 — Detect Disparities.</strong> Use these lenses: Naming Disparity (same
+            <strong>Step 2 - Detect Disparities.</strong> Use these lenses: Naming Disparity (same
             idea, different names), Shape Disparity (similar data structures with incompatible
             fields), Lifecycle Disparity (inconsistent init/update/dispose patterns),
             Source-of-Truth Disparity (same truth defined in multiple files), Semantic Disparity
@@ -149,12 +150,12 @@ const EMERGENT_DISPARITY: Article = {
             could benefit another).
           </p>
           <p>
-            <strong>Step 3 — Sort by Boon Potential.</strong> Score each candidate from 1 (minor
+            <strong>Step 3 - Sort by Boon Potential.</strong> Score each candidate from 1 (minor
             cleanup) to 5 (major compounding boon) across: reuse gain, risk reduction, testability
             gain, future feature acceleration, migration safety, cognitive load reduction.
           </p>
           <p>
-            <strong>Step 4 — Propose Reconciliation Tissue.</strong> For each high-value disparity,
+            <strong>Step 4 - Propose Reconciliation Tissue.</strong> For each high-value disparity,
             propose the smallest useful bridge: adapter, registry, schema, event map, contract test,
             facade, lifecycle hook, mapping table, capability interface, or golden output.
           </p>
@@ -189,7 +190,7 @@ const SCHOLOECHO: Article = {
   slug: 'scholoecho-space-painting',
   title: 'ScholoEcho and the Space-Painting Instrument',
   lede:
-    'A white paper on designing reverb and delay as spatial paint instead of knob soup — and what happens when you build an instrument around room geometry instead of acoustic parameters.',
+    'A white paper on designing reverb and delay as spatial paint instead of knob soup - and what happens when you build an instrument around room geometry instead of acoustic parameters.',
   kind: 'whitepaper',
   date: 'June 2026',
   readTime: '12 min',
@@ -244,11 +245,11 @@ const SCHOLOECHO: Article = {
             Under this model, the interface question changes from "how much reverb?" to "where is this sound, physically?" That question is answerable in terms a non-engineer can hold:
           </p>
           <ul>
-            <li><strong>Room depth</strong> — how far back in the space is the source?</li>
-            <li><strong>Room volume</strong> — what is the total enclosed space? (a closet vs. a cathedral)</li>
-            <li><strong>Surface material</strong> — is the room made of wood, stone, glass, or foam?</li>
-            <li><strong>Air density</strong> — how much does the room absorb high frequencies? (cold cathedral vs. humid live room)</li>
-            <li><strong>Irregularity</strong> — how much do the surfaces scatter sound vs. mirror it?</li>
+            <li><strong>Room depth</strong> - how far back in the space is the source?</li>
+            <li><strong>Room volume</strong> - what is the total enclosed space? (a closet vs. a cathedral)</li>
+            <li><strong>Surface material</strong> - is the room made of wood, stone, glass, or foam?</li>
+            <li><strong>Air density</strong> - how much does the room absorb high frequencies? (cold cathedral vs. humid live room)</li>
+            <li><strong>Irregularity</strong> - how much do the surfaces scatter sound vs. mirror it?</li>
           </ul>
           <p>
             These five parameters describe a room completely enough to synthesize all twelve traditional reverb knobs from them. The spatial model is a <em>higher-level API</em> over the acoustic machinery.
@@ -277,7 +278,7 @@ const SCHOLOECHO: Article = {
           </p>
           <p>
             In Painter Mode, you apply reverb like paint to a spectrogram timeline. Each painted
-            region defines a different space — the verse is in a stone chamber, the chorus breaks
+            region defines a different space - the verse is in a stone chamber, the chorus breaks
             open into cathedral air, the bridge drops to a dead room. The "brush" is the room
             preset. The canvas is the song.
           </p>
@@ -328,7 +329,7 @@ const SCHOLOECHO: Article = {
         <>
           <p>
             In Scholomance's phonemic system, the PSYCHIC school governs micro-tonal variations,
-            spatial delays, and shifting reverbs. Its vowels — IY, AY, AI, EE — carry the acoustic
+            spatial delays, and shifting reverbs. Its vowels - IY, AY, AI, EE - carry the acoustic
             signature of distance and interiority. A line dense with PSYCHIC vowels already has a
             spatial quality built into its phonetic texture.
           </p>
@@ -356,7 +357,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
   slug: 'scholomance-channel-zero-launch',
   title: 'Launch Verdict: Channel Zero',
   lede:
-    'A structured self-audit for the blog surface: signal clarity, SEO runway, accessibility, and design law alignment — verdicted against Scholomance world-law standards.',
+    'A structured self-audit for the blog surface: signal clarity, SEO runway, accessibility, and design law alignment - verdicted against Scholomance world-law standards.',
   kind: 'verdict',
   date: 'June 2026',
   readTime: '9 min',
@@ -377,7 +378,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
           <p>
             A Scholomance Verdict is a structured post-build audit conducted against explicit
             criteria rather than impressions. This verdict covers the Channel Zero blog surface
-            — the index page, the article layout, the component kit, and the design tokens — and
+             -  the index page, the article layout, the component kit, and the design tokens - and
             is scored against four axes: signal clarity, SEO runway, accessibility compliance,
             and design law alignment.
           </p>
@@ -387,7 +388,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
             <strong>D</strong> (blocking issue, must fix). Any D blocks the verdict from passing.
           </p>
           <p>
-            Channel Zero is Scholomance's editorial surface — the blog that ships alongside the
+            Channel Zero is Scholomance's editorial surface - the blog that ships alongside the
             platform, covering skills, verdicts, white papers, and technical essays. The mission
             statement: free doctrine for writers, engineers, musicians, and creative operators
             building their own instruments instead of begging the machine for permission.
@@ -397,7 +398,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
     },
     {
       id: 'signal',
-      heading: 'Signal Clarity — B',
+      heading: 'Signal Clarity - B',
       level: 2,
       content: (
         <>
@@ -408,9 +409,9 @@ const CHANNEL_ZERO_VERDICT: Article = {
             makes sense on first encounter.
           </p>
           <p>
-            <strong>Findings:</strong> The hero lede ("Free doctrine for writers, engineers…") is
+            <strong>Findings:</strong> The hero lede ("Free doctrine for writers, engineers...") is
             accurate and readable. The category tags are distinctive. The three launch posts cover
-            meaningfully different territory — one operational skill, one instrument design
+            meaningfully different territory - one operational skill, one instrument design
             whitepaper, one self-audit. The grid density is correct for launch.
           </p>
           <p>
@@ -427,7 +428,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
     },
     {
       id: 'accessibility',
-      heading: 'Accessibility — A',
+      heading: 'Accessibility - A',
       level: 2,
       content: (
         <>
@@ -462,7 +463,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
     },
     {
       id: 'design-law',
-      heading: 'Design Law Alignment — A',
+      heading: 'Design Law Alignment - A',
       level: 2,
       content: (
         <>
@@ -472,7 +473,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
             semantic justification, typography from the established system, color from school tokens).
           </p>
           <p>
-            <strong>Findings:</strong> The Channel Zero kit uses the GrimDesign palette correctly —
+            <strong>Findings:</strong> The Channel Zero kit uses the GrimDesign palette correctly  - 
             near-black backgrounds, gold accents, dim secondary text, no gradients that do not carry
             information. The typography stack is JetBrains Mono for metadata, Cormorant Garamond for
             display headings, and an appropriate serif stack for body text.
@@ -484,7 +485,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
           </p>
           <p>
             The article hero uses a subtle aperture animation that mirrors the landing page portal
-            geometry — a direct world-law callback. The kind-tag pill system (SKILL / VERDICT /
+            geometry - a direct world-law callback. The kind-tag pill system (SKILL / VERDICT /
             WHITEPAPER) maps to the existing category system used across the platform.
           </p>
           <p>
@@ -499,7 +500,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
     },
     {
       id: 'verdict',
-      heading: 'Aggregate Verdict — Pass (B+)',
+      heading: 'Aggregate Verdict - Pass (B+)',
       level: 2,
       content: (
         <>
@@ -507,9 +508,9 @@ const CHANNEL_ZERO_VERDICT: Article = {
             <strong>Summary scores:</strong>
           </p>
           <ul>
-            <li>Signal Clarity — B (one excerpt trim needed)</li>
-            <li>Accessibility — A</li>
-            <li>Design Law Alignment — A</li>
+            <li>Signal Clarity - B (one excerpt trim needed)</li>
+            <li>Accessibility - A</li>
+            <li>Design Law Alignment - A</li>
           </ul>
           <p>
             No D grades. No blocking issues. Channel Zero passes the launch verdict at B+ aggregate.
@@ -519,7 +520,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
           </p>
           <ul>
             <li>
-              Trim the excerpt for the ScholoEcho card to approximately 18 words — currently 22
+              Trim the excerpt for the ScholoEcho card to approximately 18 words - currently 22
             </li>
             <li>
               Add an RSS feed endpoint at <code>/blog/feed.xml</code> for discovery
@@ -534,7 +535,7 @@ const CHANNEL_ZERO_VERDICT: Article = {
             </li>
           </ul>
           <p>
-            The platform that bans the ban, not the artist — Channel Zero is live and law-compliant.
+            The platform that bans the ban, not the artist - Channel Zero is live and law-compliant.
           </p>
         </>
       ),

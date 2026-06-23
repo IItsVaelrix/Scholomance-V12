@@ -305,7 +305,7 @@ export default function AnalysisPanel({
         </div>
       )}
 
-      {/* Phonemic Oracle — Prioritized Detailed RAG Feedback */}
+      {/* Phonemic Oracle - Prioritized Detailed RAG Feedback */}
       {!isAstrologySurface && hasNarrativeAMP && (
         <section className="analyze-section analyze-narrative-amp-section">
           <h4 className="analyze-section-title">
@@ -475,7 +475,7 @@ export default function AnalysisPanel({
               { label: "Syllables", value: statistics.totalSyllables },
             ].map(({ label, value }) => (
               <div key={label} className="analyze-stat-cell">
-                <span className="analyze-stat-value">{value ?? "—"}</span>
+                <span className="analyze-stat-value">{value ?? " - "}</span>
                 <span className="analyze-stat-label">{label}</span>
               </div>
             ))}
@@ -602,7 +602,7 @@ export default function AnalysisPanel({
         </section>
       )}
 
-      {/* Verse Structure — HHM stanza data */}
+      {/* Verse Structure - HHM stanza data */}
       {!isAstrologySurface && hhmSummary?.enabled && hhmSummary.stanzas?.length > 0 && (
         <section className="analyze-section">
           <h4 className="analyze-section-title">
@@ -715,7 +715,7 @@ export default function AnalysisPanel({
 
           {codexCommentary && (
             <div className="analyze-codex-commentary">
-              <span className="analyze-codex-kicker">Oracle's Resonance</span>
+              <span className="analyze-codex-kicker">Oracle&apos;s Resonance</span>
               <p>{codexCommentary}</p>
             </div>
           )}
@@ -759,7 +759,7 @@ export default function AnalysisPanel({
         </section>
       )}
 
-      {/* Literary Chronicles — Historical echoes */}
+      {/* Literary Chronicles - Historical echoes */}
       {!isAstrologySurface && (
         <ChroniclePanel currentLineText={currentLineText} />
       )}
@@ -786,7 +786,7 @@ export default function AnalysisPanel({
               type="button"
               className={`infobeam-toggle${infoBeamEnabled ? " active" : ""}`}
               onClick={(e) => { e.stopPropagation(); onInfoBeamToggle?.(); }}
-              title="InfoBeam — click a group to view rhyme order"
+              title="InfoBeam - click a group to view rhyme order"
               aria-pressed={infoBeamEnabled}
             >
               ◈

@@ -167,6 +167,8 @@ const WORD_PHONEME_OVERRIDES = Object.freeze({
   THUMB: ["TH", "AH1", "M"],
   NUMB: ["N", "AH1", "M"],
   EIGHT: ["EY1", "T"],
+  RHYME: ["R", "AY1", "M"],
+  ALIGNED: ["AH0", "L", "AY1", "N", "D"],
   DOPE: ["D", "OW1", "P"],
   // Test Case Overrides
   BASE: ["B", "EY1", "S"],
@@ -576,7 +578,7 @@ export const PhonemeEngine = {
       const upper = word.toUpperCase();
       const inFlight = this.AUTHORITY_IN_FLIGHT.get(upper);
       if (inFlight) {
-          try { await inFlight; } catch(e) {}
+          try { await inFlight; } catch(e) { /* ignore */ }
       }
       
       const authData = this.AUTHORITY_CACHE.get(upper);
@@ -830,7 +832,8 @@ export const PhonemeEngine = {
       'POLISH': 'AA', 'DEMOLISH': 'AA', 'ABOLISH': 'AA', 'SOLID': 'AA', 'COTTAGE': 'AA', 'WATTAGE': 'AA',
       'BOXES': 'AA', 'DROPLETS': 'AA', 'PROFIT': 'AA', 'LOGIC': 'AA', 'PROPHET': 'AA', 'LOCKSMITH': 'AA',
       'OPTIC': 'AA', 'TONGUE': 'AH', 'YOUNG': 'AH', 'GREAT': 'EY', 'BREAK': 'EY',
-      'SOUL': 'IY', 'COMPOSED': 'IY', 'HOLD': 'IY', 'EIGHT': 'EY', 'DELAY': 'EY'
+      'SOUL': 'IY', 'COMPOSED': 'IY', 'HOLD': 'IY', 'EIGHT': 'EY', 'DELAY': 'EY',
+      'DEAD': 'EH', 'DEATH': 'EH', 'BREATH': 'EH', 'HEAD': 'EH', 'BREAD': 'EH', 'THREAD': 'EH',
     };
     if (EXCEPTIONS[upper]) {
       const p = EXCEPTIONS[upper];
@@ -856,6 +859,12 @@ export const PhonemeEngine = {
       if (/[AEIOU]/.test(char)) {
         let p = null;
         let skip = 1;
+        
+        // Trailing silent-E: skip when there is already another vowel in the word
+        if (char === 'E' && i === upper.length - 1 && upper.length > 2 && /[AEIOUY]/.test(upper.slice(0, -1))) {
+          i++;
+          continue;
+        }
         
         // 1. Long Digraphs / Diphthongs
         if (slice.startsWith('ATION')) { p = 'EY'; skip = 5; } 
@@ -890,6 +899,14 @@ export const PhonemeEngine = {
         if (!p) {
           const V_MAP = { 'A': 'AE', 'E': 'EH', 'I': 'IH', 'O': 'AA', 'U': 'AH' };
           p = V_MAP[char] || 'AH';
+          // I before ND/LD (mind, find, kind, child, wild) → long I / AY
+          if (p === 'IH' && slice.length >= 3) {
+            const after = upper.slice(i + 1, i + 3).toUpperCase();
+            if (after === 'ND' || after === 'LD') {
+              p = 'AY';
+              skip = 1;
+            }
+          }
         }
         phonemes.push(p + '1');
         i += skip;
@@ -904,7 +921,12 @@ export const PhonemeEngine = {
         if (char === 'Y' && i === upper.length - 1 && i > 0 && !/[AEIOU]/.test(upper[i-1])) {
           // Multisyllabic words ending in LY or RY usually end in an IY0 sound (e.g. happily, glossary)
           // Shorter words like fly, try, cry end in AY1.
+          // Words with another vowel letter before the Y (body, copy, sloppy, happy)
+          // also get unstressed IY0.
+          const hasOtherVowels = /[AEIOU]/.test(upper.slice(0, -1));
           if ((upper.endsWith('LY') || upper.endsWith('RY')) && upper.length > 3) {
+            phonemes.push('IY0');
+          } else if (hasOtherVowels) {
             phonemes.push('IY0');
           } else {
             phonemes.push('AY1');
@@ -925,7 +947,14 @@ export const PhonemeEngine = {
         const isEd = upper.endsWith('ED');
         
         let stressedIdx = vowelIndices[vowelIndices.length - 1];
-        if (isIng || isEd) stressedIdx = vowelIndices[0];
+        // Unstressed final -y: stress the penultimate vowel instead
+        if (vowelIndices.length >= 2) {
+          const lastVowel = phonemes[vowelIndices[vowelIndices.length - 1]];
+          if (lastVowel && /IY0$|IH0$|AH0$|ER0$/.test(lastVowel)) {
+            stressedIdx = vowelIndices[vowelIndices.length - 2];
+          }
+        }
+        if (isIng || (isEd && !hasSilentE)) stressedIdx = vowelIndices[0];
         else if (hasSilentE) stressedIdx = (upper.length <= 5) ? vowelIndices[0] : vowelIndices[vowelIndices.length - 1];
         else if (upper.endsWith('TION') || upper.endsWith('SION')) stressedIdx = vowelIndices[vowelIndices.length - 2];
         

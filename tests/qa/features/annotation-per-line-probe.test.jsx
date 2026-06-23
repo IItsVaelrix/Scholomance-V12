@@ -1,9 +1,9 @@
 /**
- * Visual Debug — Annotation Per-Line Regression
+ * Visual Debug - Annotation Per-Line Regression
  *
  * Renders LexicalScrollEditor with a known multi-word document and inspects
  * the DOM to see whether TruesightWordNode spans are per-word or per-line.
- * This is a diagnostic, not a permanent test — once the regression is
+ * This is a diagnostic, not a permanent test - once the regression is
  * understood, the assertions become guards.
  */
 import { describe, it, expect } from 'vitest';
@@ -12,7 +12,7 @@ import LexicalScrollEditor from '../../../src/lib/lexical/LexicalScrollEditor.js
 import { TruesightWordNode } from '../../../src/lib/lexical/TruesightNode.js';
 import { computeCharStartFromLexical } from '../../../src/lib/lexical/charStart.js';
 
-describe('Lexical Truesight — annotation per-word (regression probe)', () => {
+describe('Lexical Truesight - annotation per-word (regression probe)', () => {
   it('each word in a multi-word line becomes a separate TruesightWordNode', async () => {
     const content = 'Alpha beta gamma';
     const analyzedWordsByIdentity = {
@@ -50,7 +50,7 @@ describe('Lexical Truesight — annotation per-word (regression probe)', () => {
     }
 
     // The structural assertion: 3 words => 3 TruesightWordNode spans.
-    // If this fails with 1, the regression is "per line" — one span wraps
+    // If this fails with 1, the regression is "per line" - one span wraps
     // the whole content.
     expect(truesightSpans.length).toBe(3);
   });
@@ -194,7 +194,7 @@ describe('Lexical Truesight — annotation per-word (regression probe)', () => {
     const assonantSpans = container.querySelectorAll('.grimoire-word--assonant');
     const greySpans = container.querySelectorAll('.grimoire-word--grey');
 
-    // EXPECTED: 3 words — 1 rhyme (--active, Alpha), 1 assonance (--assonant,
+    // EXPECTED: 3 words - 1 rhyme (--active, Alpha), 1 assonance (--assonant,
     // gamma), 1 ungated (--grey, beta). Non-resonant words must still carry an
     // explicit class so the annotation does not read as whole-line coloring.
     expect(truesightSpans.length).toBe(3);

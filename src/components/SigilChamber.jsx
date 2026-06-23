@@ -1,5 +1,5 @@
 /**
- * SigilChamber — Phaser-powered ritual circle visualization
+ * SigilChamber - Phaser-powered ritual circle visualization
  *
  * Renders a living sigil: rotating rune rings, syllable-count orbital nodes,
  * school glyph at center, ADD-blend particles.
@@ -18,7 +18,7 @@ function hexToNum(hex) {
   return parseInt(clean, 16);
 }
 
-/* ── Scene factory — receives Phaser as argument so no top-level import ──── */
+/* ── Scene factory - receives Phaser as argument so no top-level import ──── */
 function buildSceneClass(Phaser) {
   return class SigilScene extends Phaser.Scene {
     constructor() {
@@ -80,7 +80,7 @@ function buildSceneClass(Phaser) {
       const cn = hexToNum(color);
       const { cx, cy, R } = this;
 
-      /* Outer ring — CW rotation */
+      /* Outer ring - CW rotation */
       this.outerC = this.add.container(cx, cy).setDepth(2);
       const og = this.add.graphics();
       og.lineStyle(1.5, cn, 0.48);
@@ -101,7 +101,7 @@ function buildSceneClass(Phaser) {
       this.outerC.add(og);
       this.tweens.add({ targets: this.outerC, rotation: Math.PI * 2, duration: 34000, repeat: -1, ease: "Linear" });
 
-      /* Mid ring — syllable nodes, CCW */
+      /* Mid ring - syllable nodes, CCW */
       this.midC = this.add.container(cx, cy).setDepth(3);
       const mg   = this.add.graphics();
       const midR = R * 0.65;
@@ -119,7 +119,7 @@ function buildSceneClass(Phaser) {
       this.midC.add(mg);
       this.tweens.add({ targets: this.midC, rotation: -(Math.PI * 2), duration: 21000, repeat: -1, ease: "Linear" });
 
-      /* Inner ring — static double ring + 3-line seal */
+      /* Inner ring - static double ring + 3-line seal */
       this.innerC = this.add.container(cx, cy).setDepth(4);
       const ig = this.add.graphics();
       const iR = R * 0.36;
@@ -137,7 +137,7 @@ function buildSceneClass(Phaser) {
       }
       this.innerC.add(ig);
 
-      /* Center glyph — breathing pulse */
+      /* Center glyph - breathing pulse */
       this.glyphT?.destroy();
       const fs = Math.max(18, Math.round(iR * 1.1));
       this.glyphT = this.add
@@ -155,7 +155,7 @@ function buildSceneClass(Phaser) {
         duration: 3800, repeat: -1, yoyo: true, ease: "Sine.easeInOut",
       });
 
-      /* Particles — drift from inner ring */
+      /* Particles - drift from inner ring */
       this.emitter?.destroy();
       try {
         this.emitter = this.add.particles(cx, cy, "sdot", {
@@ -167,7 +167,7 @@ function buildSceneClass(Phaser) {
           tint: cn, blendMode: "ADD",
         }).setDepth(5);
       } catch {
-        /* Particle system is an enhancement — degrade gracefully */
+        /* Particle system is an enhancement - degrade gracefully */
       }
     }
 
@@ -211,7 +211,7 @@ export default function SigilChamber({ color, glyph, syllables, word }) {
     latestDataRef.current = { color, glyph, syllables, word };
   }, [color, glyph, syllables, word]);
 
-  /* Create Phaser game once — dynamic import keeps jsdom/SSR safe */
+  /* Create Phaser game once - dynamic import keeps jsdom/SSR safe */
   useEffect(() => {
     const el = elRef.current;
     if (!el) return;
@@ -254,7 +254,7 @@ export default function SigilChamber({ color, glyph, syllables, word }) {
           if (game.canvas) game.canvas.style.pointerEvents = "none";
         });
       } catch (err) {
-        /* Phaser unavailable (test env / no WebGL) — sigil chamber renders empty */
+        /* Phaser unavailable (test env / no WebGL) - sigil chamber renders empty */
       }
     };
 

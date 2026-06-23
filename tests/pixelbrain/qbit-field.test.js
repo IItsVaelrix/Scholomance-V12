@@ -406,7 +406,7 @@ describe('propagateWithOctree', () => {
     const tOctree = (performance.now() - t1) / N;
     // Don't regress beyond 3x the standard version's time.
     expect(tOctree).toBeLessThan(tStandard * 3);
-    // eslint-disable-next-line no-console
+     
     console.log(`  propagate avg: ${tStandard.toFixed(2)}ms, octree avg: ${tOctree.toFixed(2)}ms, ratio: ${(tOctree / tStandard).toFixed(2)}x`);
   });
 });

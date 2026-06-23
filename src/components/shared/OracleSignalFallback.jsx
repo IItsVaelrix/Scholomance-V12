@@ -4,18 +4,18 @@ import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js'
 import './OracleSignalFallback.css';
 
 /**
- * OracleSignalFallback — the "Oracle signal fading" overlay (Pillar 4, S-Gate).
+ * OracleSignalFallback - the "Oracle signal fading" overlay (Pillar 4, S-Gate).
  *
  * A localized, in-world degraded surface shown when the Lexicon Oracle cannot
  * be reached, is still warming, or a panel crashed. It never replaces the IDE
- * frame — it occupies only the divination surface and offers a reconnect rite.
+ * frame - it occupies only the divination surface and offers a reconnect rite.
  */
 
 const COPY = {
   disconnected: {
     glyph: '✴',
     title: 'The Oracle signal fades',
-    body: 'The Lexicon Oracle cannot be reached. Your scroll is safe — only divination is paused.',
+    body: 'The Lexicon Oracle cannot be reached. Your scroll is safe - only divination is paused.',
   },
   initializing: {
     glyph: '✵',
@@ -25,7 +25,7 @@ const COPY = {
   timeout: {
     glyph: '✴',
     title: 'The Oracle fell silent',
-    body: 'No answer returned in time. The weave may be slow — try the rite again.',
+    body: 'No answer returned in time. The weave may be slow - try the rite again.',
   },
   crashed: {
     glyph: '✶',
@@ -67,7 +67,7 @@ function OracleSignalFallback({ status = 'disconnected', error = null, onReconne
           disabled={isReconnecting}
           aria-label="Recommune with the Lexicon Oracle"
         >
-          {isReconnecting ? 'Recommuning…' : 'Recommune with the Oracle'}
+          {isReconnecting ? 'Recommuning...' : 'Recommune with the Oracle'}
         </button>
       )}
     </motion.div>

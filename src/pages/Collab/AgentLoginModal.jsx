@@ -1,5 +1,5 @@
 /**
- * AgentLoginModal — Login dialog for agent registration
+ * AgentLoginModal - Login dialog for agent registration
  *
  * Flow:
  * 1. Register agent on collab plane

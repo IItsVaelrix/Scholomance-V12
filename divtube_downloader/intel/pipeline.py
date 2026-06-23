@@ -1,6 +1,5 @@
 from .schema import (
-    SeoCritiqueResult, DeterminismInfo, Flag,
-    SCHEMA_VERSION, SCORING_VERSION, RULESET_VERSION,
+    SeoCritiqueResult, DeterminismInfo, SCHEMA_VERSION, SCORING_VERSION, RULESET_VERSION,
 )
 from .engines import thumbnail_engine, title_engine, tag_engine, performance_engine
 

@@ -28,7 +28,7 @@ export default function ActionBar({ selectedAction, onActionSelect, isDisabled, 
             onClick={() => onActionSelect(id)}
             disabled={isBtnDisabled}
             title={btnTitle}
-            aria-label={`${label} — hotkey ${hotkey}`}
+            aria-label={`${label} - hotkey ${hotkey}`}
             aria-pressed={selectedAction === id}
             type="button"
           >

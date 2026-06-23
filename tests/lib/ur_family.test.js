@@ -4,22 +4,22 @@ import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 describe('UR Vowel Family (New Core Family)', () => {
   it('should identify UR family for "pure"', () => {
     const result = PhonemeEngine.analyzeWord('pure');
-    expect(result.vowelFamily).toBe('IH');
+    expect(result.vowelFamily).toBe('UR');
   });
 
   it('should identify UR family for "cure"', () => {
     const result = PhonemeEngine.analyzeWord('cure');
-    expect(result.vowelFamily).toBe('IH');
+    expect(result.vowelFamily).toBe('UR');
   });
 
   it('should identify UR family for "allure"', () => {
     const result = PhonemeEngine.analyzeWord('allure');
-    expect(result.vowelFamily).toBe('IH');
+    expect(result.vowelFamily).toBe('UR');
   });
 
   it('should identify UR family for "procure"', () => {
     const result = PhonemeEngine.analyzeWord('procure');
-    expect(result.vowelFamily).toBe('IH');
+    expect(result.vowelFamily).toBe('UR');
   });
 
   it('should recognize rhymes within the UR family', () => {

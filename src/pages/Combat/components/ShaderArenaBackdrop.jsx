@@ -1,12 +1,12 @@
 /**
- * ShaderArenaBackdrop.jsx — PixelBrain shader battle-zone atmosphere.
+ * ShaderArenaBackdrop.jsx - PixelBrain shader battle-zone atmosphere.
  *
  * Runs a PB-SHADER-v1 packet on a dedicated WebGL2 <canvas> that sits *behind*
  * the Phaser board. Rendering through the engine adapter's raw-WebGL helpers
  * (compile/quad/resolve/render) keeps us off Phaser's pipeline API, so the
  * Phaser-3 → 4 PostFX migration can't break the arena floor.
  *
- * LAW: pure UI consumer of the sanctioned adapter — no pixelbrain core imports.
+ * LAW: pure UI consumer of the sanctioned adapter - no pixelbrain core imports.
  */
 
 import { useEffect, useRef } from 'react';
@@ -25,7 +25,7 @@ import { SCHOOL_PALETTE } from '../assets/combatAssets.js';
 
 const SCHOOL_INDEX = { SONIC: 0, PSYCHIC: 1, VOID: 2, ALCHEMY: 3, WILL: 4, NECROMANCY: 5, ABJURATION: 6, DIVINATION: 7 };
 
-// The VOID arena: a SOLID, opaque obsidian chamber — a stone floor receding to a
+// The VOID arena: a SOLID, opaque obsidian chamber - a stone floor receding to a
 // horizon, veined with glowing amethyst fissures, a back wall, and a central
 // singularity. Opaque alpha so the board reads as standing on real ground, not
 // floating. School palette tints the amethyst; resonance drives the glow.
@@ -118,7 +118,7 @@ vec4 pbMain(vec2 uv, float time, float resonance) {
   col *= smoothstep(1.15, 0.25, length(q));
   col *= 0.85 + 0.3 * resonance;
 
-  return vec4(col, 1.0);   // OPAQUE — solid ground, never a hologram
+  return vec4(col, 1.0);   // OPAQUE - solid ground, never a hologram
 }
 `;
 
@@ -134,7 +134,7 @@ export default function ShaderArenaBackdrop({ school = 'SONIC', resonance = 0.55
     if (!canvas) return;
 
     const gl = canvas.getContext('webgl2', { premultipliedAlpha: false, alpha: true });
-    if (!gl) return; // No WebGL2 — CSS gradient shows through.
+    if (!gl) return; // No WebGL2 - CSS gradient shows through.
 
     let program;
     let quad;

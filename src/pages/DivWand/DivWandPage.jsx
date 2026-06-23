@@ -355,7 +355,7 @@ export default function DivWandPage() {
       const outcome = validateDivProposal(parsed);
       setValidationResult(outcome);
       if (outcome.valid) {
-        setTerminalLogs(prev => [...prev, { type: 'success', text: 'Validation passed — all nodes comply.', ts: ts() }]);
+        setTerminalLogs(prev => [...prev, { type: 'success', text: 'Validation passed - all nodes comply.', ts: ts() }]);
       } else {
         setTerminalLogs(prev => [
           ...prev,
@@ -387,7 +387,7 @@ export default function DivWandPage() {
     const text = e.target.value;
     setProposalText(text);
     debouncedValidate(text);
-    // Manual edits diverge from the loaded preset — drop the active pill so the
+    // Manual edits diverge from the loaded preset - drop the active pill so the
     // highlight reflects what's actually in the editor.
     setSelectedPreset(prev => (prev && text === JSON.stringify(prev.proposal, null, 2) ? prev : null));
   }, [debouncedValidate]);
@@ -397,7 +397,7 @@ export default function DivWandPage() {
       const parsed = JSON.parse(proposalText);
       setProposalText(JSON.stringify(parsed, null, 2));
       setTerminalLogs(prev => [...prev, { type: 'info', text: 'JSON formatted.', ts: ts() }]);
-    } catch { /* invalid — nothing to format */ }
+    } catch { /* invalid - nothing to format */ }
   }, [proposalText]);
 
   const handleCopy = useCallback(() => {
@@ -414,7 +414,7 @@ export default function DivWandPage() {
       const outcome = browserRegisterDivLayout(parsed);
       setTerminalLogs(prev => [...prev, {
         type: 'success',
-        text: `Cataloged — ${outcome.catalogId}${outcome.alreadyRegistered ? ' (idempotent)' : ''} · ${outcome.count} total`,
+        text: `Cataloged - ${outcome.catalogId}${outcome.alreadyRegistered ? ' (idempotent)' : ''} · ${outcome.count} total`,
         ts: ts(),
       }]);
     } catch (e) {
@@ -595,7 +595,7 @@ export default function DivWandPage() {
               </div>
             </div>
             <div className="dw-terminal-log" ref={terminalRef} role="log" aria-live="polite" aria-label="Validation log">
-              {terminalLogs.length === 0 && <span className="dw-log-empty">Awaiting events…</span>}
+              {terminalLogs.length === 0 && <span className="dw-log-empty">Awaiting events...</span>}
               {terminalLogs.map((entry, i) => (
                 <div key={i} className={`dw-log-entry dw-log-entry--${entry.type}`}>
                   <span className="dw-log-ts">{entry.ts}</span>
@@ -659,7 +659,7 @@ export default function DivWandPage() {
               ) : (
                 <div className="dw-preview-empty" role="status">
                   <Sparkles size={26} aria-hidden="true" />
-                  <span>Invalid JSON — no preview</span>
+                  <span>Invalid JSON - no preview</span>
                 </div>
               )}
             </div>

@@ -711,7 +711,7 @@ function VHSStatic({ visible }) {
         ctx.fillRect(0, bandY, W, bandH);
       }
 
-      // Scanline noise — only sample a fraction of rows per frame for perf
+      // Scanline noise - only sample a fraction of rows per frame for perf
       const imageData = ctx.createImageData(W, 1);
       const rowsToFill = Math.min(H, 20 + Math.floor(noise * 40));
       for (let r = 0; r < rowsToFill; r++) {
@@ -937,10 +937,10 @@ export default function WatchPage() {
                     allowFullScreen
                   />
 
-                  {/* VHS static — shown when playing */}
+                  {/* VHS static - shown when playing */}
                   <VHSStatic visible={isPlaying} />
 
-                  {/* Bytecode Video Overlay — real-time bytecode-driven effects */}
+                  {/* Bytecode Video Overlay - real-time bytecode-driven effects */}
                   <BytecodeVideoOverlay bytecodeState={bytecodeState} isPlaying={isPlaying} />
 
                   {/* CRT scanlines */}
@@ -950,7 +950,7 @@ export default function WatchPage() {
                   <div className="crt-screen-vignette" aria-hidden="true" />
                 </div>
 
-                {/* Indigo bloom — intensifies when playing */}
+                {/* Indigo bloom - intensifies when playing */}
                 <div
                   className={`crt-bloom ${isPlaying ? "is-playing" : "is-paused"}`}
                   aria-hidden="true"

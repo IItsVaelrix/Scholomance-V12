@@ -82,7 +82,7 @@ export function useOracleQuery() {
       });
       return json.data;
     } catch (unexpected) {
-      // The hook must never throw — map any surprise into a stable state.
+      // The hook must never throw - map any surprise into a stable state.
       applyStateIfCurrent({
         data: null,
         status: 'error',

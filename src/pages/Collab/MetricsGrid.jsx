@@ -1,5 +1,5 @@
 /**
- * MetricsGrid — Display collaboration metrics at a glance
+ * MetricsGrid - Display collaboration metrics at a glance
  * Adapted from PixelBrain AnalysisResults
  */
 

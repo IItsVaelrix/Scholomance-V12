@@ -119,7 +119,7 @@ function measure(fn, runs) {
 describe('QBIT-Voxel Level 4 — performance', () => {
   it('full 64³ pipeline completes under hard ceiling (gross-regression guard)', () => {
     const result = measure(() => runFullPipeline(propagate), MEASURED_RUNS);
-    // eslint-disable-next-line no-console
+     
     console.log(
       `  64³ pipeline (propagate): median=${result.median.toFixed(2)}ms min=${result.min.toFixed(2)}ms max=${result.max.toFixed(2)}ms (photonic horizon ${PHOTONIC_HORIZON_MS}ms, JS ceiling ${HARD_CEILING_MS}ms)`
     );
@@ -129,7 +129,7 @@ describe('QBIT-Voxel Level 4 — performance', () => {
   it('octree-accelerated 64³ pipeline does not regress vs. standard propagate', () => {
     const standard = measure(() => runFullPipeline(propagate), MEASURED_RUNS);
     const octree = measure(() => runFullPipeline(propagateWithOctree), MEASURED_RUNS);
-    // eslint-disable-next-line no-console
+     
     console.log(
       `  octree vs standard: octree=${octree.median.toFixed(2)}ms standard=${standard.median.toFixed(2)}ms ratio=${(octree.median / standard.median).toFixed(2)}x`
     );
@@ -152,7 +152,7 @@ describe('QBIT-Voxel Level 4 — performance', () => {
       includeGradient: false,        // gradient build is the most expensive bridge step
     });
     const elapsed = performance.now() - t0;
-    // eslint-disable-next-line no-console
+     
     console.log(
       `  bridge route (64³): ${elapsed.toFixed(2)}ms, grade=${report.grade}, score=${report.score.toFixed(3)}, rle-ratio=${report.rle ? report.rle.compressionRatio.toFixed(1) : 'n/a'}x`
     );

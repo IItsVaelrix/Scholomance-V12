@@ -4,7 +4,7 @@ import os
 import json
 
 from video_forge.project_store import ProjectStore
-from video_forge.schema import VideoProject, MediaItem, TimelineClip
+from video_forge.schema import VideoProject, MediaItem
 
 
 class TestProjectStore(unittest.TestCase):

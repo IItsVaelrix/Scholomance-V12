@@ -7,7 +7,7 @@ import { computeCharStartFromLexical, resolveTokenDataAtPosition } from './charS
 import { wordTruesight, tokenTruesight } from '../../pages/Visualiser/truesightColor';
 import { decodeBytecode } from '../../lib/truesight/bytecodeRenderer.js';
 
-// WORD_TOKEN_REGEX is anchored (^…$) — correct for "is this node exactly one
+// WORD_TOKEN_REGEX is anchored (^...$) - correct for "is this node exactly one
 // word?" but useless for FINDING a word inside a multi-word text node. Branch (b)
 // needs an unanchored matcher (uses match.index + splitText), or loaded
 // multi-word lines never tokenize/colour. Non-global so .exec has no lastIndex.
@@ -41,7 +41,7 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
     }
 
     // Resolve the per-position upstream analysis for a text-bearing node.
-    // Position-only — no text-keyed fallback (Prion #2 from the spatial-immune
+    // Position-only - no text-keyed fallback (Prion #2 from the spatial-immune
     // chemotaxis diagnosis: the previous textKeyedCache silently masked
     // upstream charStart failures by re-applying the last-inserted analysis
     // for repeated words, which is structurally impossible to detect in CI).
@@ -51,7 +51,7 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
     // closure. The useEffect deps are [editor, isTruesight], so closure
     // captures are frozen at first mount. Reading from inputsRef keeps the
     // transform in sync with upstream analysis updates. The staleness
-    // diagnosis (RAID PAT-004 — Weave Propagation Chain) lives in
+    // diagnosis (RAID PAT-004 - Weave Propagation Chain) lives in
     // tests/qa/features/charStart-convention.test.jsx as the regression guard.
     const lookupTokenData = (node, text) => {
       const { analyzedWordsByCharStart: liveByCharStart, analyzedWordsByIdentity: liveByIdentity } = inputsRef.current;
@@ -77,7 +77,7 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
 
       // Active node branch: this is already a Truesight word node. Refresh its
       // color/class from the canonical lookup. We never fall back to a
-      // text-keyed cache here — that was the source of the silent-override bug.
+      // text-keyed cache here - that was the source of the silent-override bug.
       if ($isTruesightWordNode(textNode)) {
         if (WORD_TOKEN_REGEX.test(textContent)) {
           const globalCharStart = computeCharStartFromLexical(textNode);

@@ -42,9 +42,9 @@ for (const variant of VARIANTS) {
     const expectedWordCount = countWords(content);
     const report = runImmuneScan(collected, { expectedWordCount });
 
-    // eslint-disable-next-line no-console
+     
     console.log(`\n[${variant.name}] ${summarizeReport(report)}`);
-    // eslint-disable-next-line no-console
+     
     console.log('IMMUNE-DETAIL ' + JSON.stringify({
       variant: variant.name,
       shellCount: report.shellCount,
@@ -57,7 +57,7 @@ for (const variant of VARIANTS) {
 
     if (!report.healthy && report.antibody) {
       const res = writeResonanceAntibody(report.antibody);
-      // eslint-disable-next-line no-console
+       
       console.log(`IMMUNE-ANTIBODY ${res.recognized ? 'RECOGNIZED' : 'NEW'} → ${res.path}`);
     }
 
@@ -98,9 +98,9 @@ test('TrueSight overlay healthy — edit · TYPING live', async ({ page }) => {
   const expectedWordCount = countWords(content);
   const report = runImmuneScan(collected, { expectedWordCount });
 
-  // eslint-disable-next-line no-console
+   
   console.log(`\n[edit · TYPING] ${summarizeReport(report)}`);
-  // eslint-disable-next-line no-console
+   
   console.log('IMMUNE-DETAIL ' + JSON.stringify({
     shellCount: report.shellCount, nodeCount: report.nodeCount, expectedWordCount,
     peakCell: report.peakCell, rootNode: report.rootNode, distress: report.distress.slice(0, 6),
@@ -108,7 +108,7 @@ test('TrueSight overlay healthy — edit · TYPING live', async ({ page }) => {
 
   if (!report.healthy && report.antibody) {
     const res = writeResonanceAntibody(report.antibody);
-    // eslint-disable-next-line no-console
+     
     console.log(`IMMUNE-ANTIBODY ${res.recognized ? 'RECOGNIZED' : 'NEW'} → ${res.path}`);
   }
 

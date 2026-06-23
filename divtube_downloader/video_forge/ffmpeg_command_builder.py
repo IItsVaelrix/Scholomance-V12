@@ -1,8 +1,7 @@
 from __future__ import annotations
-import shlex
 from typing import Optional
 
-from video_forge.schema import VideoProject, TimelineClip, TransitionOp, TextOverlayOp, AudioTrackOp, EffectOp
+from video_forge.schema import VideoProject, TextOverlayOp, EffectOp
 from video_forge.presets import PRESETS
 from video_forge.effects import EFFECTS
 from video_forge.transitions import TRANSITIONS
@@ -71,7 +70,6 @@ class FfmpegCommandBuilder:
         concat_inputs = []
         clip_map = {c.clip_id: c for c in project.timeline}
         sorted_clips = sorted(project.timeline, key=lambda c: (c.timeline_index, c.track_index))
-        max_duration = max((c.end_time for c in sorted_clips), default=0.0)
 
         for clip in sorted_clips:
             media = project.media_bin.get(clip.media_id)
@@ -199,7 +197,7 @@ class FfmpegCommandBuilder:
         pos = pos_map.get(overlay.position, pos_map["center"])
         parts = [f"drawtext=text='{overlay.text}':fontsize={fs}:fontcolor={fc}:x={pos}:y={pos}:enable='between(t,0,{overlay.duration_secs})'"]
         if preset.shadow:
-            parts[0] += f":shadowcolor=black@0.6:shadowx=2:shadowy=2"
+            parts[0] += ":shadowcolor=black@0.6:shadowx=2:shadowy=2"
         if preset.outline:
             oc = preset.outline_color
             parts[0] += f":bordercolor={oc}:borderw=2"

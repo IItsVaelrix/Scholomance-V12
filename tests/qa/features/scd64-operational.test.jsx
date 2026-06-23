@@ -1,27 +1,27 @@
 /**
- * Permanent Operational Guard — SCD64
+ * Permanent Operational Guard - SCD64
  *
  * This file is the permanent regression guard for the four SCD64
  * operational gaps identified during the post-implementation review:
  *
- *   1. EXTENSION POINT — a second bug family (RESONANCE_GHOST) must
+ *   1. EXTENSION POINT - a second bug family (RESONANCE_GHOST) must
  *      produce a DIFFERENT SCD64 from COLOR_DRAGON, proving the family
  *      registry works and the canonicals are not hardcoded.
  *
- *   2. GLOSSARY/GENERATOR SYNC — the SCD64_GLOSSARY is derived from
+ *   2. GLOSSARY/GENERATOR SYNC - the SCD64_GLOSSARY is derived from
  *      BUG_FAMILIES at module load. If anyone changes a canonical without
  *      updating the other, the recomputed SCD64 from the canonicals must
  *      still match the glossary entry's hexCode. This test pins that
  *      invariant.
  *
- *   3. REAL EVIDENCE — `collectRealTruesightEvidence()` must read the
+ *   3. REAL EVIDENCE - `collectRealTruesightEvidence()` must read the
  *      actual codebase, not hardcoded fixtures. After the Color Dragon
  *      fix landed, the collector must report `present: false` and
  *      `fixInstalled: true` for COLOR_DRAGON (no legacy patterns, fix
  *      patterns present). This is the detector for "did the fix actually
- *      stick?" — if a future agent reverts the fix, this test fails.
+ *      stick?" - if a future agent reverts the fix, this test fails.
  *
- *   4. QA CHECKLIST — the white paper §12 acceptance criteria still pass
+ *   4. QA CHECKLIST - the white paper §12 acceptance criteria still pass
  *      (repeatability, agent convergence, negative control, nearby bug
  *      distinction, health semantics). Pinned against the locked
  *      first example.
@@ -44,7 +44,7 @@ import {
 
 const PINNED_FIRST = '01861DF4C31AC92C24D4754DD1043D244908E4B3317B90735048A13A0AB2B33C';
 
-describe('SCD64 — extension point: a second bug family produces a DIFFERENT fingerprint', () => {
+describe('SCD64 - extension point: a second bug family produces a DIFFERENT fingerprint', () => {
   it('COLOR_DRAGON and RESONANCE_GHOST produce distinct, deterministic 64-char fingerprints', () => {
     const colorDragon = generateSCD64ForFamily('COLOR_DRAGON', {}, {}, {});
     const resonanceGhost = generateSCD64ForFamily('RESONANCE_GHOST', {}, {}, {});
@@ -100,7 +100,7 @@ describe('SCD64 — extension point: a second bug family produces a DIFFERENT fi
   });
 });
 
-describe('SCD64 — glossary/generator sync: zero drift between registry and generator', () => {
+describe('SCD64 - glossary/generator sync: zero drift between registry and generator', () => {
   it('recomputing each family from its canonicals produces the same hex as the glossary entry', () => {
     // Group glossary by family
     const byFamily = {};
@@ -146,7 +146,7 @@ describe('SCD64 — glossary/generator sync: zero drift between registry and gen
   });
 });
 
-describe('SCD64 — real evidence: the collector reads the actual codebase, not fixtures', () => {
+describe('SCD64 - real evidence: the collector reads the actual codebase, not fixtures', () => {
   it('returns per-family bug-presence/fix-installed flags computed from the actual code', () => {
     const evidence = collectRealTruesightEvidence();
 
@@ -161,7 +161,7 @@ describe('SCD64 — real evidence: the collector reads the actual codebase, not 
       expect(typeof familyEvidence.fixInstalled).toBe('boolean');
       expect(Array.isArray(familyEvidence.perFile)).toBe(true);
       // Runtime-numeric families (e.g. SCORE_DRIFT) carry no static evidence
-      // files — they are detected from runtimeEvidence, not file greps, so
+      // files - they are detected from runtimeEvidence, not file greps, so
       // their perFile list is legitimately empty.
       if (familyEvidence.perFile.length > 0) {
         // Each perFile entry should reference a real file in the repo.
@@ -206,7 +206,7 @@ describe('SCD64 — real evidence: the collector reads the actual codebase, not 
   });
 });
 
-describe('SCD64 — QA checklist from white paper §12', () => {
+describe('SCD64 - QA checklist from white paper §12', () => {
   it('repeatability: 10 identical runs produce the same COLOR_DRAGON SCD64', () => {
     const baseline = runTrueSightSCD64Sweep().aggregateSCD64;
     for (let i = 0; i < 10; i += 1) {
@@ -227,7 +227,7 @@ describe('SCD64 — QA checklist from white paper §12', () => {
   it('negative control: tampered runtime inputs do NOT alter the SCD64 (design rejects runtime-derived hex)', () => {
     const baseline = generateColorDragonSCD64().checksum64;
     const tampered = generateColorDragonSCD64(
-      { completed: true, verdictText: 'TAMPERED — should be ignored' },
+      { completed: true, verdictText: 'TAMPERED - should be ignored' },
       { energyAtMismatch: 0.99, gradientMagnitude: 0.99, collapseVerdict: 'TAMPERED' },
       { runtimeEvidence: { note: 'this should not affect the hex' } }
     );
@@ -276,7 +276,7 @@ describe('SCD64 — QA checklist from white paper §12', () => {
   });
 });
 
-describe('SCD64 — pinned first example is stable across the operational refactor', () => {
+describe('SCD64 - pinned first example is stable across the operational refactor', () => {
   it('getFirstColorDragonSCD64() still equals the pinned first example', () => {
     const first = getFirstColorDragonSCD64();
     expect(first.checksum64).toBe(PINNED_FIRST);

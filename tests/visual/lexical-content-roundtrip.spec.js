@@ -14,7 +14,7 @@ test('editor content round-trips with single newlines (no \\n\\n corruption)', a
   await page.waitForTimeout(300);
 
   const emitted = await page.evaluate(() => window.__HARNESS__?.editorContent);
-  // eslint-disable-next-line no-console
+   
   console.log('EMITTED', JSON.stringify(emitted));
   expect(emitted, 'onContentChange must not double newlines').not.toMatch(/\n\n/);
   expect(emitted, 'content must stay multi-line').toContain('\n');

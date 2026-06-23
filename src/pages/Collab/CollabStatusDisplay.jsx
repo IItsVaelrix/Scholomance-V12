@@ -1,5 +1,5 @@
 /**
- * CollabStatusDisplay — Display sync status with conflict integration
+ * CollabStatusDisplay - Display sync status with conflict integration
  * Adapted from PixelBrain StatusDisplay
  */
 

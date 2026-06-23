@@ -167,7 +167,7 @@ function SearchPanelInner({
   const seedRef = useRef('');
   const castTimeoutRef = useRef(null);
 
-  // — WORD mode state —
+  // - WORD mode state  - 
   const [query, setQuery] = useState('');
   const [resolvedWord, setResolvedWord] = useState('');
   const [lookupOverride, setLookupOverride] = useState(null);
@@ -175,16 +175,16 @@ function SearchPanelInner({
   const [isSuggesting, setIsSuggesting] = useState(false);
   const [castSignal, setCastSignal] = useState(null);
 
-  // — Mode state —
+  // - Mode state  - 
   const [mode, setMode] = useState('WORD'); // 'WORD' | 'CORPUS' | 'QUERY'
 
-  // — CORPUS mode state —
+  // - CORPUS mode state  - 
   const [corpusResults, setCorpusResults] = useState([]);
   const [isCorpusLoading, setIsCorpusLoading] = useState(false);
   const [corpusError, setCorpusError] = useState(null);
   const [activeTypeFilter, setActiveTypeFilter] = useState(null);
 
-  // — Semantic kin state (WORD mode, section 07) —
+  // - Semantic kin state (WORD mode, section 07)  - 
   const [semanticKin, setSemanticKin] = useState([]);
 
   const {
@@ -251,19 +251,19 @@ function SearchPanelInner({
     [activeEntry]
   );
 
-  // — Corpus facets derived from live results —
+  // - Corpus facets derived from live results  - 
   const corpusFacets = useMemo(() => {
     const types = [...new Set(corpusResults.map((r) => r.type).filter(Boolean))];
     return { types };
   }, [corpusResults]);
 
-  // — Filtered corpus results —
+  // - Filtered corpus results  - 
   const filteredCorpusResults = useMemo(() => {
     if (!activeTypeFilter) return corpusResults;
     return corpusResults.filter((r) => r.type === activeTypeFilter);
   }, [corpusResults, activeTypeFilter]);
 
-  // — Word lookup —
+  // - Word lookup  - 
   const performLookup = useCallback(async (nextWord, options = {}) => {
     const normalized = normalizeLookupWord(nextWord);
     if (!normalized) return;
@@ -311,7 +311,7 @@ function SearchPanelInner({
     }
   }, []);
 
-  // — Cache resolved word data —
+  // - Cache resolved word data  - 
   useEffect(() => {
     if (!data || !resolvedWord) return;
     const normalizedDataWord = normalizeLookupWord(data.word || resolvedWord);
@@ -319,7 +319,7 @@ function SearchPanelInner({
     setCachedWord(normalizedDataWord, data);
   }, [data, resolvedWord]);
 
-  // — Seed word → auto lookup —
+  // - Seed word → auto lookup  - 
   useEffect(() => {
     const normalizedSeed = normalizeLookupWord(seedWord);
     if (!normalizedSeed || normalizedSeed === seedRef.current) return;
@@ -328,7 +328,7 @@ function SearchPanelInner({
     void performLookup(normalizedSeed, { markUser: false });
   }, [performLookup, seedWord]);
 
-  // — WORD mode: suggestion debounce —
+  // - WORD mode: suggestion debounce  - 
   useEffect(() => {
     if (mode !== 'WORD') return undefined;
     if (normalizedQuery.length < 2) {
@@ -358,7 +358,7 @@ function SearchPanelInner({
     };
   }, [normalizedQuery, mode]);
 
-  // — CORPUS mode: search debounce —
+  // - CORPUS mode: search debounce  - 
   useEffect(() => {
     if (mode !== 'CORPUS') return undefined;
     if (normalizedQuery.length < 2) {
@@ -393,7 +393,7 @@ function SearchPanelInner({
     };
   }, [normalizedQuery, mode]);
 
-  // — WORD mode: semantic kin fetch after word resolves —
+  // - WORD mode: semantic kin fetch after word resolves  - 
   useEffect(() => {
     if (mode !== 'WORD') return undefined;
     const word = activeEntry?.word || resolvedWord;
@@ -544,7 +544,7 @@ function SearchPanelInner({
 
         <div className="oracle-core-panel">
 
-        {/* Chrome bar — mode toggle + label */}
+        {/* Chrome bar - mode toggle + label */}
         <div className="oracle-chrome">
           <span className="oracle-chrome-dot oracle-chrome-dot--hot" aria-hidden="true" />
           <span className="oracle-chrome-dot oracle-chrome-dot--warm" aria-hidden="true" />
@@ -733,7 +733,7 @@ function SearchPanelInner({
         )}
 
         {/* Main feed */}
-        <div className="oracle-feed" role="region" aria-live="polite" aria-label={`Lexicon terminal output – ${inputIdRef.current}`}>
+        <div className="oracle-feed" role="region" aria-live="polite" aria-label={`Lexicon terminal output - ${inputIdRef.current}`}>
           <AnimatePresence mode="wait">
 
             {/* ═══ QUERY MODE ═══ */}
@@ -928,7 +928,7 @@ function SearchPanelInner({
                 >
                   <p className="oracle-idle-title">Archive standing by.</p>
                   <p className="oracle-idle-copy">
-                    Query the literary corpus. Matched fragments surface with their phonemic tokens highlighted — click any token to resolve it in WORD mode.
+                    Query the literary corpus. Matched fragments surface with their phonemic tokens highlighted - click any token to resolve it in WORD mode.
                   </p>
                   <div className="oracle-idle-prompt">
                     <span>&gt;&gt;</span>
@@ -966,7 +966,7 @@ function SearchPanelInner({
                   {...revealMotion}
                   transition={{ duration: 0.24 }}
                 >
-                  {/* 01 — Capability Truth */}
+                  {/* 01 - Capability Truth */}
                   <motion.section className="oracle-section oracle-section--summary" {...streamMotionProps}>
                     <div className="oracle-section-head">
                       <span className="oracle-section-index">01</span>
@@ -981,7 +981,7 @@ function SearchPanelInner({
                     />
                   </motion.section>
 
-                  {/* 02 — Archive Stack */}
+                  {/* 02 - Archive Stack */}
                   {definitionRows.length > 0 && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -996,7 +996,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* 03 — Measured Reality */}
+                  {/* 03 - Measured Reality */}
                   {scrollContext && (scrollContext.foundInScroll || (scrollContext.resonanceLinks?.length || 0) > 0 || (scrollContext.assonanceLinks?.length || 0) > 0) && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -1011,7 +1011,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* 04 — Signal Channels */}
+                  {/* 04 - Signal Channels */}
                   {channelGroups.length > 0 && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -1026,7 +1026,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* 05 — Astrology Trace */}
+                  {/* 05 - Astrology Trace */}
                   {scrollContext?.astrology && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -1041,7 +1041,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* 06 — Live Resonance */}
+                  {/* 06 - Live Resonance */}
                   {scrollContext?.resonanceLinks?.length > 0 && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -1056,7 +1056,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* 07 — Phonemic Kin (semantic endpoint) */}
+                  {/* 07 - Phonemic Kin (semantic endpoint) */}
                   {semanticKin.length > 0 && (
                     <motion.section className="oracle-section" {...streamMotionProps}>
                       <div className="oracle-section-head">
@@ -1071,7 +1071,7 @@ function SearchPanelInner({
                     </motion.section>
                   )}
 
-                  {/* XX — Signal Fault */}
+                  {/* XX - Signal Fault */}
                   {error && !activeEntry && (
                     <motion.section className="oracle-section oracle-section--error" {...streamMotionProps}>
                       <div className="oracle-section-head">

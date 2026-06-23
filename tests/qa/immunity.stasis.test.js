@@ -220,6 +220,60 @@ async function main() {
     }
   });
 
+  // ─── SYNTAX-0F0C: Stray Character Detector ──────────────────────────
+
+  await runTest('Innate: SYNTAX-0F0C catches invisible zero-width space', () => {
+    const content = "const x = 1;\u200Bconst y = 2;";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (!hit) throw new Error('SYNTAX-0F0C missed zero-width space.');
+    if (hit.context.type !== 'invisible_character') throw new Error('Wrong context type: ' + hit.context.type);
+  });
+
+  await runTest('Innate: SYNTAX-0F0C catches BOM character', () => {
+    const content = "\uFEFFexport const x = 1;";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (!hit) throw new Error('SYNTAX-0F0C missed BOM.');
+  });
+
+  await runTest('Innate: SYNTAX-0F0C catches smart quotes', () => {
+    const content = "const msg = \u201Chello\u201D;";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (!hit) throw new Error('SYNTAX-0F0C missed smart quotes.');
+    if (hit.context.type !== 'stray_unicode') throw new Error('Wrong context type: ' + hit.context.type);
+  });
+
+  await runTest('Innate: SYNTAX-0F0C catches em-dash copy-paste artifact', () => {
+    const content = "const name = join\u2014hyphen\u2014here;";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (!hit) throw new Error('SYNTAX-0F0C missed em-dash.');
+  });
+
+  await runTest('Innate: SYNTAX-0F0C ignores clean ASCII source', () => {
+    const content = "const x = (a + b) * c;\nconst y = `template ${x}`;\nexport { x, y };";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (hit) throw new Error('SYNTAX-0F0C false-positived on clean ASCII: ' + JSON.stringify(hit.context));
+  });
+
+  await runTest('Innate: SYNTAX-0F0C respects allow annotation', () => {
+    const content = "// IMMUNE_ALLOW: syntax-prion\n\u200Bconst x = 1;";
+    const hit = scanInnate(content, 'src/lib/test.js').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (hit) throw new Error('SYNTAX-0F0C ignored allow annotation.');
+  });
+
+  await runTest('Innate: SYNTAX-0F0C does not scan non-JS files', () => {
+    const content = "\u200Bhello";
+    const hit = scanInnate(content, 'docs/readme.md').find(v => v.ruleId === 'SYNTAX-0F0C');
+    if (hit) throw new Error('SYNTAX-0F0C should not run on .md files.');
+  });
+
+  await runTest('Innate: repair.syntax-prion.sanitize is registered', async () => {
+    const { getRepair } = await import('../../codex/core/immunity/repair.recommendations.js');
+    const repair = getRepair('repair.syntax-prion.sanitize');
+    if (!repair || repair.key !== 'repair.syntax-prion.sanitize') {
+      throw new Error('SYNTAX-0F0C repairKey resolves to the unknown stub (not registered).');
+    }
+  });
+
   console.log('\n--- 🛡️ IMMUNITY STASIS SUMMARY ---');
   console.log('INNATE BARRIER:  STABLE');
   console.log('ADAPTIVE LAYER:  RESONATING');

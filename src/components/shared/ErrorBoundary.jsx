@@ -2,15 +2,15 @@ import React from 'react';
 import './ErrorBoundary.css';
 
 /**
- * ErrorBoundary — the final safety net (Pillar 4, S-Gate).
+ * ErrorBoundary - the final safety net (Pillar 4, S-Gate).
  *
  * Catches render-time crashes in its subtree so a failing panel degrades in
  * place instead of unmounting the whole IDE frame.
  *
  * Props:
- *  - fallback: ReactNode | (error, reset) => ReactNode — custom degraded UI.
- *  - label:    string — heading for the default fallback.
- *  - onError:  (error, errorInfo) => void — side-channel for logging/telemetry.
+ *  - fallback: ReactNode | (error, reset) => ReactNode - custom degraded UI.
+ *  - label:    string - heading for the default fallback.
+ *  - onError:  (error, errorInfo) => void - side-channel for logging/telemetry.
  */
 class ErrorBoundary extends React.Component {
   constructor(props) {

@@ -14,7 +14,7 @@ export type SCD64HoverDecodeResponse = {
 };
 
 export type SCD64RemediationHint = {
-  kind: "BREAKPOINT" | "INSPECT" | "AVOID" | "TEST" | "TRACE" | "OWNER_NOTE";
+  kind: "BREAKPOINT" | "INSPECT" | "AVOID" | "TEST" | "TRACE" | "OWNER_NOTE" | "SEMANTIC_DIFF";
   message: string;
   file?: string;
   symbol?: string;

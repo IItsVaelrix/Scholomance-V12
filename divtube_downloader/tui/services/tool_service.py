@@ -47,6 +47,7 @@ class _FileCache:
     Prevents redundant disk reads when AIs re-reference the same files."""
 
     def __init__(self, max_entries=300):
+        self.max_entries = max_entries
         self._entries = {}
 
     def read(self, path):
@@ -240,6 +241,7 @@ class ToolService:
             },
             {
                 "type": "function",
+                "is_coding_action": True,
                 "function": {
                     "name": "run_command",
                     "description": "Run an arbitrary shell command in the project root. You have full access to git, npm, vitest, and bash pipes/redirects.",
@@ -257,6 +259,7 @@ class ToolService:
             },
             {
                 "type": "function",
+                "is_coding_action": True,
                 "function": {
                     "name": "replace_file_content",
                     "description": "Edit a file by replacing a unique block of text.",
@@ -914,6 +917,7 @@ class ToolService:
             },
             {
                 "type": "function",
+                "is_coding_action": True,
                 "function": {
                     "name": "heal",
                     "description": "Run the autonomous healing loop: diagnose bug via RAID → apply patch → run tests → learn from result. Use when you have a bug report and want the system to attempt automatic repair.",
@@ -967,6 +971,7 @@ class ToolService:
             },
             {
                 "type": "function",
+                "is_coding_action": True,
                 "function": {
                     "name": "apply_patch",
                     "description": "Apply a search/replace patch or unified diff to a file. Use this when you have a ready patch and want to write it to disk immediately.",
@@ -1474,9 +1479,10 @@ class ToolService:
         if not checksum:
             return "Error: No checksum provided."
         
-        cmd = ["npx", "tsx", "scripts/scd64-decode.ts", checksum]
+        import shlex
+        cmd = f"source ~/.bashrc && npx tsx scripts/scd64-decode.ts {shlex.quote(checksum)}"
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15, cwd=PROJECT_ROOT)
+            proc = subprocess.run(cmd, shell=True, executable="/bin/bash", capture_output=True, text=True, timeout=15, cwd=PROJECT_ROOT)
             if proc.returncode != 0:
                 return f"Error decoding SCD64:\n{proc.stderr.strip() or proc.stdout.strip()}"
             
@@ -1499,9 +1505,10 @@ class ToolService:
         if not safe:
             return "Error: Invalid path."
         
-        cmd = ["npx", "tsx", "scripts/scd64-intellisense.ts", "--json", file_path]
+        import shlex
+        cmd = f"source ~/.bashrc && npx tsx scripts/scd64-intellisense.ts --json {shlex.quote(file_path)}"
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=30, cwd=PROJECT_ROOT)
+            proc = subprocess.run(cmd, shell=True, executable="/bin/bash", capture_output=True, text=True, timeout=30, cwd=PROJECT_ROOT)
             
             # The script might exit with 1 if there are errors but still outputs JSON if --json is passed
             out = proc.stdout.strip()

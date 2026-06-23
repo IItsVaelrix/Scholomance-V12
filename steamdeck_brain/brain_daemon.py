@@ -13,8 +13,11 @@ Architecture:
   - HTTP API on localhost:9090
 
 Usage:
-  python3 brain_daemon.py --model phi3:mini --port 9090
-  python3 brain_daemon.py --daemon  # fork to background
+  python3 brain_daemon.py --model phi3:mini --port 9090   # foreground
+
+To keep it on at all times (independent of DivTube, surviving crashes and
+reboots), install it as a systemd --user service:
+  ./systemd/install.sh
 
 Clients use brain_bridge.BrainBridgeClient for transparent queries.
 """

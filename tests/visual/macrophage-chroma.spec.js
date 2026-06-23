@@ -4,7 +4,7 @@ test('Spectral Macrophage live DOM Phagocytosis', async ({ page }) => {
   // Capture Macrophage logs from the browser console
   page.on('console', msg => {
     if (msg.text().includes('MACROPHAGE') || msg.text().includes('DEEP SPECTRAL')) {
-      // eslint-disable-next-line no-console
+       
       console.log(`BROWSER: ${msg.text()}`);
     }
   });

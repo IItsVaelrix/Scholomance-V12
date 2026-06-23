@@ -30,7 +30,7 @@ function Icon({
 
 // ─── Activity Bar Icons ───────────────────────────────────────────────────────
 
-/** Folder icon — Explorer */
+/** Folder icon - Explorer */
 export function FolderIcon(props) {
   return (
     <Icon {...props}>
@@ -39,7 +39,7 @@ export function FolderIcon(props) {
   );
 }
 
-/** Magnifying glass — Search */
+/** Magnifying glass - Search */
 export function SearchIcon(props) {
   return (
     <Icon {...props}>
@@ -49,7 +49,7 @@ export function SearchIcon(props) {
   );
 }
 
-/** Wrench/Screwdriver — Tools */
+/** Wrench/Screwdriver - Tools */
 export function ToolsIcon(props) {
   return (
     <Icon {...props}>
@@ -58,7 +58,7 @@ export function ToolsIcon(props) {
   );
 }
 
-/** Book — Library / Scrolls */
+/** Book - Library / Scrolls */
 export function BookIcon(props) {
   return (
     <Icon {...props}>
@@ -70,7 +70,7 @@ export function BookIcon(props) {
 
 // ─── Tool Icons ──────────────────────────────────────────────────────────────
 
-/** Open eye — Truesight */
+/** Open eye - Truesight */
 export function EyeIcon(props) {
   return (
     <Icon {...props}>
@@ -80,7 +80,7 @@ export function EyeIcon(props) {
   );
 }
 
-/** Sparkle/Star — Ritual Prediction */
+/** Sparkle/Star - Ritual Prediction */
 export function SparkleIcon(props) {
   return (
     <Icon {...props}>
@@ -89,7 +89,7 @@ export function SparkleIcon(props) {
   );
 }
 
-/** Bar Chart — Metrics */
+/** Bar Chart - Metrics */
 export function MetricsIcon(props) {
   return (
     <Icon {...props}>
@@ -100,7 +100,7 @@ export function MetricsIcon(props) {
   );
 }
 
-/** Crosshair / Asterisk — Analyze */
+/** Crosshair / Asterisk - Analyze */
 export function AnalyzeIcon(props) {
   return (
     <Icon {...props}>
@@ -113,7 +113,7 @@ export function AnalyzeIcon(props) {
   );
 }
 
-/** Infinity / Link — Rhyme */
+/** Infinity / Link - Rhyme */
 export function RhymeIcon(props) {
   return (
     <Icon {...props}>
@@ -125,7 +125,7 @@ export function RhymeIcon(props) {
 
 // ─── Misc UI Icons ───────────────────────────────────────────────────────────
 
-/** Star chart — Rhyme Astrology */
+/** Star chart - Rhyme Astrology */
 export function AstrologyIcon(props) {
   return (
     <Icon {...props}>
@@ -136,7 +136,7 @@ export function AstrologyIcon(props) {
   );
 }
 
-/** Checkmark — Success/Saved */
+/** Checkmark - Success/Saved */
 export function CheckIcon(props) {
   return (
     <Icon {...props} stroke="#22aa44">
@@ -145,7 +145,7 @@ export function CheckIcon(props) {
   );
 }
 
-/** Close/X — Cancel/Dismiss */
+/** Close/X - Cancel/Dismiss */
 export function CloseIcon(props) {
   return (
     <Icon {...props}>
@@ -155,7 +155,7 @@ export function CloseIcon(props) {
   );
 }
 
-/** Double chevron right — Expand sidebar */
+/** Double chevron right - Expand sidebar */
 export function ChevronsRightIcon(props) {
   return (
     <Icon {...props}>
@@ -165,7 +165,7 @@ export function ChevronsRightIcon(props) {
   );
 }
 
-/** Double chevron left — Collapse sidebar */
+/** Double chevron left - Collapse sidebar */
 export function ChevronsLeftIcon(props) {
   return (
     <Icon {...props}>
@@ -175,7 +175,7 @@ export function ChevronsLeftIcon(props) {
   );
 }
 
-/** Gear — Settings */
+/** Gear - Settings */
 export function SettingsIcon(props) {
   return (
     <Icon {...props}>

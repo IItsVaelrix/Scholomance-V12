@@ -17,7 +17,7 @@ const SHORT_CONTENT = [
   'Crimson resonance echoes through the lattice',
 ].join('\n');
 
-// Long, wrapping content closer to a real scroll — exercises wrap-point logic.
+// Long, wrapping content closer to a real scroll - exercises wrap-point logic.
 const LONG_CONTENT = Array.from({ length: 12 }, (_, i) =>
   `Line ${i} the lantern keeper wanders through the crimson archive counting silent vowels`
 ).join('\n');

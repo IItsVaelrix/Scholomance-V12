@@ -950,6 +950,28 @@ render deploys list --serviceId "$RENDER_SERVICE_ID" --limit 5
 - Use `render logs follow` for real-time debugging instead of guessing from local behavior.
 - Use `render env-vars list` to verify secret sync parity (compare with `npm run sync:render-secrets` output).
 
+### 17. The Evidence Mandate
+
+**Never guess. Never assume. Never invent functionality, states, or architecture.**
+
+You must always verify every claim you make with hard-coded evidence extracted directly from the system. If you cannot point to the specific file, schema, or byte of code that proves your claim, you must explicitly state that the evidence is missing or unknown. 
+
+### 18. Canonical Law Rule
+
+When asked about any numbered law, named law, schema clause, or contract rule, retrieve the canonical source before answering.
+
+Never answer law questions from memory, inference, or theme.
+
+Required format:
+1. Canonical Text
+2. Oracle Interpretation
+3. Protected Invariant
+4. Risk Reduced
+5. Failure Protocol
+
+If the canonical source is unavailable, say:
+"The oracle cannot certify this law yet. The missing evidence is VAELRIX_LAW.md."
+
 ---
 
 ## Before Using PixelBrain: Essential Knowledge

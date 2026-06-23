@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 import React, { useEffect, useRef } from "react";
 import { AbsoluteFill, Audio, useCurrentFrame, useVideoConfig } from "remotion";
 import { clamp01 } from "../../codex/core/scholotime/scholotime.math.js";
@@ -6,7 +7,7 @@ import type { BeatClockState } from "./useBeatClock";
 import type { GrimoireTrackWithAlignment } from "../pages/Visualiser/tracks/loadTrackWithAlignment";
 import { DEFAULT_PACING } from "../pages/Visualiser/tracks/types";
 import type { WordTiming } from "./types";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 import { getTypographyMoviePlugin } from "../pages/internal/ScholoTimeLab/typographyMoviePlugins.js";
 
 const mazePlugin = getTypographyMoviePlugin("first-person-maze") as {

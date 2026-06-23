@@ -105,7 +105,7 @@ test.describe('Memory Cell Osmosis — IDE TrueSight whitespace substrate', () =
     });
     const result = evaluateIdeWhitespaceOsmosis(metrics, cell);
 
-    // eslint-disable-next-line no-console
+     
     console.log('MEMCELL-IDE-HEALTH ' + JSON.stringify({ metrics, result }, null, 2));
 
     expect(result.status, JSON.stringify({ metrics, result }, null, 2)).toBe('silent');
@@ -130,7 +130,7 @@ test.describe('Memory Cell Osmosis — IDE TrueSight whitespace substrate', () =
     });
     const result = evaluateIdeWhitespaceOsmosis(metrics, cell);
 
-    // eslint-disable-next-line no-console
+     
     console.log('MEMCELL-IDE-ANOMALY ' + JSON.stringify({ metrics, result }, null, 2));
 
     expect(metrics.maxWordDriftPx).toBeGreaterThan(TOLERANCE_PX);

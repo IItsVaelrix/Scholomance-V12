@@ -51,7 +51,7 @@ import { symptomsToVector } from './clerical-raid.vector.js';
 
 const SLOT_NAMES = ['BUGCLASS', 'COORDSYS', 'INVARIANT', 'MAGNITUDE', 'MASKING', 'GATE', 'PROPAGATE', 'VERDICT'];
 
-const BUG_FAMILIES = Object.freeze({
+const BUG_FAMILIES = {
   COLOR_DRAGON: Object.freeze({
     versionByte: '01',
     domain: 'COLOR',
@@ -66,10 +66,6 @@ const BUG_FAMILIES = Object.freeze({
       { slot: 'PROPAGATE', canonical: 'PROPAGATE:backend-IR-to-ReadPage-to-Lexical-TruesightPlugin-divergence' },
       { slot: 'VERDICT',   canonical: 'VERDICT:diagnose-only+authoritative-backend-family+rogue-painter' },
     ]),
-    // Files that the real-evidence collector reads to detect this bug's
-    // present-state signature. The collector greps these for the legacy
-    // patterns; if any legacy pattern is present, the bug is considered
-    // present; if all show the fix, the bug is considered absent.
     evidenceFiles: [
       'src/lib/lexical/TruesightPlugin.jsx',
       'src/pages/Read/ReadPage.jsx',
@@ -77,18 +73,14 @@ const BUG_FAMILIES = Object.freeze({
       'src/lib/lexical/charStart.js',
     ],
     legacyPatterns: [
-      // The legacy patterns require code-syntax context (identifier usage
-      // as a callee, member access, or assignment). A bare word in a
-      // comment does not match — that prevents the regex from triggering
-      // on historical references in JSDoc.
-      /\bgetGlobalCharStart\s*\(/,                                  // legacy inline charStart walk (as a call)
-      /\banalysisMap\s*(?:\.|\[|\s*=|;|,|\))/,                     // legacy text-keyed fallback map (as a use)
-      /\.set\([a-zA-Z_$.?\s]+\.toLowerCase\(\)/,                    // legacy Map.set lowercased text
-      /\.get\([a-zA-Z_$.?\s]+\.toLowerCase\(\)/,                    // legacy Map.get lowercased text
+      /\bgetGlobalCharStart\s*\(/,
+      /\banalysisMap\s*(?:\.|\[|\s*=|;|,|\))/,
+      /\.set\([a-zA-Z_$.?\s]+\.toLowerCase\(\)/,
+      /\.get\([a-zA-Z_$.?\s]+\.toLowerCase\(\)/,
     ],
     fixPatterns: [
-      /computeCharStartFromLexical/,                                 // canonical charStart helper (as a use)
-      /resolveTokenDataAtPosition/,                                  // position-only lookup hierarchy (as a use)
+      /computeCharStartFromLexical/,
+      /resolveTokenDataAtPosition/,
     ],
     equations: Object.freeze([
       { name: 'Invariant Color Divergence', symbol: 'ICD', formula: 'ICD(w) = backendVowelFamily(w, context) != frontendVowelFamily(w)' },
@@ -115,34 +107,23 @@ const BUG_FAMILIES = Object.freeze({
       'codex/core/phonology/phoneme.engine.js',
     ],
     legacyPatterns: [
-      /resonantCharStarts\s*=\s*null\b/,                                // gate Set explicitly nulled
-      /resonantCharStarts\s*=\s*\[\s*\]/,                                // gate Set empty literal
-      /qualifies\s*=\s*\(\s*\)\s*=>/,                                   // empty filter
+      /resonantCharStarts\s*=\s*null\b/,
+      /resonantCharStarts\s*=\s*\[\s*\]/,
+      /qualifies\s*=\s*\(\s*\)\s*=>/,
     ],
     fixPatterns: [
-      /resonantCharStarts\s*=\s*new Set\(/,                             // gate Set constructed as Set
-      /MIN_RESONANCE_SCORE/,                                            // gate threshold present
+      /resonantCharStarts\s*=\s*new Set\(/,
+      /MIN_RESONANCE_SCORE/,
     ],
     equations: Object.freeze([
       { name: 'Gate Set Cardinality',   symbol: 'GSC', formula: 'GSC = |resonantCharStarts| vs |allConnections|' },
       { name: 'Ghost Coloring Rate',    symbol: 'GCR', formula: 'GCR(w) = (coloredWords == 0) && (|resonantCharStarts| == 0)' },
     ]),
   }),
-  // v3 — GATE_DATA_ABSENT. Distinct from RESONANCE_GHOST: the Set-construction
-  // loop is CORRECT; its INPUT is missing. Rhyme connections (allConnections)
-  // are produced ONLY by the server panel-analysis pipeline (deepRhymeEngine).
-  // Every fallback synthesis path (nlu.synthesizeVerse -> synthesizeVerse ->
-  // buildSyntaxLayer) emits a syntaxLayer with NO allConnections, and
-  // compileVerseToIR emits no .connections either. The resonance gate reads a
-  // server-only key (deepAnalysis.syntaxLayer.allConnections), so when the
-  // server is unreachable (ScholomanceDictionaryAPI.isEnabled() === false during
-  // backoff) the gate input is undefined, the Set is correctly-but-uselessly
-  // empty, and zero words color. The everything->nothing flip happened because
-  // closing the null-bypass made the gate authoritative over an absent feed.
   GATE_DATA_ABSENT: Object.freeze({
     versionByte: '03',
     domain: 'COLOR',
-    description: 'Resonance gate starved of input: rhyme connections exist only on the server synthesis path; the fallback path omits allConnections, so the gate reads a server-only key and the Set is empty.',
+    description: 'Resonance gate starved of input: rhyme connections exist only on the server synthesis path.',
     canonicals: Object.freeze([
       { slot: 'BUGCLASS',  canonical: 'BUGCLASS:GATE_DATA_ABSENT:fallback-synthesis-omits-connections+gate-reads-server-only-key' },
       { slot: 'COORDSYS',  canonical: 'COORDSYS:server-only-syntaxLayer.allConnections+fallback-buildSyntaxLayer-emits-no-connections' },
@@ -160,15 +141,9 @@ const BUG_FAMILIES = Object.freeze({
       'codex/core/shared/syntax.layer.js',
     ],
     legacyPatterns: [
-      // The resonance gate's connection read is single-source (server-only key)
-      // with NO fallback. Present while the gate consumes syntaxLayer.allConnections
-      // directly; the fix routes the read through a resolver instead.
       /deepAnalysis\?\.syntaxLayer\?\.allConnections/,
     ],
     fixPatterns: [
-      // The shared resolver introduced by the fix: a single function that reads
-      // connections from whichever synthesis path produced them (server analysis,
-      // syntaxLayer alias, or verseIR) and signals degraded mode when none exist.
       /resolveResonanceConnections/,
     ],
     equations: Object.freeze([
@@ -176,16 +151,10 @@ const BUG_FAMILIES = Object.freeze({
       { name: 'Starved Gate Rate',          symbol: 'SGR', formula: 'SGR = (|resonantCharStarts| == 0) && (CSP == false)' },
     ]),
   }),
-  // v5 — SCORE_DRIFT. The first non-COLOR family and the first runtime detector
-  // to mint a confirmed SCD64. The ranker's aggregate score for a token diverges
-  // from a transparent reference token weight (TF-IDF x syllable salience x
-  // position). This is a runtime-numeric bug, not a file-pattern bug, so the
-  // static evidence-collector arrays are intentionally empty — the real evidence
-  // is the deviation numbers carried in runtimeEvidence by tokenWeightToSCD64.
   SCORE_DRIFT: Object.freeze({
     versionByte: '05',
     domain: 'SCORING',
-    description: 'Ranker score diverges from the transparent reference token weight: a provider miscalibrates a token (over- or under-weighted) and the error stays hidden until the final ranked list.',
+    description: 'Ranker score diverges from the transparent reference token weight.',
     canonicals: Object.freeze([
       { slot: 'BUGCLASS',  canonical: 'BUGCLASS:SCORE_DRIFT:ranker-score-diverges-from-reference-token-weight' },
       { slot: 'COORDSYS',  canonical: 'COORDSYS:reference-weight-tfidf-syllable-position-vs-ranker-aggregate-of-8-providers' },
@@ -204,70 +173,24 @@ const BUG_FAMILIES = Object.freeze({
       { name: 'Score Deviation',        symbol: 'SDV', formula: 'SDV(w) = rankerScore(w) - referenceWeight(w); |SDV| > deviationThreshold => drift' },
     ]),
   }),
-});
+};
 
-// Default family for backward compatibility with the v1 locked SCD64.
-const DEFAULT_BUG_FAMILY = 'COLOR_DRAGON';
-
-// The single source of truth for the pinned first example. The white paper
-// §3 and §15 lock this as the reference fingerprint. Any drift trips the
-// glossary/generator sync test in tests/qa/features/scd64-operational.test.jsx.
-const PINNED_FIRST_EXAMPLE = '01861DF4C31AC92C24D4754DD1043D244908E4B3317B90735048A13A0AB2B33C';
-
-// ═══════════════════════════════════════════════════════════════════════════
-// SCD64_GLOSSARY — derived from the canonical registry
-// ═══════════════════════════════════════════════════════════════════════════
-//
-// Built once at module load from BUG_FAMILIES so the glossary and the
-// generator cannot drift. The categoryChecksum is a 16-char hash of the
-// canonical entry (name + canonical + slotName + hex), giving every slot
-// a stable MCP-indexable key. If a canonical changes, the hash changes;
-// if a hash changes, the test fails. This is the operational guarantee.
-
-// Per-slot human meanings for the COLOR_DRAGON family. The original white
-// paper's appendix shows per-slot human meanings; we preserve them here so
-// the glossary is rich enough to be self-documenting. RESONANCE_GHOST
-// uses the same slot names but different meanings.
-const SLOT_HUMAN_MEANINGS = Object.freeze({
-  COLOR_DRAGON: Object.freeze({
-    BUGCLASS:  'Color bug caused by coordinate drift concealed by a fallback color path.',
-    COORDSYS:  'Backend source charStart vs Lexical sibling walk + frontend token boundary.',
-    INVARIANT: 'Global charStart matched but vowel/family source for color diverged.',
-    MAGNITUDE: 'High mismatch rate (>=0.94) with per-line drift and token coverage loss.',
-    MASKING:   'Resonant set present but frontend fallback painter overrode authoritative family.',
-    GATE:      'Resonance gate passed (>=0.95) in backend; frontend recomputed color family anyway.',
-    PROPAGATE: 'Divergence propagated: deepRhymeEngine \u2192 IR \u2192 ReadPage \u2192 TruesightPlugin.',
-    VERDICT:   'Diagnose-only. Authoritative backend family identified. Rogue frontend painter.',
-  }),
-  RESONANCE_GHOST: Object.freeze({
-    BUGCLASS:  'Resonance-gate Set construction failure: the gate Set is empty when it should be populated.',
-    COORDSYS:  'Backend allConnections vs frontend gate Set; coordinate of failure is the Set-construction loop.',
-    INVARIANT: '|resonantCharStarts| must equal |allConnections with score >= threshold|; mismatch means gate is silent.',
-    MAGNITUDE: 'Empty gate Set rate >= 0.80; zero colored words across the document.',
-    MASKING:   'Gate Set quietly empty; frontend silently falls through to either color-everything or color-nothing.',
-    GATE:      'Resonance gate score >= 0.95 in backend, but gate Set is empty so no word is selected.',
-    PROPAGATE: 'Divergence: deepRhymeEngine \u2192 syntaxLayer \u2192 ReadPage \u2192 gate Set construction skipped.',
-    VERDICT:   'Diagnose-only. Gate Set construction broken. Frontend shows nothing.',
-  }),
-  GATE_DATA_ABSENT: Object.freeze({
-    BUGCLASS:  'Gate starved of input: the fallback synthesis path omits rhyme connections and the gate reads a server-only key.',
-    COORDSYS:  'allConnections exists only on the server path (syntaxLayer = analysis); buildSyntaxLayer emits no connections; compileVerseToIR emits no .connections.',
-    INVARIANT: 'The gate\u2019s connection source must exist on EVERY synthesis path (server and local fallback), not just the server path.',
-    MAGNITUDE: 'When the server is unreachable the fallback path is always selected; gate Set size is 0 and zero words color.',
-    MASKING:   'isEnabled() returns false during backoff and the fallthrough is silent; activeConnections survives via a verseIR fallback, but the resonance gate has no such fallback.',
-    GATE:      'The resonance gate is always consulted, but its input (allConnections) is undefined on the fallback path, so it selects nothing.',
-    PROPAGATE: 'server-unreachable \u2192 isEnabled()=false \u2192 synthesizeVerse \u2192 empty syntaxLayer \u2192 empty gate Set \u2192 no color.',
-    VERDICT:   'Diagnose-only. Fix: wire connections into the fallback synthesis OR give the gate a defined degraded mode when no source exists.',
-  }),
-});
-
-function _humanMeaningForSlot(familyName, slotName) {
-  const familyMeanings = SLOT_HUMAN_MEANINGS[familyName];
-  if (familyMeanings && familyMeanings[slotName]) return familyMeanings[slotName];
-  return BUG_FAMILIES[familyName]?.description || 'See glossary.';
+// Dynamic Plugin Registration
+export function registerBugFamily(familyName, familyConfig) {
+  if (BUG_FAMILIES[familyName]) {
+    throw new Error(`[SCD64] Bug family ${familyName} already registered.`);
+  }
+  BUG_FAMILIES[familyName] = Object.freeze(familyConfig);
+  _updateGlossary();
 }
 
-function _buildSCD64Glossary() {
+const DEFAULT_BUG_FAMILY = 'COLOR_DRAGON';
+const PINNED_FIRST_EXAMPLE = '01861DF4C31AC92C24D4754DD1043D244908E4B3317B90735048A13A0AB2B33C';
+
+let SCD64_GLOSSARY = [];
+let SCD64_COLOR_DRAGON_GLOSSARY = [];
+
+function _updateGlossary() {
   const out = [];
   for (const [familyName, family] of Object.entries(BUG_FAMILIES)) {
     const deriveHex = (canonical, isBugClass) => {
@@ -289,7 +212,7 @@ function _buildSCD64Glossary() {
         category: familyName,
         canonicalMeaning: entry.canonical.split(':').slice(1).join(':'),
         canonicalDerivationString: entry.canonical,
-        humanMeaning: _humanMeaningForSlot(familyName, entry.slot),
+        humanMeaning: family.description || 'See glossary.',
         jsonFormulaTemplate: { name: entry.slot.toLowerCase() },
         fixedForever: true,
       };
@@ -306,17 +229,13 @@ function _buildSCD64Glossary() {
       out.push(Object.freeze(glossaryEntry));
     }
   }
-  return Object.freeze(out);
+  SCD64_GLOSSARY = Object.freeze(out);
+  SCD64_COLOR_DRAGON_GLOSSARY = Object.freeze(SCD64_GLOSSARY.filter((e) => e.family === 'COLOR_DRAGON'));
 }
 
-const SCD64_GLOSSARY = _buildSCD64Glossary();
-export { SCD64_GLOSSARY };
+_updateGlossary();
 
-// Backward-compatible alias for the COLOR_DRAGON subset of the glossary.
-// White paper §9 and tests reference this name.
-export const SCD64_COLOR_DRAGON_GLOSSARY = Object.freeze(
-  SCD64_GLOSSARY.filter((e) => e.family === 'COLOR_DRAGON')
-);
+export { SCD64_GLOSSARY, SCD64_COLOR_DRAGON_GLOSSARY };
 
 export class ImmuneAgent {
   constructor(id, x, y, z) {
@@ -640,10 +559,89 @@ export class SpatialImmuneOrchestrator {
     if (this.scd64SearchEngineEnabled) {
       try {
         this._vectorizeAndQuantizeSCD(fullDiagnostic, { source: 'generateSCD64' });
-      } catch (e) {}
+      } catch (e) { /* ignore */ }
     }
 
     return fullDiagnostic;
+  }
+
+  /**
+   * Auto-Remediation (Healing)
+   * Scans for a registered bug family. If the legacy pattern is detected and a fix pattern
+   * is available, it automatically applies the fix to the evidenceFiles.
+   */
+  autoHeal(bugFamily) {
+    if (!BUG_FAMILIES[bugFamily]) {
+      throw new Error(`[SCD64] AutoHeal failed: Unknown bug family ${bugFamily}`);
+    }
+
+    const family = BUG_FAMILIES[bugFamily];
+    if (!family.legacyPatterns || family.legacyPatterns.length === 0 || !family.fixPatterns || family.fixPatterns.length === 0) {
+      return { success: false, reason: 'No legacy/fix patterns defined for auto-heal.' };
+    }
+
+    let moduleDir;
+    try {
+      moduleDir = dirname(fileURLToPath(import.meta.url));
+    } catch (e) {
+      moduleDir = process.cwd();
+    }
+    const repoRoot = resolveFsPath(moduleDir, '..', '..', '..');
+
+    let fixedCount = 0;
+    const report = [];
+
+    for (const relFile of family.evidenceFiles) {
+      const absFile = resolveFsPath(repoRoot, relFile);
+      let content = '';
+      try {
+        content = readFileSync(absFile, 'utf8');
+      } catch (e) {
+        continue;
+      }
+
+      let modified = false;
+      for (let i = 0; i < family.legacyPatterns.length; i++) {
+        const legacyPat = family.legacyPatterns[i];
+        // Ensure we actually have a fix pattern
+        if (!family.fixPatterns || family.fixPatterns.length === 0) continue;
+        const fixPat = family.fixPatterns[i] || family.fixPatterns[0];
+        
+        // Convert fix pattern to a valid string replacement.
+        // If fixPat is a RegExp object, extract its source and clean escapes.
+        // This makes it suitable for string replacement.
+        let fixStr = '';
+        if (fixPat instanceof RegExp) {
+          // Remove backslashes used for escaping regex specials, but keep \n, \t
+          fixStr = fixPat.source.replace(/\\([()[\]{}.*+?^$|])/g, '$1');
+        } else {
+          fixStr = String(fixPat);
+        }
+        
+        // Execute a global regex replacement across the file content
+        const searchRegex = new RegExp(legacyPat.source, (legacyPat.flags || '').replace('g', '') + 'g');
+        if (searchRegex.test(content)) {
+          content = content.replace(searchRegex, fixStr);
+          modified = true;
+        }
+      }
+
+      if (modified) {
+        try {
+          writeFileSync(absFile, content, 'utf8');
+          fixedCount++;
+          report.push({ file: relFile, status: 'healed' });
+        } catch (e) {
+          report.push({ file: relFile, status: 'error', message: e.message });
+        }
+      }
+    }
+
+    return {
+      success: fixedCount > 0,
+      fixedFiles: fixedCount,
+      report
+    };
   }
 
   _defaultEvidenceForFamily(bugFamily) {

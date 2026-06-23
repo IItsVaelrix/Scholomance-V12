@@ -55,11 +55,11 @@ const ROLE_LABELS = {
 };
 
 const ROLE_DESCRIPTIONS = {
-  anchor: 'A stable naming point — identifies a concept or entity.',
-  modifier: 'Qualifies or intensifies — shapes the meaning of another element.',
-  trigger: 'Initiates action or transformation — a dynamic force.',
-  connector: 'Links elements — a structural binding in the syntax.',
-  unknown: 'Resists classification — may be a proper noun or rare token.',
+  anchor: 'A stable naming point - identifies a concept or entity.',
+  modifier: 'Qualifies or intensifies - shapes the meaning of another element.',
+  trigger: 'Initiates action or transformation - a dynamic force.',
+  connector: 'Links elements - a structural binding in the syntax.',
+  unknown: 'Resists classification - may be a proper noun or rare token.',
 };
 
 const RHYME_TIER_LABEL = {
@@ -85,7 +85,7 @@ function ConfidenceBadge({ confidence, factors }) {
       <button
         type="button"
         className={`rp-confidence-badge rp-confidence--${tier}`}
-        aria-label={`Confidence ${pct}%${hasFactors ? ' — show breakdown' : ''}`}
+        aria-label={`Confidence ${pct}%${hasFactors ? ' - show breakdown' : ''}`}
         aria-expanded={hasFactors ? open : undefined}
         onClick={hasFactors ? () => setOpen((v) => !v) : undefined}
         data-static={hasFactors ? undefined : 'true'}
@@ -139,7 +139,7 @@ function RuneRow({ label, words, onNavigate, onTransmute }) {
                   type="button"
                   className="rp-rune rp-rune--transmute"
                   onClick={() => onTransmute(text)}
-                  title={`Replace with “${text}”`}
+                  title={`Replace with "${text}"`}
                 >
                   {text}
                 </button>
@@ -147,8 +147,8 @@ function RuneRow({ label, words, onNavigate, onTransmute }) {
                   type="button"
                   className="rp-rune-explore"
                   onClick={() => onNavigate(text)}
-                  aria-label={`Explore “${text}”`}
-                  title={`Explore “${text}”`}
+                  aria-label={`Explore "${text}"`}
+                  title={`Explore "${text}"`}
                 >
                   <Search size={10} />
                 </button>
@@ -173,7 +173,7 @@ function Breadcrumb({ history, index, onJump }) {
   const visible = history.slice(start, end);
   return (
     <div className="rp-breadcrumb" aria-label="Word navigation history">
-      {start > 0 && <span className="rp-crumb-trunc">…</span>}
+      {start > 0 && <span className="rp-crumb-trunc">...</span>}
       {visible.map((w, relIdx) => {
         const absIdx = start + relIdx;
         const isCurrent = absIdx === index;
@@ -565,7 +565,7 @@ const RitualPredictionTooltip = ({
 
           <section className="rp-section">
             <div className="rp-section-label"><BookOpen size={11} /> Lexicon</div>
-            {lookupLoading && !lex && <div className="rp-lexicon-status">consulting the lexicon…</div>}
+            {lookupLoading && !lex && <div className="rp-lexicon-status">consulting the lexicon...</div>}
             {pos && (
               <div className="rp-lex-pos-row">
                 <span className="rp-lex-pos">{pos}</span>
@@ -625,7 +625,7 @@ const RitualPredictionTooltip = ({
               {canTransmute && (
                 <button type="button" className="rp-action-btn rp-action-btn--accent" onClick={() => onTransmute(activeWord)}>
                   <Replace size={12} />
-                  <span>Replace “{rootWord}” → “{activeWord}”</span>
+                  <span>{`Replace "${rootWord}" → "${activeWord}"`}</span>
                 </button>
               )}
               <button type="button" className="rp-action-btn" onClick={handleCopy}>
@@ -672,7 +672,7 @@ const RitualPredictionTooltip = ({
     </div>
   );
 
-  // ── Embedded (mobile sheet) — no positioning / resize chrome ──────────────
+  // ── Embedded (mobile sheet) - no positioning / resize chrome ──────────────
   if (isEmbedded) {
     return (
       <div ref={containerRef} className="ritual-prediction-tooltip rp-embedded" data-theme={theme}>

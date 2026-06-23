@@ -1,5 +1,5 @@
 /**
- * GhostIcon — Arcade Ghost Mascot
+ * GhostIcon - Arcade Ghost Mascot
  * Adapted from PAC-MAN aesthetic for bug severity.
  */
 

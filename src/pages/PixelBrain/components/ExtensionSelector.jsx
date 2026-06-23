@@ -1,5 +1,5 @@
 /**
- * ExtensionSelector — Select and configure PixelBrain extensions
+ * ExtensionSelector - Select and configure PixelBrain extensions
  */
 
 import { useState, useCallback } from 'react';

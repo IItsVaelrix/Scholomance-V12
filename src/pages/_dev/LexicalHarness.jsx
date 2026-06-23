@@ -2,7 +2,7 @@
  * DEV-ONLY harness for the Lexical editor typing diagnosis.
  * Mirrors ReadPage's controlled-content wiring: when editable, the `content`
  * prop is derived from the live `editorContent` state that `onContentChange`
- * updates — so this reproduces the per-keystroke content-prop feedback loop.
+ * updates - so this reproduces the per-keystroke content-prop feedback loop.
  */
 import React, { useState, useCallback, useEffect } from 'react';
 import LexicalScrollEditor from '../../lib/lexical/LexicalScrollEditor.jsx';

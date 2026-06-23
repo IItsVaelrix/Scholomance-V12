@@ -161,9 +161,15 @@ function extractLineRef(line) {
  *
  * @param {LineAnalysis} lineA
  * @param {LineAnalysis} lineB
+ * @param {object} [options]
+ * @param {(wordA: string, wordB: string) => string|null} [options.matchDictionaryFamily]
+ *   Optional callback that returns the shared authoritative rhyme_family
+ *   for two end-words, or `null` if they do not share one. When provided
+ *   and the callback returns a non-null family, the end-word match is
+ *   promoted to `perfect` immediately, before any local-phoneme fallback.
  * @returns {EndWordMatch}
  */
-function analyzeEndWordMatch(lineA, lineB) {
+function analyzeEndWordMatch(lineA, lineB, options = {}) {
   const endA = lineA.endWord;
   const endB = lineB.endWord;
 
@@ -175,6 +181,29 @@ function analyzeEndWordMatch(lineA, lineB) {
   const wordB = endB.word || '';
   const rhymeKeyA = endA.rhymeKey || '';
   const rhymeKeyB = endB.rhymeKey || '';
+
+  // Authoritative dictionary check FIRST. If the Scholomance Dictionary API
+  // says these two words share a rhyme_family, that is a perfect rhyme by
+  // contract regardless of any local-phoneme math below.
+  if (options.matchDictionaryFamily) {
+    const sharedFamily = options.matchDictionaryFamily(wordA, wordB);
+    if (sharedFamily) {
+      return {
+        wordA,
+        wordB,
+        type: 'perfect',
+        score: 1.0,
+        syllablesMatched: Math.max(
+          Math.min(
+            Number(endA.syllableCount) || 1,
+            Number(endB.syllableCount) || 1,
+          ),
+          1,
+        ),
+        dictionaryFamily: sharedFamily,
+      };
+    }
+  }
 
   // Check if they share the same rhyme key (phoneme-level match)
   if (rhymeKeyA && rhymeKeyB && rhymeKeyA === rhymeKeyB) {
@@ -411,6 +440,10 @@ const OVERALL_WEIGHTS = {
  * @param {number} [options.internalOverlapWeight=0.25]
  * @param {number} [options.stressWeight=0.15]
  * @param {number} [options.syllableWeight=0.15]
+ * @param {(wordA: string, wordB: string) => string|null} [options.matchDictionaryFamily]
+ *   Optional callback that returns the shared authoritative rhyme_family
+ *   for two end-words, or `null` if they do not share one. Promotes the
+ *   end-word match to `perfect` when the dictionary agrees.
  * @returns {LineRhymeConnection}
  */
 export function connectLines(lineA, lineB, options = {}) {
@@ -421,7 +454,7 @@ export function connectLines(lineA, lineB, options = {}) {
     syllableSymmetry: options.syllableWeight ?? OVERALL_WEIGHTS.syllableSymmetry,
   };
 
-  const endWord = analyzeEndWordMatch(lineA, lineB);
+  const endWord = analyzeEndWordMatch(lineA, lineB, { matchDictionaryFamily: options.matchDictionaryFamily });
   const internalOverlap = analyzeInternalOverlap(lineA, lineB);
   const stressSimilarity = analyzeStressSimilarity(lineA, lineB);
   const syllableSymmetry = analyzeSyllableSymmetry(lineA, lineB);

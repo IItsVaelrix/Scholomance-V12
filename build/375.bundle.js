@@ -56541,7 +56541,7 @@ __webpack_require__.d(__webpack_exports__, {
 
 // UNUSED EXPORTS: AnyMap, FlattenMap, GREATEST_LOWER_BOUND, LEAST_UPPER_BOUND, allGeneratedPositionsFor, decodedMap, decodedMappings, eachMapping, encodedMap, encodedMappings, generatedPositionFor, isIgnored, presortedDecodedMap, traceSegment
 
-;// ./node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.mjs
+// ./node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.mjs
 // src/vlq.ts
 var comma = ",".charCodeAt(0);
 var semicolon = ";".charCodeAt(0);
@@ -56961,7 +56961,7 @@ function encode(decoded) {
 
 // EXTERNAL MODULE: ./node_modules/@jridgewell/resolve-uri/dist/resolve-uri.umd.js
 var resolve_uri_umd = __webpack_require__(4424);
-;// ./node_modules/@jridgewell/trace-mapping/dist/trace-mapping.mjs
+// ./node_modules/@jridgewell/trace-mapping/dist/trace-mapping.mjs
 /* unused harmony import specifier */ var trace_mapping_encode;
 // src/trace-mapping.ts
 
@@ -69671,7 +69671,7 @@ var encode = __webpack_require__(5374);
 var src_target = __webpack_require__(917);
 // EXTERNAL MODULE: ./node_modules/remotion/dist/esm/index.mjs
 var esm = __webpack_require__(3947);
-;// ./node_modules/remotion/dist/esm/version.mjs
+// ./node_modules/remotion/dist/esm/version.mjs
 // src/version.ts
 var VERSION = "4.0.477";
 
@@ -69692,7 +69692,7 @@ var client = __webpack_require__(5338);
 var jsx_runtime = __webpack_require__(4848);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/output.js
 var src_output = __webpack_require__(9917);
-;// ./node_modules/@remotion/web-renderer/dist/esm/index.mjs
+// ./node_modules/@remotion/web-renderer/dist/esm/index.mjs
 /* unused harmony import specifier */ var canEncodeVideo;
 var __create = Object.create;
 var __getProtoOf = Object.getPrototypeOf;
@@ -76857,7 +76857,7 @@ const extractAv1CodecInfoFromPacket = (packet) => {
         const bitstream = new _shared_bitstream_js__WEBPACK_IMPORTED_MODULE_3__/* .Bitstream */ ._(data);
         // Read sequence header fields
         const seqProfile = bitstream.readBits(3);
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+         
         const stillPicture = bitstream.readBits(1);
         const reducedStillPictureHeader = bitstream.readBits(1);
         let seqLevel = 0;
@@ -77242,7 +77242,7 @@ const determineVideoPacketType = (codec, decoderConfig, packetData) => {
                 if (bitstream.readBits(2) !== 2) {
                     return null;
                 }
-                ;
+                
                 const profileLowBit = bitstream.readBits(1);
                 const profileHighBit = bitstream.readBits(1);
                 const profile = (profileHighBit << 1) + profileLowBit;
@@ -77293,7 +77293,7 @@ const determineVideoPacketType = (codec, decoderConfig, packetData) => {
                 (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assertNever */ .xb)(codec);
                 (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assert */ .vA)(false);
             }
-            ;
+            
     }
 };
 var FlacBlockType;
@@ -77336,43 +77336,43 @@ const readVorbisComments = (bytes, metadataTags) => {
                 {
                     metadataTags.title ??= value;
                 }
-                ;
+                
                 break;
             case 'DESCRIPTION':
                 {
                     metadataTags.description ??= value;
                 }
-                ;
+                
                 break;
             case 'ARTIST':
                 {
                     metadataTags.artist ??= value;
                 }
-                ;
+                
                 break;
             case 'ALBUM':
                 {
                     metadataTags.album ??= value;
                 }
-                ;
+                
                 break;
             case 'ALBUMARTIST':
                 {
                     metadataTags.albumArtist ??= value;
                 }
-                ;
+                
                 break;
             case 'COMMENT':
                 {
                     metadataTags.comment ??= value;
                 }
-                ;
+                
                 break;
             case 'LYRICS':
                 {
                     metadataTags.lyrics ??= value;
                 }
-                ;
+                
                 break;
             case 'TRACKNUMBER':
                 {
@@ -77386,7 +77386,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TRACKTOTAL':
                 {
@@ -77395,7 +77395,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DISCNUMBER':
                 {
@@ -77409,7 +77409,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DISCTOTAL':
                 {
@@ -77418,7 +77418,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'DATE':
                 {
@@ -77427,13 +77427,13 @@ const readVorbisComments = (bytes, metadataTags) => {
                         metadataTags.date ??= date;
                     }
                 }
-                ;
+                
                 break;
             case 'GENRE':
                 {
                     metadataTags.genre ??= value;
                 }
-                ;
+                
                 break;
             case 'METADATA_BLOCK_PICTURE':
                 {
@@ -77456,7 +77456,7 @@ const readVorbisComments = (bytes, metadataTags) => {
                         description: description || undefined,
                     });
                 }
-                ;
+                
                 break;
         }
     }
@@ -77490,37 +77490,37 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                 {
                     addCommentTag('TITLE', value);
                 }
-                ;
+                
                 break;
             case 'description':
                 {
                     addCommentTag('DESCRIPTION', value);
                 }
-                ;
+                
                 break;
             case 'artist':
                 {
                     addCommentTag('ARTIST', value);
                 }
-                ;
+                
                 break;
             case 'album':
                 {
                     addCommentTag('ALBUM', value);
                 }
-                ;
+                
                 break;
             case 'albumArtist':
                 {
                     addCommentTag('ALBUMARTIST', value);
                 }
-                ;
+                
                 break;
             case 'genre':
                 {
                     addCommentTag('GENRE', value);
                 }
-                ;
+                
                 break;
             case 'date':
                 {
@@ -77532,43 +77532,43 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                         addCommentTag('DATE', value.toISOString().slice(0, 10));
                     }
                 }
-                ;
+                
                 break;
             case 'comment':
                 {
                     addCommentTag('COMMENT', value);
                 }
-                ;
+                
                 break;
             case 'lyrics':
                 {
                     addCommentTag('LYRICS', value);
                 }
-                ;
+                
                 break;
             case 'trackNumber':
                 {
                     addCommentTag('TRACKNUMBER', value.toString());
                 }
-                ;
+                
                 break;
             case 'tracksTotal':
                 {
                     addCommentTag('TRACKTOTAL', value.toString());
                 }
-                ;
+                
                 break;
             case 'discNumber':
                 {
                     addCommentTag('DISCNUMBER', value.toString());
                 }
-                ;
+                
                 break;
             case 'discsTotal':
                 {
                     addCommentTag('DISCTOTAL', value.toString());
                 }
-                ;
+                
                 break;
             case 'images':
                 {
@@ -77606,13 +77606,13 @@ const createVorbisComments = (headerBytes, tags, writeImages) => {
                         addCommentTag('METADATA_BLOCK_PICTURE', encoded);
                     }
                 }
-                ;
+                
                 break;
             case 'raw':
                 {
                     // Handled later
                 }
-                ;
+                
                 break;
             default: (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assertNever */ .xb)(key);
         }
@@ -78147,7 +78147,7 @@ const buildVideoCodecString = (codec, width, height, bitrate) => {
         const bitDepth = '08'; // 8-bit
         return `av01.${profile}.${level}${levelInfo.tier}.${bitDepth}`;
     }
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+     
     throw new TypeError(`Unhandled codec '${codec}'.`);
 };
 const generateVp9CodecConfigurationFromCodecString = (codecString) => {
@@ -78412,7 +78412,7 @@ const extractAudioCodecString = (trackInfo) => {
     }
     throw new TypeError(`Unhandled codec '${codec}'.`);
 };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+ 
 const guessDescriptionForVideo = (decoderConfig) => {
     return undefined; // All codecs allow an undefined description
 };
@@ -78850,7 +78850,7 @@ const validateSubtitleMetadata = (metadata) => {
  */
 class CustomVideoDecoder {
     /** Returns true if and only if the decoder can decode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -78863,7 +78863,7 @@ class CustomVideoDecoder {
  */
 class CustomAudioDecoder {
     /** Returns true if and only if the decoder can decode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -78876,7 +78876,7 @@ class CustomAudioDecoder {
  */
 class CustomVideoEncoder {
     /** Returns true if and only if the encoder can encode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -78889,7 +78889,7 @@ class CustomVideoEncoder {
  */
 class CustomAudioEncoder {
     /** Returns true if and only if the encoder can encode the given codec configuration. */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     static supports(codec, config) {
         return false;
     }
@@ -79364,7 +79364,7 @@ const canEncodeVideo = async (codec, options = {}) => {
             // isConfigSupported on Firefox appears to unreliably indicate if encoding will actually succeed. Therefore,
             // we just try encoding a frame to see if it actually works.
             // https://github.com/Vanilagy/mediabunny/issues/222
-            // eslint-disable-next-line @typescript-eslint/no-misused-promises, no-async-promise-executor
+            // eslint-disable-next-line no-async-promise-executor
             return new Promise(async (resolve) => {
                 try {
                     const encoder = new VideoEncoder({
@@ -79755,35 +79755,35 @@ const parseId3V2Tag = (slice, header, tags) => {
                 {
                     tags.title ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TIT3':
             case 'TT3':
                 {
                     tags.description ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TPE1':
             case 'TP1':
                 {
                     tags.artist ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TALB':
             case 'TAL':
                 {
                     tags.album ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TPE2':
             case 'TP2':
                 {
                     tags.albumArtist ??= reader.readId3V2EncodingAndText(frameEndPos);
                 }
-                ;
+                
                 break;
             case 'TRCK':
             case 'TRK':
@@ -79799,7 +79799,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.tracksTotal ??= tracksTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TPOS':
             case 'TPA':
@@ -79815,7 +79815,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.discsTotal ??= discsTotal;
                     }
                 }
-                ;
+                
                 break;
             case 'TCON':
             case 'TCO':
@@ -79839,7 +79839,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     }
                     tags.genre ??= genreText;
                 }
-                ;
+                
                 break;
             case 'TDRC':
             case 'TDAT':
@@ -79850,7 +79850,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.date ??= date;
                     }
                 }
-                ;
+                
                 break;
             case 'TYER':
             case 'TYE':
@@ -79861,7 +79861,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                         tags.date ??= new Date(year, 0, 1);
                     }
                 }
-                ;
+                
                 break;
             case 'USLT':
             case 'ULT':
@@ -79871,7 +79871,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     reader.readId3V2Text(encoding, frameEndPos); // Short content description
                     tags.lyrics ??= reader.readId3V2Text(encoding, frameEndPos);
                 }
-                ;
+                
                 break;
             case 'COMM':
             case 'COM':
@@ -79881,7 +79881,7 @@ const parseId3V2Tag = (slice, header, tags) => {
                     reader.readId3V2Text(encoding, frameEndPos); // Short content description
                     tags.comment ??= reader.readId3V2Text(encoding, frameEndPos);
                 }
-                ;
+                
                 break;
             case 'APIC':
             case 'PIC':
@@ -79918,13 +79918,13 @@ const parseId3V2Tag = (slice, header, tags) => {
                         });
                     }
                 }
-                ;
+                
                 break;
             default:
                 {
                     reader.pos += frame.size;
                 }
-                ;
+                
                 break;
         }
         reader.pos = frameEndPos;
@@ -80153,35 +80153,35 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TIT2', value);
                         writtenTags.add('TIT2');
                     }
-                    ;
+                    
                     break;
                 case 'description':
                     {
                         this.writeId3V2TextFrame('TIT3', value);
                         writtenTags.add('TIT3');
                     }
-                    ;
+                    
                     break;
                 case 'artist':
                     {
                         this.writeId3V2TextFrame('TPE1', value);
                         writtenTags.add('TPE1');
                     }
-                    ;
+                    
                     break;
                 case 'album':
                     {
                         this.writeId3V2TextFrame('TALB', value);
                         writtenTags.add('TALB');
                     }
-                    ;
+                    
                     break;
                 case 'albumArtist':
                     {
                         this.writeId3V2TextFrame('TPE2', value);
                         writtenTags.add('TPE2');
                     }
-                    ;
+                    
                     break;
                 case 'trackNumber':
                     {
@@ -80191,7 +80191,7 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TRCK', string);
                         writtenTags.add('TRCK');
                     }
-                    ;
+                    
                     break;
                 case 'discNumber':
                     {
@@ -80201,35 +80201,35 @@ class Id3V2Writer {
                         this.writeId3V2TextFrame('TPOS', string);
                         writtenTags.add('TPOS');
                     }
-                    ;
+                    
                     break;
                 case 'genre':
                     {
                         this.writeId3V2TextFrame('TCON', value);
                         writtenTags.add('TCON');
                     }
-                    ;
+                    
                     break;
                 case 'date':
                     {
                         this.writeId3V2TextFrame('TDRC', value.toISOString().slice(0, 10));
                         writtenTags.add('TDRC');
                     }
-                    ;
+                    
                     break;
                 case 'lyrics':
                     {
                         this.writeId3V2LyricsFrame(value);
                         writtenTags.add('USLT');
                     }
-                    ;
+                    
                     break;
                 case 'comment':
                     {
                         this.writeId3V2CommentFrame(value);
                         writtenTags.add('COMM');
                     }
-                    ;
+                    
                     break;
                 case 'images':
                     {
@@ -80240,20 +80240,20 @@ class Id3V2Writer {
                             this.writeId3V2ApicFrame(image.mimeType, pictureType, description, image.data);
                         }
                     }
-                    ;
+                    
                     break;
                 case 'tracksTotal':
                 case 'discsTotal':
                     {
                         // Handled with trackNumber and discNumber respectively
                     }
-                    ;
+                    
                     break;
                 case 'raw':
                     {
                         // Handled later
                     }
-                    ;
+                    
                     break;
                 default: {
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assertNever */ .xb)(key);
@@ -81163,7 +81163,7 @@ function assertDefinedSize(size) {
         throw new Error('Undefined element size is used in a place where it is not supported.');
     }
 }
-;
+
 
 
 /***/ },
@@ -82204,7 +82204,7 @@ class ColorAlphaMerger {
         this.pendingRequests = new Map();
         this.nextRequestId = 0;
         const canMakeCanvas = typeof OffscreenCanvas !== 'undefined'
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
+             
             || (typeof document !== 'undefined' && typeof document.createElement === 'function');
         if (!ColorAlphaMerger.forceCpu && canMakeCanvas && !mergerGpuUnavailable) {
             // Try the GPU path. If anything goes wrong, we silently fall back to the CPU path.
@@ -82844,7 +82844,7 @@ class AudioDecoderWrapper extends DecoderWrapper {
             let sampleTimestamp = sample.timestamp;
             if (this.expectedFirstTimestamp && this.currentTimestamp === null) {
                 this.timestampOffset = this.expectedFirstTimestamp - sampleTimestamp;
-                ;
+                
             }
             sampleTimestamp += this.timestampOffset;
             if (this.currentTimestamp === null
@@ -82977,7 +82977,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 2:
                 {
@@ -82991,7 +82991,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 3:
                 {
@@ -83005,7 +83005,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 4:
                 {
@@ -83022,7 +83022,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 8:
                 {
@@ -83033,14 +83033,14 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                     }
                 }
-                ;
+                
                 break;
             default:
                 {
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assertNever */ .xb)(sampleSize);
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                 }
-                ;
+                
         }
         switch (sampleSize) {
             case 1:
@@ -83056,7 +83056,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         this.writeOutputValue = (view, byteOffset, value) => view.setUint8(byteOffset, value + 2 ** 7);
                     }
                 }
-                ;
+                
                 break;
             case 2:
                 {
@@ -83064,7 +83064,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     this.outputFormat = 's16';
                     this.writeOutputValue = (view, byteOffset, value) => view.setInt16(byteOffset, value, true);
                 }
-                ;
+                
                 break;
             case 3:
                 {
@@ -83075,7 +83075,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     // stored in s32, each sample MUST be left-shifted by 8 bits.
                     this.writeOutputValue = (view, byteOffset, value) => view.setInt32(byteOffset, value << 8, true);
                 }
-                ;
+                
                 break;
             case 4:
                 {
@@ -83089,7 +83089,7 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                         this.writeOutputValue = (view, byteOffset, value) => view.setInt32(byteOffset, value, true);
                     }
                 }
-                ;
+                
                 break;
             case 8:
                 {
@@ -83097,16 +83097,16 @@ class PcmAudioDecoderWrapper extends DecoderWrapper {
                     this.outputFormat = 'f32';
                     this.writeOutputValue = (view, byteOffset, value) => view.setFloat32(byteOffset, value, true);
                 }
-                ;
+                
                 break;
             default:
                 {
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assertNever */ .xb)(sampleSize);
                     (0,_misc_js__WEBPACK_IMPORTED_MODULE_5__/* .assert */ .vA)(false);
                 }
-                ;
+                
         }
-        ;
+        
     }
     getDecodeQueueSize() {
         return 0;
@@ -83326,7 +83326,7 @@ var src_packet = __webpack_require__(3936);
 var src_sample = __webpack_require__(4166);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/encode.js
 var encode = __webpack_require__(5374);
-;// ./node_modules/mediabunny/dist/modules/src/resample.js
+// ./node_modules/mediabunny/dist/modules/src/resample.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -83572,7 +83572,7 @@ class AudioResampler {
     }
 }
 
-;// ./node_modules/mediabunny/dist/modules/src/media-source.js
+// ./node_modules/mediabunny/dist/modules/src/media-source.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -83625,7 +83625,7 @@ class MediaSource {
     /** @internal */
     async _start() { }
     /** @internal */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     async _flushAndClose(forceClose) { }
     /**
      * Closes this source. This prevents future samples from being added and signals to the output file that no further
@@ -84171,7 +84171,7 @@ class VideoEncoderWrapper {
                     // We need to encode alpha as well, which we do with a separate encoder
                     this.alphaEncoder = new VideoEncoder({
                         // We ignore the alpha chunk's metadata
-                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                         
                         output: (chunk, meta) => {
                             alphaEncoderQueue--;
                             // There has to be a color chunk because the encoders are wired in series
@@ -84269,7 +84269,7 @@ class ColorAlphaSplitter {
         this.pendingRequests = new Map();
         this.nextRequestId = 0;
         const canMakeCanvas = typeof OffscreenCanvas !== 'undefined'
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
+             
             || (typeof document !== 'undefined' && typeof document.createElement === 'function');
         if (!ColorAlphaSplitter.forceCpu && canMakeCanvas && !splitterGpuUnavailable) {
             // Try the GPU path. If anything goes wrong, we silently fall back to the CPU path.
@@ -85511,7 +85511,7 @@ class AudioEncoderWrapper {
                         (0,misc/* assert */.vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 2:
                 {
@@ -85525,7 +85525,7 @@ class AudioEncoderWrapper {
                         (0,misc/* assert */.vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 3:
                 {
@@ -85539,7 +85539,7 @@ class AudioEncoderWrapper {
                         (0,misc/* assert */.vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 4:
                 {
@@ -85556,7 +85556,7 @@ class AudioEncoderWrapper {
                         (0,misc/* assert */.vA)(false);
                     }
                 }
-                ;
+                
                 break;
             case 8:
                 {
@@ -85567,14 +85567,14 @@ class AudioEncoderWrapper {
                         (0,misc/* assert */.vA)(false);
                     }
                 }
-                ;
+                
                 break;
             default:
                 {
                     (0,misc/* assertNever */.xb)(sampleSize);
                     (0,misc/* assert */.vA)(false);
                 }
-                ;
+                
         }
     }
     async flushAndClose(forceClose) {
@@ -85738,7 +85738,7 @@ class MediaStreamAudioTrackSource extends AudioSource {
         /** @internal */
         this._audioContext = null;
         /** @internal */
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         this._scriptProcessorNode = null; // Deprecated but goated
         /** @internal */
         this._promiseWithResolvers = (0,misc/* promiseWithResolvers */.nJ)();
@@ -85836,11 +85836,11 @@ class MediaStreamAudioTrackSource extends AudioSource {
         }
         else {
             // Let's fall back to an AudioContext approach
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+             
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             this._audioContext = new AudioContext({ sampleRate: this._track.getSettings().sampleRate });
             const sourceNode = this._audioContext.createMediaStreamSource(new MediaStream([this._track]));
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
+             
             this._scriptProcessorNode = this._audioContext.createScriptProcessor(4096);
             if (this._audioContext.state === 'suspended') {
                 await this._audioContext.resume();
@@ -85848,11 +85848,11 @@ class MediaStreamAudioTrackSource extends AudioSource {
             sourceNode.connect(this._scriptProcessorNode);
             this._scriptProcessorNode.connect(this._audioContext.destination);
             let totalDuration = 0;
-            // eslint-disable-next-line @typescript-eslint/no-deprecated
+             
             this._scriptProcessorNode.onaudioprocess = (event) => {
-                // eslint-disable-next-line @typescript-eslint/no-deprecated
+                 
                 const iterator = src_sample/* AudioSample */.B1._fromAudioBuffer(event.inputBuffer, totalDuration);
-                // eslint-disable-next-line @typescript-eslint/no-deprecated
+                 
                 totalDuration += event.inputBuffer.duration;
                 for (const audioSample of iterator) {
                     onAudioSample(audioSample);
@@ -85937,7 +85937,7 @@ const mediaStreamTrackProcessorWorkerCode = () => {
                         });
                     });
                 }
-                ;
+                
                 break;
             case 'stopTrack':
                 {
@@ -85954,7 +85954,7 @@ const mediaStreamTrackProcessorWorkerCode = () => {
                         trackId: message.trackId,
                     });
                 }
-                ;
+                
                 break;
             default: (0,misc/* assertNever */.xb)(message);
         }
@@ -86150,7 +86150,7 @@ class AttachedFile {
         }
     }
 }
-;
+
 const validateMetadataTags = (tags) => {
     if (!tags || typeof tags !== 'object') {
         throw new TypeError('tags must be an object.');
@@ -86640,7 +86640,7 @@ const validateAnyIterable = (iterable) => {
     }
 };
 const assertNever = (x) => {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+     
     throw new Error(`Unexpected value: ${x}`);
 };
 const getUint24 = (view, byteOffset, littleEndian) => {
@@ -86878,7 +86878,7 @@ const isWebKit = () => {
     // This even returns true for WebKit-wrapping browsers such as Chrome on iOS
     return isWebKitCache = !!(typeof navigator !== 'undefined'
         && (
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         navigator.vendor?.match(/apple/i)
             // Or, in workers:
             || (/AppleWebKit/.test(navigator.userAgent) && !/Chrome/.test(navigator.userAgent))
@@ -86897,7 +86897,7 @@ const isChromium = () => {
         return isChromiumCache;
     }
     return isChromiumCache = !!(typeof navigator !== 'undefined'
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         && (navigator.vendor?.includes('Google Inc') || /Chrome/.test(navigator.userAgent)));
 };
 let chromiumVersionCache = null;
@@ -87138,7 +87138,7 @@ const unthrottledTimerWorkerMain = () => {
                     }, message.delay);
                     timeoutHandles.set(message.timerId, handle);
                 }
-                ;
+                
                 break;
             case 'set-interval':
                 {
@@ -87147,7 +87147,7 @@ const unthrottledTimerWorkerMain = () => {
                     }, message.delay);
                     intervalHandles.set(message.timerId, handle);
                 }
-                ;
+                
                 break;
             case 'clear-timeout':
                 {
@@ -87157,7 +87157,7 @@ const unthrottledTimerWorkerMain = () => {
                         timeoutHandles.delete(message.timerId);
                     }
                 }
-                ;
+                
                 break;
             case 'clear-interval':
                 {
@@ -87167,7 +87167,7 @@ const unthrottledTimerWorkerMain = () => {
                         intervalHandles.delete(message.timerId);
                     }
                 }
-                ;
+                
                 break;
         }
     };
@@ -87196,7 +87196,7 @@ const getUnthrottledTimerWorker = () => {
     return unthrottledTimerWorker;
 };
 const setTimeoutUnthrottled = (
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+ 
 callback, delay) => {
     if (shouldUseNativeTimers()) {
         return { id: setTimeout(callback, delay) };
@@ -87225,7 +87225,7 @@ const clearTimeoutUnthrottled = (timer) => {
     });
 };
 const setIntervalUnthrottled = (
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+ 
 callback, delay) => {
     if (shouldUseNativeTimers()) {
         return { id: setInterval(callback, delay) };
@@ -87402,7 +87402,7 @@ var id3 = __webpack_require__(7576);
 var metadata = __webpack_require__(5165);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/misc.js
 var misc = __webpack_require__(3912);
-;// ./node_modules/mediabunny/dist/modules/src/muxer.js
+// ./node_modules/mediabunny/dist/modules/src/muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -87417,7 +87417,7 @@ class Muxer {
         this.trackTimestampInfo = new WeakMap();
         this.output = output;
     }
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     onTrackClose(track) { }
     validateTimestamp(track, timestampInSeconds, isKeyPacket) {
         if (timestampInSeconds < 0) {
@@ -87449,7 +87449,7 @@ class Muxer {
     }
 }
 
-;// ./node_modules/mediabunny/dist/modules/src/adts/adts-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/adts/adts-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -87549,7 +87549,7 @@ var reader = __webpack_require__(7735);
 var flac_misc = __webpack_require__(5828);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/shared/bitstream.js
 var shared_bitstream = __webpack_require__(1390);
-;// ./node_modules/mediabunny/dist/modules/src/flac/flac-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/flac/flac-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -87804,7 +87804,7 @@ class FlacMuxer extends Muxer {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/subtitles.js
 var subtitles = __webpack_require__(9887);
-;// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-boxes.js
+// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-boxes.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -88505,19 +88505,19 @@ const esds = (trackData) => {
             {
                 objectTypeIndication = 0x40;
             }
-            ;
+            
             break;
         case 'mp3':
             {
                 objectTypeIndication = 0x6b;
             }
-            ;
+            
             break;
         case 'vorbis':
             {
                 objectTypeIndication = 0xdd;
             }
-            ;
+            
             break;
         default: throw new Error(`Unhandled audio codec: ${trackData.track.source._codec}`);
     }
@@ -89027,61 +89027,61 @@ const addQuickTimeMetadataTagBoxes = (boxes, tags) => {
                 {
                     boxes.push(metadataTagStringBoxShort('©nam', value));
                 }
-                ;
+                
                 break;
             case 'description':
                 {
                     boxes.push(metadataTagStringBoxShort('©des', value));
                 }
-                ;
+                
                 break;
             case 'artist':
                 {
                     boxes.push(metadataTagStringBoxShort('©ART', value));
                 }
-                ;
+                
                 break;
             case 'album':
                 {
                     boxes.push(metadataTagStringBoxShort('©alb', value));
                 }
-                ;
+                
                 break;
             case 'albumArtist':
                 {
                     boxes.push(metadataTagStringBoxShort('albr', value));
                 }
-                ;
+                
                 break;
             case 'genre':
                 {
                     boxes.push(metadataTagStringBoxShort('©gen', value));
                 }
-                ;
+                
                 break;
             case 'date':
                 {
                     boxes.push(metadataTagStringBoxShort('©day', value.toISOString().slice(0, 10)));
                 }
-                ;
+                
                 break;
             case 'comment':
                 {
                     boxes.push(metadataTagStringBoxShort('©cmt', value));
                 }
-                ;
+                
                 break;
             case 'lyrics':
                 {
                     boxes.push(metadataTagStringBoxShort('©lyr', value));
                 }
-                ;
+                
                 break;
             case 'raw':
                 {
                     // Handled later
                 }
-                ;
+                
                 break;
             case 'discNumber':
             case 'discsTotal':
@@ -89091,7 +89091,7 @@ const addQuickTimeMetadataTagBoxes = (boxes, tags) => {
                 {
                     // Not written for QuickTime (common Apple L)
                 }
-                ;
+                
                 break;
             default: (0,misc/* assertNever */.xb)(key);
         }
@@ -89137,49 +89137,49 @@ const generateMetadataPairs = (tags, isMdta) => {
                 {
                     pairs.push({ key: isMdta ? 'title' : '©nam', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'description':
                 {
                     pairs.push({ key: isMdta ? 'description' : '©des', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'artist':
                 {
                     pairs.push({ key: isMdta ? 'artist' : '©ART', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'album':
                 {
                     pairs.push({ key: isMdta ? 'album' : '©alb', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'albumArtist':
                 {
                     pairs.push({ key: isMdta ? 'album_artist' : 'aART', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'comment':
                 {
                     pairs.push({ key: isMdta ? 'comment' : '©cmt', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'genre':
                 {
                     pairs.push({ key: isMdta ? 'genre' : '©gen', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'lyrics':
                 {
                     pairs.push({ key: isMdta ? 'lyrics' : '©lyr', value: dataStringBoxLong(value) });
                 }
-                ;
+                
                 break;
             case 'date':
                 {
@@ -89188,7 +89188,7 @@ const generateMetadataPairs = (tags, isMdta) => {
                         value: dataStringBoxLong(value.toISOString().slice(0, 10)),
                     });
                 }
-                ;
+                
                 break;
             case 'images':
                 {
@@ -89203,7 +89203,7 @@ const generateMetadataPairs = (tags, isMdta) => {
                             ]) });
                     }
                 }
-                ;
+                
                 break;
             case 'trackNumber':
                 {
@@ -89224,7 +89224,7 @@ const generateMetadataPairs = (tags, isMdta) => {
                             ]) });
                     }
                 }
-                ;
+                
                 break;
             case 'discNumber':
                 {
@@ -89240,20 +89240,20 @@ const generateMetadataPairs = (tags, isMdta) => {
                             ]) });
                     }
                 }
-                ;
+                
                 break;
             case 'tracksTotal':
             case 'discsTotal':
                 {
                     // These are included with 'trackNumber' and 'discNumber' respectively
                 }
-                ;
+                
                 break;
             case 'raw':
                 {
                     // Handled later
                 }
-                ;
+                
                 break;
             default: (0,misc/* assertNever */.xb)(key);
         }
@@ -89431,7 +89431,7 @@ const SUBTITLE_CODEC_TO_CONFIGURATION_BOX = {
 };
 const getLanguageCodeInt = (code) => {
     (0,misc/* assert */.vA)(code.length === 3);
-    ;
+    
     let language = 0;
     for (let i = 0; i < 3; i++) {
         language <<= 5;
@@ -89450,7 +89450,7 @@ var adts_reader = __webpack_require__(8475);
 var isobmff_misc = __webpack_require__(1826);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-reader.js
 var isobmff_reader = __webpack_require__(8561);
-;// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/isobmff/isobmff-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -90401,7 +90401,7 @@ class IsobmffMuxer extends Muxer {
         }
         return upperBound;
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+     
     async onTrackClose(track) {
         const release = await this.mutex.acquire();
         const trackData = this.trackDatas.find(x => x.track === track);
@@ -90570,7 +90570,7 @@ class IsobmffMuxer extends Muxer {
 var ebml = __webpack_require__(6411);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/matroska/matroska-misc.js
 var matroska_misc = __webpack_require__(3616);
-;// ./node_modules/mediabunny/dist/modules/src/matroska/matroska-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/matroska/matroska-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -90898,63 +90898,63 @@ class MatroskaMuxer extends Muxer {
                         addSimpleTag('TITLE', value);
                         writtenTags.add('TITLE');
                     }
-                    ;
+                    
                     break;
                 case 'description':
                     {
                         addSimpleTag('DESCRIPTION', value);
                         writtenTags.add('DESCRIPTION');
                     }
-                    ;
+                    
                     break;
                 case 'artist':
                     {
                         addSimpleTag('ARTIST', value);
                         writtenTags.add('ARTIST');
                     }
-                    ;
+                    
                     break;
                 case 'album':
                     {
                         addSimpleTag('ALBUM', value);
                         writtenTags.add('ALBUM');
                     }
-                    ;
+                    
                     break;
                 case 'albumArtist':
                     {
                         addSimpleTag('ALBUM_ARTIST', value);
                         writtenTags.add('ALBUM_ARTIST');
                     }
-                    ;
+                    
                     break;
                 case 'genre':
                     {
                         addSimpleTag('GENRE', value);
                         writtenTags.add('GENRE');
                     }
-                    ;
+                    
                     break;
                 case 'comment':
                     {
                         addSimpleTag('COMMENT', value);
                         writtenTags.add('COMMENT');
                     }
-                    ;
+                    
                     break;
                 case 'lyrics':
                     {
                         addSimpleTag('LYRICS', value);
                         writtenTags.add('LYRICS');
                     }
-                    ;
+                    
                     break;
                 case 'date':
                     {
                         addSimpleTag('DATE', value.toISOString().slice(0, 10));
                         writtenTags.add('DATE');
                     }
-                    ;
+                    
                     break;
                 case 'trackNumber':
                     {
@@ -90964,7 +90964,7 @@ class MatroskaMuxer extends Muxer {
                         addSimpleTag('PART_NUMBER', string);
                         writtenTags.add('PART_NUMBER');
                     }
-                    ;
+                    
                     break;
                 case 'discNumber':
                     {
@@ -90974,21 +90974,21 @@ class MatroskaMuxer extends Muxer {
                         addSimpleTag('DISC', string);
                         writtenTags.add('DISC');
                     }
-                    ;
+                    
                     break;
                 case 'tracksTotal':
                 case 'discsTotal':
                     {
                         // Handled with trackNumber and discNumber respectively
                     }
-                    ;
+                    
                     break;
                 case 'images':
                 case 'raw':
                     {
                         // Handled elsewhere
                     }
-                    ;
+                    
                     break;
                 default: (0,misc/* assertNever */.xb)(key);
             }
@@ -91592,7 +91592,7 @@ class MatroskaMuxer extends Muxer {
                 ] });
         }
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+     
     async onTrackClose(track) {
         const release = await this.mutex.acquire();
         const trackData = this.trackDatas.find(x => x.track === track);
@@ -91647,7 +91647,7 @@ class MatroskaMuxer extends Muxer {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/shared/mp3-misc.js
 var mp3_misc = __webpack_require__(2788);
-;// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-writer.js
+// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-writer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -91727,7 +91727,7 @@ class Mp3Writer {
     }
 }
 
-;// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/mp3/mp3-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -91857,7 +91857,7 @@ class Mp3Muxer extends Muxer {
 var ogg_misc = __webpack_require__(9730);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/ogg/ogg-reader.js
 var ogg_reader = __webpack_require__(9841);
-;// ./node_modules/mediabunny/dist/modules/src/ogg/ogg-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/ogg/ogg-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -92201,7 +92201,7 @@ class OggMuxer extends Muxer {
             this.format._options.onPage(data, start, trackData.track.source);
         }
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+     
     async onTrackClose(track) {
         const release = await this.mutex.acquire();
         const trackData = this.trackDatas.find(x => x.track === track);
@@ -92233,7 +92233,7 @@ class OggMuxer extends Muxer {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-misc.js
 var mpeg_ts_misc = __webpack_require__(2490);
-;// ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/mpeg-ts/mpeg-ts-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -92335,28 +92335,28 @@ class MpegTsMuxer extends Muxer {
                     streamType = 15 /* MpegTsStreamType.AAC */;
                     streamId = AUDIO_STREAM_ID_BASE + this.audioTrackIndex++;
                 }
-                ;
+                
                 break;
             case 'mp3':
                 {
                     streamType = 3 /* MpegTsStreamType.MP3_MPEG1 */;
                     streamId = AUDIO_STREAM_ID_BASE + this.audioTrackIndex++;
                 }
-                ;
+                
                 break;
             case 'ac3':
                 {
                     streamType = 129 /* MpegTsStreamType.AC3_SYSTEM_A */;
                     streamId = 0xbd;
                 }
-                ;
+                
                 break;
             case 'eac3':
                 {
                     streamType = 135 /* MpegTsStreamType.EAC3_SYSTEM_A */;
                     streamId = 0xbd;
                 }
-                ;
+                
                 break;
         }
         const pid = FIRST_TRACK_PID + this.trackDatas.length;
@@ -92758,7 +92758,7 @@ class MpegTsMuxer extends Muxer {
             this.format._options.onPacket(this.packetBuffer.slice(), startPos);
         }
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+     
     async onTrackClose(track) {
         const release = await this.mutex.acquire();
         const trackData = this.trackDatas.find(x => x.track === track);
@@ -92870,7 +92870,7 @@ const buildPmt = (trackDatas) => {
 
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/wave/wave-demuxer.js
 var wave_demuxer = __webpack_require__(260);
-;// ./node_modules/mediabunny/dist/modules/src/wave/riff-writer.js
+// ./node_modules/mediabunny/dist/modules/src/wave/riff-writer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -92902,7 +92902,7 @@ class RiffWriter {
     }
 }
 
-;// ./node_modules/mediabunny/dist/modules/src/wave/wave-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/wave/wave-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -93086,21 +93086,21 @@ class WaveMuxer extends Muxer {
                         writeInfoTag('INAM', value);
                         writtenTags.add('INAM');
                     }
-                    ;
+                    
                     break;
                 case 'artist':
                     {
                         writeInfoTag('IART', value);
                         writtenTags.add('IART');
                     }
-                    ;
+                    
                     break;
                 case 'album':
                     {
                         writeInfoTag('IPRD', value);
                         writtenTags.add('IPRD');
                     }
-                    ;
+                    
                     break;
                 case 'trackNumber':
                     {
@@ -93110,28 +93110,28 @@ class WaveMuxer extends Muxer {
                         writeInfoTag('ITRK', string);
                         writtenTags.add('ITRK');
                     }
-                    ;
+                    
                     break;
                 case 'genre':
                     {
                         writeInfoTag('IGNR', value);
                         writtenTags.add('IGNR');
                     }
-                    ;
+                    
                     break;
                 case 'date':
                     {
                         writeInfoTag('ICRD', value.toISOString().slice(0, 10));
                         writtenTags.add('ICRD');
                     }
-                    ;
+                    
                     break;
                 case 'comment':
                     {
                         writeInfoTag('ICMT', value);
                         writtenTags.add('ICMT');
                     }
-                    ;
+                    
                     break;
                 case 'albumArtist':
                 case 'discNumber':
@@ -93143,13 +93143,13 @@ class WaveMuxer extends Muxer {
                     {
                         // Not supported in RIFF INFO
                     }
-                    ;
+                    
                     break;
                 case 'raw':
                     {
                         // Handled later
                     }
-                    ;
+                    
                     break;
                 default: (0,misc/* assertNever */.xb)(key);
             }
@@ -93229,7 +93229,7 @@ var media_source = __webpack_require__(2532);
 var src_output = __webpack_require__(9917);
 // EXTERNAL MODULE: ./node_modules/mediabunny/dist/modules/src/hls/hls-misc.js
 var hls_misc = __webpack_require__(3622);
-;// ./node_modules/mediabunny/dist/modules/src/hls/hls-muxer.js
+// ./node_modules/mediabunny/dist/modules/src/hls/hls-muxer.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -93578,7 +93578,7 @@ class HlsMuxer extends Muxer {
         }
         return true;
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+     
     async onTrackClose(track) {
         const trackData = this.trackDatas.find(x => x.track === track);
         if (trackData) {
@@ -93679,11 +93679,11 @@ class HlsMuxer extends Muxer {
         }
     }
     async addSubtitleCue(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     track, 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     cue, 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     meta) {
         throw new Error('Unreachable.');
     }
@@ -94389,7 +94389,7 @@ const toPlaylistInfo = (playlist) => {
     };
 };
 
-;// ./node_modules/mediabunny/dist/modules/src/output-format.js
+// ./node_modules/mediabunny/dist/modules/src/output-format.js
 /*!
  * Copyright (c) 2026-present, Vanilagy and contributors
  *
@@ -94431,7 +94431,7 @@ class OutputFormat {
             .filter(codec => src_codec/* SUBTITLE_CODECS */.VW.includes(codec));
     }
     /** @internal */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     _codecUnsupportedHint(codec) {
         return '';
     }
@@ -95157,7 +95157,7 @@ class HlsOutputFormat extends OutputFormat {
         return true; // I guess??
     }
     /** @internal */
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+     
     _codecUnsupportedHint(codec) {
         return ` Using different segment formats may grant support for this codec.`;
     }
@@ -97034,7 +97034,7 @@ class VideoSample {
         if (![0, 90, 180, 270].includes(newRotation)) {
             throw new TypeError('newRotation must be 0, 90, 180, or 270.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.rotation = newRotation;
     }
     /** Sets the presentation timestamp of this video sample, in seconds. */
@@ -97042,7 +97042,7 @@ class VideoSample {
         if (!Number.isFinite(newTimestamp)) {
             throw new TypeError('newTimestamp must be a number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.timestamp = newTimestamp;
     }
     /** Sets the duration of this video sample, in seconds. */
@@ -97050,7 +97050,7 @@ class VideoSample {
         if (!Number.isFinite(newDuration) || newDuration < 0) {
             throw new TypeError('newDuration must be a non-negative number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.duration = newDuration;
     }
     /** Calls `.close()`. */
@@ -97881,7 +97881,7 @@ class AudioSample {
         if (!Number.isFinite(newTimestamp)) {
             throw new TypeError('newTimestamp must be a number.');
         }
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+         
         this.timestamp = newTimestamp;
     }
     /** Calls `.close()`. */
@@ -98308,7 +98308,7 @@ class Target extends _misc_js__WEBPACK_IMPORTED_MODULE_1__/* .EventEmitter */ .b
     }
     /** @internal */
     _dispatchWrite(start, end) {
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
+         
         this.onwrite?.(start, end);
         this._emit('write', { start, end });
     }
@@ -98377,7 +98377,7 @@ class BufferTarget extends Target {
         if (this._supportsResize) {
             // Use resize if it exists
             // @ts-expect-error Don't want to bump "lib" in tsconfig
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+             
             this._buffer.resize(newLength);
             // The Uint8Array scales automatically
         }
@@ -98483,7 +98483,7 @@ class StreamTarget extends Target {
     /** @internal */
     async _flush() {
         if (this._writeError !== null) {
-            // eslint-disable-next-line @typescript-eslint/only-throw-error
+             
             throw this._writeError;
         }
         (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assert */ .vA)(this._streamWriter);
@@ -98646,7 +98646,7 @@ class StreamTarget extends Target {
             this._tryToFlushChunks(true);
         }
         if (this._writeError !== null) {
-            // eslint-disable-next-line @typescript-eslint/only-throw-error
+             
             throw this._writeError;
         }
         (0,_misc_js__WEBPACK_IMPORTED_MODULE_1__/* .assert */ .vA)(this._streamWriter);
@@ -99074,25 +99074,25 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                     {
                         this.metadataTags.title ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'TIT3':
                     {
                         this.metadataTags.description ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IART':
                     {
                         this.metadataTags.artist ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IPRD':
                     {
                         this.metadataTags.album ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'IPRT':
                 case 'ITRK':
@@ -99108,7 +99108,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.tracksTotal ??= tracksTotal;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'ICRD':
                 case 'IDIT':
@@ -99118,7 +99118,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.date ??= date;
                         }
                     }
-                    ;
+                    
                     break;
                 case 'YEAR':
                     {
@@ -99127,14 +99127,14 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                             this.metadataTags.date ??= new Date(year, 0, 1);
                         }
                     }
-                    ;
+                    
                     break;
                 case 'IGNR':
                 case 'GENR':
                     {
                         this.metadataTags.genre ??= value;
                     }
-                    ;
+                    
                     break;
                 case 'ICMT':
                 case 'CMNT':
@@ -99142,7 +99142,7 @@ class WaveDemuxer extends _demuxer_js__WEBPACK_IMPORTED_MODULE_0__/* .Demuxer */
                     {
                         this.metadataTags.comment ??= value;
                     }
-                    ;
+                    
                     break;
             }
             currentPos += 8 + chunkSize + (chunkSize & 1); // Handle padding

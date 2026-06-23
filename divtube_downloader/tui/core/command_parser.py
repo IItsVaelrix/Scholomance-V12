@@ -1,6 +1,5 @@
 import shlex
 import os
-import glob
 
 # ── project root detection ──────────────────────────────────────────
 _PROJECT_ROOT = None
@@ -66,7 +65,7 @@ def resolve_at_references(raw: str, log_fn=None) -> str:
 
                 if content is not None and log_fn:
                     ext = os.path.splitext(full)[1].lower()
-                    lang = {"js": "js", "jsx": "jsx", "ts": "ts",
+                    {"js": "js", "jsx": "jsx", "ts": "ts",
                             "tsx": "tsx", "py": "python", "json": "json",
                             "md": "markdown", "css": "css", "html": "html",
                             "yml": "yaml", "yaml": "yaml",
@@ -74,11 +73,11 @@ def resolve_at_references(raw: str, log_fn=None) -> str:
                             "sql": "sql", "sh": "bash"}.get(ext.lstrip("."), "")
                     short = os.path.relpath(full, root)
                     log_fn(f"\n[bold #B388FF]📎 @{short}[/] [#6B7280]({len(content)} B)[/]")
-                    log_fn(f"[#4B0082]━━━ file ━━━[/]")
+                    log_fn("[#4B0082]━━━ file ━━━[/]")
                     log_fn(f"[#E2E8F0]{content[:3000]}[/]")
                     if len(content) > 3000:
                         log_fn(f"[#6B7280]… ({len(content) - 3000} more bytes) — use full path in command to process it[/]")
-                    log_fn(f"[#4B0082]━━━━━━━━━━━[/]\n")
+                    log_fn("[#4B0082]━━━━━━━━━━━[/]\n")
 
                 # replace @token with the absolute path
                 resolved.append(full)
@@ -109,6 +108,10 @@ class CommandRegistry:
         if not raw_input:
             return
 
+        # Handle space after slash, e.g. "/ polish" -> "/polish"
+        if raw_input.startswith("/") and len(raw_input) > 1 and raw_input[1].isspace():
+            raw_input = "/" + raw_input[1:].lstrip()
+
         # ── resolve @file references before command parsing ──────────
         raw_input = resolve_at_references(raw_input, ui_context.log_msg)
 
@@ -126,5 +129,12 @@ class CommandRegistry:
 
         if cmd in self.commands:
             self.commands[cmd]["handler"](ui_context, args)
+        elif cmd.startswith("/"):
+            # Forward unrecognized slash commands to the AI agent natively
+            ui_context.log_msg(f"[#6B7280]Forwarding {cmd} to Vaelrix...[/]")
+            if "/prompt" in self.commands:
+                self.commands["/prompt"]["handler"](ui_context, [raw_input])
+            else:
+                ui_context.log_msg(f"[#FF5C7A]Unknown command: {cmd}. Type /help.[/]")
         else:
             ui_context.log_msg(f"[#FF5C7A]Unknown command: {cmd}. Type /help.[/]")

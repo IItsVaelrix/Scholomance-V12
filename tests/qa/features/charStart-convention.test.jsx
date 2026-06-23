@@ -1,5 +1,5 @@
 /**
- * Permanent Regression Guard — Truesight charStart Convention
+ * Permanent Regression Guard - Truesight charStart Convention
  *
  * Pins the canonical charStart convention used by the Lexical editor and the
  * upstream analysis pipeline. The bug this guards against (Prion #1 +
@@ -36,7 +36,7 @@ const charStartModulePath = resolvePath(here, '../../../src/lib/lexical/charStar
 /**
  * Build a minimal mock Lexical node tree that satisfies the walk contract:
  *   getType(), getTextContent(), getPreviousSibling(), getParent().
- * Each node is a plain object — no lexical package required.
+ * Each node is a plain object - no lexical package required.
  *
  * Faithful to the real Lexical editor: each paragraph contains alternating
  * word TextNodes and space TextNodes (real Lexical leaves the spaces between
@@ -85,7 +85,7 @@ function makeParagraphChain(paragraphTexts) {
   return { root, paragraphs, leaves };
 }
 
-describe('Truesight charStart convention — single source of truth', () => {
+describe('Truesight charStart convention - single source of truth', () => {
   it('returns 0 for the first leaf of a single paragraph', () => {
     const { leaves } = makeParagraphChain(['Hello']);
     expect(computeCharStartFromLexical(leaves[0])).toBe(0);
@@ -130,7 +130,7 @@ describe('Truesight charStart convention — single source of truth', () => {
   });
 });
 
-describe('Truesight charStart convention — position-only lookup hierarchy', () => {
+describe('Truesight charStart convention - position-only lookup hierarchy', () => {
   it('resolves by charStart when the position matches', () => {
     const { leaves } = makeParagraphChain(['see', 'hear']);
     // leaves: [see, ' ', hear, ' ']. 'hear' is at index 2.
@@ -154,7 +154,7 @@ describe('Truesight charStart convention — position-only lookup hierarchy', ()
     });
   });
 
-  it('returns null when neither charStart nor identity matches — and does NOT fall back to a text-keyed cache', () => {
+  it('returns null when neither charStart nor identity matches - and does NOT fall back to a text-keyed cache', () => {
     const { leaves } = makeParagraphChain(['see', 'hear']);
     const node = leaves[2];
     // Provide a charStart map with a different offset and an identity map
@@ -171,7 +171,7 @@ describe('Truesight charStart convention — position-only lookup hierarchy', ()
   });
 });
 
-describe('Truesight charStart convention — source-level invariants', () => {
+describe('Truesight charStart convention - source-level invariants', () => {
   it('does not implement a text-keyed lookup fallback in TruesightPlugin.jsx', () => {
     // Source-level guard: the silent-override bug was a `Map.set` keyed by
     // lowercased text. If anyone re-introduces that pattern, the test
@@ -189,13 +189,13 @@ describe('Truesight charStart convention — source-level invariants', () => {
     expect(src).toMatch(/from\s+['"]\.\/charStart\.js['"]/);
     expect(src).toMatch(/computeCharStartFromLexical/);
     expect(src).toMatch(/resolveTokenDataAtPosition/);
-    // No inline `getGlobalCharStart` re-implementation walking siblings —
+    // No inline `getGlobalCharStart` re-implementation walking siblings  - 
     // the canonical helper is the single source of truth.
     expect(src).not.toMatch(/function\s+getGlobalCharStart/);
   });
 
   it('does not capture analyzedWordsByCharStart/Identity from the useEffect closure (staleness guard)', () => {
-    // The staleness prion (RAID PAT-004 — Weave Propagation Chain) fires when
+    // The staleness prion (RAID PAT-004 - Weave Propagation Chain) fires when
     // a helper inside a registered Lexical nodeTransform reads prop values
     // from the useEffect closure rather than from inputsRef.current. The
     // useEffect deps are [editor, isTruesight], so closure captures are
@@ -205,7 +205,7 @@ describe('Truesight charStart convention — source-level invariants', () => {
     const src = readFileSync(truesightPluginPath, 'utf8');
 
     // The transform listener must NOT reference the closure-captured prop names
-    // directly — it must destructure them from inputsRef.current. The listener
+    // directly - it must destructure them from inputsRef.current. The listener
     // is extracted to `const transformListener` so it can be registered on both
     // node types; its body is the region we assert over.
     const listenerRegion = src.match(/const transformListener = \(textNode\) => \{[\s\S]*?\n {4}\};/);
@@ -234,14 +234,14 @@ describe('Truesight charStart convention — source-level invariants', () => {
     // No module-scope `let` outside the exported function bodies.
     // The file should only have `export const`, `export function`, and
     // function-internal `let`/`const` declarations (which are NOT
-    // module-scope — they're scoped to the function body). We anchor
+    // module-scope - they're scoped to the function body). We anchor
     // column-0 to find only true module-scope declarations.
     const moduleLets = src.split('\n').filter((line) => /^(let|var)\s/.test(line));
     expect(moduleLets).toEqual([]);
   });
 });
 
-describe('Truesight charStart convention — Prion #3 NaN/poisoned-family guard', () => {
+describe('Truesight charStart convention - Prion #3 NaN/poisoned-family guard', () => {
   it('wordTruesight returns a valid school string for content words', () => {
     // The G2P engine contract is "string vowel family". If it ever returns
     // NaN, undefined, or a numeric, the resolver must NOT crash and must
@@ -286,7 +286,7 @@ describe('Truesight charStart convention — Prion #3 NaN/poisoned-family guard'
   });
 });
 
-describe('Truesight charStart convention — integration with the gate', () => {
+describe('Truesight charStart convention - integration with the gate', () => {
   it('the resonance gate Set aligns with computeCharStartFromLexical for a known document', () => {
     // This is the test the runtime probe wishes it could do: take a known
     // document, build a known upstream analysis with known charStarts, and
@@ -316,7 +316,7 @@ describe('Truesight charStart convention — integration with the gate', () => {
       const hasAnalysis = upstreamByCharStart[cs] != null;
       // The invariant: the gate only ever contains positions that EXIST in
       // the document. If a gate entry doesn't match any document charStart,
-      // the upstream analysis has drifted — which is the bug Prion #1 caught.
+      // the upstream analysis has drifted - which is the bug Prion #1 caught.
       if (expectedResonant) {
         expect(hasAnalysis).toBe(true);
       }

@@ -82,13 +82,13 @@ test('I6: which style property collapses TrueSight word spacing', async ({ page 
     return report;
   }, LINE);
 
-  // eslint-disable-next-line no-console
+   
   console.log('I6-REPORT ' + JSON.stringify(result, null, 2));
 
   const culprits = Object.entries(result.variants)
     .filter(([, v]) => Math.abs(v.totalDeltaPx) > TOLERANCE_PX)
     .map(([name, v]) => `${name} (Δtotal=${v.totalDeltaPx}px, maxWordDrift=${v.maxWordDriftPx}px)`);
-  // eslint-disable-next-line no-console
+   
   console.log('I6-CULPRITS ' + (culprits.length ? culprits.join(' | ') : 'none (static styles fidelity-clean)'));
 
   expect(result.plainTotalPx).toBeGreaterThan(0);

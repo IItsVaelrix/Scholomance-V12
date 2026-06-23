@@ -53,6 +53,8 @@
 | `chip_boot.sh` | Bootstrap — installs deps, pulls model, seeds knowledge, launches brain |
 | `ingest_knowledge.py` | Ingestion tool — files, directories, personality profiles, direct text |
 | `knowledge/` | Sample lore and personality data to seed the substrate |
+| `brain_daemon.py` | Always-on HTTP daemon — keeps Cortex + Ollama warm on `127.0.0.1:9090` |
+| `systemd/` | `--user` service units + `install.sh` to keep the daemon on at all times |
 
 ## Quick Start
 
@@ -76,6 +78,43 @@ python3 ingest_knowledge.py personality --name "Vaelrix" --traits "wise,cryptic,
 
 # 5. Launch
 python3 steamdeck_brain.py --model phi3:mini
+```
+
+## Always-On Daemon (recommended)
+
+`brain_daemon.py` runs the Cortex + Ollama bridge as a persistent HTTP server on
+`127.0.0.1:9090`. The DivTube TUI connects to it over HTTP — it does **not** own
+the daemon's lifecycle, so the brain stays up even when DivTube is closed.
+
+To keep it (and Ollama) running at all times — across crashes, logouts, and
+reboots — install the `systemd --user` services:
+
+```bash
+# Detects your Python/Ollama paths, renders the units, enables linger, starts them
+./systemd/install.sh
+
+# Manage it
+systemctl --user status scholomance-brain.service
+journalctl --user -u scholomance-brain.service -f
+curl -s http://127.0.0.1:9090/health
+
+# Remove
+./systemd/install.sh --uninstall
+```
+
+Two units are installed: `scholomance-ollama.service` (supervises `ollama serve`,
+the brain's only runtime dependency) and `scholomance-brain.service`
+(`brain_daemon.py`, `Restart=always`, waits for Ollama before launching).
+`loginctl enable-linger` lets them run without an active login session.
+
+Override defaults without editing the units by dropping `KEY=VALUE` lines into
+`~/.config/scholomance-brain.env` (`BRAIN_MODEL`, `BRAIN_PORT`, `BRAIN_DB`,
+`BRAIN_EXTRA_ARGS`, e.g. `BRAIN_EXTRA_ARGS=--personality Vaelrix`).
+
+Or run the daemon manually (foreground):
+
+```bash
+python3 brain_daemon.py --model phi3:mini --port 9090
 ```
 
 ## Usage Examples

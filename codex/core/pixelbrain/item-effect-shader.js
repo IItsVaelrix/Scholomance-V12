@@ -367,6 +367,6 @@ export function buildItemEffectShader({ spec, geometry = null, materialColor, en
 function defaultTintFromRegistry(spec) {
   if (!spec) return null;
   // Lazy import to avoid a cycle at module load.
-  // eslint-disable-next-line global-require
+   
   return null; // The page-side caller usually provides a resolver.
 }

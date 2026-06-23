@@ -69,6 +69,7 @@ const BYTECODE_MOD = MODULE_IDS.SHARED;
 import { createLexiconAdapter } from './adapters/lexicon.sqlite.adapter.js';
 import { createCorpusAdapter } from './adapters/corpus.sqlite.adapter.js';
 import { createCorpusService } from './services/corpus.service.js';
+import { ScholomanceDictionaryAPI } from '../core/shared/scholomanceDictionary.api.js';
 import { corpusRoutes } from './routes/corpus.routes.js';
 import { rhymeAstrologyRoutes } from './routes/rhymeAstrology.routes.js';
 import { resolveRhymeAstrologyArtifactPaths } from './utils/rhymeAstrologyPaths.js';
@@ -220,6 +221,39 @@ fastify.decorate('featureFlags', Object.freeze({
 const lexiconAdapter = createLexiconAdapter(SCHOLOMANCE_DICT_PATH, { log: fastify.log });
 const corpusAdapter = createCorpusAdapter(SCHOLOMANCE_CORPUS_PATH, { log: fastify.log });
 const corpusService = createCorpusService({ dbPath: SCHOLOMANCE_CORPUS_PATH, log: fastify.log });
+
+// ─── Scholomance Dictionary API wiring ─────────────────────────────────────
+// The ScholomanceDictionaryAPI is the shared client surface for /api/lexicon
+// (and friends). Wire it into the server boot so the configured base URL is
+// logged up front in both dev and production. In production the API must
+// point at the public server URL; in dev it points at the local listener.
+function resolveScholomanceDictApiUrl() {
+    const explicit = String(
+        process.env.SCHOLOMANCE_DICT_API_URL ||
+        process.env.VITE_SCHOLOMANCE_DICT_API_URL ||
+        '',
+    ).trim().replace(/\/+$/, '');
+
+    if (explicit) {
+        // Absolute or already a same-server path — use as-is.
+        if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(explicit)) return explicit;
+        if (explicit.startsWith('/')) {
+            // Same-origin relative path → resolve against the server base URL.
+            return `${SERVER_BASE_URL.replace(/\/+$/, '')}${explicit}`;
+        }
+        return `${SERVER_BASE_URL.replace(/\/+$/, '')}/${explicit}`;
+    }
+
+    // Default: same-origin /api/lexicon on the running server.
+    return `${SERVER_BASE_URL.replace(/\/+$/, '')}/api/lexicon`;
+}
+
+const SCHOLOMANCE_DICT_API_URL = resolveScholomanceDictApiUrl();
+fastify.decorate('scholomanceDictionaryAPI', ScholomanceDictionaryAPI);
+fastify.log.info(
+    { baseUrl: SCHOLOMANCE_DICT_API_URL, configured: ScholomanceDictionaryAPI.isConfigured() },
+    '[ScholomanceAPI] Configured',
+);
 
 // Register multipart for uploads
 fastify.register(multipart, {

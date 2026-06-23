@@ -382,15 +382,30 @@ export default class CombatHUDScene extends Phaser.Scene {
     }
   }
 
-  // Demo simulation when no relay (for testing the HUD alone)
+  // Demo simulation when no relay (for testing the HUD alone).
+  // Uses a deterministic mulberry32 PRNG seeded from a stable label so the
+  // demo replays identically across runs (Vaelrix Law: Determinism forbids
+  // Math.random in non-deterministic contexts).
   simulateStateUpdates() {
+    const demoSeed = 'combat-hud-demo';
+    let demoState = 1;
+    for (let i = 0; i < demoSeed.length; i += 1) {
+      demoState = ((demoState * 31) + demoSeed.charCodeAt(i)) | 0;
+    }
+    const next = () => {
+      demoState = (demoState + 0x6D2B79F5) | 0;
+      let t = demoState;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return (((t ^ (t >>> 14)) >>> 0) / 4294967296);
+    };
     setInterval(() => {
-      this.playerHealth = Math.max(20, this.playerHealth - Math.random() * 3);
+      this.playerHealth = Math.max(20, this.playerHealth - next() * 3);
       this.updatePlayerFrame();
 
       // Fake target
-      if (Math.random() > 0.7) {
-        this.targetHealth = Math.max(0, 80 - Math.random() * 10);
+      if (next() > 0.7) {
+        this.targetHealth = Math.max(0, 80 - next() * 10);
         this.updateTargetFrame();
       }
 
@@ -403,7 +418,7 @@ export default class CombatHUDScene extends Phaser.Scene {
       // Fake minimap
       this.updateMinimap({
         player: { x: 0.5, y: 0.5 },
-        enemies: [{ x: 0.3 + Math.random() * 0.4, y: 0.3 + Math.random() * 0.4 }]
+        enemies: [{ x: 0.3 + next() * 0.4, y: 0.3 + next() * 0.4 }]
       });
     }, 800);
   }

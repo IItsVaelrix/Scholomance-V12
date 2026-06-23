@@ -1,4 +1,3 @@
-from ..schema import SeoCritiqueResult
 
 
 _SEVERITY_ICON = {"CRIT": "!!", "WARN": "!", "INFO": "i"}

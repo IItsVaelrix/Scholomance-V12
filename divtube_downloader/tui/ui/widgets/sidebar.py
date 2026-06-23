@@ -1,6 +1,6 @@
 from textual.widgets import Static, Button
 from textual.app import ComposeResult
-from textual.containers import Vertical, VerticalScroll
+from textual.containers import VerticalScroll
 from tui.ui.widgets.glyph import AnimatedGlyph
 
 SECTIONS = [
@@ -12,7 +12,7 @@ SECTIONS = [
     ("HEALTH", ["/health", "/health-emit", "/health-verify"]),
     ("TURBOQUANT", ["/register-golden", "/list-curves", "/score-title", "/test-titles",
                     "/analyze-gaps", "/search-similar"]),
-    ("SESSION", ["/provider", "/apikey", "/help", "/memory", "/clear", "/exit"]),
+    ("SESSION", ["/provider", "/apikey", "/release", "/help", "/memory", "/clear", "/exit"]),
 ]
 
 class Sidebar(Static):

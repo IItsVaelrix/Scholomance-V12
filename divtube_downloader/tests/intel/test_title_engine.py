@@ -1,6 +1,6 @@
 import unittest
 from intel.schema import VideoAnalysis, VideoOverview
-from intel.engines.title_engine import run, MAX_RECOMMENDED, HARD_WARN, HOOK_WINDOW, KEYWORD_FRONTLOAD
+from intel.engines.title_engine import run, KEYWORD_FRONTLOAD
 
 
 class TestTitleEngine(unittest.TestCase):

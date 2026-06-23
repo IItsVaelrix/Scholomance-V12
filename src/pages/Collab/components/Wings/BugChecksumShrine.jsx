@@ -1,5 +1,5 @@
 /**
- * BugChecksumShrine — Bytecode Integrity Monitor
+ * BugChecksumShrine - Bytecode Integrity Monitor
  * Visualizes the checksum state of a bug artifact.
  */
 

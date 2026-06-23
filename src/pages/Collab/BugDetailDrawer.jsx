@@ -1,5 +1,5 @@
 /**
- * BugDetailDrawer — Specialized drawer for bug report inspection
+ * BugDetailDrawer - Specialized drawer for bug report inspection
  */
 
 import { useState, useCallback } from 'react';

@@ -1,11 +1,9 @@
-from textual.app import App, ComposeResult
+from textual.app import ComposeResult
 from textual.screen import Screen
 from textual.containers import Horizontal, Vertical
 from textual.widgets import Static, Header, Footer, Input
-from textual import work
 from rich.text import Text
 from rich.style import Style
-from rich.panel import Panel
 import shlex
 
 from tui.widgets.timeline_widget import TimelineWidget

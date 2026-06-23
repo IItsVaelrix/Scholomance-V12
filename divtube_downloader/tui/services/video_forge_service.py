@@ -8,13 +8,12 @@ from video_forge.render_service import RenderService
 from video_forge.ledger import LedgerViewer
 from video_forge.schema import (
     VideoProject, MediaItem, TimelineClip, EffectOp, TransitionOp,
-    TextOverlayOp, AudioTrackOp, compute_project_recipe_hash, validate_timeline,
+    TextOverlayOp, AudioTrackOp, compute_project_recipe_hash,
 )
 from video_forge.presets import PRESETS
 from video_forge.effects import EFFECTS
 from video_forge.transitions import TRANSITIONS
 from video_forge.text_cards import PIXELBRAIN_PRESETS
-from video_forge.errors import get_error
 
 
 GOLD = "#FFD700"

@@ -8,7 +8,7 @@
  * These are the phonemes that carry stress markers (0, 1, 2).
  */
 export const ARPABET_VOWELS = new Set([
-  'AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW', 'UR'
+  'AA', 'AE', 'AH', 'AO', 'AW', 'AX', 'AY', 'EH', 'ER', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW', 'UR'
 ]);
 
 /**
@@ -112,24 +112,35 @@ export const SONORITY_HIERARCHY = {
  * Maps ARPAbet vowels to their base vowel families before normalization.
  * Aligned with src/lib/phonology/vowelFamily.js normalization.
  */
+/**
+ * Maps each ARPAbet vowel to its canonical base family.
+ *
+ * Each vowel maps to itself by default — perfect rhymes require identical
+ * vowel nuclei. Slant/near-rhyme similarity between families is handled by
+ * the VOWEL_SIMILARITY matrix in phoneticSimilarity.js, NOT by collapsing
+ * distinct vowels into the same family here.
+ *
+ * The only intentional collapse: AX (schwa) → AH, since schwa is the
+ * unstressed allophone of the AH/ʌ nucleus in General American English.
+ */
 export const VOWEL_TO_BASE_FAMILY = {
-  'AA': 'A',
-  'AH': 'A',
-  'AX': 'A',
-  'AW': 'A',
+  'AA': 'AA',
+  'AH': 'AH',
+  'AX': 'AH',
+  'AW': 'AW',
   'AE': 'AE',
-  'EH': 'AE',
+  'EH': 'EH',
   'AO': 'AO',
   'OW': 'OW',
-  'OY': 'OW',
+  'OY': 'OY',
   'UW': 'UW',
-  'UH': 'UW',
-  'UR': 'IH',
+  'UH': 'UH',
+  'UR': 'UR',
   'IY': 'IY',
   'IH': 'IH',
-  'ER': 'IH',
+  'ER': 'ER',
   'EY': 'EY',
-  'AY': 'EY',
+  'AY': 'AY',
 };
 
 /**

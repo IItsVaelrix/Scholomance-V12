@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 import React from "react";
 import { clamp01 } from "../../codex/core/scholotime/scholotime.math.js";
 import { SCHOOLS } from "../../codex/core/constants/schools.js";

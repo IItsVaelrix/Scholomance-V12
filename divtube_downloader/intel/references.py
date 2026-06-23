@@ -37,10 +37,10 @@ def parse_reference_file(filepath: str) -> ReferenceBlock:
         name=name,
         principle=sections.get("principle", "").strip(),
         deterministic_checks=[
-            l.strip() for l in sections.get("deterministic checks", "").strip().split("\n") if l.strip()
+            line.strip() for line in sections.get("deterministic checks", "").strip().split("\n") if line.strip()
         ],
         failure_modes=[
-            l.strip() for l in sections.get("failure modes", "").strip().split("\n") if l.strip()
+            line.strip() for line in sections.get("failure modes", "").strip().split("\n") if line.strip()
         ],
         critique_language=critique_language,
         scoring_impact=sections.get("scoring impact", "").strip(),

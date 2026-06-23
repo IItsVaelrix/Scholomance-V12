@@ -1,5 +1,5 @@
 /**
- * STYLE TRANSMUTER — Neural Style Transfer for External AI Art
+ * STYLE TRANSMUTER - Neural Style Transfer for External AI Art
  * 
  * Re-skins reference images using school color laws and retro era constraints.
  */

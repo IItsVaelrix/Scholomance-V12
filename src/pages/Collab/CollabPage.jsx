@@ -1,5 +1,5 @@
 /**
- * CollabPage — Agent Collaboration Console
+ * CollabPage - Agent Collaboration Console
  * Sacred Geometry Layout: Left Panel (Input) | Center (Viewport) | Right Panel (Telemetry)
  * Adapted from PixelBrain architecture
  */
@@ -312,7 +312,7 @@ export default function CollabPage() {
     const [lastActivityId, setLastActivityId] = useState(null);
 
     // Critical-bug alert acknowledgement (persisted so the pulse doesn't nag on
-    // every navigation back to this page — only unseen open criticals re-fire).
+    // every navigation back to this page - only unseen open criticals re-fire).
     const [seenCriticalIds, setSeenCriticalIds] = useState(loadSeenCriticalIds);
     
     // Drawer state
@@ -567,7 +567,7 @@ export default function CollabPage() {
         try {
             localStorage.setItem(SEEN_CRITICAL_BUGS_KEY, JSON.stringify(ids));
         } catch {
-            /* localStorage unavailable — alert simply won't persist acknowledgement */
+            /* localStorage unavailable - alert simply won't persist acknowledgement */
         }
     }, [activeTab, bugs]);
 
@@ -938,7 +938,7 @@ export default function CollabPage() {
         },
         bugs: {
             total: bugs.length,
-            // Open criticals only — resolved/closed bugs must not keep the
+            // Open criticals only - resolved/closed bugs must not keep the
             // bugs-tab alert pulsing (see bug-status.js).
             critical: bugs.filter(isActiveCriticalBug).length,
         },
@@ -1318,7 +1318,7 @@ export default function CollabPage() {
                         </AnimatePresence>
                     </div>
                     
-                    {/* Status Display (below viewport) — suppressed on BUGS tab so the cabinet "screen" is fully visible without outer chrome/scroll */}
+                    {/* Status Display (below viewport) - suppressed on BUGS tab so the cabinet "screen" is fully visible without outer chrome/scroll */}
                     {activeTab !== 'bugs' && (
                         <CollabStatusDisplay 
                             status={status}
@@ -1523,7 +1523,7 @@ export default function CollabPage() {
                 />
             )}
 
-            {/* Inline input modal — Bug Assign */}
+            {/* Inline input modal - Bug Assign */}
             {bugAssignState && (
                 <>
                     <button
@@ -1551,7 +1551,7 @@ export default function CollabPage() {
                 </>
             )}
 
-            {/* Inline input modal — Bug Duplicate */}
+            {/* Inline input modal - Bug Duplicate */}
             {bugDuplicateState && (
                 <>
                     <button

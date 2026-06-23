@@ -25,12 +25,34 @@ const LOCAL_HINTS: Record<string, SCD64RemediationHint[]> = {
       message: "Do not patch shouldColor() directly until coordinate authority is verified.",
       confidence: 0.9
     }
+  ],
+  "068DAB573058F2BF36D82A40D0AF9DA8F5B466A210FA1BA93F55C475619D3107": [
+    {
+      kind: "SEMANTIC_DIFF",
+      message: "Two identifiers look identical at a glance but resolve to different bindings. Audit every usage of the singular form against the plural.",
+      file: "any",
+      symbol: "resonantCharStart vs resonantCharStarts",
+      confidence: 0.92
+    },
+    {
+      kind: "INSPECT",
+      message: "Check if the singular form was introduced by a typo (missing 's') or by destructuring the wrong object. The type checker is silent on both.",
+      file: "any",
+      symbol: "identifier ghost",
+      confidence: 0.88
+    },
+    {
+      kind: "AVOID",
+      message: "Do not rename blindly. Confirm the data shape matches what surrounding code expects before switching identifiers — the ghost may have been the correct one.",
+      file: "any",
+      confidence: 0.85
+    }
   ]
 };
 
 export function lookupSCD64BlocksInMCP(args: { versionByte: string; blocks: string[] }, checksum64: string): SCD64HoverDecodeResponse {
   let bugFamily = "UNKNOWN_FAMILY";
-  let firstFoundSlot = SCD64_GLOSSARY.find(g => g.hexCode === args.blocks[0] || (g.versionByte === args.versionByte && g.hexCode.endsWith(args.blocks[0].slice(2))));
+  const firstFoundSlot = SCD64_GLOSSARY.find(g => g.hexCode === args.blocks[0] || (g.versionByte === args.versionByte && g.hexCode.endsWith(args.blocks[0].slice(2))));
   
   if (firstFoundSlot) {
     bugFamily = firstFoundSlot.family;

@@ -11,7 +11,7 @@ def write_sections(scores, flags, references):
 
 def _write_with_template(scores, flags, references):
     sections = {}
-    flag_codes = [f.code for f in flags]
+    [f.code for f in flags]
 
     ref_map = {}
     for block in references:
@@ -89,7 +89,6 @@ def _write_with_template(scores, flags, references):
     blueprint = []
     blueprint.append("### Prioritized Action Plan")
     blueprint.append("")
-    action_items = []
     score_areas = [
         ("thumbnail", "Thumbnail Readability"),
         ("title", "Title Construction"),
@@ -128,7 +127,7 @@ def _write_with_claude(scores, flags, references, api_key):
                         "critique_language": block.critique_language[code],
                     })
 
-        prompt_data = {
+        {
             "scores": scores,
             "flags": [{"severity": f.severity, "code": f.code, "message": f.message} for f in flags],
             "references": ref_context,
@@ -149,5 +148,5 @@ def _write_with_claude(scores, flags, references, api_key):
         sections = json.loads(result_text)
         return sections
 
-    except Exception as e:
+    except Exception:
         return _write_with_template(scores, flags, references)

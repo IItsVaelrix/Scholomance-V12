@@ -1194,6 +1194,103 @@ async function main() {
       });
       break;
 
+    // ── Osmosis: Memory Cell Substrate Scan ────────
+    case 'osmosis-scan': {
+      const payloadStr = rest.flags.payload || rest._[0] || '[]';
+      let payload;
+      try {
+        payload = JSON.parse(payloadStr);
+      } catch (e) {
+        result = { error: `Invalid JSON payload: ${e.message}` };
+        break;
+      }
+
+      try {
+        const {
+          createMemoryCellPacket,
+          evaluateMemoryCellOsmosis,
+          scanMemoryCells,
+          MEMORY_CELL_VECTOR_DIMENSIONS,
+        } = await import(path.join(PROJECT_ROOT, 'codex/core/immunity/memory-cell-osmosis.js'));
+
+        const cells = [];
+        const observations = [];
+
+        for (const entry of payload) {
+          // Build a 128-dim vector from the payload
+          const rawVec = Array.isArray(entry.vector) ? entry.vector : [];
+          const vec = new Float32Array(MEMORY_CELL_VECTOR_DIMENSIONS);
+          for (let i = 0; i < Math.min(rawVec.length, MEMORY_CELL_VECTOR_DIMENSIONS); i++) {
+            vec[i] = Math.max(-1, Math.min(1, Number(rawVec[i]) || 0));
+          }
+
+          // Determine cell family and mode
+          const family = entry.family || 'runtime';
+          const mode = entry.mode || 'baseline';
+          const cellId = entry.cell_id || entry.key || `cell-${cells.length}`;
+
+          // Create the memory cell packet
+          const cell = createMemoryCellPacket({
+            id: cellId,
+            family,
+            mode,
+            vector: vec,
+            membrane: entry.membrane || {
+              similarityFloor: 0.92,
+              driftCeiling: 0.08,
+              concentrationLimit: 0.99,
+            },
+            stableContext: {
+              detector: 'substrate-osmosis-bridge',
+              key: entry.key || cellId,
+              scanSource: 'divtube-tui',
+            },
+            seed: 42,
+          });
+
+          cells.push(cell);
+          observations.push({
+            vector: vec,
+            concentration: entry.concentration || 0,
+          });
+        }
+
+        // Run osmosis evaluation on each cell
+        const results = [];
+        for (let i = 0; i < cells.length; i++) {
+          try {
+            const osmResult = evaluateMemoryCellOsmosis(cells[i], observations[i]);
+            results.push({
+              ...osmResult,
+              key: payload[i].key || payload[i].cell_id || `cell-${i}`,
+            });
+          } catch (evalErr) {
+            results.push({
+              cellId: cells[i].id,
+              key: payload[i].key || `cell-${i}`,
+              status: 'error',
+              anomalyKind: 'evaluation_error',
+              similarity: 0,
+              drift: 1,
+              concentration: 0,
+              confidence: 0,
+              error: evalErr.message,
+            });
+          }
+        }
+
+        result = {
+          contract: 'SCHOL-MEMCELL-OSMOSIS-SCAN-v1',
+          scanned: cells.length,
+          anomalies: results.filter(r => r.status === 'anomaly').length,
+          results,
+        };
+      } catch (e) {
+        result = { error: `Osmosis scan failed: ${e.message}`, stack: e.stack };
+      }
+      break;
+    }
+
     default:
       console.error('Unknown command: ' + command);
       console.error(USAGE);

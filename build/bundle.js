@@ -10,7 +10,7 @@
 var esm = __webpack_require__(3947);
 // EXTERNAL MODULE: ./node_modules/react/jsx-runtime.js
 var jsx_runtime = __webpack_require__(4848);
-;// ./src/pages/Visualiser/tracks/types.ts
+// ./src/pages/Visualiser/tracks/types.ts
 
 const DEFAULT_PACING = {
   bpm: 120,
@@ -21,7 +21,7 @@ const DEFAULT_PACING = {
   coupletCostMax: 0.75
 };
 
-;// ./codex/core/scholotime/scholotime.math.js
+// ./codex/core/scholotime/scholotime.math.js
 
 function assertPositiveInteger(value, name) {
   if (!Number.isInteger(value) || value < 0) {
@@ -97,7 +97,7 @@ function applyEasing(progress, easingType = "linear") {
   }
 }
 
-;// ./src/video/useBeatClock.ts
+// ./src/video/useBeatClock.ts
 
 
 
@@ -110,7 +110,7 @@ function useBeatClock({ bpm, offsetMs }) {
   return { timeMs, beat, bar };
 }
 
-;// ./codex/core/pixelbrain/shared.js
+// ./codex/core/pixelbrain/shared.js
 
 const GOLDEN_RATIO = 1.618033988749895;
 const GOLDEN_ANGLE = 137.50776405003785;
@@ -257,7 +257,7 @@ function hslToHex(h, s, l) {
   return `#${channel(0)}${channel(8)}${channel(4)}`;
 }
 
-;// ./codex/core/constants/schools.js
+// ./codex/core/constants/schools.js
 /* unused harmony import specifier */ var schools_hslToHex;
 
 
@@ -494,7 +494,7 @@ function computeDominantSchool(schoolWeights) {
   })[0]) == null ? void 0 : _a[0]) || null;
 }
 
-;// ./src/video/KineticWord.tsx
+// ./src/video/KineticWord.tsx
 
 
 
@@ -588,7 +588,7 @@ function KineticWord({ wordTiming, clock, beatDurationMs }) {
   );
 }
 
-;// ./src/video/PixelBrainStage.tsx
+// ./src/video/PixelBrainStage.tsx
 
 
 
@@ -634,7 +634,7 @@ function PixelBrainStage({ activeWords, clock }) {
   ] });
 }
 
-;// ./src/video/KineticLyricsVideo.tsx
+// ./src/video/KineticLyricsVideo.tsx
 
 
 
@@ -744,7 +744,7 @@ function KineticLyricsVideo({ track }) {
 
 // EXTERNAL MODULE: ./node_modules/react/index.js
 var react = __webpack_require__(6540);
-;// ./src/pages/internal/ScholoTimeLab/typographyMoviePlugins.js
+// ./src/pages/internal/ScholoTimeLab/typographyMoviePlugins.js
 
 const SCHOOL_COLORS = ["#d6b35f", "#42d9ff", "#b56cff", "#ff5ca8", "#ff9d3d"];
 const WALL_DARK = "#090914";
@@ -1217,7 +1217,7 @@ function getTypographyMoviePlugin(pluginId) {
   return TYPOGRAPHY_MOVIE_PLUGINS.find((plugin) => plugin.id === pluginId) || TYPOGRAPHY_MOVIE_PLUGINS[0];
 }
 
-;// ./src/video/MazeLyricsVideo.tsx
+// ./src/video/MazeLyricsVideo.tsx
 
 
 
@@ -1318,7 +1318,7 @@ function MazeLyricsVideo({ track }) {
   ] });
 }
 
-;// ./src/pages/Visualiser/tracks/petrichor.ts
+// ./src/pages/Visualiser/tracks/petrichor.ts
 
 const PETRICHOR = {
   id: "149036d5-397c-4b59-a150-f4f6403c4758",
@@ -1459,9 +1459,9 @@ const PETRICHOR = {
   }
 };
 
-;// ./src/pages/Visualiser/tracks/petrichor.align.json
+// ./src/pages/Visualiser/tracks/petrichor.align.json
 const petrichor_align_namespaceObject = /*#__PURE__*/JSON.parse('{"schemaVersion":"scholomance.align.v1","trackId":"149036d5-397c-4b59-a150-f4f6403c4758","bpm":123,"offsetMs":9000,"lyricsHash":"mock-hand-authored-2026-06-15","audioUrl":"https://cdn1.suno.ai/149036d5-397c-4b59-a150-f4f6403c4758.mp3","generatedAt":"2026-06-15T00:00:00Z","wordTimings":[{"word":"I","startMs":9000,"endMs":9200,"beat":{"index":0,"phase":0,"bar":0,"barPhase":0},"school":"PSYCHIC","confidence":1},{"word":"just","startMs":9250,"endMs":9420,"beat":{"index":0,"phase":0.512,"bar":0,"barPhase":0.128},"school":"WILL","confidence":1},{"word":"care","startMs":9450,"endMs":9750,"beat":{"index":0,"phase":0.922,"bar":0,"barPhase":0.23},"school":"WILL","confidence":1},{"word":"that","startMs":9800,"endMs":9970,"beat":{"index":1,"phase":0.639,"bar":0,"barPhase":0.41},"school":"WILL","confidence":1},{"word":"I","startMs":10020,"endMs":10180,"beat":{"index":2,"phase":0.09,"bar":0,"barPhase":0.522},"school":"PSYCHIC","confidence":1},{"word":"miss","startMs":10220,"endMs":10450,"beat":{"index":2,"phase":0.501,"bar":0,"barPhase":0.625},"school":"SONIC","confidence":1},{"word":"you","startMs":10500,"endMs":11200,"beat":{"index":3,"phase":0.075,"bar":0,"barPhase":0.769},"school":"ABJURATION","confidence":1},{"word":"I","startMs":11400,"endMs":11600,"beat":{"index":4,"phase":0.2,"bar":1,"barPhase":0.05},"school":"PSYCHIC","confidence":1},{"word":"prepared","startMs":11650,"endMs":12000,"beat":{"index":4,"phase":0.71,"bar":1,"barPhase":0.178},"school":"WILL","confidence":1},{"word":"my","startMs":12050,"endMs":12200,"beat":{"index":5,"phase":0.21,"bar":1,"barPhase":0.303},"school":"PSYCHIC","confidence":1},{"word":"life","startMs":12250,"endMs":12550,"beat":{"index":5,"phase":0.72,"bar":1,"barPhase":0.43},"school":"PSYCHIC","confidence":1},{"word":"knowing","startMs":12600,"endMs":12900,"beat":{"index":6,"phase":0.23,"bar":1,"barPhase":0.558},"school":"ABJURATION","confidence":1},{"word":"my","startMs":12950,"endMs":13100,"beat":{"index":6,"phase":0.74,"bar":1,"barPhase":0.685},"school":"PSYCHIC","confidence":1},{"word":"life","startMs":13150,"endMs":13400,"beat":{"index":7,"phase":0.24,"bar":1,"barPhase":0.81},"school":"PSYCHIC","confidence":1},{"word":"is","startMs":13450,"endMs":13600,"beat":{"index":7,"phase":0.75,"bar":1,"barPhase":0.938},"school":"SONIC","confidence":1},{"word":"no","startMs":13650,"endMs":13850,"beat":{"index":8,"phase":0.05,"bar":2,"barPhase":0.013},"school":"ABJURATION","confidence":1},{"word":"longer","startMs":13900,"endMs":14250,"beat":{"index":8,"phase":0.56,"bar":2,"barPhase":0.14},"school":"ABJURATION","confidence":1},{"word":"yours","startMs":14300,"endMs":15100,"beat":{"index":9,"phase":0.07,"bar":2,"barPhase":0.268},"school":"SONIC","confidence":1}]}');
-;// ./src/pages/Visualiser/tracks/maze-screensaver.ts
+// ./src/pages/Visualiser/tracks/maze-screensaver.ts
 
 const MAZE_SCREENSAVER = {
   id: "0ff1c2ee-6951-4f65-9204-4cbb2baf16fa",
@@ -1497,7 +1497,7 @@ const MAZE_SCREENSAVER = {
   // },
 };
 
-;// ./src/video/Root.tsx
+// ./src/video/Root.tsx
 
 
 
@@ -1540,7 +1540,7 @@ function RemotionRoot() {
   ] });
 }
 
-;// ./src/video/index.ts
+// ./src/video/index.ts
 
 
 

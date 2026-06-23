@@ -2,6 +2,8 @@ import subprocess
 import threading
 import os
 
+from tui.utils.throttle import gradle_throttle
+
 class AgentService:
     def __init__(self):
         pass
@@ -10,6 +12,7 @@ class AgentService:
         token = controller.begin_agent() if controller else None
 
         def run():
+            gradle_throttle.wait()
             env = os.environ.copy()
             env["JAVA_HOME"] = "/home/deck/.var/app/com.visualstudio.code/data/vscode/extensions/redhat.java-1.54.0-linux-x64/jre/21.0.10-linux-x86_64"
             env["PATH"] = env["JAVA_HOME"] + "/bin:" + env["PATH"]

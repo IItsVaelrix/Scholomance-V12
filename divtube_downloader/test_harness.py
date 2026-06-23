@@ -1,6 +1,5 @@
 import subprocess
 import json
-import time
 
 def run_test():
     print("Starting TurboQuant IPC Test Harness...")

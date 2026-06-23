@@ -12,6 +12,7 @@
  * anti-skeuomorphic sigil mandate.
  */
 
+import { renderWandSvgUri } from './wandSvg.js';
 import { bakeAll } from '../scenes/CharacterShaderRenderer.js';
 import { combat_tileUri } from './generated/combat-tile.js';
 import { combat_torchUri } from './generated/combat-torch.js';

@@ -104,7 +104,19 @@ class ContentCriticService:
                     "messages": msgs
                 }
                 if use_tools and hasattr(self, "tools") and self.tools.tools:
-                    payload["tools"] = self.tools.tools
+                    import copy
+                    safe_tools = copy.deepcopy(self.tools.tools)
+                    def _strip_custom(d):
+                        if isinstance(d, dict):
+                            d.pop("default", None)
+                            d.pop("is_coding_action", None)
+                            for v in d.values():
+                                _strip_custom(v)
+                        elif isinstance(d, list):
+                            for item in d:
+                                _strip_custom(item)
+                    _strip_custom(safe_tools)
+                    payload["tools"] = safe_tools
                     
                 url = f"{base_url}/chat/completions" if not base_url.endswith("/chat/completions") else base_url
                 req = urllib.request.Request(url, method="POST")

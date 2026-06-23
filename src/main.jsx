@@ -43,7 +43,7 @@ import { AdminRoute } from "./components/AdminRoute.jsx";
 
 // DEV-ONLY de-risking spike (PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE).
 // The guard `import.meta.env.DEV` is statically false in production, so the route is
-// NEVER registered in prod (devSpikeRoutes stays []) — unreachable, never rendered,
+// NEVER registered in prod (devSpikeRoutes stays []) - unreachable, never rendered,
 // its lazy chunk never fetched. (Vite still lists the chunk name in its dep-map array,
 // but no code path loads it.) Not wired into navigation; reachable only at
 // /combat-godot-spike during `npm run dev`.

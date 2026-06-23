@@ -1,5 +1,5 @@
 /**
- * AgentStatus — live presence surface for connected and disconnected agents
+ * AgentStatus - live presence surface for connected and disconnected agents
  */
 
 import { motion, useReducedMotion } from 'framer-motion';
@@ -318,7 +318,7 @@ export default function AgentStatus({ agents, nowMs = Date.now(), onRefresh, onE
 
     return (
         <div className="agents-view">
-            {/* In-world notification surface — delete status */}
+            {/* In-world notification surface - delete status */}
             {deleteStatus && (
                 <motion.div
                     className={`notification-banner notification-banner--${deleteStatus.type}`}

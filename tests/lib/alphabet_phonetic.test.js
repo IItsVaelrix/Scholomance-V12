@@ -39,13 +39,14 @@ describe('Alphabet Phonetic Mapping', () => {
     const match1 = PhonemeEngine.scoreMultiSyllableMatch(cat, bat);
     expect(match1.score).toBeGreaterThan(0.60);
 
-    // Vowel match only (assonance): Deactivated per CODA_MIN_SCORE
+    // Vowel match (assonance): cat (AE-T) vs map (AE-P) — same vowel,
+    // different coda. Assonance now passes through with vowel-weighted scoring.
     const cat2 = PhonemeEngine.analyzeDeep('cat');
     const map = PhonemeEngine.analyzeDeep('map');
     
     const match2 = PhonemeEngine.scoreMultiSyllableMatch(cat2, map);
     
-    expect(match2.score).toBe(0);
-    expect(match2.type).toBe('none');
+    expect(match2.score).toBeGreaterThan(0.59);
+    expect(match2.type).toBe('masculine');
   });
 });

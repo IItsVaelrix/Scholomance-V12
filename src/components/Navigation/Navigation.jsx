@@ -31,7 +31,7 @@ const ROUTE_COPY = {
   watch: "Witness the live arena and current ritual signal.",
   listen: "Tune stations, broadcasts, and ambient transmission.",
   read: "Compose scrolls and inspect their hidden anatomy.",
-  visualiser: "Kinetic lyric visualiser — phoneme school colors, beat sync.",
+  visualiser: "Kinetic lyric visualiser - phoneme school colors, beat sync.",
   oracle: "Consult the Oracle for Lyrical Analysis.",
   blog: "Read transmissions, skills, verdicts, and whitepapers.",
   pixelbrain: "Neural network visualization and metadata mapping.",
