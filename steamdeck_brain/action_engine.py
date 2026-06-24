@@ -4,9 +4,8 @@ import threading
 import queue
 import time
 import json
-from typing import Dict, Any
 
-from vaelrix_tools import dispatch_tool, get_tool_definitions, TOOL_REGISTRY
+from vaelrix_tools import dispatch_tool
 
 
 class ActionEngine:
@@ -35,10 +34,11 @@ class ActionEngine:
     def parse_and_run(self, response: str) -> str:
         """Parse tool calls and execute them. Supports multi-turn tool loops."""
 
+        self.tool_log = []
+
         for _ in range(self.MAX_TOOL_TURNS):
             match = re.search(r'\[TOOL:\s*(\w+)\]\s*(\{.*?\})', response, re.DOTALL)
             if not match:
-                # Fallback: legacy EXECUTE format
                 legacy = re.search(r'\[EXECUTE:\s*(.+?)\]', response, re.DOTALL)
                 if legacy:
                     return self._run_execute(response, legacy.group(1).strip())
@@ -53,16 +53,19 @@ class ActionEngine:
                 response = f"{response}\n\n[Tool Error: invalid JSON arguments for '{tool_name}']"
                 continue
 
+            self.tool_log.append({"tool": tool_name, "args": args})
+
             print(f"\n\033[1;96m🔧 TOOL: {tool_name}\033[0m \033[2m{json.dumps(args)}\033[0m")
 
             result = dispatch_tool(tool_name, args, cortex=self._get_cortex())
 
-            print(f"\033[2m{result[:500]}{'...' if len(result) > 500 else ''}\033[0m")
+            result_trunc = result[:500] + ('...' if len(result) > 500 else '')
+            self.tool_log[-1]["result"] = result_trunc
+            print(f"\033[2m{result_trunc}\033[0m")
 
             response = response[:match.start()] + response[match.end():]
             response = f"{response}\n\n--- TOOL RESULT [{tool_name}] ---\n{result}"
 
-            # Ask model to continue with tool output
             followup = self.brain.model.generate(
                 response,
                 system=self.brain.system_prompt
@@ -73,7 +76,7 @@ class ActionEngine:
 
     def _run_execute(self, response: str, cmd: str) -> str:
         """Legacy: handle [EXECUTE: command] blocks."""
-        print(f"\n\033[1;91m🛑 LOGICAL FIREWALL TRIGGERED\033[0m")
+        print("\n\033[1;91m🛑 LOGICAL FIREWALL TRIGGERED\033[0m")
         print(f"\033[96mVaelrix requests to execute:\033[0m \033[93m{cmd}\033[0m")
 
         import threading as th

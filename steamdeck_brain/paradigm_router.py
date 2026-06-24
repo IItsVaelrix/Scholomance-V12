@@ -13,11 +13,10 @@ Schema: SCHOL-PARADIGM-v1  (see paradigms/*.json)
 
 import os
 import json
+import pickle
 import re
 import hashlib
-import time
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable, Tuple
+from typing import Dict, List, Optional, Callable, Tuple
 
 # ── Bytecode checksum ─────────────────────────────────────────────────────
 
@@ -34,7 +33,6 @@ def verify_paradigm(paradigm: dict) -> Tuple[bool, str]:
             return False, f"missing required field: {field}"
     if paradigm.get("contract") != "SCHOL-PARADIGM-v1":
         return False, f"unknown contract: {paradigm.get('contract')}"
-    steps = paradigm.get("steps", [])
     steps_no_checksum = {k: v for k, v in paradigm.items() if k != "checksum"}
     actual = compute_checksum(steps_no_checksum)
     expected = paradigm["checksum"]
@@ -47,14 +45,52 @@ def verify_paradigm(paradigm: dict) -> Tuple[bool, str]:
 class ParadigmRouter:
     """Classifies queries against registered paradigms and runs retrieval pipelines."""
 
+    CACHE_DIR = os.path.expanduser("~/.substrate")
+
     def __init__(self, paradigm_dir: str = None):
         self.paradigms: List[dict] = []
         self._step_registry: Dict[str, Callable] = {}
         if paradigm_dir is None:
             paradigm_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "paradigms")
         self.paradigm_dir = paradigm_dir
-        self._load_paradigms()
+        if not self._load_cached():
+            self._load_paradigms()
+            self._save_cache()
         self._init_step_registry()
+
+    def _cache_path(self):
+        return os.path.join(self.CACHE_DIR, ".paradigm_cache.pickle")
+
+    def _load_cached(self):
+        try:
+            path = self._cache_path()
+            if not os.path.exists(path):
+                return False
+            cache_mtime = os.path.getmtime(path)
+            json_files = sorted(
+                f for f in os.listdir(self.paradigm_dir) if f.endswith(".json")
+            )
+            if not json_files:
+                return False
+            latest_json_mtime = max(
+                os.path.getmtime(os.path.join(self.paradigm_dir, f))
+                for f in json_files
+            )
+            if latest_json_mtime > cache_mtime:
+                return False
+            with open(path, "rb") as f:
+                self.paradigms = pickle.load(f)
+            return True
+        except Exception:
+            return False
+
+    def _save_cache(self):
+        try:
+            os.makedirs(self.CACHE_DIR, exist_ok=True)
+            with open(self._cache_path(), "wb") as f:
+                pickle.dump(self.paradigms, f)
+        except Exception:
+            pass
 
     def _load_paradigms(self):
         """Load and verify all SCHOL-PARADIGM-v1 JSON files."""
@@ -244,7 +280,6 @@ class ParadigmRouter:
         resolved = self._resolve_template(pattern, context)
         family = step.get("family", "")
         try:
-            import sys
             project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
             tools_dir = os.path.join(project_root, "tools", "scd64-vscode", "data")
             glossary_path = os.path.join(tools_dir, "scd64-glossary.v1.json")
@@ -417,21 +452,7 @@ class ParadigmRouter:
 
     def _step_rhyme_engine(self, query: str, step: dict, context: dict, router) -> dict:
         """Query the rhyme analysis engine via the Node.js bridge."""
-        pattern = step.get("query", query)
-        resolved = self._resolve_template(pattern, context)
-        try:
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-            import subprocess
-            node_bin = os.path.expanduser("~/.nvm/versions/node/v20.20.2/bin/node")
-            if not os.path.exists(node_bin):
-                node_bin = "node"
-            # Use the Python runner for the rhyme engine via the panel analysis test
-            analysis_script = os.path.join(project_root, "scripts", "immune-pre-commit.js")
-            # Fallback: just note the rhyme engine is available but requires node
-            return {"source": "Rhyme Engine", "content": "DeepRhymeEngine available (Node.js). Local phoneme analysis classifies connections as perfect/near/slant/assonance."}
-        except Exception:
-            pass
-        return {"source": "Rhyme Engine", "content": ""}
+        return {"source": "Rhyme Engine", "content": "DeepRhymeEngine available (Node.js). Local phoneme analysis classifies connections as perfect/near/slant/assonance."}
 
     def _step_pixelbrain(self, query: str, step: dict, context: dict, router) -> dict:
         """Query pixelbrain artifacts."""
@@ -489,7 +510,7 @@ class ParadigmRouter:
             )
             report = proc.stdout
             lines = report.split("\n")
-            status_line = next((l for l in lines if "POLISH STATUS:" in l), "")
+            status_line = next((line for line in lines if "POLISH STATUS:" in line), "")
             return {"source": "Production Polish", "content": status_line or "Unknown"}
         except Exception:
             pass

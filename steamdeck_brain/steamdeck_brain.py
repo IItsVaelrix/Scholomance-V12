@@ -54,7 +54,7 @@ from paradigm_router import ParadigmRouter
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
-DEFAULT_MODEL = "qwen2.5:1.5b"  # 1.5B fits Steam Deck 16 GB RAM; 9B OOMs on subsequent loads
+DEFAULT_MODEL = "qwen2.5-coder:7b"
 DEFAULT_SUBSTRATE_DB = "~/.substrate/memory.sqlite"
 DEFAULT_SYSTEM_PROMPT = """You are an augmented intelligence running on a Steam Deck.
 You have access to an external memory substrate (Cortex) that provides relevant 
@@ -316,6 +316,7 @@ class BrainBridge:
 
         # Step 5: Process Tool Executions and Self-Correction
         response = self.action_engine.parse_and_run(response)
+        self._last_tool_log = getattr(self.action_engine, "tool_log", [])
 
         return response
 

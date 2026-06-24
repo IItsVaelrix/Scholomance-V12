@@ -33,6 +33,22 @@
              augmented knowledge
 ```
 
+Created steamdeck_brain/launch-brain-stack.sh.
+
+What it does:
+1. Kills anything on ports 11434 (Ollama) and 9090 (brain daemon)
+2. Starts ollama serve in the background → /tmp/ollama.log
+3. Waits for Ollama to be ready
+4. Starts brain_daemon.py in the background → /tmp/brain_daemon.log
+5. Waits for the brain daemon to be ready
+Run it:
+./steamdeck_brain/launch-brain-stack.sh
+With custom args (passed through to brain_daemon.py):
+./steamdeck_brain/launch-brain-stack.sh --model qwen2.5-coder:7b --port 9090
+Watch logs:
+tail -f /tmp/ollama.log /tmp/brain_daemon.log
+
+
 ## The "Brain Boosting Microchip" Concept
 
 | Component | What it is | Analogy |
@@ -121,7 +137,7 @@ Or run the daemon manually (foreground):
 ```bash
 python3 brain_daemon.py --model qwen3.5:9b --port 9090
 ```
-
+python3 brain_daemon.py --model qwen3.5:9b --port 9090
 ## Usage Examples
 
 ```bash

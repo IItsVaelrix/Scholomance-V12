@@ -1,5 +1,4 @@
 import json
-import os
 import threading
 import urllib.request
 import urllib.error
@@ -126,76 +125,85 @@ class PromptService:
             token = controller.begin_agent() if controller else None
             try:
                 if agent_id == "vaelrix":
-                    import sys, os
+                    import sys
+                    import os
                     brain_dir = "/home/deck/Downloads/Scholomance-V12-main/steamdeck_brain"
                     parent = os.path.dirname(brain_dir)
                     if parent not in sys.path:
                         sys.path.insert(0, parent)
 
-                    # Step 1: reuse cached daemon client if we have one
-                    if hasattr(self, "_vaelrix_brain") and self._vaelrix_brain is not None:
-                        client = self._vaelrix_brain
-                        try:
-                            response = client.ask(text)
-                            if response and not response.startswith("[Error"):
-                                set_state("responding")
-                                callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](daemon)[/]\n")
-                                if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
-                                    callback.__self__.typewriter_log_msg(response)
-                                else:
-                                    from rich.markdown import Markdown
-                                    callback(Markdown(response))
-                                set_state("idle")
-                                return
-                        except Exception:
-                            # Daemon died; invalidate cache and try fresh boot
-                            self._vaelrix_brain = None
+                    def _show_vaelrix_response(result, label="(daemon)"):
+                        response = result.get("response", "")
+                        tool_calls = result.get("tool_calls", [])
 
-                    # Step 2: try connecting to daemon for the first time
-                    try:
-                        from steamdeck_brain.brain_bridge_client import BrainBridgeClient
-                        client = BrainBridgeClient(port=9090)
-                        if client.is_available():
-                            response = client.ask(text)
-                            if response and not response.startswith("[Error"):
-                                # Cache the live client for subsequent calls
-                                self._vaelrix_brain = client
-                                set_state("responding")
-                                callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](daemon)[/]\n")
-                                if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
-                                    callback.__self__.typewriter_log_msg(response)
-                                else:
-                                    from rich.markdown import Markdown
-                                    callback(Markdown(response))
-                                set_state("idle")
-                                return
-                    except Exception:
-                        pass
+                        if not response or response.startswith("[Error"):
+                            return False
 
-                    # Step 3: cold-boot fallback (daemon unavailable)
-                    from steamdeck_brain.steamdeck_brain import BrainBridge
-                    callback(f"\n[{MUTED}]Booting Vaelrix Cortex (daemon unavailable — cold boot)...[/]")
-                    bridge = BrainBridge(personality="Vaelrix")
-                    set_state("thinking")
-                    response = bridge.ask(text)
-                    set_state("responding")
-                    if response:
-                        if agent_id not in self.history:
-                            self.history[agent_id] = []
-                        self.history[agent_id].append({"role": "user", "content": text})
-                        self.history[agent_id].append({"role": "assistant", "content": response})
-                        if len(self.history[agent_id]) > self.max_history * 2:
-                            self.history[agent_id] = self.history[agent_id][-(self.max_history * 2):]
+                        if tool_calls:
+                            set_state("looking")
+                            callback(f"\n[bold #ef4444]ᗣ LOOKING[/] [#6B7280]— {len(tool_calls)} tool call(s)[/]")
+                            for tc in tool_calls:
+                                tool_name = tc.get("tool", "?")
+                                args = tc.get("args", {})
+                                res = tc.get("result", "(no result)")
+                                callback(f"  [bold #FFD700]🔧 {tool_name}[/] [#6B7280]{str(args)[:120]}[/]")
+                                callback(f"  [#475569]{res[:200]}{'...' if len(res) > 200 else ''}[/]")
 
-                        callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}](SteamDeck Brain)[/]\n")
+                        set_state("responding")
+                        callback(f"\n[bold {GOLD}]❖ VAELRIX RESPONSE ❖[/] [{MUTED}]{label}[/]\n")
                         if hasattr(callback, "__self__") and hasattr(callback.__self__, "typewriter_log_msg"):
                             callback.__self__.typewriter_log_msg(response)
                         else:
                             from rich.markdown import Markdown
                             callback(Markdown(response))
-                            callback("\n")
-                    else:
-                        callback("(empty response)\n")
+                        set_state("idle")
+                        return True
+
+                    # Step 1: reuse cached daemon client if we have one
+                    if hasattr(self, "_vaelrix_brain") and self._vaelrix_brain is not None:
+                        client = self._vaelrix_brain
+                        try:
+                            set_state("thinking")
+                            result = client.ask(text)
+                            if _show_vaelrix_response(result):
+                                return
+                        except Exception:
+                            self._vaelrix_brain = None
+
+                    # Step 2: connect to daemon (retry with backoff)
+                    from steamdeck_brain.brain_bridge_client import BrainBridgeClient
+
+                    def _try_daemon():
+                        try:
+                            client = BrainBridgeClient(port=9090)
+                            if client.is_available():
+                                return client
+                        except Exception:
+                            pass
+                        return None
+
+                    import time as _time
+                    for attempt in range(1, 13):
+                        if controller and controller.agent_cancelled(token):
+                            callback("[#FFD166]⚠ Vaelrix cancelled.[/]")
+                            set_state("idle")
+                            return
+
+                        client = _try_daemon()
+                        if client:
+                            set_state("thinking")
+                            result = client.ask(text)
+                            if _show_vaelrix_response(result):
+                                self._vaelrix_brain = client
+                                return
+
+                        wait = min(attempt * 2, 20)
+                        callback(f"[\u001b[33m⚠\u001b[0m] Vaelrix daemon down — retry {attempt}/12 in {wait}s… (systemd will restart it)")
+                        set_state("idle")
+                        _time.sleep(wait)
+
+                    callback("\n[bold #FF5C7A]✗ Vaelrix daemon unreachable after 12 retries.[/]")
+                    callback("[#6B7280]  Start it:  systemctl --user start scholomance-brain.service[/]")
                     set_state("idle")
                     return
 
@@ -288,7 +296,10 @@ class PromptService:
                             is_coding = tool_def.get("is_coding_action", False)
 
                             if is_coding:
-                                import rich.panel, rich.syntax, rich.console, os
+                                import rich.panel
+                                import rich.syntax
+                                import rich.console
+                                import os
                                 if func_args is not None:
                                     if func_name == "replace_file_content" or func_name == "multi_replace_file_content":
                                         path = func_args.get("path", "")

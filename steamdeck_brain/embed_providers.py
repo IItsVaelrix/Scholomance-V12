@@ -13,6 +13,7 @@ Provides:
 import json
 import math
 import os
+import pickle
 import urllib.request
 from typing import List, Optional
 
@@ -178,16 +179,45 @@ class OllamaEmbedProvider:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class HybridEmbedProvider:
-    """Auto-selecting embed provider chain: Ollama → N-Gram → Hash."""
-    
+    """Auto-selecting embed provider chain: Ollama → N-Gram → Hash.
+    Caches ollama availability to disk so cold boots skip the timeout."""
+
+    CACHE_DIR = os.path.expanduser("~/.substrate")
+
     def __init__(self, dim: int = DEFAULT_DIM):
         self.dim = dim
-        self.ollama = OllamaEmbedProvider(fallback=False)
         self.ngram = NGramEmbeddingProvider(dim=dim)
-        self._ollama_ok = None
-    
-    def encode(self, text: str) -> List[float]:
+        self._ollama_ok = self._load_cache()
         if self._ollama_ok is not False:
+            self.ollama = OllamaEmbedProvider(timeout=3, fallback=False)
+        else:
+            self.ollama = None
+            print("   ⚡ embed cache hit — n-gram active (ollama embed skipped)")
+
+    def _cache_path(self):
+        return os.path.join(self.CACHE_DIR, ".embed_cache.pickle")
+
+    def _load_cache(self):
+        try:
+            path = self._cache_path()
+            if os.path.exists(path):
+                with open(path, "rb") as f:
+                    data = pickle.load(f)
+                return data.get("ollama_ok", None)
+        except Exception:
+            pass
+        return None
+
+    def _save_cache(self):
+        try:
+            os.makedirs(self.CACHE_DIR, exist_ok=True)
+            with open(self._cache_path(), "wb") as f:
+                pickle.dump({"ollama_ok": self._ollama_ok}, f)
+        except Exception:
+            pass
+
+    def encode(self, text: str) -> List[float]:
+        if self._ollama_ok is not False and self.ollama is not None:
             try:
                 vec = self.ollama.encode(text)
                 if vec and any(v != 0.0 for v in vec):
@@ -195,10 +225,12 @@ class HybridEmbedProvider:
                     return vec
             except Exception:
                 self._ollama_ok = False
+                self._save_cache()
+                self.ollama = None
         return self.ngram.encode(text)
-    
+
     def encode_batch(self, texts: List[str]) -> List[List[float]]:
-        if self._ollama_ok is not False:
+        if self._ollama_ok is not False and self.ollama is not None:
             try:
                 result = self.ollama.encode_batch(texts)
                 if result and any(any(v != 0.0 for v in r) for r in result):
@@ -206,6 +238,8 @@ class HybridEmbedProvider:
                     return result
             except Exception:
                 self._ollama_ok = False
+                self._save_cache()
+                self.ollama = None
         return self.ngram.encode_batch(texts)
 
 

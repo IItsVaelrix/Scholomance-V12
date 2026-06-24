@@ -19,8 +19,8 @@ EnvironmentFile=-%h/.config/scholomance-brain.env
 # Self-heal: install Ollama (to @OLLAMA_BIN@'s prefix) if the binary is missing.
 ExecStartPre=@ENSURE_OLLAMA@ @OLLAMA_BIN@
 ExecStart=@OLLAMA_BIN@ serve
-Restart=always
-RestartSec=3
+# Auto-restart disabled so manual launches can control the server lifecycle.
+Restart=no
 # Ollama keeps the model warm; give it room and don't OOM-kill aggressively.
 OOMScoreAdjust=-200
 

@@ -21,3 +21,4 @@ niche_database.sqlite
 
 # Backups
 *.bak
+.blackboxcli/

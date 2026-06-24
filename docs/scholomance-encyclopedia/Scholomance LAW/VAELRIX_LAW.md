@@ -3,7 +3,7 @@
 
 > Read first: `SHARED_PREAMBLE.md` → this file. ARCH-PRIORITY: docs/skills loaded every new read of @VAELRIX_LAW
 
-**Version: 1.16** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
+**Version: 1.17** | Status: Living Document | Arbiter: Angel (IItsVaelrix, repository owner/user)
 
 All agents read this file before acting.
 All agents reference `SCHEMA_CONTRACT.md` for data shapes.
@@ -218,7 +218,7 @@ Centralized archive ensures:
 
 **Related:** Scholomance Encyclopedia (`docs/scholomance-encyclopedia/`) documents bug fixes and architecture proposals post-implementation. PDRs document features pre-implementation.
 
-### 15. Post-Implementation Report Is Mandatory
+### 14. Post-Implementation Report Is Mandatory
 
 **Every implemented feature, fix, or architectural change MUST have a Post-Implementation Report (PIR).**
 
@@ -571,7 +571,7 @@ Choose one.
 > One final paragraph describing the true state of the implementation, without spin.
 ```
 
-### 16. The Law of Antigen Regeneration
+### 15. The Law of Antigen Regeneration
 
 **Every agent MUST transition documented private "scars" into public antigens.**
 
@@ -588,7 +588,7 @@ No agent may ignore a documented fix in memory when encountering a regression. I
 **Why This Exists:**
 Private memory is the agent's individual experience. Antigen Regeneration is the system's collective immunity. By sharing our scars, we ensure that the Scholomance never suffers the same wound twice.
 
-### 14. Collab Login and MCP Access Protocol
+### 16. Collab Login and MCP Access Protocol
 
 **Any agent participating in coordinated work must use the collab control plane through approved login and MCP access paths.**
 
@@ -1321,7 +1321,7 @@ Each agent has a context file that inherits this law and specifies domain jurisd
 
 ---
 
-### 17. The Mandate of Semantic Search
+### 19. The Mandate of Semantic Search
 
 **Standard string-matching tools (e.g., Grep) are prohibited for codebase analysis and forensic audits.**
 
@@ -1332,7 +1332,7 @@ Agents MUST use **TurboQuant Search** (`mcp_scholomance_collab_search_codebase`)
 
 Exception: `run_shell_command("grep ...")` is permitted only for low-level diagnostic operations on non-source files (e.g., logs, temporary files) when semantic indexing is unavailable.
 
-### 18. The Immune System and Forensic Stasis
+### 20. The Immune System and Forensic Stasis
 
 **No code modification shall be committed without a prior Immune System scan.**
 
@@ -1342,7 +1342,7 @@ Agents MUST use the **Immune System** (`mcp_scholomance_collab_immunity_scan_fil
 - **Adaptive Immunity**: Detects semantic similarity to known high-risk fractures (e.g., `RECURSIVE_SHADOW`).
 - **Forensic Stasis**: If a scan reveals a violation, the agent must seal the fracture before proceeding with the implementation ritual.
 
-### 19. Explicit Type Annotations Only — No `:=` Inference
+### 21. Explicit Type Annotations Only — No `:=` Inference
 
 **The `:=` static type inference operator is prohibited in all GDScript files.**
 
@@ -1355,6 +1355,57 @@ GDScript's `:=` operator tells the compiler to infer a static type from the assi
 
 **Why this exists:**
 `:=` is a recurring parse-error vector in this project. Explicit annotations remove compiler ambiguity, document intent, and prevent type-inference failures from blocking builds. An agent that uses `:=` in GDScript will cause the next agent to waste time on a known failure mode.
+
+### 22. Vaelrix Daemon Retry Golden Standard — No Cold Boots
+
+**The Vaelrix daemon MUST be accessed via HTTP retry with exponential backoff. Cold boots are prohibited.**
+
+When the Vaelrix brain daemon (`brain_daemon.py` on `:9090`) is unreachable, the TUI client (`prompt_service.py`) MUST follow the golden retry ritual — it MUST NOT spawn a fresh `BrainBridge` process in the TUI thread (cold boot).
+
+#### 20.1 The Golden Retry Ritual
+
+The following pattern in `prompt_service.py` is the canonical reference. Every agent who modifies Vaelrix client code must preserve it:
+
+1. **Cached client first**: Try `self._vaelrix_brain.ask(text)` — reuse the warm connection.
+2. **Fresh connection with retry**: If cached fails, attempt `BrainBridgeClient(port=9090)`.
+3. **Retry loop**: Loop up to **12 attempts** with **exponential backoff** (2s, 4s, 6s, …, capped at 20s). On each failure, emit a status message to the user.
+4. **Agent cancel check**: Honor `controller.agent_cancelled(token)` inside the retry loop so the user can abort.
+5. **Final failure message**: After 12 failures, emit an error telling the user how to start the daemon — do NOT cold boot.
+6. **No cold boot path**: The old `BrainBridge(personality="Vaelrix")` in-process fallback is deleted and must never be reinstated.
+
+#### 20.2 Retry Parameters (Golden Constants)
+
+```
+MAX_RETRIES = 12
+BACKOFF_BASE = 2   # seconds; multiplies by attempt number
+BACKOFF_CAP  = 20  # seconds; ceiling for backoff
+```
+
+#### 20.3 State Indicators During Retry
+
+- **Before daemon query**: `set_state("thinking")` → shows "THINKING" in the UI border title.
+- **During retry pause**: `set_state("idle")` → clears the border title, so the user sees the retry progress message.
+- **After response**: `set_state("responding")` → shows "RESPONDING" during typewriter output.
+
+#### 20.4 Daemon Lifecycle Is Systemd's Job
+
+The Vaelrix daemon is managed by `scholomance-brain.service` (systemd `--user`). The TUI must never attempt to start, stop, or cold-boot the daemon itself. When the daemon is down, the user is told:
+
+```
+⚠ Vaelrix daemon down — retry 4/12 in 8s… (systemd will restart it)
+```
+
+After all retries are exhausted, the user sees:
+
+```
+✗ Vaelrix daemon unreachable after 12 retries.
+  Start it:  systemctl --user start scholomance-brain.service
+```
+
+**Golden reference file**: `divtube_downloader/tui/services/prompt_service.py` — lines 128–201 (Vaelrix agent path).
+
+**Why this exists:**
+Cold boots spawn a fresh `BrainBridge` inside the TUI process. This loads the Ollama model from scratch, burns memory, blocks the TUI, and duplicates the daemon's role. The systemd service already manages the daemon lifecycle with `Restart=always`. Letting the TUI wait for systemd to revive the daemon is the correct pattern. An agent that reinstates the cold-boot path is reintroducing a known architecture failure.
 
 ---
 
@@ -1392,6 +1443,7 @@ GDScript's `:=` operator tells the compiler to infer a static type from the assi
 | 1.14 | 2026-05-09 | Canonicalized encyclopedia-consolidated documentation paths: PDRs now live under `docs/scholomance-encyclopedia/PDR-archive/`, PIRs under `docs/scholomance-encyclopedia/post-implementation-reports/`, and root law files may act as compatibility entrypoints. |
 | 1.15 | 2026-05-22 | Added Law 9 (Component Instance Isolation) to prohibit global mutable variables in UI files and enforce component-local useRef caching. Corrected Law 12's violation reference pointer. Renumbered Law 17 (Collab Login and MCP Access Protocol) to Law 14 to reconcile sub-heading numbers and resolve missing law gaps. |
 | 1.16 | 2026-06-17 | Added Law 19: "Explicit Type Annotations Only — No `:=` Inference" — GDScript's `:=` operator is prohibited project-wide. Explicit type annotations (`var x: float = ...`) are required. Prevents recurring parse errors from Variant-inferred types under `warnings_as_errors`. |
+| 1.17 | 2026-06-23 | Renumbered laws 14–22 to sequential order (no duplicate law numbers). Added Law 22: "Vaelrix Daemon Retry Golden Standard — No Cold Boots" — HTTP daemon retry with exponential backoff (12 attempts, 2s→20s capped) is mandatory. In-process cold boots (`BrainBridge` spawn in TUI thread) are permanently prohibited. Golden reference: `prompt_service.py:128–201`. |
 
 ---
 

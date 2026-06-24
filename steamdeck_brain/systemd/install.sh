@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================================
-# install.sh — Install the SteamDeck Brain as always-on systemd --user services
+# install.sh — Install the SteamDeck Brain as systemd --user services
 # ============================================================================
-# Keeps brain_daemon.py (and its Ollama dependency) running at all times,
-# independent of the DivTube TUI, surviving crashes and reboots.
+# Starts brain_daemon.py (and its Ollama dependency) at boot via user linger,
+# independent of the DivTube TUI. Auto-restart is disabled so manual launches
+# can refresh the port; reboots and explicit restarts still bring it back.
 #
 # Usage:
 #   ./install.sh                 # detect paths, install + enable + start
@@ -75,7 +76,7 @@ if [[ -n "$OLLAMA_BIN" ]]; then
 fi
 
 echo -e "${BLUE}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║   🧠  Installing Scholomance Brain — always-on systemd units  ║${NC}"
+echo -e "${BLUE}║   🧠  Installing Scholomance Brain — systemd user units       ║${NC}"
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo "  Python:      $PYTHON"
 echo "  Brain daemon:$BRAIN_DAEMON"

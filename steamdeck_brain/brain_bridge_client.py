@@ -13,7 +13,7 @@ Usage in DivTube TUI:
 import json
 import urllib.request
 import urllib.error
-from typing import Optional, Dict, Any
+from typing import Dict, Any
 
 
 class BrainBridgeClient:
@@ -39,8 +39,8 @@ class BrainBridgeClient:
                 self._available = False
         return self._available
 
-    def ask(self, query: str, show_context: bool = False, compare: bool = False) -> str:
-        """Query the daemon with full cortex context."""
+    def ask(self, query: str, show_context: bool = False, compare: bool = False) -> Dict[str, Any]:
+        """Query the daemon with full cortex context. Returns dict with response + tool_calls."""
         try:
             req = urllib.request.Request(
                 f"{self.base_url}/ask",
@@ -50,15 +50,18 @@ class BrainBridgeClient:
             )
             with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode())
-                return data.get("response", "[Error: no response]")
+                return {
+                    "response": data.get("response", "[Error: no response]"),
+                    "tool_calls": data.get("tool_calls", [])
+                }
         except urllib.error.URLError as e:
-            return f"[Error: daemon unavailable - {e.reason}]"
+            return {"response": f"[Error: daemon unavailable - {e.reason}]", "tool_calls": []}
         except Exception as e:
-            return f"[Error: {e}]"
+            return {"response": f"[Error: {e}]", "tool_calls": []}
 
     def ask_direct(self, query: str) -> str:
         """Query without substrate augmentation."""
-        return self.ask(query, compare=True)
+        return self.ask(query, compare=True)["response"]
 
     def stats(self) -> Dict[str, Any]:
         """Get daemon stats."""

@@ -1705,7 +1705,8 @@ class DivTubeAgentApp(App):
 
     @on(events.Paste)
     def on_paste(self, event: events.Paste) -> None:
-        text = event.text.strip(" '\n\r\"")
+        event.prevent_default()
+        text = event.text.strip()
         import os
         if os.path.exists(text) and os.path.isfile(text):
             ext = os.path.splitext(text)[1].lower()
@@ -1716,7 +1717,7 @@ class DivTubeAgentApp(App):
                 cmd = f"/thumbnail {text}"
             elif ext == ".md":
                 cmd = f"/scholomance {text}"
-                
+
             if cmd:
                 inp = self.query_one("#command-input")
                 inp.text = cmd
