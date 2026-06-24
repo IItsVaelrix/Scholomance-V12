@@ -64,12 +64,24 @@ def should_allow_tool_call(
       - The exact same call was not already made this phase.
       - Destructive calls are flagged with elevated risk.
     """
+    from .scdna import emit_health_signal
+
+    def _tool_signal(tier: str, detail: str) -> str:
+        return emit_health_signal(
+            severity="yellow" if tier.startswith("Y") else "red",
+            component="TOOL_GOVERNOR",
+            stable_id=tool,
+            tier=tier,
+            detail=detail[:200],
+        )
+
     if allowed_tools is not None and tool not in allowed_tools:
         return ToolDecision(
             allowed=False,
             reason=f"Tool '{tool}' is not in the active brain's allowed tool set",
             suggestedAlternative="Use a tool listed in the brain's allowedTools",
             riskLevel="blocked",
+            tieredSignals=[_tool_signal("R2", f"Tool {tool} not in allowed set")],
         )
 
     if require_reason and not reason.strip():
@@ -78,6 +90,7 @@ def should_allow_tool_call(
             reason="Tool call blocked because no reason was provided",
             suggestedAlternative="Provide a reason explaining what unknown this resolves",
             riskLevel="blocked",
+            tieredSignals=[_tool_signal("R2", "Tool call missing reason")],
         )
 
     budget = max_calls_per_phase if max_calls_per_phase is not None else field.tools.maxCallsPerPhase
@@ -87,6 +100,7 @@ def should_allow_tool_call(
             reason="Tool call blocked because the current phase budget is exhausted",
             suggestedAlternative="Escalate to the Council Arbiter or end the phase",
             riskLevel="blocked",
+            tieredSignals=[_tool_signal("Y3", "Tool-call budget exhausted")],
         )
 
     key = normalize_tool_call(tool, args)
@@ -97,16 +111,24 @@ def should_allow_tool_call(
                 reason="Tool call blocked because this exact call was already made",
                 suggestedAlternative="Use the prior result or refine the arguments",
                 riskLevel="blocked",
+                tieredSignals=[_tool_signal("Y2", "Repeated identical tool call")],
             )
 
     risk_level = "high" if tool in _DESTRUCTIVE_TOOLS else "low"
     if tool in _READ_ONLY_TOOLS:
         risk_level = "low"
 
+    tiered_signals: list[str] = []
+    if risk_level == "high":
+        tiered_signals.append(
+            _tool_signal("Y3", f"Destructive tool {tool} allowed with elevated risk")
+        )
+
     return ToolDecision(
         allowed=True,
         reason=f"Tool '{tool}' allowed within budget and permission set",
         riskLevel=risk_level,
+        tieredSignals=tiered_signals,
     )
 
 

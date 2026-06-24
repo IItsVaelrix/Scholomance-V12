@@ -7,6 +7,7 @@ Blocks wasteful or redundant searches while allowing genuine unknowns.
 from __future__ import annotations
 
 from copy import deepcopy
+from typing import Any
 
 from .types import (
     SearchBlock,
@@ -14,6 +15,28 @@ from .types import (
     SearchRecord,
     VaelrixCortexForceField,
 )
+
+# Minimum confidence at which a matched gene can bypass broad search.
+_SCDNA_SEARCH_BYPASS_CONFIDENCE = 0.75
+
+
+def _emit_search_tiered_signal(
+    reason_category: str,
+    tier: str,
+    query: str,
+    detail: str,
+) -> str:
+    """Emit a tiered SCDNA-style signal for a search governor decision."""
+    from .scdna import emit_health_signal
+
+    return emit_health_signal(
+        severity="yellow" if tier.startswith("Y") else "red",
+        component="SEARCH_GOVERNOR",
+        stable_id=reason_category,
+        tier=tier,
+        query=query[:120],
+        detail=detail[:200],
+    )
 
 
 def normalize_query(query: str) -> str:
@@ -35,20 +58,28 @@ def should_allow_search(
     query: str,
     reason: str,
     phase: str = "default",
+    gene_registry: Any | None = None,
 ) -> SearchDecision:
     """
     Decide whether a proposed search is allowed.
 
     Returns a SearchDecision with allowed=False and an explanation when the
     search is redundant, unreasoned, over-budget, or answerable from known
-    targets.
+    targets or a high-confidence SCDNA gene.
     """
+    from .scdna import DEFAULT_GENE_REGISTRY, detect_gene_matches
+
     normalized = normalize_query(query)
 
     if field.search.requireSearchReason and not reason.strip():
         return SearchDecision(
             allowed=False,
             reason="Search blocked because no reason was provided",
+            tieredSignals=[
+                _emit_search_tiered_signal(
+                    "MISSING_REASON", "R2", query, "Search requested without reason"
+                )
+            ],
         )
 
     repeated = any(
@@ -60,6 +91,11 @@ def should_allow_search(
             allowed=False,
             reason="Search blocked because this query was already searched",
             suggestedAlternative="Use the prior result or read a confirmed target",
+            tieredSignals=[
+                _emit_search_tiered_signal(
+                    "REPEATED_SEARCH", "Y2", query, "Query already searched this phase"
+                )
+            ],
         )
 
     if field.search.searchCount >= field.search.maxSearchesPerPhase:
@@ -67,6 +103,11 @@ def should_allow_search(
             allowed=False,
             reason="Search blocked because the current phase budget is exhausted",
             suggestedAlternative="Escalate to Council Arbiter only if a new unknown appeared",
+            tieredSignals=[
+                _emit_search_tiered_signal(
+                    "SEARCH_BUDGET_EXHAUSTED", "Y3", query, "Phase search budget exhausted"
+                )
+            ],
         )
 
     known_target = _find_known_target(field, normalized)
@@ -75,7 +116,45 @@ def should_allow_search(
             allowed=False,
             reason="Search blocked because a known target can answer this",
             suggestedAlternative=f"Read known target: {known_target}",
+            tieredSignals=[
+                _emit_search_tiered_signal(
+                    "KNOWN_TARGET", "Y1", query, f"Known target available: {known_target}"
+                )
+            ],
         )
+
+    # Check SCDNA genes before broad search. A high-confidence active gene
+    # that directly resolves the query makes the search redundant.
+    from .scdna import DEFAULT_GENE_REGISTRY, detect_gene_matches
+
+    gene_registry = gene_registry or DEFAULT_GENE_REGISTRY
+    gene_matches = detect_gene_matches(query, gene_registry)
+    if gene_matches:
+        top = gene_matches[0]
+        if (
+            top.retrieval.confidence >= _SCDNA_SEARCH_BYPASS_CONFIDENCE
+            and top.retrieval.freshness >= 0.5
+            and top.lifecycle.status != "deprecated"
+            and top.lifecycle.status != "quarantined"
+        ):
+            return SearchDecision(
+                allowed=False,
+                reason=(
+                    f"Search blocked because SCDNA gene {top.identity.stableId} "
+                    f"(confidence={top.retrieval.confidence:.2f}) resolves this query"
+                ),
+                suggestedAlternative=(
+                    f"Use decoded gene instruction: {top.instruction.imperative}"
+                ),
+                tieredSignals=[
+                    _emit_search_tiered_signal(
+                        "SCDNA_BYPASS",
+                        "Y1",
+                        query,
+                        f"Gene {top.identity.stableId} bypasses broad search",
+                    )
+                ],
+            )
 
     return SearchDecision(
         allowed=True,

@@ -25,6 +25,9 @@ from .forcefield import create_force_field
 from .personality_weighting import apply_personality_weights, compute_personality_weights
 from .persistence import load_force_field, save_force_field
 from .pixelbrain.router import route_amplifier_results_to_health
+from .scdna import apply_scdna_to_force_field
+from .scdna.council_integration import scdna_matches_to_amplifier_results
+from .scdna.pixelbrain_router import route_scdna_signals_to_health
 from .tool_governor import record_tool_call, should_allow_tool_call
 from .turboquant import TurboQuantClient, dispatch_chunks_to_brains
 from .types import VaelrixCortexForceField
@@ -67,7 +70,7 @@ class BrainBridge:
         max_workers: int = 4,
         session_id: str | None = None,
         persist: bool = False,
-    ) -> dict[str, Any]:
+) -> dict[str, Any]:
         """
         Run the full ForceField pipeline for ``query``.
 
@@ -87,7 +90,11 @@ class BrainBridge:
             - field: the final ForceField
             - session_id: the session identifier
             - persisted: whether the session was saved
+            - scdna_genes: list of compact SCDNA gene strings applied
+            - scdna_contradictions: list of contradiction records
+            - scdna_health_signals: list of SCDNA health signal strings
         """
+
         if session_id is not None:
             try:
                 field = load_force_field(session_id)
@@ -108,7 +115,19 @@ class BrainBridge:
                 classification=classification,  # type: ignore[arg-type]
                 priority=priority,  # type: ignore[arg-type]
             )
+        # SCDNA: detect retrieval genes, resolve contradictions, degrade
+        # offending genes, and apply the survivors to ForceField routing/context.
+        field, decoded_genes, scdna_contradictions, scdna_signals, _ = apply_scdna_to_force_field(
+            field, contradiction_index=field.tools.callsThisPhase
+        )
+
+        # Signal-based routing merges with SCDNA-derived routing so that genes
+        # can activate brains that would otherwise be suppressed by signals.
         field = apply_routing(field, self.registry)
+
+        # Convert SCDNA gene instructions into AmplifierResult findings so the
+        # Council Arbiter can merge them with brain-derived findings.
+        gene_results = scdna_matches_to_amplifier_results(decoded_genes)
 
         # Compute and store personality-aware brain weights.
         personality_weights = compute_personality_weights(field, self.registry)
@@ -120,6 +139,9 @@ class BrainBridge:
 
         results = run_amplifiers(field, query=query, max_workers=max_workers, runners=self.runners)
 
+        # Merge SCDNA gene-derived findings with brain-derived results.
+        results = [*gene_results, *results]
+
         # Run the determinism auditor over the execution state and brain outputs.
         determinism_audit = audit_determinism(field, results)
         results.append(determinism_audit)
@@ -129,8 +151,16 @@ class BrainBridge:
 
         arbiter_output = arbitrate_amplifier_results(field, results, personality_weights=personality_weights)
 
-        # Wire brain outputs through the PixelBrain Router into BytecodeHealth.
+        # Collect tiered signals from SCDNA, determinism auditor, and tool governor.
+        all_tiered_signals: list[str] = list(scdna_signals)
+        for result in results:
+            all_tiered_signals.extend(getattr(result, "tieredSignals", []) or [])
+        for call in gated_tool_calls:
+            all_tiered_signals.extend(call.get("tieredSignals", []))
+
+        # Wire brain outputs and all tiered signals through PixelBrain Router.
         health_signals = route_amplifier_results_to_health(results)
+        health_signals.extend(route_scdna_signals_to_health(all_tiered_signals))
 
         synthesis_prompt = self._build_synthesis_prompt(query, arbiter_output, health_signals)
         answer = self.llm_client(synthesis_prompt)
@@ -152,6 +182,12 @@ class BrainBridge:
             "field": field,
             "session_id": field.task.taskId,
             "persisted": persisted,
+            "scdna_genes": [g.to_compact_string() for g in decoded_genes],
+            "scdna_contradictions": [
+                {"stableId": c.gene.identity.stableId, "reason": c.reason, "opposing": c.opposing}
+                for c in scdna_contradictions
+            ],
+            "scdna_health_signals": scdna_signals,
         }
 
     def _gate_tool_calls(
@@ -183,6 +219,7 @@ class BrainBridge:
                         "allowed": decision.allowed,
                         "governorReason": decision.reason,
                         "riskLevel": decision.riskLevel,
+                        "tieredSignals": decision.tieredSignals,
                     }
                 )
                 if decision.allowed:

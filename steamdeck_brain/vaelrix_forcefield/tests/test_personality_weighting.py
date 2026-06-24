@@ -37,9 +37,10 @@ def test_compute_weights_applies_priority_boost():
     field.routing.activeBrains = ["RISK_BRAIN", "TEST_BRAIN", "CODE_BRAIN"]
     weights = compute_personality_weights(field, registry)
 
-    assert weights["RISK_BRAIN"] == pytest.approx(1.1 * 1.3, abs=0.01)
-    assert weights["TEST_BRAIN"] == pytest.approx(1.2, abs=0.01)
-    assert weights["CODE_BRAIN"] == pytest.approx(1.2, abs=0.01)
+    # Personality weight is the product of base, classification, and priority boosts.
+    assert weights["RISK_BRAIN"] == pytest.approx(1.1 * 1.1 * 1.3, abs=0.01)
+    assert weights["TEST_BRAIN"] == pytest.approx(1.0 * 1.0 * 1.2, abs=0.01)
+    assert weights["CODE_BRAIN"] == pytest.approx(1.0 * 1.2 * 1.0, abs=0.01)
 
 
 def test_compute_weights_applies_user_override():
