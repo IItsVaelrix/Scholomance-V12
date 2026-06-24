@@ -222,6 +222,14 @@ const lexiconAdapter = createLexiconAdapter(SCHOLOMANCE_DICT_PATH, { log: fastif
 const corpusAdapter = createCorpusAdapter(SCHOLOMANCE_CORPUS_PATH, { log: fastify.log });
 const corpusService = createCorpusService({ dbPath: SCHOLOMANCE_CORPUS_PATH, log: fastify.log });
 
+const PORT = Number(process.env.PORT ?? 3000);
+const HOST = process.env.HOST ?? '0.0.0.0';
+const SERVER_BASE_URL = String(
+    process.env.PUBLIC_SERVER_URL ||
+    process.env.VITE_API_BASE_URL ||
+    `http://localhost:${PORT}`
+).trim();
+
 // ─── Scholomance Dictionary API wiring ─────────────────────────────────────
 // The ScholomanceDictionaryAPI is the shared client surface for /api/lexicon
 // (and friends). Wire it into the server boot so the configured base URL is
@@ -329,17 +337,10 @@ const SESSION_COOKIE_SAMESITE = process.env.SESSION_COOKIE_SAMESITE || 'lax';
 // Optional: set to '.scholomance.live' to share the cookie across subdomains.
 // Left undefined → host-only cookie (recommended; the SPA never reads it anyway).
 const SESSION_COOKIE_DOMAIN = process.env.SESSION_COOKIE_DOMAIN || undefined;
-const PORT = Number(process.env.PORT ?? 3000);
-const HOST = process.env.HOST ?? '0.0.0.0';
 const TURSO_USER_DB_URL = process.env.TURSO_USER_DB_URL;
 const DEFAULT_API_TIMEOUT_MS = Number(process.env.API_TIMEOUT_MS ?? 5000);
 const SHUTDOWN_TIMEOUT_MS = parsePositiveIntEnv('SHUTDOWN_TIMEOUT_MS', 10000);
 const AUDIO_ADMIN_TOKEN = getAudioAdminToken();
-const SERVER_BASE_URL = String(
-    process.env.PUBLIC_SERVER_URL ||
-    process.env.VITE_API_BASE_URL ||
-    `http://localhost:${PORT}`
-).trim();
 const PUBLIC_APP_URL = String(
     process.env.PUBLIC_APP_URL ||
     process.env.VITE_PUBLIC_APP_URL ||
