@@ -30,7 +30,7 @@ export default function LandingPage() {
   }, [handleEnter]);
 
   return (
-    <div className="portal-scene" aria-label="Scholomance — enter the portal">
+    <div className="portal-scene" aria-label="Scholomance - enter the portal">
       <StormCanvas className="portal-storm" variant="scene" intensity={1.4} debug={STORM_DEBUG} />
 
       <span className="portal-moon" aria-hidden="true">

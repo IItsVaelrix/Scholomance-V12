@@ -44,7 +44,7 @@ function PixelBrainAssetSprite({
   sceneMode,
 }: PixelBrainAssetSpriteProps) {
   const opacity = resolveAssetOpacity(assetId, sceneMode, index);
-  // Subtle scale breathe on beat — primary asset breathes more than secondaries
+  // Subtle scale breathe on beat - primary asset breathes more than secondaries
   const scale = 1 + beatPhase * (index === 0 ? 0.018 : 0.008);
 
   return (

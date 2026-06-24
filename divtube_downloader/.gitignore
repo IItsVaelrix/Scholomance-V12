@@ -1,0 +1,24 @@
+# Secrets — never commit
+.env
+.env.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Java / Gradle build artifacts
+build/
+.gradle/
+gradle-8.5/
+gradle.zip
+
+# Generated data / models / logs
+embeddings/
+divtube_memory.db
+niche_database.sqlite
+*.log
+
+# Backups
+*.bak
+.blackboxcli/

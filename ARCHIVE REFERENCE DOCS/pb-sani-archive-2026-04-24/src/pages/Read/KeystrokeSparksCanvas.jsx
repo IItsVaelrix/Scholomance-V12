@@ -1,5 +1,5 @@
 /**
- * KeystrokeSparksCanvas — React wrapper for KeystrokeSparksScene
+ * KeystrokeSparksCanvas - React wrapper for KeystrokeSparksScene
  *
  * Performance contract:
  *   - Phaser is NOT initialized on mount.
@@ -8,7 +8,7 @@
  *   - Subsequent keypresses are throttled to ≤ 1 spark burst per 80 ms.
  *
  * Props:
- *   schoolColor {string}  — hex color for the active school
+ *   schoolColor {string} - hex color for the active school
  */
 import { useEffect, useRef } from 'react';
 
@@ -77,7 +77,7 @@ export default function KeystrokeSparksCanvas({
           gameRef.current = game;
         });
       } catch {
-        /* Phaser unavailable — sparks layer absent */
+        /* Phaser unavailable - sparks layer absent */
       }
     }
 

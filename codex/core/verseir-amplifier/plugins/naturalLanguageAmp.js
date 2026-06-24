@@ -15,7 +15,9 @@ import { clamp01, createAmplifierResult, createAmplifierDiagnostic } from '../sh
 import { LEXICAL_VISUAL_DB } from '../../semantic/visual-extractor.js';
 import { nluToPixelBrainParams } from '../../semantic/semantic-math-bridge.js';
 import { verseIRMicroprocessors } from '../../microprocessors/index.js';
-import { tokenize, INTENT_KEYWORDS, STYLE_KEYWORDS } from '../../microprocessors/nlu/constants.js';
+import { tokenize, INTENT_KEYWORDS, STYLE_KEYWORDS, ENTITY_TYPES } from '../../microprocessors/nlu/constants.js';
+import { selectOOVCandidate } from '../../microprocessors/nlu/entity-extractor.js';
+import { createOOVResolver } from '../../microprocessors/nlu/oov-resolver.js';
 
 const ID = 'natural_language_amp';
 const LABEL = 'Natural Language Understanding AMP';
@@ -24,32 +26,59 @@ const CLAIMED_WEIGHT = 0.03;
 const VERSION = '3.0.0';
 
 /**
- * Parse natural language prompt
- * @param {string} prompt - Natural language input
- * @returns {Object} Parsed intent with semantic parameters
+ * Parse natural language prompt.
+ *
+ * The microprocessor `execute()` calls are async, so this is async and awaits
+ * each one. When the closed-vocabulary extractor finds no subject and a
+ * dictionary adapter is supplied, an out-of-vocabulary token is resolved onto a
+ * known subject via Datamuse `meansLike` before semantic mapping runs.
+ *
+ * @param {string} prompt - Natural language input.
+ * @param {Object} [options] - { dictionaryAdapter } enables OOV resolution.
+ * @returns {Promise<Object>} Parsed intent with semantic parameters.
  */
-export function parseNaturalLanguagePrompt(prompt) {
+export async function parseNaturalLanguagePrompt(prompt, options = {}) {
   const tokens = tokenize(prompt);
   const fullText = String(prompt || '').toLowerCase();
-  
+
   // 1. Microprocessor: Intent Classification
-  const { intent, confidence } = verseIRMicroprocessors.execute('nlu.classifyIntent', { tokens });
-  
-  // 2. Microprocessor: Entity Extraction
-  const entities = verseIRMicroprocessors.execute('nlu.extractEntities', { tokens, fullText });
-  
-  // 3. Microprocessor: Semantic Mapping
-  const semanticParams = verseIRMicroprocessors.execute('nlu.mapSemantics', { entities, intent });
-  
+  const { intent, confidence } = await verseIRMicroprocessors.execute('nlu.classifyIntent', { tokens });
+
+  // 2. Microprocessor: Entity Extraction (closed-vocabulary)
+  let entities = await verseIRMicroprocessors.execute('nlu.extractEntities', { tokens, fullText });
+
+  // 2b. OOV resolution: only when no subject matched AND an adapter is supplied.
+  // Without an adapter this is a no-op (no network), preserving legacy behavior.
+  const oovResolutions = [];
+  const adapter = options.dictionaryAdapter;
+  if (adapter && entities[ENTITY_TYPES.SUBJECT].length === 0) {
+    const candidate = selectOOVCandidate(tokens, entities);
+    if (candidate) {
+      const resolve = createOOVResolver(adapter);
+      const resolution = await resolve(candidate);
+      if (resolution) {
+        entities = Object.freeze({
+          ...entities,
+          [ENTITY_TYPES.SUBJECT]: [resolution.resolvedTo],
+        });
+        oovResolutions.push(resolution);
+      }
+    }
+  }
+
+  // 3. Microprocessor: Semantic Mapping (now sees the resolved subject)
+  const semanticParams = await verseIRMicroprocessors.execute('nlu.mapSemantics', { entities, intent });
+
   // 4. Microprocessor: Verse Generation
-  const generatedVerse = verseIRMicroprocessors.execute('nlu.generateVerse', { entities });
-  
+  const generatedVerse = await verseIRMicroprocessors.execute('nlu.generateVerse', { entities });
+
   return Object.freeze({
     intent,
     confidence,
     entities,
     semanticParams,
     generatedVerse,
+    oovResolutions,
     originalPrompt: prompt,
   });
 }
@@ -140,14 +169,28 @@ export const naturalLanguageAmp = {
     const tokenCount = tokenize(rawText).length;
     const mode = (tokenCount < 10) ? 'generate' : (options.nluMode || 'direct');
     
-    // Parse the prompt using the microprocessor pipeline
-    const parsed = parseNaturalLanguagePrompt(rawText);
-    
+    // Parse the prompt using the microprocessor pipeline. The dictionary
+    // adapter (if supplied) enables OOV subject resolution via Datamuse.
+    const parsed = await parseNaturalLanguagePrompt(rawText, {
+      dictionaryAdapter: options.dictionaryAdapter,
+    });
+
     // Convert entities to mathematical constraints (THE BRIDGE)
     const mathConstraints = nluToPixelBrainParams(parsed.entities, parsed.semanticParams);
-    
+
     const diagnostics = [];
-    
+
+    // Record any OOV word that was mapped onto a known subject, so downstream
+    // consumers can discount confidence for the inferred subject.
+    for (const resolution of parsed.oovResolutions) {
+      diagnostics.push(createAmplifierDiagnostic({
+        severity: 'info',
+        source: ID,
+        message: `Resolved out-of-vocabulary "${resolution.original}" → "${resolution.resolvedTo}" via ${resolution.via}.`,
+        metadata: resolution,
+      }));
+    }
+
     if (parsed.confidence < 0.5) {
       diagnostics.push(createAmplifierDiagnostic({
         severity: 'warning',
@@ -203,6 +246,7 @@ export const naturalLanguageAmp = {
         semanticParams: parsed.semanticParams,
         mathConstraints,
         generatedVerse: mode === 'generate' ? parsed.generatedVerse : null,
+        oovResolutions: parsed.oovResolutions,
         originalPrompt: parsed.originalPrompt,
         mode,
       }),

@@ -1,0 +1,12 @@
+torch>=2.0.0
+transformers>=4.30.0
+fastapi
+uvicorn
+pydantic
+pyyaml
+numpy
+sentence-transformers
+peft
+textblob
+pronouncing
+spacy

@@ -1,0 +1,37 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "data-analyze",
+  "version": "0.1.0",
+  "priority": 7,
+  "match": {
+    "patterns": [
+      "(analyze|check|scan|score).*(rhyme|poem|verse|lyric|song|phoneme|syllable|vowel|consonant)",
+      "(what|how).*(rhyme|phoneme|syllable|verseir|assonance|consonance)",
+      "(pixelbrain|pixel|image|sprite|aseprite|texture|shader|silhouette)"
+    ]
+  },
+  "steps": [
+    {
+      "source": "rhyme-engine",
+      "query": "{query}",
+      "label": "Rhyme analysis",
+      "retrieve_as": "rhyme"
+    },
+    {
+      "source": "pixelbrain",
+      "query": "{query}",
+      "label": "PixelBrain outputs",
+      "max_results": 5,
+      "retrieve_as": "pixelbrain"
+    },
+    {
+      "source": "glossary",
+      "query": "{query}",
+      "label": "Phonetic terms",
+      "max_results": 5,
+      "retrieve_as": "glossary"
+    }
+  ],
+  "system_suffix": "CHAIN: run phonetic analysis \u2192 identify rhyme families \u2192 check pixelbrain artifacts \u2192 classify connection types (perfect/near/slant/assonance).",
+  "checksum": "b6f9539f"
+}

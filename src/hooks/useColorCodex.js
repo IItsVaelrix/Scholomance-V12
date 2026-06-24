@@ -5,8 +5,8 @@ import { VOWEL_FAMILY_TO_SCHOOL } from '../data/schools.js';
 
 // ARPAbet vowel nuclei (stress-stripped). Used to locate the rhyme tail.
 const ARPABET_VOWELS = new Set([
-  'AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER',
-  'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW',
+  'AA', 'AE', 'AH', 'AO', 'AW', 'AX', 'AY', 'EH', 'ER',
+  'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW', 'UR',
 ]);
 
 // Max normalized alignment cost (cost per tail position) for two words to count

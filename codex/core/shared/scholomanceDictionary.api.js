@@ -148,7 +148,7 @@ async function fetchJson(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
+    const res = await fetch(url, { credentials: "include", ...options, signal: controller.signal });
     if (!res.ok) throw new ScholomanceHttpError(res.status);
     return await res.json();
   } catch (err) {

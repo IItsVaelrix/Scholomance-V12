@@ -2,13 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import './CombatGodotSpike.css';
 
 /**
- * CombatGodotSpike.jsx — DISPOSABLE DE-RISK SPIKE (dev-only route).
+ * CombatGodotSpike.jsx - DISPOSABLE DE-RISK SPIKE (dev-only route).
  *
  * Governed by:
  *   docs/scholomance-encyclopedia/PDR-archive/PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE.md
  *   docs/scholomance-encyclopedia/PDR-archive/PDR-2026-06-04-GODOT-WASM-COMBAT-SPIKE-SPEC.md
  *
- * Purpose: answer three kill-questions before ANY rewrite of the real Combat page —
+ * Purpose: answer three kill-questions before ANY rewrite of the real Combat page  - 
  *   Q1 bundle/load · Q2 postMessage bridge · Q3 verse text input.
  *
  * ISOLATION CONTRACT (Phase 1): imports NOTHING from src/pages/Combat/**,
@@ -48,7 +48,7 @@ export default function CombatGodotSpike() {
   // Kill-Q2: listen for messages coming BACK from the Godot iframe.
   useEffect(() => {
     const onMessage = (event) => {
-      // Same-origin only — the export is served from our own static dir.
+      // Same-origin only - the export is served from our own static dir.
       if (event.source !== iframeRef.current?.contentWindow) return;
       const data = typeof event.data === 'object' ? event.data : { raw: event.data };
       log('godot→react', JSON.stringify(data));
@@ -85,7 +85,7 @@ export default function CombatGodotSpike() {
 
       <div className="godot-spike-stage">
         {exportPresent === null && (
-          <div className="godot-spike-placeholder">Checking for Godot export…</div>
+          <div className="godot-spike-placeholder">Checking for Godot export...</div>
         )}
 
         {exportPresent === false && (
@@ -116,7 +116,7 @@ export default function CombatGodotSpike() {
         <div className="godot-spike-metric">
           <span className="godot-spike-metric-label">Kill-Q1 · cold load</span>
           <span className="godot-spike-metric-value">
-            {loadMs == null ? '—' : `${loadMs} ms`}
+            {loadMs == null ? ' - ' : `${loadMs} ms`}
           </span>
         </div>
 

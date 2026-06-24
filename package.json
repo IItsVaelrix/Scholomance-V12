@@ -3,6 +3,9 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "bin": {
+    "scholo-immune": "./codex/cli/scholo-immune.js"
+  },
   "engines": {
     "node": "20.20.2",
     "npm": "10.8.2",
@@ -14,6 +17,7 @@
     "pnpm": "10.33.4"
   },
   "scripts": {
+    "immune": "node codex/cli/scholo-immune.js",
     "godot": "STEAM_COMPAT_DATA_PATH=\"/home/deck/.local/share/Steam/steamapps/compatdata/404790\" STEAM_COMPAT_CLIENT_INSTALL_PATH=\"/home/deck/.local/share/Steam\" \"/home/deck/.local/share/Steam/steamapps/common/Proton - Experimental/proton\" run \"/home/deck/.local/share/Steam/steamapps/common/Godot Engine/godot.windows.opt.tools.64.exe\" --path \"Z:\\\\home\\\\deck\\\\Desktop\\\\Scholomance-V12-main\\\\godot_project\"",
     "godot:native": "\"/home/deck/Downloads/Godot_v4.6.3-stable_linux.x86_64\" --path \"/home/deck/Downloads/Scholomance-V12-main/godot_project\"",
     "godot:world": "\"/home/deck/Downloads/Godot_v4.6.3-stable_linux.x86_64\" --path \"/home/deck/Downloads/Scholomance-V12-main/godot_project\" \"scenes/VoidmetalCaveWorld.tscn\"",
@@ -85,6 +89,7 @@
     "immune:stasis": "node tests/qa/immunity.stasis.test.js",
     "immune:stasis:glyph": "node tests/qa/immunity.glyph-stasis.test.js",
     "immune:stasis:all": "node tests/qa/immunity.stasis.test.js && node tests/qa/immunity.glyph-stasis.test.js",
+    "queue": "node scripts/scd64-queue.mjs",
     "diagnostic:scan": "node codex/core/diagnostic/run-diagnostic.cli.js",
     "diagnostic:scan:ci": "node codex/core/diagnostic/run-diagnostic.cli.js --trigger ci",
     "bytecode-synthesis": "node scripts/prove_bytecode_diagnostic_synthesis.js",
@@ -94,7 +99,13 @@
     "cleri:probe": "node scripts/cleri-probe.js",
     "polish": "node scripts/production-polish.js full",
     "polish:quick": "node scripts/production-polish.js quick",
-    "polish:ci": "node scripts/production-polish.js full --ci"
+    "polish:ci": "node scripts/production-polish.js full --ci",
+    "scd64:intellisense": "npx tsx scripts/scd64-intellisense.ts",
+    "chatbot": "cd nlp_chatbot && ./venv/bin/uvicorn server.api:app --reload --port 8000",
+    "chatbot:app": "cd nlp_chatbot && ./venv/bin/python client/terminal.py",
+    "vaelrix": "bash scripts/launch-vaelrix.sh",
+    "vaelrix:web": "bash scripts/launch-vaelrix.sh -- --web --port 8080",
+    "vaelrix:daemon": "node --env-file=.env scripts/dev-with-collab-reuse.js --brain-only"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
@@ -112,11 +123,16 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@fontsource/press-start-2p": "^5.2.7",
+    "@lexical/history": "^0.45.0",
+    "@lexical/react": "^0.45.0",
+    "@lexical/selection": "^0.45.0",
+    "@lexical/utils": "^0.45.0",
     "@libsql/client": "^0.14.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@remotion/bundler": "^4.0.477",
     "@remotion/cli": "^4.0.477",
     "@remotion/renderer": "^4.0.477",
+    "@vscode/ripgrep": "^1.18.0",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.6.2",
     "chalk": "^5.4.1",
@@ -125,6 +141,7 @@
     "dotenv": "^17.2.4",
     "fastify": "^5.2.1",
     "framer-motion": "^10.16.4",
+    "lexical": "^0.45.0",
     "lucide-react": "^1.7.0",
     "phaser": "^4.1.0",
     "prop-types": "^15.8.1",
@@ -163,6 +180,7 @@
     "jsdom": "^28.0.0",
     "knip": "^6.14.2",
     "lightningcss": "^1.31.1",
+    "ts-morph": "^28.0.0",
     "tsx": "^4.22.4",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",

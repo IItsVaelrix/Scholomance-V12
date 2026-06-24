@@ -39,13 +39,18 @@ export function createScoringEngine(initialHeuristics = []) {
        // Most will fail or return 0. Let's let them run but they expect a doc.
     }
 
+    // Weights are treated as RELATIVE: normalize by their sum so the score stays
+    // on a 0–100 scale regardless of how the weights are tuned. This lets a single
+    // heuristic be emphasized (e.g. multisyllabic_rhyme) without overclocking the ceiling.
+    const totalWeight = heuristics.reduce((sum, h) => sum + (Number(h.weight) || 0), 0) || 1;
+
     const rawTraces = await Promise.all(heuristics.map(async (h) => {
       const raw = await h.scorer(doc);
       return {
         ...raw,
         heuristic: raw?.heuristic || h.name,
         weight: h.weight,
-        contribution: raw.rawScore * h.weight * 100,
+        contribution: (raw.rawScore * h.weight * 100) / totalWeight,
       };
     }));
 

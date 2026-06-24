@@ -279,3 +279,9 @@ Requires a running dev server (`npm run dev:server` in a separate terminal, or t
 | CSS tokens | `scripts/verify-css-tokens.js` | This file §Tool 4 |
 | knip | `knip.json` | This file §Tool 5 |
 | Playwright axe | `tests/visual/ide-a11y.spec.js` | This file §Tool 6 |
+
+Fastest — local CLI, no server needed:
+node --env-file=.env .tmp/tq-search.mjs hybrid "combat resolution"
+node --env-file=.env .tmp/tq-search.mjs forensic "dangerouslySetInnerHTML"
+node --env-file=.env .tmp/tq-search.mjs semantic "phoneme analysis"
+node --env-file=.env .tmp/tq-search.mjs list

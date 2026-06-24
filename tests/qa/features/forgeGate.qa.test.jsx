@@ -1,9 +1,9 @@
 /**
- * FORGE GATE PANEL QA — PixelBrain Immunity verdict surface (task 7aff0e39)
+ * FORGE GATE PANEL QA - PixelBrain Immunity verdict surface (task 7aff0e39)
  *
  * Pins the UI contract for the Forge Craft Gate surface: the verdict region is
  * an aria-live status (never an alert box), the file control is labelled and
- * keyboard reachable, and the panel renders the normalized adapter verdict —
+ * keyboard reachable, and the panel renders the normalized adapter verdict  - 
  * PB-XP vaccine on PASS, PB-ERR bytecode + reason on a blocking FAIL.
  */
 
@@ -17,7 +17,7 @@ expect.extend(toHaveNoViolations);
 
 function specFile(obj, name = 'voidmetal-pickaxe.v1.json') {
   const file = new File([JSON.stringify(obj)], name, { type: 'application/json' });
-  // jsdom's File lacks .text() in some versions — polyfill deterministically.
+  // jsdom's File lacks .text() in some versions - polyfill deterministically.
   file.text = () => Promise.resolve(JSON.stringify(obj));
   return file;
 }
@@ -27,7 +27,7 @@ function loadSpec(file) {
   fireEvent.change(input, { target: { files: [file] } });
 }
 
-describe('ForgeGatePanel — Immunity verdict surface', () => {
+describe('ForgeGatePanel - Immunity verdict surface', () => {
   it('renders an idle prompt with a labelled control and passes axe', async () => {
     const { container } = render(<ForgeGatePanel onRunGate={vi.fn()} />);
 
@@ -95,7 +95,7 @@ function loadBlueprint(file) {
   fireEvent.change(input, { target: { files: [file] } });
 }
 
-describe('ForgeGatePanel — silhouette blueprint surface', () => {
+describe('ForgeGatePanel - silhouette blueprint surface', () => {
   it('renders per-view chips when a blueprint verdict comes back', async () => {
     const onRunGate = vi.fn();
     const onRunBlueprint = vi.fn(() => ({

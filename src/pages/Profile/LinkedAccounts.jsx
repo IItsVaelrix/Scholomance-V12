@@ -75,7 +75,7 @@ export default function LinkedAccounts() {
       {error && <p className="linked-error">{error}</p>}
 
       {identities === null ? (
-        <p className="linked-loading">Loading…</p>
+        <p className="linked-loading">Loading...</p>
       ) : (
         <ul className="linked-list">
           {identities.map((idn) => {
@@ -95,7 +95,7 @@ export default function LinkedAccounts() {
                     disabled={busy === idn.provider}
                     onClick={() => handleUnlink(idn.provider)}
                   >
-                    {busy === idn.provider ? "…" : "Unlink"}
+                    {busy === idn.provider ? "..." : "Unlink"}
                   </button>
                 )}
               </li>

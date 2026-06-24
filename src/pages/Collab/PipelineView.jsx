@@ -1,5 +1,5 @@
 /**
- * PipelineView — Pipeline visualization with create form
+ * PipelineView - Pipeline visualization with create form
  */
 
 const STATUS_COLORS = {

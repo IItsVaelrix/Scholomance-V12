@@ -383,7 +383,7 @@ describe("ScrollEditor Truesight overlay", () => {
     expect(boxes).toHaveLength(words.length);
     expect(boxes.map((node) => node.getAttribute("data-char-start"))).toEqual(["0", "6"]);
     // The box is a child of its pixel-positioned word shell and fills it via
-    // inset — inline left/width here would double-offset it inside the shell.
+    // inset - inline left/width here would double-offset it inside the shell.
     boxes.forEach((box) => {
       expect(box.style.position).toBe("absolute");
       expect(box.style.inset).toBe("0");

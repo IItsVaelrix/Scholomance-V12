@@ -1,5 +1,5 @@
 /**
- * StatusDisplay — Display generation status with bytecode error integration
+ * StatusDisplay - Display generation status with bytecode error integration
  */
 
 import { motion } from 'framer-motion';

@@ -1,7 +1,7 @@
 /**
- * AgentMessaging — ritual channel for inter-agent communication
+ * AgentMessaging - ritual channel for inter-agent communication
  * World-law connection: Agents are minds in the scholomance chamber.
- * Messages are "thought-threads" — glyph-tagged, persisted to the deterministic ledger
+ * Messages are "thought-threads" - glyph-tagged, persisted to the deterministic ledger
  * via /collab/messages (Migration v14, collab_messages table), and broadcast across
  * present minds. Each thought is etched into the chamber's memory and retrievable
  * by future incantations. Server-driven realtime across all clients rides SSE;
@@ -46,7 +46,7 @@ function renderMessageText(text) {
 
 /**
  * BroadcastChannel-based messaging for same-tab cross-component communication.
- * Messages are ephemeral — they live only in the current browser session.
+ * Messages are ephemeral - they live only in the current browser session.
  */
 const CHANNEL_NAME = 'scholomance.collab.messaging';
 
@@ -215,7 +215,7 @@ export default function AgentMessaging({ agents, currentAgentId }) {
             }
 
             // Also add to local state. Guard against the SSE echo of our own
-            // message arriving before this resolves — it shares the same id.
+            // message arriving before this resolves - it shares the same id.
             setMessages(prev => {
                 if (prev.some(m => m.id === message.id)) return prev;
                 const next = [...prev, message];
@@ -262,7 +262,7 @@ export default function AgentMessaging({ agents, currentAgentId }) {
                 </h3>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <span className="messaging-subtitle">
-                        {connectedAgents.length} minds present — thoughts etched into the chamber&apos;s ledger
+                        {connectedAgents.length} minds present - thoughts etched into the chamber&apos;s ledger
                     </span>
                     {currentAgentId && (
                         <span style={{ fontSize: '9px', color: 'var(--color-collab-gold)', fontFamily: 'var(--font-collab-mono)', textTransform: 'uppercase' }}>
@@ -282,7 +282,7 @@ export default function AgentMessaging({ agents, currentAgentId }) {
                             animate={{ opacity: 1 }}
                         >
                             <span className="messaging-empty__glyph">⟐</span>
-                            <p className="messaging-empty-text">Summoning thought-threads from the ledger…</p>
+                            <p className="messaging-empty-text">Summoning thought-threads from the ledger...</p>
                         </motion.div>
                     ) : messages.length === 0 ? (
                         <motion.div

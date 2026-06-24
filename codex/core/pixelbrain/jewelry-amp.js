@@ -94,7 +94,7 @@ export function applyJewelryTemplate(template, silhouette, spec) {
         // We simulate engraving by tagging a thin inner/outer ring with negative slot (depth) and part re-assignment for bezel_engrave.
         // In full system this would delegate to motif-engraver or a proper engravingAMP.
         const bezelEngraveId = `${setting.id}_engrave`;
-        gCells.forEach(({ c }) => {
+        gemCells.forEach(({ c }) => {
           const neighbors = [[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[-1,1],[1,-1],[1,1]];
           neighbors.forEach(([dx, dy]) => {
             const nk = `${c.x + dx},${c.y + dy}`;

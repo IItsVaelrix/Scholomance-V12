@@ -1,5 +1,5 @@
 /**
- * PipelineTerminal — Pipeline visualization with stage rail and result editor
+ * PipelineTerminal - Pipeline visualization with stage rail and result editor
  * Adapted from PixelBrain's terminal aesthetic
  */
 
@@ -344,7 +344,7 @@ function RoutingExplanation({ stage, task, agents }) {
         ) : (
           <div className="routing-text routing-text--warning">
             <WarningIcon size={12} />
-            No agent assigned — waiting for claim
+            No agent assigned - waiting for claim
           </div>
         )}
 

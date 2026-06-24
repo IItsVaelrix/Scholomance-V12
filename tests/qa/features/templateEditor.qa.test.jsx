@@ -1,5 +1,5 @@
 /**
- * TEMPLATE EDITOR QA — Lattice Grid editing surface
+ * TEMPLATE EDITOR QA - Lattice Grid editing surface
  *
  * Proves the hex engine is actually wired: pointer/keyboard edits mutate the
  * engine grid through the Cell Wall adapter, symmetry mirrors stay on-lattice,
@@ -36,7 +36,7 @@ function statusText() {
   return screen.getByText(/CELLS:/).textContent;
 }
 
-describe('TemplateEditor — lattice grid surface', () => {
+describe('TemplateEditor - lattice grid surface', () => {
   it('renders with the hexagonal dialect active and passes axe', async () => {
     const { container } = render(<TemplateEditor />);
     const hexButton = screen.getByRole('button', { name: 'hexagonal' });

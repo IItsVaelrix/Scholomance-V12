@@ -1,8 +1,8 @@
 /**
- * TEMPLATE EDITOR — Lattice Grid editing surface
+ * TEMPLATE EDITOR - Lattice Grid editing surface
  *
  * UI SPEC:
- * - World-law connection: the lattice is spatial bytecode — this surface is
+ * - World-law connection: the lattice is spatial bytecode - this surface is
  *   where its legal grid points (rectangular, isometric, hexagonal, circular,
  *   fibonacci dialects) become paintable glyph cells. The grid the player
  *   sees is the same lattice the engine snaps, hit-tests and fills against:
@@ -14,7 +14,7 @@
  * - Accessibility: every control labelled; tool and symmetry toggles expose
  *   aria-pressed; the canvas is a keyboard surface (arrows move the cell
  *   cursor, Enter/Space applies the tool, Delete erases).
- * - Animation: none — static editing surface (TemplateEditor.css disables
+ * - Animation: none - static editing surface (TemplateEditor.css disables
  *   CRT effects so the lattice stays legible).
  */
 
@@ -88,7 +88,7 @@ const GRID_TYPE_OPTIONS = Object.values(GRID_TYPES);
 
 function traceHexPath(ctx, cx, cy, radius) {
   for (let i = 0; i < 6; i++) {
-    // Pointy-top vertices every 60°, starting at 30° — engine orientation
+    // Pointy-top vertices every 60°, starting at 30° - engine orientation
     const a = Math.PI / 6 + (i / 6) * Math.PI * 2;
     const px = cx + Math.cos(a) * radius;
     const py = cy + Math.sin(a) * radius;
@@ -106,7 +106,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
   const commandStackRef = useRef(null);
   const importedInitialAssetRef = useRef(null);
   const commandLogRef = useRef([]); // UI-side log for scrubbable history list and "Export Deterministic Recipe" (stores description, ampId, options, meta, timestamp). Enables the full provenance without touching core stack.
-  const strokeRejections = useRef(null); // dampened rejection state per stroke — reset on pointer up
+  const strokeRejections = useRef(null); // dampened rejection state per stroke - reset on pointer up
 
   const [tool, setTool] = useState('paint');
   const [brushColor, setBrushColor] = useState('#C9A227');
@@ -356,7 +356,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
       console.warn(`[PhosphorylationGate] Rejected at (${x},${y}): ${reason}`);
     } else if (strokeRejections.current.reason === reason) {
       strokeRejections.current.count++;
-      // Same reason repeated — no additional signal (dampened)
+      // Same reason repeated - no additional signal (dampened)
     } else {
       strokeRejections.current = { reason, count: 1 };
       console.warn(`[PhosphorylationGate] Rejected at (${x},${y}): ${reason}`);
@@ -365,7 +365,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
 
   const onStrokeEnd = useCallback(() => {
     if (strokeRejections.current?.count > 0) {
-      console.info(`[PhosphorylationGate] Stroke ended: ${strokeRejections.current.count} rejection(s) — ${strokeRejections.current.reason}`);
+      console.info(`[PhosphorylationGate] Stroke ended: ${strokeRejections.current.count} rejection(s) - ${strokeRejections.current.reason}`);
     }
     strokeRejections.current = null;
   }, []);
@@ -437,7 +437,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
 
       if (tool === 'paint') {
         // Phosphorylation path: fire when material + SDF context are available on the layer.
-        // TemplateEditor is a pure template-grid editor with a brush colour — no material/SDF
+        // TemplateEditor is a pure template-grid editor with a brush colour - no material/SDF
         // concept exists here yet. The kinase build will return { valid: false } in that case,
         // so we fall back to the plain PaintCommand. This additive guard makes it safe to wire
         // now: when material/SDF are injected (future work), phosphorylation auto-activates.
@@ -448,11 +448,11 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
           const outcome = stack.execute(createPhosphorylationCommand(layer, target.x, target.y, kinase, prevColor));
           if (outcome?.rejected) {
             notifyRejection(outcome.result?.reason ?? 'UNKNOWN', target.x, target.y);
-            // Phosphorylation rejected — fall back to plain paint so the stroke is never lost
+            // Phosphorylation rejected - fall back to plain paint so the stroke is never lost
             stack.execute(createPaintCommand(grid, layerIndex, target.x, target.y, brushColor, prevColor));
           }
         } else {
-          // No material/SDF on this layer — use plain PaintCommand (existing behaviour)
+          // No material/SDF on this layer - use plain PaintCommand (existing behaviour)
           stack.execute(createPaintCommand(grid, layerIndex, target.x, target.y, brushColor, prevColor));
         }
       } else if (tool === 'erase') {
@@ -868,7 +868,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
       }
     },
 
-    // The live engine grid — the single document model shared with the page panels.
+    // The live engine grid - the single document model shared with the page panels.
     getGrid: () => gridRef.current,
 
     // Native .aseprite export of the canvas (same path as the in-editor button).
@@ -1362,7 +1362,7 @@ function TemplateEditorComponent({ onCommitAsset, onGridChange, initialAssetPack
                   }}
                   onClick={() => setActiveLayerIndex(idx)}
                 >
-                  {layer.name || `Layer ${idx}`} {layer.locked ? '🔒' : ''} {layer.visible ? '' : '👁‍🗨'}
+                  {layer.name || `Layer ${idx}`} {layer.locked ? '🔒' : ''} {layer.visible ? '' : '👁🗨'}
                 </button>
               ))}
             </div>

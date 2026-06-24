@@ -14,10 +14,10 @@ const rhymeEngine = new DeepRhymeEngine();
 
 const TYPE_WEIGHT = {
   perfect: 1.00,
-  near: 0.90,
-  slant: 0.78,
-  assonance: 0.70,
-  consonance: 0.62,
+  near: 0.70,
+  slant: 0.50,
+  assonance: 0.40,
+  consonance: 0.50,
 };
 
 function clamp01(value) {

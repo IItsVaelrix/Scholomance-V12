@@ -87,7 +87,11 @@ export async function panelAnalysisRoutes(fastify, opts = {}) {
 
   fastify.post('/api/analysis/panels', {
     config: {
-      rateLimit: { max: 20, timeWindow: '1 minute' },
+      // Live editing debounces analysis but still issues many requests per
+      // minute. 20/min was low enough that a normal session hit HTTP 429,
+      // which made the client fall back to connection-less local synthesis and
+      // grey every word. Keep a sane cap in production; raise it for local dev.
+      rateLimit: { max: process.env.NODE_ENV === 'production' ? 60 : 600, timeWindow: '1 minute' },
     },
     handler: async (request, reply) => {
       const startedAtMs = Date.now();

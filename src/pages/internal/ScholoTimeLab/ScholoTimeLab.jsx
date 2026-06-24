@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchFile } from "@ffmpeg/util";
 import { compileScholoTimeFrame } from "../../../../codex/core/scholotime/scholotime.compiler.js";

@@ -39,13 +39,13 @@ export function ReferencePanel({
       <strong>REFERENCE / ANNOTATION (System 8)</strong>
 
       <div style={{ margin: '8px 0' }}>
-        <label style={{ display: 'block', marginBottom: 4, fontSize: 10 }}>Drop image for reference layer + annotations</label>
-        <input type="file" accept="image/*" onChange={handleFile} disabled={isProcessing} />
+        <label htmlFor="refInput" style={{ display: 'block', marginBottom: 4, fontSize: 10 }}>Drop image for reference layer + annotations</label>
+        <input id="refInput" type="file" accept="image/*" onChange={handleFile} disabled={isProcessing} />
       </div>
 
       {lastRefInfo && (
         <div style={{ fontSize: 10, color: '#8a8' }}>
-          Created: {lastRefInfo.name} ({lastRefInfo.cells} cells) — locked, low opacity.
+          Created: {lastRefInfo.name} ({lastRefInfo.cells} cells) - locked, low opacity.
         </div>
       )}
 

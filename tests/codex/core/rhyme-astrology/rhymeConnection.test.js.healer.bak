@@ -1,0 +1,383 @@
+/**
+ * rhymeConnection.test.js — Tests for the line-to-line RhymeConnection module
+ *
+ * Uses hand-crafted mock LineAnalysis objects (matching the shape
+ * produced by DeepRhymeEngine.buildLineAnalysisFromIRLine) so the
+ * tests are deterministic and do not require a phoneme engine.
+ *
+ * Test lines (a short nursery-style quatrain):
+ *   Line 0: "The moon was bright"  — end-word: BRIGHT (rhymeKey: "AY1 T")
+ *   Line 1: "A silver light"       — end-word: LIGHT  (rhymeKey: "AY1 T")
+ *   Line 2: "The night was deep"   — end-word: DEEP   (rhymeKey: "IY1 P")
+ *   Line 3: "The stars did peep"   — end-word: PEEP   (rhymeKey: "IY1 P")
+ *
+ * Expected scheme: AABB (bright/light perfect, deep/peep perfect)
+ */
+
+import { describe, it, expect } from 'vitest';
+import {
+  connectLines,
+  connectDocument,
+  connectDocumentMatrix,
+  deriveSchemePattern,
+} from '../../../../codex/core/rhyme-astrology/rhymeConnection.js';
+
+// ─── Helpers: build a word-level token (matching createLineWordFromToken) ───
+
+function makeWord({
+  word,
+  wordIndex,
+  lineIndex,
+  rhymeKey = null,
+  vowelFamily = null,
+  syllableCount = 1,
+  stressPattern = '1',
+}, analysisOverrides = {}) {
+  const upper = word.toUpperCase();
+  const analysis = Object.freeze({
+    word: upper,
+    vowelFamily: vowelFamily || null,
+    phonemes: [],
+    syllables: [],
+    syllableCount,
+    rhymeKey: rhymeKey || null,
+    extendedRhymeKeys: [],
+    stressPattern,
+    ...analysisOverrides,
+  });
+
+  return {
+    word,
+    normalizedWord: upper,
+    vowelFamily,
+    rhymeKey,
+    syllableCount,
+    stressPattern,
+    lineIndex,
+    wordIndex,
+    charStart: 0,
+    charEnd: word.length,
+    analysis,
+    syntaxToken: null,
+  };
+}
+
+function makeLineAnalysis({ lineIndex, text, words }) {
+  const wordObjects = words.map((w, idx) =>
+    makeWord({
+      word: w.word,
+      wordIndex: idx,
+      lineIndex,
+      rhymeKey: w.rhymeKey,
+      vowelFamily: w.vowelFamily,
+      syllableCount: w.syllableCount ?? 1,
+      stressPattern: w.stressPattern ?? '1',
+    }),
+  );
+
+  const totalSyllables = wordObjects.reduce((s, w) => s + w.syllableCount, 0);
+  const stressPattern = wordObjects.map(w => w.stressPattern).join(' ');
+  const endWord = wordObjects[wordObjects.length - 1];
+
+  return {
+    lineIndex,
+    text,
+    words: wordObjects,
+    syllableTotal: totalSyllables,
+    stressPattern,
+    internalRhymes: [],
+    endRhymeKey: endWord.rhymeKey || null,
+    endWord: endWord.analysis,
+  };
+}
+
+// ─── Test fixture lines ─────────────────────────────────────────────────────
+
+const LINES = [
+  {
+    lineIndex: 0,
+    text: 'The moon was bright',
+    words: [
+      { word: 'The',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'moon',   rhymeKey: 'UW1 N',          vowelFamily: 'UW1',  syllableCount: 1, stressPattern: '1' },
+      { word: 'was',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'bright',  rhymeKey: 'AY1 T',         vowelFamily: 'AY1',  syllableCount: 1, stressPattern: '1' },
+    ],
+  },
+  {
+    lineIndex: 1,
+    text: 'A silver light',
+    words: [
+      { word: 'A',      rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'silver',  rhymeKey: 'IH1 L V ER0',    vowelFamily: 'IH1', syllableCount: 2, stressPattern: '10' },
+      { word: 'light',   rhymeKey: 'AY1 T',          vowelFamily: 'AY1', syllableCount: 1, stressPattern: '1' },
+    ],
+  },
+  {
+    lineIndex: 2,
+    text: 'The night was deep',
+    words: [
+      { word: 'The',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'night',  rhymeKey: 'AY1 T',          vowelFamily: 'AY1',  syllableCount: 1, stressPattern: '1' },
+      { word: 'was',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'deep',   rhymeKey: 'IY1 P',          vowelFamily: 'IY1',  syllableCount: 1, stressPattern: '1' },
+    ],
+  },
+  {
+    lineIndex: 3,
+    text: 'The stars did peep',
+    words: [
+      { word: 'The',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'stars',  rhymeKey: 'AA1 R Z',        vowelFamily: 'AA1',  syllableCount: 1, stressPattern: '1' },
+      { word: 'did',    rhymeKey: null,             vowelFamily: null,   syllableCount: 1, stressPattern: '0' },
+      { word: 'peep',   rhymeKey: 'IY1 P',          vowelFamily: 'IY1',  syllableCount: 1, stressPattern: '1' },
+    ],
+  },
+];
+
+const lineAnalyses = LINES.map(makeLineAnalysis);
+
+// ─── Tests ──────────────────────────────────────────────────────────────────
+
+describe('codex/core/rhyme-astrology/rhymeConnection', () => {
+
+  // ── connectLines ──────────────────────────────────────────────────────────
+
+  describe('connectLines', () => {
+    it('recognises a perfect end-rhyme (bright <-> light — same rhymeKey "AY1 T")', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[1]);
+
+      expect(conn.endWord.type).toBe('perfect');
+      expect(conn.endWord.score).toBeCloseTo(1.0);
+      expect(conn.endWord.wordA).toBe('BRIGHT');
+      expect(conn.endWord.wordB).toBe('LIGHT');
+      expect(conn.endWord.syllablesMatched).toBe(1);
+
+      expect(conn.primaryType).toBe('perfect');
+      expect(conn.overallScore).toBeGreaterThanOrEqual(0.45);
+    });
+
+    it('recognises a perfect end-rhyme (deep <-> peep — same rhymeKey "IY1 P")', () => {
+      const conn = connectLines(lineAnalyses[2], lineAnalyses[3]);
+
+      expect(conn.endWord.type).toBe('perfect');
+      expect(conn.endWord.score).toBeCloseTo(1.0);
+      expect(conn.endWord.wordA).toBe('DEEP');
+      expect(conn.endWord.wordB).toBe('PEEP');
+    });
+
+    it('returns "none" for non-rhyming lines (bright <-> deep)', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[2]);
+
+      expect(conn.endWord.type).toBe('none');
+      expect(conn.endWord.score).toBe(0);
+      // primaryType is 'weak' because syllable symmetry + stress similarity
+      // push the composite score above 0.3 even without end-rhyme
+      expect(conn.primaryType).toMatch(/^(weak|none)$/);
+    });
+
+    it('populates lineA / lineB refs correctly', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[3]);
+
+      expect(conn.lineA.lineIndex).toBe(0);
+      expect(conn.lineA.text).toBe('The moon was bright');
+      expect(conn.lineA.syllableCount).toBe(4);
+      expect(conn.lineB.lineIndex).toBe(3);
+      expect(conn.lineB.text).toBe('The stars did peep');
+    });
+
+    it('computes syllable symmetry', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[3]);
+
+      expect(conn.syllableSymmetry.lineA).toBe(4);
+      expect(conn.syllableSymmetry.lineB).toBe(4);
+      expect(conn.syllableSymmetry.delta).toBe(0);
+      expect(conn.syllableSymmetry.score).toBeCloseTo(1.0);
+      expect(conn.syllableSymmetry.exact).toBe(true);
+    });
+
+    it('computes stress similarity', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[1]);
+
+      expect(typeof conn.stressSimilarity.score).toBe('number');
+      expect(conn.stressSimilarity.score).toBeGreaterThanOrEqual(0);
+      expect(conn.stressSimilarity.score).toBeLessThanOrEqual(1);
+      expect(['identical', 'similar', 'different']).toContain(conn.stressSimilarity.label);
+    });
+
+    it('computes internal overlap', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[2]);
+
+      expect(Array.isArray(conn.internalOverlap.fromLineA)).toBe(true);
+      expect(Array.isArray(conn.internalOverlap.fromLineB)).toBe(true);
+      expect(typeof conn.internalOverlap.score).toBe('number');
+    });
+
+    it('density is between 0 and 1', () => {
+      const conn = connectLines(lineAnalyses[0], lineAnalyses[1]);
+      expect(conn.density).toBeGreaterThanOrEqual(0);
+      expect(conn.density).toBeLessThanOrEqual(1);
+    });
+
+    it('accepts custom weights via options', () => {
+      const connDefault = connectLines(lineAnalyses[0], lineAnalyses[1]);
+      const connCustom = connectLines(lineAnalyses[0], lineAnalyses[1], {
+        endWordWeight: 0.8,
+        internalOverlapWeight: 0.1,
+        stressWeight: 0.05,
+        syllableWeight: 0.05,
+      });
+
+      expect(connCustom.overallScore).not.toBeCloseTo(connDefault.overallScore);
+      expect(connCustom.overallScore).toBeGreaterThanOrEqual(0.8);
+    });
+  });
+
+  // ── connectDocument ───────────────────────────────────────────────────────
+
+  describe('connectDocument', () => {
+    it('returns an array of all line pairs (6 for 4 lines)', () => {
+      const connections = connectDocument(lineAnalyses);
+      expect(Array.isArray(connections)).toBe(true);
+      expect(connections.length).toBe(6);
+    });
+
+    it('sorts connections by overallScore descending', () => {
+      const connections = connectDocument(lineAnalyses);
+      for (let i = 1; i < connections.length; i++) {
+        expect(connections[i - 1].overallScore)
+          .toBeGreaterThanOrEqual(connections[i].overallScore);
+      }
+    });
+
+    it('filters by minScore', () => {
+      const all = connectDocument(lineAnalyses, { minScore: 0 });
+      const filtered = connectDocument(lineAnalyses, { minScore: 0.5 });
+
+      expect(filtered.length).toBeLessThan(all.length);
+      for (const conn of filtered) {
+        expect(conn.overallScore).toBeGreaterThanOrEqual(0.5);
+      }
+    });
+
+    it('returns adjacent-only pairs when includeAdjacentOnly is true', () => {
+      const adj = connectDocument(lineAnalyses, { includeAdjacentOnly: true });
+
+      expect(adj.length).toBe(3);
+      for (const conn of adj) {
+        expect(Math.abs(conn.lineA.lineIndex - conn.lineB.lineIndex)).toBe(1);
+      }
+    });
+
+    it('returns empty array for fewer than 2 lines', () => {
+      expect(connectDocument([])).toEqual([]);
+      expect(connectDocument([lineAnalyses[0]])).toEqual([]);
+    });
+  });
+
+  // ── connectDocumentMatrix ─────────────────────────────────────────────────
+
+  describe('connectDocumentMatrix', () => {
+    it('returns an NxN matrix', () => {
+      const matrix = connectDocumentMatrix(lineAnalyses);
+      expect(matrix.length).toBe(4);
+      for (const row of matrix) {
+        expect(row.length).toBe(4);
+      }
+    });
+
+    it('has null on diagonal / lower triangle, connections on upper', () => {
+      const matrix = connectDocumentMatrix(lineAnalyses);
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4; j++) {
+          if (i >= j) {
+            expect(matrix[i][j]).toBeNull();
+          } else {
+            expect(matrix[i][j]).not.toBeNull();
+            expect(matrix[i][j].lineA.lineIndex).toBe(i);
+            expect(matrix[i][j].lineB.lineIndex).toBe(j);
+          }
+        }
+      }
+    });
+
+    it('returns empty for empty input', () => {
+      expect(connectDocumentMatrix([])).toEqual([]);
+    });
+  });
+
+  // ── deriveSchemePattern ───────────────────────────────────────────────────
+
+  describe('deriveSchemePattern', () => {
+    it('detects AABB pattern for the test quatrain', () => {
+      const result = deriveSchemePattern(lineAnalyses);
+
+      expect(result.pattern).toBe('AABB');
+      expect(result.confidence).toBeGreaterThan(0);
+    });
+
+    it('returns labels map with line indices per group', () => {
+      const result = deriveSchemePattern(lineAnalyses);
+
+      expect(result.labels instanceof Map).toBe(true);
+      expect(result.labels.size).toBe(2);
+      expect(result.labels.get('A')).toEqual([0, 1]);
+      expect(result.labels.get('B')).toEqual([2, 3]);
+    });
+
+    it('returns empty pattern for empty input', () => {
+      const result = deriveSchemePattern([]);
+      expect(result.pattern).toBe('');
+      expect(result.confidence).toBe(0);
+    });
+
+    it('accepts pre-computed connections', () => {
+      const conns = connectDocument(lineAnalyses);
+      const result = deriveSchemePattern(lineAnalyses, conns);
+      expect(result.pattern).toBe('AABB');
+    });
+
+    it('respects endWordThreshold option', () => {
+      const result = deriveSchemePattern(lineAnalyses, null, { endWordThreshold: 1.0 });
+      expect(result.pattern).toBe('AABB');
+    });
+  });
+
+  // ── Edge cases ────────────────────────────────────────────────────────────
+
+  describe('edge cases', () => {
+    it('handles lines with missing endWord gracefully', () => {
+      const badLine = {
+        lineIndex: 99,
+        text: '',
+        words: [],
+        syllableTotal: 0,
+        stressPattern: '',
+        internalRhymes: [],
+        endRhymeKey: null,
+        endWord: null,
+      };
+      const conn = connectLines(lineAnalyses[0], badLine);
+
+      expect(conn.endWord.type).toBe('none');
+      expect(conn.endWord.score).toBe(0);
+      expect(conn.overallScore).toBeGreaterThanOrEqual(0);
+    });
+
+    it('handles single-word lines', () => {
+      const single = makeLineAnalysis({
+        lineIndex: 0,
+        text: 'go',
+        words: [{ word: 'go', rhymeKey: 'OW1', vowelFamily: 'OW1', syllableCount: 1, stressPattern: '1' }],
+      });
+      const conn = connectLines(single, single);
+      expect(conn.endWord.type).toBe('perfect');
+    });
+
+    it('produces deterministic results across repeated calls', () => {
+      const a = connectLines(lineAnalyses[0], lineAnalyses[1]);
+      const b = connectLines(lineAnalyses[0], lineAnalyses[1]);
+      expect(a).toEqual(b);
+    });
+  });
+});

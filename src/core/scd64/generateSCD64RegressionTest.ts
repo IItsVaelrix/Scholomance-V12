@@ -1,0 +1,241 @@
+/**
+ * generateSCD64RegressionTest.ts
+ *
+ * Converts a full SCD64 diagnostic object into a deterministic Vitest
+ * regression test.  This is Phase 5 of the SCD64 robust-pass PDR
+ * (2026-06-21-SCD64-robust-pass.md).
+ *
+ * Rules:
+ *  - DIAGNOSE_ONLY: this module never mutates source code.
+ *  - Output is a pure string; the caller decides whether to write it.
+ *  - Test file names are derived from bugFamily + first block only,
+ *    never from line numbers, so they stay stable across refactors.
+ *  - Generated tests anchor on exported function symbols and evidence
+ *    shapes, not on implementation line numbers.
+ */
+
+import fs from "node:fs";
+import path from "node:path";
+import type { SCD64RegressionInput, SCD64GeneratedTest } from "./types";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Slugify a bug-family name for use in a filesystem path. */
+function slugify(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+/**
+ * Extract the first 8-char block from a checksum64.
+ * This is the BUGCLASS block and is stable per family.
+ */
+function firstBlock(checksum64: string): string {
+  return checksum64.slice(0, 8).toUpperCase();
+}
+
+/**
+ * Convert a plain object to a compact, deterministic JSON literal suitable
+ * for embedding in TypeScript source.  Indented at two extra levels.
+ */
+function toInlineJSON(obj: unknown, indent = 6): string {
+  return JSON.stringify(obj, null, 2)
+    .split("\n")
+    .map((line, i) => (i === 0 ? line : " ".repeat(indent) + line))
+    .join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Core generator
+// ---------------------------------------------------------------------------
+
+/**
+ * Generate a Vitest regression test source from a SCD64 diagnostic.
+ *
+ * @example
+ * ```ts
+ * import diagnosticJson from "./captured-color-dragon.json";
+ * const { source, relativePath } = generateSCD64RegressionTest({
+ *   diagnostic: diagnosticJson,
+ * });
+ * fs.writeFileSync(relativePath, source, "utf8");
+ * ```
+ */
+export function generateSCD64RegressionTest(
+  input: SCD64RegressionInput,
+): SCD64GeneratedTest {
+  const { diagnostic, testName } = input;
+  const { checksum64, bugFamily, runtimeEvidence, slots } = diagnostic;
+
+  // ── Validate ──────────────────────────────────────────────────────────────
+  if (!/^[0-9A-F]{64}$/.test(checksum64)) {
+    throw new Error(
+      `[SCD64] generateSCD64RegressionTest: checksum64 must be exactly 64 ` +
+        `uppercase hex chars. Got: "${checksum64}"`,
+    );
+  }
+  if (!bugFamily || typeof bugFamily !== "string") {
+    throw new Error("[SCD64] generateSCD64RegressionTest: bugFamily is required.");
+  }
+
+  // ── Derived values ────────────────────────────────────────────────────────
+  const block0 = firstBlock(checksum64);
+  const familySlug = slugify(bugFamily);
+  const fileName = `${familySlug}-${block0}.spec.ts`;
+  const relativePath = path.join("tests", "regression", "scd64", fileName);
+  const descriptionLabel = testName ?? bugFamily;
+
+  // ── Slot table comment ────────────────────────────────────────────────────
+  const slotRows = slots
+    .map(
+      (s) =>
+        `   *   [${String(s.index).padStart(1)}] ${s.name.padEnd(10)} ${s.hex}  ${s.meaning.slice(0, 60)}`,
+    )
+    .join("\n");
+
+  // ── Evidence fixtures ─────────────────────────────────────────────────────
+  const backendFixture = toInlineJSON(runtimeEvidence.backend ?? {});
+  const frontendFixture = toInlineJSON(runtimeEvidence.frontend ?? {});
+  const comparisonFixture = toInlineJSON(runtimeEvidence.comparison ?? {});
+
+  // ── Determine whether the circuit breaker should fire ─────────────────────
+  // The generator conservatively checks only the known COLOR_DRAGON fatal.
+  // More families can be whitelisted in circuitBreaker.ts.
+  const hasFatalVariant =
+    bugFamily === "COLOR_DRAGON" &&
+    checksum64 === "01861DF4C31AC92C24D4754DD1043D244908E4B3317B90735048A13A0AB2B33C";
+
+  const circuitBreakerBlock = hasFatalVariant
+    ? `
+  it("disables TrueSight coloring for known fatal ${descriptionLabel} desync", () => {
+    const breaker = evaluateSCD64CircuitBreaker({
+      checksum64: "${checksum64}",
+      bugFamily: "${bugFamily}",
+      severity: "FATAL_PRESENTATION_DESYNC",
+    });
+
+    expect(breaker.active).toBe(true);
+    expect(breaker.affectedFeature).toBe("TRUESIGHT_COLORING");
+    expect(breaker.diagnosticMode).toBe("DIAGNOSE_ONLY");
+  });`
+    : `
+  // No known-fatal circuit-breaker signature for this variant.
+  // Add an entry to circuitBreaker.ts KNOWN_FATAL_SIGNATURES and re-run
+  // the generator if this diagnostic is later promoted to fatal.`;
+
+  // ── Source ────────────────────────────────────────────────────────────────
+  const source = `/**
+ * SCD64 Regression: ${descriptionLabel}
+ *
+ * AUTO-GENERATED by generateSCD64RegressionTest.ts — DO NOT EDIT MANUALLY.
+ * Re-generate with:
+ *   node scripts/scd64-generate-regression.mjs path/to/diagnostic.json
+ *
+ * Diagnostic fingerprint
+ * ─────────────────────
+ * Family  : ${bugFamily}
+ * Checksum: ${checksum64}
+ *
+ * Slot anatomy:
+${slotRows}
+ *
+ * DIAGNOSE_ONLY — this test records bug anatomy; it does not patch code.
+ */
+
+import { describe, expect, it } from "vitest";
+import { generateSCD64 } from "../../src/core/scd64/generateSCD64FromSlots";
+import { decodeSCD64Hover } from "../../src/core/scd64/decodeSCD64";
+import { evaluateSCD64CircuitBreaker } from "../../src/core/scd64/circuitBreaker";
+import { createTrueSightEvidenceFixture } from "../fixtures/createTrueSightEvidenceFixture";
+
+// ── Captured runtime evidence ───────────────────────────────────────────────
+const BACKEND_EVIDENCE = ${backendFixture};
+const FRONTEND_EVIDENCE = ${frontendFixture};
+const COMPARISON_EVIDENCE = ${comparisonFixture};
+
+describe("SCD64 regression: ${descriptionLabel}", () => {
+  it("reproduces the canonical ${descriptionLabel} diagnostic fingerprint", () => {
+    // Regenerate the checksum from the canonical family definition.
+    // This confirms the canonical strings have not silently drifted.
+    const checksum64 = generateSCD64("${bugFamily}");
+
+    expect(checksum64).toBe(
+      "${checksum64}",
+    );
+  });
+
+  it("decodes all 8 slots from the canonical checksum", () => {
+    const decoded = decodeSCD64Hover("${checksum64}");
+
+    expect(decoded.valid).toBe(true);
+    expect(decoded.bugFamily).toBe("${bugFamily}");
+    expect(decoded.slots).toHaveLength(8);
+
+    // Each slot must resolve to a known meaning (not the fallback "Unknown code").
+    for (const slot of decoded.slots) {
+      expect(slot.meaning).not.toBe("Unknown code");
+    }
+  });
+
+  it("matches the runtime evidence shape captured at diagnostic time", () => {
+    const fixture = createTrueSightEvidenceFixture({
+      backend: BACKEND_EVIDENCE,
+      frontend: FRONTEND_EVIDENCE,
+      comparison: COMPARISON_EVIDENCE,
+    });
+
+    // The fixture must be structurally valid (non-null, has expected keys).
+    // Extend these assertions once createTrueSightEvidenceFixture is finalised.
+    expect(fixture).toBeDefined();
+    expect(fixture.backend).toMatchObject(BACKEND_EVIDENCE);
+    expect(fixture.frontend).toMatchObject(FRONTEND_EVIDENCE);
+    expect(fixture.comparison).toMatchObject(COMPARISON_EVIDENCE);
+  });
+${circuitBreakerBlock}
+});
+`;
+
+  return {
+    relativePath,
+    source,
+    checksum64,
+    bugFamily,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Optional disk-writer (Node only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Write the generated regression test to disk.
+ *
+ * Creates intermediate directories automatically.  Throws if the file
+ * already exists and `overwrite` is not set, so existing fossils are never
+ * silently clobbered.
+ *
+ * @param projectRoot  Absolute path to the repository root.
+ * @param generated    Return value of generateSCD64RegressionTest.
+ * @param overwrite    Allow overwriting an existing test file. Default false.
+ */
+export function writeSCD64RegressionTest(
+  projectRoot: string,
+  generated: SCD64GeneratedTest,
+  overwrite = false,
+): string {
+  const absolutePath = path.join(projectRoot, generated.relativePath);
+  const dir = path.dirname(absolutePath);
+
+  if (!overwrite && fs.existsSync(absolutePath)) {
+    throw new Error(
+      `[SCD64] Regression test already exists at "${absolutePath}". ` +
+        `Pass overwrite=true to replace it.`,
+    );
+  }
+
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(absolutePath, generated.source, "utf8");
+
+  return absolutePath;
+}

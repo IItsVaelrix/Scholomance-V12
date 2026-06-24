@@ -1,0 +1,10 @@
+model_name: "microsoft/DialoGPT-small"
+output_dir: "./output/dialo-literary"
+batch_size: 1
+learning_rate: 5e-5
+epochs: 1
+max_length: 256
+gradient_accumulation_steps: 4
+fp16: false
+save_steps: 500
+eval_steps: 500\n

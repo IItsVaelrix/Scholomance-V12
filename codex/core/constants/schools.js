@@ -35,7 +35,7 @@ export const VOWEL_FAMILY_TO_SCHOOL = Object.freeze({
   YOW: 'ABJURATION',  // folds to OW (rare y-glide variant)
   EE:  'PSYCHIC',     // folds to IY
   IN:  'SONIC',       // folds to IH
-  A:   'NECROMANCY',  // bare "A" shorthand folds to AA
+
   AI:  'PSYCHIC',     // alternate romanization of AY
   OI:  'ALCHEMY',     // alternate romanization of OY
   OU:  'ABJURATION',  // British "ou" folds to OW

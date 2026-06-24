@@ -1,5 +1,5 @@
 /**
- * BugBytecodePanel — Specialized view for bytecode verification and decode
+ * BugBytecodePanel - Specialized view for bytecode verification and decode
  */
 
 import { CheckIcon, WarningIcon, ErrorIcon, CodeIcon, CopyIcon, ZapIcon } from "../../components/Icons.jsx";

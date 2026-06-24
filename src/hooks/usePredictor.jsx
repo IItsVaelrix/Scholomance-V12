@@ -11,7 +11,11 @@ import { ScholomanceDictionaryAPI } from '../lib/scholomanceDictionary.api.js';
 
 const MIN_CORPUS_WORD_LENGTH = 2;
 const VALIDATION_BATCH_MAX_SIZE = 500;
-const VALIDATION_BATCH_WINDOW_MS = 12;
+// Coalescing window for spellcheck/validation batches. Was 12ms, which fired a
+// request roughly every keystroke and blew the server's per-route rate limit
+// (HTTP 429) - that 429 storm starved the resonance gate and greyed every word.
+// 350ms batches a burst of typing into one request while staying responsive.
+const VALIDATION_BATCH_WINDOW_MS = 350;
 
 const PredictorContext = createContext(null);
 

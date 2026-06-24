@@ -12,6 +12,24 @@ const DEFAULT_CLIENTS = Object.freeze({
         role: 'backend',
         capabilities: ['grok', 'mcp', 'collab'],
     },
+    'gemini-backend': {
+        id: 'gemini-backend',
+        name: 'Gemini Backend',
+        role: 'backend',
+        capabilities: ['gemini', 'mcp', 'collab'],
+    },
+    'chatgpt-backend': {
+        id: 'chatgpt-backend',
+        name: 'ChatGPT Backend',
+        role: 'backend',
+        capabilities: ['chatgpt', 'mcp', 'collab'],
+    },
+    'claude-backend': {
+        id: 'claude-backend',
+        name: 'Claude Backend',
+        role: 'backend',
+        capabilities: ['claude', 'mcp', 'collab'],
+    },
 });
 
 const authorizationCodes = new Map();

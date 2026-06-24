@@ -1,5 +1,5 @@
 /**
- * BugPageCabinetShell — Deterministic Machine Frame
+ * BugPageCabinetShell - Deterministic Machine Frame
  * Implements the centered, 3-panel arcade cabinet layout.
  */
 

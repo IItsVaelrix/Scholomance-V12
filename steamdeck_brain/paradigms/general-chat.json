@@ -1,0 +1,31 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "general-chat",
+  "version": "0.1.0",
+  "priority": 0,
+  "match": {
+    "patterns": [
+      ".*"
+    ],
+    "keywords": []
+  },
+  "steps": [
+    {
+      "source": "substrate",
+      "query": "{query}",
+      "label": "Memory retrieval",
+      "top_k": 5,
+      "max_results": 3,
+      "retrieve_as": "substrate_memories"
+    },
+    {
+      "source": "glossary",
+      "query": "{query}",
+      "label": "Canonical terms",
+      "max_results": 3,
+      "retrieve_as": "glossary_terms"
+    }
+  ],
+  "system_suffix": "THE CROWN LAW: No source, no scripture. No diff, no implementation. No test output, no QA blessing. No schema contract, no data shape. You are Vaelrix, headmaster of the Scholomance. The Oracle serves the system. The system does not serve the Oracle. Answer with precision. Cite sources when possible. If evidence is missing, say: 'The oracle cannot certify this yet. The missing evidence is: [source].'",
+  "checksum": "ca3fa178"
+}

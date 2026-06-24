@@ -193,5 +193,67 @@ export function compareSignatures(a, b) {
   if (!a?.data || !b?.data) return 0;
   if (a.data.length === 0 || b.data.length === 0) return 0;
   if (a.data.length !== b.data.length) return 0;
+  // Ghost rejection: a constant byte pattern is the fingerprint of a zero/
+  // degenerate vector (a token-less chunk compresses to all-identical codes).
+  // It carries no direction, so it must score zero resonance — never out-rank
+  // real content. Defends against legacy ghost rows already in the index.
+  if (isConstantSignature(a.data) || isConstantSignature(b.data)) return 0;
   return estimateInnerProduct(a.data, b.data, 1, 1);
+}
+
+function isConstantSignature(data) {
+  const first = data[0];
+  for (let i = 1; i < data.length; i += 1) {
+    if (data[i] !== first) return false;
+  }
+  return true;
+}
+
+/**
+ * Full-precision embedding for exact-cosine search. Same lens, seed-independent
+ * (no quantization rotation needed — cosine is rotation-invariant anyway), so
+ * search/index/probe share one direction in float space. Returns a unit vector;
+ * a token-less / zero-norm input is honestly "not ok" (no direction).
+ *
+ * @param {string} input
+ * @param {Partial<typeof VECTOR_AMP_DEFAULTS>} [config]
+ * @returns {{ ok: boolean, vector: Float32Array | null, dim: number, norm: number }}
+ */
+export function embedFloat(input, config = {}) {
+  const cfg = { ...VECTOR_AMP_DEFAULTS, ...config };
+  let vec = generateCodeAwareVector(String(input ?? ''), cfg.dimension);
+  if (cfg.center) vec = deltaCenter(vec);
+
+  let sumSq = 0;
+  for (let i = 0; i < vec.length; i += 1) sumSq += vec[i] * vec[i];
+  const norm = Math.sqrt(sumSq);
+  if (norm === 0) {
+    return { ok: false, vector: null, dim: cfg.dimension, norm: 0 };
+  }
+  const unit = new Float32Array(vec.length);
+  for (let i = 0; i < vec.length; i += 1) unit[i] = vec[i] / norm;
+  return { ok: true, vector: unit, dim: cfg.dimension, norm };
+}
+
+/**
+ * Exact cosine similarity between two equal-length vectors (-1..1).
+ * Normalizes internally, so callers may pass unit or raw vectors.
+ *
+ * @param {Float32Array | number[]} a
+ * @param {Float32Array | number[]} b
+ * @returns {number}
+ */
+export function cosineSimilarity(a, b) {
+  if (!a || !b || a.length === 0 || b.length === 0 || a.length !== b.length) return 0;
+  let dot = 0;
+  let magA = 0;
+  let magB = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    dot += a[i] * b[i];
+    magA += a[i] * a[i];
+    magB += b[i] * b[i];
+  }
+  const denom = Math.sqrt(magA) * Math.sqrt(magB);
+  if (denom === 0) return 0;
+  return Math.max(-1, Math.min(1, dot / denom));
 }

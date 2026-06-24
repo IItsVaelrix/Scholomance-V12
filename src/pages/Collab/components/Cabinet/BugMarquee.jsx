@@ -1,5 +1,5 @@
 /**
- * BugMarquee — Cabinet Header
+ * BugMarquee - Cabinet Header
  * Visual identity and pulse for the machine.
  */
 

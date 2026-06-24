@@ -33,6 +33,50 @@ function clamp01(value) {
 }
 
 /**
+ * Compute the document-aware weight for a single analyzed word.
+ *
+ * Formula:
+ *   weight = clamp01(
+ *     TF_IDF_proxy                     // penalises high-frequency words
+ *     × (1 + syllableSalience)          // polysyllabic words score higher
+ *     × positionalFactor                // earlier in line = heavier
+ *     + rarity × RARITY_WEIGHT_SCALE    // rare words get a phonetic bonus
+ *   )
+ *
+ * Stop words always return 0 — they must not influence phonetic scoring.
+ *
+ * @param {object} word          - AnalyzedWord object (needs normalized, isStopWord,
+ *                                  syllableCount, rarity, lineNumber).
+ * @param {number} termFrequency - Raw frequency of this word in the document.
+ * @param {number} positionInLine - 0-based index of this word within its line.
+ * @returns {number} 0-1 token weight.
+ */
+function computeTokenWeight(word, termFrequency, positionInLine) {
+  if (word.isStopWord) return 0;
+
+  // TF-IDF proxy: high-frequency words are penalised.
+  const idfProxy = 1 / (1 + Math.max(0, termFrequency));
+
+  // Syllable salience: each syllable above 1 adds a small bonus.
+  const syllables = Math.max(1, word.syllableCount || 1);
+  const syllableSalience = syllables > 1 ? (syllables - 1) * 0.08 : 0;
+
+  // Positional decay: first word in line receives full weight.
+  const positionalFactor = Math.max(0.2, 1 - positionInLine * 0.06);
+
+  const baseWeight = idfProxy * (1 + syllableSalience) * positionalFactor;
+
+  // Rarity bonus from PhonemeEngine (already 0-1).
+  const rarity =
+    typeof word.rarity === 'number' && Number.isFinite(word.rarity)
+      ? Math.max(0, Math.min(1, word.rarity))
+      : 0;
+  const rarityBonus = rarity * 0.3;
+
+  return clamp01(baseWeight + rarityBonus);
+}
+
+/**
  * Analyzes a text document to prepare it for heuristic scoring.
  * Performs tokenization and phoneme/deep-phoneme analysis once per word and
  * builds algorithmic parse signals reused by scoring heuristics.
@@ -166,6 +210,30 @@ export function analyzeText(text) {
   const contentWordFrequency = countTokens(contentWords);
   const stemFrequency = countTokens(stems);
 
+  // ── Second pass: stamp weight onto every AnalyzedWord. ─────────────────────
+  // wordFrequency is now complete so TF-IDF is accurate.
+  // We also track position-within-line so the positional factor is correct.
+  /** @type {Record<string, number>} normalized token → document weight (0-1) */
+  const tokenWeights = {};
+  const linePositionCounters = new Map();
+
+  for (const word of allWords) {
+    const lineNum = word.lineNumber ?? 0;
+    const pos = linePositionCounters.get(lineNum) ?? 0;
+    linePositionCounters.set(lineNum, pos + 1);
+
+    const tf = wordFrequency[word.normalized] ?? 1;
+    const weight = computeTokenWeight(word, tf, pos);
+
+    // Stamp directly on the mutable analyzedWord object.
+    word.weight = weight;
+
+    // Accumulate into the flat lookup (content words only; stop words stay 0).
+    if (!word.isStopWord && !(word.normalized in tokenWeights)) {
+      tokenWeights[word.normalized] = weight;
+    }
+  }
+
   const uniqueWordCount = Object.keys(wordFrequency).length;
   const uniqueStemCount = Object.keys(stemFrequency).length;
   const contentWordCount = contentWords.length;
@@ -235,6 +303,7 @@ export function analyzeText(text) {
       wordFrequency,
       contentWordFrequency,
       stemFrequency,
+      tokenWeights,
       repeatedWords,
       repeatedBigrams,
       lineStarters: boundaryPatterns.lineStarters,

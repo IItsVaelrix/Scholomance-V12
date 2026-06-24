@@ -33,11 +33,11 @@ export function CommerceCard({
           disabled={!buyEnabled}
           aria-label={`Buy for ${price} ${currency}`}
         >
-          BUY NOW — {price}
+          BUY NOW - {price}
         </button>
         {downloadFormats && downloadFormats.length > 0 && (
           <button className="scholoSecondaryAction" onClick={onDownload} aria-label="Download">
-            DOWNLOAD — {downloadFormats.join(", ")}
+            DOWNLOAD - {downloadFormats.join(", ")}
           </button>
         )}
       </div>

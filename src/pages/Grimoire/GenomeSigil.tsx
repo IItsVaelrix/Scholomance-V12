@@ -10,7 +10,7 @@ interface GenomeSigilProps {
 }
 
 /**
- * Deterministic sacred-geometry render of a track's visual genome — the right
+ * Deterministic sacred-geometry render of a track's visual genome - the right
  * page of the Grimoire. Pure SVG built from the genome model, so it renders
  * byte-identical on every device with no Web Audio / FFT dependency. `pulse`
  * (optional) scales the core glow when a live sidecar is driving it.
@@ -61,7 +61,7 @@ export const GenomeSigil: React.FC<GenomeSigilProps> = ({ genome, size = 600, pu
         <line key={`spoke-${i}`} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} stroke={s.color} strokeWidth={0.75} opacity={0.4} />
       ))}
 
-      {/* central nested polygons — eye-in-triangle motif */}
+      {/* central nested polygons - eye-in-triangle motif */}
       <polygon
         points={polygonPoints(cx, cy, model.coreRadius, model.coreSides, genome.baseHue % 60)}
         fill="none"

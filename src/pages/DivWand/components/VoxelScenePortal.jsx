@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 // src/pages/DivWand/components/VoxelScenePortal.jsx
 import { memo, useMemo } from 'react';
 
@@ -14,7 +15,7 @@ function runVoxelPipeline(volumeSize, seedCfg, text) {
   const SIZE = volumeSize;
   const volume = createVoxelVolume(SIZE, SIZE, SIZE);
 
-  // Step 1–2: Generate seeds
+  // Step 1-2: Generate seeds
   let rawSeeds;
   if (text) {
     rawSeeds = generateVectorizedTextSeeds(text, volume, {
@@ -51,7 +52,7 @@ function runVoxelPipeline(volumeSize, seedCfg, text) {
   // Step 5: HollownessAMP
   applyHollownessAMP(volume, seedCfg.hollowIterations ?? 3);
 
-  // Step 6: BiomeCoherenceAMP — wrap field to cell-object API
+  // Step 6: BiomeCoherenceAMP - wrap field to cell-object API
   runBiomeCoherenceAMP(volume, {
     energyAt: (cell) => field.energyAt(cell.x, cell.y, cell.z),
   });
@@ -66,7 +67,7 @@ function runVoxelPipeline(volumeSize, seedCfg, text) {
   // Remap faceType → type for SVG renderer
   const faces = rawFaces.map(f => ({ ...f, type: f.faceType }));
 
-  // Step 8: Render SVG — shared world look (AO + antialias) with a soft glow
+  // Step 8: Render SVG - shared world look (AO + antialias) with a soft glow
   // cued from the energy seeds.
   return renderFacesToSVG(faces, worldRenderOptions(seedsToLightPoints(seeds, { size: SIZE })));
 }

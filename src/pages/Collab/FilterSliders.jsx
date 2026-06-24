@@ -1,5 +1,5 @@
 /**
- * FilterSliders — Interactive filters for task/agent filtering
+ * FilterSliders - Interactive filters for task/agent filtering
  * Adapted from PixelBrain ParameterSliders
  */
 

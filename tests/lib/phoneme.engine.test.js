@@ -111,15 +111,15 @@ describe('PhonemeEngine', () => {
       expect(PhonemeEngine.guessVowelFamily('CAT')).toBe('AE');    // short A
 
       // Silent-e / Magic-e patterns
-      expect(PhonemeEngine.guessVowelFamily('LIKE')).toBe('EY');   // i_e pattern -> EY (was AY)
-      expect(PhonemeEngine.guessVowelFamily('TIME')).toBe('EY');   // i_e pattern -> EY (was AY)
-      expect(PhonemeEngine.guessVowelFamily('MAKE')).toBe('EY');   // a_e pattern
-      expect(PhonemeEngine.guessVowelFamily('HOME')).toBe('OW');   // o_e pattern
+      expect(PhonemeEngine.guessVowelFamily('LIKE')).toBe('AY');   // i_e → AY
+      expect(PhonemeEngine.guessVowelFamily('TIME')).toBe('AY');   // i_e → AY
+      expect(PhonemeEngine.guessVowelFamily('MAKE')).toBe('EY');   // a_e → EY
+      expect(PhonemeEngine.guessVowelFamily('HOME')).toBe('OW');   // o_e → OW
 
       // R-controlled vowels
       expect(PhonemeEngine.guessVowelFamily('CORE')).toBe('AO');   // -ore pattern
       expect(PhonemeEngine.guessVowelFamily('MORE')).toBe('AO');   // -ore pattern
-      expect(PhonemeEngine.guessVowelFamily('FIRE')).toBe('EY');   // FIRE override (stressed AY -> EY)
+      expect(PhonemeEngine.guessVowelFamily('FIRE')).toBe('AY');   // FIRE override (AY)
     });
 
     it('keeps long-A cluster words in EY family', () => {
@@ -172,7 +172,7 @@ describe('PhonemeEngine', () => {
         const stressed = syllables.find((syl) => Number(syl?.stress) > 0) || syllables[0];
         return String(stressed?.vowelFamily || '').toUpperCase();
       });
-      expect(new Set(stressedFamilies)).toEqual(new Set(['A']));
+      expect(new Set(stressedFamilies)).toEqual(new Set(['AH']));
     });
 
     it('identifies distinct U family for boot and foot', () => {

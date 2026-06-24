@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "immune-audit",
+  "version": "0.1.0",
+  "priority": 9,
+  "match": {
+    "patterns": [
+      "(immunity|immune|prion|pathogen|SYNTAX-0F|CRITICAL|violation)"
+    ],
+    "keywords": [
+      "immunity",
+      "immune",
+      "prion",
+      "pathogen",
+      "violation",
+      "SYNTAX",
+      "CRITICAL",
+      "WARNING",
+      "innate",
+      "adaptive",
+      "scanner"
+    ],
+    "bytecode_prefixes": [
+      "PB-ERR-v1-LINGUISTIC",
+      "PB-ERR-v1-STATE",
+      "PB-ERR-v1-COORD",
+      "SYNTAX-0F"
+    ]
+  },
+  "steps": [
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Full immunity scan",
+      "retrieve_as": "scan"
+    },
+    {
+      "source": "cleri",
+      "query": "{query}",
+      "label": "RAID patterns",
+      "max_results": 5,
+      "retrieve_as": "raid"
+    },
+    {
+      "source": "substrate",
+      "query": "immunity fix for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Past fixes",
+      "retrieve_as": "history"
+    }
+  ],
+  "system_suffix": "CHAIN: count violations by severity \u2192 identify affected files \u2192 match against Cleri RAID \u2192 propose immune-sanitize or manual fix. For SYNTAX-0F0C, suggest scripts/immune-sanitize.js.",
+  "checksum": "11e0b617"
+}

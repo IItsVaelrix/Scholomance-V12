@@ -24,7 +24,7 @@ import { resolveSonicChroma } from '../../lib/phonology.adapter.js';
  * The verse textarea is always rendered in Truesight mode (the typed
  * text is visually transparent; the overlay shows phoneme-colored words
  * underneath). On first focus, a one-time reveal hint explains the mode
- * — otherwise first-time players see a transparent box and assume the
+ * - otherwise first-time players see a transparent box and assume the
  * input is broken. Dismissal persists in localStorage.
  */
 
@@ -137,7 +137,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school, variant = '
   return (
     <div className={`oracle-scribe battle-panel oracle-scribe--${variant} ${isFocused ? 'is-focused' : ''}`}>
       <div className="scribe-header">
-        <div className="scribe-label">ORACLE SCRIBE — {school} AFFINITY</div>
+        <div className="scribe-label">ORACLE SCRIBE - {school} AFFINITY</div>
         <div className={`scribe-integrity status-${integrity.status?.toLowerCase()}`} aria-label="Syntactic integrity">
           {integrity.label || 'AWAITING CONCEPT'}
         </div>
@@ -206,7 +206,7 @@ export default function OracleScribe({ onSubmit, isDisabled, school, variant = '
                   <div className="truesight-reveal-body">
                     <div className="truesight-reveal-title">TRUESIGHT AWAKENED</div>
                     <div className="truesight-reveal-text">
-                      Your verse is illuminated. Words glow by <em>school</em> and <em>resonance</em> as you inscribe — what you type is still being recorded.
+                      Your verse is illuminated. Words glow by <em>school</em> and <em>resonance</em> as you inscribe - what you type is still being recorded.
                     </div>
                   </div>
                   <button

@@ -124,7 +124,7 @@ function pngToDataUrl(bytes: Uint8Array): string {
   return `data:image/png;base64,${btoa(bin)}`;
 }
 
-// Deterministic LCG reroll — the forge itself never uses Math.random()
+// Deterministic LCG reroll - the forge itself never uses Math.random
 const nextSeed = (seed: number) => (seed * 1664525 + 1013904223) % 0x7fffffff;
 
 export default function ActorForgeLab() {
@@ -138,12 +138,12 @@ export default function ActorForgeLab() {
   const [characterName, setCharacterName] = useState('Apprentice Scholar');
   const [stylePreset, setStylePreset] = useState<StylePresetId>('starboundEsper');
 
-  const [bodyProfile, setBodyProfile] = useState(STYLE_PRESETS.starboundEsper.body);
-  const [skin, setSkin] = useState(STYLE_PRESETS.starboundEsper.skin);
-  const [hairProfile, setHairProfile] = useState(STYLE_PRESETS.starboundEsper.hair);
-  const [hairColor, setHairColor] = useState(STYLE_PRESETS.starboundEsper.hairColor);
-  const [eyeProfile, setEyeProfile] = useState(STYLE_PRESETS.starboundEsper.eyes);
-  const [eyeColor, setEyeColor] = useState(STYLE_PRESETS.starboundEsper.eyeColor);
+  const [bodyProfile, setBodyProfile] = useState<string>(STYLE_PRESETS.starboundEsper.body);
+  const [skin, setSkin] = useState<string>(STYLE_PRESETS.starboundEsper.skin);
+  const [hairProfile, setHairProfile] = useState<string>(STYLE_PRESETS.starboundEsper.hair);
+  const [hairColor, setHairColor] = useState<string>(STYLE_PRESETS.starboundEsper.hairColor);
+  const [eyeProfile, setEyeProfile] = useState<string>(STYLE_PRESETS.starboundEsper.eyes);
+  const [eyeColor, setEyeColor] = useState<string>(STYLE_PRESETS.starboundEsper.eyeColor);
   const [top, setTop] = useState(TOP_PROFILES[0]);
   const [bottom, setBottom] = useState(BOTTOM_PROFILES[0]);
   const [shoes, setShoes] = useState(SHOES_PROFILES[0]);
@@ -223,12 +223,12 @@ export default function ActorForgeLab() {
   const direction = FACING_TO_DIRECTION[facing];
 
   const spriteUrl = useMemo(() => {
-    const png = forge.character?.sprites?.[direction];
+    const png = (forge.character as any)?.sprites?.[direction];
     return png ? pngToDataUrl(png) : null;
   }, [forge, direction]);
 
   const sheetUrl = useMemo(() => {
-    const sheet = forge.character?.spritesheet;
+    const sheet = (forge.character as any)?.spritesheet;
     return sheet ? pngToDataUrl(sheet) : null;
   }, [forge]);
 
@@ -240,7 +240,7 @@ export default function ActorForgeLab() {
     setEnhancementError(null);
 
     try {
-      const pngBytes = forge.character.sprites?.south;
+      const pngBytes = (forge.character as any).sprites?.south;
       if (!pngBytes) throw new EnhancementError('No south sprite available');
       const baseDataUrl = pngToDataUrl(pngBytes);
 
@@ -305,7 +305,7 @@ export default function ActorForgeLab() {
       <div className="actor-forge-lab">
       <header className="lab-header">
         <h1>Actor Forge Lab</h1>
-        <p className="lab-subtitle">PixelBrain deterministic character foundry — live preview</p>
+        <p className="lab-subtitle">PixelBrain deterministic character foundry - live preview</p>
       </header>
 
       <div className="lab-container">
@@ -513,8 +513,8 @@ export default function ActorForgeLab() {
             onClick={handleForgeAndEnhance}
             disabled={!forge.character || enhancementState === 'forging' || enhancementState === 'enhancing'}
           >
-            {enhancementState === 'forging'    ? 'Forging…'
-             : enhancementState === 'enhancing' ? 'Enhancing…'
+            {enhancementState === 'forging'    ? 'Forging...'
+             : enhancementState === 'enhancing' ? 'Enhancing...'
              : enhancementState === 'enhanced'  ? '✦ Re-Enhance'
              : '✦ Forge & Enhance'}
           </button>
@@ -526,7 +526,7 @@ export default function ActorForgeLab() {
             onClick={() => {
               if (!forge.character) return;
               localStorage.setItem('scholomance_active_actor', JSON.stringify({
-                ...forge.character.pixelLotusActor,
+                ...(forge.character as any).pixelLotusActor,
                 displayName: characterName,
                 spec: forge.character.spec,
               }));
@@ -545,10 +545,10 @@ export default function ActorForgeLab() {
   displayName: characterName,
   artStyle: STYLE_PRESETS[stylePreset].label,
   specHash: forge.character.specHash,
-  totalCells: forge.character.diagnostics.totalCells,
-  paletteSizes: forge.character.diagnostics.paletteSizes,
+  totalCells: (forge.character as any).diagnostics?.totalCells,
+  paletteSizes: (forge.character as any).diagnostics?.paletteSizes,
   frame: `${forge.character.canvas.width}×${forge.character.canvas.height}`,
-  directions: forge.character.diagnostics.directions,
+  directions: (forge.character as any).diagnostics?.directions,
 } : { error: forge.error }, null, 2)}
           </pre>
         </div>

@@ -7,7 +7,7 @@ import ActionHintStrip from './ActionHintStrip.jsx';
  * The main interaction spine. Replaces the plain text action console.
  * Stacks ActionBar (tactical command buttons) + ActionHintStrip (context metadata).
  *
- * World-law connection: the bottom band is the ritual command threshold —
+ * World-law connection: the bottom band is the ritual command threshold  - 
  * the point where the scholar's intent becomes a declared action.
  */
 export default function BottomCommandBand({ selectedAction, onActionSelect, isDisabled, movesRemaining, canExtract, variant = 'default' }) {

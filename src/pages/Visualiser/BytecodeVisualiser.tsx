@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 /**
- * BytecodeVisualiser — a deterministic, audio-reactive sacred-geometry mandala
+ * BytecodeVisualiser - a deterministic, audio-reactive sacred-geometry mandala
  * on a 2D canvas. Concentric rings + radial spectral bars (from FFT) + a rotating
  * merkaba + flower-of-life nodes + a glowing core, composited additively for a
  * holographic look. Rotation tracks BPM. Reduced-motion renders one static frame.
@@ -107,7 +107,7 @@ export function BytecodeVisualiser({
         ctx.stroke();
       }
 
-      // Radial spectral bars — the WMP-style graph, wrapped to the circle.
+      // Radial spectral bars - the WMP-style graph, wrapped to the circle.
       ctx.shadowBlur = 10;
       for (let i = 0; i < binCount; i += 1) {
         const mag = data[i] / 255;
@@ -163,7 +163,7 @@ export function BytecodeVisualiser({
       ctx.arc(0, 0, coreR * 5, 0, Math.PI * 2);
       ctx.fill();
 
-      // Vertical light beam — the concept's central shaft through the mandala.
+      // Vertical light beam - the concept's central shaft through the mandala.
       const beamH = R * 1.95;
       const beamW = R * (0.05 + energy * 0.07);
       const bg = ctx.createLinearGradient(0, -beamH, 0, beamH);

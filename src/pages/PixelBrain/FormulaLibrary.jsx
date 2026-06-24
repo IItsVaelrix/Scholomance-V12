@@ -1,5 +1,5 @@
 /**
- * FORMULA LIBRARY — Registry of mathematical visual sigils
+ * FORMULA LIBRARY - Registry of mathematical visual sigils
  *
  * Browses, saves, and applies formula presets for infinite asset generation.
  * Organizes formulas by arcane school and complexity.

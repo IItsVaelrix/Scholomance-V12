@@ -3,7 +3,7 @@ import { buildSigil, SIGIL_VIEWBOX } from './proceduralSigil.js';
 import './ProceduralSigil.css';
 
 /**
- * Procedural sigil — a single composite glyph generated from a word's phoneme
+ * Procedural sigil - a single composite glyph generated from a word's phoneme
  * texture. Deterministic: the same phonemes always render the same mark, while
  * different phoneme textures diverge. Replaces the static per-school glyph in
  * the Oracle word title with a symbol unique to the resolved word.

@@ -1,0 +1,23 @@
+{
+  "music": {
+    "optimal_length_min": 20,
+    "optimal_length_max": 50,
+    "power_words": [
+      "official video",
+      "lyric video",
+      "cover",
+      "live",
+      "remix",
+      "ft.",
+      "feat.",
+      "acoustic",
+      "performance"
+    ],
+    "target_uppercase_ratio": 0.15,
+    "baseline_search_terms": [
+      "official music video",
+      "live performance",
+      "cover song"
+    ]
+  }
+}

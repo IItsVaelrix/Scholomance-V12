@@ -1,5 +1,5 @@
 /**
- * BugDeckControls — Cabinet Button Interface
+ * BugDeckControls - Cabinet Button Interface
  * Governed geometry for arcade controls.
  */
 
@@ -36,20 +36,20 @@ export function BugDeckControls({
 }) {
     return (
         <div className="bug-deck">
-            {/* Navigation Cluster — left group */}
+            {/* Navigation Cluster - left group */}
             <div className="deck-cluster deck-cluster--nav">
                 <ControlButton label="PREV" hint="&uarr;" onClick={onPrev} />
                 <ControlButton label="SELECT" hint="ENT" onClick={onSelect} primary color="#FFB800" />
                 <ControlButton label="NEXT" hint="&darr;" onClick={onNext} />
             </div>
 
-            {/* Primary Actions — center group (mathematically centered via grid) */}
+            {/* Primary Actions - center group (mathematically centered via grid) */}
             <div className="deck-cluster deck-cluster--primary">
                 <ControlButton label="CREATE TASK" hint="T" onClick={onCreateTask} color="#00FFFF" />
                 <ControlButton label="START PIPELINE" hint="P" onClick={onStartPipeline} color="#FFB8FF" />
             </div>
 
-            {/* Resolution Cluster — right group */}
+            {/* Resolution Cluster - right group */}
             <div className="deck-cluster deck-cluster--resolution">
                 <ControlButton label="ASSIGN" hint="A" onClick={onAssign} />
                 <ControlButton label="DUPE" hint="D" onClick={onDuplicate} />

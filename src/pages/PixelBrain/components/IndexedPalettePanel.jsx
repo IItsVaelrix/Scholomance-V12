@@ -66,7 +66,10 @@ export function IndexedPalettePanel({
             return (
               <div
                 key={i}
+                role="button"
+                tabIndex={0}
                 onClick={(e) => handleSwatchClick(color, e)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleSwatchClick(color, e); }}
                 onContextMenu={(e) => { e.preventDefault(); if (onGlobalReplace) onGlobalReplace(fgColor, color); }}
                 title={`${color} • intensity ${intensity.toFixed(2)} (click=fg, shift/ctx=replace)`}
                 style={{

@@ -37,10 +37,10 @@ function pearson(xs, ys) {
  * surface (hsl 102, RESONANT effectClass). Used in the IDE sidebar when Truesight
  * is active to inspect word→school classifications at runtime without opening devtools.
  *
- * Data consumed: analyzedWords — array of { text: string, school: string } derived
+ * Data consumed: analyzedWords - array of { text: string, school: string } derived
  * from committedAnalysis.analyzedWords Map at the ReadPage call site.
- * bytecodeErrors — array of BytecodeError objects or bytecode strings for diagnostic display.
- * activeSchool: string | null — the currently selected school ID.
+ * bytecodeErrors - array of BytecodeError objects or bytecode strings for diagnostic display.
+ * activeSchool: string | null - the currently selected school ID.
  */
 export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = [], activeSchool = null, showPhonemegram = false }) {
   const reducedMotion = usePrefersReducedMotion();
@@ -144,7 +144,7 @@ export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = 
         )}
       </header>
 
-      {/* BODY — school color swatches + word chips */}
+      {/* BODY - school color swatches + word chips */}
       <div className="truesight-debug-panel__body" role="list">
         {Object.entries(schoolGroups).map(([school, words]) => (
           <div
@@ -178,12 +178,12 @@ export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = 
 
         {totalWords === 0 && (
           <p className="truesight-debug-panel__empty" role="status">
-            No glyphs analyzed — enter text in the scroll editor.
+            No glyphs analyzed - enter text in the scroll editor.
           </p>
         )}
       </div>
 
-      {/* PHONEMEGRAM — Study1 §Phonemegram applied to color */}
+      {/* PHONEMEGRAM - Study1 §Phonemegram applied to color */}
       {phonemegram && (
         <section
           className="truesight-debug-panel__phonemegram"
@@ -205,7 +205,7 @@ export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = 
               <li
                 key={family}
                 className="truesight-debug-panel__family-cell"
-                title={`${family} — OKLCh(${oklch.l.toFixed(2)}, ${oklch.c.toFixed(2)}, ${oklch.h.toFixed(0)}°) — PC1=${projection?.pc1?.toFixed(2) ?? '?'}, PC2=${projection?.pc2?.toFixed(2) ?? '?'}`}
+                title={`${family} - OKLCh(${oklch.l.toFixed(2)}, ${oklch.c.toFixed(2)}, ${oklch.h.toFixed(0)}°) - PC1=${projection?.pc1?.toFixed(2) ?? '?'}, PC2=${projection?.pc2?.toFixed(2) ?? '?'}`}
               >
                 <span
                   className="truesight-debug-panel__family-swatch"
@@ -219,7 +219,7 @@ export function TruesightDebugColorPanel({ analyzedWords = [], bytecodeErrors = 
         </section>
       )}
 
-      {/* BYTECODE ERRORS — Pac-Man Ghost aesthetic */}
+      {/* BYTECODE ERRORS - Pac-Man Ghost aesthetic */}
       {errorCount > 0 && (
         <section
           className="truesight-debug-panel__errors"

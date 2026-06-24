@@ -17,7 +17,7 @@ import { resolveTrackId } from "../../lib/catalog.api.js";
 import "./ListenPage.css";
 
 /**
- * ListenPage — The Scholomance Resonance Chamber.
+ * ListenPage - The Scholomance Resonance Chamber.
  * An immersive 3D/HUD hybrid cockpit.
  */
 export default function ListenPage() {
@@ -61,7 +61,7 @@ export default function ListenPage() {
     return { ...school, color: generateSchoolColor(id) };
   }, [detectedSchoolId, currentSchoolId, isTuning]);
 
-  // ── Animation AMP Integration — DISABLED for stability ──────────────────
+  // ── Animation AMP Integration - DISABLED for stability ──────────────────
 
   const sidebarProps = {
     initial: { opacity: 0, x: 30 },
@@ -77,7 +77,7 @@ export default function ListenPage() {
     transition: { duration: 0.2 }
   };
 
-  // ── Entropy tracking — UI-only: punishes looping the same school ──────────
+  // ── Entropy tracking - UI-only: punishes looping the same school ──────────
   const [entropyLevel, setEntropyLevel] = useState(0);
   const playCountRef = useRef<Record<string, number>>({});
   const prevIsPlayingRef = useRef(false);
@@ -285,7 +285,7 @@ export default function ListenPage() {
                     window.location.href = "/visualiser";
                   }}
                   className="black-hole-btn"
-                  aria-label="Enter the Visualiser — explore the resonance field"
+                  aria-label="Enter the Visualiser - explore the resonance field"
                 >
                   <span className="black-hole-horizon"></span>
                   <span className="black-hole-text">Enter the Visualiser</span>
@@ -306,7 +306,7 @@ export default function ListenPage() {
               </div>
 
               <div className="parameter-grid">
-                {/* Spectrum Analyzer — replaces static frequency bar */}
+                {/* Spectrum Analyzer - replaces static frequency bar */}
                 <div className="param-node param-node--spectrum">
                   <div className="param-label">
                     <span>WAVEFORM_ANALYSIS</span>
@@ -332,7 +332,7 @@ export default function ListenPage() {
                   </div>
                 </div>
 
-                {/* Parameter sliders — moved below spectrum */}
+                {/* Parameter sliders - moved below spectrum */}
                 <div className="param-section">
                   <div className="param-node">
                     <div className="param-label">
@@ -403,7 +403,7 @@ export default function ListenPage() {
                   </div>
                 </div>
 
-                {/* Hardware Configuration — Output Device Selection */}
+                {/* Hardware Configuration - Output Device Selection */}
                 <OutputDeviceSelector 
                   devices={outputDevices}
                   currentSinkId={sinkId}
@@ -412,7 +412,7 @@ export default function ListenPage() {
                   color={activeStation.color}
                 />
 
-                {/* Entropy meter — fills as the player loops the same school */}
+                {/* Entropy meter - fills as the player loops the same school */}
                 <div className="param-node">
                   <div className="param-label">
                     <span>ENTROPY</span>
@@ -455,7 +455,7 @@ export default function ListenPage() {
                 </div>
                 {/* Exploit label always rendered, visibility controlled by CSS */}
                 <div className={`phoneme-exploit-label ${phonemeWarning ? 'is-visible' : ''}`} aria-live="assertive">
-                  HEURISTIC LIMIT — RETURNS DECAY
+                  HEURISTIC LIMIT - RETURNS DECAY
                 </div>
                 <div className="phase-controls">
                   <button className="phase-btn">CONSONANT</button>

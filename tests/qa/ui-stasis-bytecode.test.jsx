@@ -17,7 +17,7 @@
  * 
  * Error Encoding: All failures emit bytecode errors per 01_Bytecode_Error_System_Overview.md
  * 
- * World-Law Connection: UI stasis represents a "frozen glyph" — a word that refuses to 
+ * World-Law Connection: UI stasis represents a "frozen glyph" - a word that refuses to 
  * complete its utterance. In a world where Syntax is Physics, a stalled UI is a 
  * linguistic law violation.
  */
@@ -72,7 +72,7 @@ function _createClickStasisError(elementId, expectedState, actualState, context 
 /**
  * Creates an animation lifecycle error
  * 
- * World-Law: An animation that outlives its vessel is a ghost in the machine —
+ * World-Law: An animation that outlives its vessel is a ghost in the machine  - 
  * a spell that continues casting after the mage has fallen.
  */
 function createAnimationLifecycleError(animationType, phase, reason, context = {}) {
@@ -331,7 +331,7 @@ beforeEach(() => {
 // Test Suites
 // ============================================================================
 
-describe('UI Stasis — Clickable Elements', () => {
+describe('UI Stasis - Clickable Elements', () => {
   describe('Button Click Handlers', () => {
     it('should not stall on rapid consecutive clicks', async () => {
       // Test rapid-fire click resilience
@@ -456,7 +456,7 @@ describe('UI Stasis — Clickable Elements', () => {
         expect(e.message).toBe('Handler failed');
       }
 
-      // 3. Verify recovery — subsequent click should work normally
+      // 3. Verify recovery - subsequent click should work normally
       fireEvent.click(button);
       expect(countLabel.textContent).toBe('2');
       
@@ -466,7 +466,7 @@ describe('UI Stasis — Clickable Elements', () => {
     
     it('should emit bytecode error on click handler stall', async () => {
       // World-Law: When a glyph refuses to answer, the refusal must be spoken 
-      // in bytecode — the language of the machine's pain.
+      // in bytecode - the language of the machine's pain.
       vi.useFakeTimers();
       const timeoutMs = 100;
       
@@ -594,7 +594,7 @@ describe('UI Stasis — Clickable Elements', () => {
     });
     
     it('should emit bytecode error if loading state never clears', async () => {
-      // World-Law: A glyph frozen in loading is a word caught mid-utterance — 
+      // World-Law: A glyph frozen in loading is a word caught mid-utterance  -  
       // a linguistic abomination that must be named.
       const timeoutMs = 500;
       let isLoading = true;
@@ -644,7 +644,7 @@ describe('UI Stasis — Clickable Elements', () => {
     
     it('should handle disabled state changes correctly', async () => {
       // World-Law: The seal on a glyph can be lifted, but the transition must 
-      // be atomic — no touch may land in the between-state.
+      // be atomic - no touch may land in the between-state.
       const handler = vi.fn();
       
       const { container, rerender } = render(
@@ -680,7 +680,7 @@ describe('UI Stasis — Clickable Elements', () => {
   });
 });
 
-describe('UI Stasis — Animation Lifecycle', () => {
+describe('UI Stasis - Animation Lifecycle', () => {
   describe('Framer Motion Animations', () => {
     it('should cleanup animations on unmount', async () => {
       // World-Law: When the vessel shatters, the spell within must dissipate. 
@@ -772,7 +772,7 @@ describe('UI Stasis — Animation Lifecycle', () => {
       const { unmount } = render(<LeakyComponent />);
       unmount();
       
-      // This test documents the leak — in real code, we'd assert cleanupCalled === true
+      // This test documents the leak - in real code, we'd assert cleanupCalled === true
       expect(cleanupCalled).toBe(false);
       
       // Emit documentation error
@@ -891,7 +891,7 @@ describe('UI Stasis — Animation Lifecycle', () => {
     });
     
     it('should emit bytecode error for orphaned RAF loop', async () => {
-      // World-Law: An RAF loop that continues after unmount is an abomination — 
+      // World-Law: An RAF loop that continues after unmount is an abomination  -  
       // a spell casting itself in the void.
       let rafId = null;
       let loopRunning = false;
@@ -1051,7 +1051,7 @@ describe('UI Stasis — Animation Lifecycle', () => {
   });
 });
 
-describe('UI Stasis — Race Conditions', () => {
+describe('UI Stasis - Race Conditions', () => {
   describe('Concurrent Async Operations', () => {
     it('should handle concurrent clicks without race conditions', async () => {
       // World-Law: Multiple touches upon the same glyph create resonance. Each 
@@ -1199,7 +1199,7 @@ describe('UI Stasis — Race Conditions', () => {
   });
 });
 
-describe('UI Stasis — Edge Cases', () => {
+describe('UI Stasis - Edge Cases', () => {
   describe('Unmount During Async Operation', () => {
     it('should not update state after unmount', async () => {
       // World-Law: A message delivered to a departed mage should not resurrect 
@@ -1312,7 +1312,7 @@ describe('UI Stasis — Edge Cases', () => {
           try {
             e.target.setPointerCapture(e.pointerId);
           } catch (err) {
-            // Capture failed — handle gracefully
+            // Capture failed - handle gracefully
           }
         };
         
@@ -1353,7 +1353,7 @@ describe('UI Stasis — Edge Cases', () => {
   describe('Focus Trap Escapes', () => {
     it('should allow escape from focus traps', async () => {
       // World-Law: A prison of focus must have a key. The Escape key is that 
-      // key — without it, the trap is a cage, not a tool.
+      // key - without it, the trap is a cage, not a tool.
       const FocusTrapComponent = () => {
         const trapRef = useRef(null);
         
@@ -1516,7 +1516,7 @@ describe('UI Stasis — Edge Cases', () => {
   });
 });
 
-describe('UI Stasis — Accessibility Interactions', () => {
+describe('UI Stasis - Accessibility Interactions', () => {
   describe('Keyboard Navigation', () => {
     it('should handle rapid keyboard navigation without stasis', async () => {
       // World-Law: The fingers that dance across the keyboard should not be 
@@ -1634,7 +1634,7 @@ describe('UI Stasis — Accessibility Interactions', () => {
   });
 });
 
-describe('UI Stasis — Bytecode Error Integration', () => {
+describe('UI Stasis - Bytecode Error Integration', () => {
   it('should emit bytecode errors on stasis detection', async () => {
     // World-Law: When the UI freezes, the freeze must be named in the language 
     // of the machine. Bytecode is that language.
@@ -1690,7 +1690,7 @@ describe('UI Stasis — Bytecode Error Integration', () => {
   
   it('should encode race condition errors as bytecode', () => {
     // World-Law: When operations collide, the collision must be recorded in 
-    // bytecode — the skid marks on the syntax.
+    // bytecode - the skid marks on the syntax.
     const error = createRaceConditionError(
       'state-update',
       ['concurrent-click-1', 'concurrent-click-2'],
@@ -1745,7 +1745,7 @@ describe('UI Stasis — Bytecode Error Integration', () => {
 // Integration Test: Real Component Scenarios
 // ============================================================================
 
-describe('UI Stasis — Real Component Integration', () => {
+describe('UI Stasis - Real Component Integration', () => {
   describe('WordTooltip Drag & Click', () => {
     it('should handle drag-click distinction without stasis', async () => {
       // World-Law: The touch that drags and the touch that clicks are different 
@@ -1956,7 +1956,7 @@ describe('UI Stasis — Real Component Integration', () => {
 // Performance Benchmarks
 // ============================================================================
 
-describe('UI Stasis — Performance Benchmarks', () => {
+describe('UI Stasis - Performance Benchmarks', () => {
   describe('Click Handler Performance', () => {
     it('should complete click handler within 16ms (1 frame)', async () => {
       // World-Law: A click answered in more than a frame is a hesitation 
@@ -2037,10 +2037,10 @@ describe('UI Stasis — Performance Benchmarks', () => {
 });
 
 // ============================================================================
-// Scholomance Station — View Transition Tests
+// Scholomance Station - View Transition Tests
 // ============================================================================
 
-describe('UI Stasis — Scholomance Station Transition', () => {
+describe('UI Stasis - Scholomance Station Transition', () => {
   describe('Ignition Button (Orb Click)', () => {
     it('should transition from CHAMBER to STATION view on orb click', async () => {
       // World-Law: The central orb is the gateway to Scholomance Station.
@@ -2090,7 +2090,7 @@ describe('UI Stasis — Scholomance Station Transition', () => {
     
     it('should emit bytecode error if view transition stalls', async () => {
       // World-Law: A portal that opens but never transports
-      // is a linguistic violation — the glyph promises transit
+      // is a linguistic violation - the glyph promises transit
       // but delivers only stillness.
       
       let viewMode = 'CHAMBER';
@@ -2157,7 +2157,7 @@ describe('UI Stasis — Scholomance Station Transition', () => {
     
     it('should handle haptic feedback on ignition', async () => {
       // World-Law: The touch that ignites the station must be answered
-      // with physical resonance — the haptic pulse confirms the spell was cast.
+      // with physical resonance - the haptic pulse confirms the spell was cast.
       
       const hapticTriggered = { current: false };
       
@@ -2282,7 +2282,7 @@ describe('UI Stasis — Scholomance Station Transition', () => {
     
     it('should disable station buttons when no signal', async () => {
       // World-Law: Without a signal, the station navigator
-      // must refuse touch — there is nowhere to go.
+      // must refuse touch - there is nowhere to go.
       
       const onPrevTrack = vi.fn();
       const onNextTrack = vi.fn();

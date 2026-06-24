@@ -2,8 +2,8 @@
  * useWordLookup Hook
  *
  * Pillar 4 (Oracle UI Fail-Safe): this hook NEVER throws for an Oracle/network
- * failure. Every outcome — success, not-found, denied, timeout, disconnect,
- * initializing — resolves to a stable, structured state the UI can render
+ * failure. Every outcome - success, not-found, denied, timeout, disconnect,
+ * initializing - resolves to a stable, structured state the UI can render
  * without unmounting. Consumers read `status`, `ok`, and the structured
  * `error` ({ category, code, severity, message }).
  */
@@ -27,7 +27,7 @@ function makeOracleError(category, code, severity, message) {
   return { category, code, severity, message };
 }
 
-const ORACLE_ERRORS = {
+export const ORACLE_ERRORS = {
   NOT_FOUND: makeOracleError('NOT_FOUND', 'WORD_NOT_FOUND', 'INFO', 'Word not found in the archive.'),
   DENIED: makeOracleError('AUTH', 'LEXICON_ACCESS_DENIED', 'WARN', 'Lexicon access denied.'),
   WARMING: makeOracleError('INITIALIZING', 'ORACLE_WARMING', 'INFO', 'The Oracle is warming. Try again shortly.'),
@@ -221,7 +221,7 @@ export function useWordLookup() {
       applyStateIfCurrent(result);
       return result.data ?? null;
     } catch (unexpected) {
-      // The hook must never throw — map any surprise into a stable state.
+      // The hook must never throw - map any surprise into a stable state.
       applyStateIfCurrent({
         data: null,
         source: null,

@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 // src/pages/DivWand/components/WorldScenePortal.jsx
 //
 // QBIT-Voxel Level 3 (The World) React component. Sibling to VoxelScenePortal;
@@ -25,7 +26,7 @@ import { runBiomeCoherenceAMPWorld } from '../../../../codex/core/pixelbrain/bio
  * world-coordinate offsets, applies the lex-min cull predicate, and
  * returns a single sorted face array ready for the SVG renderer.
  *
- * Pure function with respect to `world` — does not mutate it.
+ * Pure function with respect to `world` - does not mutate it.
  */
 function collectWorldFaces(world) {
   const { chunkSize, chunkCount } = world.spec;
@@ -125,7 +126,7 @@ const FACE_DIRECTION_OFFSETS = {
 function shouldEmitFace(faceType, cx, cy, cz, world) {
   const [dx, dy, dz] = FACE_DIRECTION_OFFSETS[faceType];
   const ncx = cx + dx, ncy = cy + dy, ncz = cz + dz;
-  // No neighbor in this direction — the face is the world's outer boundary.
+  // No neighbor in this direction - the face is the world's outer boundary.
   if (ncx < 0 || ncx >= world.spec.chunkCount.x) return true;
   if (ncy < 0 || ncy >= world.spec.chunkCount.y) return true;
   if (ncz < 0 || ncz >= world.spec.chunkCount.z) return true;
@@ -190,7 +191,7 @@ function runWorldPipeline(worldSpec) {
   // 4. Collect world-coord faces with the lex-min cull.
   const faces = collectWorldFaces(world);
 
-  // 5. Render to SVG — shared world look (AO + antialias) plus a soft glow cue
+  // 5. Render to SVG - shared world look (AO + antialias) plus a soft glow cue
   // from the world's energy seeds (lifted to world coords, contained to a
   // chunk-span radius so it reads as atmosphere, not a prop).
   const lightPoints = seedsToLightPoints(collectWorldSeeds(world), {

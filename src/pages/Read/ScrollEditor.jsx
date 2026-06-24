@@ -16,7 +16,29 @@ import { resolveOverlayPlacement } from "../../lib/truesight/overlay-placement.j
 
 
 const MAX_CONTENT_LENGTH = 50000;
-const DEFAULT_LINE_HEIGHT = 24;
+// Matches the CSS --editor-content-line-height: 1.9 at the default
+// --editor-content-font-size: clamp(1.02rem,1.2vw,1.12rem) ≈ 16px.
+// When adaptiveTopology hasn't computed yet (e.g. single-line content before
+// the ResizeObserver fires), this keeps the gutter at the correct height so
+// it doesn't jump from 24px → 30.4px when the first keystroke triggers
+// topology recalculation.
+const DEFAULT_LINE_HEIGHT = 30.4;
+
+const sanitizeTruesightStyle = (styleObj) => {
+  if (!styleObj) return {};
+  const copy = { ...styleObj };
+  const forbidden = [
+    'letterSpacing', 'wordSpacing', 'fontWeight', 'fontStyle',
+    'fontFamily', 'fontSize', 'lineHeight', 'textTransform',
+    'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
+    'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+    'border', 'borderWidth', 'borderStyle'
+  ];
+  for (const prop of forbidden) {
+    delete copy[prop];
+  }
+  return copy;
+};
 
 function normalizeWordToken(token) {
   return cleanVisualiserWord(token).toUpperCase();
@@ -174,7 +196,7 @@ function emitWordActivation(trigger, wordPayload, anchorRect, onWordActivate) {
 }
 
 // ── Pillar 5: De-jittered caret measurement ──────────────────────────────────
-// A single persistent, offscreen canvas measures text — no per-keystroke DOM
+// A single persistent, offscreen canvas measures text - no per-keystroke DOM
 // allocation, so typing produces no GC churn. Computed font styles and a
 // per-character width matrix are cached and invalidated only on an explicit
 // layout-shift trigger (see invalidateCaretMeasurementCache).
@@ -184,6 +206,15 @@ function getMeasurementContext(measurement) {
     if (typeof document === 'undefined') return null;
     measurement.canvas = document.createElement('canvas');
     measurement.ctx = measurement.canvas.getContext('2d');
+    // Match the textarea's text-rendering:geometricPrecision shaping so caret
+    // measurement uses the same fractional glyph advances the browser renders
+    // (canvas defaults to optimizeSpeed, which grid-fits advances to integers).
+    if (measurement.ctx && 'textRendering' in measurement.ctx) {
+      measurement.ctx.textRendering = 'geometricPrecision';
+    }
+    if (measurement.ctx && 'fontKerning' in measurement.ctx) {
+      measurement.ctx.fontKerning = 'normal';
+    }
   }
   return measurement.ctx;
 }
@@ -341,6 +372,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   getSpellingSuggestions?: ((word: string, ctx: any, n: number) => Promise<string[]>) | null,
  *   predictorReady?: boolean,
  *   plsPhoneticFeatures?: object | null,
+ *   tokenWeights?: Record<string, number> | null,
  *   theme?: object | null,
  *   forceTopology?: object | null,
  *   initialContainerWidth?: number | null,
@@ -354,7 +386,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
 
 /**
  * Handle exposed via forwardRef. Callers may only call methods listed here.
- * If a method is not in this typedef it does not exist on the ref — add it
+ * If a method is not in this typedef it does not exist on the ref - add it
  * here and to useImperativeHandle together or not at all.
  *
  * @typedef {{
@@ -398,8 +430,9 @@ const ScrollEditor = forwardRef(/**
   getSpellingSuggestions = null,
   predictorReady = false,
   plsPhoneticFeatures = null,
+  tokenWeights = null,
   theme = null,
-  // Test-injection seams (bug a2812103) — let JSDOM-bound tests bypass real
+  // Test-injection seams (bug a2812103) - let JSDOM-bound tests bypass real
   // layout measurement. Production code never passes these.
   forceTopology = null,
   initialContainerWidth = null,
@@ -408,6 +441,7 @@ const ScrollEditor = forwardRef(/**
   onBlur,
   mirrored = false,
   allowLegacyWordFallback = true,
+  isLatticeGrid = false,
 }, ref) => {
   const { theme: activeTheme } = useTheme();
 
@@ -446,6 +480,7 @@ const ScrollEditor = forwardRef(/**
   const [isGhostPinned, setIsGhostPinned] = useState(false);
   const [ghostData, setGhostData] = useState(null);
   const [bytecodeArtifacts, setBytecodeArtifacts] = useState([]);
+  const [isQuarantined, setIsQuarantined] = useState(false);
 
   const editorContainerRef = useRef(null);
   const wrapperRef = useRef(null);
@@ -543,9 +578,9 @@ const ScrollEditor = forwardRef(/**
 
   useLayoutEffect(() => {
     // When forceTopology is supplied (e.g., JSDOM tests), skip real
-    // measurement entirely — the injected topology IS the authoritative state.
+    // measurement entirely - the injected topology IS the authoritative state.
     if (forceTopology) return undefined;
-    // EDIT mode types rapidly — skip continuous measurement while composing.
+    // EDIT mode types rapidly - skip continuous measurement while composing.
     // BUT never skip when Truesight is on: the annotation overlay positions every
     // word box against this topology, so starving it leaves the lattice unable to
     // instantiate. (The ResizeObserver below fires on size/font change, not on
@@ -557,7 +592,7 @@ const ScrollEditor = forwardRef(/**
     // Initial measurement covers Gutter alignment in all non-EDIT modes.
     updateTypography(true);
 
-    // NEUTRAL is static — initial measurement is sufficient; skip observer.
+    // NEUTRAL is static - initial measurement is sufficient; skip observer.
     if (activeIdeMode === "NEUTRAL") return undefined;
 
     // TRUESIGHT needs continuous tracking for overlay layout.
@@ -575,10 +610,11 @@ const ScrollEditor = forwardRef(/**
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [updateTypography, forceTopology, activeIdeMode]);
 
   // Chunked relayout: each raw line's measured token geometry is cached by its
-  // text, so typing only re-measures the edited line — the rest are reused. The
+  // text, so typing only re-measures the edited line - the rest are reused. The
   // whole lattice no longer regenerates per keystroke, which is what let us drop
   // the typing-freeze (and the desync it caused) on the input path below.
   const overlayLineCacheRef = useRef({ sig: '', map: new Map() });
@@ -794,6 +830,112 @@ const ScrollEditor = forwardRef(/**
     });
   }, [hoveredMisspelling, spellcheckSuggestions]);
 
+  // Keep a stable ref of tokens so the biological loop doesn't get cancelled by React renders
+  const allOverlayTokensRef = useRef([]);
+  useEffect(() => {
+    allOverlayTokensRef.current = allOverlayTokens;
+  }, [allOverlayTokens]);
+
+  // T-CELL & MACROPHAGE: Biological Immune Loop
+  useEffect(() => {
+    if (!isTruesight || !wordBackgroundLayerRef.current) return;
+    
+    let tCellScan;
+    const immuneSweep = () => {
+      const renderedSpans = wordBackgroundLayerRef.current.querySelectorAll('.truesight-word');
+      const expectedWords = allOverlayTokensRef.current.filter(t => !t.isWhitespace && WORD_TOKEN_REGEX.test(t.token));
+      if (renderedSpans.length > 0 && renderedSpans.length !== expectedWords.length) {
+        console.error(`[T-CELL 🚨] DOM ALIGNMENT FAILURE! Expected ${expectedWords.length} words, found ${renderedSpans.length}. Executing Quarantine.`);
+        setIsQuarantined(true);
+        
+        // Dispatch exosome to the Immune System Server
+        fetch('/api/diagnostic/exosome', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            schemaVersion: 1,
+            checksum: `tcell-dom-${Date.now()}`,
+            epicenter_node: "ScrollEditor.jsx",
+            resolution_status: "QUARANTINED",
+            context: {
+              error: `DOM ALIGNMENT FAILURE! Expected ${expectedWords.length} words, found ${renderedSpans.length}.`,
+              type: "STRUCTURAL_FAULT",
+              code: "PB-ERR-v1-TRUESIGHT-DOM-MISMATCH"
+            }
+          })
+        }).catch(err => console.error("T-Cell dispatch failed:", err));
+      } else {
+        setIsQuarantined(false);
+        
+        // ---------------------------------------------------------
+        // MACROPHAGE: Spectral Color Integrity Scan
+        // ---------------------------------------------------------
+        let phagocytosisExecuted = false;
+        
+        renderedSpans.forEach((span, i) => {
+          const expectedWord = expectedWords[i];
+          const renderedColor = span.style.getPropertyValue('--w') || span.style.color;
+          
+          // Detect malformed colors (e.g. string "undefined", "NaN", or null incorrectly cast)
+          if (renderedColor === 'undefined' || renderedColor.includes('NaN')) {
+            phagocytosisExecuted = true;
+            console.error(`[MACROPHAGE 🦠] Spectral Leak at Word ${i} ("${expectedWord.token}"). Engulfing corrupted color: ${renderedColor}`);
+            
+            // Execute Phagocytosis: Override the corrupted inline styles with neutral gray
+            span.style.setProperty('--w', 'hsl(0, 0%, 50%)', 'important');
+            span.style.setProperty('color', 'hsl(0, 0%, 50%)', 'important');
+            
+            // Deep Diagnostic Report Generation
+            const diagnosticReport = {
+              version: 'v2',
+              category: 'SPECTRAL_PIPELINE',
+              severity: 'CRITICAL',
+              errorCode: 'PB-ERR-v1-TRUESIGHT-CHROMA-BLEED',
+              cellId: 'VERSE_IR_RENDERER',
+              checkId: 'VISUAL_BYTECODE_FIDELITY',
+              context: {
+                word: expectedWord.token,
+                renderedColor: renderedColor,
+                spatialTopology: { layer: 'CHROMATIC_DOM', domIndex: i },
+                rootCauseAnalysis: "Failed to resolve Biophysical Metrics during VerseIR Amplification. Viseme Mapping returned NaN or undefined."
+              },
+              timestamp: new Date().toISOString()
+            };
+
+            console.log(`\n=== 🔬 DEEP SPECTRAL DIAGNOSTIC REPORT ===`);
+            console.log(JSON.stringify(diagnosticReport, null, 2));
+            console.log(`==========================================\n`);
+
+            // Dispatch exosome to the Immune System Server
+            fetch('/api/diagnostic/exosome', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                schemaVersion: 2,
+                checksum: `macrophage-chroma-${Date.now()}-${i}`,
+                epicenter_node: "ScrollEditor.jsx",
+                resolution_status: "PHAGOCYTIZED",
+                diagnosticReport
+              })
+            }).catch(err => console.error("Macrophage dispatch failed:", err));
+          }
+        });
+        
+        if (phagocytosisExecuted) {
+           console.log(`[MACROPHAGE 🦠] 🧼 Color misalignments neutralized. Rendering payload wiped to neutral gray.`);
+        }
+      }
+      
+      // Schedule the next tick in 500ms
+      tCellScan = setTimeout(immuneSweep, 500);
+    };
+    
+    // Start the biological loop
+    tCellScan = setTimeout(immuneSweep, 500);
+    
+    return () => clearTimeout(tCellScan);
+  }, [isTruesight]);
+
   useEffect(() => {
     if (!hoveredMisspelling || !getSpellingSuggestions) {
       setSpellcheckSuggestions([]);
@@ -975,7 +1117,7 @@ const ScrollEditor = forwardRef(/**
     onCursorChange?.({ line, col, offset: pos });
   }, [onCursorChange, activeIdeMode]);
 
-  // Pillar 5: explicit cache-invalidation trigger — flush cached glyph metrics
+  // Pillar 5: explicit cache-invalidation trigger - flush cached glyph metrics
   // when a physical layout shift (adaptive topology / Truesight scale) occurs.
   useEffect(() => {
     invalidateCaretMeasurementCache(caretMeasurementRef.current);
@@ -1073,13 +1215,19 @@ const ScrollEditor = forwardRef(/**
     const lineIndex = lines.length - 1;
     const currentLineText = lines[lineIndex] || "";
 
-    // Build context for PLS
+    // Build context for PLS.
+    // tokenWeights: per-token document-importance weights from the analysis
+    // pipeline second pass (TF-IDF × syllable salience × positional decay).
+    // The ranker blends these 30/70 with provider scores so rare content words
+    // rank above stop words and high-frequency filler tokens.
     const context = {
       text: value,
       cursorOffset: pos,
       lineIndex,
       currentLineText,
       prefix,
+      plsPhoneticFeatures: plsPhoneticFeatures || null,
+      tokenWeights: tokenWeights || null,
     };
 
     // Use syntax layer for HHM context
@@ -1124,7 +1272,7 @@ const ScrollEditor = forwardRef(/**
       if (!tx) return;
       setCursorCoords(getCaretViewportCoords(caretMeasurementRef.current, tx, prefix, adaptiveTopology));
     });
-  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, checkSpelling, getSpellingSuggestions, adaptiveTopology]);
+  }, [isPredictive, getCompletions, predictorReady, syntaxLayer, checkSpelling, getSpellingSuggestions, adaptiveTopology, plsPhoneticFeatures, tokenWeights]);
 
   const handleContentChange = useCallback((event) => {
     const nextValue = event.target.value;
@@ -1147,7 +1295,7 @@ const ScrollEditor = forwardRef(/**
     // cache makes the rebuild cheap (only the edited line re-measures), so instead
     // of freezing the overlay for 400ms (which left the word boxes desynced from
     // the text mid-type) we update it every keystroke. Staging it in a transition
-    // keeps the keystroke itself non-blocking — the caret stays on the synchronous
+    // keeps the keystroke itself non-blocking - the caret stays on the synchronous
     // `content` update above; the overlay catches up within a frame.
     if (isTruesight) {
       startTransition(() => setContentForOverlay(nextValue));
@@ -1168,6 +1316,7 @@ const ScrollEditor = forwardRef(/**
     completionsTimeoutRef.current = setTimeout(() => {
       updateCompletions(nextValue, pos);
     }, 120);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [emitCursorChange, onContentChange, updateCompletions, isTruesight, syncOverlayToContent]);
 
   const editorMotionProps = reducedMotion
@@ -1280,7 +1429,7 @@ const ScrollEditor = forwardRef(/**
               style={{
                 ...cursorSync?.overlayStyles,
                 // Edit + Truesight: lift the overlay above the textarea but keep the
-                // LAYER click-through — only the word shells (pointer-events:auto)
+                // LAYER click-through - only the word shells (pointer-events:auto)
                 // catch clicks; whitespace/empty space falls through to the textarea
                 // so caret placement, scrolling and typing all still work.
                 ...(isTruesight && isEditable ? { zIndex: 'var(--z-above)', pointerEvents: 'none' } : {}),
@@ -1321,7 +1470,7 @@ const ScrollEditor = forwardRef(/**
                         const pixelWidth = tokenWidth || null;
                         const annotationWidth = Math.max(1, pixelWidth || (adaptiveTopology?.baseCellWidth || 1) * token.length);
                         // Tile the clickable box to the next glyph token's left edge so
-                        // the entire word — including its trailing edge — is hittable.
+                        // the entire word - including its trailing edge - is hittable.
                         // Each word div then abuts the next with no dead zone, mirroring
                         // the procedural overlay formula (token.x is cumulative width).
                         const nextGlyph = tokArr.slice(tokIdx + 1).find((t) => !t.isWhitespace);
@@ -1337,9 +1486,12 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
+                          const isPunct = !isWhitespace;
+                          const punctaClass = (isLatticeGrid && isPunct) ? 'truesight-puncta--lattice' : '';
                           return (
                             <span
                               key={localStart}
+                              className={punctaClass || undefined}
                               style={{
                                 ...commonStyle,
                                 pointerEvents: 'none',
@@ -1359,12 +1511,13 @@ const ScrollEditor = forwardRef(/**
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const truesight = wordTruesight(token);
                         const shouldColor = Boolean(truesight);
-                        
+
                         // V12 PERFORMANCE: Use precomputed values from Synthesis Kernel
-                        const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
-                        
-                        const color = truesight?.color || null;
-                        const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) ? analysis : null;
+                        const decoded = (bytecode && shouldColor && !isQuarantined) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
+
+                        const color = (!isQuarantined && truesight?.color) ? truesight.color : null;
+
+                        const animationSignal = (analysis?.animationSpec || analysis?.dominantSchool) && !isQuarantined ? analysis : null;
 
                         const isLineHighlighted = highlightedLinesSet.has(lineIndex);
 
@@ -1417,7 +1570,7 @@ const ScrollEditor = forwardRef(/**
                                 anchorRect: event.currentTarget.getBoundingClientRect(),
                               });
                               // While editing, a word click opens the tooltip AND drops
-                              // the caret into the word so you can keep typing there —
+                              // the caret into the word so you can keep typing there  - 
                               // the shell intercepted the click, so place the caret by hand.
                               if (isEditable && textareaRef.current) {
                                 const ta = textareaRef.current;
@@ -1452,6 +1605,7 @@ const ScrollEditor = forwardRef(/**
                                 shouldColor ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
                                 isLineHighlighted ? 'truesight-annotation-box--highlighted' : '',
                                 isMisspelled ? 'truesight-annotation-box--misspelled' : '',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : '',
                               ].filter(Boolean).join(' ')}
                               style={{
                                 position: 'absolute',
@@ -1483,7 +1637,7 @@ const ScrollEditor = forwardRef(/**
                                 justifyContent: 'center',
                                 color: color || undefined,
                                 '--w': color || undefined,
-                                ...(decoded?.style || {}),
+                                ...sanitizeTruesightStyle(decoded?.style),
                                 pointerEvents: 'none',
                                 '--chip-delay': `${wordIndex * 30}ms`
                               }}
@@ -1594,9 +1748,12 @@ const ScrollEditor = forwardRef(/**
                         };
 
                         if (!isWord) {
+                          const isPunct = !isWhitespace;
+                          const punctaClass = (isLatticeGrid && isPunct) ? 'truesight-puncta--lattice' : '';
                           return (
                             <span 
                               key={`vghost-${globalCharStart}`} 
+                              className={punctaClass || undefined}
                               style={{ ...commonStyle, color: 'transparent' }}
                               data-char-start={globalCharStart}
                             >
@@ -1619,7 +1776,7 @@ const ScrollEditor = forwardRef(/**
                         const bytecode = analysis?.visualBytecode || analysis?.trueVisionBytecode || null;
                         const truesight = wordTruesight(token);
                         const shouldColor = Boolean(truesight);
-                        
+
                         // V12 PERFORMANCE: Use precomputed values
                         const decoded = (bytecode && shouldColor) ? (analysis.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion, theme: activeTheme })) : null;
 
@@ -1697,6 +1854,7 @@ const ScrollEditor = forwardRef(/**
                               className={[
                                 'truesight-annotation-box',
                                 (shouldColor || wordVowelFamily) ? 'truesight-annotation-box--resonant' : 'truesight-annotation-box--plain',
+                                isLatticeGrid ? 'truesight-annotation-box--lattice' : '',
                               ].filter(Boolean).join(' ')}
                               style={{
                                 position: 'absolute',
@@ -1728,7 +1886,7 @@ const ScrollEditor = forwardRef(/**
                                 justifyContent: 'center',
                                 color: color || undefined,
                                 '--w': color || undefined,
-                                ...(decoded?.style || {}),
+                                ...sanitizeTruesightStyle(decoded?.style),
                                 pointerEvents: 'none',
                                 '--chip-delay': `${(analysis?.globalTokenIndex || 0) * 30}ms`
                               }}

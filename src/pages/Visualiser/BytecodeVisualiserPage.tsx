@@ -32,14 +32,14 @@ function melismaBonus(word: string): number {
   return runs ? runs.length * 3 : 0;
 }
 
-// ── Lyric pacing — tempo × phoneme-engine syllables ───────────────────────
+// ── Lyric pacing - tempo × phoneme-engine syllables ───────────────────────
 // Each track publishes no per-line timestamps, so each line's duration is
 // estimated mathematically: syllables per word from the phoneme engine's
 // syllabifier (graphemic vowel-group heuristic only as the pre-init fallback,
 // melisma-aware) ÷ syllables-per-beat for its delivery style, quantized to a
 // half-beat grid at the detected tempo. Adjacent lines that alignPhonemes
 // scores as phonemically parallel (rhymed/anaphoric couplets) are snapped to
-// the same bar length — couplets share bars in rap flow. Cumulative beat-times
+// the same bar length - couplets share bars in rap flow. Cumulative beat-times
 // are scaled onto the vocal window, which absorbs breaths and fills.
 
 function beatsFromSyllables(syl: number, lineIndex: number, pacing: TrackPacing): number {
@@ -97,7 +97,7 @@ function colorToHue(color: string | undefined, fallback = 286): number {
   return Math.round(h);
 }
 
-/** Monoline transport glyph — crisp currentColor strokes, no emoji glyphs. */
+/** Monoline transport glyph - crisp currentColor strokes, no emoji glyphs. */
 function TransportGlyph({ d, filled = false }: { d: string; filled?: boolean }) {
   return (
     <svg
@@ -163,7 +163,7 @@ function MiniWave({ hue, phase, reducedMotion }: { hue: number; phase: number; r
 export default function BytecodeVisualiserPage() {
   const reducedMotion = usePrefersReducedMotion();
 
-  // Active grimoire track — deep-linkable: ?track=<id>.
+  // Active grimoire track - deep-linkable: ?track=<id>.
   const [activeTrack, setActiveTrack] = useState<GrimoireTrack>(() => {
     const id = new URLSearchParams(window.location.search).get('track');
     return GRIMOIRE_TRACKS.find((t) => t.id === id) ?? GRIMOIRE_TRACKS[0];
@@ -274,7 +274,7 @@ export default function BytecodeVisualiserPage() {
   // exists for this track. Null -> every consumer below keeps the heuristic.
   const alignment = useLyricAlignment(activeTrack.id);
 
-  // timeupdate fires ~4 Hz — too coarse for word-level highlight (words run
+  // timeupdate fires ~4 Hz - too coarse for word-level highlight (words run
   // ~0.2-0.5 s). While playing with alignment data, refine at ~8 Hz; the
   // mandala survives this re-render rate by design (stable readFFT identity).
   useEffect(() => {
@@ -357,7 +357,7 @@ export default function BytecodeVisualiserPage() {
     return () => { cancelled = true; };
   }, [activeTrack, pacing]);
 
-  // The track's "world" — themed to its dominant phonemic school.
+  // The track's "world" - themed to its dominant phonemic school.
   const worldColor = generateSchoolColor(dominantSchool);
   const worldHue = colorToHue(worldColor);
 
@@ -431,7 +431,7 @@ export default function BytecodeVisualiserPage() {
               {activeTrack.meta.map(([k, v]) => (
                 <div className="bcv-meta__row" key={k}><dt>{k}</dt><dd>{v}</dd></div>
               ))}
-              {/* Provenance comes from the artifact itself, never hardcoded —
+              {/* Provenance comes from the artifact itself, never hardcoded  - 
                   a non-aligned artifact must not be presented as aligned. */}
               <div className="bcv-meta__row"><dt>Sync</dt><dd>{alignment ? `aligned · ${alignment.source.aligner}` : 'estimated'}</dd></div>
             </dl>
@@ -462,7 +462,7 @@ export default function BytecodeVisualiserPage() {
                           const isWord = /[A-Za-z]/.test(tok.word);
                           if (isWord) w += 1;
                           // Text equality guards against registry lyrics drifting from
-                          // the lyrics the artifact was aligned against — a stale
+                          // the lyrics the artifact was aligned against - a stale
                           // artifact must not highlight the wrong word.
                           const sung = isWord && sungWord !== null && sungWord.line === i
                             && sungWord.word === w && sungWord.text === tok.word;
@@ -547,11 +547,11 @@ export default function BytecodeVisualiserPage() {
 
           {audioBlocked && (
             <div className="bcv-audio-warning" style={{ color: 'hsl(0 90% 70%)', fontSize: '0.85rem', marginBottom: '8px', padding: '8px', background: 'hsl(0 90% 10%)', borderRadius: '4px', border: '1px solid hsl(0 90% 20%)' }}>
-              ⚠️ Audio Blocked — Please interact with the page or check your browser settings to allow playback.
+              ⚠️ Audio Blocked - Please interact with the page or check your browser settings to allow playback.
             </div>
           )}
 
-          {/* Player transport — every control state-driven (architect law). */}
+          {/* Player transport - every control state-driven (architect law). */}
           <div className="bcv-player">
             <span className="bcv-time">{fmt(progress)}</span>
             <div className="bcv-progress" role="presentation">

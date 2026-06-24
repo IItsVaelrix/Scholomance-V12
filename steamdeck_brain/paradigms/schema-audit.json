@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "schema-audit",
+  "version": "0.1.0",
+  "priority": 10,
+  "match": {
+    "patterns": [
+      "(schema|data shape|contract|payload|DTO|metadata|ingest|retrieval).*(change|check|valid|drift|audit|sovereign)",
+      "SCHEMA_CONTRACT",
+      "modify.*schema",
+      "unauthorized.*schema",
+      "(is|are).*(schema|contract|payload).*(valid|correct|up.to.date|outdated)",
+      "can I (add|change|modify|create).*(field|schema|shape|payload)"
+    ],
+    "keywords": [
+      "SCHEMA_CONTRACT",
+      "schema",
+      "contract",
+      "payload",
+      "DTO",
+      "data shape",
+      "field",
+      "schema sovereignty",
+      "unauthorized",
+      "undocumented",
+      "parallel schema",
+      "SOA"
+    ]
+  },
+  "steps": [
+    {
+      "source": "file-read",
+      "query": "{query}",
+      "label": "Read schema contract",
+      "retrieve_as": "schema_contract"
+    },
+    {
+      "source": "substrate",
+      "query": "schema contract rules for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Schema memory",
+      "retrieve_as": "schema_memory"
+    },
+    {
+      "source": "glossary",
+      "query": "schema",
+      "label": "Canonical terms",
+      "max_results": 3,
+      "retrieve_as": "glossary"
+    }
+  ],
+  "system_suffix": "THE OATH: SCHEMA_CONTRACT.md defines all data shapes. If a needed shape does not exist, request it. Do not invent it. No agent may create a parallel schema. No agent may modify SCHEMA_CONTRACT.md except Codex with Angel awareness. CHAIN: locate schema contract \u2192 compare request against canon \u2192 verify no parallel shape \u2192 cite exact reference.",
+  "checksum": "c2cd7f66"
+}

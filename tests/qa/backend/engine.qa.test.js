@@ -242,6 +242,7 @@ describe("CODEx Phoneme Engine Accuracy (QA)", () => {
     let totalPhonemes = 0;
     let totalErrors = 0;
     let wordCount = 0;
+    const MAX_ALLOWED_PER = 0.45; 
     const failures = [];
 
     for (const word in goldenSet) {

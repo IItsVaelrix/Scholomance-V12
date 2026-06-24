@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPhotonicStorm } from "./storm/photonicStorm.js";
 
 /**
- * StormCanvas — mounts a photonic-storm engine on a <canvas>.
+ * StormCanvas - mounts a photonic-storm engine on a <canvas>.
  *
  * variant "scene": full-bleed dungeon sky behind the orb.
  * variant "orb":   the contained scrying vision (style the element round in CSS).

@@ -1,0 +1,83 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "bug-diagnose",
+  "version": "0.1.0",
+  "priority": 10,
+  "match": {
+    "patterns": [
+      "(error|bug|crash|fail|broken|exception|traceback|stack trace)",
+      "(fix|resolve|diagnose|debug|troubleshoot)",
+      "(Internal Server Error|OOM|SIGTERM|SIGKILL|segfault|TypeError|ImportError)"
+    ],
+    "keywords": [
+      "error",
+      "bug",
+      "crash",
+      "fail",
+      "broken",
+      "exception",
+      "fix",
+      "diagnose",
+      "debug",
+      "traceback",
+      "stack",
+      "Internal Server Error",
+      "SIGTERM",
+      "OOM",
+      "segfault"
+    ],
+    "bytecode_prefixes": [
+      "PB-ERR",
+      "SCHOL-ERR",
+      "PB-OK"
+    ]
+  },
+  "steps": [
+    {
+      "source": "file-read",
+      "query": "{query}",
+      "label": "Read referenced files",
+      "retrieve_as": "referenced_files"
+    },
+    {
+      "source": "substrate",
+      "query": "bug fix for {query}",
+      "label": "Bug memory",
+      "top_k": 8,
+      "max_results": 5,
+      "retrieve_as": "bug_history"
+    },
+    {
+      "source": "cleri",
+      "query": "{query}",
+      "label": "RAID pattern match",
+      "max_results": 5,
+      "retrieve_as": "raid_hits"
+    },
+    {
+      "source": "file-system",
+      "query": "{query}",
+      "paths": [
+        "codex/",
+        "src/"
+      ],
+      "label": "Affected source files",
+      "max_results": 10,
+      "retrieve_as": "source_files"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity violations",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "self-critique",
+      "query": "{query}",
+      "prompt": "Does this fix introduce side effects? Check dependencies, imports, and the Vaelrix Law of Determinism.",
+      "label": "Self-critique"
+    }
+  ],
+  "system_suffix": "CHAIN: read any files mentioned in the query \u2192 identify the error \u2192 trace to source \u2192 check Cleri RAID \u2192 propose fix with real code from the files above. Self-critique: does the fix introduce new side effects?",
+  "checksum": "2569bf4b"
+}

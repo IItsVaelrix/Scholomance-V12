@@ -1,5 +1,5 @@
 /**
- * TaskDetailDrawer — Right-side slide-in drawer for task inspection
+ * TaskDetailDrawer - Right-side slide-in drawer for task inspection
  * 8 sections: Summary, Assignment, Files, Dependencies, Pipeline, Results, Activity, Locks
  */
 

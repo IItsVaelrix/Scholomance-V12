@@ -157,7 +157,7 @@ export async function lexiconRoutes(fastify, opts = {}) {
     preHandler: [requireLexiconSession],
     config: {
       rateLimit: {
-        max: 60,
+        max: process.env.NODE_ENV === 'production' ? 300 : 600,
         timeWindow: '1 minute',
         keyGenerator: toRateLimitKey,
       },
@@ -199,7 +199,10 @@ export async function lexiconRoutes(fastify, opts = {}) {
     preHandler: [requireLexiconSession],
     config: {
       rateLimit: {
-        max: 30,
+        // Spellcheck validation fires frequently during live editing. 30/min
+        // produced the HTTP 429 storm seen in the console; raise the dev cap so
+        // local editing doesn't trip it. (Client also now batches at 350ms.)
+        max: process.env.NODE_ENV === 'production' ? 60 : 600,
         timeWindow: '1 minute',
         keyGenerator: toRateLimitKey,
       },

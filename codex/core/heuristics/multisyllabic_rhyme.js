@@ -228,5 +228,5 @@ async function scoreMultisyllabicRhyme(doc) {
 export const multisyllabicRhymeHeuristic = {
   name: 'multisyllabic_rhyme',
   scorer: scoreMultisyllabicRhyme,
-  weight: 0.15,
+  weight: 0.20,
 };

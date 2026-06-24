@@ -148,7 +148,7 @@ export default function VisualizerReleasePage() {
   }, [seek, currentTime, duration]);
 
   const handleBuy = useCallback(() => {
-    console.warn("Purchase flow — This would open Stripe/checkout in production.");
+    console.warn("Purchase flow - This would open Stripe/checkout in production.");
   }, []);
 
   return (

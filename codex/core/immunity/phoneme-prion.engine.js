@@ -361,6 +361,30 @@ export const PRION_SIGNATURES = Object.freeze({
     `,
     description: 'Object merge with prototype pollution vectors'
   },
+  'cold-boot-daemon-fallback': {
+    // Buggy pattern: HTTP daemon unavailable → spawn heavy in-process model
+    buggyCode: `
+      def ask_vaelrix(query, callback):
+          try:
+              client = get_cached_daemon_client()
+              response = client.ask(query)
+              return response
+          except Exception:
+              from brain_engine import BrainBridge
+              bridge = BrainBridge(model="qwen", personality="Vaelrix")
+              response = bridge.ask(query)
+              return response
+      async function queryBrainDaemon(prompt, fallbackFn) {
+          try {
+              const res = await fetch("http://localhost:9090/ask", { body: JSON.stringify({query: prompt}) });
+              return await res.json();
+          } catch (err) {
+              return fallbackFn(prompt);
+          }
+      }
+    `,
+    description: 'Daemon HTTP client falls through to in-process model spawn instead of retry-with-backoff'
+  },
 });
 
 /**

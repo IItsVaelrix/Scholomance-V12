@@ -99,6 +99,28 @@ export class DatamuseAdapter extends DictionaryAdapter {
   }
 
   /**
+   * Finds words with similar MEANING (Datamuse `ml=`). This is the strongest
+   * relation for semantic enrichment — e.g. "reggaeton" → salsa, punta;
+   * "speedrun" → simulator, exploit, mode. Used to give out-of-vocabulary
+   * terms a meaning by mapping them onto known words.
+   * @param {string} word - The word to find meaning-neighbours for.
+   * @returns {Promise<string[]>}
+   */
+  async meansLike(word) {
+    if (!word) {
+      return [];
+    }
+
+    try {
+      const data = await this._fetch(`/words?ml=${encodeURIComponent(word)}&max=${this.maxResults}`);
+      return this._extractWords(data);
+    } catch (error) {
+      console.warn('[DatamuseAdapter] meansLike failed:', error);
+      return [];
+    }
+  }
+
+  /**
    * Finds rhymes for a word.
    * @param {string} word - The word to find rhymes for.
    * @returns {Promise<string[]>}

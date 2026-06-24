@@ -12,17 +12,21 @@
  * anti-skeuomorphic sigil mandate.
  */
 
+import { renderWandSvgUri } from './wandSvg.js';
 import { bakeAll } from '../scenes/CharacterShaderRenderer.js';
 import { combat_tileUri } from './generated/combat-tile.js';
 import { combat_torchUri } from './generated/combat-torch.js';
 import { combat_leylineUri } from './generated/combat-leyline.js';
 
 export const SCHOOL_PALETTE = {
-  SONIC:   { primary: '#8a5bff', glow: '#b79bff', dark: '#1a0f33', accent: '#ffe27a' },
-  VOID:    { primary: '#9a6bff', glow: '#c8a2ff', dark: '#0c0c1a', accent: '#ff7ae0' },
-  PSYCHIC: { primary: '#00e5ff', glow: '#9bf6ff', dark: '#04222b', accent: '#ffe27a' },
-  ALCHEMY: { primary: '#ff3d8b', glow: '#ff9dc4', dark: '#2b0418', accent: '#ffd36e' },
-  WILL:    { primary: '#ffd400', glow: '#fff19b', dark: '#2b2200', accent: '#fff7cc' },
+  SONIC:      { primary: '#8a5bff', glow: '#b79bff', dark: '#1a0f33', accent: '#ffe27a' },
+  VOID:       { primary: '#9a6bff', glow: '#c8a2ff', dark: '#0c0c1a', accent: '#ff7ae0' },
+  PSYCHIC:    { primary: '#00e5ff', glow: '#9bf6ff', dark: '#04222b', accent: '#ffe27a' },
+  ALCHEMY:    { primary: '#ff3d8b', glow: '#ff9dc4', dark: '#2b0418', accent: '#ffd36e' },
+  WILL:       { primary: '#ffd400', glow: '#fff19b', dark: '#2b2200', accent: '#fff7cc' },
+  NECROMANCY: { primary: '#22c55e', glow: '#4ade80', dark: '#052e16', accent: '#bbf7d0' },
+  ABJURATION: { primary: '#06b6d4', glow: '#22d3ee', dark: '#083344', accent: '#cffafe' },
+  DIVINATION: { primary: '#eab308', glow: '#facc15', dark: '#422006', accent: '#fef08a' },
 };
 
 function palette(school) {

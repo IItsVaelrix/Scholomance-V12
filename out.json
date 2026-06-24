@@ -1,0 +1,3566 @@
+Analysis: {
+  "lines": [
+    {
+      "lineIndex": 0,
+      "text": "Bastard never falls in line",
+      "words": [
+        {
+          "word": "Bastard",
+          "normalizedWord": "BASTARD",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-D",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 0,
+          "wordIndex": 0,
+          "charStart": 0,
+          "charEnd": 7,
+          "analysis": {
+            "word": "BASTARD",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "B",
+              "AE1",
+              "S",
+              "T",
+              "ER0",
+              "D"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "B",
+                "coda": "",
+                "onsetPhonemes": [
+                  "B"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "ST",
+                "coda": "D",
+                "onsetPhonemes": [
+                  "S",
+                  "T"
+                ],
+                "codaPhonemes": [
+                  "D"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-D",
+            "extendedRhymeKeys": [
+              "IH-D",
+              "AE-open/IH-D"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "never",
+          "normalizedWord": "NEVER",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-open",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 0,
+          "wordIndex": 1,
+          "charStart": 8,
+          "charEnd": 13,
+          "analysis": {
+            "word": "NEVER",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "N",
+              "EH1",
+              "V",
+              "ER0"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "EH1",
+                "vowelFamily": "AE",
+                "onset": "N",
+                "coda": "",
+                "onsetPhonemes": [
+                  "N"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "V",
+                "coda": "",
+                "onsetPhonemes": [
+                  "V"
+                ],
+                "codaPhonemes": [],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-open",
+            "extendedRhymeKeys": [
+              "IH-open",
+              "AE-open/IH-open"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "falls",
+          "normalizedWord": "FALLS",
+          "vowelFamily": "AO",
+          "rhymeKey": "AO-LZ",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 0,
+          "wordIndex": 2,
+          "charStart": 14,
+          "charEnd": 19,
+          "analysis": {
+            "word": "FALLS",
+            "vowelFamily": "AO",
+            "phonemes": [
+              "F",
+              "AO1",
+              "L",
+              "Z"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AO1",
+                "vowelFamily": "AO",
+                "onset": "F",
+                "coda": "LZ",
+                "onsetPhonemes": [
+                  "F"
+                ],
+                "codaPhonemes": [
+                  "L",
+                  "Z"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AO-LZ",
+            "extendedRhymeKeys": [
+              "AO-LZ"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "in",
+          "normalizedWord": "IN",
+          "vowelFamily": "IH",
+          "rhymeKey": "IH-N",
+          "syllableCount": 1,
+          "stressPattern": "0",
+          "lineIndex": 0,
+          "wordIndex": 3,
+          "charStart": 20,
+          "charEnd": 22,
+          "analysis": {
+            "word": "IN",
+            "vowelFamily": "IH",
+            "phonemes": [
+              "IH0",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "IH0",
+                "vowelFamily": "IH",
+                "onset": "",
+                "coda": "N",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "IH-N",
+            "extendedRhymeKeys": [
+              "IH-N"
+            ],
+            "stressPattern": "0"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "line",
+          "normalizedWord": "LINE",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-N",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 0,
+          "wordIndex": 4,
+          "charStart": 23,
+          "charEnd": 27,
+          "analysis": {
+            "word": "LINE",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "L",
+              "AY1",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AY1",
+                "vowelFamily": "EY",
+                "onset": "L",
+                "coda": "N",
+                "onsetPhonemes": [
+                  "L"
+                ],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-N",
+            "extendedRhymeKeys": [
+              "EY-N"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 7,
+      "stressPattern": "10 10 1 0 1",
+      "internalRhymes": [
+        {
+          "type": "near",
+          "subtype": "feminine",
+          "score": 0.88,
+          "syllablesMatched": 2,
+          "phoneticWeight": 1.2020815280171309,
+          "wordA": {
+            "lineIndex": 0,
+            "wordIndex": 0,
+            "charStart": 0,
+            "charEnd": 7,
+            "word": "Bastard"
+          },
+          "wordB": {
+            "lineIndex": 0,
+            "wordIndex": 1,
+            "charStart": 8,
+            "charEnd": 13,
+            "word": "never"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow",
+            "multiplier": 1,
+            "reasons": [
+              "no_syntax_layer_and_not_function"
+            ]
+          }
+        }
+      ],
+      "endRhymeKey": "EY-N",
+      "endWord": {
+        "word": "LINE",
+        "vowelFamily": "EY",
+        "phonemes": [
+          "L",
+          "AY1",
+          "N"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AY1",
+            "vowelFamily": "EY",
+            "onset": "L",
+            "coda": "N",
+            "onsetPhonemes": [
+              "L"
+            ],
+            "codaPhonemes": [
+              "N"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "EY-N",
+        "extendedRhymeKeys": [
+          "EY-N"
+        ],
+        "stressPattern": "1"
+      }
+    },
+    {
+      "lineIndex": 1,
+      "text": "Master with an awkward mind",
+      "words": [
+        {
+          "word": "Master",
+          "normalizedWord": "MASTER",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-open",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 1,
+          "wordIndex": 0,
+          "charStart": 28,
+          "charEnd": 34,
+          "analysis": {
+            "word": "MASTER",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "M",
+              "AE1",
+              "S",
+              "T",
+              "ER0"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "M",
+                "coda": "",
+                "onsetPhonemes": [
+                  "M"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "ST",
+                "coda": "",
+                "onsetPhonemes": [
+                  "S",
+                  "T"
+                ],
+                "codaPhonemes": [],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-open",
+            "extendedRhymeKeys": [
+              "IH-open",
+              "AE-open/IH-open"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "with",
+          "normalizedWord": "WITH",
+          "vowelFamily": "IH",
+          "rhymeKey": "IH-DH",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 1,
+          "wordIndex": 1,
+          "charStart": 35,
+          "charEnd": 39,
+          "analysis": {
+            "word": "WITH",
+            "vowelFamily": "IH",
+            "phonemes": [
+              "W",
+              "IH1",
+              "DH"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "IH1",
+                "vowelFamily": "IH",
+                "onset": "W",
+                "coda": "DH",
+                "onsetPhonemes": [
+                  "W"
+                ],
+                "codaPhonemes": [
+                  "DH"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "IH-DH",
+            "extendedRhymeKeys": [
+              "IH-DH"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "an",
+          "normalizedWord": "AN",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-N",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 1,
+          "wordIndex": 2,
+          "charStart": 40,
+          "charEnd": 42,
+          "analysis": {
+            "word": "AN",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "AE1",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "",
+                "coda": "N",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AE-N",
+            "extendedRhymeKeys": [
+              "AE-N"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "awkward",
+          "normalizedWord": "AWKWARD",
+          "vowelFamily": "AA",
+          "rhymeKey": "AA-D",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 1,
+          "wordIndex": 3,
+          "charStart": 43,
+          "charEnd": 50,
+          "analysis": {
+            "word": "AWKWARD",
+            "vowelFamily": "AA",
+            "phonemes": [
+              "AA1",
+              "K",
+              "W",
+              "ER0",
+              "D"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AA1",
+                "vowelFamily": "AA",
+                "onset": "",
+                "coda": "",
+                "onsetPhonemes": [],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "KW",
+                "coda": "D",
+                "onsetPhonemes": [
+                  "K",
+                  "W"
+                ],
+                "codaPhonemes": [
+                  "D"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AA-D",
+            "extendedRhymeKeys": [
+              "IH-D",
+              "AA-open/IH-D"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "mind",
+          "normalizedWord": "MIND",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-ND",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 1,
+          "wordIndex": 4,
+          "charStart": 51,
+          "charEnd": 55,
+          "analysis": {
+            "word": "MIND",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "M",
+              "AY1",
+              "N",
+              "D"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AY1",
+                "vowelFamily": "EY",
+                "onset": "M",
+                "coda": "ND",
+                "onsetPhonemes": [
+                  "M"
+                ],
+                "codaPhonemes": [
+                  "N",
+                  "D"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-ND",
+            "extendedRhymeKeys": [
+              "EY-ND"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 7,
+      "stressPattern": "10 1 1 10 1",
+      "internalRhymes": [],
+      "endRhymeKey": "EY-ND",
+      "endWord": {
+        "word": "MIND",
+        "vowelFamily": "EY",
+        "phonemes": [
+          "M",
+          "AY1",
+          "N",
+          "D"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AY1",
+            "vowelFamily": "EY",
+            "onset": "M",
+            "coda": "ND",
+            "onsetPhonemes": [
+              "M"
+            ],
+            "codaPhonemes": [
+              "N",
+              "D"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "EY-ND",
+        "extendedRhymeKeys": [
+          "EY-ND"
+        ],
+        "stressPattern": "1"
+      }
+    },
+    {
+      "lineIndex": 2,
+      "text": "Habit is to back stab",
+      "words": [
+        {
+          "word": "Habit",
+          "normalizedWord": "HABIT",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-T",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 2,
+          "wordIndex": 0,
+          "charStart": 56,
+          "charEnd": 61,
+          "analysis": {
+            "word": "HABIT",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "HH",
+              "AE1",
+              "B",
+              "AH0",
+              "T"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "HH",
+                "coda": "",
+                "onsetPhonemes": [
+                  "HH"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "AH0",
+                "vowelFamily": "AA",
+                "onset": "B",
+                "coda": "T",
+                "onsetPhonemes": [
+                  "B"
+                ],
+                "codaPhonemes": [
+                  "T"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-T",
+            "extendedRhymeKeys": [
+              "AA-T",
+              "AE-open/AA-T"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "is",
+          "normalizedWord": "IS",
+          "vowelFamily": "IH",
+          "rhymeKey": "IH-Z",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 2,
+          "wordIndex": 1,
+          "charStart": 62,
+          "charEnd": 64,
+          "analysis": {
+            "word": "IS",
+            "vowelFamily": "IH",
+            "phonemes": [
+              "IH1",
+              "Z"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "IH1",
+                "vowelFamily": "IH",
+                "onset": "",
+                "coda": "Z",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "Z"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "IH-Z",
+            "extendedRhymeKeys": [
+              "IH-Z"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "to",
+          "normalizedWord": "TO",
+          "vowelFamily": "AA",
+          "rhymeKey": "AA-open",
+          "syllableCount": 1,
+          "stressPattern": "0",
+          "lineIndex": 2,
+          "wordIndex": 2,
+          "charStart": 65,
+          "charEnd": 67,
+          "analysis": {
+            "word": "TO",
+            "vowelFamily": "AA",
+            "phonemes": [
+              "T",
+              "AH0"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AH0",
+                "vowelFamily": "AA",
+                "onset": "T",
+                "coda": "",
+                "onsetPhonemes": [
+                  "T"
+                ],
+                "codaPhonemes": [],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AA-open",
+            "extendedRhymeKeys": [
+              "AA-open"
+            ],
+            "stressPattern": "0"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "back",
+          "normalizedWord": "BACK",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-K",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 2,
+          "wordIndex": 3,
+          "charStart": 68,
+          "charEnd": 72,
+          "analysis": {
+            "word": "BACK",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "B",
+              "AE1",
+              "K"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "B",
+                "coda": "K",
+                "onsetPhonemes": [
+                  "B"
+                ],
+                "codaPhonemes": [
+                  "K"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AE-K",
+            "extendedRhymeKeys": [
+              "AE-K"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "stab",
+          "normalizedWord": "STAB",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-B",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 2,
+          "wordIndex": 4,
+          "charStart": 73,
+          "charEnd": 77,
+          "analysis": {
+            "word": "STAB",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "S",
+              "T",
+              "AE1",
+              "B"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "ST",
+                "coda": "B",
+                "onsetPhonemes": [
+                  "S",
+                  "T"
+                ],
+                "codaPhonemes": [
+                  "B"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AE-B",
+            "extendedRhymeKeys": [
+              "AE-B"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 6,
+      "stressPattern": "10 1 0 1 1",
+      "internalRhymes": [
+        {
+          "type": "slant",
+          "subtype": "masculine",
+          "score": 0.7040000000000001,
+          "syllablesMatched": 1,
+          "phoneticWeight": 0.8510407640085654,
+          "wordA": {
+            "lineIndex": 2,
+            "wordIndex": 0,
+            "charStart": 56,
+            "charEnd": 61,
+            "word": "Habit"
+          },
+          "wordB": {
+            "lineIndex": 2,
+            "wordIndex": 2,
+            "charStart": 65,
+            "charEnd": 67,
+            "word": "to"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow_weak",
+            "multiplier": 0.88,
+            "reasons": [
+              "contains_function_non_terminal"
+            ]
+          }
+        },
+        {
+          "type": "assonance",
+          "subtype": "none",
+          "score": 0.62,
+          "syllablesMatched": 1,
+          "phoneticWeight": 1.2010407640085654,
+          "wordA": {
+            "lineIndex": 2,
+            "wordIndex": 0,
+            "charStart": 56,
+            "charEnd": 61,
+            "word": "Habit"
+          },
+          "wordB": {
+            "lineIndex": 2,
+            "wordIndex": 3,
+            "charStart": 68,
+            "charEnd": 72,
+            "word": "back"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow",
+            "multiplier": 1,
+            "reasons": [
+              "no_syntax_layer_and_not_function"
+            ]
+          }
+        },
+        {
+          "type": "near",
+          "subtype": "masculine",
+          "score": 0.9,
+          "syllablesMatched": 1,
+          "phoneticWeight": 1.2,
+          "wordA": {
+            "lineIndex": 2,
+            "wordIndex": 3,
+            "charStart": 68,
+            "charEnd": 72,
+            "word": "back"
+          },
+          "wordB": {
+            "lineIndex": 2,
+            "wordIndex": 4,
+            "charStart": 73,
+            "charEnd": 77,
+            "word": "stab"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow",
+            "multiplier": 1,
+            "reasons": [
+              "no_syntax_layer_and_not_function"
+            ]
+          }
+        }
+      ],
+      "endRhymeKey": "AE-B",
+      "endWord": {
+        "word": "STAB",
+        "vowelFamily": "AE",
+        "phonemes": [
+          "S",
+          "T",
+          "AE1",
+          "B"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AE1",
+            "vowelFamily": "AE",
+            "onset": "ST",
+            "coda": "B",
+            "onsetPhonemes": [
+              "S",
+              "T"
+            ],
+            "codaPhonemes": [
+              "B"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "AE-B",
+        "extendedRhymeKeys": [
+          "AE-B"
+        ],
+        "stressPattern": "1"
+      }
+    },
+    {
+      "lineIndex": 3,
+      "text": "pattern ends with slaughtered spines",
+      "words": [
+        {
+          "word": "pattern",
+          "normalizedWord": "PATTERN",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-N",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 3,
+          "wordIndex": 0,
+          "charStart": 78,
+          "charEnd": 85,
+          "analysis": {
+            "word": "PATTERN",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "P",
+              "AE1",
+              "T",
+              "ER0",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AE1",
+                "vowelFamily": "AE",
+                "onset": "P",
+                "coda": "",
+                "onsetPhonemes": [
+                  "P"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "T",
+                "coda": "N",
+                "onsetPhonemes": [
+                  "T"
+                ],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-N",
+            "extendedRhymeKeys": [
+              "IH-N",
+              "AE-open/IH-N"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "ends",
+          "normalizedWord": "ENDS",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-NDZ",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 3,
+          "wordIndex": 1,
+          "charStart": 86,
+          "charEnd": 90,
+          "analysis": {
+            "word": "ENDS",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "EH1",
+              "N",
+              "D",
+              "Z"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "EH1",
+                "vowelFamily": "AE",
+                "onset": "",
+                "coda": "NDZ",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "N",
+                  "D",
+                  "Z"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AE-NDZ",
+            "extendedRhymeKeys": [
+              "AE-NDZ"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "with",
+          "normalizedWord": "WITH",
+          "vowelFamily": "IH",
+          "rhymeKey": "IH-DH",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 3,
+          "wordIndex": 2,
+          "charStart": 91,
+          "charEnd": 95,
+          "analysis": {
+            "word": "WITH",
+            "vowelFamily": "IH",
+            "phonemes": [
+              "W",
+              "IH1",
+              "DH"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "IH1",
+                "vowelFamily": "IH",
+                "onset": "W",
+                "coda": "DH",
+                "onsetPhonemes": [
+                  "W"
+                ],
+                "codaPhonemes": [
+                  "DH"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "IH-DH",
+            "extendedRhymeKeys": [
+              "IH-DH"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "slaughtered",
+          "normalizedWord": "SLAUGHTERED",
+          "vowelFamily": "AO",
+          "rhymeKey": "AO-D",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 3,
+          "wordIndex": 3,
+          "charStart": 96,
+          "charEnd": 107,
+          "analysis": {
+            "word": "SLAUGHTERED",
+            "vowelFamily": "AO",
+            "phonemes": [
+              "S",
+              "L",
+              "AO1",
+              "T",
+              "ER0",
+              "D"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AO1",
+                "vowelFamily": "AO",
+                "onset": "SL",
+                "coda": "",
+                "onsetPhonemes": [
+                  "S",
+                  "L"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "T",
+                "coda": "D",
+                "onsetPhonemes": [
+                  "T"
+                ],
+                "codaPhonemes": [
+                  "D"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AO-D",
+            "extendedRhymeKeys": [
+              "IH-D",
+              "AO-open/IH-D"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "spines",
+          "normalizedWord": "SPINES",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-NZ",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 3,
+          "wordIndex": 4,
+          "charStart": 108,
+          "charEnd": 114,
+          "analysis": {
+            "word": "SPINES",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "S",
+              "P",
+              "AY1",
+              "N",
+              "Z"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AY1",
+                "vowelFamily": "EY",
+                "onset": "SP",
+                "coda": "NZ",
+                "onsetPhonemes": [
+                  "S",
+                  "P"
+                ],
+                "codaPhonemes": [
+                  "N",
+                  "Z"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-NZ",
+            "extendedRhymeKeys": [
+              "EY-NZ"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 7,
+      "stressPattern": "10 1 1 10 1",
+      "internalRhymes": [
+        {
+          "type": "assonance",
+          "subtype": "none",
+          "score": 0.62,
+          "syllablesMatched": 1,
+          "phoneticWeight": 1.2010407640085654,
+          "wordA": {
+            "lineIndex": 3,
+            "wordIndex": 0,
+            "charStart": 78,
+            "charEnd": 85,
+            "word": "pattern"
+          },
+          "wordB": {
+            "lineIndex": 3,
+            "wordIndex": 1,
+            "charStart": 86,
+            "charEnd": 90,
+            "word": "ends"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow",
+            "multiplier": 1,
+            "reasons": [
+              "no_syntax_layer_and_not_function"
+            ]
+          }
+        }
+      ],
+      "endRhymeKey": "EY-NZ",
+      "endWord": {
+        "word": "SPINES",
+        "vowelFamily": "EY",
+        "phonemes": [
+          "S",
+          "P",
+          "AY1",
+          "N",
+          "Z"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AY1",
+            "vowelFamily": "EY",
+            "onset": "SP",
+            "coda": "NZ",
+            "onsetPhonemes": [
+              "S",
+              "P"
+            ],
+            "codaPhonemes": [
+              "N",
+              "Z"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "EY-NZ",
+        "extendedRhymeKeys": [
+          "EY-NZ"
+        ],
+        "stressPattern": "1"
+      }
+    },
+    {
+      "lineIndex": 4,
+      "text": "And they never draw the line",
+      "words": [
+        {
+          "word": "And",
+          "normalizedWord": "AND",
+          "vowelFamily": "AA",
+          "rhymeKey": "AA-ND",
+          "syllableCount": 1,
+          "stressPattern": "0",
+          "lineIndex": 4,
+          "wordIndex": 0,
+          "charStart": 115,
+          "charEnd": 118,
+          "analysis": {
+            "word": "AND",
+            "vowelFamily": "AA",
+            "phonemes": [
+              "AH0",
+              "N",
+              "D"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AH0",
+                "vowelFamily": "AA",
+                "onset": "",
+                "coda": "ND",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "N",
+                  "D"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AA-ND",
+            "extendedRhymeKeys": [
+              "AA-ND"
+            ],
+            "stressPattern": "0"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "they",
+          "normalizedWord": "THEY",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-open",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 4,
+          "wordIndex": 1,
+          "charStart": 119,
+          "charEnd": 123,
+          "analysis": {
+            "word": "THEY",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "DH",
+              "EY1"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "EY1",
+                "vowelFamily": "EY",
+                "onset": "DH",
+                "coda": "",
+                "onsetPhonemes": [
+                  "DH"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-open",
+            "extendedRhymeKeys": [
+              "EY-open"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "never",
+          "normalizedWord": "NEVER",
+          "vowelFamily": "AE",
+          "rhymeKey": "AE-open",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 4,
+          "wordIndex": 2,
+          "charStart": 124,
+          "charEnd": 129,
+          "analysis": {
+            "word": "NEVER",
+            "vowelFamily": "AE",
+            "phonemes": [
+              "N",
+              "EH1",
+              "V",
+              "ER0"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "EH1",
+                "vowelFamily": "AE",
+                "onset": "N",
+                "coda": "",
+                "onsetPhonemes": [
+                  "N"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "ER0",
+                "vowelFamily": "IH",
+                "onset": "V",
+                "coda": "",
+                "onsetPhonemes": [
+                  "V"
+                ],
+                "codaPhonemes": [],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AE-open",
+            "extendedRhymeKeys": [
+              "IH-open",
+              "AE-open/IH-open"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "draw",
+          "normalizedWord": "DRAW",
+          "vowelFamily": "AO",
+          "rhymeKey": "AO-open",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 4,
+          "wordIndex": 3,
+          "charStart": 130,
+          "charEnd": 134,
+          "analysis": {
+            "word": "DRAW",
+            "vowelFamily": "AO",
+            "phonemes": [
+              "D",
+              "R",
+              "AO1"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AO1",
+                "vowelFamily": "AO",
+                "onset": "DR",
+                "coda": "",
+                "onsetPhonemes": [
+                  "D",
+                  "R"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AO-open",
+            "extendedRhymeKeys": [
+              "AO-open"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "the",
+          "normalizedWord": "THE",
+          "vowelFamily": "AA",
+          "rhymeKey": "AA-open",
+          "syllableCount": 1,
+          "stressPattern": "0",
+          "lineIndex": 4,
+          "wordIndex": 4,
+          "charStart": 135,
+          "charEnd": 138,
+          "analysis": {
+            "word": "THE",
+            "vowelFamily": "AA",
+            "phonemes": [
+              "DH",
+              "AH0"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AH0",
+                "vowelFamily": "AA",
+                "onset": "DH",
+                "coda": "",
+                "onsetPhonemes": [
+                  "DH"
+                ],
+                "codaPhonemes": [],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AA-open",
+            "extendedRhymeKeys": [
+              "AA-open"
+            ],
+            "stressPattern": "0"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "line",
+          "normalizedWord": "LINE",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-N",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 4,
+          "wordIndex": 5,
+          "charStart": 139,
+          "charEnd": 143,
+          "analysis": {
+            "word": "LINE",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "L",
+              "AY1",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AY1",
+                "vowelFamily": "EY",
+                "onset": "L",
+                "coda": "N",
+                "onsetPhonemes": [
+                  "L"
+                ],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-N",
+            "extendedRhymeKeys": [
+              "EY-N"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 7,
+      "stressPattern": "0 1 10 1 0 1",
+      "internalRhymes": [],
+      "endRhymeKey": "EY-N",
+      "endWord": {
+        "word": "LINE",
+        "vowelFamily": "EY",
+        "phonemes": [
+          "L",
+          "AY1",
+          "N"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AY1",
+            "vowelFamily": "EY",
+            "onset": "L",
+            "coda": "N",
+            "onsetPhonemes": [
+              "L"
+            ],
+            "codaPhonemes": [
+              "N"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "EY-N",
+        "extendedRhymeKeys": [
+          "EY-N"
+        ],
+        "stressPattern": "1"
+      }
+    },
+    {
+      "lineIndex": 5,
+      "text": "But I'm drawing mine",
+      "words": [
+        {
+          "word": "But",
+          "normalizedWord": "BUT",
+          "vowelFamily": "AA",
+          "rhymeKey": "AA-T",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 5,
+          "wordIndex": 0,
+          "charStart": 144,
+          "charEnd": 147,
+          "analysis": {
+            "word": "BUT",
+            "vowelFamily": "AA",
+            "phonemes": [
+              "B",
+              "AH1",
+              "T"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AH1",
+                "vowelFamily": "AA",
+                "onset": "B",
+                "coda": "T",
+                "onsetPhonemes": [
+                  "B"
+                ],
+                "codaPhonemes": [
+                  "T"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "AA-T",
+            "extendedRhymeKeys": [
+              "AA-T"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "I'm",
+          "normalizedWord": "I'M",
+          "vowelFamily": "IH",
+          "rhymeKey": "IH-M",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 5,
+          "wordIndex": 1,
+          "charStart": 148,
+          "charEnd": 151,
+          "analysis": {
+            "word": "I'M",
+            "vowelFamily": "IH",
+            "phonemes": [
+              "IH1",
+              "M"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "IH1",
+                "vowelFamily": "IH",
+                "onset": "",
+                "coda": "M",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "M"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "IH-M",
+            "extendedRhymeKeys": [
+              "IH-M"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "drawing",
+          "normalizedWord": "DRAWING",
+          "vowelFamily": "AO",
+          "rhymeKey": "AO-NG",
+          "syllableCount": 2,
+          "stressPattern": "10",
+          "lineIndex": 5,
+          "wordIndex": 2,
+          "charStart": 152,
+          "charEnd": 159,
+          "analysis": {
+            "word": "DRAWING",
+            "vowelFamily": "AO",
+            "phonemes": [
+              "D",
+              "R",
+              "AO1",
+              "IH0",
+              "NG"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AO1",
+                "vowelFamily": "AO",
+                "onset": "DR",
+                "coda": "",
+                "onsetPhonemes": [
+                  "D",
+                  "R"
+                ],
+                "codaPhonemes": [],
+                "stress": 1
+              },
+              {
+                "index": 1,
+                "vowel": "IH0",
+                "vowelFamily": "IH",
+                "onset": "",
+                "coda": "NG",
+                "onsetPhonemes": [],
+                "codaPhonemes": [
+                  "NG"
+                ],
+                "stress": 0
+              }
+            ],
+            "syllableCount": 2,
+            "rhymeKey": "AO-NG",
+            "extendedRhymeKeys": [
+              "IH-NG",
+              "AO-open/IH-NG"
+            ],
+            "stressPattern": "10"
+          },
+          "syntaxToken": null
+        },
+        {
+          "word": "mine",
+          "normalizedWord": "MINE",
+          "vowelFamily": "EY",
+          "rhymeKey": "EY-N",
+          "syllableCount": 1,
+          "stressPattern": "1",
+          "lineIndex": 5,
+          "wordIndex": 3,
+          "charStart": 160,
+          "charEnd": 164,
+          "analysis": {
+            "word": "MINE",
+            "vowelFamily": "EY",
+            "phonemes": [
+              "M",
+              "AY1",
+              "N"
+            ],
+            "syllables": [
+              {
+                "index": 0,
+                "vowel": "AY1",
+                "vowelFamily": "EY",
+                "onset": "M",
+                "coda": "N",
+                "onsetPhonemes": [
+                  "M"
+                ],
+                "codaPhonemes": [
+                  "N"
+                ],
+                "stress": 1
+              }
+            ],
+            "syllableCount": 1,
+            "rhymeKey": "EY-N",
+            "extendedRhymeKeys": [
+              "EY-N"
+            ],
+            "stressPattern": "1"
+          },
+          "syntaxToken": null
+        }
+      ],
+      "syllableTotal": 5,
+      "stressPattern": "1 1 10 1",
+      "internalRhymes": [
+        {
+          "type": "slant",
+          "subtype": "masculine",
+          "score": 0.72,
+          "syllablesMatched": 1,
+          "phoneticWeight": 1.2010407640085654,
+          "wordA": {
+            "lineIndex": 5,
+            "wordIndex": 1,
+            "charStart": 148,
+            "charEnd": 151,
+            "word": "I'm"
+          },
+          "wordB": {
+            "lineIndex": 5,
+            "wordIndex": 2,
+            "charStart": 152,
+            "charEnd": 159,
+            "word": "drawing"
+          },
+          "groupLabel": null,
+          "syntax": {
+            "gate": "allow",
+            "multiplier": 1,
+            "reasons": [
+              "no_syntax_layer_and_not_function"
+            ]
+          }
+        }
+      ],
+      "endRhymeKey": "EY-N",
+      "endWord": {
+        "word": "MINE",
+        "vowelFamily": "EY",
+        "phonemes": [
+          "M",
+          "AY1",
+          "N"
+        ],
+        "syllables": [
+          {
+            "index": 0,
+            "vowel": "AY1",
+            "vowelFamily": "EY",
+            "onset": "M",
+            "coda": "N",
+            "onsetPhonemes": [
+              "M"
+            ],
+            "codaPhonemes": [
+              "N"
+            ],
+            "stress": 1
+          }
+        ],
+        "syllableCount": 1,
+        "rhymeKey": "EY-N",
+        "extendedRhymeKeys": [
+          "EY-N"
+        ],
+        "stressPattern": "1"
+      }
+    }
+  ],
+  "endRhymeConnections": [
+    {
+      "type": "perfect",
+      "subtype": "masculine",
+      "score": 0.94,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 4,
+        "wordIndex": 5,
+        "charStart": 139,
+        "charEnd": 143,
+        "word": "line"
+      },
+      "wordB": {
+        "lineIndex": 5,
+        "wordIndex": 3,
+        "charStart": 160,
+        "charEnd": 164,
+        "word": "mine"
+      },
+      "groupLabel": "A",
+      "syntax": {
+        "gate": "allow_weak",
+        "multiplier": 0.94,
+        "reasons": [
+          "contains_function_non_terminal",
+          "phonetic_affinity_override"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.875,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 4,
+        "charStart": 23,
+        "charEnd": 27,
+        "word": "line"
+      },
+      "wordB": {
+        "lineIndex": 1,
+        "wordIndex": 4,
+        "charStart": 51,
+        "charEnd": 55,
+        "word": "mind"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "perfect",
+      "subtype": "masculine",
+      "score": 0.9500000000000001,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 4,
+        "charStart": 51,
+        "charEnd": 55,
+        "word": "mind"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 4,
+        "charStart": 108,
+        "charEnd": 114,
+        "word": "spines"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.875,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 4,
+        "charStart": 108,
+        "charEnd": 114,
+        "word": "spines"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 5,
+        "charStart": 139,
+        "charEnd": 143,
+        "word": "line"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    }
+  ],
+  "internalRhymeConnections": [
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.88,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "slant",
+      "subtype": "masculine",
+      "score": 0.7040000000000001,
+      "syllablesMatched": 1,
+      "phoneticWeight": 0.8510407640085654,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 2,
+        "charStart": 65,
+        "charEnd": 67,
+        "word": "to"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow_weak",
+        "multiplier": 0.88,
+        "reasons": [
+          "contains_function_non_terminal"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.9,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "slant",
+      "subtype": "masculine",
+      "score": 0.72,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 5,
+        "wordIndex": 1,
+        "charStart": 148,
+        "charEnd": 151,
+        "word": "I'm"
+      },
+      "wordB": {
+        "lineIndex": 5,
+        "wordIndex": 2,
+        "charStart": 152,
+        "charEnd": 159,
+        "word": "drawing"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    }
+  ],
+  "allConnections": [
+    {
+      "type": "perfect",
+      "subtype": "masculine",
+      "score": 0.94,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 4,
+        "wordIndex": 5,
+        "charStart": 139,
+        "charEnd": 143,
+        "word": "line"
+      },
+      "wordB": {
+        "lineIndex": 5,
+        "wordIndex": 3,
+        "charStart": 160,
+        "charEnd": 164,
+        "word": "mine"
+      },
+      "groupLabel": "A",
+      "syntax": {
+        "gate": "allow_weak",
+        "multiplier": 0.94,
+        "reasons": [
+          "contains_function_non_terminal",
+          "phonetic_affinity_override"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.875,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 4,
+        "charStart": 23,
+        "charEnd": 27,
+        "word": "line"
+      },
+      "wordB": {
+        "lineIndex": 1,
+        "wordIndex": 4,
+        "charStart": 51,
+        "charEnd": 55,
+        "word": "mind"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "perfect",
+      "subtype": "masculine",
+      "score": 0.9500000000000001,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 4,
+        "charStart": 51,
+        "charEnd": 55,
+        "word": "mind"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 4,
+        "charStart": 108,
+        "charEnd": 114,
+        "word": "spines"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.875,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 4,
+        "charStart": 108,
+        "charEnd": 114,
+        "word": "spines"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 5,
+        "charStart": 139,
+        "charEnd": 143,
+        "word": "line"
+      },
+      "groupLabel": "B",
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.88,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "slant",
+      "subtype": "masculine",
+      "score": 0.7040000000000001,
+      "syllablesMatched": 1,
+      "phoneticWeight": 0.8510407640085654,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 2,
+        "charStart": 65,
+        "charEnd": 67,
+        "word": "to"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow_weak",
+        "multiplier": 0.88,
+        "reasons": [
+          "contains_function_non_terminal"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "masculine",
+      "score": 0.9,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "slant",
+      "subtype": "masculine",
+      "score": 0.72,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 5,
+        "wordIndex": 1,
+        "charStart": 148,
+        "charEnd": 151,
+        "word": "I'm"
+      },
+      "wordB": {
+        "lineIndex": 5,
+        "wordIndex": 2,
+        "charStart": 152,
+        "charEnd": 159,
+        "word": "drawing"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.9,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "perfect",
+      "subtype": "feminine",
+      "score": 0.95,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.88,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 0,
+        "charStart": 0,
+        "charEnd": 7,
+        "word": "Bastard"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "perfect",
+      "subtype": "feminine",
+      "score": 0.98,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.88,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 0,
+        "wordIndex": 1,
+        "charStart": 8,
+        "charEnd": 13,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.9,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "perfect",
+      "subtype": "feminine",
+      "score": 0.98,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 0,
+        "charStart": 28,
+        "charEnd": 34,
+        "word": "Master"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 2,
+        "wordIndex": 0,
+        "charStart": 56,
+        "charEnd": 61,
+        "word": "Habit"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "near",
+      "subtype": "feminine",
+      "score": 0.88,
+      "syllablesMatched": 2,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 0,
+        "charStart": 78,
+        "charEnd": 85,
+        "word": "pattern"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 3,
+        "charStart": 68,
+        "charEnd": 72,
+        "word": "back"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 2,
+        "wordIndex": 4,
+        "charStart": 73,
+        "charEnd": 77,
+        "word": "stab"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 4,
+        "wordIndex": 2,
+        "charStart": 124,
+        "charEnd": 129,
+        "word": "never"
+      },
+      "wordB": {
+        "lineIndex": 3,
+        "wordIndex": 1,
+        "charStart": 86,
+        "charEnd": 90,
+        "word": "ends"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "slant",
+      "subtype": "masculine",
+      "score": 0.7238,
+      "syllablesMatched": 1,
+      "phoneticWeight": 0.8510407640085654,
+      "wordA": {
+        "lineIndex": 1,
+        "wordIndex": 3,
+        "charStart": 43,
+        "charEnd": 50,
+        "word": "awkward"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 0,
+        "charStart": 115,
+        "charEnd": 118,
+        "word": "And"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow_weak",
+        "multiplier": 0.94,
+        "reasons": [
+          "contains_function_non_terminal",
+          "phonetic_affinity_override"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2020815280171309,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 3,
+        "charStart": 96,
+        "charEnd": 107,
+        "word": "slaughtered"
+      },
+      "wordB": {
+        "lineIndex": 5,
+        "wordIndex": 2,
+        "charStart": 152,
+        "charEnd": 159,
+        "word": "drawing"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 3,
+        "charStart": 96,
+        "charEnd": 107,
+        "word": "slaughtered"
+      },
+      "wordB": {
+        "lineIndex": 0,
+        "wordIndex": 2,
+        "charStart": 14,
+        "charEnd": 19,
+        "word": "falls"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 3,
+        "wordIndex": 3,
+        "charStart": 96,
+        "charEnd": 107,
+        "word": "slaughtered"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 3,
+        "charStart": 130,
+        "charEnd": 134,
+        "word": "draw"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 5,
+        "wordIndex": 2,
+        "charStart": 152,
+        "charEnd": 159,
+        "word": "drawing"
+      },
+      "wordB": {
+        "lineIndex": 0,
+        "wordIndex": 2,
+        "charStart": 14,
+        "charEnd": 19,
+        "word": "falls"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    },
+    {
+      "type": "assonance",
+      "subtype": "none",
+      "score": 0.62,
+      "syllablesMatched": 1,
+      "phoneticWeight": 1.2010407640085654,
+      "wordA": {
+        "lineIndex": 5,
+        "wordIndex": 2,
+        "charStart": 152,
+        "charEnd": 159,
+        "word": "drawing"
+      },
+      "wordB": {
+        "lineIndex": 4,
+        "wordIndex": 3,
+        "charStart": 130,
+        "charEnd": 134,
+        "word": "draw"
+      },
+      "groupLabel": null,
+      "syntax": {
+        "gate": "allow",
+        "multiplier": 1,
+        "reasons": [
+          "no_syntax_layer_and_not_function"
+        ]
+      }
+    }
+  ],
+  "rhymeGroups": {},
+  "schemePattern": "BBCBAA",
+  "syntaxSummary": null,
+  "compiler": {
+    "verseIRVersion": "1.2.0",
+    "mode": "balanced",
+    "tokenCount": 30,
+    "lineCount": 6,
+    "maxWindowSyllables": 4,
+    "maxWindowTokenSpan": 4,
+    "syllableWindowCount": 120,
+    "lineBreakStyle": "lf",
+    "offsetSemantics": "code_unit_primary",
+    "graphemeAware": true,
+    "graphemeCount": 164,
+    "whitespaceFidelity": true
+  },
+  "statistics": {
+    "totalLines": 6,
+    "totalWords": 30,
+    "totalSyllables": 39,
+    "perfectCount": 5,
+    "nearCount": 9,
+    "slantCount": 3,
+    "internalCount": 6,
+    "multiSyllableCount": 9,
+    "endRhymeCount": 38,
+    "syntaxGating": {
+      "enabled": false,
+      "totalCandidates": 0,
+      "suppressedPairs": 0,
+      "weakenedPairs": 0,
+      "keptPairs": 0
+    }
+  }
+}
+Heuristic: {
+  "heuristic": "multisyllabic_rhyme",
+  "rawScore": 0.5618423191919192,
+  "explanation": "9 multisyllabic links, 9 feminine, 0 dactylic, 0 at 4+ syllables, authority 65%, density 20%, line coverage 67%.",
+  "diagnostics": [
+    {
+      "start": 8,
+      "end": 34,
+      "severity": "info",
+      "message": "feminine rhyme chain",
+      "metadata": {
+        "pair": "never <-> Master",
+        "score": 0.98,
+        "authority": 0.7056,
+        "subtype": "feminine",
+        "syllablesMatched": 2,
+        "placement": "end",
+        "distinctRoots": true
+      }
+    },
+    {
+      "start": 28,
+      "end": 129,
+      "severity": "info",
+      "message": "feminine rhyme chain",
+      "metadata": {
+        "pair": "Master <-> never",
+        "score": 0.98,
+        "authority": 0.7056,
+        "subtype": "feminine",
+        "syllablesMatched": 2,
+        "placement": "end",
+        "distinctRoots": true
+      }
+    },
+    {
+      "start": 0,
+      "end": 85,
+      "severity": "info",
+      "message": "feminine rhyme chain",
+      "metadata": {
+        "pair": "Bastard <-> pattern",
+        "score": 0.95,
+        "authority": 0.6839999999999999,
+        "subtype": "feminine",
+        "syllablesMatched": 2,
+        "placement": "end",
+        "distinctRoots": true
+      }
+    },
+    {
+      "start": 0,
+      "end": 34,
+      "severity": "info",
+      "message": "feminine rhyme chain",
+      "metadata": {
+        "pair": "Bastard <-> Master",
+        "score": 0.9,
+        "authority": 0.648,
+        "subtype": "feminine",
+        "syllablesMatched": 2,
+        "placement": "end",
+        "distinctRoots": true
+      }
+    },
+    {
+      "start": 28,
+      "end": 85,
+      "severity": "info",
+      "message": "feminine rhyme chain",
+      "metadata": {
+        "pair": "Master <-> pattern",
+        "score": 0.9,
+        "authority": 0.648,
+        "subtype": "feminine",
+        "syllablesMatched": 2,
+        "placement": "end",
+        "distinctRoots": true
+      }
+    }
+  ]
+}

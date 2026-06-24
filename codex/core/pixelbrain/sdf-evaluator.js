@@ -47,23 +47,26 @@ export function evaluateSDF(sdf, px, py) {
       case 'circle':
         d = length(sub(pp, pr.center || {x:0,y:0})) - (pr.radius || 0);
         break;
-      case 'box':
+      case 'box': {
         const b = pr.size || {x:1,y:1};
         const q = sub(abs(sub(pp, pr.center || {x:0,y:0})), mul(b, 0.5));
         d = length(max(q, {x:0,y:0})) + Math.min(Math.max(q.x, q.y), 0);
         break;
-      case 'capsule':
+      }
+      case 'capsule': {
         const pa = pr.p1 || {x:0,y:0}, pb = pr.p2 || {x:0,y:1};
         const pa2 = sub(pp, pa), ba = sub(pb, pa);
         const h = clamp01( dot(pa2, ba) / dot(ba, ba) );
         d = length( sub( pa2 , mul(ba, h) ) ) - (pr.radius || 0);
         break;
-      case 'line':
+      }
+      case 'line': {
         const p1 = pr.p1 || {x:0,y:0}, p2 = pr.p2 || {x:1,y:0};
         const l = sub(p2, p1);
         const h2 = clamp01( dot( sub(pp,p1), l ) / dot(l,l) );
         d = length( sub( sub(pp,p1), mul(l, h2) ) );
         break;
+      }
       case 'polygon': {
         // Simple even-odd or winding for dist? For simplicity use max dist to edges (approx)
         let minD = Infinity;
@@ -97,14 +100,16 @@ export function evaluateSDF(sdf, px, py) {
         case 'union': a = Math.min(a, b); break;
         case 'subtract': a = Math.max(a, -b); break;
         case 'intersect': a = Math.max(a, b); break;
-        case 'smoothUnion':
+        case 'smoothUnion': {
           const h1 = Math.max(kk - Math.abs(a - b), 0) / kk;
           a = Math.min(a, b) - h1*h1*h1*kk/6;
           break;
-        case 'smoothSubtract':
+        }
+        case 'smoothSubtract': {
           const h2 = Math.max(kk - Math.abs(a + b), 0) / kk;
           a = Math.max(a, -b) + h2*h2*h2*kk/6;
           break;
+        }
         default: a = Math.min(a, b);
       }
     }

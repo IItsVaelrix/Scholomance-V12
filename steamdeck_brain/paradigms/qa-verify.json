@@ -1,0 +1,49 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "qa-verify",
+  "version": "0.1.0",
+  "priority": 9,
+  "match": {
+    "patterns": [
+      "(test|QA|verify|pass|fail|green|red|flaky).*(suite|result|output|status|gate|report)",
+      "(are|did).*(tests|QA).*(pass|fail|run)",
+      "(before|after).*(benchmark|perf|performance|speed)"
+    ],
+    "keywords": [
+      "QA",
+      "test",
+      "pass",
+      "fail",
+      "verify",
+      "gate",
+      "polish",
+      "benchmark",
+      "regression",
+      "coverage"
+    ]
+  },
+  "steps": [
+    {
+      "source": "polish",
+      "query": "{query}",
+      "label": "Polish gate",
+      "retrieve_as": "polish"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "substrate",
+      "query": "test results for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Test history",
+      "retrieve_as": "tests"
+    }
+  ],
+  "system_suffix": "QA TRIBUNAL: QA must be evidence, not language. No test output = no QA blessing. Required format: Command run, Exit code, Before, After, Failures fixed, Remaining failures, Risk, Next test. The test suite is the tribunal. The Oracle is only the witness.",
+  "checksum": "59c683b5"
+}
