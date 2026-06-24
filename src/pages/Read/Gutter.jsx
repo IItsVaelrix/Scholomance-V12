@@ -9,14 +9,15 @@ const MAX_BARS = 8;
 // ".)" suffix and divides the line number from the syllable bars. Fill/opacity
 // come from CSS (.gutter-tick), brightening on the current line.
 function GutterTick() {
-     return (
-      <svg
+  return (
+    <svg
       className="gutter-tick"
       viewBox="0 0 8 8"
       width="8"
       height="8"
       aria-hidden="true"
       fill="currentColor"
+      style={{ width: 8, height: 8, display: 'block', flexShrink: 0 }}
     >
       <path d="M4 0.75 L7.25 4 L4 7.25 L0.75 4 Z" />
     </svg>
