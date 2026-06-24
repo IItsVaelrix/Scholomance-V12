@@ -847,11 +847,19 @@ export function decodeRetrievalGene(gene: string): DecodedGene {
     throw new Error(`Unsupported retrieval gene version: ${version}.`);
   }
 
-  const parsedConfidence = Number(confidence) / 100;
+  const rawConfidence = Number(confidence);
 
-  if (!Number.isFinite(parsedConfidence)) {
-    throw new Error(`Invalid confidence value: ${confidence}.`);
+  if (
+    !Number.isInteger(rawConfidence) ||
+    rawConfidence < 0 ||
+    rawConfidence > 100
+  ) {
+    throw new Error(
+      `Invalid confidence value: ${confidence}. Expected integer 0-100.`
+    );
   }
+
+  const parsedConfidence = rawConfidence / 100;
 
   return {
     version,
@@ -1054,25 +1062,23 @@ The first version should be small.
 1. Gene string format
 2. Gene decoder
 3. Flag translator
-4. Gene registry
-5. ForceField injection
-6. Search-before-broad-search gate
-7. Decoder tests
+4. Gene validator
+5. Gene registry (3 genes only)
+6. Detector with token scoring
+7. Decoder / validator / detector tests
 ```
 
 Do not start by encoding every memory.
 
-Start with the highest-value memories:
+Start with exactly three canonical genes:
 
 ```txt
-Recurring bug patterns
-Canonical architecture rules
-Known brittle modules
-Major lyrical/creative frameworks
-PixelBrain rules
-Phoneme engine rules
-Tool-use rules
+BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK
+ARCH_RULE_BACKEND_TRUTH_AUTHORITY
+TOOL_RULE_SEARCH_BEFORE_ASSUME
 ```
+
+This proves the system without turning the registry into a memory swamp.
 
 ---
 
@@ -1085,47 +1091,18 @@ src/
       types.ts
       decodeRetrievalGene.ts
       translateGeneToEnglish.ts
-      geneRegistry.ts
-      applyGeneToForceField.ts
-      detectGeneMatches.ts
       validateGene.ts
-      lifecycle.ts
-      degradeGene.ts
-      recoverGene.ts
-      health.ts
-      compiler/
-        cli.ts
-        addGene.ts
-        acceptanceChecklist.ts
-        emitHealth.ts
-
-    forcefield/
-      types.ts
-      createForceField.ts
-      searchGovernor.ts
-      contextLedger.ts
-
-    turboquant/
-      genomeChunk.ts
-      retrieveGenomeChunk.ts
-
-    amplifiers/
-      amplifierRouter.ts
-      amplifierRegistry.ts
-
-    pixelbrain/
-      healthSignal.ts
-      tierParser.ts
+      geneRegistry.ts
+      detectGeneMatches.ts
 
   tests/
     scdna.decodeRetrievalGene.test.ts
     scdna.translateGeneToEnglish.test.ts
-    scdna.applyGeneToForceField.test.ts
-    scdna.searchGovernorIntegration.test.ts
-    scdna.degradation.test.ts
-    scdna.tieredHealth.test.ts
-    scdna.compiler.test.ts
+    scdna.validateGene.test.ts
+    scdna.detectGeneMatches.test.ts
 ```
+
+Later phases add `applyGeneToForceField.ts`, `lifecycle.ts`, `compiler/`, `pixelbrain/tierParser.ts`, and their tests.
 
 ---
 
@@ -1149,20 +1126,41 @@ export function detectGeneMatches(
   registry: GeneRegistry
 ): RetrievalGene[] {
   const normalizedQuery = normalizeText(query);
+  const queryTokens = new Set(tokenize(normalizedQuery));
 
-  return Object.values(registry).filter(gene => {
-    const searchable = normalizeText([
-      gene.identity.stableId,
-      gene.domain.primary,
-      ...gene.domain.secondary,
-      gene.english.shortMeaning,
-      gene.english.expandedMeaning,
-      gene.instruction.imperative,
-      ...gene.instruction.forbiddenDrift
-    ].join(" "));
+  return Object.values(registry)
+    .filter(gene => gene.lifecycle.status === "active")
+    .map(gene => {
+      const searchable = normalizeText([
+        gene.identity.stableId,
+        gene.domain.primary,
+        ...gene.domain.secondary,
+        gene.english.shortMeaning,
+        gene.english.expandedMeaning,
+        gene.instruction.imperative,
+        ...gene.instruction.forbiddenDrift,
+        ...gene.instruction.requiredChecks,
+      ].join(" "));
 
-    return searchable.includes(normalizedQuery) || normalizedQuery.includes(gene.domain.primary);
-  });
+      const geneTokens = new Set(tokenize(searchable));
+      const overlap = [...queryTokens].filter(token => geneTokens.has(token)).length;
+      const score = overlap / Math.max(1, queryTokens.size);
+
+      return { gene, score };
+    })
+    .filter(({ gene, score }) => {
+      const priorityBoost = gene.retrieval.priority * 0.15;
+      const confidenceBoost = gene.retrieval.confidence * 0.15;
+      return score + priorityBoost + confidenceBoost >= 0.45;
+    })
+    .sort((a, b) => b.score - a.score)
+    .map(result => result.gene);
+}
+
+function tokenize(value: string): string[] {
+  return normalizeText(value)
+    .split(" ")
+    .filter(token => token.length >= 3);
 }
 
 function normalizeText(value: string): string {
@@ -1212,20 +1210,7 @@ export function validateGene(gene: RetrievalGene): string[] {
 
 ## 24. Acceptance Criteria
 
-SCDNA is successful when:
-
-```txt
-Genes decode deterministically
-Genes translate into stable English
-High-confidence genes activate relevant brains
-Unknown flags are surfaced, not ignored
-Search Governor checks gene matches before broad search
-ForceField receives decoded instructions
-TurboQuant payloads can be retrieved from gene references
-Genes reduce repeated retrieval
-Genes reduce interpretation ambiguity
-Low-confidence or stale genes require validation
-```
+See the consolidated acceptance criteria in **Section 31: Updated Acceptance Criteria**.
 
 ---
 
@@ -1234,11 +1219,13 @@ Low-confidence or stale genes require validation
 ### Decoder QA
 
 ```txt
-Valid gene decodes successfully
+Valid compact gene decodes successfully
 Invalid prefix fails
 Invalid version fails
+Confidence below 0 fails
+Confidence above 100 fails
+Non-integer confidence fails
 Missing fields fail
-Invalid confidence fails
 Unknown flags are preserved and reported
 Same gene always produces same output
 ```
@@ -1250,6 +1237,32 @@ Known flags translate correctly
 Unknown flags do not disappear
 English instruction includes source, domain, action, brains, and confidence
 Translation is deterministic
+Translation snapshot does not drift across refactors
+```
+
+### Validation QA
+
+```txt
+Valid gene passes validation
+Gene without stableId fails
+Gene without contentHash fails
+Gene without primary domain fails
+Gene without activation brains fails
+Gene without imperative fails
+Gene without short meaning fails
+Confidence outside [0, 1] fails
+Freshness outside [0, 1] fails
+```
+
+### Detector QA
+
+```txt
+Exact stableId match wins over semantic match
+Broad domain word does not activate every gene
+Deprecated gene does not activate
+Low-confidence gene requires validation
+Score threshold rejects weak matches
+Results are sorted by relevance
 ```
 
 ### Routing QA
@@ -1279,12 +1292,13 @@ Decoded gene updates routing field
 Decoded gene respects search budget
 Decoded gene does not silently override contradictions
 Decoded gene can be challenged by fresher evidence
+Gene match count is capped per request
 ```
 
 ### Degradation QA
 
 ```txt
-Contradiction degrades confidence deterministically
+Contradiction degrades confidence deterministically from originalConfidence
 Consistent correct use recovers confidence slowly
 Confidence at or below threshold deprecates gene
 Deprecated gene is skipped by detector
@@ -1330,51 +1344,67 @@ Existing health signals still parse after tier upgrade
 
 ## 26. Next Risks
 
-### Risk 1: False authority
+### Risk 1: Gene explosion
+
+If every tiny memory becomes a gene, the registry becomes noisy and the detector becomes useless.
+
+**Mitigation:** only promote a memory into SCDNA if it prevents a repeated mistake or activates a reusable workflow. Enforce the compiler acceptance checklist and cap the initial registry at three genes.
+
+---
+
+### Risk 2: False authority
 
 A gene may look official even when it is wrong.
 
-**Mitigation:** include confidence, freshness, canonical status, and validation requirements.
+**Mitigation:** include confidence, freshness, canonical status, contradiction pathways, and required validation. Never let a gene override fresher evidence silently.
 
 ---
 
-### Risk 2: Decoder drift
+### Risk 3: Over-routing
+
+A gene may activate too many brains, turning cognition into noise.
+
+**Mitigation:** the compiler checklist requires fewer than five activated brains unless justified. Personality weighting in the ForceField further dampens irrelevant activations.
+
+---
+
+### Risk 4: Decoder drift
 
 A gene may decode differently if the translator changes.
 
-**Mitigation:** version every decoder and preserve compatibility tables.
+**Mitigation:** version every decoder, preserve compatibility tables, and snapshot-test English translations.
 
 ---
 
-### Risk 3: Overcompression
+### Risk 5: Overcompression
 
 If genes become too short, meaning becomes cryptic.
 
-**Mitigation:** keep compact strings linked to full structured gene records.
+**Mitigation:** keep compact strings linked to full structured gene records. The compact string is a serialization, not the source of truth.
 
 ---
 
-### Risk 4: Bad tagging
+### Risk 6: Bad tagging
 
 If a memory receives the wrong gene, it may activate the wrong brains.
 
-**Mitigation:** add gene validation, review workflows, and correction history.
+**Mitigation:** add gene validation, review workflows, correction history, and degradation/deprecation on contradiction.
 
 ---
 
-### Risk 5: Retrieval tunnel vision
+### Risk 7: Retrieval tunnel vision
 
 If the system trusts a gene too much, it may ignore better evidence.
 
-**Mitigation:** allow ForceField contradiction checks and freshness overrides.
+**Mitigation:** allow ForceField contradiction checks and freshness overrides. A gene contradicted by evidence degrades immediately.
 
 ---
 
-### Risk 6: Gene explosion
+### Risk 8: Detector overmatch
 
-If every tiny memory becomes a gene, the registry becomes noisy.
+Broad domain words or loose matching can activate genes for unrelated queries.
 
-**Mitigation:** encode only high-value, reusable, operational memories.
+**Mitigation:** use token-overlap scoring with a minimum score threshold, exclude deprecated genes, and require priority/confidence boosts to pass. Exact stableId matches win over semantic matches.
 
 ---
 
@@ -1535,8 +1565,10 @@ When a contradiction is detected at runtime index `i`:
 ```txt
 contradictionCount += 1
 lastContradictionAtIndex = i
-confidence = max(minConfidence, confidence * (degradationFactor ** contradictionCount))
+confidence = max(minConfidence, originalConfidence * (degradationFactor ** contradictionCount))
 ```
+
+The degradation is always computed from `originalConfidence`, not the current degraded value, so the curve matches the table exactly and a gene cannot accidentally double-punish itself.
 
 Default constants:
 
@@ -1706,9 +1738,12 @@ SCDNA is successful when:
 
 ```txt
 Genes decode deterministically.
+Compact gene confidence is bounded to integers 0-100.
 Genes translate into stable English.
 High-confidence genes activate relevant brains.
 Unknown flags are surfaced, not ignored.
+The detector does not activate genes on broad domain words alone.
+Deprecated genes never activate.
 Search Governor checks gene matches before broad search.
 ForceField receives decoded instructions.
 TurboQuant payloads can be retrieved from gene references.
