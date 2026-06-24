@@ -1318,7 +1318,15 @@ This is the upgrade from agent to organism.
 | Council Arbiter stub | `steamdeck_brain/vaelrix_forcefield/council_arbiter.py` | ✅ Implemented |
 | Amplifier Executor | `steamdeck_brain/vaelrix_forcefield/amplifier_executor.py` | ✅ Implemented |
 | Code Brain | `steamdeck_brain/vaelrix_forcefield/brains/code_brain.py` | ✅ Implemented |
-| Test / Risk / Memory / Critique Brains | `steamdeck_brain/vaelrix_forcefield/brains/` | ✅ Implemented |
+| Test / Risk / Memory / Critique / Determinism Brains | `steamdeck_brain/vaelrix_forcefield/brains/` | ✅ Implemented |
+| Pixel Brain | `steamdeck_brain/vaelrix_forcefield/brains/pixel_brain.py` | ✅ Implemented |
+| Rhyme Brain | `steamdeck_brain/vaelrix_forcefield/brains/rhyme_brain.py` | ✅ Implemented |
+| Phoneme Brain | `steamdeck_brain/vaelrix_forcefield/brains/phoneme_brain.py` | ✅ Implemented |
+| Lore Brain | `steamdeck_brain/vaelrix_forcefield/brains/lore_brain.py` | ✅ Implemented |
+| SEO Brain | `steamdeck_brain/vaelrix_forcefield/brains/seo_brain.py` | ✅ Implemented |
+| Audio Brain | `steamdeck_brain/vaelrix_forcefield/brains/audio_brain.py` | ✅ Implemented |
+| UI Brain | `steamdeck_brain/vaelrix_forcefield/brains/ui_brain.py` | ✅ Implemented |
+| Architecture Brain | `steamdeck_brain/vaelrix_forcefield/brains/architecture_brain.py` | ✅ Implemented |
 | PixelBrain Router | `steamdeck_brain/vaelrix_forcefield/pixelbrain/router.py` | ✅ Implemented |
 | BytecodeHealth binding | `steamdeck_brain/vaelrix_forcefield/pixelbrain/bytecode_health.py` | ✅ Implemented |
 | BrainBridge integration surface | `steamdeck_brain/vaelrix_forcefield/brain_bridge.py` | ✅ Implemented |
@@ -1333,6 +1341,12 @@ This is the upgrade from agent to organism.
 **Not yet implemented (post-MVP):**
 
 - Automatic submission of BytecodeHealth signals to diagnostic memory / immune system
+
+**Post-MVP completion (2026-06-25):**
+
+- All 8 stub brains (`PIXEL_BRAIN`, `RHYME_BRAIN`, `PHONEME_BRAIN`, `LORE_BRAIN`, `SEO_BRAIN`, `AUDIO_BRAIN`, `UI_BRAIN`, `ARCHITECTURE_BRAIN`) promoted from `stub_brains.py` to fully implemented modules with domain-specific heuristic analysis, ResonanceScore computation, and dedicated runner functions.
+- `stub_brains.py` removed — all 14 brains now have dedicated implementations.
+- All 59 existing tests continue to pass; all 14 brains smoke-tested OK.
 
 **Runtime behavior:**
 
