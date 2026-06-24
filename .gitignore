@@ -140,3 +140,5 @@ build/
 # SteamDeck brain runtime
 steamdeck_brain/__pycache__/
 *.pyc
+# SCDNA compiler runtime artifacts (generated at default paths)
+steamdeck_brain/vaelrix_forcefield/scdna/compiler.history.jsonl

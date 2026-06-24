@@ -10,6 +10,7 @@ Council Arbiter and ActionEngine can act on them.
 from __future__ import annotations
 
 from .pixelbrain import emit_error
+from .scdna import emit_health_signal
 from .types import AmplifierResult, ResonanceScore, VaelrixCortexForceField
 
 
@@ -37,8 +38,19 @@ def audit_determinism(
     Returns an AmplifierResult from DETERMINISM_BRAIN containing findings,
     recommended action, and PB-ERR-v1 bytecodes for any violation.
     """
+
+    def _tiered_signal(tier: str, code: str, context: dict) -> str:
+        return emit_health_signal(
+            severity="yellow" if tier.startswith("Y") else "red",
+            component="DETERMINISM_AUDITOR",
+            stable_id=code,
+            tier=tier,
+            **context,
+        )
+
     findings: list[str] = []
     bytecodes: list[str] = []
+    tiered_signals: list[str] = []
 
     det = field.determinism
     deterministic = det.deterministicMode
@@ -74,6 +86,9 @@ def audit_determinism(
                 context={"field": "determinism.seed", "value": None},
             )
         )
+        tiered_signals.append(
+            _tiered_signal("Y1", "0701", {"field": "determinism.seed", "value": "null"})
+        )
 
     if deterministic and not det.stableOrdering:
         findings.append(
@@ -87,6 +102,11 @@ def audit_determinism(
                 module="FORCEFIELD",
                 code="0702",
                 context={"field": "determinism.stableOrdering", "value": False},
+            )
+        )
+        tiered_signals.append(
+            _tiered_signal(
+                "Y1", "0702", {"field": "determinism.stableOrdering", "value": "false"}
             )
         )
 
@@ -107,16 +127,28 @@ def audit_determinism(
                 f"{brain.id} allows non-deterministic tools: {', '.join(bad_tools)}"
             )
             for tool in bad_tools:
+                severity = "WARN" if not deterministic else "CRIT"
                 bytecodes.append(
                     emit_error(
                         category="DETERMINISM",
-                        severity="WARN" if not deterministic else "CRIT",
+                        severity=severity,
                         module=brain.id,
                         code="0703",
                         context={
                             "tool": tool,
                             "deterministicMode": deterministic,
                             "source": "allowedTools",
+                        },
+                    )
+                )
+                tiered_signals.append(
+                    _tiered_signal(
+                        "R2" if deterministic else "Y1",
+                        "0703",
+                        {
+                            "tool": tool,
+                            "source": "allowedTools",
+                            "brain": brain.id,
                         },
                     )
                 )
@@ -129,10 +161,11 @@ def audit_determinism(
                     f"{result.brainId} requested non-deterministic tool "
                     f"'{request.tool}' for reason: {request.reason}"
                 )
+                severity = "WARN" if not deterministic else "CRIT"
                 bytecodes.append(
                     emit_error(
                         category="DETERMINISM",
-                        severity="WARN" if not deterministic else "CRIT",
+                        severity=severity,
                         module=result.brainId,
                         code="0704",
                         context={
@@ -143,6 +176,17 @@ def audit_determinism(
                         },
                     )
                 )
+                tiered_signals.append(
+                    _tiered_signal(
+                        "R2" if deterministic else "Y1",
+                        "0704",
+                        {
+                            "tool": request.tool,
+                            "brain": result.brainId,
+                        },
+                    )
+                )
+
 
     # Check that results are returned in activeBrains order.
     active = field.routing.activeBrains
@@ -178,6 +222,7 @@ def audit_determinism(
         ),
         findings=findings,
         bytecodes=bytecodes,
+        tieredSignals=tiered_signals,
         recommendedAction=(
             "No action needed."
             if not bytecodes
