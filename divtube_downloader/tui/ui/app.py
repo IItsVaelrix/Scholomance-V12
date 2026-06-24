@@ -30,18 +30,18 @@ from tui.services.env_config import write_key
 from tui.screens.video_forge_screen import VideoForgeScreen
 
 # ── Scholomance palette ──────────────────────────────────────────────
-BACKGROUND = "#0B0C10"
-SURFACE    = "#121212"
-PANEL      = "#15121C"
-CRIMSON    = "#DC143C"
-GOLD       = "#FFD700"
-INDIGO     = "#4B0082"
-PURPLE     = "#7851A9"
-PURPLE_LT  = "#B388FF"
+# Obsidian · Purple · Crimson
+BACKGROUND = "#0D0D0D"   # obsidian black
+SURFACE    = "#161616"   # obsidian surface
+PANEL      = "#1C1818"   # obsidian panel (crimson warmth)
+CRIMSON    = "#DC143C"   # primary accent
+GOLD       = "#FFD700"   # highlight
+PURPLE     = "#8B5CF6"   # secondary accent (royal purple)
+PURPLE_LT  = "#B388FF"   # light purple
 SUCCESS    = "#7CFF8B"
 WARNING    = "#FFD166"
 ERROR      = "#FF5C7A"
-MUTED      = "#6B7280"
+MUTED      = "#6A5A6A"   # muted purple-gray
 FOREGROUND = "#E2E8F0"
 
 
@@ -97,29 +97,29 @@ class FileSelectScreen(ModalScreen[str]):
     CSS = """
     FileSelectScreen {
         align: center middle;
-        background: rgba(15, 23, 42, 0.90);
+        background: rgba(13, 13, 13, 0.92);
     }
     #file-select-container {
         width: 80;
         height: 25;
-        border: panel #6366F1;
-        background: #1E293B;
+        border: panel #DC143C;
+        background: #1C1C1C;
         padding: 1 2;
         box-sizing: border-box;
     }
     .modal-title {
         text-align: center;
         margin-bottom: 1;
-        color: #A78BFA;
+        color: #B388FF;
     }
     #file-filter {
         margin-bottom: 1;
-        border: panel #4F46E5;
-        background: #0F172A;
+        border: panel #B81030;
+        background: #0D0D0D;
         transition: border 200ms;
     }
     #file-filter:focus {
-        border: panel #818CF8;
+        border: panel #FF3355;
     }
     """
     IGNORE_DIRS = {"node_modules", ".git", "dist", "build", ".cache",
@@ -175,7 +175,7 @@ class FileSelectScreen(ModalScreen[str]):
             placeholder = "Type to filter…"
             options = [Option(f) for f in self.files[:100]]
         yield Vertical(
-            Static(f"[bold #00BFFF]{title}[/]", classes="modal-title"),
+            Static(f"[bold #DC143C]{title}[/]", classes="modal-title"),
             Input(placeholder=placeholder, id="file-filter"),
             OptionList(*options, id="file-list"),
             id="file-select-container"
@@ -288,43 +288,43 @@ class ModelSelectScreen(ModalScreen[str]):
 class DivTubeAgentApp(App):
     CSS = '''
     Screen { 
-        background: #0F172A; 
+        background: #0D0D0D; 
     }
 
     Header { 
-        background: #1E293B; 
+        background: #1C1C1C; 
         color: #F8FAFC; 
         text-style: bold; 
         padding: 0 1;
     }
     HeaderTitle { 
-        color: #A78BFA; 
+        color: #B388FF; 
         text-style: bold; 
     }
     Footer { 
-        background: #1E293B; 
+        background: #1C1C1C; 
     }
     FooterKey { 
-        background: #1E293B; 
-        color: #94A3B8;
+        background: #1C1C1C; 
+        color: #9B8A9B;
         transition: background 200ms, color 200ms;
     }
     FooterKey > .footer-key--key { 
-        color: #0F172A; 
-        background: #A78BFA; 
+        color: #0D0D0D; 
+        background: #B388FF; 
         text-style: bold; 
     }
     FooterKey > .footer-key--description { 
-        color: #CBD5E1; 
+        color: #C0B0C0; 
     }
     FooterKey:hover { 
-        background: #334155; 
+        background: #2D181E; 
         color: #F8FAFC;
     }
 
     #sidebar {
         width: 32;
-        background: #1E293B;
+        background: #1C1C1C;
         border: panel #8B5CF6;
         border-title-color: #F8FAFC;
         border-title-align: center;
@@ -333,8 +333,8 @@ class DivTubeAgentApp(App):
     }
     #inspector {
         height: 1fr;
-        background: #1E293B;
-        border: panel #6366F1;
+        background: #1C1C1C;
+        border: panel #DC143C;
         border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 1 1;
@@ -342,8 +342,8 @@ class DivTubeAgentApp(App):
     }
     #radar {
         height: 1fr;
-        background: #0F172A;
-        border: panel #F59E0B;
+        background: #0D0D0D;
+        border: panel #FFD700;
         border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 1 1;
@@ -353,12 +353,12 @@ class DivTubeAgentApp(App):
     }
     #right-panel {
         width: 42;
-        background: #0F172A;
+        background: #0D0D0D;
     }
     #code-viewer {
         height: 1fr;
-        background: #0F172A;
-        border: panel #6366F1;
+        background: #0D0D0D;
+        border: panel #DC143C;
         border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
@@ -377,44 +377,44 @@ class DivTubeAgentApp(App):
         height: 1; 
         border: none; 
         background: transparent; 
-        color: #94A3B8; 
+        color: #9B8A9B; 
         content-align: left middle; 
         padding-left: 2; 
         transition: background 200ms, color 200ms;
     }
     .sidebar-button:hover { 
-        background: #334155; 
-        color: #A78BFA; 
+        background: #2D181E; 
+        color: #B388FF; 
         text-style: bold; 
     }
     
     #center-panel { 
         width: 1fr; 
-        background: #0F172A; 
+        background: #0D0D0D; 
         padding: 1 1; 
     }
 
     .chat-log-cls {
-        background: #1E293B;
+        background: #1C1C1C;
         color: #F8FAFC;
-        border: panel #E11D48;
+        border: panel #DC143C;
         border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
         scrollbar-color: #8B5CF6;
-        scrollbar-color-hover: #A78BFA;
-        scrollbar-color-active: #A78BFA;
-        scrollbar-background: #0F172A;
+        scrollbar-color-hover: #B388FF;
+        scrollbar-color-active: #B388FF;
+        scrollbar-background: #0D0D0D;
         scrollbar-size-vertical: 1;
     }
     
     #typewriter-box {
-        background: #1E293B;
+        background: #1C1C1C;
         color: #F8FAFC;
         height: auto;
         min-height: 3;
         max-height: 30;
-        border: panel #F59E0B;
+        border: panel #FFD700;
         border-title-color: #F8FAFC;
         border-title-align: center;
         padding: 0 1;
@@ -431,8 +431,8 @@ class DivTubeAgentApp(App):
         width: 100%;
         height: 3;
         margin: 1;
-        background: #1E293B;
-        border: tall #334155;
+        background: #1C1C1C;
+        border: tall #2D181E;
     }
     #command-input.expanded {
         height: 15;
@@ -442,7 +442,7 @@ class DivTubeAgentApp(App):
     }
 
     .cmd-list { padding: 1 0 0 1; }
-    .muted { color: #64748B; }
+    .muted { color: #6A5A6A; }
     .glyph-container { 
         dock: bottom; 
         content-align: center middle; 
@@ -459,20 +459,20 @@ class DivTubeAgentApp(App):
 
     ModelSelectScreen {
         align: center middle;
-        background: rgba(15, 23, 42, 0.90);
+        background: rgba(13, 13, 13, 0.92);
     }
     #model-dialog {
         width: 60;
         height: 20;
-        background: #1E293B;
+        background: #1C1C1C;
         border: panel #8B5CF6;
         border-title-color: #F8FAFC;
         padding: 0;
         box-sizing: border-box;
     }
     #model-title {
-        background: #334155;
-        color: #A78BFA;
+        background: #2D181E;
+        color: #B388FF;
         text-style: bold;
         content-align: center middle;
         width: 100%;
@@ -485,7 +485,7 @@ class DivTubeAgentApp(App):
         padding: 1 1; 
     }
     OptionList > .option-list--option-highlighted { 
-        background: #334155; 
+        background: #2D181E; 
         color: #F8FAFC; 
         text-style: bold; 
     }
@@ -598,7 +598,7 @@ class DivTubeAgentApp(App):
         def handle_code(ui, args):
             if not args:
                 ui.show_code("", "")
-                ui.log_msg("[#6B7280]Code viewer cleared.[/]")
+                ui.log_msg("[#6A5A6A]Code viewer cleared.[/]")
                 return
             path = args[0]
             try:
@@ -908,6 +908,46 @@ class DivTubeAgentApp(App):
 
         self.registry.register("/apply-patch", handle_apply_patch, "Apply AI Patches", "/apply-patch <f>")
 
+        def handle_refactor_all(ui, args):
+            if len(args) < 3:
+                ui.log_msg(f"[{ERROR}]Usage:[/] /refactor-all <glob> <search> <replace> [--dry-run]")
+                return
+            pattern = args[0]
+            search = args[1]
+            replace = args[2]
+            dry_run = "--dry-run" in args[3:]
+            ui.log_msg(f"[{MUTED}]Refactoring files matching [bold]{pattern}[/]...[/]")
+            try:
+                from tui.utils.agent_tools import refactor_all
+                result = refactor_all(pattern, search, replace, dry_run=dry_run)
+                color = WARNING if result.changed == 0 else SUCCESS
+                ui.log_msg(
+                    f"[{color}]Searched {result.searched} file(s): {result.changed} changed, "
+                    f"{result.skipped} skipped[/]"
+                )
+                for detail in result.details:
+                    status = detail["status"]
+                    fpath = detail["file"]
+                    if status == "changed":
+                        ui.log_msg(f"  [{SUCCESS}]✔[/] {fpath}")
+                    elif status == "would_change":
+                        ui.log_msg(f"  [{WARNING}]◌[/] {fpath} (dry-run)")
+                    elif status == "ambiguous":
+                        ui.log_msg(f"  [{WARNING}]⚠[/] {fpath} — {detail['occurrences']} occurrences (ambiguous)")
+                    elif status == "no_match":
+                        ui.log_msg(f"  [{MUTED}]−[/] {fpath} — no match")
+                    else:
+                        ui.log_msg(f"  [{ERROR}]✖[/] {fpath} — {status}")
+            except Exception as e:
+                ui.log_msg(f"[{ERROR}]Refactor failed:[/] {e}")
+
+        self.registry.register(
+            "/refactor-all",
+            handle_refactor_all,
+            "Batch search/replace across files",
+            '/refactor-all <glob> "search" "replace" [--dry-run]',
+        )
+
         def handle_thumbnail(ui, args):
             import os
             import threading
@@ -1112,7 +1152,7 @@ class DivTubeAgentApp(App):
             if any(isinstance(s, VideoForgeScreen) for s in ui.screen_stack):
                 ui.pop_screen()
             else:
-                ui.log_msg("[#6B7280]Already on DivTube home. Use /forge to open the Video Forge editor.[/]")
+                ui.log_msg("[#6A5A6A]Already on DivTube home. Use /forge to open the Video Forge editor.[/]")
 
         self.registry.register("/divtube", handle_divtube, "Return to DivTube", "/divtube")
 
@@ -1226,7 +1266,7 @@ class DivTubeAgentApp(App):
                     def _write():
                         bar.progress = 100
                         ui.set_timer(2.0, lambda: setattr(bar.styles, "display", "none"))
-                        ui.log_msg(f"[{ERROR}]Vaelrix unreachable: {e}\n[#6B7280]Is the daemon running on :9090?[/]")
+                        ui.log_msg(f"[{ERROR}]Vaelrix unreachable: {e}\n[#6A5A6A]Is the daemon running on :9090?[/]")
                     ui.call_from_thread(_write)
 
             threading.Thread(target=run, daemon=True).start()
@@ -1237,7 +1277,7 @@ class DivTubeAgentApp(App):
         """TurboQuant SEO plugin commands (spec v1.0, phases 0-3)."""
 
         def usage(ui, text):
-            ui.log_msg(f"[#6B7280]usage:[/] {text}")
+            ui.log_msg(f"[#6A5A6A]usage:[/] {text}")
 
         def register_golden(ui, args):
             pos, flags = _flags(args, {"--name"})
@@ -1420,7 +1460,7 @@ class DivTubeAgentApp(App):
             ui.cleri.rebuild_index(ui.log_msg)
 
         def handle_cleri_repl(ui, args):
-            ui.log_msg("[#FFD700]CLERI REPL[/] [#6B7280]— enter symptom text, blank to exit.[/]")
+            ui.log_msg("[#FFD700]CLERI REPL[/] [#6A5A6A]— enter symptom text, blank to exit.[/]")
             text = " ".join(args).strip()
             if text:
                 ui.cleri.scan(text, ui.log_msg)
@@ -1536,6 +1576,11 @@ class DivTubeAgentApp(App):
                 self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
         self.log_msg(f"[{purple}]Brain Daemon[/]")
         for name in ("/daemon-start", "/daemon-stop"):
+            cmd = self.registry.commands.get(name)
+            if cmd:
+                self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
+        self.log_msg(f"[{purple}]Refactor[/]")
+        for name in ("/refactor-all",):
             cmd = self.registry.commands.get(name)
             if cmd:
                 self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
@@ -1683,12 +1728,12 @@ class DivTubeAgentApp(App):
                     return
                 os.path.splitext(full)[1].lower()
                 short = os.path.relpath(full, project_root)
-                self.log_msg(f"\n[bold #B388FF]📎 @{short}[/] [#6B7280]({len(content)} B)[/]")
-                self.log_msg("[#4B0082]━━━ file ──────────────────[/]")
+                self.log_msg(f"\n[bold #B388FF]📎 @{short}[/] [#6A5A6A]({len(content)} B)[/]")
+                self.log_msg("[#8B5CF6]━━━ file ──────────────────[/]")
                 self.log_msg(f"[#E2E8F0]{content[:5000]}[/]")
                 if len(content) > 5000:
-                    self.log_msg(f"[#6B7280]… ({len(content) - 5000} more bytes)[/]")
-                self.log_msg("[#4B0082]━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n")
+                    self.log_msg(f"[#6A5A6A]… ({len(content) - 5000} more bytes)[/]")
+                self.log_msg("[#8B5CF6]━━━━━━━━━━━━━━━━━━━━━━━━━[/]\n")
             else:
                 self.log_msg(f"[#FF5C7A]✗ File not found: {full}[/]")
             return
@@ -1698,7 +1743,7 @@ class DivTubeAgentApp(App):
             self.registry.parse_and_execute(val, self)
         else:
             if "youtube.com" in val or "youtu.be" in val:
-                self.log_msg("[#6B7280]Auto-detecting URL… running analysis.[/]")
+                self.log_msg("[#6A5A6A]Auto-detecting URL… running analysis.[/]")
                 self.agent.run_command("1", val, self.log_msg, self)
             else:
                 self.registry.parse_and_execute(f"/prompt {val}", self)
@@ -1821,7 +1866,7 @@ class DivTubeAgentApp(App):
             input_widget.cursor_location = (row, start + len("@" + (dir_part + "/" if dir_part else "") + matches[0].rstrip("/")))
         else:
             # show options in chat
-            self.log_msg(f"[#6B7280]@{prefix} → {', '.join(matches)}[/]")
+            self.log_msg(f"[#6A5A6A]@{prefix} → {', '.join(matches)}[/]")
 
 if __name__ == "__main__":
     app = DivTubeAgentApp()

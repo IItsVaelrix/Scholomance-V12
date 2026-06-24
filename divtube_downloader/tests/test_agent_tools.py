@@ -5,6 +5,7 @@ from pathlib import Path
 from tui.utils.agent_tools import (
     ImportGraph,
     PatchResult,
+    RefactorResult,
     SymbolMatch,
     TestResult,
     apply_patch,
@@ -12,6 +13,7 @@ from tui.utils.agent_tools import (
     get_recent_errors,
     list_project_tree,
     read_import_graph,
+    refactor_all,
     run_targeted_tests,
 )
 
@@ -127,6 +129,40 @@ class TestApplyPatch(unittest.TestCase):
         self.path.write_text("old = 1\nold = 2\n")
         result = apply_patch(self.path, "old =", "new =")
         self.assertFalse(result.success)
+
+
+class TestRefactorAll(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmpdir.name)
+        (self.root / "a.py").write_text("old_func()\n")
+        (self.root / "b.py").write_text("old_func()\n")
+        (self.root / "c.py").write_text("other_func()\n")
+        (self.root / "node_modules").mkdir()
+        (self.root / "node_modules" / "d.py").write_text("old_func()\n")
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_changes_matching_files(self):
+        result = refactor_all("*.py", "old_func()", "new_func()", root=self.root)
+        self.assertIsInstance(result, RefactorResult)
+        self.assertEqual(result.searched, 3)  # *.py does not recurse into node_modules
+        self.assertEqual(result.changed, 2)
+        self.assertEqual((self.root / "a.py").read_text(), "new_func()\n")
+        self.assertEqual((self.root / "b.py").read_text(), "new_func()\n")
+        self.assertNotIn("old_func()", (self.root / "c.py").read_text())
+
+    def test_dry_run_does_not_write(self):
+        result = refactor_all("*.py", "old_func()", "new_func()", root=self.root, dry_run=True)
+        self.assertEqual(result.changed, 2)
+        self.assertEqual((self.root / "a.py").read_text(), "old_func()\n")
+
+    def test_skips_ambiguous_matches(self):
+        (self.root / "ambig.py").write_text("old_func()\nold_func()\n")
+        result = refactor_all("*.py", "old_func()", "new_func()", root=self.root)
+        ambig = next(d for d in result.details if "ambig.py" in d["file"])
+        self.assertEqual(ambig["status"], "ambiguous")
 
 
 class TestRunTargetedTests(unittest.TestCase):

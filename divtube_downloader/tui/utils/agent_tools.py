@@ -388,3 +388,86 @@ def run_targeted_tests(
             stderr=e.stderr or "",
             returncode=-1,
         )
+
+
+@dataclass
+class RefactorResult:
+    """Result of a batch refactor operation."""
+
+    searched: int
+    changed: int
+    skipped: int
+    details: list[dict]
+
+
+def refactor_all(
+    glob_pattern: str,
+    search_text: str,
+    replacement_text: str,
+    *,
+    root: str | Path | None = None,
+    dry_run: bool = False,
+) -> RefactorResult:
+    """
+    Batch search/replace across all files matching a glob pattern.
+
+    Only replaces files where ``search_text`` appears exactly once, to avoid
+    ambiguous edits. Creates ``.bak`` backups unless *dry_run* is True.
+
+    Args:
+        glob_pattern: e.g. "tui/**/*.py" or "*.md"
+        search_text: Exact text to search for.
+        replacement_text: Text to replace it with.
+        root: Project root; auto-detected if omitted.
+        dry_run: If True, report what would change without writing.
+    """
+    root_path = _resolve_root(root)
+    matches = sorted(root_path.glob(glob_pattern))
+
+    details: list[dict] = []
+    changed = 0
+    skipped = 0
+
+    for path in matches:
+        if not path.is_file():
+            continue
+        if any(part in _DEFAULT_IGNORED_DIRS for part in path.parts):
+            skipped += 1
+            details.append({"file": str(path), "status": "ignored_dir"})
+            continue
+
+        try:
+            content = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            skipped += 1
+            details.append({"file": str(path), "status": "read_error", "error": str(e)})
+            continue
+
+        if search_text not in content:
+            details.append({"file": str(path), "status": "no_match"})
+            continue
+
+        count = content.count(search_text)
+        if count > 1:
+            skipped += 1
+            details.append({"file": str(path), "status": "ambiguous", "occurrences": count})
+            continue
+
+        if dry_run:
+            details.append({"file": str(path), "status": "would_change"})
+            changed += 1
+            continue
+
+        backup_path = path.with_suffix(path.suffix + ".bak")
+        shutil.copy2(path, backup_path)
+        new_content = content.replace(search_text, replacement_text, 1)
+        path.write_text(new_content, encoding="utf-8")
+        changed += 1
+        details.append({"file": str(path), "status": "changed", "backup": str(backup_path)})
+
+    return RefactorResult(
+        searched=len(matches),
+        changed=changed,
+        skipped=skipped,
+        details=details,
+    )

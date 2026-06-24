@@ -22,7 +22,7 @@ class Sidebar(Static):
     def compose(self) -> ComposeResult:
         with VerticalScroll(classes="sidebar-box"):
             for heading, cmds in SECTIONS:
-                yield Static(f"[#7851A9]{heading}[/]", classes="sidebar-heading")
+                yield Static(f"[#8B5CF6]{heading}[/]", classes="sidebar-heading")
                 for c in cmds:
                     yield Button(c, variant="primary", classes="sidebar-button")
             yield AnimatedGlyph(classes="glyph-container")

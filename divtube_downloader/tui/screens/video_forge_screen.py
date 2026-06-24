@@ -12,12 +12,12 @@ from tui.widgets.render_meter_widget import RenderMeterWidget
 
 GOLD = "#FFD700"
 PURPLE = "#B388FF"
-MUTED = "#6B7280"
+MUTED = "#6A5A6A"
 SUCCESS = "#7CFF8B"
 WARNING = "#FFD166"
 CRIMSON = "#DC143C"
-OBSIDIAN = "#0B0C10"
-PANEL_BG = "#121212"
+OBSIDIAN = "#0D0D0D"
+PANEL_BG = "#161616"
 
 FORGE_HELP_TEXT = """[#B388FF]FORGE COMMANDS[/]
   [#FFD700]new[/]             Create new project
@@ -73,8 +73,8 @@ class VideoForgeScreen(Screen):
     }
     #forge-command-list {
         height: 10;
-        border: round #4B0082;
-        background: #121212;
+        border: round #8B5CF6;
+        background: #161616;
         padding: 0 1;
         margin-top: 1;
         overflow-y: auto;

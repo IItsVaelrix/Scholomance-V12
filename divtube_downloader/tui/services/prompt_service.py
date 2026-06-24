@@ -12,7 +12,7 @@ GOLD    = "#FFD700"
 PURPLE  = "#B388FF"
 SUCCESS = "#7CFF8B"
 ERROR   = "#FF5C7A"
-MUTED   = "#6B7280"
+MUTED   = "#6A5A6A"
 
 
 class PromptService:
@@ -141,12 +141,12 @@ class PromptService:
 
                         if tool_calls:
                             set_state("looking")
-                            callback(f"\n[bold #ef4444]ᗣ LOOKING[/] [#6B7280]— {len(tool_calls)} tool call(s)[/]")
+                            callback(f"\n[bold #ef4444]ᗣ LOOKING[/] [#6A5A6A]— {len(tool_calls)} tool call(s)[/]")
                             for tc in tool_calls:
                                 tool_name = tc.get("tool", "?")
                                 args = tc.get("args", {})
                                 res = tc.get("result", "(no result)")
-                                callback(f"  [bold #FFD700]🔧 {tool_name}[/] [#6B7280]{str(args)[:120]}[/]")
+                                callback(f"  [bold #FFD700]🔧 {tool_name}[/] [#6A5A6A]{str(args)[:120]}[/]")
                                 callback(f"  [#475569]{res[:200]}{'...' if len(res) > 200 else ''}[/]")
 
                         set_state("responding")
@@ -203,7 +203,7 @@ class PromptService:
                         _time.sleep(wait)
 
                     callback("\n[bold #FF5C7A]✗ Vaelrix daemon unreachable after 12 retries.[/]")
-                    callback("[#6B7280]  Start it:  systemctl --user start scholomance-brain.service[/]")
+                    callback("[#6A5A6A]  Start it:  systemctl --user start scholomance-brain.service[/]")
                     set_state("idle")
                     return
 

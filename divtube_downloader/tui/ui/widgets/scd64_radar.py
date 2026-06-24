@@ -31,7 +31,7 @@ class SCD64Radar(Static):
                 py = y * scale_y
                 
                 char = "·"
-                style = "#334155" # dim dot
+                style = "#2D181E" # dim dot
                 
                 # Check seeds
                 for s in self.seeds:

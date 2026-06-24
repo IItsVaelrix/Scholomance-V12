@@ -26,7 +26,7 @@ PURPLE  = "#B388FF"
 SUCCESS = "#7CFF8B"
 WARNING = "#FFD166"
 ERROR   = "#FF5C7A"
-MUTED   = "#6B7280"
+MUTED   = "#6A5A6A"
 CYAN    = "#00E5FF"
 
 # ── Anomaly severity colors ──────────────────────────────────────────

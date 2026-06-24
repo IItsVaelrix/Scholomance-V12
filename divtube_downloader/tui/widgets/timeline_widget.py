@@ -5,10 +5,10 @@ from rich.style import Style
 
 GOLD = "#FFD700"
 PURPLE = "#B388FF"
-MUTED = "#6B7280"
+MUTED = "#6A5A6A"
 CRIMSON = "#DC143C"
 SUCCESS = "#7CFF8B"
-OBSIDIAN = "#0B0C10"
+OBSIDIAN = "#0D0D0D"
 
 
 class TimelineWidget(Static):

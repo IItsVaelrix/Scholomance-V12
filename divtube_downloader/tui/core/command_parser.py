@@ -72,12 +72,12 @@ def resolve_at_references(raw: str, log_fn=None) -> str:
                             "gradle": "groovy", "java": "java",
                             "sql": "sql", "sh": "bash"}.get(ext.lstrip("."), "")
                     short = os.path.relpath(full, root)
-                    log_fn(f"\n[bold #B388FF]📎 @{short}[/] [#6B7280]({len(content)} B)[/]")
-                    log_fn("[#4B0082]━━━ file ━━━[/]")
+                    log_fn(f"\n[bold #B388FF]📎 @{short}[/] [#6A5A6A]({len(content)} B)[/]")
+                    log_fn("[#8B5CF6]━━━ file ━━━[/]")
                     log_fn(f"[#E2E8F0]{content[:3000]}[/]")
                     if len(content) > 3000:
-                        log_fn(f"[#6B7280]… ({len(content) - 3000} more bytes) — use full path in command to process it[/]")
-                    log_fn("[#4B0082]━━━━━━━━━━━[/]\n")
+                        log_fn(f"[#6A5A6A]… ({len(content) - 3000} more bytes) — use full path in command to process it[/]")
+                    log_fn("[#8B5CF6]━━━━━━━━━━━[/]\n")
 
                 # replace @token with the absolute path
                 resolved.append(full)
@@ -131,7 +131,7 @@ class CommandRegistry:
             self.commands[cmd]["handler"](ui_context, args)
         elif cmd.startswith("/"):
             # Forward unrecognized slash commands to the AI agent natively
-            ui_context.log_msg(f"[#6B7280]Forwarding {cmd} to Vaelrix...[/]")
+            ui_context.log_msg(f"[#6A5A6A]Forwarding {cmd} to Vaelrix...[/]")
             if "/prompt" in self.commands:
                 self.commands["/prompt"]["handler"](ui_context, [raw_input])
             else:

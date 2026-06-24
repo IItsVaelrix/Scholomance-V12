@@ -23,7 +23,7 @@ class ContentCriticService:
                 callback("[red]Error: No API Key found. Run '/apikey <key>' to set it.[/]")
                 return
 
-            callback(f"[#6B7280]Fetching available models from {models_url}...[/]")
+            callback(f"[#6A5A6A]Fetching available models from {models_url}...[/]")
             url = f"{models_url}/models" if not models_url.endswith("/models") else models_url
             req = urllib.request.Request(url, method="GET")
             req.add_header("Authorization", f"Bearer {api_key}")
@@ -76,7 +76,7 @@ class ContentCriticService:
                 callback("[red]Error: No API Key found. Run '/apikey <key>' to set it.[/]", success=False, is_final=True)
                 return
 
-            callback(f"[#6B7280]Analyzing '{file_path}' via {base_url}...[/]", success=True, is_final=False)
+            callback(f"[#6A5A6A]Analyzing '{file_path}' via {base_url}...[/]", success=True, is_final=False)
 
             # Determine where to find the prompt
             if skill_name == "mirrorborne-scholomance":
@@ -140,7 +140,7 @@ class ContentCriticService:
                     except urllib.error.HTTPError as e:
                         err_msg = e.read().decode('utf-8')
                         if use_tools and (e.code in (400, 501) or "support" in err_msg.lower() or "tool" in err_msg.lower() or "not implemented" in err_msg.lower()):
-                            callback(f"[dim][#6B7280]API returned {e.code} with tools — retrying without tool calling. Error: {err_msg[:300]}[/][/]")
+                            callback(f"[dim][#6A5A6A]API returned {e.code} with tools — retrying without tool calling. Error: {err_msg[:300]}[/][/]")
                             # Fallback without tools if the model doesn't support them
                             use_tools = False
                             llm_throttle.wait()

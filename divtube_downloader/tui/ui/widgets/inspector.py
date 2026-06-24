@@ -4,7 +4,7 @@ from textual.containers import Vertical
 from tui.ui.widgets.glyph import AnimatedGlyph
 
 def _row(label: str, value: str, color: str, dot: str = "●") -> str:
-    return f"[#7851A9]{label:<8}[/] [{color}]{dot}[/] [#E2E8F0]{value}[/]"
+    return f"[#8B5CF6]{label:<8}[/] [{color}]{dot}[/] [#E2E8F0]{value}[/]"
 
 class Inspector(Static):
     def on_mount(self) -> None:
@@ -60,7 +60,7 @@ class Inspector(Static):
             Static(_row("RAID",   "SCANNING",    "#FFD700"),       id="insp-cleri"),
             Static(_row("Model",  "big-pickle",  "#B388FF"),       id="insp-prompt"),
             Static(_row("Engine", "DivTube-V1",  "#B388FF"),       id="insp-engine"),
-            Static(_row("Tokens", "N/A",         "#6B7280", "─"),  id="insp-tokens"),
+            Static(_row("Tokens", "N/A",         "#6A5A6A", "─"),  id="insp-tokens"),
             AnimatedGlyph(classes="glyph-container"),
             classes="inspector-box"
         )

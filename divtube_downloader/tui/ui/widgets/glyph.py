@@ -15,11 +15,11 @@ def _frame(color: str, glyph: str = "▶", inner: str | None = None) -> str:
 # Pulse through the Scholomance palette: dim purple → crimson → gold → back.
 FRAMES = [
     _frame("#4B2A6F", "▷"),   # dim purple, hollow
-    _frame("#7851A9"),        # royal purple
+    _frame("#8B5CF6"),        # royal purple
     _frame("#DC143C"),        # crimson
     _frame("#FFD700", inner="#FFFFFF"),  # gold flare, white triangle
     _frame("#DC143C"),        # crimson
-    _frame("#7851A9"),        # royal purple
+    _frame("#8B5CF6"),        # royal purple
 ]
 
 class AnimatedGlyph(Static):

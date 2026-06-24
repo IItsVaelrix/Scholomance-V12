@@ -34,8 +34,8 @@ class CodeBox(VerticalScroll):
     CodeBox {
         width: 1fr;
         height: 1fr;
-        background: #0B0C10;
-        border: round #4B0082;
+        background: #0D0D0D;
+        border: round #8B5CF6;
         border-title-color: #FFD700;
         border-title-align: center;
         padding: 0 1;
@@ -50,7 +50,7 @@ class CodeBox(VerticalScroll):
     CodeBox > .code-content {
         width: 1fr;
         height: 1fr;
-        background: #0B0C10;
+        background: #0D0D0D;
         padding: 0 1;
     }
     """
@@ -90,7 +90,7 @@ class CodeBox(VerticalScroll):
                 theme="monokai",
                 line_numbers=True,
                 word_wrap=False,
-                background_color="#0B0C10",
+                background_color="#0D0D0D",
             )
             self._container.update(rich_syntax)
         except Exception:

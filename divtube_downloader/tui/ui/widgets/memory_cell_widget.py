@@ -18,15 +18,15 @@ from textual import on
 # ── Scholomance palette (matches app.py) ────────────────────────────
 CRIMSON    = "#DC143C"
 GOLD       = "#FFD700"
-INDIGO     = "#4B0082"
-PURPLE     = "#7851A9"
+INDIGO     = "#8B5CF6"
+PURPLE     = "#8B5CF6"
 PURPLE_LT  = "#B388FF"
 SUCCESS    = "#7CFF8B"
 WARNING    = "#FFD166"
 ERROR      = "#FF5C7A"
-MUTED      = "#6B7280"
-BG         = "#0B0C10"
-SURFACE    = "#121212"
+MUTED      = "#6A5A6A"
+BG         = "#0D0D0D"
+SURFACE    = "#161616"
 CYAN       = "#00E5FF"
 
 # ── Anomaly colors ──────────────────────────────────────────────────
