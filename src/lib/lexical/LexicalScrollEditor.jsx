@@ -340,7 +340,13 @@ const LexicalScrollEditor = forwardRef(({
   const lexicalEditorRef = useRef(null);
   const gutterRef = useRef(null);
   const [viewportHeight, setViewportHeight] = useState(0);
-  const [measuredLineHeight, setMeasuredLineHeight] = useState(32);
+  // Matches the CSS --editor-content-line-height: 1.9 at the default
+  // --editor-content-font-size: clamp(1.02rem,1.2vw,1.12rem) ≈ 16px.
+  // LineHeightPlugin only fires once a <p> exists; on a brand-new empty
+  // scroll there is no paragraph until the first keystroke, so seed the
+  // gutter at the correct 30.4 instead of 32 to avoid a 1.6px row shrink
+  // on the first Enter.
+  const [measuredLineHeight, setMeasuredLineHeight] = useState(30.4);
   const handleLineHeight = useCallback((h) => {
     setMeasuredLineHeight(h);
   }, []);

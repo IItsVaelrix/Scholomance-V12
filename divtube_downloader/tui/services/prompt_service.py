@@ -1,11 +1,16 @@
 import json
+import re
 import threading
 import urllib.request
 import urllib.error
 
 from tui.services.env_config import get_config, get_model
-from tui.services.tool_service import ToolService
+from tui.services.tool_service import ToolService, get_pending_diff, _side_by_side_pairs
 from tui.utils.throttle import llm_throttle
+
+# Compiled once: pulls the write_id out of a replace_file_content result so we
+# can fetch the side-by-side blob from the tool service and render it inline.
+_WID_RX = re.compile(r"\[write_id=(w\d+)\]")
 
 
 GOLD    = "#FFD700"
@@ -353,6 +358,17 @@ class PromptService:
                                     disp_str = result_str
                                 callback.__self__.show_code(disp_str, filename=f"{func_name}_output", language="json")
 
+                            # Inline diff review: if the tool wrote a file, pull
+                            # the side-by-side blob the tool stashed and render
+                            # it as a Rich table in the chat log. The LLM still
+                            # gets the unified diff in the tool result; this is
+                            # purely a human-facing summary with a confirm/undo
+                            # affordance.
+                            if func_name == "replace_file_content" and isinstance(tool_result, str):
+                                m = _WID_RX.search(tool_result)
+                                if m:
+                                    _render_diff_review(callback, m.group(1))
+
                             import time
                             time.sleep(1.0) # Prevent 429 rate limit death spirals
                             
@@ -414,4 +430,116 @@ class PromptService:
             self.history[agent_id].clear()
         elif not agent_id:
             self.history.clear()
+
+
+def _render_diff_review(callback, write_id):
+    """Render a side-by-side diff for a completed replace_file_content write
+    as a Rich table in the chat log, then emit a one-line undo affordance.
+
+    Pulls the before/after blob stashed by the tool service and consumes it
+    (so the next replace doesn't re-render the same diff). Falls back to a
+    plain status line if the blob is no longer available.
+    """
+    blob = get_pending_diff(write_id, consume=True)
+    if blob is None:
+        callback(
+            f"  [{MUTED}]diff review unavailable for {write_id} "
+            f"(already consumed or expired).[/]"
+        )
+        return
+
+    from rich.table import Table
+    from rich.panel import Panel
+
+    pairs = _side_by_side_pairs(blob["before"], blob["after"])
+    if not pairs:
+        callback(
+            f"  [{MUTED}]no visible changes for {blob['path']}.[/]"
+        )
+        return
+
+    # Cap the rendered table at a sane size so a 5000-line file doesn't
+    # flood the scrollback. If the diff is bigger, head + tail it and
+    # indicate the truncation.
+    MAX_ROWS = 60
+    total = len(pairs)
+    shown = pairs
+    truncated = False
+    if total > MAX_ROWS:
+        head = pairs[: MAX_ROWS // 2]
+        tail = pairs[-(MAX_ROWS // 2):]
+        shown = head + [(
+            None, None,
+            f"  ⋮ {total - MAX_ROWS} unchanged row(s) collapsed ⋮",
+            f"  ⋮ {total - MAX_ROWS} unchanged row(s) collapsed ⋮",
+            " ",
+        )] + tail
+        truncated = True
+
+    table = Table(
+        title=(
+            f"⚡ DIFF REVIEW — {blob['path']}  "
+            f"[{MUTED}]({write_id})[/]"
+        ),
+        title_justify="left",
+        show_header=True,
+        header_style=f"bold {GOLD}",
+        border_style=PURPLE,
+        expand=True,
+        pad_edge=False,
+    )
+    table.add_column("─",  no_wrap=True, width=4,  style=MUTED)
+    table.add_column("BEFORE",  ratio=1, overflow="fold")
+    table.add_column("─",  no_wrap=True, width=4,  style=MUTED)
+    table.add_column("AFTER",   ratio=1, overflow="fold")
+
+    add_count = rem_count = mod_count = same_count = 0
+    for ln_l, ln_r, b, a, tag in shown:
+        if tag == " ":
+            same_count += 1
+            ln_l_s = str(ln_l) if ln_l is not None else ""
+            ln_r_s = str(ln_r) if ln_r is not None else ""
+            table.add_row(
+                ln_l_s, b or "", ln_r_s, a or "",
+                style=MUTED,
+            )
+        elif tag == "-":
+            rem_count += 1
+            table.add_row(
+                str(ln_l) if ln_l is not None else "",
+                f"[{ERROR}]- {b or ''}[/]",
+                "", "",
+            )
+        elif tag == "+":
+            add_count += 1
+            table.add_row(
+                "", "",
+                str(ln_r) if ln_r is not None else "",
+                f"[{SUCCESS}]+ {a or ''}[/]",
+            )
+        else:  # '~' modified
+            mod_count += 1
+            table.add_row(
+                str(ln_l) if ln_l is not None else "",
+                f"[#FFB454]~ {b or ''}[/]",
+                str(ln_r) if ln_r is not None else "",
+                f"[#FFB454]~ {a or ''}[/]",
+            )
+
+    callback(Panel(
+        table,
+        border_style=PURPLE,
+        subtitle=(
+            f"[{SUCCESS}]+{add_count}[/]  "
+            f"[{ERROR}]-{rem_count}[/]  "
+            f"[#FFB454]~{mod_count}[/]  "
+            f"[{MUTED}]={same_count}[/]"
+            + (f"  [dim]({total - MAX_ROWS} rows collapsed)[/]" if truncated else "")
+        ),
+        subtitle_align="right",
+    ))
+    callback(
+        f"  [{GOLD}]↪ Apply?[/] Press [{SUCCESS}]Enter[/] to keep, or type "
+        f"[{ERROR}]/undo-replace {write_id}[/] to roll back this write."
+    )
 
