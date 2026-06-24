@@ -242,6 +242,7 @@ export default function ReadPage() {
   const [mobileActiveTab, setMobileActiveTab] = useState("EDITOR");
   const [showScorePanel, setShowScorePanel] = useState(false);
   const [showOraclePanel, setShowOraclePanel] = useState(true);
+  const [showSpellcheckPanel, setShowSpellcheckPanel] = useState(false);
   const [oracleWord, setOracleWord] = useState("");
   const [toasts, setToasts] = useState([]);
 
@@ -645,6 +646,10 @@ export default function ReadPage() {
     });
   }, []);
 
+  const misspellings = useMemo(() => {
+    return scoreData?.misspellings || [];
+  }, [scoreData]);
+
   const handleWordActivate = useCallback((activation) => {
     if (!activation || !activation.normalizedWord) {
       setTooltipState({ token: null, position: { x: 0, y: 0 }, localAnalysis: null, pinned: false });
@@ -658,6 +663,18 @@ export default function ReadPage() {
     }
 
     if (tooltipState.token && tooltipState.token.normalizedWord === activation.normalizedWord) {
+      return;
+    }
+
+    // Spellcheck panel can still open on misspelled word clicks even if ritual prediction is off.
+    const isMisspelledWord = misspellings.some(
+      (err) => normalizeComparableWord(err.word) === activation.normalizedWord
+    );
+    if (isMisspelledWord) {
+      setShowSpellcheckPanel(true);
+    }
+
+    if (!isPredictive) {
       return;
     }
 
@@ -688,7 +705,7 @@ export default function ReadPage() {
     if (isMobileViewport) {
       setIsWordSheetOpen(true);
     }
-  }, [buildTooltipAnalysis, isMobileViewport, resolveTooltipPosition, tooltipState]);
+  }, [buildTooltipAnalysis, isMobileViewport, isPredictive, misspellings, resolveTooltipPosition, tooltipState]);
 
   const handleCloseTooltip = useCallback(() => {
     handleWordActivate(null);
@@ -731,9 +748,19 @@ export default function ReadPage() {
   }, [editorContent, tooltipState.token]);
 
   const { predict, getCompletions, checkSpelling, getSpellingSuggestions, ready: predictorReady } = usePredictor();
-  const misspellings = useMemo(() => {
-    return scoreData?.misspellings || [];
-  }, [scoreData]);
+
+  useEffect(() => {
+    if (misspellings.length === 0) {
+      setShowSpellcheckPanel(false);
+    }
+  }, [misspellings]);
+
+  useEffect(() => {
+    if (!isPredictive) {
+      setTooltipState({ token: null, position: { x: 0, y: 0 }, localAnalysis: null, pinned: false });
+      setIsWordSheetOpen(false);
+    }
+  }, [isPredictive]);
 
   const applySpellcheckCorrection = useCallback((original, correction) => {
     const replacement = applyMatchCase(original, correction);
@@ -880,11 +907,11 @@ export default function ReadPage() {
   const commonUI = (
     <>
 
-      {misspellings.length > 0 && (
+      {showSpellcheckPanel && misspellings.length > 0 && (
         <FloatingPanel
           id="spellcheck-panel"
           title="Spellcheck"
-          onClose={() => {}} // Always active
+          onClose={() => setShowSpellcheckPanel(false)}
           defaultX={typeof window !== 'undefined' ? window.innerWidth - 300 : 900}
           defaultY={typeof window !== 'undefined' ? window.innerHeight - 300 : 600}
           minWidth={220}
@@ -1503,15 +1530,15 @@ export default function ReadPage() {
                       </div>
                     )}
 
-                    {misspellings.length > 0 && (
+                    {showSpellcheckPanel && misspellings.length > 0 && (
                       <div className="right-panel-section">
                         <div className="right-panel-section-header">
                           <span className="right-panel-section-title">Spellcheck</span>
                           <button
                             type="button"
                             className="right-panel-close"
-                            onClick={() => {}} // Always active
-                            aria-label="Spellcheck is active"
+                            onClick={() => setShowSpellcheckPanel(false)}
+                            aria-label="Close Spellcheck"
                           >×</button>
                         </div>
                         <div className="misspellings-list">
@@ -1547,7 +1574,7 @@ export default function ReadPage() {
                       </div>
                     )}
 
-                    {!showScorePanel && !isAnalysisPanelVisible && !(infoBeamEnabled && infoBeamFamily) && !showOraclePanel && !(misspellings.length > 0) && (
+                    {!showScorePanel && !isAnalysisPanelVisible && !(infoBeamEnabled && infoBeamFamily) && !showOraclePanel && !(showSpellcheckPanel && misspellings.length > 0) && (
                       <div className="right-panel-empty">
                         <div className="right-panel-empty-icon">⊘</div>
                         <p>Summon the Lexicon Oracle, Rhyme Astrology, or CODEx Metrics to project analysis here</p>
@@ -1570,7 +1597,7 @@ export default function ReadPage() {
         serverAnalysisActive={USE_SERVER_ANALYSIS}
       />
       
-      {tooltipState.token && (
+      {isPredictive && tooltipState.token && (
         <AnimatePresence>
           <RitualPredictionTooltip
             key="word-card"

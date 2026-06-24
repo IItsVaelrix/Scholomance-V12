@@ -740,6 +740,44 @@ export function createWordLookupService(options = {}) {
     return hasLexicalData(constrained) ? constrained : null;
   }
 
+  async function mergeWithExternalIfSparse(localEntry, word) {
+    const localDefs = localEntry.definitions || [];
+    if (localDefs.length >= MAX_DEFINITION_COUNT) return localEntry;
+
+    try {
+      const externalEntry = await lookupFromExternalApis(word);
+      if (!externalEntry || !Array.isArray(externalEntry.definitions) || externalEntry.definitions.length === 0) {
+        return localEntry;
+      }
+
+      const seen = new Set(localDefs.map((d) => String(d).trim().toLowerCase()));
+      const mergedDefs = [...localDefs];
+      for (const def of externalEntry.definitions) {
+        const text = String(def || '').trim();
+        const key = text.toLowerCase();
+        if (!text || seen.has(key)) continue;
+        seen.add(key);
+        mergedDefs.push(text);
+        if (mergedDefs.length >= MAX_DEFINITION_COUNT) break;
+      }
+
+      if (mergedDefs.length === localDefs.length) return localEntry;
+
+      return {
+        ...localEntry,
+        definitions: mergedDefs,
+        definition: localEntry.definition || {
+          text: mergedDefs[0],
+          partOfSpeech: externalEntry.definition?.partOfSpeech || externalEntry.pos?.[0] || '',
+          source: 'Scholomance Dictionary + Free Dictionary API',
+        },
+      };
+    } catch (error) {
+      log?.warn?.({ err: error, word }, '[WordLookupService] External merge failed, using local entry');
+      return localEntry;
+    }
+  }
+
   async function lookupWord(rawWord) {
     const normalizedWord = String(rawWord || '').trim().toLowerCase();
     if (!normalizedWord) {
@@ -766,7 +804,8 @@ export function createWordLookupService(options = {}) {
     const lookupResult = await coalescedLookup(normalizedWord, async () => {
       const localResult = await lookupFromScholomanceDict(normalizedWord);
       if (localResult) {
-        return { data: localResult, source: 'scholomance-local' };
+        const merged = await mergeWithExternalIfSparse(localResult, normalizedWord);
+        return { data: merged, source: 'scholomance-merged' };
       }
 
       const externalResult = await lookupFromExternalApis(normalizedWord);

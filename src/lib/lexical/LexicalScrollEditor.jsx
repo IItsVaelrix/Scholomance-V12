@@ -5,7 +5,7 @@ import { ContentEditable } from '@lexical/react/LexicalContentEditable';
 import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
 import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
 import { useLexicalComposerContext } from '@lexical/react/LexicalComposerContext';
-import { $getRoot, $createParagraphNode, $createTextNode, $getNodeByKey, $getSelection, COMMAND_PRIORITY_LOW, CLICK_COMMAND, KEY_MODIFIER_COMMAND, COMMAND_PRIORITY_NORMAL, $isParagraphNode, $isTextNode, $createRangeSelection, $setSelection } from 'lexical';
+import { $getRoot, $createParagraphNode, $createTextNode, $getNodeByKey, $getSelection, COMMAND_PRIORITY_LOW, CLICK_COMMAND, KEY_MODIFIER_COMMAND, COMMAND_PRIORITY_NORMAL, $isParagraphNode, $isTextNode, $isRangeSelection, $createRangeSelection, $setSelection } from 'lexical';
 import { motion, AnimatePresence } from "framer-motion";
 
 import { TruesightWordNode, $isTruesightWordNode } from './TruesightNode';
@@ -509,15 +509,27 @@ const LexicalScrollEditor = forwardRef(({
 
   const handleAcceptSuggestion = useCallback((token) => {
     if (lexicalEditorRef.current && currentPrefix) {
-       lexicalEditorRef.current.update(() => {
-          const selection = $getSelection();
-          if (selection && selection.isCollapsed()) {
-             for (let i = 0; i < currentPrefix.length; i++) {
-                selection.deleteBackward();
-             }
-             selection.insertText(token);
+      lexicalEditorRef.current.update(() => {
+        const selection = $getSelection();
+        if ($isRangeSelection(selection) && selection.isCollapsed()) {
+          const anchor = selection.anchor;
+          const anchorNode = anchor.getNode();
+          if ($isTextNode(anchorNode)) {
+            const text = anchorNode.getTextContent();
+            const endOffset = anchor.offset;
+            const startOffset = Math.max(0, endOffset - currentPrefix.length);
+            const removed = text.slice(startOffset, endOffset);
+            if (removed.toLowerCase() === currentPrefix.toLowerCase()) {
+              anchorNode.spliceText(startOffset, currentPrefix.length, token);
+              anchorNode.select(startOffset + token.length, startOffset + token.length);
+            } else {
+              selection.insertText(token);
+            }
+          } else {
+            selection.insertText(token);
           }
-       });
+        }
+      });
     }
     setIntellisenseSuggestions([]);
   }, [currentPrefix]);

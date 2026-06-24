@@ -17,16 +17,16 @@
 #   scripts/deploy.sh --help
 #
 # Config (override via env):
-#   CF_PROJECT  (default: scholomance-v12)
-#   CF_BRANCH   (default: master)
-#   FLY_APP     (default: scholomance-v12)
+#   CF_PROJECT  (default: scholomance-v13)
+#   CF_BRANCH   (default: main)
+#   FLY_APP     (default: scholomance-v13)
 #   DIST_DIR    (default: ./dist)
 #
 set -euo pipefail
 
-CF_PROJECT="${CF_PROJECT:-scholomance-v12}"
-CF_BRANCH="${CF_BRANCH:-master}"
-FLY_APP="${FLY_APP:-scholomance-v12}"
+CF_PROJECT="${CF_PROJECT:-scholomance-v13}"
+CF_BRANCH="${CF_BRANCH:-main}"
+FLY_APP="${FLY_APP:-scholomance-v13}"
 DIST_DIR="${DIST_DIR:-./dist}"
 
 # Always operate from the repo root (this script lives in scripts/).
@@ -86,7 +86,7 @@ if [ "$DO_FLY" -eq 1 ]; then
   log "Deploying API → Fly (app: ${FLY_APP})… (this builds the Docker image; can take several minutes)"
   flyctl deploy --remote-only --app "${FLY_APP}" \
     || die "Fly deploy failed. Check:  flyctl auth whoami   and   flyctl status --app ${FLY_APP}"
-  ok "Fly deployed → https://${FLY_APP}.fly.dev/"
+  ok "Fly deployed → https://scholomance.live/"
 fi
 
 log "Deploy finished."

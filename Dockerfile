@@ -55,7 +55,7 @@ FROM node:20-bookworm-slim AS runtime
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV HOST=::
+ENV HOST=0.0.0.0
 ENV PORT=8080
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite
