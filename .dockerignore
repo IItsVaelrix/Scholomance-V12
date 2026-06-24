@@ -26,6 +26,7 @@ godot_project/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+*.sqlite.bak*
 *.png
 *.bmp
 *.jpg
@@ -40,6 +41,7 @@ godot_project/
 *.pdf
 nul
 .venv-align/
+.venv/
 vst/
 vst-sdk/
 target/
@@ -52,3 +54,21 @@ __pycache__/
 *.rlib
 *.rmeta
 .godot/
+
+# Large local/dev subsystems not used by the runtime image
+nlp_chatbot/
+divtube_downloader/
+packages/
+tools/
+scratch/
+steamdeck_brain/
+literary_gpt/
+
+# Large local SQLite dbs / artifacts not needed at image-build time
+oracle_memory.sqlite
+scholomance_collab.sqlite
+scholomance_user.sqlite
+scholomance_user.sqlite-wal
+scholomance_user.sqlite-shm
+_leftleaf.png
+_combat-1440.png

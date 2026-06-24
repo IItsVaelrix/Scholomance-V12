@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ResizableBox } from 'react-resizable';
 import { useTheme } from '../hooks/useTheme.jsx';
 import { useWordLookup } from '../hooks/useWordLookup.jsx';
+import { ScholomanceCorpusAPI } from '../lib/scholomanceCorpus.api.js';
 import { buildRitualPrediction, posToRole } from '../lib/ritualPredictionTooltip.js';
 import { resolveOverlayPlacement } from '../lib/truesight/overlay-placement.js';
 import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ChevronRight, Copy, Replace, Search, Sparkles, X } from 'lucide-react';
@@ -210,6 +211,27 @@ function ResonanceSection({ partners }) {
   );
 }
 
+function cleanWordLists(activeWord, lex) {
+  if (!lex) return { rhymes: [], slantRhymes: [], synonyms: [], antonyms: [] };
+  const normalized = normalizeWord(activeWord);
+  const normalizeItem = (w) => normalizeWord(typeof w === 'string' ? w : w?.word);
+
+  const seen = new Set([normalized]);
+  const takeUnique = (list, limit = 8) => (list || []).filter((w) => {
+    const n = normalizeItem(w);
+    if (!n || seen.has(n)) return false;
+    seen.add(n);
+    return true;
+  }).slice(0, limit);
+
+  return {
+    rhymes: takeUnique(lex.rhymes, 8),
+    slantRhymes: takeUnique(lex.slantRhymes, 8),
+    synonyms: takeUnique(lex.synonyms, 8),
+    antonyms: takeUnique(lex.antonyms, 8),
+  };
+}
+
 function WhyFactorsSection({ factors, fallback }) {
   if (!factors || factors.length === 0) {
     return fallback ? <p className="rp-why-text">{fallback}</p> : null;
@@ -315,6 +337,27 @@ const RitualPredictionTooltip = ({
   useEffect(() => {
     if (activeWord) lookup(activeWord);
   }, [activeWord, lookup]);
+
+  const [corpusData, setCorpusData] = useState({ semantic: [], search: [] });
+  const [corpusLoading, setCorpusLoading] = useState(false);
+  useEffect(() => {
+    if (!activeWord || !ScholomanceCorpusAPI.isEnabled()) {
+      setCorpusData({ semantic: [], search: [] });
+      return;
+    }
+    setCorpusLoading(true);
+    let cancelled = false;
+    Promise.all([
+      ScholomanceCorpusAPI.semantic(activeWord, 8).catch(() => []),
+      ScholomanceCorpusAPI.search(activeWord, 3).catch(() => []),
+    ]).then(([semantic, search]) => {
+      if (cancelled) return;
+      setCorpusData({ semantic, search });
+    }).finally(() => {
+      if (!cancelled) setCorpusLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [activeWord]);
 
   // Use the precomputed prediction for the root word; otherwise build one for
   // whatever word we've navigated to.
@@ -526,6 +569,18 @@ const RitualPredictionTooltip = ({
   const lexRole = posToRole(pos);
   const roleConflict = lexRole && lexRole !== pred.role;
 
+  const { rhymes, slantRhymes, synonyms, antonyms } = cleanWordLists(activeWord, lex);
+  const similes = corpusData.semantic
+    .map((r) => (typeof r === 'string' ? r : r?.word))
+    .filter((w) => {
+      const n = normalizeWord(w);
+      return n && n !== normalizeWord(activeWord)
+        && !rhymes.some((r) => normalizeWord(r) === n)
+        && !slantRhymes.some((r) => normalizeWord(r) === n)
+        && !synonyms.some((r) => normalizeWord(r) === n)
+        && !antonyms.some((r) => normalizeWord(r) === n);
+    }).slice(0, 8);
+
   const canTransmute = typeof onTransmute === 'function' && rootWord && normalizeWord(activeWord) !== normalizeWord(rootWord);
 
   const cardBody = (
@@ -577,10 +632,11 @@ const RitualPredictionTooltip = ({
               </div>
             )}
             {definitions.map((def, i) => <p key={i} className="rp-lex-def">{def}</p>)}
-            <RuneRow label="syn" words={lex?.synonyms} onNavigate={navigateTo} onTransmute={onTransmute} />
-            <RuneRow label="ant" words={lex?.antonyms} onNavigate={navigateTo} onTransmute={onTransmute} />
-            <RuneRow label="rhyme" words={lex?.rhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
-            <RuneRow label="slant" words={lex?.slantRhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
+            <RuneRow label="syn" words={synonyms} onNavigate={navigateTo} onTransmute={onTransmute} />
+            <RuneRow label="ant" words={antonyms} onNavigate={navigateTo} onTransmute={onTransmute} />
+            <RuneRow label="rhyme" words={rhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
+            <RuneRow label="slant" words={slantRhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
+            <RuneRow label="simile" words={similes} onNavigate={navigateTo} onTransmute={onTransmute} />
           </section>
 
           <section className="rp-section">
@@ -616,6 +672,24 @@ const RitualPredictionTooltip = ({
                   <li key={i}>{signal}</li>
                 ))}
               </ul>
+            </section>
+          )}
+
+          {(corpusData.semantic.length > 0 || corpusData.search.length > 0 || corpusLoading) && (
+            <section className="rp-section">
+              <div className="rp-section-label">Scholomance Corpus</div>
+              {corpusLoading && <div className="rp-lexicon-status">consulting the corpus...</div>}
+              <RuneRow
+                label="echo"
+                words={corpusData.semantic.map((r) => (typeof r === 'string' ? r : r?.word)).filter(Boolean)}
+                onNavigate={navigateTo}
+                onTransmute={onTransmute}
+              />
+              {corpusData.search.map((result, i) => (
+                <p key={i} className="rp-lex-def rp-corpus-snippet">
+                  {result.snippet || result.text}
+                </p>
+              ))}
             </section>
           )}
 
