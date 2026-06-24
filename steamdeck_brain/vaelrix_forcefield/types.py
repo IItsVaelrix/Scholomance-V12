@@ -185,6 +185,7 @@ class AmplifierResult:
     evidence: list[EvidenceRef] = field(default_factory=list)
     recommendedAction: str = ""
     requestedToolCalls: list[ToolCallRequest] = field(default_factory=list)
+    bytecodes: list[str] = field(default_factory=list)
     resonance: ResonanceScore = field(default_factory=ResonanceScore)
 
 
@@ -193,6 +194,14 @@ class SearchDecision:
     allowed: bool
     reason: str
     suggestedAlternative: str | None = None
+
+
+@dataclass
+class ToolDecision:
+    allowed: bool
+    reason: str
+    suggestedAlternative: str | None = None
+    riskLevel: str = "low"  # low | medium | high | blocked
 
 
 @dataclass

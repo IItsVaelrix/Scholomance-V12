@@ -1,0 +1,158 @@
+"""
+Vaelrix Cortex ForceField — Tool Governor.
+
+Gates every non-search tool call (read_file, replace_file_content, run_tests,
+etc.) so that the ForceField prevents tool-call spirals, unauthorized brain
+tool use, repeated identical calls, and high-risk destructive operations.
+"""
+
+from __future__ import annotations
+
+from copy import deepcopy
+
+from .types import ToolCallField, ToolCallRequest, ToolDecision, VaelrixCortexForceField
+
+
+# Tools that can materially change the codebase or runtime.
+_DESTRUCTIVE_TOOLS = {
+    "replace_file_content",
+    "write_file",
+    "delete_file",
+    "run_command",
+    "execute",
+}
+
+# Tools that are read-only.
+_READ_ONLY_TOOLS = {
+    "read_file",
+    "search_code",
+    "codebase_search",
+    "archive_search",
+    "forensic_search",
+    "find_file",
+    "list_files",
+    "diagnostic_scan",
+}
+
+
+def normalize_tool_call(tool: str, args: dict) -> str:
+    """Create a stable key for detecting repeated identical tool calls."""
+    from json import dumps
+
+    # Keep only deterministic args; ignore reason/timestamp/free-form notes.
+    stable_args = {k: v for k, v in sorted(args.items()) if k not in {"reason", "note"}}
+    return f"{tool}:{dumps(stable_args, sort_keys=True, ensure_ascii=False)}"
+
+
+def should_allow_tool_call(
+    field: VaelrixCortexForceField,
+    tool: str,
+    args: dict,
+    reason: str,
+    *,
+    allowed_tools: set[str] | None = None,
+    max_calls_per_phase: int | None = None,
+    require_reason: bool = True,
+) -> ToolDecision:
+    """
+    Decide whether a proposed tool call is allowed.
+
+    Checks:
+      - The tool is in the active brain's allowed tool set (if provided).
+      - A reason is provided when required.
+      - The per-phase tool-call budget is not exhausted.
+      - The exact same call was not already made this phase.
+      - Destructive calls are flagged with elevated risk.
+    """
+    if allowed_tools is not None and tool not in allowed_tools:
+        return ToolDecision(
+            allowed=False,
+            reason=f"Tool '{tool}' is not in the active brain's allowed tool set",
+            suggestedAlternative="Use a tool listed in the brain's allowedTools",
+            riskLevel="blocked",
+        )
+
+    if require_reason and not reason.strip():
+        return ToolDecision(
+            allowed=False,
+            reason="Tool call blocked because no reason was provided",
+            suggestedAlternative="Provide a reason explaining what unknown this resolves",
+            riskLevel="blocked",
+        )
+
+    budget = max_calls_per_phase if max_calls_per_phase is not None else field.tools.maxCallsPerPhase
+    if field.tools.callsThisPhase >= budget:
+        return ToolDecision(
+            allowed=False,
+            reason="Tool call blocked because the current phase budget is exhausted",
+            suggestedAlternative="Escalate to the Council Arbiter or end the phase",
+            riskLevel="blocked",
+        )
+
+    key = normalize_tool_call(tool, args)
+    for past in field.tools.lastCalls:
+        if past.get("_key") == key:
+            return ToolDecision(
+                allowed=False,
+                reason="Tool call blocked because this exact call was already made",
+                suggestedAlternative="Use the prior result or refine the arguments",
+                riskLevel="blocked",
+            )
+
+    risk_level = "high" if tool in _DESTRUCTIVE_TOOLS else "low"
+    if tool in _READ_ONLY_TOOLS:
+        risk_level = "low"
+
+    return ToolDecision(
+        allowed=True,
+        reason=f"Tool '{tool}' allowed within budget and permission set",
+        riskLevel=risk_level,
+    )
+
+
+def record_tool_call(
+    field: VaelrixCortexForceField,
+    tool: str,
+    args: dict,
+    reason: str,
+) -> VaelrixCortexForceField:
+    """Record an allowed tool call in the ForceField."""
+    new_field = deepcopy(field)
+    new_field.tools.callsThisPhase += 1
+    new_field.tools.lastCalls.append(
+        {
+            "tool": tool,
+            "args": args,
+            "reason": reason,
+            "_key": normalize_tool_call(tool, args),
+        }
+    )
+    return new_field
+
+
+def filter_allowed_tool_calls(
+    field: VaelrixCortexForceField,
+    requests: list[ToolCallRequest],
+    allowed_tools: set[str] | None = None,
+) -> tuple[list[ToolCallRequest], list[ToolDecision]]:
+    """
+    Given a list of tool-call requests, return only those that pass the Tool
+    Governor, plus a parallel list of decisions for diagnostics.
+    """
+    allowed: list[ToolCallRequest] = []
+    decisions: list[ToolDecision] = []
+
+    for request in requests:
+        decision = should_allow_tool_call(
+            field,
+            request.tool,
+            request.args,
+            request.reason,
+            allowed_tools=allowed_tools,
+        )
+        decisions.append(decision)
+        if decision.allowed:
+            allowed.append(request)
+            field = record_tool_call(field, request.tool, request.args, request.reason)
+
+    return allowed, decisions

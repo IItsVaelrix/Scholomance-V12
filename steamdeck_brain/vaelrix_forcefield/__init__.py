@@ -13,6 +13,7 @@ Public API:
 from .amplifier_executor import run_amplifiers
 from .amplifier_registry import get_brain_by_id, get_registry
 from .amplifier_router import apply_routing, select_amplifiers
+from .brain_bridge import BrainBridge
 from .context_ledger import (
     answer_question,
     ask_question,
@@ -30,6 +31,13 @@ from .forcefield import (
     create_force_field,
     reset_phase_counters,
     update_force_field,
+)
+from .persistence import (
+    delete_force_field,
+    get_persistence_status,
+    list_force_fields,
+    load_force_field,
+    save_force_field,
 )
 from .search_governor import (
     block_search,
@@ -55,11 +63,13 @@ from .types import (
     SearchRecord,
     TaskField,
     ToolCallField,
+    ToolDecision,
     VaelrixCortexForceField,
 )
 
 __all__ = [
     "run_amplifiers",
+    "BrainBridge",
     "create_force_field",
     "update_force_field",
     "reset_phase_counters",
@@ -79,6 +89,11 @@ __all__ = [
     "update_field_from_arbiter",
     "get_registry",
     "get_brain_by_id",
+    "save_force_field",
+    "load_force_field",
+    "list_force_fields",
+    "delete_force_field",
+    "get_persistence_status",
     "AmplifierBrain",
     "AmplifierResult",
     "ContextField",
@@ -97,5 +112,7 @@ __all__ = [
     "SearchRecord",
     "TaskField",
     "ToolCallField",
+    "ToolDecision",
     "VaelrixCortexForceField",
 ]
+

@@ -1304,7 +1304,7 @@ This is the upgrade from agent to organism.
 
 **Status:** MVP implemented and wired into the Vaelrix runtime.
 
-**Date:** 2026-06-23
+**Date:** 2026-06-24
 
 **Implemented components:**
 
@@ -1319,41 +1319,59 @@ This is the upgrade from agent to organism.
 | Amplifier Executor | `steamdeck_brain/vaelrix_forcefield/amplifier_executor.py` | ✅ Implemented |
 | Code Brain | `steamdeck_brain/vaelrix_forcefield/brains/code_brain.py` | ✅ Implemented |
 | Test / Risk / Memory / Critique Brains | `steamdeck_brain/vaelrix_forcefield/brains/` | ✅ Implemented |
+| PixelBrain Router | `steamdeck_brain/vaelrix_forcefield/pixelbrain/router.py` | ✅ Implemented |
+| BytecodeHealth binding | `steamdeck_brain/vaelrix_forcefield/pixelbrain/bytecode_health.py` | ✅ Implemented |
+| BrainBridge integration surface | `steamdeck_brain/vaelrix_forcefield/brain_bridge.py` | ✅ Implemented |
+| TurboQuant chunk dispatch + brain lenses | `steamdeck_brain/vaelrix_forcefield/turboquant/` | ✅ Implemented |
+| Full Tool Governor (read/edit/test/run) | `steamdeck_brain/vaelrix_forcefield/tool_governor.py` | ✅ Implemented |
+| Persistent ForceField serialization | `steamdeck_brain/vaelrix_forcefield/persistence.py` | ✅ Implemented |
 | Runtime wiring | `steamdeck_brain/steamdeck_brain.py`, `steamdeck_brain/action_engine.py` | ✅ Implemented |
-| Tests | `steamdeck_brain/vaelrix_forcefield/tests/` | ✅ 20 tests passing |
+| Tests | `steamdeck_brain/vaelrix_forcefield/tests/` | ✅ 53 tests passing |
 
 **Not yet implemented (post-MVP):**
 
-- TurboQuant chunk dispatch per brain lens
-- Parallel Amplifier execution
-- Full Tool Governor beyond search tools
 - Determinism auditor integration
 - Personality-aware brain weighting
-- Persistent ForceField serialization across sessions
+- Automatic submission of BytecodeHealth signals to diagnostic memory / immune system
 
 **Runtime behavior:**
 
 - `BrainBridge.ask()` initializes a fresh ForceField per user request.
 - The Amplifier Router selects relevant brains based on activation signals.
+- TurboQuant dispatches compressed knowledge chunks to each active brain through its domain-specific lens (CODE_BRAIN, LORE_BRAIN, RISK_BRAIN, etc.).
 - Active brains execute in parallel via the Amplifier Executor.
 - The Council Arbiter merges, deduplicates, and flags conflicts across brain outputs.
-- Accepted findings and recommended next actions are injected into the model system prompt.
+- Any PB-ERR-v1 bytecodes emitted by brains are routed through the PixelBrain Router into PB-OK-v1 / PB-RED-v1 BytecodeHealth signals.
+- Brain-requested tool calls are gated by the Tool Governor, which checks allowedTools, per-phase budget, reason, and duplicate calls.
+- Accepted findings, recommended next actions, gated tool calls, and health signals are injected into the synthesis prompt.
 - Active/suppressed brain lists and remaining search budget are also injected into the system prompt.
 - `ActionEngine.parse_and_run()` gates `search_code`, `codebase_search`, `archive_search`, `forensic_search`, `find_file`, and `list_files` through the Search Governor.
-- Blocked searches return the governor's reasoning instead of executing.
-- Allowed searches are recorded in the ForceField history.
+- `ActionEngine.parse_and_run()` gates `read_file`, `replace_file_content`, `write_file`, `delete_file`, `run_tests`, and `run_command` through the Tool Governor.
+- `CODE_BRAIN` routes every keyword search through the Search Governor, performs real ripgrep calls for allowed searches, reads confirmed targets when blocked, and emits `read_file` tool calls for top evidence.
+- `BrainBridge.ask()` can resume a persisted session via `session_id` and save the final ForceField with `persist=True`.
+- ForceField sessions are serialized to SQLite as JSON blobs with migration-tracked schema.
+- Blocked searches and blocked tool calls return the governor's reasoning instead of executing.
+- Allowed searches and tool calls are recorded in the ForceField history.
 
 **Verification:**
 
 ```bash
 cd steamdeck_brain
-python -m unittest vaelrix_forcefield.tests.test_forcefield_mvp -v
+PYTHONPATH=/home/deck/Downloads/Scholomance-V12-main/steamdeck_brain \
+  python -m unittest \
+    vaelrix_forcefield.tests.test_forcefield_mvp \
+    vaelrix_forcefield.tests.test_amplifier_executor \
+    vaelrix_forcefield.tests.test_pixelbrain_router \
+    vaelrix_forcefield.tests.test_brain_bridge \
+    vaelrix_forcefield.tests.test_turboquant \
+    vaelrix_forcefield.tests.test_tool_governor \
+    vaelrix_forcefield.tests.test_persistence
 ```
 
 Result:
 
 ```
-Ran 20 tests in ~0.4s
+Ran 53 tests in ~1.3s
 OK
 ```
 

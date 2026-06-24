@@ -4,18 +4,28 @@ Vaelrix Cortex ForceField — Code Brain.
 Lightweight repo analysis: extracts keywords from the query, searches the
 project for relevant files/symbols, and returns structured findings without
 invoking a second LLM.
+
+This brain is evidence-based: every finding is backed by a real file/search
+call (ripgrep) and routed through the Search Governor so the ForceField
+remains auditable and budget-aware.
 """
 
 from __future__ import annotations
 
 import json
-import os
-import re
 import shutil
 import subprocess
 from pathlib import Path
 
-from ..types import AmplifierBrain, AmplifierResult, EvidenceRef, ResonanceScore, VaelrixCortexForceField
+from ..search_governor import should_allow_search
+from ..types import (
+    AmplifierBrain,
+    AmplifierResult,
+    EvidenceRef,
+    ResonanceScore,
+    ToolCallRequest,
+    VaelrixCortexForceField,
+)
 
 
 CODE_BRAIN = AmplifierBrain(
@@ -53,9 +63,9 @@ def _project_root() -> Path:
 
 def _extract_keywords(text: str) -> list[str]:
     """Pull out likely code-related keywords from the query."""
-    # CamelCase / snake_case identifiers
+    import re
+
     ids = re.findall(r"[A-Za-z_][A-Za-z0-9_]*", text)
-    # Filter out common stop words
     stop = {
         "the", "a", "an", "this", "that", "is", "are", "was", "were",
         "be", "been", "being", "have", "has", "had", "do", "does", "did",
@@ -67,7 +77,6 @@ def _extract_keywords(text: str) -> list[str]:
         "function", "class", "import", "refactor", "test", "file",
     }
     keywords = [w for w in ids if len(w) > 2 and w.lower() not in stop]
-    # Deduplicate preserving order
     seen: set[str] = set()
     out: list[str] = []
     for k in keywords:
@@ -76,6 +85,23 @@ def _extract_keywords(text: str) -> list[str]:
             seen.add(kl)
             out.append(k)
     return out[:6]
+
+
+def _read_known_target(path: str, root: Path) -> EvidenceRef | None:
+    """Read a confirmed file path directly when the governor blocks a search."""
+    target = root / path
+    if not target.exists():
+        return None
+    try:
+        text = target.read_text(encoding="utf-8", errors="ignore").splitlines()
+        first_non_empty = next((line.strip() for line in text if line.strip()), "")
+        return EvidenceRef(
+            source=str(target.relative_to(root) if target.is_relative_to(root) else target),
+            snippet=first_non_empty[:120],
+            relevance=0.9,
+        )
+    except Exception:
+        return None
 
 
 def _ripgrep_keyword(keyword: str, root: Path) -> list[EvidenceRef]:
@@ -129,13 +155,20 @@ def run_code_brain(
     field: VaelrixCortexForceField,
     query: str | None = None,
 ) -> AmplifierResult:
-    """Run the Code Brain against the current ForceField."""
+    """Run the Code Brain against the current ForceField.
+
+    Searches are governed by should_allow_search and executed via ripgrep.
+    The returned AmplifierResult contains real EvidenceRef objects and
+    ToolCallRequest entries so the caller can read the most relevant files.
+    """
     q = query or field.task.rawUserRequest
     keywords = _extract_keywords(q)
     root = _project_root()
 
     findings: list[str] = []
     evidence: list[EvidenceRef] = []
+    requested_tool_calls: list[ToolCallRequest] = []
+    searched_keywords: list[str] = []
 
     if not keywords:
         findings.append("No specific code identifiers detected in the request.")
@@ -147,26 +180,59 @@ def run_code_brain(
         )
 
     for keyword in keywords:
+        reason = f"Searching for code references to '{keyword}'"
+        decision = should_allow_search(field, keyword, reason)
+
+        if not decision.allowed:
+            if decision.suggestedAlternative and "Read known target" in decision.suggestedAlternative:
+                known_path = decision.suggestedAlternative.split(":", 1)[-1].strip()
+                known_evidence = _read_known_target(known_path, root)
+                if known_evidence:
+                    evidence.append(known_evidence)
+                    findings.append(f"Used confirmed target for '{keyword}': {known_evidence.source}")
+                    requested_tool_calls.append(
+                        ToolCallRequest(
+                            tool="read_file",
+                            args={"path": known_evidence.source},
+                            reason=f"Confirmed target for '{keyword}'",
+                        )
+                    )
+                continue
+            findings.append(f"Search for '{keyword}' blocked: {decision.reason}")
+            continue
+
         refs = _ripgrep_keyword(keyword, root)
+        searched_keywords.append(keyword)
         if refs:
             evidence.extend(refs)
             files = sorted({ref.source.split(":")[0] for ref in refs})
             findings.append(f"'{keyword}' found in {len(files)} file(s): {', '.join(files[:3])}")
+            # Request a read of the top hit so downstream stages have the full source.
+            top_file = files[0]
+            requested_tool_calls.append(
+                ToolCallRequest(
+                    tool="read_file",
+                    args={"path": top_file},
+                    reason=f"Top evidence for '{keyword}'",
+                )
+            )
 
     if not findings:
         findings.append(f"No direct matches for keywords: {', '.join(keywords)}")
 
+    has_evidence = bool(evidence)
     return AmplifierResult(
         brainId=CODE_BRAIN.id,
-        summary=f"Analyzed {len(keywords)} keyword(s) across the codebase.",
+        summary=f"Analyzed {len(keywords)} keyword(s); searched {len(searched_keywords)} via real file calls.",
         findings=findings,
         evidence=evidence[:5],
         recommendedAction="Read the top evidence files and confirm the relevant code location.",
+        requestedToolCalls=requested_tool_calls[:5],
         resonance=ResonanceScore(
-            intentMatch=0.8 if evidence else 0.4,
-            evidenceStrength=0.8 if evidence else 0.2,
+            intentMatch=0.8 if has_evidence else 0.4,
+            evidenceStrength=0.8 if has_evidence else 0.2,
             novelty=0.6,
             conflictRisk=0.1,
-            actionability=0.8 if evidence else 0.3,
+            actionability=0.8 if has_evidence else 0.3,
         ),
     )

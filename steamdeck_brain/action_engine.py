@@ -10,6 +10,16 @@ from vaelrix_tools import dispatch_tool
 
 _SEARCH_TOOLS = {"search_code", "codebase_search", "archive_search", "forensic_search", "find_file", "list_files"}
 
+# Tools the ForceField Tool Governor should gate beyond search.
+_GOVERNED_TOOLS = {
+    "read_file",
+    "replace_file_content",
+    "write_file",
+    "delete_file",
+    "run_tests",
+    "run_command",
+}
+
 
 class ActionEngine:
     """
@@ -102,6 +112,43 @@ class ActionEngine:
                     query,
                     reason,
                 )
+
+            # ── ForceField Tool Governor ───────────────────────────────────────
+            if tool_name in _GOVERNED_TOOLS and getattr(self.brain, "_current_force_field", None):
+                field = self.brain._current_force_field
+                reason = args.get("reason") or f"Model-initiated {tool_name}"
+                try:
+                    from vaelrix_forcefield.tool_governor import should_allow_tool_call, record_tool_call
+                    decision = should_allow_tool_call(field, tool_name, args, reason)
+                except Exception:
+                    decision = None
+
+                if decision and not decision.allowed:
+                    result = (
+                        f"[ForceField Tool Governor blocked {tool_name}]\n"
+                        f"Reason: {decision.reason}\n"
+                        f"Alternative: {decision.suggestedAlternative or 'Refine the request or escalate to the Council Arbiter'}"
+                    )
+                    result_trunc = result[:500] + ('...' if len(result) > 500 else '')
+                    self.tool_log[-1]["result"] = result_trunc
+                    print(f"\033[2m{result_trunc}\033[0m")
+                    response = response[:match.start()] + response[match.end():]
+                    response = f"{response}\n\n--- TOOL RESULT [{tool_name}] ---\n{result}"
+
+                    followup = self.brain.model.generate(
+                        response,
+                        system=self.brain.system_prompt
+                    )
+                    response = f"{response}\n\n{followup}"
+                    continue
+
+                if decision:
+                    self.brain._current_force_field = record_tool_call(
+                        self.brain._current_force_field,
+                        tool_name,
+                        args,
+                        reason,
+                    )
 
             result = dispatch_tool(tool_name, args, cortex=self._get_cortex())
 
