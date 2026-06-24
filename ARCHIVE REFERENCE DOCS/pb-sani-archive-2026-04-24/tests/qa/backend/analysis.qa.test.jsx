@@ -68,7 +68,7 @@ describe("Panel analysis backend QA", () => {
         vi.advanceTimersByTime(100);
         throw new Error("Waiting for error state");
       }
-      expect(result.current.error).toBe("Server unavailable — using local analysis");
+      expect(result.current.error).toBe("Server unavailable - using local analysis");
     }, { timeout: 2000, interval: 50 });
 
     const analysisCalls = fetchMock.mock.calls.filter(call => String(call[0]).includes("/api/analysis/panels"));

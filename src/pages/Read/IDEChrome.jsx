@@ -101,7 +101,7 @@ function MatrixTitle({ title }) {
         setSlots(prev => {
           if (!Array.isArray(prev)) return prev;
           const copy = [...prev];
-          if (copy[i]) copy[i] = { char: targetChar === ' ' ? ' ' : targetChar, state: 'settled' };
+          if (copy[i]) copy[i] = { char: targetChar === ' ' ? ' ' : targetChar, state: 'settled' };
           return copy;
         });
       }, delay);

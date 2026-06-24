@@ -1,5 +1,5 @@
 /**
- * BugCreateModal — Modal for filing new bug reports
+ * BugCreateModal - Modal for filing new bug reports
  */
 
 import { motion, AnimatePresence } from 'framer-motion';

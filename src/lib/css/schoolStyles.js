@@ -12,6 +12,8 @@ export function generateSchoolCSSVariables() {
     const schoolKey = key.toLowerCase();
     css += `  --${schoolKey}-primary: ${school.colorHsl ? `hsl(${school.colorHsl.h}, ${school.colorHsl.s}%, ${school.colorHsl.l}%)` : '#808080'};\n`;
     css += `  --${schoolKey}-primary-glow: ${school.colorHsl ? `hsla(${school.colorHsl.h}, ${school.colorHsl.s}%, ${school.colorHsl.l}%, 0.3)` : 'rgba(128, 128, 128, 0.3)'};\n`;
+    css += `  --school-${schoolKey}: var(--${schoolKey}-primary);\n`;
+    css += `  --school-${schoolKey}-glow: var(--${schoolKey}-primary-glow);\n`;
   }
   
   css += '}\n';

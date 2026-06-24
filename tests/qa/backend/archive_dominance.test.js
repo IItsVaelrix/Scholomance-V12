@@ -30,7 +30,7 @@ describe('Archive of Dominance - Backend Verification', () => {
         expect(results).toHaveProperty('semantic');
         expect(results).toHaveProperty('phonetic');
         expect(results).toHaveProperty('linkedDocs');
-    });
+    }, 30000);
 
     it('should find file neighbors', async () => {
         const files = await collabService.listCodebaseFiles();

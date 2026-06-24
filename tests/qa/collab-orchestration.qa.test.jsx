@@ -48,6 +48,7 @@ vi.mock('framer-motion', () => ({
         span: ({ children, ...props }) => <span {...props}>{children}</span>,
     },
     AnimatePresence: ({ children }) => <>{children}</>,
+    useReducedMotion: () => false,
 }));
 
 // Mock BroadcastChannel for AgentMessaging
@@ -87,6 +88,14 @@ describe('ActivityFeed', () => {
 
 describe('AgentMessaging', () => {
     const mockAgents = [{ id: 'agent-1', name: 'Agent 1', status: 'online' }];
+    beforeEach(() => {
+        global.fetch = vi.fn(() =>
+            Promise.resolve({
+                ok: true,
+                json: () => Promise.resolve([]), // Return empty array so data.reverse() works
+            })
+        );
+    });
 
     it('renders and allows input', () => {
         render(<AgentMessaging agents={mockAgents} currentAgentId="agent-1" />);

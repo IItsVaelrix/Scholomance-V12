@@ -1,11 +1,11 @@
 /**
- * HolographicEmbed — Transmission console DOM layer.
+ * HolographicEmbed - Transmission console DOM layer.
  *
  * Enhancements:
  * - Futuristic Web Audio API button sounds (synthesized, no file deps)
- * - Still-water ripple on click — expands from touch point
+ * - Still-water ripple on click - expands from touch point
  * - Warm holographic glow pulse on hover
- * - Aetheric current overflow twitch — random, purely visual, never disturbs audio
+ * - Aetheric current overflow twitch - random, purely visual, never disturbs audio
  * - Music-reactive signal core (is-live class drives glow animation in CSS)
  */
 
@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 import { getTrackEmbedConfig } from "../../lib/musicEmbeds";
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Web Audio — synthesized button tones.
+   Web Audio - synthesized button tones.
    AudioContext is created per-click and closed after the tone ends to avoid
    holding open audio resources between interactions.
 ───────────────────────────────────────────────────────────────────────────── */
@@ -78,12 +78,12 @@ function playButtonSound(type = 'tap', sinkId = '') {
 
     osc.addEventListener('ended', () => { ctx.close().catch(() => {}); }, { once: true });
   } catch {
-    // Silently degrade — audio API may be blocked or unavailable
+    // Silently degrade - audio API may be blocked or unavailable
   }
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   Ripple — injects a DOM span at the click point, animates via CSS keyframe,
+   Ripple - injects a DOM span at the click point, animates via CSS keyframe,
    self-removes on animationend. Still-water effect: slow expansion, subtle fade.
 ───────────────────────────────────────────────────────────────────────────── */
 function spawnRipple(btn, event) {
@@ -101,7 +101,7 @@ function spawnRipple(btn, event) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   makeHandler — wraps a button's click handler with sound + ripple.
+   makeHandler - wraps a button's click handler with sound + ripple.
 ───────────────────────────────────────────────────────────────────────────── */
 function makeHandler(handler, soundType = 'tap', sinkId = '') {
   return (e) => {
@@ -112,7 +112,7 @@ function makeHandler(handler, soundType = 'tap', sinkId = '') {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   PowerArcIcon — Arcane ignition symbol.
+   PowerArcIcon - Arcane ignition symbol.
    Styled arcing power button that fits the Resonance Chamber aesthetic.
 ───────────────────────────────────────────────────────────────────────────── */
 const PowerArcIcon = ({ color, isPlaying, isTuning }) => (
@@ -182,13 +182,13 @@ export default function HolographicEmbed({
   onIgnite,
   sinkId = '',
 }) {
-  /* Aetheric current overflow twitch — non-deterministic interval, purely visual */
+  /* Aetheric current overflow twitch - non-deterministic interval, purely visual */
   const [isTwitching, setIsTwitching] = useState(false);
 
   useEffect(() => {
     let timeout;
     let twitchResetTimeout;
-    // Crypto-seeded per mount via the sanctioned RNG bridge — varies per
+    // Crypto-seeded per mount via the sanctioned RNG bridge - varies per
     // page-load, no raw host RNG (QUANT-0101 / VAELRIX_LAW §6). Purely visual.
     const random = freshRng();
 
@@ -197,7 +197,7 @@ export default function HolographicEmbed({
       const delay = 8000 + random() * 30000;
       timeout = setTimeout(() => {
         setIsTwitching(true);
-        // Twitch resolves in 500ms — matches CSS animation duration
+        // Twitch resolves in 500ms - matches CSS animation duration
         twitchResetTimeout = setTimeout(() => setIsTwitching(false), 500);
         scheduleNextTwitch();
       }, delay);
@@ -278,7 +278,7 @@ export default function HolographicEmbed({
                         d="M24 144 C54 172, 90 118, 122 146 S188 190, 224 144 S280 108, 304 132" />
                 </svg>
 
-                {/* Central Power Ignition Icon — Replaces Glyph and Focus Dots */}
+                {/* Central Power Ignition Icon - Replaces Glyph and Focus Dots */}
                 <button 
                   className="signal-core__ignition-btn"
                   onClick={makeHandler(onIgnite, 'play', sinkId)}
@@ -306,7 +306,7 @@ export default function HolographicEmbed({
         <span className="listen-console__plate-glyph" aria-hidden="true">✦</span>
       </div>
 
-      {/* ── TransportConsole — holographic touch surface ──────────────── */}
+      {/* ── TransportConsole - holographic touch surface ──────────────── */}
       <div
         className={[
           'transport-console',

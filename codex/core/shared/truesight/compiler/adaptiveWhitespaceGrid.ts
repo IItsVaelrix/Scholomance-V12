@@ -76,7 +76,19 @@ export function measureTextWidth(
   // Only update context font if it changed
   if (lastFontKey !== fontKey) {
     ctx.font = `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`;
-    
+
+    // Match the editor textarea's shaping so canvas advances equal the browser's
+    // rendered advances. Without geometricPrecision the canvas defaults to
+    // optimizeSpeed, which grid-fits glyph advances to integers and drifts the
+    // overlay hit-boxes off the real glyphs (~0.1px/glyph, ~5px/line).
+    // See BUG-2026-06-20-TRUESIGHT-LATTICE-METRIC-DRIFT.
+    if ('textRendering' in ctx) {
+      (ctx as any).textRendering = 'geometricPrecision';
+    }
+    if ('fontKerning' in ctx) {
+      (ctx as any).fontKerning = 'normal';
+    }
+
     // Set modern letter/word spacing if supported
     if ('letterSpacing' in ctx) {
       (ctx as any).letterSpacing = `${letterSpacing}px`;
@@ -84,7 +96,7 @@ export function measureTextWidth(
     if ('wordSpacing' in ctx) {
       (ctx as any).wordSpacing = `${wordSpacing}px`;
     }
-    
+
     lastFontKey = fontKey;
     // V12 FIX: Clear entire cache on font change as old measurements are invalid
     widthCache.clear();

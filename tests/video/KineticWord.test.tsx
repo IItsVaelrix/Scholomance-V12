@@ -5,7 +5,7 @@ import { SCHOOLS } from "../../codex/core/constants/schools.js";
 import type { WordTiming } from "../../src/video/types";
 import type { BeatClockState } from "../../src/video/useBeatClock";
 
-// useBeatClock reads from Remotion context — not needed here since KineticWord
+// useBeatClock reads from Remotion context - not needed here since KineticWord
 // now receives clock as a prop directly.
 
 const makeClock = (timeMs: number): BeatClockState => ({
@@ -76,7 +76,7 @@ describe("KineticWord", () => {
       />
     );
     const el = getByText("care");
-    // jsdom normalizes hex to rgb — check the parent span which carries the color
+    // jsdom normalizes hex to rgb - check the parent span which carries the color
     expect(el.style.color).toBeTruthy(); // color is set
     expect(el.style.color).not.toBe(""); // not empty
     // Verify it's the WILL color (#ef4444 = rgb(239, 68, 68))

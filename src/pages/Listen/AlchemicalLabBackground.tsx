@@ -14,9 +14,9 @@ export function getSharedPhaserGame(): Phaser.Game | null {
 }
 
 /**
- * AlchemicalLabBackground — Creates a SINGLE Phaser game with multiple scenes:
- * - AlchemicalLabScene (zIndex: 0) — Background atmosphere with rotating hexagram
- * - SignalChamberScene (zIndex: 10) — Console UI (mounted by SignalChamberConsole)
+ * AlchemicalLabBackground - Creates a SINGLE Phaser game with multiple scenes:
+ * - AlchemicalLabScene (zIndex: 0) - Background atmosphere with rotating hexagram
+ * - SignalChamberScene (zIndex: 10) - Console UI (mounted by SignalChamberConsole)
  *
  * Performance: Cache + Hydrate pattern for instant LCP
  * - First visit: Shows CSS background, loads Phaser, caches rendered static layer

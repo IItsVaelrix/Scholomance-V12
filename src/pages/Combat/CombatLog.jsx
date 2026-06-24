@@ -32,14 +32,14 @@ function resolveCombatLogPrefix(turn) {
 }
 
 /**
- * CombatLog.jsx — CombatLogDrawer
+ * CombatLog.jsx - CombatLogDrawer
  *
  * Chronicle of combat events. Supports collapse/expand modes so the log
  * supports MUD information density without drowning the battlefield.
  *
  * Modes:
- *   collapsed — shows last 2 entries + fade + toggle button
- *   expanded  — full scrollable chronicle (current behavior)
+ *   collapsed - shows last 2 entries + fade + toggle button
+ *   expanded - full scrollable chronicle (current behavior)
  *
  * Animation sync with board events is preserved from original implementation.
  */

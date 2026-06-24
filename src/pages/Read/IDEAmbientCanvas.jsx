@@ -1,12 +1,12 @@
 /**
- * IDEAmbientCanvas — React wrapper for IDEAmbientScene
+ * IDEAmbientCanvas - React wrapper for IDEAmbientScene
  *
  * Defers Phaser initialization to browser idle time (requestIdleCallback,
  * 4 s timeout). This guarantees it never competes with first-interaction
  * paint and has zero INP impact during initial load.
  *
  * Props:
- *   schoolColor {string} — hex color for the active school (e.g. "#651fff")
+ *   schoolColor {string} - hex color for the active school (e.g. "#651fff")
  */
 import { useEffect, useRef } from 'react';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';

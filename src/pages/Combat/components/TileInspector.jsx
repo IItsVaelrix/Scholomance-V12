@@ -20,15 +20,15 @@ export default function TileInspector({ cellLabel, range, occupantEntity, schola
       <div className="tile-inspector">
         <div className="inspector-row">
           <span className="inspector-key">COORD</span>
-          <span className="inspector-val">{cellLabel || '—'}</span>
+          <span className="inspector-val">{cellLabel || ' - '}</span>
         </div>
         <div className="inspector-row">
           <span className="inspector-key">GLYPH TYPE</span>
-          <span className="inspector-val">{tile.leylineType ? tile.leylineType.toUpperCase().replace('-', ' ') : '—'}</span>
+          <span className="inspector-val">{tile.leylineType ? tile.leylineType.toUpperCase().replace('-', ' ') : ' - '}</span>
         </div>
         <div className="inspector-row">
           <span className="inspector-key">AFFINITY</span>
-          <span className="inspector-val">{tile.leylineAffinity || '—'}</span>
+          <span className="inspector-val">{tile.leylineAffinity || ' - '}</span>
         </div>
         <div className="inspector-row">
           <span className="inspector-key">HARVEST</span>
@@ -37,13 +37,13 @@ export default function TileInspector({ cellLabel, range, occupantEntity, schola
         <div className="inspector-row">
           <span className="inspector-key">PHASE</span>
           <span className={`inspector-val phase-${tile.leylinePhase}`}>
-            {tile.leylinePhase ? tile.leylinePhase.toUpperCase() : '—'}
+            {tile.leylinePhase ? tile.leylinePhase.toUpperCase() : ' - '}
           </span>
         </div>
         <div className="inspector-row">
           <span className="inspector-key">DIST</span>
           <span className={`inspector-val${outOfRange ? ' out-of-range' : ''}`}>
-            {range ?? '—'}
+            {range ?? ' - '}
           </span>
         </div>
         {occupantEntity && (

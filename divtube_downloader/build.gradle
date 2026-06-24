@@ -1,0 +1,36 @@
+
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'com.divtube'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Wand/DivWand simulated dependencies (usually Jackson for JSON)
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.15.2'
+}
+
+application {
+    mainClass = 'divtube.app.DivTubeApp'
+}
+
+tasks.named('run') {
+    standardInput = System.in
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << "-parameters"
+}

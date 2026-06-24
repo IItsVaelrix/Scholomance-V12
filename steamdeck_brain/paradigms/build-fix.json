@@ -1,0 +1,46 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "build-fix",
+  "version": "0.1.0",
+  "priority": 9,
+  "match": {
+    "patterns": [
+      "(build|compile|bundle|vite|webpack|tsc|esbuild).*(fail|error|broke|broken|cannot|unable)",
+      "(fix|resolve).*(build|compile|typecheck|typescript|eslint|lint)",
+      "(TypeScript|ESLint|Vite|import|module).*(error|fail|missing|not found|cannot)"
+    ]
+  },
+  "steps": [
+    {
+      "source": "polish",
+      "query": "{query}",
+      "label": "Polish check",
+      "retrieve_as": "polish"
+    },
+    {
+      "source": "file-system",
+      "query": "{query}",
+      "paths": [
+        "codex/",
+        "src/",
+        "package.json",
+        "tsconfig.json",
+        "vite.config.js",
+        ".eslintrc.json"
+      ],
+      "label": "Config files",
+      "max_results": 8,
+      "retrieve_as": "config"
+    },
+    {
+      "source": "substrate",
+      "query": "build error fix for {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Past fixes",
+      "retrieve_as": "history"
+    }
+  ],
+  "system_suffix": "CHAIN: identify the error category (TypeScript/ESLint/Vite/import) \u2192 check config files \u2192 search for past fixes \u2192 propose specific file edit. Include 'npm run typecheck' or 'npm run lint' to verify.",
+  "checksum": "2719247b"
+}

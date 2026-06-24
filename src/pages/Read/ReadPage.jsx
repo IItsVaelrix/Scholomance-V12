@@ -18,13 +18,14 @@ import { useTheme } from "../../hooks/useTheme.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
 import { useProgression } from "../../hooks/useProgression.jsx";
 import { useVerseSynthesis } from "../../hooks/useVerseSynthesis.js";
-import { useWordLookup } from "../../hooks/useWordLookup.jsx";
 import { usePredictor } from "../../hooks/usePredictor.jsx";
 import { getRitualPalette } from "../../data/schoolPalettes.js";
 import { SCHOOLS, VOWEL_FAMILY_TO_SCHOOL, getSchoolsByUnlock } from "../../data/schools.js";
 import { normalizeVowelFamily } from "../../lib/phonology/vowelFamily.js";
 import { parseBooleanEnvFlag } from "../../hooks/useCODExPipeline.jsx";
 import { patternColor } from "../../lib/patternColor.js";
+import { resolveResonanceConnections } from "../../lib/truesight/resolveResonanceConnections.js";
+import { buildResonanceGate } from "../../lib/truesight/buildResonanceGate.js";
 import { getCachedWord, setCachedWord, pruneOldCaches } from "../../lib/platform/wordCache.js";
 import { getAuroraLevel, cycleAuroraLevel, useAuroraLevel } from "../../lib/atmosphere/aurora.ts";
 import { useAutoSave } from "../../hooks/useAutoSave.js";
@@ -35,10 +36,10 @@ import AnalysisPanel from "./AnalysisPanel.jsx";
 import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
 import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
 import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
-import WordTooltip from "../../components/WordTooltip.jsx";
+import RitualPredictionTooltip from "../../components/RitualPredictionTooltip.jsx";
 import { TruesightDebugColorPanel } from "../../components/TruesightDebugColorPanel/TruesightDebugColorPanel.jsx";
 
-import ScrollEditor from "./ScrollEditor.jsx";
+import ScrollEditor from "../../lib/lexical/LexicalScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
 import { ANALYSIS_MODES } from "../../lib/truesight/compiler/analysisModes";
 import { TopBar, StatusBar } from "./IDEChrome.jsx";
@@ -170,6 +171,9 @@ export default function ReadPage() {
   // Use settings for initial state if available
   const [isTruesight, setIsTruesight] = useState(
     () => readPersistedBooleanSetting('truesightEnabled') ?? settings?.truesightEnabled ?? false
+  );
+  const [isLatticeGrid, setIsLatticeGrid] = useState(
+    () => readPersistedBooleanSetting('latticeGridEnabled') ?? settings?.latticeGridEnabled ?? false
   );
   const [isPredictive, setIsPredictive] = useState(true);
   const [mirrored, setMirrored] = useState(settings?.mirroredEnabled ?? false); // Mirror state
@@ -336,6 +340,14 @@ export default function ReadPage() {
     });
   }, [updateSettings]);
 
+  const handleToggleLatticeGrid = useCallback(() => {
+    setIsLatticeGrid((prev) => {
+      const next = !prev;
+      updateSettings({ latticeGridEnabled: next });
+      return next;
+    });
+  }, [updateSettings]);
+
   const handleTogglePredictive = useCallback(() => {
     setIsPredictive((prev) => !prev);
   }, []);
@@ -386,15 +398,42 @@ export default function ReadPage() {
     setInfoBeamFamily(label);
   }, []);
 
-  const { lookup, data: lookupData, isLoading: isLookupLoading, error: lookupError, reset: resetWordLookup } = useWordLookup();
+  // Lexicon lookup is now owned by the tooltip itself (RitualPredictionTooltip
+  // self-fetches via useWordLookup), so ReadPage no longer threads word data.
 
   const infoBeamConnections = useMemo(() => {
     if (!infoBeamEnabled || !infoBeamFamily) return [];
-    const all = Array.isArray(deepAnalysis?.syntaxLayer?.allConnections)
-      ? deepAnalysis.syntaxLayer.allConnections
-      : [];
-    return all.filter((c) => c.groupLabel === infoBeamFamily);
+    const { connections } = resolveResonanceConnections(deepAnalysis);
+    return connections.filter((c) => c.groupLabel === infoBeamFamily);
   }, [infoBeamEnabled, infoBeamFamily, deepAnalysis]);
+
+  // Resonance gate for word colouring: only words that participate in a
+  // rhyme/assonance connection get coloured (the rest stay grey), so colour
+  // marks resonance instead of every content word ("Skittles" fix). Always
+  // returns a Set - empty when analysis ran but found nothing resonant, OR
+  // when no connection source exists on the live synthesis path (server
+  // offline / local fallback). The two are distinguished by `resonanceDegraded`
+  // below; the gate itself stays strict (grey) in both cases so the offline
+  // state can never reintroduce the over-colouring bug. The connection source
+  // is read path-agnostically (see SCD64 GATE_DATA_ABSENT 03030742...).
+  // The tiered resonance gate: Map<charStart, 'rhyme' | 'assonance'>.
+  // 'rhyme' preserves the historical >= MIN_RESONANCE_SCORE glow set exactly;
+  // 'assonance' adds vowel echoes as a subordinate tint tier. A Map keeps
+  // .has/.size working for existing consumers while adding .get for the tier.
+  const resonantCharStarts = useMemo(() => {
+    const { connections } = resolveResonanceConnections(deepAnalysis);
+    return buildResonanceGate(connections);
+  }, [deepAnalysis]);
+
+  // True when analysis has arrived but the live synthesis path carries no
+  // connection source at all (the GATE_DATA_ABSENT condition). Drives the
+  // quiet "resonance offline" signal so a grey editor reads as "analysis
+  // unavailable" rather than "broken". Loading (no deepAnalysis yet) is NOT
+  // degraded - it's just not-ready.
+  const resonanceDegraded = useMemo(() => {
+    if (!deepAnalysis) return false;
+    return !resolveResonanceConnections(deepAnalysis).sourcePresent;
+  }, [deepAnalysis]);
 
   const scrollLines = useMemo(
     () => truesightContent.split("\n"),
@@ -494,15 +533,13 @@ export default function ReadPage() {
     setTooltipState({ token: null, position: { x: TOOLTIP_MARGIN, y: TOOLTIP_MARGIN }, localAnalysis: null, pinned: false });
     setSessionWords([]);
     setSessionIndex(-1);
-    setLookupOverride(null);
-    if (typeof resetWordLookup === 'function') resetWordLookup();
-  }, [bumpAutosaveContext, issueEditorDocumentIdentity, resetWordLookup, setActiveScrollId]);
+  }, [bumpAutosaveContext, issueEditorDocumentIdentity, setActiveScrollId]);
 
   const handleEditScroll = useCallback(() => {
     bumpAutosaveContext(activeScrollId, activeScroll?.title, activeScrollContent);
     setEditorTitle(String(activeScroll?.title || ""));
     setEditorContent(activeScrollContent);
-    // Do NOT call issueEditorDocumentIdentity here — we are editing the same
+    // Do NOT call issueEditorDocumentIdentity here - we are editing the same
     // document already mounted in ScrollEditor. Changing the key would remount
     // it, losing scroll position and resetting adaptiveTopology (which clears
     // the Gutter's per-line syllable counts).
@@ -564,7 +601,6 @@ export default function ReadPage() {
 
   const [sessionWords, setSessionWords] = useState([]);
   const [sessionIndex, setSessionIndex] = useState(-1);
-  const [lookupOverride, setLookupOverride] = useState(null);
 
   const tooltipCloseGuardRef = useRef({ expiresAt: 0, lineIndex: -1, charStart: -1 });
 
@@ -647,72 +683,52 @@ export default function ReadPage() {
         setSessionIndex(next.length - 1);
         return next;
       });
-      setLookupOverride(null);
-      resetWordLookup();
-      lookup(activation.normalizedWord);
     }
 
     if (isMobileViewport) {
       setIsWordSheetOpen(true);
     }
-  }, [buildTooltipAnalysis, isMobileViewport, lookup, resetWordLookup, resolveTooltipPosition, tooltipState]);
+  }, [buildTooltipAnalysis, isMobileViewport, resolveTooltipPosition, tooltipState]);
 
   const handleCloseTooltip = useCallback(() => {
     handleWordActivate(null);
   }, [handleWordActivate]);
 
-  const handleTooltipDrag = useCallback((pos) => {
-    const vp = ({ width: window.innerWidth, height: window.innerHeight });
-    const clampedPos = clampTooltipPosition(pos, vp.width, vp.height);
-    setTooltipState(prev => ({ ...prev, position: clampedPos }));
-  }, []);
-
-  const handleSuggestionClick = useCallback((suggestedWord) => {
+  // Transmute: replace the originally-activated word in the poem with the
+  // chosen word. Only valid when we know the source position (charStart >= 0).
+  const handleTransmute = useCallback((chosenWord) => {
     if (!tooltipState.token) return;
     const { word: original, charStart } = tooltipState.token;
-    const replacement = applyMatchCase(original, suggestedWord);
+    if (!Number.isInteger(charStart) || charStart < 0) return;
+    const replacement = applyMatchCase(original, chosenWord);
     const newContent = editorContent.slice(0, charStart) + replacement + editorContent.slice(charStart + original.length);
     handleEditorContentChange(newContent);
     handleCloseTooltip();
     addToast(`Transmuted "${original}" to "${replacement}"`, "success");
   }, [editorContent, handleEditorContentChange, handleCloseTooltip, tooltipState.token, addToast]);
 
+  // Session navigation re-seeds the tooltip with the chosen word; the tooltip
+  // self-fetches its own lexicon + prediction. Source position is cleared so
+  // transmute stays disabled for words not anchored in the current document.
   const handleSessionNavigate = useCallback((direction) => {
     const nextIndex = sessionIndex + direction;
-    if (nextIndex >= 0 && nextIndex < sessionWords.length) {
-      const nextWord = sessionWords[nextIndex]?.word;
-      setSessionIndex(nextIndex);
-      setLookupOverride(null);
-      resetWordLookup();
-      lookup(nextWord);
-    }
-  }, [sessionIndex, sessionWords, lookup, resetWordLookup]);
+    if (nextIndex < 0 || nextIndex >= sessionWords.length) return;
+    const nextWord = sessionWords[nextIndex]?.word;
+    if (!nextWord) return;
+    setSessionIndex(nextIndex);
+    setTooltipState((prev) => ({
+      ...prev,
+      token: { word: nextWord, normalizedWord: nextWord, charStart: -1, lineIndex: -1 },
+      localAnalysis: null,
+    }));
+  }, [sessionIndex, sessionWords]);
 
-  const tooltipWordData = useMemo(() => {
-    if (!tooltipState.token) return null;
-    const baseWordData = {
-      word: tooltipState.token.word,
-      vowelFamily: tooltipState.localAnalysis?.core?.vowelFamily || null,
-      terminalVowelFamily: tooltipState.localAnalysis?.core?.terminalVowelFamily || null,
-      rhymeKey: tooltipState.localAnalysis?.core?.rhymeKey || null,
-      rhymeTailSignature: tooltipState.localAnalysis?.core?.rhymeTailSignature || null,
-      syllableCount: tooltipState.localAnalysis?.core?.syllableCount || undefined,
-    };
-    const effectiveLookupData = lookupOverride ?? lookupData;
-    if (effectiveLookupData && String(effectiveLookupData.word || "").toUpperCase() === String(tooltipState.token.normalizedWord || "").toUpperCase()) {
-      return {
-        ...baseWordData,
-        ...effectiveLookupData,
-        word: effectiveLookupData.word || baseWordData.word,
-        vowelFamily: effectiveLookupData.vowelFamily || baseWordData.vowelFamily,
-        terminalVowelFamily: effectiveLookupData.terminalVowelFamily || baseWordData.terminalVowelFamily,
-        rhymeKey: effectiveLookupData.rhymeKey || baseWordData.rhymeKey,
-        rhymeTailSignature: effectiveLookupData.rhymeTailSignature || baseWordData.rhymeTailSignature,
-        syllableCount: effectiveLookupData.syllableCount || baseWordData.syllableCount,
-      };
-    }
-    return baseWordData;
-  }, [lookupData, lookupOverride, tooltipState]);
+  // The raw line the activated word sits on - feeds the tooltip's resonance.
+  const tooltipContextLine = useMemo(() => {
+    const lineIndex = tooltipState.token?.lineIndex;
+    if (!Number.isInteger(lineIndex) || lineIndex < 0) return "";
+    return (editorContent || "").split("\n")[lineIndex] || "";
+  }, [editorContent, tooltipState.token]);
 
   const { predict, getCompletions, checkSpelling, getSpellingSuggestions, ready: predictorReady } = usePredictor();
   const misspellings = useMemo(() => {
@@ -826,6 +842,8 @@ export default function ReadPage() {
     <ToolsSidebar
       isTruesight={isTruesight}
       onToggleTruesight={handleToggleTruesight}
+      isLatticeGrid={isLatticeGrid}
+      onToggleLatticeGrid={handleToggleLatticeGrid}
       isPredictive={isPredictive}
       onTogglePredictive={handleTogglePredictive}
       mirrored={mirrored}
@@ -951,6 +969,11 @@ export default function ReadPage() {
                     {isTruesight ? 'On' : 'Off'}
                   </button>
                 </div>
+                {isTruesight && resonanceDegraded && (
+                  <div className="settings-panel-note settings-panel-note--offline" role="status">
+                    Resonance offline - analysis unavailable; words shown in plain ink.
+                  </div>
+                )}
                 <div className="settings-panel-row">
                   <span>Symmetrical</span>
                   <button
@@ -1011,6 +1034,7 @@ export default function ReadPage() {
                 isEditable={isEditable}
                 disabled={false}
                 isTruesight={isTruesight}
+                isLatticeGrid={isLatticeGrid}
                 isPredictive={isPredictive}
                 predict={predict}
                 getCompletions={getCompletions}
@@ -1018,11 +1042,13 @@ export default function ReadPage() {
                 getSpellingSuggestions={getSpellingSuggestions}
                 predictorReady={predictorReady}
                 plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                tokenWeights={scoreData?.tokenWeights || null}
                 onContentChange={handleEditorContentChange}
                 onTitleChange={handleEditorTitleChange}
                 analyzedWords={analyzedWords}
                 analyzedWordsByIdentity={analyzedWordsByIdentity}
                 analyzedWordsByCharStart={analyzedWordsByCharStart}
+                resonantCharStarts={resonantCharStarts}
                 lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                 highlightedLines={effectiveHighlightedLines}
                 pinnedLines={pinnedLines}
@@ -1105,6 +1131,8 @@ export default function ReadPage() {
           onClose={() => { haptic('dismiss'); setIsHexSheetOpen(false); }}
           isTruesight={isTruesight}
           onToggleTruesight={handleToggleTruesight}
+          isLatticeGrid={isLatticeGrid}
+          onToggleLatticeGrid={handleToggleLatticeGrid}
           isPredictive={isPredictive}
           onTogglePredictive={handleTogglePredictive}
           mirrored={mirrored}
@@ -1121,11 +1149,9 @@ export default function ReadPage() {
         <MobileWordSheet
           isOpen={isWordSheetOpen}
           onClose={() => { haptic('dismiss'); setIsWordSheetOpen(false); }}
-          wordData={tooltipWordData}
-          analysis={tooltipState.localAnalysis}
-          isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-          error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
-          onSuggestionClick={handleSuggestionClick}
+          word={tooltipState.token?.word || null}
+          contextLine={tooltipContextLine}
+          onTransmute={handleTransmute}
           sessionHistory={sessionWords}
           sessionIndex={sessionIndex}
           onSessionNavigate={handleSessionNavigate}
@@ -1330,6 +1356,7 @@ export default function ReadPage() {
                     isEditable={isEditable}
                     disabled={false}
                     isTruesight={isTruesight}
+                    isLatticeGrid={isLatticeGrid}
                     isPredictive={isPredictive}
                     predict={predict}
                     getCompletions={getCompletions}
@@ -1337,11 +1364,13 @@ export default function ReadPage() {
                     getSpellingSuggestions={getSpellingSuggestions}
                     predictorReady={predictorReady}
                     plsPhoneticFeatures={scoreData?.plsPhoneticFeatures || rhymeAstrology?.features || null}
+                    tokenWeights={scoreData?.tokenWeights || null}
                     onContentChange={handleEditorContentChange}
                     onTitleChange={handleEditorTitleChange}
                     analyzedWords={analyzedWords}
                     analyzedWordsByIdentity={analyzedWordsByIdentity}
                     analyzedWordsByCharStart={analyzedWordsByCharStart}
+                    resonantCharStarts={resonantCharStarts}
                     lineSyllableCounts={deepAnalysis?.lineSyllableCounts || []}
                     highlightedLines={effectiveHighlightedLines}
                     pinnedLines={pinnedLines}
@@ -1434,7 +1463,7 @@ export default function ReadPage() {
                     {infoBeamEnabled && infoBeamFamily && (
                       <div className="right-panel-section">
                         <div className="right-panel-section-header">
-                          <span className="right-panel-section-title">InfoBeam — Group {infoBeamFamily}</span>
+                          <span className="right-panel-section-title">InfoBeam - Group {infoBeamFamily}</span>
                           <button
                             type="button"
                             className="right-panel-close"
@@ -1543,17 +1572,14 @@ export default function ReadPage() {
       
       {tooltipState.token && (
         <AnimatePresence>
-          <WordTooltip
+          <RitualPredictionTooltip
             key="word-card"
-            wordData={tooltipWordData}
-            analysis={tooltipState.localAnalysis}
-            isLoading={tooltipState.pinned && isLookupLoading && !lookupOverride}
-            error={tooltipState.pinned ? (lookupError?.message ?? null) : null}
+            word={tooltipState.token.word}
+            contextLine={tooltipContextLine}
             x={tooltipState.position.x}
             y={tooltipState.position.y}
-            onDrag={handleTooltipDrag}
             onClose={handleCloseTooltip}
-            onSuggestionClick={handleSuggestionClick}
+            onTransmute={handleTransmute}
             sessionHistory={sessionWords}
             sessionIndex={sessionIndex}
             onSessionNavigate={handleSessionNavigate}
@@ -1631,7 +1657,7 @@ export default function ReadPage() {
       {isNarrowViewport && infoBeamEnabled && infoBeamFamily && (
         <FloatingPanel
           id="infobeam-panel"
-          title={`InfoBeam — Group ${infoBeamFamily}`}
+          title={`InfoBeam - Group ${infoBeamFamily}`}
           onClose={() => setInfoBeamFamily(null)}
           defaultX={window.innerWidth - 720}
           defaultY={80}

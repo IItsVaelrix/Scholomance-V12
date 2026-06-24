@@ -19,13 +19,13 @@ describe("CMUDICT integration", () => {
 
     expect(result).toBeTruthy();
     expect(result.phonemes).toEqual(["K", "ER1", "N", "AH0", "L"]);
-    expect(result.vowelFamily).toBe("IH");
+    expect(result.vowelFamily).toBe("ER");
   });
 
   it('uses CMU output through the main phoneme engine', () => {
     const result = PhonemeEngine.analyzeWord('kernel');
     expect(result).toBeTruthy();
     expect(result.phonemes).toEqual(["K", "ER1", "N", "AH0", "L"]);
-    expect(result.rhymeKey).toBe("IH-L");
+    expect(result.rhymeKey).toBe("ER-L");
   });
 });

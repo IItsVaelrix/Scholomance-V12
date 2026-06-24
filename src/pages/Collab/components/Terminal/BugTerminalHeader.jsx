@@ -1,5 +1,5 @@
 /**
- * BugTerminalHeader — Viewport Status Strip
+ * BugTerminalHeader - Viewport Status Strip
  * Displays bytecode metadata for the loaded target.
  */
 

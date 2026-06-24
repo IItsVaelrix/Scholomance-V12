@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import './ChroniclePanel.css';
 
 /**
- * ChroniclePanel — Displays historical literary matches from the Super Corpus.
+ * ChroniclePanel - Displays historical literary matches from the Super Corpus.
  */
 export default function ChroniclePanel({ currentLineText = "" }) {
   const [matches, setMatches] = useState([]);
@@ -85,7 +85,7 @@ export default function ChroniclePanel({ currentLineText = "" }) {
             >
               <p className="chronicle-text">&ldquo;{match.text}&rdquo;</p>
               <div className="chronicle-meta">
-                {match.author && <span className="chronicle-author">— {match.author}</span>}
+                {match.author && <span className="chronicle-author"> -  {match.author}</span>}
                 {match.title && <span className="chronicle-work">in {match.title}</span>}
               </div>
             </motion.div>

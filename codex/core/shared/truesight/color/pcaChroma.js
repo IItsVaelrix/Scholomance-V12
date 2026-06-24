@@ -77,7 +77,12 @@ const SCHOOL_COLOR_ANCHORS = Object.freeze({
 const DEFAULT_SCHOOL_HSL = Object.freeze({ h: 174, s: 68, l: 52 });
 
 function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
+  // NaN-safe: a non-finite input (e.g. lightness poisoned by a NaN resonance
+  // phase) collapses to the floor instead of leaking NaN downstream to
+  // oklchToHex → "#NaNNaNNaN". See PB-ERR-v1-TRUESIGHT-CHROMA-BLEED.
+  const n = Number(value);
+  if (!Number.isFinite(n)) return min;
+  return Math.min(max, Math.max(min, n));
 }
 
 function wrapHue(value) {
@@ -294,7 +299,10 @@ export function computeBlendedHsl(schoolWeights, schools = SCHOOLS) {
  */
 export function resolveVerseIrColor(family, schoolId = null, options = {}) {
   const resolvedFamily = resolveProjectionFamily(family);
-  const { phase = 0 } = options;
+  // Guard the resonance tick: a non-finite phase (NaN/Infinity from an
+  // uninitialised or divide-by-zero animation clock) would make
+  // Math.sin(phase·2π) NaN → NaN lightness → "#NaN…". Default to a static tick.
+  const phase = Number.isFinite(options?.phase) ? options.phase : 0;
 
   if (!resolvedFamily) {
     return Object.freeze({

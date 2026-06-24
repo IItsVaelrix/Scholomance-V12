@@ -88,7 +88,7 @@ export default function ScholarStatusPanel({ scholar, latestTurn = null, playerT
       {(statusEffects.length > 0 || isUnstable || scholar.supercharged) ? (
         <div className="status-effect-list" aria-live="polite">
           {isUnstable && (
-            <div className="status-effect-chip is-unstable" title="Incoherent leyline extraction destabilized you. Casts may fizzle until this decays — a coherent verse reduces the risk.">
+            <div className="status-effect-chip is-unstable" title="Incoherent leyline extraction destabilized you. Casts may fizzle until this decays - a coherent verse reduces the risk.">
               UNSTABLE · {unstableTurnsLeft}T
             </div>
           )}

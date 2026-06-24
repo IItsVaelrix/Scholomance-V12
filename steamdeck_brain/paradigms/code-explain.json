@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "code-explain",
+  "version": "0.1.0",
+  "priority": 8,
+  "match": {
+    "patterns": [
+      "(explain|how does|what does|understand) (this |the )?(code|function|class|module|file|component|hook|service|adapter|route|engine)",
+      "(in|at|from) (codex|src|steamdeck)",
+      "@[a-zA-Z_/.-]+"
+    ],
+    "keywords": [
+      "explain",
+      "code",
+      "function",
+      "class",
+      "module",
+      "import",
+      "component",
+      "hook",
+      "service",
+      "adapter",
+      "route",
+      "engine",
+      "pipeline",
+      "what does this do"
+    ]
+  },
+  "steps": [
+    {
+      "source": "codebase-search",
+      "query": "{query}",
+      "label": "Relevant files",
+      "max_results": 5,
+      "retrieve_as": "code_files"
+    },
+    {
+      "source": "glossary",
+      "query": "{query}",
+      "label": "SCD64 terms",
+      "max_results": 3,
+      "retrieve_as": "glossary"
+    },
+    {
+      "source": "substrate",
+      "query": "architecture of {query}",
+      "label": "Architecture context",
+      "top_k": 5,
+      "max_results": 3,
+      "retrieve_as": "arch"
+    }
+  ],
+  "system_suffix": "CHAIN: identify the code entity \u2192 explain its role in the architecture \u2192 trace imports/dependencies \u2192 provide usage example. Reference the Vaelrix Law (determinism, bytecode discipline) where applicable.",
+  "checksum": "95877788"
+}

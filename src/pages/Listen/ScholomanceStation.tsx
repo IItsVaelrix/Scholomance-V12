@@ -95,9 +95,9 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
             ))}
           </div>
   
-          {/* Sacred Geometry Sphere — Procedurally Generated Orb */}
+          {/* Sacred Geometry Sphere - Procedurally Generated Orb */}
           <div className={`orb-centerpiece ${isPlaying ? 'is-playing' : ''} ${isTuning ? 'is-tuning' : ''}`}>
-            {/* Block layer: opaque disc BEHIND the orb (z-index:-1) — masks the
+            {/* Block layer: opaque disc BEHIND the orb (z-index:-1) - masks the
                 track-matrix text that bleeds through the transparent canvas. */}
             <div className="orb-centerpiece__backing" aria-hidden="true" />
             <div className="orb-centerpiece__ring-layer">

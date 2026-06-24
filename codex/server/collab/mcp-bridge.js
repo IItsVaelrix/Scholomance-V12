@@ -15,12 +15,13 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod';
 import * as schemas from './collab.schemas.js';
 import {
-  BytecodeError,
-  ERROR_CATEGORIES,
-  ERROR_SEVERITY,
-  MODULE_IDS,
-  ERROR_CODES,
+    BytecodeError,
+    ERROR_CATEGORIES,
+    ERROR_SEVERITY,
+    MODULE_IDS,
+    ERROR_CODES,
 } from '../../core/pixelbrain/bytecode-error.js';
+import { IterativeHealer } from '../../core/immunity/iterative-healer.js';
 import { analyzeDesignIntent } from '../../core/grimdesign/intentAnalyzer.js';
 import { resolveDesignDecisions } from '../../core/grimdesign/decisionEngine.js';
 
@@ -168,7 +169,10 @@ const TOOL_ALIASES = new Map(Object.entries({
     mcp_scholomance_collab_agent_list: ['agent_list'],
     mcp_scholomance_collab_task_list: ['task_list'],
     mcp_scholomance_collab_pipeline_list: ['pipeline_list'],
+    mcp_scholomance_collab_fs_find: ['fs_find', 'find_file'],
     mcp_scholomance_collab_fs_propose_patch: ['propose_patch', 'edit_propose'],
+    mcp_scholomance_collab_fs_apply_patch: ['apply_patch'],
+    mcp_scholomance_collab_heal: ['heal', 'iterative_heal'],
     mcp_scholomance_collab_law_get: ['law_get'],
     mcp_scholomance_collab_lock_list: ['lock_list'],
     mcp_scholomance_collab_skill_vaelrix_law_debug: ['vaelrix_law_debug', 'law_debug', 'high_inquisitor_debug', 'debug_oracle'],
@@ -572,6 +576,51 @@ export function registerCollabMcpBridge(server, service = collabService) {
         }
     });
 
+    registerTool(server, 'mcp_scholomance_collab_fs_find', {
+        query: z.string().describe('File name or glob pattern to search for'),
+        directory: z.string().optional().default('.').describe('The relative directory to search within (relative to project root)'),
+    }, async ({ query, directory }) => {
+        const absDir = path.resolve(ROOT, directory);
+        if (!absDir.startsWith(ROOT)) throw new BytecodeError(
+            ERROR_CATEGORIES.RANGE, ERROR_SEVERITY.CRIT, MOD,
+            ERROR_CODES.OUT_OF_BOUNDS,
+            { reason: 'Out of bounds access attempt to external substrates', requestedPath: absDir, rootPath: ROOT },
+        );
+        if (!fs.existsSync(absDir)) return [];
+
+        const results = [];
+
+        function walk(currentPath) {
+            const entries = fs.readdirSync(currentPath, { withFileTypes: true });
+            for (const entry of entries) {
+                if (entry.name === 'node_modules' || entry.name.startsWith('.')) continue;
+
+                const fullPath = path.join(currentPath, entry.name);
+                
+                if (entry.isDirectory()) {
+                    walk(fullPath);
+                } else {
+                    // Simple text match
+                    if (entry.name.includes(query) || (query.includes('*') && new RegExp('^' + query.replace(/\\*/g, '.*') + '$').test(entry.name))) {
+                        const relPath = path.relative(ROOT, fullPath);
+                        results.push(relPath);
+                    }
+                }
+            }
+        }
+
+        try {
+            walk(absDir);
+            return results.slice(0, 200); // cap results
+        } catch (e) {
+            throw new BytecodeError(
+                ERROR_CATEGORIES.STATE, ERROR_SEVERITY.WARN, MOD,
+                ERROR_CODES.INVALID_STATE,
+                { reason: 'Failed to find substrate', originalError: e.message },
+            );
+        }
+    });
+
     registerTool(server, 'mcp_scholomance_collab_fs_read', {
         path: z.string().describe('The relative path of the file substrate to read'),
     }, async ({ path: filePath }) => {
@@ -796,7 +845,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         caseSensitive: z.boolean().default(false).describe('Whether the search should be case-sensitive'),
         includePattern: z.string().optional().describe('Glob pattern for files to include (e.g. "*.js")'),
         excludePattern: z.string().optional().describe('Glob pattern for files to exclude'),
-        limit: z.number().default(20).describe('Maximum number of matches to return'),
+        limit: z.number().default(75).describe('Maximum number of matches to return (total across all files)'),
     }, ({ query, ...options }) => {
         console.error(`[MCP] Executing Forensic Search: "${query}"`);
         return forensicSearch(query, options);
@@ -1011,7 +1060,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
             try {
                 const abs = path.resolve(ROOT, target_file);
                 if (abs.startsWith(ROOT) && fs.existsSync(abs)) return fs.readFileSync(abs, 'utf8').slice(0, 8000);
-            } catch {}
+            } catch { /* ignore */ }
             return null;
         })() : null;
 
@@ -1070,7 +1119,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         try {
             fbSkill = fs.readFileSync(fbSkillPath, 'utf8');
             fitMatrix = fs.readFileSync(fitPath, 'utf8');
-        } catch (e) {}
+        } catch (e) { /* ignore */ }
 
         const detectedMode = mode || (subject.toLowerCase().includes('pdr') || subject.toLowerCase().includes('spec') ? 'D' : 
                             subject.toLowerCase().includes('ui') || subject.toLowerCase().includes('component') ? 'C' : 'B');
@@ -1230,7 +1279,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         let agent = null;
         try {
             if (typeof service.getAgent === 'function') agent = await service.getAgent(agent_id);
-        } catch {}
+        } catch { /* ignore */ }
         if (!agent && !bypass_lock_check) {
             // still allow recording; strict check can be added later via ownership/locks
         }
@@ -1240,7 +1289,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
         try {
             const locks = await service.listLocks ? await service.listLocks() : [];
             lockInfo = locks.find(l => l.file_path === file_path || l.file_path === `/${file_path}`);
-        } catch {}
+        } catch { /* ignore */ }
 
         const activityDetails = {
             file_path,
@@ -1283,6 +1332,68 @@ export function registerCollabMcpBridge(server, service = collabService) {
         };
     });
 
+    // ── apply_patch (actually write to filesystem) ─────────────────────────────
+    registerTool(server, 'mcp_scholomance_collab_fs_apply_patch', {
+        file_path: z.string().min(1).describe('Relative path of the file to patch'),
+        patch: z.string().min(1).describe('Search/replace block or unified diff or full content'),
+        backup: z.boolean().optional().default(true).describe('Create .bak backup before applying'),
+    }, async ({ file_path, patch, backup }) => {
+        const healer = new IterativeHealer(null, { projectRoot: ROOT });
+        const result = healer._applyPatch(file_path, patch, 1);
+        if (result.success) {
+            await service.logActivity({
+                agent_id: null,
+                action: 'patch_applied',
+                target_type: 'file',
+                target_id: file_path,
+                details: { method: result.method, bytesWritten: result.bytesWritten },
+            });
+        }
+        return result;
+    });
+
+    // ── Iterative Healer (autonomous diagnose → fix → verify → learn) ───────────
+    registerTool(server, 'mcp_scholomance_collab_heal', {
+        symptoms: z.array(z.string()).min(1).describe('Symptom lines or error descriptions'),
+        file_paths: z.array(z.string()).optional().describe('Affected file paths'),
+        error_messages: z.array(z.string()).optional(),
+        layer_hint: z.string().optional(),
+        task_id: z.string().optional().describe('Task ID to link results to'),
+        test_suite: z.enum(['lint','typecheck','test','qa','backend','e2e','build']).optional()
+            .default('qa').describe('Verification suite to run'),
+        max_iterations: z.number().int().min(1).max(10).optional().default(3),
+        patch_content: z.string().optional().describe('Explicit patch content (bypasses fixPath loading)'),
+        target_file: z.string().optional().describe('Target file for the patch'),
+    }, async ({ symptoms, file_paths, error_messages, layer_hint, task_id, test_suite, max_iterations, patch_content, target_file }) => {
+        const raid = getClericalRaidMcp();
+        const healer = new IterativeHealer(raid, { projectRoot: ROOT });
+        const bugReport = {
+            symptoms,
+            filePaths: file_paths || [],
+            errorMessages: error_messages || [],
+            layerHint: layer_hint || null,
+            timestamp: Date.now(),
+        };
+        const result = await healer.heal(bugReport, {
+            taskId: task_id || null,
+            testSuite: test_suite || 'qa',
+            maxIterations: max_iterations || 3,
+            patchContent: patch_content || null,
+            targetFile: target_file || null,
+        });
+        // Link result to task if provided
+        if (task_id && result.status) {
+            try {
+                await service.updateTask({
+                    id: task_id,
+                    actor_agent_id: 'healer',
+                    note: `[HEALER] ${result.status} after ${result.iterations} iteration(s). Pattern: ${result.pattern?.name || 'none'}. Verdict: ${result.verdict}.`,
+                });
+            } catch { /* ignore */ }
+        }
+        return result;
+    });
+
     // ── Law Retrieval (targeted, better than full dumps) ───────────────────────
     registerTool(server, 'mcp_scholomance_collab_law_get', {
         section: z.string().optional().describe('Law name, number, or keyword (e.g. "Determinism", "Bug Fix Documentation", "5", "escalation")'),
@@ -1291,8 +1402,8 @@ export function registerCollabMcpBridge(server, service = collabService) {
         const lawPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/VAELRIX_LAW.md');
         const preamblePath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/SHARED_PREAMBLE.md');
         let text = '';
-        try { text = fs.readFileSync(lawPath, 'utf8'); } catch {}
-        try { text += '\n\n' + fs.readFileSync(preamblePath, 'utf8'); } catch {}
+        try { text = fs.readFileSync(lawPath, 'utf8'); } catch { /* ignore */ }
+        try { text += '\n\n' + fs.readFileSync(preamblePath, 'utf8'); } catch { /* ignore */ }
 
         let excerpt = text.slice(0, max_chars);
         if (section) {
@@ -1321,7 +1432,7 @@ export function registerCollabMcpBridge(server, service = collabService) {
     }, async ({ anomaly_name, symptoms, target_files = [], mode = 'B', additional_context }) => {
         const debugSkillPath = path.join(ROOT, 'docs/scholomance-encyclopedia/Scholomance LAW/vaelrix_law_debug.md');
         let debugDoc = '';
-        try { debugDoc = fs.readFileSync(debugSkillPath, 'utf8'); } catch {}
+        try { debugDoc = fs.readFileSync(debugSkillPath, 'utf8'); } catch { /* ignore */ }
 
         // Auto-classify and gather basic evidence
         const classification = target_files.length > 0 ? 'Structural/Integration' : 'Behavioral';

@@ -68,8 +68,8 @@ export function AMPApplyPanel({
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <label style={{ fontSize: 10 }}>
-          <input type="checkbox" checked={createNew} onChange={e => setCreateNew(e.target.checked)} /> New layer (non-destructive)
+        <label htmlFor="ampNewLayer" style={{ fontSize: 10 }}>
+          <input id="ampNewLayer" type="checkbox" checked={createNew} onChange={e => setCreateNew(e.target.checked)} /> New layer (non-destructive)
         </label>
       </div>
 

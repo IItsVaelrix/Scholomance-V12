@@ -41,7 +41,7 @@ describe('Collab Bug Page QA', () => {
     testSuite: 'Collab Bug Page QA'
   };
 
-  describe('BugBoard — List Integrity', () => {
+  describe('BugBoard - List Integrity', () => {
     it('should correctly calculate bug statistics from payload', () => {
       const bugs = [
         { id: '1', status: 'new', severity: 'CRIT' },
@@ -86,7 +86,7 @@ describe('Collab Bug Page QA', () => {
     });
   });
 
-  describe('BugBytecodePanel — Verification', () => {
+  describe('BugBytecodePanel - Verification', () => {
     it('should correctly parse a valid PB-ERR-v1 bytecode', () => {
       const validBytecode = 'PB-ERR-v1-TYPE-CRIT-IMGPIX-0001-eyJwYXJhbWV0ZXJOYW1lIjoicGl4ZWxEYXRhIiwiZXhwZWN0ZWRUeXBlIjoic3RyaW5nIiwiYWN0dWFsVHlwZSI6Im51bWJlciJ9-7F8A9B2C';
       
@@ -120,7 +120,7 @@ describe('Collab Bug Page QA', () => {
     });
   });
 
-  describe('Bug Experience — Ledger Logic', () => {
+  describe('Bug Experience - Ledger Logic', () => {
     it('should promote to active status only after 2 corroborations', () => {
       let entry = {
         skeleton_hash: 'h1',
@@ -151,7 +151,7 @@ describe('Collab Bug Page QA', () => {
     });
   });
 
-  describe('UI State — Stasis Detection (Bug Modal)', () => {
+  describe('UI State - Stasis Detection (Bug Modal)', () => {
     it('should emit UI_STASIS error if submission takes too long', async () => {
       // World-Law: A submission that hangs mid-ritual is a blocked intent.
       const timeoutMs = 1000;

@@ -17,7 +17,7 @@
     "react-hooks",
     "jsx-a11y"
   ],
-  "ignorePatterns": ["dist", ".eslintrc.json", "vst/scholo-candy/target/doc"],
+  "ignorePatterns": ["dist", "build", "out", "output", "divtube_downloader", "nlp_chatbot", "tools/**/out", ".eslintrc.json", "vst/scholo-candy/target/doc"],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"

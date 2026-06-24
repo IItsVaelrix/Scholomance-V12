@@ -1,13 +1,13 @@
 /**
- * AgentRegisterWizard — Multi-step wizard for registering new agents
+ * AgentRegisterWizard - Multi-step wizard for registering new agents
  *
  * Steps:
- * 1. role      — Pick a role (large cards, auto-advances)
- * 2. identity  — Agent ID + Display Name
- * 3. caps      — Tag-chip capability input (optional)
- * 4. confirm   — Summary → "Summon Agent"
- * 5. summoning — Thematic loading
- * 6. success   — Sigil pulse, auto-close
+ * 1. role - Pick a role (large cards, auto-advances)
+ * 2. identity - Agent ID + Display Name
+ * 3. caps - Tag-chip capability input (optional)
+ * 4. confirm - Summary → "Summon Agent"
+ * 5. summoning - Thematic loading
+ * 6. success - Sigil pulse, auto-close
  */
 
 import { motion, AnimatePresence } from 'framer-motion';
@@ -35,7 +35,7 @@ const ROLE_OPTIONS = [
         value: 'qa',
         label: 'Testing / QA',
         description: 'Tests, CI, debugging',
-        flavor: 'Keeper of contracts — breaks what must not pass',
+        flavor: 'Keeper of contracts - breaks what must not pass',
         glyph: '◉',
     },
 ];
@@ -128,7 +128,7 @@ function IdentityStep({ agentId, name, onAgentIdChange, onNameChange, error }) {
 
     return (
         <div className="arw-step arw-step--identity">
-            <p className="arw-step__hint">Name this agent. The ID is its sigil — permanent and unique.</p>
+            <p className="arw-step__hint">Name this agent. The ID is its sigil - permanent and unique.</p>
 
             <div className="arw-field">
                 <label htmlFor="arw-agent-id" className="arw-field__label">
@@ -145,7 +145,7 @@ function IdentityStep({ agentId, name, onAgentIdChange, onNameChange, error }) {
                     autoComplete="off"
                     spellCheck={false}
                 />
-                <span className="arw-field__help">Lowercase slug — no spaces. Used to identify this agent instance.</span>
+                <span className="arw-field__help">Lowercase slug - no spaces. Used to identify this agent instance.</span>
             </div>
 
             <div className="arw-field">
@@ -216,7 +216,7 @@ function CapabilitiesStep({ caps, onAdd, onRemove }) {
                         onChange={(e) => setInputVal(e.target.value)}
                         onKeyDown={handleKeyDown}
                         onBlur={flush}
-                        placeholder={caps.length === 0 ? 'jsx, css, node, fastify… press Enter' : ''}
+                        placeholder={caps.length === 0 ? 'jsx, css, node, fastify... press Enter' : ''}
                         autoComplete="off"
                         spellCheck={false}
                     />

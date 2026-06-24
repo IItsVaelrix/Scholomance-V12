@@ -94,7 +94,7 @@ export function CODExProvider({ children }) {
     adapters.push(createDatamuseAdapter());
     console.log('[CODEx] Datamuse adapter added for rhymes/fallback');
 
-    // Initialize pipelines — no cleanup returned because the pipeline is a
+    // Initialize pipelines - no cleanup returned because the pipeline is a
     // module-level singleton that lives for the full app lifetime.
     initializePipelines({ dictionaryAdapters: adapters }).then(() => {
       setIsInitialized(true);

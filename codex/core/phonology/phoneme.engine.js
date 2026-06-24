@@ -72,23 +72,76 @@ function isG2PJuryEnabled() {
   return USE_G2P_JURY;
 }
 
-function isSingleNasalCodaSubstitution(codaA, codaB) {
+function isAcceptableCodaSlant(codaA, codaB) {
   if (!Array.isArray(codaA) || !Array.isArray(codaB)) return false;
-  if (codaA.length !== 1 || codaB.length !== 1) return false;
-  if (codaA[0] === codaB[0]) return false;
-  return NASAL_CODA_PHONEMES.has(codaA[0]) && NASAL_CODA_PHONEMES.has(codaB[0]);
+  if (codaA.length === 0 && codaB.length === 0) return true;
+  
+  const joinA = codaA.join(' ');
+  const joinB = codaB.join(' ');
+  
+  // Single nasal substitution (M, N, NG)
+  if (codaA.length === 1 && codaB.length === 1) {
+    if (NASAL_CODA_PHONEMES.has(codaA[0]) && NASAL_CODA_PHONEMES.has(codaB[0])) {
+      return true;
+    }
+  }
+
+  // Nasal + Stop dropping (e.g. N vs ND, M vs MP)
+  if ((joinA === 'N' && joinB === 'N D') || (joinA === 'N D' && joinB === 'N')) return true;
+  if ((joinA === 'M' && joinB === 'M P') || (joinA === 'M P' && joinB === 'M')) return true;
+  if ((joinA === 'NG' && joinB === 'NG K') || (joinA === 'NG K' && joinB === 'NG')) return true;
+
+  // Fricative + Stop dropping (e.g. S vs S T)
+  if ((joinA === 'S' && joinB === 'S T') || (joinA === 'S T' && joinB === 'S')) return true;
+  if ((joinA === 'K' && joinB === 'K T') || (joinA === 'K T' && joinB === 'K')) return true;
+  if ((joinA === 'P' && joinB === 'P T') || (joinA === 'P T' && joinB === 'P')) return true;
+  if ((joinA === 'F' && joinB === 'F T') || (joinA === 'F T' && joinB === 'F')) return true;
+
+  // Liquid + Stop dropping (e.g. L vs L D)
+  if ((joinA === 'L' && joinB === 'L D') || (joinA === 'L D' && joinB === 'L')) return true;
+  if ((joinA === 'R' && joinB === 'R D') || (joinA === 'R D' && joinB === 'R')) return true;
+
+  // Total dropping of S, Z, T, or D at the end of a word
+  if ((joinA === 'S' && joinB === '') || (joinA === '' && joinB === 'S')) return true;
+  if ((joinA === 'Z' && joinB === '') || (joinA === '' && joinB === 'Z')) return true;
+  if ((joinA === 'T' && joinB === '') || (joinA === '' && joinB === 'T')) return true;
+  if ((joinA === 'D' && joinB === '') || (joinA === '' && joinB === 'D')) return true;
+
+  return false;
 }
 
 async function _runG2PJury(word) {
   const outcome = await runG2PJury(word, null, { policy: USE_G2P_JURY ? 'pass' : 'off' });
-  if (outcome?.verdict?.ok) {
+  if (outcome?.verdict?.ok && outcome.verdict.winner?.phonemes) {
+    const rawPhonemes = outcome.verdict.winner.phonemes;
+    // We cannot call 'this' here because this is a top-level function,
+    // so we call applyOrderedPhonologicalProcesses directly.
+    const processed = applyOrderedPhonologicalProcesses(rawPhonemes);
+    const syllables = Syllabifier.syllabify(processed);
+
+    const lastSyl = syllables[syllables.length - 1] || [];
+    const lastVowelP = lastSyl.find(p => ARPABET_VOWELS.has(p.replace(/[0-9]/g, '')));
+    const vIdx = lastVowelP ? lastSyl.indexOf(lastVowelP) : -1;
+    const lastBaseV = lastVowelP ? lastVowelP.replace(/[0-9]/g, '') : 'AH';
+
+    const stressedSyl = syllables.find(s => s.some(p => p.endsWith('1'))) || syllables[0] || lastSyl;
+    const stressedVowelP = stressedSyl.find(p => ARPABET_VOWELS.has(p.replace(/[0-9]/g, '')));
+    const stressedBaseV = stressedVowelP ? stressedVowelP.replace(/[0-9]/g, '') : lastBaseV;
+
+    const vowelFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[stressedBaseV] || 'A');
+
+    const codaParts = vIdx >= 0 ? lastSyl.slice(vIdx + 1).map(p => p.replace(/[0-9]/g, '')) : [];
+    const coda = codaParts.length > 0 ? codaParts.join('') : null;
+    
+    const finalFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[lastBaseV] || 'A');
+
     return {
       analysis: {
-        vowelFamily: outcome.verdict.vowelFamily,
-        phonemes: outcome.verdict.phonemes,
-        coda: outcome.verdict.coda,
-        rhymeKey: outcome.verdict.rhymeKey,
-        syllableCount: outcome.verdict.syllableCount,
+        vowelFamily,
+        phonemes: processed,
+        coda,
+        rhymeKey: `${finalFamily}-${coda || "open"}`,
+        syllableCount: syllables.length,
       },
       diagnostics: outcome.diagnostics,
     };
@@ -114,6 +167,8 @@ const WORD_PHONEME_OVERRIDES = Object.freeze({
   THUMB: ["TH", "AH1", "M"],
   NUMB: ["N", "AH1", "M"],
   EIGHT: ["EY1", "T"],
+  RHYME: ["R", "AY1", "M"],
+  ALIGNED: ["AH0", "L", "AY1", "N", "D"],
   DOPE: ["D", "OW1", "P"],
   // Test Case Overrides
   BASE: ["B", "EY1", "S"],
@@ -154,6 +209,22 @@ const WORD_PHONEME_OVERRIDES = Object.freeze({
   MARTYR: ["M", "AA1", "R", "T", "ER0"],
   CONQUER: ["K", "AA1", "NG", "K", "ER0"],
   CONTINENT: ["K", "AA0", "N", "T", "IH1", "N", "EH0", "N", "T"],
+  LOSSILY: ["L", "AA1", "S", "IH0", "L", "IY0"],
+  MEGATRON: ["M", "EH1", "G", "AH0", "T", "R", "AA1", "N"],
+  POLYGON: ["P", "AA1", "L", "AH0", "G", "AA1", "N"],
+  POLYGONS: ["P", "AA1", "L", "AH0", "G", "AA1", "N", "Z"],
+  SLITTER: ["S", "L", "IH1", "T", "ER0"],
+  SLITTERS: ["S", "L", "IH1", "T", "ER0", "Z"],
+  OF: ["AH0", "V"],
+  TO: ["T", "AH0"],
+  IN: ["IH0", "N"],
+  AND: ["AH0", "N", "D"],
+  BEING: ["B", "IY1", "NG"],
+  BEINGS: ["B", "IY1", "NG", "Z"],
+  WORST: ["W", "ER1", "S", "T"],
+  BIRTHDAYS: ["B", "ER1", "TH", "D", "EY1", "Z"],
+  THIRSTY: ["TH", "ER1", "S", "T", "IY0"],
+  CHAMPAGNE: ["SH", "AE0", "M", "P", "EY1", "N"],
 });
 
 function freezeStringList(values) {
@@ -484,8 +555,97 @@ export const PhonemeEngine = {
     return Promise.allSettled(pending).then(() => undefined);
   },
 
+  async primeG2PBatch(words) {
+    if (!USE_G2P_JURY) return;
+    
+    const normalizedWords = [...new Set(
+      (Array.isArray(words) ? words : [])
+        .map((word) => String(word || "").trim())
+        .filter(Boolean)
+    )];
+    
+    if (!normalizedWords.length) return;
+
+    const missing = normalizedWords.filter((word) => {
+      const upper = word.toUpperCase();
+      if (this.WORD_CACHE.has(upper)) return false;
+      if (WORD_PHONEME_OVERRIDES[upper]) return false;
+      if (CmuPhonemeEngine.analyzeWord(upper)) return false;
+      return true;
+    });
+
+    await Promise.all(missing.map(async (word) => {
+      const upper = word.toUpperCase();
+      const inFlight = this.AUTHORITY_IN_FLIGHT.get(upper);
+      if (inFlight) {
+          try { await inFlight; } catch(e) { /* ignore */ }
+      }
+      
+      const authData = this.AUTHORITY_CACHE.get(upper);
+      if (authData && authData.phonemes) return;
+
+      try {
+        const result = await _runG2PJury(upper);
+        if (result) {
+          this.WORD_CACHE.set(upper, result.analysis);
+          this.WORD_DIAGNOSTICS_CACHE.set(upper, result.diagnostics);
+        }
+      } catch (e) { /* noop */ }
+    }));
+  },
+
   _resolveWordAnalysisDetailed(word) {
-    const upper = String(word || "").toUpperCase().replace(/[^A-Z]/g, '');
+    const rawUpper = String(word || "").toUpperCase();
+    const words = rawUpper.split(/[\s-]+/).filter(w => w.replace(/[^A-Z]/g, '').length > 0);
+    
+    if (words.length > 1) {
+      const allPhonemes = [];
+      let finalFamily = 'A';
+      let finalCoda = null;
+      let finalRhymeKey = 'A-open';
+      
+      for (const w of words) {
+        const res = this._resolveWordAnalysisDetailed(w);
+        if (res && res.analysis && res.analysis.phonemes) {
+          allPhonemes.push(...res.analysis.phonemes);
+          finalFamily = res.analysis.vowelFamily;
+          finalCoda = res.analysis.coda;
+          finalRhymeKey = res.analysis.rhymeKey;
+        }
+      }
+      
+      if (allPhonemes.length === 0) {
+        return {
+          analysis: null,
+          diagnostics: createPhoneticDiagnostics({
+            source: 'unresolved',
+            branch: 'ascii_normalization_multi',
+            fallbackPath: ['sanitize_ascii'],
+            unknownReason: 'empty_after_ascii_normalization',
+          }),
+        };
+      }
+      
+      const syllables = Syllabifier.syllabify(allPhonemes);
+      const analysis = { 
+        vowelFamily: finalFamily, 
+        phonemes: allPhonemes, 
+        coda: finalCoda, 
+        rhymeKey: finalRhymeKey, 
+        syllableCount: syllables.length 
+      };
+      
+      return {
+        analysis,
+        diagnostics: createPhoneticDiagnostics({
+          source: 'multi_word_composition',
+          branch: 'phrase_split',
+          notes: ['Composed from multiple individual words.'],
+        })
+      };
+    }
+
+    const upper = rawUpper.replace(/[^A-Z]/g, '');
     if (!upper) {
       return {
         analysis: null,
@@ -580,7 +740,11 @@ export const PhonemeEngine = {
       }));
     }
 
-    const cmuResult = CmuPhonemeEngine.analyzeWord(upper);
+    let cmuResult = null;
+    if (!WORD_PHONEME_OVERRIDES[upper]) {
+      cmuResult = CmuPhonemeEngine.analyzeWord(upper);
+    }
+    
     let result;
     let diagnostics;
     if (cmuResult) {
@@ -668,7 +832,8 @@ export const PhonemeEngine = {
       'POLISH': 'AA', 'DEMOLISH': 'AA', 'ABOLISH': 'AA', 'SOLID': 'AA', 'COTTAGE': 'AA', 'WATTAGE': 'AA',
       'BOXES': 'AA', 'DROPLETS': 'AA', 'PROFIT': 'AA', 'LOGIC': 'AA', 'PROPHET': 'AA', 'LOCKSMITH': 'AA',
       'OPTIC': 'AA', 'TONGUE': 'AH', 'YOUNG': 'AH', 'GREAT': 'EY', 'BREAK': 'EY',
-      'SOUL': 'IY', 'COMPOSED': 'IY', 'HOLD': 'IY', 'EIGHT': 'EY', 'DELAY': 'EY'
+      'SOUL': 'IY', 'COMPOSED': 'IY', 'HOLD': 'IY', 'EIGHT': 'EY', 'DELAY': 'EY',
+      'DEAD': 'EH', 'DEATH': 'EH', 'BREATH': 'EH', 'HEAD': 'EH', 'BREAD': 'EH', 'THREAD': 'EH',
     };
     if (EXCEPTIONS[upper]) {
       const p = EXCEPTIONS[upper];
@@ -694,6 +859,12 @@ export const PhonemeEngine = {
       if (/[AEIOU]/.test(char)) {
         let p = null;
         let skip = 1;
+        
+        // Trailing silent-E: skip when there is already another vowel in the word
+        if (char === 'E' && i === upper.length - 1 && upper.length > 2 && /[AEIOUY]/.test(upper.slice(0, -1))) {
+          i++;
+          continue;
+        }
         
         // 1. Long Digraphs / Diphthongs
         if (slice.startsWith('ATION')) { p = 'EY'; skip = 5; } 
@@ -728,6 +899,14 @@ export const PhonemeEngine = {
         if (!p) {
           const V_MAP = { 'A': 'AE', 'E': 'EH', 'I': 'IH', 'O': 'AA', 'U': 'AH' };
           p = V_MAP[char] || 'AH';
+          // I before ND/LD (mind, find, kind, child, wild) → long I / AY
+          if (p === 'IH' && slice.length >= 3) {
+            const after = upper.slice(i + 1, i + 3).toUpperCase();
+            if (after === 'ND' || after === 'LD') {
+              p = 'AY';
+              skip = 1;
+            }
+          }
         }
         phonemes.push(p + '1');
         i += skip;
@@ -740,7 +919,18 @@ export const PhonemeEngine = {
         }
         
         if (char === 'Y' && i === upper.length - 1 && i > 0 && !/[AEIOU]/.test(upper[i-1])) {
-          phonemes.push('AY1');
+          // Multisyllabic words ending in LY or RY usually end in an IY0 sound (e.g. happily, glossary)
+          // Shorter words like fly, try, cry end in AY1.
+          // Words with another vowel letter before the Y (body, copy, sloppy, happy)
+          // also get unstressed IY0.
+          const hasOtherVowels = /[AEIOU]/.test(upper.slice(0, -1));
+          if ((upper.endsWith('LY') || upper.endsWith('RY')) && upper.length > 3) {
+            phonemes.push('IY0');
+          } else if (hasOtherVowels) {
+            phonemes.push('IY0');
+          } else {
+            phonemes.push('AY1');
+          }
         } else { 
           const mapped = C_MAP[char] || char; 
           if (Array.isArray(mapped)) phonemes.push(...mapped); 
@@ -757,7 +947,14 @@ export const PhonemeEngine = {
         const isEd = upper.endsWith('ED');
         
         let stressedIdx = vowelIndices[vowelIndices.length - 1];
-        if (isIng || isEd) stressedIdx = vowelIndices[0];
+        // Unstressed final -y: stress the penultimate vowel instead
+        if (vowelIndices.length >= 2) {
+          const lastVowel = phonemes[vowelIndices[vowelIndices.length - 1]];
+          if (lastVowel && /IY0$|IH0$|AH0$|ER0$/.test(lastVowel)) {
+            stressedIdx = vowelIndices[vowelIndices.length - 2];
+          }
+        }
+        if (isIng || (isEd && !hasSilentE)) stressedIdx = vowelIndices[0];
         else if (hasSilentE) stressedIdx = (upper.length <= 5) ? vowelIndices[0] : vowelIndices[vowelIndices.length - 1];
         else if (upper.endsWith('TION') || upper.endsWith('SION')) stressedIdx = vowelIndices[vowelIndices.length - 2];
         
@@ -838,22 +1035,27 @@ export const PhonemeEngine = {
     for (let i = 0; i < Math.min(revA.length, revB.length); i++) {
       const sA = revA[i], sB = revB[i];
       const vowelScore = PhoneticSimilarity.getVowelSimilarity(sA.vowel, sB.vowel);
-      const codaScore = PhoneticSimilarity.getArraySimilarity(sA.codaPhonemes, sB.codaPhonemes);
+      let codaScore = PhoneticSimilarity.getArraySimilarity(sA.codaPhonemes, sB.codaPhonemes);
 
       const stressMatch = (sA.stress > 0) === (sB.stress > 0);
       
-      // Strict gate on the first (final) syllable coda
+      // If there's high vowel similarity, we shouldn't fail purely because of codas (assonance is valid).
+      // Let's soften the strict gate. We'll give it a pass if the vowels match perfectly.
       if (i === 0) {
           const hasCodaA = sA.codaPhonemes.length > 0;
           const hasCodaB = sB.codaPhonemes.length > 0;
           
           if ((hasCodaA || hasCodaB) && codaScore < CODA_MIN_SCORE) {
-              // Lever 3: rescue classic nasal-coda slants without promoting pure assonance.
-              if (vowelScore >= 0.85 && isSingleNasalCodaSubstitution(sA.codaPhonemes, sB.codaPhonemes)) {
-                  const slantScore = Math.max(vowelScore * 0.60, 0.72);
-                  return { syllablesMatched: 1, score: slantScore, type: 'masculine' };
+              if (vowelScore >= 0.65 && isAcceptableCodaSlant(sA.codaPhonemes, sB.codaPhonemes)) {
+                  // It's an acceptable slant, bump the score so it contributes well
+                  // and allows the multi-syllable chain to continue backwards.
+                  codaScore = Math.max(codaScore, 0.85);
               }
-              break;
+              // If it's strong assonance but not an acceptable slant sub, we simply allow it to continue 
+              // but don't return early. The score will naturally be lower due to the low codaScore.
+              else if (vowelScore < 0.80) {
+                  break;
+              }
           }
       }
 
@@ -863,13 +1065,37 @@ export const PhonemeEngine = {
           effectiveCodaScore = 0.0;
       }
 
+      // Assonance compensation: if coda is totally different but vowel is strong,
+      // lean more heavily on the vowel to keep the multi-syllable chain alive.
+      let s;
+      if (vowelScore >= 0.85) {
+          s = (vowelScore * 0.80) + (effectiveCodaScore * 0.20);
+      } else {
+          s = (vowelScore * 0.60) + (effectiveCodaScore * 0.40);
+      }
+
       // Lever 1: stress agreement factor — mismatch caps well below perfect
-      const s = (vowelScore * 0.60) + (effectiveCodaScore * 0.40);
-      const finalS = stressMatch ? s : Math.min(s, 0.55);
+      // But we shouldn't kill the chain completely if vowel is very strong.
+      let finalS = stressMatch ? s : Math.min(s, 0.65);
+      
+      // Rap phonetics: Unstressed syllables (schwas) are often mumbled or dropped.
+      // If both are unstressed and the vowels are even slightly similar (>= 0.60),
+      // we guarantee it passes the breaking threshold to keep the chain alive.
+      if (sA.stress === 0 && sB.stress === 0 && vowelScore >= 0.60) {
+          finalS = Math.max(finalS, 0.60);
+      }
+
       if (finalS < 0.60) break;
       matched++; totalScore += finalS;
     }
-    const score = matched > 0 ? totalScore / matched : 0;
+    let score = matched > 0 ? totalScore / matched : 0;
+    
+    // Unstressed suffix penalty: if we only matched 1 syllable, and it was completely unstressed 
+    // in both multi-syllable words (e.g. "jump-ing" vs "run-ning"), it's a weak suffix match, not a true rhyme.
+    if (matched === 1 && revA.length > 1 && revB.length > 1 && !(revA[0].stress > 0) && !(revB[0].stress > 0)) {
+        score *= 0.5;
+    }
+
     if (score < 0.60) return { syllablesMatched: 0, score: 0, type: 'none' };
     let type = 'none';
     if (matched >= 3) type = 'dactylic'; else if (matched === 2) type = 'feminine'; else if (matched === 1) type = 'masculine';

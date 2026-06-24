@@ -2,13 +2,13 @@ import React from 'react';
 import TurnTimer from './TurnTimer.jsx';
 
 /**
- * BattleChrome.jsx — TopCombatBar
+ * BattleChrome.jsx - TopCombatBar
  *
  * Minimal, high-priority header for current combat context.
  * Shows: school context · turn state pill · mode label · round · flee
  *
  * Turn state pill: PLAYER ACTING (gold) / OPPONENT ACTING (school accent) / RESOLVING (dim pulse)
- * Mode label: appended when not idle — "· INSCRIBING", "· TARGETING", etc.
+ * Mode label: appended when not idle - "· INSCRIBING", "· TARGETING", etc.
  */
 
 const MODE_LABELS = {

@@ -1,11 +1,11 @@
 /**
- * GrimDesignPanel — In-IDE design signal panel.
+ * GrimDesignPanel - In-IDE design signal panel.
  *
  * Developer tool for the ToolsSidebar. Type a design intent description and
  * receive live CODEx phonemic signals: dominant school, effectClass, blended
  * HSL swatch, and provenance trace. Copy the full spec to clipboard.
  *
- * World-law connection: the color swatch is not chosen — it is measured from
+ * World-law connection: the color swatch is not chosen - it is measured from
  * the phonemic physics of the intent text, using the same pipeline that governs
  * spell scoring.
  *
@@ -15,7 +15,7 @@
  * - Data consumed: POST /api/grimdesign/analyze via useGrimDesign hook
  * - State: intent string (local), collapsed (local), copyFeedback (local)
  * - Accessibility: ARIA labels on intent textarea and copy button; reduced motion respected
- * - School theming: color swatch reflects computed blendedHsl — not a school CSS variable
+ * - School theming: color swatch reflects computed blendedHsl - not a school CSS variable
  * - Animation: effectClass badge pulse is CSS-only, respects prefers-reduced-motion
  */
 
@@ -60,7 +60,7 @@ function buildSpecText(intent, signal, decisions) {
 
   const provenanceBlock = (provenance || []).map((line) => `  ${line}`).join('\n');
 
-  return `## GrimDesign Output — "${intent}"
+  return `## GrimDesign Output - "${intent}"
 
 SIGNAL PROVENANCE:
 ${provenanceBlock}
@@ -142,7 +142,7 @@ export default function GrimDesignPanel() {
       clearTimeout(copyTimeoutRef.current);
       copyTimeoutRef.current = setTimeout(() => setCopyFeedback(false), 1800);
     } catch {
-      // clipboard API may be blocked in some contexts — fail silently
+      // clipboard API may be blocked in some contexts - fail silently
     }
   }, [intent, signal, decisions]);
 
@@ -182,7 +182,7 @@ export default function GrimDesignPanel() {
             className="grim-intent-input"
             value={intent}
             onChange={handleIntentChange}
-            placeholder="cooldown indicator for a VOID-school agent…"
+            placeholder="cooldown indicator for a VOID-school agent..."
             rows={3}
             maxLength={500}
             aria-describedby="grim-intent-hint"
@@ -194,9 +194,9 @@ export default function GrimDesignPanel() {
 
           {/* Loading indicator */}
           {isLoading && (
-            <div className="grim-loading" aria-live="polite" aria-label="Analyzing…">
+            <div className="grim-loading" aria-live="polite" aria-label="Analyzing...">
               <span className="grim-loading-bar" aria-hidden="true" />
-              <span className="grim-loading-text">Analyzing…</span>
+              <span className="grim-loading-text">Analyzing...</span>
             </div>
           )}
 
@@ -222,7 +222,7 @@ export default function GrimDesignPanel() {
                 <span className="grim-hsl-label" aria-label="Computed HSL">
                   {signal.blendedHsl
                     ? `hsl(${signal.blendedHsl.h}, ${signal.blendedHsl.s}%, ${signal.blendedHsl.l}%)`
-                    : '—'}
+                    : ' - '}
                 </span>
               </div>
 

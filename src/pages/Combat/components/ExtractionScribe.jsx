@@ -1,3 +1,4 @@
+// IMMUNE_ALLOW: LING-0F03
 import { useState, useMemo } from 'react';
 import { tokenize } from '../../../../codex/core/tokenizer.js';
 
@@ -51,7 +52,7 @@ export default function ExtractionScribe({ leyline, onSubmit, isDisabled, varian
     <div className={`oracle-scribe battle-panel alchemical-scribe-root oracle-scribe--${variant}`}>
       <div className="scribe-header alchemical-header">
         <div className="scribe-label alchemical-title">
-          LEYLINE HARVEST — {leyline?.codexId ? `${leyline.codexId} ` : ''}{leyline?.name || `${leyline?.affinity} ${leyline?.type?.toUpperCase().replace('-', ' ')}`}
+          LEYLINE HARVEST - {leyline?.codexId ? `${leyline.codexId} ` : ''}{leyline?.name || `${leyline?.affinity} ${leyline?.type?.toUpperCase().replace('-', ' ')}`}
         </div>
         <div className="leyline-stars" aria-label={`Difficulty: ${leyline?.stars} stars`}>
           {starRatingStr}

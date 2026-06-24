@@ -15,7 +15,7 @@ vi.mock('../../hooks/usePrefersReducedMotion.js', () => ({
   usePrefersReducedMotion: () => false
 }));
 
-describe('Truesight Cursor — Pixel Perfection QA', () => {
+describe('Truesight Cursor - Pixel Perfection QA', () => {
   const testContext = {
     testFile: 'truesight-cursor.qa.test.jsx',
     testSuite: 'Truesight Cursor QA'

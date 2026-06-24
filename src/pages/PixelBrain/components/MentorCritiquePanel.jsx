@@ -1,5 +1,5 @@
 /**
- * MENTOR CRITIQUE PANEL — PixelBrain (30-Year Pro) as Cockpit Instrument
+ * MENTOR CRITIQUE PANEL - PixelBrain (30-Year Pro) as Cockpit Instrument
  *
  * UI SPEC:
  * - Component: MentorCritiquePanel (src/pages/PixelBrain/components/MentorCritiquePanel.jsx)
@@ -9,7 +9,7 @@
  *   brutal honesty + clear next action. The cockpit itself teaches and enforces the law the engine implements.
  * - Data consumed: Live grid state (layers/coords via parent), any analysis/symmetry/intensity from adapter surfaces
  *   already available on the page. Static phrase tables + checklist derived directly from the skill's references
- *   (critique-checklist.md, construction-lines.md, fundamentals.md, common-pitfalls.md) — no duplication of logic.
+ *   (critique-checklist.md, construction-lines.md, fundamentals.md, common-pitfalls.md) - no duplication of logic.
  * - State: Current ordered diagnosis (steps 1-8), nextActions[], critiqueHistory (for the active piece),
  *   drillActive (timer + success criteria for Void Shield construction drill).
  * - Accessibility: aria-live regions for new diagnosis and "next action" announcements. All controls have
@@ -21,7 +21,7 @@
  * - Regression risk: New panel in right station; low impact on existing fidelity snapshot beyond layout
  *   container. Will be exercised in manual + visual flows for Void Shield style pieces.
  *
- * CLASSIFICATION: New component — core "PixelBrain" mentor surface (the reason for the skill name in the cockpit).
+ * CLASSIFICATION: New component - core "PixelBrain" mentor surface (the reason for the skill name in the cockpit).
  * WHY: Turns the textual pair-programmer from .grok/skills/pixelbrain into a live, always-available instrument
  *   that diagnoses the user's actual canvas (especially construction/radial/shield work) and drives the
  *   "apply one change → re-critique" loop.
@@ -64,9 +64,9 @@ const PHRASES = {
   edgeCrawly: "Crawly edges / 1-2px jaggies on the outer two rings. Clean execution before any shading.",
   centerDrift: "Center is +1px down-right. The whole design is torqued. Rebuild the construction cross first.",
   ringDrift: "Ring {r} and Ring {r2} have {px}px vertical drift between 9 o'clock and 3 o'clock. Visible even at icon size.",
-  nonRadial: "Your spokes are not truly radial — the {a} and {b} lines are canted. Rebuild from the construction cross.",
+  nonRadial: "Your spokes are not truly radial - the {a} and {b} lines are canted. Rebuild from the construction cross.",
   focalFight: "The focal element is fighting the outer ring. The construction would have told you the safe zone was 2px smaller.",
-  goodRings: "Good ring regularity on the outer two. The inner core is the only one that drifted — fix the center marker first.",
+  goodRings: "Good ring regularity on the outer two. The inner core is the only one that drifted - fix the center marker first.",
   nextConstruction: "Apply construction guides for center + rings + radials. Ink Structure only after the ghosts are perfect. Then show me the result.",
   nextDrill: "Practice the 20-minute Void Shield construction drill (center dead middle, 4-7 clean rings, 6-8 radials). Repeat 5x with varied radii.",
   readabilityFirst: "Readability → Clean Execution before any polish. Silhouette at 32x32 and 16x16 must still read as a shield.",
@@ -75,8 +75,8 @@ const PHRASES = {
 export default function MentorCritiquePanel({
   grid,                // current editor grid or coords (for heuristics)
   analysis,            // optional image/verse analysis
-  onApplySuggestion,   // (suggestionType) => void — e.g. 'construction' | 'symmetry' | 'layer-promote'
-  onLoadDrill,         // () => void — load the exact Void Shield construction spec + timer
+  onApplySuggestion,   // (suggestionType) => void - e.g. 'construction' | 'symmetry' | 'layer-promote'
+  onLoadDrill,         // () => void - load the exact Void Shield construction spec + timer
   critiqueToken = 0,   // parent bumps this to trigger a critique run externally
   drillActive = false,       // page-driven drill state (single timer authority)
   drillSecondsLeft = 0,
@@ -90,7 +90,7 @@ export default function MentorCritiquePanel({
     const steps = [];
     const actions = [];
 
-    // Step 1 — Silhouette / Readability (always first)
+    // Step 1 - Silhouette / Readability (always first)
     if (m.weakSilhouette) {
       steps.push({ step: 1, finding: PHRASES.silhouetteWeak, score: 'FAIL' });
       actions.push({ label: 'LOAD CONSTRUCTION GUIDES', type: 'construction' });
@@ -98,14 +98,14 @@ export default function MentorCritiquePanel({
       steps.push({ step: 1, finding: 'Silhouette holds at target sizes. Outer ring reads clean.', score: 'PASS' });
     }
 
-    // Step 2 — Edges
+    // Step 2 - Edges
     if (m.weakSilhouette || !m.hasSymmetry) {
       steps.push({ step: 2, finding: PHRASES.edgeCrawly, score: 'WARN' });
     } else {
       steps.push({ step: 2, finding: 'Edges read tight. Pixel clusters align on cardinal and 45°.', score: 'PASS' });
     }
 
-    // Step 6/7 — Center + Radial (the Void Shield killer)
+    // Step 6/7 - Center + Radial (the Void Shield killer)
     if (m.likelyCenterDrift) {
       steps.push({ step: 6, finding: PHRASES.centerDrift, score: 'FAIL' });
       steps.push({ step: 7, finding: PHRASES.nonRadial.replace('{a}', '2 o\'clock').replace('{b}', '8 o\'clock'), score: 'FAIL' });
@@ -133,7 +133,7 @@ export default function MentorCritiquePanel({
     };
 
     setDiagnosis(newDiag);
-    setNextActions(actions.slice(0, 4)); // keep it focused — one or two real moves
+    setNextActions(actions.slice(0, 4)); // keep it focused - one or two real moves
     setHistory(h => [newDiag, ...h].slice(0, 5));
 
     // Live region announcement for screen readers / pair feel
@@ -163,9 +163,9 @@ export default function MentorCritiquePanel({
   const formatTime = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
   return (
-    <div className="mentor-station pixelbrain-panel" role="region" aria-label="PixelBrain Mentor — Professional Critique Station">
+    <div className="mentor-station pixelbrain-panel" role="region" aria-label="PixelBrain Mentor - Professional Critique Station">
       <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span className="telemetry-text">PIXELBRAIN — MENTOR</span>
+        <span className="telemetry-text">PIXELBRAIN - MENTOR</span>
         <button
           className="transmute-ignite-btn"
           onClick={runCritique}
@@ -181,7 +181,7 @@ export default function MentorCritiquePanel({
       <AnimatePresence>
         {drillActive && (
           <div style={{ background: 'rgba(0,255,65,0.08)', padding: 8, marginBottom: 8, border: '1px solid #0a4' }}>
-            <div className="telemetry-text" style={{ color: '#0f0' }}>VOID SHIELD CONSTRUCTION DRILL — {formatTime(drillSecondsLeft)} REMAINING</div>
+            <div className="telemetry-text" style={{ color: '#0f0' }}>VOID SHIELD CONSTRUCTION DRILL - {formatTime(drillSecondsLeft)} REMAINING</div>
             <div style={{ fontSize: 11, opacity: 0.85 }}>Center dead middle. Full faint rings first. Radials through exact center. Ink only after ghosts are perfect. No shading until geometry locks.</div>
           </div>
         )}

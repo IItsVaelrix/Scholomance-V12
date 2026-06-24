@@ -1,0 +1,51 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "law-interpret",
+  "version": "0.1.0",
+  "priority": 9,
+  "match": {
+    "patterns": [
+      "(what|how|explain|interpret|mean).*(law|rule|paradigm|vaelrix law|determinism|sovereign|contract|canon)",
+      "LAW(#|:)?\\s*\\d+",
+      "VAELRIX_LAW",
+      "(violat|break|follow).*(law|rule|canon)"
+    ],
+    "keywords": [
+      "law",
+      "canon",
+      "VAELRIX",
+      "determinism",
+      "interpretation",
+      "canonical",
+      "scripture",
+      "exegesis",
+      "violation",
+      "enforcement"
+    ]
+  },
+  "steps": [
+    {
+      "source": "file-read",
+      "query": "{query}",
+      "label": "Read law files",
+      "retrieve_as": "law_text"
+    },
+    {
+      "source": "substrate",
+      "query": "VAELRIX LAW {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Law memory",
+      "retrieve_as": "law_memory"
+    },
+    {
+      "source": "glossary",
+      "query": "law",
+      "label": "Canonical definitions",
+      "max_results": 5,
+      "retrieve_as": "glossary"
+    }
+  ],
+  "system_suffix": "CANON vs INTERPRETATION: 1. Canonical Text \u2014 exact sourced law text. 2. Oracle Interpretation \u2014 meaning. 3. Enforcement Expansion \u2014 suggested mechanisms. 4. Failure Modes \u2014 what breaks when violated. Scripture first. Exegesis second. Engineering third. Never paraphrase treated as source.",
+  "checksum": "eedb6ced"
+}

@@ -1,5 +1,5 @@
 /**
- * BugQueueRail — Left Wing Module
+ * BugQueueRail - Left Wing Module
  * Vertical target acquisition and bug queue navigation.
  */
 

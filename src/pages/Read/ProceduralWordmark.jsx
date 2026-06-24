@@ -45,7 +45,7 @@ const ProceduralGlyph = memo(function ProceduralGlyph({
 });
 
 /**
- * Wordmark — converts a string into a row of procedural glyphs.
+ * Wordmark - converts a string into a row of procedural glyphs.
  * Aria-label preserves screen-reader semantics; the SVG row is
  * marked aria-hidden because the strokes themselves are decorative
  * once the label is provided at the wordmark level.

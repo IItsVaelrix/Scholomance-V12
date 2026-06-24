@@ -3,7 +3,7 @@
  *
  * Single-line contextual metadata strip below the ActionBar.
  * Shows target type, cost, and keyboard instructions for the selected action.
- * Static lookup — no backend calls.
+ * Static lookup - no backend calls.
  *
  * The idle-state key range is derived from ACTION_DEFS so it can never
  * drift from the actual keymap.

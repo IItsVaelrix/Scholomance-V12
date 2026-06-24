@@ -19,7 +19,7 @@ const SCHOOL_DEFINITIONS = {
 };
 
 /**
- * SpectrumCanvas — High-acuity spectral waveform graph.
+ * SpectrumCanvas - High-acuity spectral waveform graph.
  * Detects the song's "Sonic School" based on real-time energy distribution.
  */
 export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({

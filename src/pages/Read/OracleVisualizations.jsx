@@ -20,7 +20,7 @@ const PRONUNCIATION_APPROXIMANTS = new Set(['ɹ', 'r', 'l', 'w', 'j', 'ɥ', 'ʍ'
 const PRONUNCIATION_AFFRICATE_HEADS = new Set(['t', 'd']);
 const PRONUNCIATION_AFFRICATE_TAILS = new Set(['ʃ', 'ʒ', 's', 'z']);
 
-// Survives component remount within session — single source of "already revealed".
+// Survives component remount within session - single source of "already revealed".
 // Cleared on full page reload, which matches the user's intent: animation per word, once.
 const revealedTokens = new Set();
 
@@ -237,7 +237,7 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
       data-first-reveal={animate ? 'true' : 'false'}
       aria-label={pronunciationLead}
     >
-      {/* Layer 1: Sharpener — blurred phoneme blobs converge, focus-pull primes the serif */}
+      {/* Layer 1: Sharpener - blurred phoneme blobs converge, focus-pull primes the serif */}
       <div
         className="oracle-articulation-strip oracle-articulation-strip--sharpener"
         aria-hidden="true"
@@ -256,11 +256,11 @@ function ArticulationStrip({ pronunciation, fallbackWord, prefersReducedMotion }
           );
         })}
       </div>
-      {/* Layer 2: Serif lead — primary readable pronunciation, arrives as sharpener converges */}
+      {/* Layer 2: Serif lead - primary readable pronunciation, arrives as sharpener converges */}
       <span className="oracle-pronunciation-serif" aria-hidden="true">
         {pronunciationLead}
       </span>
-      {/* Layer 3: Ink overlay — ProceduralWordmark strokes painted over serif via screen blend */}
+      {/* Layer 3: Ink overlay - ProceduralWordmark strokes painted over serif via screen blend */}
       <span aria-hidden="true">
         <ProceduralWordmark
           word={fallbackWord || ''}

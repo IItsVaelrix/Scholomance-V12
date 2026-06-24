@@ -309,7 +309,7 @@ export default function CombatPage() {
                   className="hud-extract-btn" 
                   onClick={() => setSelectedAction('EXTRACT')}
                 >
-                  Leyline Resonating — Click to Extract
+                  Leyline Resonating - Click to Extract
                 </button>
               )}
               {selectedAction === 'EXTRACT' && (

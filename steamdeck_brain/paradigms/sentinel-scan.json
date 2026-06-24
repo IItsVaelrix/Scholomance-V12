@@ -1,0 +1,46 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "sentinel-scan",
+  "version": "0.1.0",
+  "priority": 8,
+  "match": {
+    "patterns": [
+      "(sentinel|scan|audit|watch|check|integrity|rot|drift|entropy).*(system|codebase|schema|archive|index|law|metadata)"
+    ],
+    "keywords": [
+      "sentinel",
+      "scan",
+      "audit",
+      "integrity",
+      "rot",
+      "drift",
+      "entropy",
+      "watch",
+      "vigil"
+    ]
+  },
+  "steps": [
+    {
+      "source": "polish",
+      "query": "{query}",
+      "label": "Polish gate",
+      "retrieve_as": "polish"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity violations",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "substrate",
+      "query": "sentinel integrity audit",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Integrity history",
+      "retrieve_as": "history"
+    }
+  ],
+  "system_suffix": "THE SENTINEL: Vaelrix should watch the walls, not only answer the bell. Scan for schema rot, hidden state, nondeterminism, fake claims, failing gates, stale indexes, metadata drift, untracked PDRs, large artifact churn. Report: violations found, risk level, recommended action.",
+  "checksum": "9f691ca0"
+}

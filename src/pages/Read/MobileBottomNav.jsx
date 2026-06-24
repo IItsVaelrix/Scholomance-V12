@@ -19,7 +19,7 @@ export default function MobileBottomNav({ activeTab, onTabChange, editorSubtitle
   }
 
   return (
-    <nav className="ide-bottom-nav" role="tablist" aria-label="Scribe workspace sections">
+    <nav className="ide-bottom-nav" aria-label="Scribe workspace sections">
       {TABS.map(tab => {
         const isActive = activeTab === tab.id;
         return (

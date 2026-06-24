@@ -6,6 +6,7 @@ import { pixelBrainPhase1BridgeAmplifier } from './plugins/pixelBrainBridge.js';
 import { lexicalResonanceAmplifier } from './plugins/lexicalResonance.js';
 import { travellingWaveFilterBankAmplifier } from './plugins/travellingWaveFilterBank.js';
 import { naturalLanguageAmp } from './plugins/naturalLanguageAmp.js';
+import { createDatamuseAdapter } from '../../services/adapters/datamuse.adapter.js';
 import {
   clamp01,
   collectVerseIRTokenStats,
@@ -675,7 +676,10 @@ export async function runVerseIRAmplifiers(verseIR, options = {}) {
     : DEFAULT_VERSEIR_AMPLIFIERS;
   const executionContext = Object.freeze({
     verseIR,
-    options,
+    options: Object.freeze({
+      ...options,
+      dictionaryAdapter: options?.dictionaryAdapter || createDatamuseAdapter(),
+    }),
     tokenStats: collectVerseIRTokenStats(verseIR),
   });
   const executionPlan = await planAmplifierExecution(amplifiers, executionContext);

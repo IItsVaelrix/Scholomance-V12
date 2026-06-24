@@ -1,5 +1,5 @@
 /**
- * SCHOLOMANCE FAIRLY ODD WAND — INTERACTIVE UX TEST-DRIVE
+ * SCHOLOMANCE FAIRLY ODD WAND - INTERACTIVE UX TEST-DRIVE
  * 
  * Path: `src/pages/Wand/WandPage.jsx`
  * Description: High-fidelity mathematical authoring studio with real-time coordinate
@@ -236,7 +236,7 @@ const INITIAL_PRESETS = [
   {
     id: "preset-ballpoint-script",
     name: "Ballpoint Script",
-    description: "Hand-drawn anime heavy outline — vectorized text in cream ballpoint ink",
+    description: "Hand-drawn anime heavy outline - vectorized text in cream ballpoint ink",
     proposal: {
       rationale: "Render scholastic inscription as thick hand-drawn ink strokes on dark parchment.",
       confidence: 0.97,
@@ -703,7 +703,7 @@ export default function WandPage() {
     localStorage.setItem('scholomance_wand_presets', JSON.stringify(updated));
 
     addTerminalLog(`Idempotently registered formula catalog: ${catId}`, "success");
-    addTerminalLog(`FORMULA PERSISTED: Catalog ID ${catId} — saved in Local Sanctuary.`, "success");
+    addTerminalLog(`FORMULA PERSISTED: Catalog ID ${catId} - saved in Local Sanctuary.`, "success");
   };
 
   const handleGodotArtifactExport = () => {

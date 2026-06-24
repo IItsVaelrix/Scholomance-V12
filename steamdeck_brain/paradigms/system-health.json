@@ -1,0 +1,37 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "system-health",
+  "version": "0.1.0",
+  "priority": 9,
+  "match": {
+    "patterns": [
+      "(health|status|stats|monitor|check).*(system|daemon|server|ollama|brain|database|db|memory|ram|cpu)",
+      "how (is|are) (the )?(system|server|daemon|ollama|brain|database|memory)",
+      "what('s| is) (running|loaded|active|connected|available|up)"
+    ]
+  },
+  "steps": [
+    {
+      "source": "polish",
+      "query": "{query}",
+      "label": "Polish gate",
+      "retrieve_as": "polish"
+    },
+    {
+      "source": "immune-scan",
+      "query": "{query}",
+      "label": "Immunity scan",
+      "retrieve_as": "immunity"
+    },
+    {
+      "source": "glossary",
+      "query": "system health",
+      "family": "DIAGNOSTIC",
+      "max_results": 5,
+      "label": "Health glossary",
+      "retrieve_as": "glossary"
+    }
+  ],
+  "system_suffix": "CHAIN: report polish status \u2192 report immunity violations \u2192 report DB connections \u2192 report model state \u2192 report memory pressure. Format as a clean status table.",
+  "checksum": "dada675a"
+}

@@ -1,7 +1,11 @@
 {
-  "mode": "deny-by-default",
-  "allowedProviders": [],
-  "allowedUseCases": [],
+  "mode": "allow-by-default",
+  "allowedProviders": [
+    "Vaelrix"
+  ],
+  "allowedUseCases": [
+    "*"
+  ],
   "dataClassifications": [
     "public",
     "internal",

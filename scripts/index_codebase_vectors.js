@@ -10,7 +10,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import { collabPersistence } from '../codex/server/collab/collab.persistence.js';
-import { runVectorAmp } from '../codex/core/semantic/amp/runVectorAmp.js';
+import { embedFloat } from '../codex/core/semantic/amp/runVectorAmp.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,6 +18,15 @@ const ROOT = path.resolve(__dirname, '..');
 
 const TARGET_DIM = 256;
 const CHUNK_SIZE = 2000; // chars
+
+// Regenerable build artifacts / vendored deps — never semantically indexed.
+// (ripgrep honours .gitignore for forensic search; the indexer needs its own
+// list since it walks the tree directly.) Any dir starting with `.venv` is also
+// skipped. Mirrors .gitignore: build, dist, coverage, target, .venv-align, etc.
+const IGNORED_DIRS = new Set([
+    'node_modules', '.git', 'dist', 'dist-ssr', 'build', '.tmp', 'output',
+    '.claude', 'coverage', 'target', '.cache',
+]);
 
 async function indexFile(filePath) {
     try {
@@ -31,21 +40,21 @@ async function indexFile(filePath) {
         }
 
         const entries = chunks.map((chunk, index) => {
-            // One lens, one seed — produced by the Vector AMP. 'off' skips the
-            // per-chunk fidelity grade we don't need while bulk indexing.
-            const { ok, signature } = runVectorAmp(chunk, { dimension: TARGET_DIM, fidelityPolicy: 'off' });
-            if (!ok || !signature?.data?.length) return null;
-            const data = signature.data;
+            // One lens, shared with search/probe. Full-precision unit vector —
+            // exact cosine, no quantization loss. Token-less chunks have no
+            // direction (ok:false) and are skipped, never indexed as ghosts.
+            const { ok, vector } = embedFloat(chunk, { dimension: TARGET_DIM });
+            if (!ok || !vector?.length) return null;
 
             // id = hash of path + index
             const id = crypto.createHash('md5').update(`${relativePath}:${index}`).digest('hex');
-            
+
             return {
                 id,
                 file_path: relativePath,
                 chunk_index: index,
                 content_preview: chunk.slice(0, 100).replace(/\s+/g, ' ').trim(),
-                vector_tq: Buffer.from(data)
+                vector_tq: Buffer.from(vector.buffer, vector.byteOffset, vector.byteLength)
             };
         }).filter(Boolean);
 
@@ -62,7 +71,7 @@ async function walk(dir, callback) {
     for (const entry of entries) {
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
-            if (['node_modules', '.git', 'dist', '.tmp', 'output', '.claude'].includes(entry.name)) continue;
+            if (IGNORED_DIRS.has(entry.name) || entry.name.startsWith('.venv')) continue;
             await walk(fullPath, callback);
         } else if (/\.(js|jsx|ts|tsx|md|toml|jsonc)$/.test(entry.name)) {
             await callback(fullPath);

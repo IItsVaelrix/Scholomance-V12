@@ -1,0 +1,55 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "file-inspect",
+  "version": "0.1.0",
+  "priority": 6,
+  "match": {
+    "patterns": [
+      "(read|show|open|inspect|look at|check|view) (the )?(file|code|script|module|config|json|log)",
+      "what('s| is) in",
+      "(package.json|.env|.gitignore|Dockerfile|fly.toml|vite.config|tsconfig)",
+      "@[a-zA-Z_/.-]+\\\\.(js|ts|jsx|tsx|py|json|md|sh|toml)"
+    ],
+    "keywords": [
+      "read",
+      "show",
+      "open",
+      "inspect",
+      "file",
+      "code",
+      "script",
+      "config",
+      "log",
+      "package.json",
+      "vite",
+      "Dockerfile"
+    ]
+  },
+  "steps": [
+    {
+      "source": "file-system",
+      "query": "{query}",
+      "paths": [
+        "codex/",
+        "src/",
+        "steamdeck_brain/",
+        "divtube_downloader/",
+        "docs/",
+        "scripts/"
+      ],
+      "label": "File search",
+      "max_results": 10,
+      "retrieve_as": "files"
+    },
+    {
+      "source": "substrate",
+      "query": "content of {query}",
+      "top_k": 3,
+      "max_results": 2,
+      "label": "Stored notes",
+      "retrieve_as": "notes"
+    }
+  ],
+  "system_suffix": "CHAIN: identify the file \u2192 describe its purpose \u2192 show key imports/exports \u2192 note related files. Reference the file path exactly.",
+  "checksum": "5ce1e71e"
+}

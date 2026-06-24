@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Pillar 4 — Oracle UI Fail-Safe gauntlet
+ * Pillar 4 - Oracle UI Fail-Safe gauntlet
  * Bytecode: SCHOL-ENC-BYKE-IDE-STASIS-PROMOTION
  *
  * Proves useWordLookup NEVER throws for an Oracle/network failure and always
@@ -27,13 +27,13 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('Pillar 4 — Oracle UI fail-safe (useWordLookup)', () => {
+describe('Pillar 4 - Oracle UI fail-safe (useWordLookup)', () => {
   beforeEach(() => {
-    // jsdom does not implement fetch — install a controllable mock.
+    // jsdom does not implement fetch - install a controllable mock.
     global.fetch = vi.fn();
   });
 
-  it('never throws on a network failure — resolves to a structured disconnected state', async () => {
+  it('never throws on a network failure - resolves to a structured disconnected state', async () => {
     global.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
     const { result } = renderHook(() => useWordLookup());
 

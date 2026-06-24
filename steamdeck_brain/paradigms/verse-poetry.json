@@ -1,0 +1,38 @@
+{
+  "contract": "SCHOL-PARADIGM-v1",
+  "id": "verse-poetry",
+  "version": "0.1.0",
+  "priority": 7,
+  "match": {
+    "patterns": [
+      "(write|compose|create|generate|craft).*(poem|verse|rhyme|song|lyric|rap|sonnet|haiku|limerick)",
+      "(analyze|review|critique).*(poem|verse|lyric|song|writing)",
+      "(what|how).*(meter|iambic|trochaic|rhyme scheme|stanza|couplet|quatrain)"
+    ]
+  },
+  "steps": [
+    {
+      "source": "substrate",
+      "query": "poetry verse writing {query}",
+      "top_k": 5,
+      "max_results": 3,
+      "label": "Literary lore",
+      "retrieve_as": "lore"
+    },
+    {
+      "source": "rhyme-engine",
+      "query": "{query}",
+      "label": "Rhyme families",
+      "retrieve_as": "rhyme"
+    },
+    {
+      "source": "glossary",
+      "query": "poetry",
+      "max_results": 3,
+      "label": "Poetic terms",
+      "retrieve_as": "glossary"
+    }
+  ],
+  "system_suffix": "CHAIN: understand the poetic form \u2192 identify available rhyme families \u2192 construct metrically \u2192 review for assonance and internal rhyme. Output in the requested format only.",
+  "checksum": "a4f79ea4"
+}

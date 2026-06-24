@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "VIDEO-FORGE-v1",
+  "determinismVersion": "2026.06.22",
+  "projectId": "2f48926d4044",
+  "projectName": "test_project",
+  "mediaBin": {},
+  "timeline": [],
+  "transitions": [],
+  "textOverlays": [],
+  "audioTracks": [],
+  "renderPresets": [
+    "youtube_1080p_mp4"
+  ],
+  "lastRenderLedger": null
+}

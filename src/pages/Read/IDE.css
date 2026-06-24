@@ -3362,7 +3362,7 @@
 }
 
 .editor-gutter {
-  width: 54px;
+  width: 68px;
   flex-shrink: 0;
   border-right: 1px solid hsla(43, 48%, 48%, 0.1);
   background: rgba(0, 0, 0, 0.18);
@@ -3375,27 +3375,63 @@
   flex-direction: column;
 }
 
+/* "N.)" number indents the syllable bars, giving an ordered-list / code-editor feel. */
 .gutter-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: var(--space-2, 0.5rem);
   padding: 0 var(--space-2);
   font-family: var(--font-mono, monospace);
+  transition: background 0.12s ease;
 }
 
-.gutter-icons {
-  width: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--text-2xs);
+.gutter-row--current {
+  background: color-mix(in srgb, var(--read-accent) 14%, transparent);
 }
 
 .line-number {
   font-size: var(--text-2xs);
-  color: hsla(43, 48%, 48%, 0.65);
-  min-width: 20px;
-  text-align: right;
+  color: hsla(43, 48%, 48%, 0.6);
+  min-width: 22px;
+  text-align: center;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.gutter-row--current .line-number {
+  color: var(--read-accent);
+  font-weight: 700;
+}
+
+/* Symmetric line marker — small filled diamond, replaces the old ".)" suffix. */
+.gutter-tick {
+  flex-shrink: 0;
+  fill: hsla(43, 48%, 48%, 0.5);
+  transition: fill 0.12s ease;
+}
+
+.gutter-row--current .gutter-tick {
+  fill: var(--read-accent);
+}
+
+/* Syllable bars — one small bar per syllable, indented after the line number. */
+.syllable-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.syllable-bar {
+  width: 3px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--read-accent);
+  opacity: 0.55;
+}
+
+.gutter-row--current .syllable-bar {
+  opacity: 0.9;
 }
 
 .syllable-count-mini {
@@ -3687,6 +3723,33 @@
   -webkit-text-fill-color: currentColor;
 }
 
+/* Lexical ContentEditable: fill the wrapper and scroll like the classic textarea. */
+.ide-layout-wrapper .lexical-content-editable {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  box-sizing: border-box;
+  caret-color: var(--read-accent);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+  scrollbar-gutter: stable;
+  padding: var(--editor-content-padding-y) var(--editor-content-padding-x);
+  font-size: var(--editor-content-font-size);
+  line-height: var(--editor-content-line-height);
+  font-family: var(--font-scroll, "Crimson Pro", Georgia, "Liberation Serif", "DejaVu Serif", serif);
+}
+
+/* Zero out browser paragraph margins so every line — including blank ones —
+   is exactly one line-height tall. This is what makes the gutter row heights
+   match the editor content precisely. */
+.ide-layout-wrapper .lexical-content-editable .editor-paragraph {
+  margin: 0;
+  padding: 0;
+  min-height: 1lh; /* guarantees blank paragraphs are still one line tall */
+}
+
 .ide-layout-wrapper .editor-textarea--foreground {
   z-index: var(--z-above);
 }
@@ -3917,6 +3980,22 @@
 .ide-layout-wrapper .grimoire-word--grey.grimoire-word--interactive:hover {
   color: #e4e1eb;
   background: rgba(30, 32, 48, 0.6);
+}
+
+/* Assonance tier — the quiet vowel-echo color. Renders the inline school tint
+   at a reduced intensity with no glow, so assonance reads as a subordinate
+   palette beneath the louder rhyme (--active) tier rather than competing with
+   it. The animated glow is withheld upstream (decodedStyle is skipped for the
+   assonance tier in TruesightPlugin), so this only needs to soften the tint. */
+.ide-layout-wrapper .grimoire-word--assonant {
+  opacity: 0.6;
+  text-shadow: none;
+  transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+/* Hovering an assonance word brings its vowel color to full strength. */
+.ide-layout-wrapper .grimoire-word--assonant:hover {
+  opacity: 1;
 }
 
 .ide-layout-wrapper .truesight-word:hover,
@@ -5569,4 +5648,20 @@
 .oracle-token:hover::after {
   opacity: 0.8;
   transform: translateX(12px) scale(1);
+}
+
+/* Resonance gate degraded-mode signal: the analysis server produced no
+   connection source on the live synthesis path, so the editor is strictly
+   grey rather than broken. SCD64 GATE_DATA_ABSENT (03030742...). */
+.settings-panel-note--offline {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: rgba(255, 209, 143, 0.85);
+  background: rgba(120, 78, 18, 0.18);
+  border-left: 2px solid rgba(255, 184, 92, 0.55);
+  border-radius: 3px;
+  opacity: 0.9;
 }

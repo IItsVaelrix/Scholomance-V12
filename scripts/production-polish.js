@@ -160,7 +160,7 @@ function runTests() {
   log(colors.cyan, '\n🧪 STEP 4: Test Gate');
   log(colors.cyan, '─'.repeat(40));
 
-  const result = spawnSync('npm', ['test', '--', '--passWithNoTests'], {
+  const result = spawnSync('npm', ['run', 'test:qa', '--', '--run', '--passWithNoTests'], {
     cwd: ROOT,
     encoding: 'utf8',
     timeout: 300000,

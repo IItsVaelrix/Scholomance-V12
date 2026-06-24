@@ -1087,3 +1087,61 @@
 .analyze-oracle-arrow {
   color: rgba(126, 223, 173, 0.86);
 }
+
+/* Procedural ML Analysis */
+.analyze-ml-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.analyze-ml-metric {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 4px;
+  background: rgba(103, 232, 249, 0.04);
+  border: 1px solid rgba(103, 232, 249, 0.15);
+  border-radius: 6px;
+  gap: 3px;
+}
+.analyze-ml-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #67e8f9;
+  line-height: 1;
+}
+.analyze-ml-label {
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(103, 232, 249, 0.65);
+  text-align: center;
+}
+.analyze-ml-commentary {
+  padding: 10px 11px;
+  border-radius: 6px;
+  background: linear-gradient(
+    135deg,
+    rgba(103, 232, 249, 0.08) 0%,
+    rgba(14, 18, 38, 0.4) 100%
+  );
+  border: 1px solid rgba(103, 232, 249, 0.25);
+}
+.analyze-ml-kicker {
+  display: block;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  color: #67e8f9;
+  margin-bottom: 6px;
+}
+.analyze-ml-commentary p {
+  margin: 0;
+  font-family: Georgia, serif;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: rgba(232, 224, 214, 0.85);
+}

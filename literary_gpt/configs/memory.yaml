@@ -1,0 +1,5 @@
+embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+quantization_type: "int8"
+top_k: 3
+importance_weight: 1.5
+similarity_threshold: 0.4\n

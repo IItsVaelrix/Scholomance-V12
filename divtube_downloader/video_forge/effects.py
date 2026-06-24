@@ -1,0 +1,122 @@
+EFFECTS = {
+    "brightness": {
+        "label": "Brightness",
+        "filter": "eq=brightness={value}",
+        "params": {"value": {"type": "float", "default": 0.0, "min": -1.0, "max": 1.0}},
+        "description": "Adjust brightness. Negative = darker, positive = brighter.",
+    },
+    "contrast": {
+        "label": "Contrast",
+        "filter": "eq=contrast={value}",
+        "params": {"value": {"type": "float", "default": 1.0, "min": 0.0, "max": 3.0}},
+        "description": "Adjust contrast. 1.0 = normal, >1 = more contrast.",
+    },
+    "saturation": {
+        "label": "Saturation",
+        "filter": "eq=saturation={value}",
+        "params": {"value": {"type": "float", "default": 1.0, "min": 0.0, "max": 3.0}},
+        "description": "Adjust saturation. 0 = grayscale, 1.0 = normal, >1 = vivid.",
+    },
+    "grayscale": {
+        "label": "Grayscale",
+        "filter": "colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3",
+        "params": {},
+        "description": "Convert to grayscale using luminance weights.",
+    },
+    "sharpen": {
+        "label": "Sharpen",
+        "filter": "unsharp=luma_msize_x=5:luma_msize_y=5:luma_amount={value}",
+        "params": {"value": {"type": "float", "default": 1.0, "min": 0.0, "max": 5.0}},
+        "description": "Sharpen the image. Higher values = more sharpening.",
+    },
+    "blur": {
+        "label": "Blur",
+        "filter": "boxblur=luma_radius={value}:luma_power=2",
+        "params": {"value": {"type": "float", "default": 2.0, "min": 0.5, "max": 20.0}},
+        "description": "Gaussian-style box blur. Higher values = more blur.",
+    },
+    "vignette": {
+        "label": "Vignette",
+        "filter": "vignette=PI/{value}",
+        "params": {"value": {"type": "float", "default": 4.0, "min": 1.0, "max": 10.0}},
+        "description": "Darken edges. Higher denominator = subtler effect.",
+    },
+    "pixelate": {
+        "label": "Pixelate",
+        "filter": "pixelize=width={value}:height={value}",
+        "params": {"value": {"type": "int", "default": 8, "min": 2, "max": 64}},
+        "description": "Pixelation block size. Higher = more pixelated.",
+    },
+    "scanlines": {
+        "label": "Scanlines",
+        "filter": "drawbox=x=0:y=mod(n\\,2):w=iw:h=1:color=black@0.3:t=fill",
+        "params": {},
+        "description": "CRT-style alternating black scanlines.",
+    },
+    "chromatic_aberration": {
+        "label": "Chromatic Aberration",
+        "filter": "chromashift=crh={x}:crv={y}",
+        "params": {
+            "x": {"type": "int", "default": 2, "min": 0, "max": 20},
+            "y": {"type": "int", "default": 2, "min": 0, "max": 20},
+        },
+        "description": "Split RGB channels for a glitchy chromatic aberration effect.",
+    },
+    "speed_up": {
+        "label": "Speed Up",
+        "filter": "setpts={value}*PTS",
+        "params": {"value": {"type": "float", "default": 0.5, "min": 0.1, "max": 0.99}},
+        "description": "Speed up playback. 0.5 = 2x speed.",
+    },
+    "slow_down": {
+        "label": "Slow Down",
+        "filter": "setpts={value}*PTS",
+        "params": {"value": {"type": "float", "default": 2.0, "min": 1.01, "max": 10.0}},
+        "description": "Slow down playback. 2.0 = 0.5x speed.",
+    },
+    "reverse": {
+        "label": "Reverse",
+        "filter": "reverse",
+        "params": {},
+        "description": "Reverse the clip playback.",
+    },
+    "crop": {
+        "label": "Crop",
+        "filter": "crop=w={width}:h={height}:x={x}:y={y}",
+        "params": {
+            "width": {"type": "int", "default": 640, "min": 16, "max": 7680},
+            "height": {"type": "int", "default": 480, "min": 16, "max": 4320},
+            "x": {"type": "int", "default": 0, "min": 0, "max": 7680},
+            "y": {"type": "int", "default": 0, "min": 0, "max": 4320},
+        },
+        "description": "Crop a region from the frame.",
+    },
+    "zoom_pan": {
+        "label": "Ken Burns Zoom/Pan",
+        "filter": "zoompan=z={zoom}:x={x}:y={y}:d={duration}:s={width}x{height}",
+        "params": {
+            "zoom": {"type": "float", "default": 1.5, "min": 1.0, "max": 5.0},
+            "x": {"type": "int", "default": 0, "min": 0, "max": 7680},
+            "y": {"type": "int", "default": 0, "min": 0, "max": 4320},
+            "duration": {"type": "int", "default": 60, "min": 1, "max": 6000},
+            "width": {"type": "int", "default": 1920, "min": 16, "max": 7680},
+            "height": {"type": "int", "default": 1080, "min": 16, "max": 4320},
+        },
+        "description": "Ken Burns-style zoom and pan effect.",
+    },
+    "resize": {
+        "label": "Resize",
+        "filter": "scale={width}:{height}",
+        "params": {
+            "width": {"type": "int", "default": 1920, "min": 16, "max": 7680},
+            "height": {"type": "int", "default": 1080, "min": 16, "max": 4320},
+        },
+        "description": "Resize to exact dimensions.",
+    },
+    "rotate": {
+        "label": "Rotate",
+        "filter": "rotate={angle}*PI/180:fillcolor=black",
+        "params": {"angle": {"type": "float", "default": 90.0, "min": -360.0, "max": 360.0}},
+        "description": "Rotate by degrees. 90 = clockwise quarter turn.",
+    },
+}

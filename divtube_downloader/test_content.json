@@ -1,0 +1,11 @@
+{
+  "niche": "gaming",
+  "target_duration_minutes": 10,
+  "hook_script": "I survived 100 days in hardcore, and on day 99, everything went wrong...",
+  "segments": [
+    {"time_percent": "0-10%", "action": "Establish the stakes and show the final boss", "pacing": "Fast"},
+    {"time_percent": "10-80%", "action": "Grinding for gear, building the base, minor setbacks", "pacing": "Medium"},
+    {"time_percent": "80-100%", "action": "The final showdown and the tragic mistake", "pacing": "Fast"}
+  ],
+  "call_to_action": "Subscribe at the very end after the boss fight."
+}

@@ -6,7 +6,7 @@
  * Symmetry AMP + Coord-Symmetry AMP internally) → renderLattice (cells, grid,
  * symmetry overlay) → click-to-paint → export.
  *
- * All core access goes through the Cell Wall adapter — this component never
+ * All core access goes through the Cell Wall adapter - this component never
  * imports codex/ directly.
  */
 
@@ -20,7 +20,7 @@ import {
   exportLatticeToAseprite,
 } from '../../../lib/pixelbrain.adapter.js';
 
-const ZOOM = 2; // integer multiplier — keeps pixels crisp in the narrow panel
+const ZOOM = 2; // integer multiplier - keeps pixels crisp in the narrow panel
 
 export function LatticeCanvas({ analysis, brushColor = '#C9A227' }) {
   const canvasRef = useRef(null);

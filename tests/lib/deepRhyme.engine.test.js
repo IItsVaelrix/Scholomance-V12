@@ -180,27 +180,28 @@ describe('DeepRhymeEngine duplicate-scheme scanning', () => {
     expect(groupSizes).toContain(4);
   });
 
-  it('does NOT treat cross-line assonance as Truesight connection (Vaelrix Law Audit)', async () => {
+  it('treats cross-line assonance as Truesight connection at 0.50 threshold', async () => {
     const engine = new DeepRhymeEngine(createAssonanceMockPhonemeEngine(0.65));
     const result = await engine.analyzeDocument([
       'dark box',
       'sharp chops',
     ].join('\n'));
 
-    // Assonance is no longer considered a structural rhyme connection
-    expect(result.endRhymeConnections).toHaveLength(0);
-    expect(result.schemePattern).toBe('AB');
+    expect(result.endRhymeConnections).toHaveLength(1);
+    expect(result.endRhymeConnections[0].type).toBe('assonance');
+    expect(result.endRhymeConnections[0].score).toBeGreaterThanOrEqual(0.50);
   });
 
-  it('keeps assonance at 0.5 or lower below Truesight threshold', async () => {
+  it('keeps assonance at exactly 0.50 at threshold', async () => {
     const engine = new DeepRhymeEngine(createAssonanceMockPhonemeEngine(0.5));
     const result = await engine.analyzeDocument([
       'dark box',
       'sharp chops',
     ].join('\n'));
 
-    expect(result.endRhymeConnections).toHaveLength(0);
-    expect(result.schemePattern).toBe('AB');
+    expect(result.endRhymeConnections).toHaveLength(1);
+    expect(result.endRhymeConnections[0].type).toBe('assonance');
+    expect(result.endRhymeConnections[0].score).toBeCloseTo(0.5, 5);
   });
 
   it('does not count repeated lexical endings as rhyme connections', async () => {
@@ -214,13 +215,13 @@ describe('DeepRhymeEngine duplicate-scheme scanning', () => {
     expect(result.schemePattern).toBe('AB');
   });
 
-  it('does NOT detect stressed-vowel assonance as structural internal rhyme (Vaelrix Law Audit)', async () => {
+  it('detects stressed-vowel assonance as structural internal rhyme at 0.50 threshold', async () => {
     const engine = new DeepRhymeEngine(createStressedAssonanceFallbackMockPhonemeEngine());
     const result = await engine.analyzeDocument('rhythm timid');
 
-    // rhythm and timid share vowel IH but have different codas (DH vs D). 
-    // They are assonant, but no longer structural rhymes.
-    expect(result.internalRhymeConnections).toHaveLength(0);
+    expect(result.internalRhymeConnections).toHaveLength(1);
+    expect(result.internalRhymeConnections[0].type).toBe('assonance');
+    expect(result.internalRhymeConnections[0].score).toBeGreaterThanOrEqual(0.50);
   });
 
   it('suppresses internal pairs where both words are non-terminal function words', async () => {
@@ -301,13 +302,11 @@ describe('DeepRhymeEngine duplicate-scheme scanning', () => {
       ])
     );
 
-    // Per the Vaelrix Law assonance audit, only structural rhyme types
-    // (perfect/near/slant/identity) are recognized as end-rhyme connections.
+    // Per the Vaelrix Law assonance audit, assonance connections (score >= 0.50)
+    // are now recognized as valid structural connections.
     // The IN-cluster words must form a non-trivial structural connectivity
-    // graph — at least three of the five words connect, and no connection
-    // is of type 'assonance'.
+    // graph — at least three of the five words connect.
     expect(result.endRhymeConnections.length).toBeGreaterThan(0);
     expect(connectedWords.size).toBeGreaterThanOrEqual(3);
-    expect(result.endRhymeConnections.every((connection) => connection.type !== 'assonance')).toBe(true);
   });
 });

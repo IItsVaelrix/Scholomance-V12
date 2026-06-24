@@ -1,0 +1,193 @@
+================================================================================
+ SCHOLOMANCE — DETERMINISTIC AI-ASSISTED DEVELOPMENT FRAMEWORK
+ ARCHITECTURAL LORE (source-truth, not fantasy)
+================================================================================
+
+The Scholomance was founded not as a wizard school but as a deterministic
+development framework governed by 19 immutable LAWS. The founding principle:
+every tool, every agent, every bytecode signal must be deterministic,
+auditable, and documented. Randomness is the enemy. Seeding is the savior.
+
+================================================================================
+ THE FOUR CODEx LAYERS
+================================================================================
+
+   core/       — Pure logic layer. Zero imports from runtime, server, or any
+                  UI framework. Contains: scd64, RuleRegistry, combat engine,
+                  diagnostic cells, checksum logic. Must be testable in
+                  isolation without mocks.
+
+   service/    — Orchestration layer. Imports from core/ only. Wires together
+                  core components into workflows. No direct IO.
+
+   runtime/    — Event loop and IO layer. Handles async scheduling, file
+                  watchers, process lifecycle. Imports from service/ and core/.
+
+   server/     — Express/REST layer. HTTP handlers, middleware, route
+                  registration. Topmost layer. Imports from runtime/ and down.
+
+   LAYER RULE: Each layer may import only from itself or the layer directly
+   beneath. Violations are detected by the Immune System's Bridge Cell and
+   reported as LAYER_BOUNDARY violations.
+
+================================================================================
+ THE 19 VAELRIX LAWS (abbreviated)
+================================================================================
+
+   §1  Determinism       — All operations must be deterministic or seeded.
+   §2  Source of Truth   — The codebase is the single source of truth.
+   §3  Documentation     — Every rule, schema, and contract is documented.
+   §4  Test Integrity    — Tests must be deterministic and self-contained.
+   §5  Bug Documentation — Every bug recorded with title, source, priority.
+   §6  Layered Isolation — CODEx layers enforce strict import boundaries.
+   §7  Schema Ownership  — All schemas owned by Codex via SCHEMA_CONTRACT.
+   §8  No Bypass         — No circumventing the LAW via raw strings or evals.
+   §9  No Guessing       — Always read the actual code, never speculate.
+   §10 Context Integrity — Full context passed between agents, never truncated.
+   §11 Deterministic Seed— All RNG must use explicit, recorded seeds.
+   §12 Audit Trail       — Every agent action is logged with trace ID.
+   §13 Tool Verification — Verify tool output before acting on it.
+   §14 No Catastrophic   — No rm -rf, no bulk delete without confirmation.
+   §15 Escalation        — Unknown errors escalate to senior agent or human.
+   §16 Healing Protocol  — Autonomous heal loops: diagnose → patch → verify.
+   §17 Memory Persistence— Persistent memory across sessions via memory_set/get.
+   §18 Documentation Keeper— All cross-domain synthesis goes through UNITY.md.
+   §19 Codebase Authority— The actual code overrides ANY documentation.
+
+================================================================================
+ AGENT COORDINATION TABLE
+================================================================================
+
+   AGENT     ROLE                          TOOLS / DOMAIN
+   ────────  ────────────────────────────  ─────────────────────────────────
+   Codex     Architecture Keeper           Schema contracts, SCHEMA_CONTRACT.md
+   Claude    UI / World Surface Designer   React components, TUI layout
+   Gemini    Backend Coder & Debug Oracle  Engine code, debug rituals, patches
+   Cursor    Nexus / Debug Narratives      Interactive debug sessions
+   Merlin    QA / Pattern-Driven Testing   Test suites, RAID queries
+   You       Human / Ship Captain          Priority decisions, context
+
+   COORDINATION RULES:
+   - Codex owns all .md contracts and schema definitions
+   - Claude owns all .jsx/.tsx UI files in src/pages/
+   - Gemini owns all engine logic in src/core/ and src/service/
+   - Cursor owns debug narratives and interactive sessions
+   - Merlin owns test files and QA verification
+   - All agents report to the Ship Captain (human)
+
+================================================================================
+ IMMUNE SYSTEM ARCHITECTURE
+================================================================================
+
+   The Immune System has five layers, each implemented as a diagnostic cell:
+
+   Innate Layer    — Fixed deterministic rules (e.g., "no unseeded random")
+   Adaptive Layer  — Pathogen registry that learns new violation patterns
+   Bridge Layer    — Cross-layer import boundary enforcement
+   Fixture Layer   — Test integrity verification (deterministic seeds)
+   Coverage Layer  — Gap analysis for untested code paths
+
+   Each cell emits BytecodeHealth green-path signals on success:
+     health_emit(cell_id, check_id) → PB-OK-v1 checksummed payload
+
+   Diagnostic reports are generated by diagnostic_scan() and persisted.
+   Summary via diagnostic_summary(), violations via diagnostic_violations().
+
+================================================================================
+ CLERICAL RAID ENGINE
+================================================================================
+
+   50+ seeded bug patterns organized into families:
+   - TYPE errors (0xxx)    — Type mismatches, null dereferences
+   - LINGUISTIC errors (0Fxx) — Variable naming, comment rot
+   - RANGE errors (0Axx)   — Off-by-one, boundary conditions
+   - STATE errors (0Dxx)   — Race conditions, stale state
+   - VALUE errors (01xx)   — Hardcoded values, magic numbers
+
+   RAID query flow: symptoms → pattern match → confidence score → fix template
+   Use: cleri_scan(symptoms) or raid_query(symptoms, file_paths)
+
+================================================================================
+ SCD64 CHECKSUM SYSTEM
+================================================================================
+
+   SCD64 = Scholomance Checksum Deterministic 64-bit
+   Format: 64-character hex string
+   Usage: scd64_scan(file) → predicts checksum
+          scd64_decode(checksum) → bug family, meaning, remediation hints
+
+   Every file mutation must produce a matching SCD64. If the checksum changes
+   unexpectedly, a structural misfold has occurred and must be investigated.
+
+================================================================================
+ BYTECODEHEALTH SIGNALS
+================================================================================
+
+   Green path: PB-OK-v1 checksum
+   Format: health_emit(cell_id, check_id, module_id)
+   Verification: health_verify(cell_id, check_id) → 100-iteration determinism test
+   
+   Health signals are emitted by every diagnostic cell after a successful scan.
+   They form a tamper-evident chain of framework integrity.
+
+================================================================================
+ COLLAB DATABASE (RAAD)
+================================================================================
+
+   PostgreSQL-backed coordination database with:
+   - bug_reports table (title, source_type, summary, priority, status)
+   - tasks table (title, description, priority, file_paths)
+   - agents table (name, role, status, last_seen)
+
+   Tools: bug_create, bug_list, task_create, task_list, agent_list
+   Source types: human, runtime, qa, pipeline, agent
+
+================================================================================
+ KEY FILE PATHS
+================================================================================
+
+   src/core/combat/           — Combat engine, ability system, damage calc
+   src/core/scd64/            — SCD64 checksum logic, RuleRegistry
+   src/core/diagnostics/      — Diagnostic cells, immune system
+   src/service/               — Orchestration layer
+   src/runtime/               — Event loop, async scheduling
+   src/server/                — Express routes, HTTP handlers
+   src/pages/                 — React UI pages (Combat, Dashboard, etc.)
+   src/shared/                — Shared types, constants, schema definitions
+   BUG_TRACK.md               — Living bug documentation (LAW §5)
+   AGENTS.md                  — Agent coordination table
+   VAELRIX_LAW.md             — 19 global laws (source of truth)
+   ENGINEERING_RULEBOOK.md    — Mandatory quality gates
+   PRODUCTION_POLISH.md       — 9-step pre-commit ritual
+
+================================================================================
+ DEBUG ORACLE (6 MODES)
+================================================================================
+
+   Mode A — DiagnosticOnly       : Generate report, no changes
+   Mode B — PatchReady           : Report + ready-to-apply patch
+   Mode C — AutonomousRepairSpec : Full autonomous fix specification
+   Mode D — SeniorReviewer       : Code review mode
+   Mode E — PostUpdateAuditor    : Verify fix didn't break anything
+   Mode F — RedTeam              : Adversarial testing mode
+
+   DebugTraceIR is the intermediate representation used by all 6 modes.
+   It produces a structured 15-section debug report with bytecode trace.
+
+================================================================================
+ PRODUCTION POLISH (9-STEP RITUAL)
+================================================================================
+
+   1. Run full test suite
+   2. Run SCD64 scan on changed files
+   3. Audit against Vaelrix LAW
+   4. Verify layer boundaries
+   5. Run immune system scan
+   6. Generate BytecodeHealth signals
+   7. Update BUG_TRACK.md if fixing a bug
+   8. Commit with deterministic message
+   9. Verify CI pipeline green
+
+================================================================================
+ END OF ARCHITECTURAL LORE
+================================================================================

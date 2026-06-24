@@ -20,7 +20,7 @@ const hexToRgb = (hex) => {
   return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 };
 
-describe('Truesight Color — Pixel Perfection QA', () => {
+describe('Truesight Color - Pixel Perfection QA', () => {
   const testContext = {
     testFile: 'truesight-color.qa.test.jsx',
     testSuite: 'Truesight Color QA'
@@ -28,7 +28,7 @@ describe('Truesight Color — Pixel Perfection QA', () => {
 
   // The single colour authority is wordTruesight (word -> analyzeDeep ->
   // vowel family -> school -> school colour). This test feeds ScrollEditor
-  // production-shaped props — no palette objects, no viseme styles — and
+  // production-shaped props - no palette objects, no viseme styles - and
   // asserts the rendered colour against the real school constants. The old
   // version of this test mocked an object-shaped vowelColors palette that
   // production never passes (LING-0F07 shadow palette); do not reintroduce it.

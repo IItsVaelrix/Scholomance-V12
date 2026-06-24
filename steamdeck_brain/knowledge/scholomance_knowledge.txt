@@ -1,0 +1,67 @@
+=== ARCHITECTURE ===
+The Scholomance is a deterministic AI-assisted development framework.
+CODEx has four layers: core (pure logic), service (orchestration), runtime (IO/events), server (HTTP).
+Each CODEx layer may only import from itself or the layer directly beneath.
+Core layer must never import from runtime, server, or any UI framework.
+Vaelrix LAW consists of 19 immutable global laws.
+LAW §1 (Determinism) — all operations must be deterministic or seeded.
+LAW §5 (Bug Documentation) — every bug recorded with title, source_type, summary, priority, status.
+LAW §9 (No Guessing) — always read actual code, never speculate.
+LAW §15 (Escalation) — unknown errors escalate to senior agent or human.
+LAW §19 (Codebase is Truth) — actual code overrides any documentation.
+
+=== SCD64 ===
+SCD64 = Scholomance Checksum Deterministic 64-bit, format: 64-character hex string.
+scd64_scan(path) predicts a file's checksum before mutation.
+scd64_decode(checksum) returns bug family, meaning, and remediation hints.
+If a file's SCD64 changes unexpectedly, a structural misfold has occurred.
+
+=== IMMUNE SYSTEM ===
+Five layers: Innate (fixed rules), Adaptive (pathogen registry), Bridge (layer boundaries), Fixture (test integrity), Coverage (gap analysis).
+health_emit(cell_id, check_id) produces a PB-OK-v1 checksummed payload.
+health_verify runs 100-iteration determinism confirmation.
+Innate rules: no unseeded Math.random, no render imports in core, SCD64 must match after changes.
+
+=== RAID PATTERN CORPUS ===
+Clerical RAID engine: 50+ seeded bug patterns.
+Families: TYPE(0xxx), LINGUISTIC(0Fxx), RANGE(0Axx), STATE(0Dxx), VALUE(01xx).
+cleri_scan(symptoms) returns best-matching pattern, confidence, verdict, fix path.
+raid_query(symptoms, file_paths) returns role-specific playbook analysis.
+
+=== AGENT SYSTEM ===
+Five agents: Codex (architecture), Claude (UI), Gemini (backend/debug), Cursor (narratives), Merlin (QA).
+All agents report to the human Ship Captain.
+
+=== DEBUG ORACLE ===
+6 modes: A (DiagnosticOnly), B (PatchReady), C (AutonomousRepair), D (SeniorReviewer), E (PostUpdateAuditor), F (RedTeam).
+Each mode produces a 15-section debug report with DebugTraceIR bytecode.
+
+=== TOOL CATALOG ===
+law_get(section), law_audit(file|intent), law_debug(anomaly, symptoms, mode)
+health_emit(cell_id, check_id), health_verify(cell_id, check_id)
+diagnostic_scan(), diagnostic_summary(), diagnostic_violations(filters)
+immune_scan(file_path), raid_query(symptoms, file_paths)
+bug_create(title, source_type, summary), bug_list(status)
+task_create(title, description, file_paths)
+memory_get/set(key, value)
+archive_search(query), scd64_scan(path), scd64_decode(checksum)
+heal(symptoms, file_paths) — autonomous diagnose → patch → verify loop.
+apply_patch(file_path, patch) — search/replace patch writer.
+
+=== KEY FILE LOCATIONS ===
+src/core/combat/CombatSystem.ts — Main combat engine.
+src/core/scd64/RuleRegistry.ts — SCD64 rule registration.
+src/core/diagnostics/ — All diagnostic cells.
+src/service/combat/CombatService.ts — Combat orchestration.
+src/runtime/GameLoop.ts — Event loop and scheduling.
+src/server/routes/combat.ts — Combat REST endpoints.
+src/pages/Combat/CombatPage.jsx — Combat UI.
+BUG_TRACK.md — Living bug documentation.
+VAELRIX_LAW.md — 19 global laws source of truth.
+ENGINEERING_RULEBOOK.md — Quality gates.
+AGENTS.md — Agent coordination table.
+PRODUCTION_POLISH.md — 9-step pre-commit ritual.
+
+=== FOUNDATIONAL CONTRACTS ===
+SHARED_PREAMBLE.md, VAELRIX_LAW.md, SCHEMA_CONTRACT.md, RESONANCE_LAW.md
+ENGINEERING_RULEBOOK.md, AGENTS.md, UNITY.md, ARCH_CONTRACT_OVERLAY_INTEGRITY.md

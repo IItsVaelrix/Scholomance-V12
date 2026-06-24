@@ -43,6 +43,10 @@ export function dequantize4BitToF32(value) {
 /**
  * Estimates the inner product between two TurboQuant-compressed buffers.
  *
+ * Both buffers empty means both source vectors had zero norm ("silence"
+ * emitted by quantizeVectorJS). Two silent vectors are identical by
+ * definition, so they score a perfect match rather than 0.
+ *
  * @param {Uint8Array} b1
  * @param {Uint8Array} b2
  * @param {number} n1
@@ -50,6 +54,13 @@ export function dequantize4BitToF32(value) {
  * @returns {number}
  */
 export function estimateInnerProduct(b1, b2, n1, n2) {
+  // Honest silence: a zero-norm vector emits an empty signature. If both
+  // sides are silence, they are by definition identical, so report a perfect
+  // match (n1*n2) rather than 0. Mixed silence/real still returns 0 so a real
+  // motion never accidentally matches a motionless archetype.
+  if (b1 && b2 && b1.length === 0 && b2.length === 0) {
+    return n1 * n2;
+  }
   if (!b1 || !b2 || b1.length === 0 || b2.length === 0 || b1.length !== b2.length) {
     return 0;
   }
@@ -62,7 +73,7 @@ export function estimateInnerProduct(b1, b2, n1, n2) {
     const byte2 = b2[i];
 
     // Direct lookup from precomputed float map
-    sum += (DEQUANT_MAP[byte1 >> 4] * DEQUANT_MAP[byte2 >> 4]) + 
+    sum += (DEQUANT_MAP[byte1 >> 4] * DEQUANT_MAP[byte2 >> 4]) +
            (DEQUANT_MAP[byte1 & 0x0f] * DEQUANT_MAP[byte2 & 0x0f]);
   }
 
@@ -133,10 +144,16 @@ export function quantizeVectorJS(vector, seed = 42) {
   }
 
   const norm = Math.sqrt(sumSq);
-  if (norm > 0) {
-    for (let i = 0; i < dim; i += 1) {
-      vec[i] /= norm;
-    }
+  // Honest zero: a zero-norm vector has no direction. Compressing it would map
+  // every dim to the 4-bit code for 0 (a CONSTANT non-zero "ghost" pattern,
+  // since the dequant map has no exact zero), which then scores a spurious,
+  // fixed similarity against any query. Emit an empty signature instead so the
+  // comparison primitive treats it as silence.
+  if (norm === 0) {
+    return { data: new Uint8Array(0), norm: 0 };
+  }
+  for (let i = 0; i < dim; i += 1) {
+    vec[i] /= norm;
   }
 
   for (let i = 0; i < dim; i += 1) {

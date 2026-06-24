@@ -3,8 +3,15 @@ import { synthesizeVerse } from "../lib/truesight/compiler/VerseSynthesis.js";
 import { verseIRMicroprocessors } from "../../codex/core/microprocessors/index.js";
 import { parseBooleanEnvFlag } from "./useCODExPipeline.jsx";
 import { ScholomanceDictionaryAPI } from "../lib/scholomanceDictionary.api.js";
+import { shouldPreserveArtifactOnError } from "../lib/truesight/synthesisErrorPolicy.js";
 
 const USE_SERVER_ANALYSIS = parseBooleanEnvFlag(import.meta.env.VITE_USE_SERVER_PANEL_ANALYSIS, true);
+
+// Bounded backoff for transient HTTP rejections (esp. 429 rate limits). Keeps
+// the last good analysis on screen while a couple of spaced retries refresh it,
+// instead of blanking the resonance gate. See synthesisErrorPolicy.js.
+const RATE_LIMIT_RETRY_BASE_MS = 1500;
+const RATE_LIMIT_MAX_RETRIES = 2;
 
 /**
  * useVerseSynthesis — UI Bridge to the VerseSynthesis AMP
@@ -23,16 +30,26 @@ export function useVerseSynthesis(content, options = {}) {
   
   const requestCount = useRef(0);
   const lastRequestContentRef = useRef("");
+  // Last committed artifact (for the catch path to decide whether to preserve
+  // it), the latest requested content (staleness guard for retries), and the
+  // pending rate-limit retry timer + attempt counter.
+  const artifactRef = useRef(null);
+  const latestContentRef = useRef(content);
+  const retryTimerRef = useRef(null);
+  const retryAttemptsRef = useRef(0);
 
-  const performSynthesis = useCallback(async (text) => {
+  useEffect(() => { artifactRef.current = artifact; }, [artifact]);
+
+  const performSynthesis = useCallback(async function performSynthesis(text) {
     // Deterministic Guard: Stop if content is identical to last issued request
     if (text === lastRequestContentRef.current) return;
-    
+
     const requestId = ++requestCount.current;
     lastRequestContentRef.current = text;
-    
+
     setIsSynthesizing(true);
     setError(null);
+
     try {
       let result;
 
@@ -65,17 +82,40 @@ export function useVerseSynthesis(content, options = {}) {
         // In V12, we offload this to the VerseSynthesis Microprocessor
         result = await verseIRMicroprocessors.execute('nlu.synthesizeVerse', { text, options: { mode, school } });
       }
-      
+
       if (requestId === requestCount.current) {
+        retryAttemptsRef.current = 0; // healthy response clears the backoff
         setArtifact(result);
       }
     } catch (err) {
       if (requestId === requestCount.current) {
         console.error("[PB-SYNTHESIS] Transmutation failed:", err);
         setError(err.message || 'Synthesis failed');
-        // Fallback to local synchronous analysis if microprocessor fails
-        const fallback = synthesizeVerse(text, { mode, school });
-        setArtifact(fallback);
+
+        if (shouldPreserveArtifactOnError(err, artifactRef.current)) {
+          // Transient HTTP rejection (e.g. 429) and we hold a populated
+          // analysis: keep the last good artifact so colours persist, and
+          // schedule a bounded, staleness-guarded retry to refresh it. Do NOT
+          // overwrite with the connection-less local fallback.
+          if (retryAttemptsRef.current < RATE_LIMIT_MAX_RETRIES) {
+            retryAttemptsRef.current += 1;
+            const delay = RATE_LIMIT_RETRY_BASE_MS * retryAttemptsRef.current;
+            if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+            retryTimerRef.current = setTimeout(() => {
+              retryTimerRef.current = null;
+              // Only retry if the user hasn't moved on to different content.
+              if (text !== latestContentRef.current) return;
+              lastRequestContentRef.current = ''; // bypass the dedupe guard
+              performSynthesis(text);
+            }, delay);
+          }
+        } else {
+          // Genuine unavailability (network error) or no prior good artifact:
+          // degrade to local synthesis. The connection-less artifact trips the
+          // "resonance offline" signal (resonanceDegraded) downstream.
+          const fallback = synthesizeVerse(text, { mode, school });
+          setArtifact(fallback);
+        }
       }
     } finally {
       if (requestId === requestCount.current) {
@@ -99,6 +139,15 @@ export function useVerseSynthesis(content, options = {}) {
   }, [highlightedGroup, artifact]);
 
   useEffect(() => {
+    // Content changed: cancel any pending rate-limit retry for the old text
+    // and reset the backoff so the new text gets a fresh budget.
+    latestContentRef.current = content;
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
+    }
+    retryAttemptsRef.current = 0;
+
     if (paused) {
       requestCount.current++;
       setIsSynthesizing(false);
@@ -115,9 +164,15 @@ export function useVerseSynthesis(content, options = {}) {
     const timer = setTimeout(() => {
       if (requestId !== requestCount.current) return;
       performSynthesis(content);
-    }, 600); // 600ms debounce for heavy analysis
+    }, 4000); // 4000ms debounce for heavy analysis
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (retryTimerRef.current) {
+        clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
   }, [content, performSynthesis, paused]);
 
   return {

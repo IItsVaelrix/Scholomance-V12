@@ -9,6 +9,8 @@ import {
   Menu,
   ChevronRight,
   User,
+  LogOut,
+  MessageSquare,
 } from "lucide-react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -22,13 +24,15 @@ const ICON_MAP = {
   listen: Headphones,
   read: BookOpen,
   visualiser: Activity,
+  oracle: MessageSquare,
 };
 
 const ROUTE_COPY = {
   watch: "Witness the live arena and current ritual signal.",
   listen: "Tune stations, broadcasts, and ambient transmission.",
   read: "Compose scrolls and inspect their hidden anatomy.",
-  visualiser: "Kinetic lyric visualiser — phoneme school colors, beat sync.",
+  visualiser: "Kinetic lyric visualiser - phoneme school colors, beat sync.",
+  oracle: "Consult the Oracle for Lyrical Analysis.",
   blog: "Read transmissions, skills, verdicts, and whitepapers.",
   pixelbrain: "Neural network visualization and metadata mapping.",
   career: "Transmute professional experience into high-acuity sigils.",
@@ -48,7 +52,8 @@ export default function Navigation() {
   const [navigatingPath, setNavigatingPath] = useState(null);
   const navTimeoutRef = useRef(null);
   const hoverTimeoutRef = useRef(null);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
 
   const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD === true;
@@ -154,6 +159,20 @@ export default function Navigation() {
     handleNav(linkPath);
   }, [navigatingPath, handleNav]);
 
+  const handleLogout = useCallback(async () => {
+    if (!user || isLoggingOut) return;
+    triggerHapticPulse(UI_HAPTICS.MEDIUM);
+    setIsLoggingOut(true);
+    setNavigatingPath(null);
+    try {
+      await logout();
+      setIsMenuOpen(false);
+      navigate("/auth");
+    } finally {
+      setIsLoggingOut(false);
+    }
+  }, [isLoggingOut, logout, navigate, user]);
+
   const overlayTransition = prefersReducedMotion
     ? { duration: 0 }
     : { duration: 0.26, ease: "easeOut" };
@@ -205,6 +224,19 @@ export default function Navigation() {
         </div>
 
         <div className="rail-right">
+          {user && (
+            <button
+              className="rail-link rail-link--user rail-link--logout"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
+              aria-label={isLoggingOut ? "Signing out" : "Sign out"}
+              title={isLoggingOut ? "Signing out" : "Sign out"}
+              type="button"
+            >
+              <LogOut size={15} aria-hidden="true" />
+            </button>
+          )}
+
           <NavLink
             to={user ? "/profile" : "/auth"}
             onClick={(e) => handleRailNavClick(e, user ? "/profile" : "/auth")}
@@ -305,6 +337,29 @@ export default function Navigation() {
                     </motion.div>
                   );
                 })}
+                {user && (
+                  <motion.button
+                    type="button"
+                    className="nav-mobile-link nav-mobile-link--button nav-mobile-link--logout"
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 12 }}
+                    animate={{ opacity: isLoggingOut ? 0.7 : 1, y: 0 }}
+                    transition={{
+                      delay: navigatingPath || prefersReducedMotion ? 0 : allLinks.length * 0.04,
+                      duration: prefersReducedMotion ? 0 : 0.24,
+                      ease: "easeOut",
+                    }}
+                  >
+                    <span className="nav-mobile-link-copy">
+                      <span className="nav-mobile-link-label">Sign Out</span>
+                      <span className="nav-mobile-link-meta">{user.email}</span>
+                    </span>
+                    <span className="nav-mobile-link-state">
+                      {isLoggingOut ? "Leaving" : "Exit"}
+                    </span>
+                  </motion.button>
+                )}
               </div>
             </motion.div>
           </motion.div>

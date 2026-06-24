@@ -7,11 +7,11 @@ import DataArchiveDrawer, { type DataArchive } from './DataArchiveDrawer';
 import './CareerPage.css';
 
 /**
- * CareerPage — The Career Ignition Chamber.
+ * CareerPage - The Career Ignition Chamber.
  *
  * Wires the Resonance Alignment Engine (src/lib/career/keyword-gap.js) into the UI:
  * the user supplies their experience AND a target job description, and the page reports
- * a deterministic 0–100 alignment score, the missing JD keywords, and which terms were
+ * a deterministic 0-100 alignment score, the missing JD keywords, and which terms were
  * preserved literally so the transmuter does not delete the very keywords it measured.
  *
  * The score bar reflects the REAL computed score (no longer a cosmetic timer), and the
@@ -109,7 +109,7 @@ export default function CareerPage() {
     if (!content.trim() || status !== 'IDLE') return;
 
     // The analysis is synchronous and deterministic. We run it up front, then animate
-    // the score bar filling to the REAL value — the bar measures the result, it does
+    // the score bar filling to the REAL value - the bar measures the result, it does
     // not fabricate progress.
     const ignite = buildSigilDataArchive(content, jobDescription) as SigilResult;
 
@@ -198,7 +198,7 @@ export default function CareerPage() {
 
           <div className="parchment-field parchment-field--jd">
             <label className="field-label" htmlFor="jd-input">
-              Target Job Description <span className="field-hint">— measured against your experience</span>
+              Target Job Description <span className="field-hint"> -  measured against your experience</span>
             </label>
             <textarea
               id="jd-input"
@@ -258,7 +258,7 @@ export default function CareerPage() {
           >
             {!hasJd && (
               <p className="report-note report-note--warn">
-                No job description supplied — score reflects nothing measurable. Paste a
+                No job description supplied - score reflects nothing measurable. Paste a
                 target JD to see real alignment.
               </p>
             )}
@@ -272,7 +272,7 @@ export default function CareerPage() {
                   </h3>
                   {report.missing.length === 0 ? (
                     <p className="report-note report-note--good">
-                      No gaps detected — your experience covers every scored JD keyword.
+                      No gaps detected - your experience covers every scored JD keyword.
                     </p>
                   ) : (
                     <div className="kw-chips">

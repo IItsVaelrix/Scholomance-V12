@@ -126,7 +126,7 @@ export default function RhymeDiagramPanel({
 
       <div className="rhyme-connections-list">
         {selectedPairKey ? (
-          // Isolated view — only the selected pair
+          // Isolated view - only the selected pair
           (() => {
             const allConns = groupedConnections.flatMap((g) => g.connections.map((c) => ({ ...c, groupColor: g.color, groupName: g.name })));
             const focused = allConns.find((c) => {

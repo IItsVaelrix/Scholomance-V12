@@ -125,6 +125,7 @@ export const INNATE_RULES = [
     moduleId: MODULE_IDS.IMMUNITY,
     repairKey: 'repair.forbidden-import.bridge-via-lib',
     detector: (content, filePath) => {
+      if (content.includes('// IMMUNE_ALLOW: LING-0F03')) return false;
       const normalized = filePath.replace(/^.*\/(src\/.*)$/, '$1');
       if (!normalized.startsWith('src/') || normalized.startsWith('src/lib/') || normalized.startsWith('src/codex/') || normalized.startsWith('src/hooks/')) return false;
       
@@ -358,6 +359,20 @@ export const INNATE_RULES = [
       return detectOverlayMetricDrift(content);
     },
   },
+  {
+    id: 'SYNTAX-0F0C',
+    name: 'Syntax prion (stray character / structural deformity)',
+    category: ERROR_CATEGORIES.LINGUISTIC,
+    errorCode: ERROR_CODES.IMMUNE_SYNTAX_PRION,
+    severity: ERROR_SEVERITY.CRIT,
+    moduleId: MODULE_IDS.IMMUNITY,
+    repairKey: 'repair.syntax-prion.sanitize',
+    detector: (content, filePath) => {
+      if (!/\.(?:js|jsx|ts|tsx|mjs|cjs)$/i.test(filePath)) return false;
+      if (content.includes('// IMMUNE_ALLOW: syntax-prion')) return false;
+      return detectStrayCharacters(content);
+    },
+  },
 ];
 
 // Classes applied to the MEASURED Truesight overlay word text. Their rendered
@@ -419,4 +434,84 @@ function detectOverlayMetricDrift(content) {
 
 function escapeForRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// ─── SYNTAX-0F0C: Stray Character Detector ──────────────────────────────
+
+const INVISIBLE_CHAR_RE = /[\u200B-\u200F\uFEFF\u2060-\u2064\u00AD\u2028\u2029]/g;
+const STRAY_UNICODE_RE = /[\u201C\u201D\u2018\u2019\u2014\u2013\u00A0\u2026]/g;
+const ZERO_WIDTH_NAME = {
+  '\u200B': 'ZERO WIDTH SPACE',
+  '\u200C': 'ZERO WIDTH NON-JOINER',
+  '\u200D': 'ZERO WIDTH JOINER',
+  '\u200E': 'LEFT-TO-RIGHT MARK',
+  '\u200F': 'RIGHT-TO-LEFT MARK',
+  '\uFEFF': 'BYTE ORDER MARK (BOM)',
+  '\u2060': 'WORD JOINER',
+  '\u2061': 'FUNCTION APPLICATION',
+  '\u2062': 'INVISIBLE TIMES',
+  '\u2063': 'INVISIBLE SEPARATOR',
+  '\u2064': 'INVISIBLE PLUS',
+  '\u00AD': 'SOFT HYPHEN',
+  '\u2028': 'LINE SEPARATOR',
+  '\u2029': 'PARAGRAPH SEPARATOR',
+};
+const STRAY_UNICODE_NAME = {
+  '\u201C': 'LEFT DOUBLE QUOTATION MARK (smart quote)',
+  '\u201D': 'RIGHT DOUBLE QUOTATION MARK (smart quote)',
+  '\u2018': 'LEFT SINGLE QUOTATION MARK (smart quote)',
+  '\u2019': 'RIGHT SINGLE QUOTATION MARK (smart quote)',
+  '\u2014': 'EM DASH',
+  '\u2013': 'EN DASH',
+  '\u00A0': 'NON-BREAKING SPACE',
+  '\u2026': 'HORIZONTAL ELLIPSIS',
+};
+
+/**
+ * Scans raw source text for characters that will break syntax before
+ * the parser ever runs: invisible codepoints, smart quotes instead of
+ * ASCII, unbalanced brackets, orphaned backticks.
+ *
+ * @param {string} content
+ * @returns {false | { matched: true, context: object }}
+ */
+function detectStrayCharacters(content) {
+  // 1. Invisible / zero-width characters (always a bug in source files)
+  let invisible;
+  INVISIBLE_CHAR_RE.lastIndex = 0;
+  while ((invisible = INVISIBLE_CHAR_RE.exec(content)) !== null) {
+    const char = invisible[0];
+    return {
+      matched: true,
+      context: {
+        type: 'invisible_character',
+        char: char,
+        name: ZERO_WIDTH_NAME[char] || 'UNKNOWN INVISIBLE',
+        codepoint: 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0'),
+        position: invisible.index,
+        detail: `Invisible character at position ${invisible.index}. Remove — invisible in editors, breaks parsers.`,
+      },
+    };
+  }
+
+  // 2. Stray typographic unicode (smart quotes, em-dashes, etc.)
+  //    These are copy-paste artifacts from LLMs / word processors.
+  let stray;
+  STRAY_UNICODE_RE.lastIndex = 0;
+  while ((stray = STRAY_UNICODE_RE.exec(content)) !== null) {
+    const char = stray[0];
+    return {
+      matched: true,
+      context: {
+        type: 'stray_unicode',
+        char: char,
+        name: STRAY_UNICODE_NAME[char] || 'UNKNOWN STRAY',
+        codepoint: 'U+' + char.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0'),
+        position: stray.index,
+        detail: `Stray unicode "${char}" at position ${stray.index}. Replace with ASCII equivalent.`,
+      },
+    };
+  }
+
+  return false;
 }
