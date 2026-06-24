@@ -172,6 +172,10 @@ const TOOL_ALIASES = new Map(Object.entries({
     mcp_scholomance_collab_fs_find: ['fs_find', 'find_file'],
     mcp_scholomance_collab_fs_propose_patch: ['propose_patch', 'edit_propose'],
     mcp_scholomance_collab_fs_apply_patch: ['apply_patch'],
+    mcp_scholomance_collab_fs_replace_file_content: ['replace_file_content', 'edit_file', 'fs_edit'],
+    mcp_scholomance_collab_fs_batch_patch: ['batch_patch', 'transaction_patch', 'multi_edit'],
+    mcp_scholomance_collab_fs_path_complete: ['path_complete', 'path_autocomplete', 'tab_complete'],
+    mcp_scholomance_collab_tui_inspect: ['tui_inspect', 'live_state', 'ui_snapshot'],
     mcp_scholomance_collab_heal: ['heal', 'iterative_heal'],
     mcp_scholomance_collab_law_get: ['law_get'],
     mcp_scholomance_collab_lock_list: ['lock_list'],
@@ -1337,9 +1341,10 @@ export function registerCollabMcpBridge(server, service = collabService) {
         file_path: z.string().min(1).describe('Relative path of the file to patch'),
         patch: z.string().min(1).describe('Search/replace block or unified diff or full content'),
         backup: z.boolean().optional().default(true).describe('Create .bak backup before applying'),
-    }, async ({ file_path, patch, backup }) => {
+        relaxed_whitespace: z.boolean().optional().default(true).describe('Normalize whitespace for fuzzy search/replace matching'),
+    }, async ({ file_path, patch, backup, relaxed_whitespace }) => {
         const healer = new IterativeHealer(null, { projectRoot: ROOT });
-        const result = healer._applyPatch(file_path, patch, 1);
+        const result = healer._applyPatch(file_path, patch, 1, { relaxedWhitespace: relaxed_whitespace !== false, backup });
         if (result.success) {
             await service.logActivity({
                 agent_id: null,
@@ -1350,6 +1355,342 @@ export function registerCollabMcpBridge(server, service = collabService) {
             });
         }
         return result;
+    });
+
+    // ── replace_file_content: fuzzy-matching edit with failure diff ────────
+    registerTool(server, 'mcp_scholomance_collab_fs_replace_file_content', {
+        path: z.string().min(1).describe('Relative file path (e.g. \'src/pages/Combat/CombatPage.jsx\')'),
+        target_content: z.string().min(1).describe('Exact text block to replace'),
+        replacement_content: z.string().describe('New text block'),
+        relaxed_whitespace: z.boolean().optional().default(true).describe('Normalize whitespace for fuzzy matching (default: true)'),
+    }, async ({ path: filePath, target_content, replacement_content, relaxed_whitespace }) => {
+        const absPath = require('path').resolve(ROOT, filePath);
+        if (!absPath.startsWith(ROOT)) throw new BytecodeError(
+            ERROR_CATEGORIES.RANGE, ERROR_SEVERITY.CRIT, MOD,
+            ERROR_CODES.OUT_OF_BOUNDS,
+            { reason: 'Out of bounds write attempt', requestedPath: absPath, rootPath: ROOT },
+        );
+        if (!fs.existsSync(absPath)) {
+            return {
+                ok: false,
+                error: `File not found: ${filePath}`,
+                suggestion: `Try path_complete to find matching files, or list_directory to browse.`,
+            };
+        }
+
+        const healer = new IterativeHealer(null, { projectRoot: ROOT });
+        const patch = target_content + '\n---\n' + replacement_content;
+        const result = healer._applyPatch(filePath, patch, -1, {
+            relaxedWhitespace: relaxed_whitespace !== false,
+            backup: true,
+        });
+
+        if (result.success) {
+            await service.logActivity({
+                agent_id: null,
+                action: 'file_replaced',
+                target_type: 'file',
+                target_id: filePath,
+                details: { method: result.method, bytesWritten: result.bytesWritten },
+            });
+            return { ok: true, method: result.method, path: filePath, note: result.note || null };
+        }
+
+        // ── Enhanced failure: show a diff-like hint ────────────────────────
+        const currentContent = fs.readFileSync(absPath, 'utf8');
+        const targetLines = target_content.split('\n');
+        const contextSearch = targetLines[0]?.trim()?.slice(0, 60) || target_content.slice(0, 60);
+        const occurrences = [];
+        let idx = -1;
+        while ((idx = currentContent.indexOf(contextSearch, idx + 1)) !== -1) {
+            const lineStart = currentContent.lastIndexOf('\n', idx) + 1;
+            const lineEnd = currentContent.indexOf('\n', idx);
+            occurrences.push({
+                position: idx,
+                context: currentContent.slice(lineStart, lineEnd === -1 ? currentContent.length : lineEnd).trim().slice(0, 100),
+            });
+            if (occurrences.length >= 5) break;
+        }
+
+        return {
+            ok: false,
+            error: result.error,
+            hint: result.hint || null,
+            target_preview: target_content.slice(0, 200),
+            found_similar: occurrences.length > 0 ? occurrences : null,
+            tip: occurrences.length === 0
+                ? 'No similar lines found. Use read_file to copy the exact block.'
+                : 'Similar lines found above — check for whitespace or formatting differences.',
+        };
+    });
+
+    // ── batch_patch: transactional multi-file edit with rollback ────────────
+    registerTool(server, 'mcp_scholomance_collab_fs_batch_patch', {
+        operations: z.array(z.object({
+            file_path: z.string().min(1).describe('Relative file path'),
+            patch: z.string().min(1).describe('Search/replace block (SEARCH\\n---\\nREPLACE) or unified diff'),
+        })).min(1).max(20).describe('Ordered list of file operations to apply atomically'),
+        relaxed_whitespace: z.boolean().optional().default(true),
+    }, async ({ operations, relaxed_whitespace }) => {
+        const healer = new IterativeHealer(null, { projectRoot: ROOT });
+        const snapshots = [];
+        const results = [];
+        let committed = false;
+
+        try {
+            // Phase 1: Snapshot all files
+            for (const op of operations) {
+                const absPath = path.resolve(ROOT, op.file_path);
+                if (!absPath.startsWith(ROOT)) throw new BytecodeError(
+                    ERROR_CATEGORIES.RANGE, ERROR_SEVERITY.CRIT, MOD,
+                    ERROR_CODES.OUT_OF_BOUNDS,
+                    { reason: 'Out of bounds write attempt in batch', requestedPath: absPath, rootPath: ROOT },
+                );
+                if (!fs.existsSync(absPath)) {
+                    results.push({ file_path: op.file_path, success: false, error: 'File not found' });
+                    throw new Error(`BATCH_ABORT: File not found: ${op.file_path}`);
+                }
+                snapshots.push({
+                    file_path: op.file_path,
+                    absPath,
+                    original: fs.readFileSync(absPath, 'utf8'),
+                });
+            }
+
+            // Phase 2: Apply all patches
+            const patchResults = [];
+            for (const op of operations) {
+                const result = healer._applyPatch(op.file_path, op.patch, -1, {
+                    relaxedWhitespace: relaxed_whitespace !== false,
+                    backup: true,
+                });
+                patchResults.push({ file_path: op.file_path, ...result });
+                if (!result.success) {
+                    throw new Error(`BATCH_ABORT: Patch failed for ${op.file_path}: ${result.error}`);
+                }
+            }
+
+            // All succeeded — commit
+            committed = true;
+            for (const r of patchResults) {
+                await service.logActivity({
+                    agent_id: null,
+                    action: 'batch_patch_applied',
+                    target_type: 'file',
+                    target_id: r.file_path,
+                    details: { method: r.method, bytesWritten: r.bytesWritten },
+                });
+            }
+
+            return {
+                ok: true,
+                committed: true,
+                file_count: operations.length,
+                results: patchResults.map(r => ({
+                    file_path: r.file_path,
+                    method: r.method,
+                    bytesWritten: r.bytesWritten,
+                })),
+            };
+        } catch (err) {
+            // Phase 3: Rollback on any failure
+            if (!committed) {
+                const rollbackResults = [];
+                for (const snap of snapshots) {
+                    try {
+                        fs.writeFileSync(snap.absPath, snap.original, 'utf8');
+                        rollbackResults.push({ file_path: snap.file_path, rolled_back: true });
+                    } catch (rbErr) {
+                        rollbackResults.push({ file_path: snap.file_path, rolled_back: false, error: rbErr.message });
+                    }
+                }
+                return {
+                    ok: false,
+                    committed: false,
+                    error: err.message.replace('BATCH_ABORT: ', ''),
+                    rollback: rollbackResults,
+                    results,
+                };
+            }
+            throw err; // Shouldn't reach here
+        }
+    });
+
+    // ── path_complete: autocomplete file paths ─────────────────────────────
+    registerTool(server, 'mcp_scholomance_collab_fs_path_complete', {
+        prefix: z.string().min(1).max(256).describe('Partial path to autocomplete (e.g. \'src/pages/Com\')'),
+        max_results: z.number().int().min(1).max(50).optional().default(15),
+    }, async ({ prefix, max_results }) => {
+        const results = [];
+        const prefixLower = prefix.toLowerCase();
+
+        function walk(currentPath, depth) {
+            if (depth > 10 || results.length >= max_results) return;
+            let entries;
+            try {
+                entries = fs.readdirSync(currentPath, { withFileTypes: true });
+            } catch {
+                return;
+            }
+            for (const entry of entries) {
+                if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
+                const fullPath = path.join(currentPath, entry.name);
+                const relPath = path.relative(ROOT, fullPath);
+
+                if (relPath.toLowerCase().startsWith(prefixLower) || relPath.toLowerCase().includes(prefixLower)) {
+                    results.push(relPath + (entry.isDirectory() ? '/' : ''));
+                }
+
+                if (entry.isDirectory() && relPath.toLowerCase().startsWith(prefixLower.split('/').slice(0, -1).join('/'))) {
+                    walk(fullPath, depth + 1);
+                }
+            }
+        }
+
+        // Try exact directory prefix first
+        const prefixDir = path.dirname(prefix);
+        const searchDir = prefixDir === '.' ? ROOT : path.resolve(ROOT, prefixDir);
+        if (searchDir.startsWith(ROOT) && fs.existsSync(searchDir)) {
+            walk(searchDir, 0);
+        } else {
+            walk(ROOT, 0);
+        }
+
+        // Sort: exact prefix matches first, then substring matches
+        results.sort((a, b) => {
+            const aExact = a.toLowerCase().startsWith(prefixLower) ? 0 : 1;
+            const bExact = b.toLowerCase().startsWith(prefixLower) ? 0 : 1;
+            if (aExact !== bExact) return aExact - bExact;
+            return a.length - b.length;
+        });
+
+        return {
+            prefix,
+            completions: results.slice(0, max_results),
+            total_matches: results.length,
+        };
+    });
+
+    // ── tui_inspect: live backend & module state inspection ────────────────
+    registerTool(server, 'mcp_scholomance_collab_tui_inspect', {}, async () => {
+        const widgets = [];
+
+        // 1. MCP Bridge health
+        widgets.push({
+            id: 'mcp_bridge',
+            type: 'health',
+            label: 'MCP Bridge',
+            status: 'ACTIVE',
+            uptime_ms: process.uptime() * 1000,
+            version: '1.4.0',
+            pid: process.pid,
+        });
+
+        // 2. Clerical RAID status
+        try {
+            const raid = getClericalRaidMcp();
+            const raidStats = raid.getStats ? raid.getStats() : {};
+            widgets.push({
+                id: 'clerical_raid',
+                type: 'immune_engine',
+                label: 'Clerical RAID',
+                status: raid ? 'LOADED' : 'NOT_LOADED',
+                pattern_count: raidStats.patternCount || raid?.patterns?.length || 'N/A',
+                queries_run: raidStats.queryCount || 'N/A',
+            });
+        } catch (e) {
+            widgets.push({ id: 'clerical_raid', type: 'immune_engine', status: 'ERROR', error: e.message });
+        }
+
+        // 3. Diagnostic summary
+        try {
+            const diagSummary = await diagnosticSummary();
+            widgets.push({
+                id: 'diagnostic_engine',
+                type: 'diagnostic',
+                label: 'Diagnostic Engine',
+                status: 'ACTIVE',
+                ...diagSummary,
+            });
+        } catch (e) {
+            widgets.push({ id: 'diagnostic_engine', type: 'diagnostic', status: 'UNAVAILABLE' });
+        }
+
+        // 4. File system snapshot (recent changes via git)
+        try {
+            const gitDiff = execSync('git diff --stat HEAD', { cwd: ROOT, timeout: 5000, encoding: 'utf8' }).trim();
+            widgets.push({
+                id: 'git_diff_summary',
+                type: 'vcs',
+                label: 'Uncommitted Changes',
+                files_changed: gitDiff ? gitDiff.split('\n').length : 0,
+                summary: gitDiff ? gitDiff.split('\n').slice(-1)[0] : 'Clean working tree',
+            });
+        } catch {
+            widgets.push({ id: 'git_diff_summary', type: 'vcs', status: 'UNAVAILABLE' });
+        }
+
+        // 5. Python module scan (Vaelrix Cortex brains)
+        try {
+            const brainsDir = path.join(ROOT, 'steamdeck_brain', 'vaelrix_forcefield', 'brains');
+            if (fs.existsSync(brainsDir)) {
+                const brainFiles = fs.readdirSync(brainsDir).filter(f => f.endsWith('.py') && f !== '__init__.py');
+                const brainStatuses = [];
+                for (const bf of brainFiles.slice(0, 20)) {
+                    const content = fs.readFileSync(path.join(brainsDir, bf), 'utf8');
+                    const hasStub = content.includes('run_stub_brain') || content.includes('StubBrain');
+                    const hasRunFn = /def run_\w+_brain/.test(content);
+                    brainStatuses.push({
+                        name: bf.replace('.py', ''),
+                        status: hasStub ? 'STUB' : hasRunFn ? 'IMPLEMENTED' : 'UNKNOWN',
+                        size_bytes: content.length,
+                    });
+                }
+                widgets.push({
+                    id: 'vaelrix_brains',
+                    type: 'module_registry',
+                    label: 'Vaelrix Cortex Brains',
+                    total: brainFiles.length,
+                    implemented: brainStatuses.filter(b => b.status === 'IMPLEMENTED').length,
+                    stubs: brainStatuses.filter(b => b.status === 'STUB').length,
+                    brains: brainStatuses,
+                });
+            }
+        } catch (e) {
+            widgets.push({ id: 'vaelrix_brains', type: 'module_registry', status: 'ERROR', error: e.message });
+        }
+
+        // 6. Node.js memory / process snapshot
+        const memUsage = process.memoryUsage();
+        widgets.push({
+            id: 'process_memory',
+            type: 'metrics',
+            label: 'Process Memory',
+            heap_used_mb: (memUsage.heapUsed / 1024 / 1024).toFixed(1),
+            heap_total_mb: (memUsage.heapTotal / 1024 / 1024).toFixed(1),
+            rss_mb: (memUsage.rss / 1024 / 1024).toFixed(1),
+            external_mb: (memUsage.external / 1024 / 1024).toFixed(1),
+        });
+
+        // 7. Active locks
+        try {
+            const locks = await service.listLocks();
+            widgets.push({
+                id: 'active_locks',
+                type: 'concurrency',
+                label: 'File Locks',
+                count: locks.length,
+                locks: locks.slice(0, 10).map(l => ({ file: l.file_path, holder: l.locked_by, since: l.locked_at })),
+            });
+        } catch {
+            widgets.push({ id: 'active_locks', type: 'concurrency', status: 'UNAVAILABLE' });
+        }
+
+        return {
+            snapshot_time: new Date().toISOString(),
+            widget_count: widgets.length,
+            widgets,
+        };
     });
 
     // ── Iterative Healer (autonomous diagnose → fix → verify → learn) ───────────
