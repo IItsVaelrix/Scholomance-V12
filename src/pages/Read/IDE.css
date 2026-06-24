@@ -3406,7 +3406,10 @@
 
 /* Symmetric line marker — small filled diamond, replaces the old ".)" suffix. */
 .gutter-tick {
+  display: block;
   flex-shrink: 0;
+  width: 8px;
+  height: 8px;
   fill: hsla(43, 48%, 48%, 0.5);
   transition: fill 0.12s ease;
 }
