@@ -21,6 +21,7 @@ from .amplifier_router import apply_routing
 from .brains import BRAIN_RUNNERS
 from .council_arbiter import arbitrate_amplifier_results
 from .determinism_auditor import audit_determinism
+from .diagnostic_memory_submitter import submit_to_diagnostic_memory
 from .forcefield import create_force_field
 from .personality_weighting import apply_personality_weights, compute_personality_weights
 from .persistence import load_force_field, save_force_field
@@ -93,6 +94,7 @@ class BrainBridge:
             - scdna_genes: list of compact SCDNA gene strings applied
             - scdna_contradictions: list of contradiction records
             - scdna_health_signals: list of SCDNA health signal strings
+            - diagnostic_memory_submission: auto-submission report (inserted/duplicates/failed)
         """
 
         if session_id is not None:
@@ -162,6 +164,14 @@ class BrainBridge:
         health_signals = route_amplifier_results_to_health(results)
         health_signals.extend(route_scdna_signals_to_health(all_tiered_signals))
 
+        # Automatic submission to diagnostic memory / immune system.
+        diagnostic_memory_submission = submit_to_diagnostic_memory(
+            health_signals=health_signals,
+            scdna_signals=scdna_signals,
+            tiered_signals=all_tiered_signals,
+            session_id=field.task.taskId,
+        )
+
         synthesis_prompt = self._build_synthesis_prompt(query, arbiter_output, health_signals)
         answer = self.llm_client(synthesis_prompt)
 
@@ -188,6 +198,7 @@ class BrainBridge:
                 for c in scdna_contradictions
             ],
             "scdna_health_signals": scdna_signals,
+            "diagnostic_memory_submission": diagnostic_memory_submission,
         }
 
     def _gate_tool_calls(

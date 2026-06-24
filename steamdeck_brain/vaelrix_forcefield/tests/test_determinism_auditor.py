@@ -1,5 +1,8 @@
 """Tests for the ForceField Determinism Auditor."""
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 import unittest
 
 from vaelrix_forcefield import create_force_field, run_amplifiers

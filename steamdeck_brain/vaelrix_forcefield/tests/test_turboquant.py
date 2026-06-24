@@ -1,5 +1,9 @@
 """Tests for TurboQuant chunk dispatch and brain lenses."""
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+
 import unittest
 
 from vaelrix_forcefield import apply_routing, create_force_field, get_registry

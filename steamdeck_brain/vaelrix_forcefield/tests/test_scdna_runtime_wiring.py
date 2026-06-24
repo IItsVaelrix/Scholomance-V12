@@ -1,5 +1,9 @@
 """Tests for SCDNA runtime integration with the Vaelrix ForceField."""
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
+
 import copy
 import json
 import tempfile

@@ -12,7 +12,15 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from substrate_engine import EmbeddingProvider, Substrate
+try:
+    from substrate_engine import EmbeddingProvider, Substrate
+except ImportError:
+    import sys as _sys
+    import os as _os
+    _steamdeck_brain_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), '../..')
+    if _steamdeck_brain_dir not in _sys.path:
+        _sys.path.insert(0, _steamdeck_brain_dir)
+    from substrate_engine import EmbeddingProvider, Substrate
 
 
 class TurboQuantClient:
