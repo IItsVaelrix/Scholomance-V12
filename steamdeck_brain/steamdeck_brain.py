@@ -51,6 +51,18 @@ from embed_providers import HybridEmbedProvider
 from cortex import Cortex
 from action_engine import ActionEngine
 from paradigm_router import ParadigmRouter
+from vaelrix_forcefield import (
+    create_force_field,
+    get_registry,
+    select_amplifiers,
+    confirm_file,
+    confirm_symbol,
+    should_allow_search,
+    record_search,
+    block_search,
+    arbitrate_amplifier_results,
+)
+from vaelrix_forcefield.amplifier_executor import run_amplifiers
 
 # ─── Config ──────────────────────────────────────────────────────────────────
 
@@ -251,6 +263,10 @@ class BrainBridge:
         except Exception as e:
             print(f"   ⚠️  ParadigmRouter: {e}")
 
+        # Wire Vaelrix Cortex ForceField (law layer for governed cognition)
+        self._current_force_field = None
+        self._amplifier_registry = get_registry()
+
         print(f"✅ Bridge ready | {model} | personality={personality or 'none'} | multi-hop={multi_hop}")
 
     def _load_personality(self, name: str):
@@ -271,9 +287,30 @@ class BrainBridge:
 
     def ask(self, query: str, show_context: bool = False) -> str:
         """
-        Full pipeline: ParadigmRouter → Cortex.retrieve() → inject → Ollama.generate() → Cortex.learn().
+        Full pipeline: ForceField → ParadigmRouter → Cortex.retrieve() → inject → Ollama.generate() → Cortex.learn().
         """
-        # Step 0: Classify query against retrieval paradigms
+        # Step 0: Initialize Vaelrix Cortex ForceField for this request
+        field = create_force_field(
+            query,
+            classification="diagnostic",
+            priority="safety",
+        )
+        field = confirm_file(field, "substrate", str(Path(self.cortex.substrate.db_path).resolve()))
+        routing = select_amplifiers(field, self._amplifier_registry)
+        field.routing = routing
+
+        # Step 0b: Run active Amplifier brains and arbitrate their findings
+        try:
+            amplifier_results = run_amplifiers(field, query)
+            arbiter_output = arbitrate_amplifier_results(field, amplifier_results)
+            field.context.confirmedFacts.extend(arbiter_output.acceptedFindings)
+        except Exception as e:
+            arbiter_output = None
+            print(f"   ⚠️  Amplifier execution failed: {e}")
+
+        self._current_force_field = field
+
+        # Step 0a: Classify query against retrieval paradigms
         paradigm_result = None
         paradigm_suffix = ""
         if self.paradigm_router:
@@ -303,10 +340,35 @@ class BrainBridge:
         # Step 2: Build prompt
         prompt = f"{context}\n\n---\n\n{query}" if context.strip() else query
 
-        # Step 3: Generate — attach paradigm reasoning chain to system prompt
+        # Step 3: Generate — attach paradigm reasoning chain + ForceField context
         system = self.system_prompt
         if paradigm_suffix:
             system = f"{system}\n\n---\n\n{paradigm_suffix}"
+
+        if self._current_force_field:
+            ff = self._current_force_field
+            active = ", ".join(ff.routing.activeBrains) or "none"
+            suppressed = ", ".join(ff.routing.suppressedBrains.keys()) or "none"
+            ff_context = (
+                f"\n\n[FORCEFIELD]\n"
+                f"Active amplifiers: {active}\n"
+                f"Suppressed amplifiers: {suppressed}\n"
+                f"Search budget remaining: {max(0, ff.search.maxSearchesPerPhase - ff.search.searchCount)}\n"
+                f"Repeated searches will be blocked. Prefer confirmed files/symbols.\n"
+            )
+            if arbiter_output:
+                if arbiter_output.acceptedFindings:
+                    ff_context += "Council findings:\n"
+                    for finding in arbiter_output.acceptedFindings[:5]:
+                        ff_context += f"  • {finding}\n"
+                if arbiter_output.nextAction:
+                    ff_context += f"Recommended next action: {arbiter_output.nextAction}\n"
+                if arbiter_output.contradictions:
+                    ff_context += "Contradictions to resolve:\n"
+                    for c in arbiter_output.contradictions[:3]:
+                        ff_context += f"  ⚠ {c}\n"
+            ff_context += "[/FORCEFIELD]"
+            system = f"{system}{ff_context}"
 
         response = self.model.generate(prompt, system=system,
                                        temperature=self.temperature, max_tokens=self.max_tokens)

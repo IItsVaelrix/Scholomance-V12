@@ -6,6 +6,7 @@ from textual.widgets.option_list import Option
 from textual.containers import Vertical
 from textual.widgets import Static, Input, TextArea
 from textual import events, on
+from rich.text import Text
 import threading
 import os
 import asyncio
@@ -60,6 +61,58 @@ def _guess_language(filename: str) -> str:
     """Best-effort language guess from a file extension for Syntax highlighting."""
     ext = os.path.splitext(filename)[1].lower()
     return EXT_LANG.get(ext, "text")
+
+
+def _copy_to_clipboard(text: str, log_fn) -> None:
+    """Copy *text* to the system clipboard, falling back to a file if no tool exists."""
+    import shutil
+    import subprocess
+
+    copied = False
+    # Try wl-copy (Wayland / KDE / Steam Deck)
+    if shutil.which("wl-copy"):
+        try:
+            subprocess.run(["wl-copy"], input=text, text=True, check=True, timeout=5)
+            copied = True
+        except Exception:
+            pass
+    # Try xclip (X11)
+    if not copied and shutil.which("xclip"):
+        try:
+            subprocess.run(["xclip", "-selection", "clipboard"], input=text, text=True, check=True, timeout=5)
+            copied = True
+        except Exception:
+            pass
+    # Try xsel (X11)
+    if not copied and shutil.which("xsel"):
+        try:
+            subprocess.run(["xsel", "--clipboard", "--input"], input=text, text=True, check=True, timeout=5)
+            copied = True
+        except Exception:
+            pass
+    # macOS pbcopy
+    if not copied and shutil.which("pbcopy"):
+        try:
+            subprocess.run(["pbcopy"], input=text, text=True, check=True, timeout=5)
+            copied = True
+        except Exception:
+            pass
+
+    if copied:
+        log_fn(f"[{SUCCESS}]✔ Copied {len(text)} characters to clipboard[/]")
+        return
+
+    # Fallback: write to a temp file and tell the user.
+    import tempfile
+    try:
+        fd, path = tempfile.mkstemp(prefix="divtube-copy-", suffix=".txt")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        log_fn(f"[{WARNING}]⚠ No clipboard tool found (wl-copy/xclip/xsel/pbcopy).[/]")
+        log_fn(f"[{MUTED}]  Saved copy to:[/] {path}")
+    except Exception as e:
+        log_fn(f"[{ERROR}]✗ Could not copy or save:[/] {e}")
+
 
 SCHOLOMANCE_THEME = Theme(
     name="scholomance",
@@ -514,6 +567,8 @@ class DivTubeAgentApp(App):
         self.prompt = PromptService()
         self.cmd_history = []
         self.cmd_index = 0
+        # ── plain-text mirror of each chat log (for /copy) ──────────
+        self._chat_text_mirror: dict[str, list[str]] = {}
         # ── agent run controller (Esc to stop) ───────────────────────
         self._agent_procs = []          # tracked killable subprocesses
         self._agent_gen = 0             # cancellation generation token
@@ -593,7 +648,18 @@ class DivTubeAgentApp(App):
 
     def setup_commands(self):
         def handle_clear(ui, args):
-            ui._get_active_chat().clear()
+            chat = ui._get_active_chat()
+            chat.clear()
+            ui._chat_text_mirror[chat.id] = []
+
+        def handle_copy(ui, args):
+            chat = ui._get_active_chat()
+            lines = ui._chat_text_mirror.get(chat.id, [])
+            if not lines:
+                ui.log_msg(f"[{WARNING}]Nothing to copy — chat is empty.[/]")
+                return
+            text = "\n".join(lines)
+            _copy_to_clipboard(text, ui.log_msg)
 
         def handle_code(ui, args):
             if not args:
@@ -608,6 +674,17 @@ class DivTubeAgentApp(App):
                 ui.log_msg(f"[#7CFF8B]✔ Code loaded:[/] {path}")
             except Exception as e:
                 ui.log_msg(f"[#FF5C7A]✗ Failed to read {path}:[/] {e}")
+
+        r = self.registry.register
+        r("/help",    lambda ui, args: ui.show_help(),                         "Show commands",          "/help")
+        r("/exit",    lambda ui, args: ui.exit(),                              "Exit app",               "/exit")
+        r("/clear",   handle_clear,                                            "Clear chat",             "/clear")
+        r("/copy",    handle_copy,                                             "Copy active chat log",   "/copy")
+        r("/code",    handle_code,                                             "View code in editor",    "/code <path>")
+        self.registry.register("/analyze", lambda ui, args: ui.agent.run_command("1", args[0] if args else "", ui.log_msg, ui), "Analyze URL", "/analyze <url>")
+        self.registry.register("/download", lambda ui, args: ui.agent.run_command("2", args[0] if args else "", ui.log_msg, ui), "Download URL", "/download <url>")
+        def handle_memory(ui, args):
+            sub = args[0].lower() if args else ""
 
         r = self.registry.register
         r("/help",    lambda ui, args: ui.show_help(),                         "Show commands",          "/help")
@@ -910,16 +987,20 @@ class DivTubeAgentApp(App):
 
         def handle_refactor_all(ui, args):
             if len(args) < 3:
-                ui.log_msg(f"[{ERROR}]Usage:[/] /refactor-all <glob> <search> <replace> [--dry-run]")
+                ui.log_msg(f"[{ERROR}]Usage:[/] /refactor-all <glob> <search> <replace> [--dry-run] [--regex]")
                 return
             pattern = args[0]
             search = args[1]
             replace = args[2]
             dry_run = "--dry-run" in args[3:]
-            ui.log_msg(f"[{MUTED}]Refactoring files matching [bold]{pattern}[/]...[/]")
+            regex = "--regex" in args[3:]
+            ui.log_msg(f"[{MUTED}]Refactoring files matching [bold]{pattern}[/]{' (regex)' if regex else ''}...[/]")
             try:
                 from tui.utils.agent_tools import refactor_all
-                result = refactor_all(pattern, search, replace, dry_run=dry_run)
+                result = refactor_all(pattern, search, replace, dry_run=dry_run, regex=regex)
+                if result.details and result.details[0].get("status") == "invalid_regex":
+                    ui.log_msg(f"[{ERROR}]Invalid regex:[/] {result.details[0].get('error')}")
+                    return
                 color = WARNING if result.changed == 0 else SUCCESS
                 ui.log_msg(
                     f"[{color}]Searched {result.searched} file(s): {result.changed} changed, "
@@ -945,7 +1026,32 @@ class DivTubeAgentApp(App):
             "/refactor-all",
             handle_refactor_all,
             "Batch search/replace across files",
-            '/refactor-all <glob> "search" "replace" [--dry-run]',
+            '/refactor-all <glob> "search" "replace" [--dry-run] [--regex]',
+        )
+
+        def handle_write_file(ui, args):
+            if len(args) < 2:
+                ui.log_msg(f"[{ERROR}]Usage:[/] /write-file <path> '<content>'")
+                return
+            path = args[0]
+            content = " ".join(args[1:])
+            try:
+                from tui.utils.agent_tools import write_file
+                result = write_file(path, content)
+                if result.success:
+                    color = SUCCESS
+                    tag = "Created" if result.created else "Overwrote"
+                    ui.log_msg(f"[{color}]✓ {tag}[/] {path} [{MUTED}]({result.bytes_written} bytes)[/]")
+                else:
+                    ui.log_msg(f"[{ERROR}]✗ {result.message}[/]")
+            except Exception as e:
+                ui.log_msg(f"[{ERROR}]Write failed:[/] {e}")
+
+        self.registry.register(
+            "/write-file",
+            handle_write_file,
+            "Create or overwrite a file",
+            "/write-file <path> '<content>'",
         )
 
         def handle_thumbnail(ui, args):
@@ -1580,11 +1686,11 @@ class DivTubeAgentApp(App):
             if cmd:
                 self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
         self.log_msg(f"[{purple}]Refactor[/]")
-        for name in ("/refactor-all",):
+        for name in ("/refactor-all", "/write-file"):
             cmd = self.registry.commands.get(name)
             if cmd:
                 self.log_msg(f"  [{gold}]{cmd['usage']:<44}[/] [{muted}]{cmd['desc']}[/]")
-        self.log_msg(f"[{purple}]Session[/] /clear · /exit")
+        self.log_msg(f"[{purple}]Session[/] /clear · /copy · /exit")
 
     def compose(self):
         return get_layout()
@@ -1669,6 +1775,20 @@ class DivTubeAgentApp(App):
         def _write():
             chat = self._get_active_chat()
             chat.write(msg)
+            # Keep a plain-text mirror for /copy.
+            try:
+                if isinstance(msg, str):
+                    plain = Text.from_markup(msg).plain
+                elif hasattr(msg, "markup"):
+                    # Rich Markdown objects expose their source markup.
+                    plain = Text.from_markup(msg.markup).plain
+                else:
+                    # Other rich renderables — best-effort stringification.
+                    plain = str(msg)
+            except Exception:
+                plain = str(msg)
+            if chat.id:
+                self._chat_text_mirror.setdefault(chat.id, []).append(plain)
         if self._thread_id == threading.get_ident():
             _write()
         else:

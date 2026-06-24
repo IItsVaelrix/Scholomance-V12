@@ -8,6 +8,9 @@ import json
 from vaelrix_tools import dispatch_tool
 
 
+_SEARCH_TOOLS = {"search_code", "codebase_search", "archive_search", "forensic_search", "find_file", "list_files"}
+
+
 class ActionEngine:
     """
     Action Layer for SteamDeck Brain.
@@ -56,6 +59,49 @@ class ActionEngine:
             self.tool_log.append({"tool": tool_name, "args": args})
 
             print(f"\n\033[1;96m🔧 TOOL: {tool_name}\033[0m \033[2m{json.dumps(args)}\033[0m")
+
+            # ── ForceField Search Governor ─────────────────────────────────────
+            if tool_name in _SEARCH_TOOLS and getattr(self.brain, "_current_force_field", None):
+                field = self.brain._current_force_field
+                query = args.get("pattern") or args.get("query") or args.get("directory") or str(args)
+                reason = args.get("reason") or f"Model-initiated {tool_name}"
+                decision = None
+                try:
+                    from vaelrix_forcefield import should_allow_search, record_search, block_search
+                    decision = should_allow_search(field, query, reason)
+                except Exception:
+                    decision = None
+
+                if decision and not decision.allowed:
+                    self.brain._current_force_field = block_search(
+                        self.brain._current_force_field,
+                        query,
+                        decision.reason,
+                        decision.suggestedAlternative,
+                    )
+                    result = (
+                        f"[ForceField blocked {tool_name}]\n"
+                        f"Reason: {decision.reason}\n"
+                        f"Alternative: {decision.suggestedAlternative or 'Use a more specific query or read a known file'}"
+                    )
+                    result_trunc = result[:500] + ('...' if len(result) > 500 else '')
+                    self.tool_log[-1]["result"] = result_trunc
+                    print(f"\033[2m{result_trunc}\033[0m")
+                    response = response[:match.start()] + response[match.end():]
+                    response = f"{response}\n\n--- TOOL RESULT [{tool_name}] ---\n{result}"
+
+                    followup = self.brain.model.generate(
+                        response,
+                        system=self.brain.system_prompt
+                    )
+                    response = f"{response}\n\n{followup}"
+                    continue
+
+                self.brain._current_force_field = record_search(
+                    self.brain._current_force_field,
+                    query,
+                    reason,
+                )
 
             result = dispatch_tool(tool_name, args, cortex=self._get_cortex())
 

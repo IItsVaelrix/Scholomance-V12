@@ -8,6 +8,7 @@ from tui.utils.agent_tools import (
     RefactorResult,
     SymbolMatch,
     TestResult,
+    WriteFileResult,
     apply_patch,
     find_symbol,
     get_recent_errors,
@@ -15,6 +16,7 @@ from tui.utils.agent_tools import (
     read_import_graph,
     refactor_all,
     run_targeted_tests,
+    write_file,
 )
 
 
@@ -163,6 +165,51 @@ class TestRefactorAll(unittest.TestCase):
         result = refactor_all("*.py", "old_func()", "new_func()", root=self.root)
         ambig = next(d for d in result.details if "ambig.py" in d["file"])
         self.assertEqual(ambig["status"], "ambiguous")
+
+    def test_regex_word_boundary(self):
+        (self.root / "words.py").write_text("foo\nfoobar\n")
+        result = refactor_all("*.py", r"\bfoo\b", "baz", root=self.root, regex=True)
+        self.assertEqual(result.changed, 1)
+        self.assertEqual((self.root / "words.py").read_text(), "baz\nfoobar\n")
+
+    def test_regex_capture_group(self):
+        (self.root / "cap.py").write_text("get_user_name()\n")
+        result = refactor_all("*.py", r"get_(\w+)_name\(\)", r"fetch_\1_id()", root=self.root, regex=True)
+        self.assertEqual(result.changed, 1)
+        self.assertEqual((self.root / "cap.py").read_text(), "fetch_user_id()\n")
+
+    def test_invalid_regex_returns_error(self):
+        result = refactor_all("*.py", r"[invalid", "x", root=self.root, regex=True)
+        self.assertEqual(result.changed, 0)
+        self.assertEqual(result.details[0]["status"], "invalid_regex")
+
+
+class TestWriteFile(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmpdir.name)
+
+    def tearDown(self):
+        self.tmpdir.cleanup()
+
+    def test_creates_new_file(self):
+        result = write_file(self.root / "new.py", "print('hello')\n", require_project_root=False)
+        self.assertIsInstance(result, WriteFileResult)
+        self.assertTrue(result.success)
+        self.assertTrue(result.created)
+        self.assertEqual((self.root / "new.py").read_text(), "print('hello')\n")
+
+    def test_overwrites_existing_file(self):
+        path = self.root / "existing.py"
+        path.write_text("old\n")
+        result = write_file(path, "new\n", require_project_root=False)
+        self.assertTrue(result.success)
+        self.assertFalse(result.created)
+        self.assertEqual(path.read_text(), "new\n")
+
+    def test_refuses_to_write_outside_project_root(self):
+        result = write_file("/tmp/divtube_test_should_not_write.txt", "x", require_project_root=True)
+        self.assertFalse(result.success)
 
 
 class TestRunTargetedTests(unittest.TestCase):

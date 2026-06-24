@@ -340,6 +340,68 @@ def apply_patch(
     )
 
 
+@dataclass
+class WriteFileResult:
+    """Result of a write_file() call."""
+
+    success: bool
+    message: str
+    bytes_written: int = 0
+    created: bool = False
+
+
+def write_file(
+    file_path: str | Path,
+    content: str,
+    *,
+    encoding: str = "utf-8",
+    require_project_root: bool = True,
+) -> WriteFileResult:
+    """
+    Create or overwrite a file in a single step.
+
+    Args:
+        file_path: Target path. Relative paths resolve from the project root.
+        content: Text content to write.
+        encoding: Text encoding.
+        require_project_root: If True, refuses to write outside the project root.
+
+    Returns:
+        WriteFileResult with success, message, bytes written, and whether the
+        file was newly created.
+    """
+    root = _resolve_root()
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = root / path
+    path = path.resolve()
+
+    if require_project_root:
+        try:
+            path.relative_to(root)
+        except ValueError:
+            return WriteFileResult(
+                False,
+                f"Refusing to write outside project root: {path}",
+            )
+
+    created = not path.exists()
+
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        bytes_written = path.write_text(content, encoding=encoding)
+    except OSError as e:
+        return WriteFileResult(False, f"Failed to write {path}: {e}")
+
+    action = "Created" if created else "Overwrote"
+    return WriteFileResult(
+        True,
+        f"{action} {path}",
+        bytes_written=bytes_written,
+        created=created,
+    )
+
+
 def run_targeted_tests(
     target: str | None = None,
     *,
@@ -407,19 +469,25 @@ def refactor_all(
     *,
     root: str | Path | None = None,
     dry_run: bool = False,
+    regex: bool = False,
 ) -> RefactorResult:
     """
     Batch search/replace across all files matching a glob pattern.
 
-    Only replaces files where ``search_text`` appears exactly once, to avoid
-    ambiguous edits. Creates ``.bak`` backups unless *dry_run* is True.
+    In literal mode (default) only replaces files where ``search_text`` appears
+    exactly once, to avoid ambiguous edits. In regex mode (--regex) the search
+    string is treated as a Python regular expression and ``replacement_text``
+    may contain back-references (\\1, \\2, etc.).
+
+    Creates ``.bak`` backups unless *dry_run* is True.
 
     Args:
         glob_pattern: e.g. "tui/**/*.py" or "*.md"
-        search_text: Exact text to search for.
-        replacement_text: Text to replace it with.
+        search_text: Exact text or regex pattern to search for.
+        replacement_text: Literal replacement text or regex substitution template.
         root: Project root; auto-detected if omitted.
         dry_run: If True, report what would change without writing.
+        regex: If True, treat search_text as a regex pattern.
     """
     root_path = _resolve_root(root)
     matches = sorted(root_path.glob(glob_pattern))
@@ -427,6 +495,18 @@ def refactor_all(
     details: list[dict] = []
     changed = 0
     skipped = 0
+
+    compiled_pattern: re.Pattern | None = None
+    if regex:
+        try:
+            compiled_pattern = re.compile(search_text)
+        except re.error as e:
+            return RefactorResult(
+                searched=0,
+                changed=0,
+                skipped=0,
+                details=[{"file": "", "status": "invalid_regex", "error": str(e)}],
+            )
 
     for path in matches:
         if not path.is_file():
@@ -443,27 +523,49 @@ def refactor_all(
             details.append({"file": str(path), "status": "read_error", "error": str(e)})
             continue
 
-        if search_text not in content:
-            details.append({"file": str(path), "status": "no_match"})
-            continue
+        if regex:
+            matches_list = list(compiled_pattern.finditer(content))
+            count = len(matches_list)
+            if count == 0:
+                details.append({"file": str(path), "status": "no_match"})
+                continue
+            if count > 1:
+                skipped += 1
+                details.append({"file": str(path), "status": "ambiguous", "occurrences": count})
+                continue
 
-        count = content.count(search_text)
-        if count > 1:
-            skipped += 1
-            details.append({"file": str(path), "status": "ambiguous", "occurrences": count})
-            continue
+            if dry_run:
+                details.append({"file": str(path), "status": "would_change"})
+                changed += 1
+                continue
 
-        if dry_run:
-            details.append({"file": str(path), "status": "would_change"})
+            backup_path = path.with_suffix(path.suffix + ".bak")
+            shutil.copy2(path, backup_path)
+            new_content = compiled_pattern.sub(replacement_text, content, count=1)
+            path.write_text(new_content, encoding="utf-8")
             changed += 1
-            continue
+            details.append({"file": str(path), "status": "changed", "backup": str(backup_path)})
+        else:
+            if search_text not in content:
+                details.append({"file": str(path), "status": "no_match"})
+                continue
 
-        backup_path = path.with_suffix(path.suffix + ".bak")
-        shutil.copy2(path, backup_path)
-        new_content = content.replace(search_text, replacement_text, 1)
-        path.write_text(new_content, encoding="utf-8")
-        changed += 1
-        details.append({"file": str(path), "status": "changed", "backup": str(backup_path)})
+            count = content.count(search_text)
+            if count > 1:
+                skipped += 1
+                details.append({"file": str(path), "status": "ambiguous", "occurrences": count})
+                continue
+
+            if dry_run:
+                details.append({"file": str(path), "status": "would_change"})
+                changed += 1
+                continue
+
+            backup_path = path.with_suffix(path.suffix + ".bak")
+            new_content = content.replace(search_text, replacement_text, 1)
+            path.write_text(new_content, encoding="utf-8")
+            changed += 1
+            details.append({"file": str(path), "status": "changed", "backup": str(backup_path)})
 
     return RefactorResult(
         searched=len(matches),
