@@ -1,5 +1,8 @@
 """Tests for the Amplifier Executor and lightweight brain implementations."""
 
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../..'))
 import unittest
 
 from vaelrix_forcefield import (
