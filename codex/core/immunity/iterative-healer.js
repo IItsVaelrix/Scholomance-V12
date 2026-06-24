@@ -200,19 +200,26 @@ export class IterativeHealer {
    *   2. Unified diff (basic parsing)
    *   3. Raw content (replaces entire file)
    */
-  _applyPatch(relativePath, patchContent, iteration) {
+  _applyPatch(relativePath, patchContent, iteration, options = {}) {
+    const { relaxedWhitespace = false, backup = true } = options;
     const absPath = path.resolve(this.projectRoot, relativePath);
     if (!fs.existsSync(absPath)) {
       return { success: false, error: `File not found: ${relativePath}` };
     }
 
-    // Backup original on first iteration
-    if (iteration === 1) {
+    // Backup original on first iteration (or when backup is explicitly requested)
+    if (backup && (iteration === 1 || iteration === -1)) {
       const bakPath = absPath + '.healer.bak';
       if (!fs.existsSync(bakPath)) {
         fs.copyFileSync(absPath, bakPath);
       }
     }
+
+    /**
+     * Normalize whitespace for fuzzy matching: collapse multiple spaces/tabs to
+     * single spaces, trim trailing whitespace from each line, and trim the block.
+     */
+    const _normWs = (s) => s.split('\n').map(l => l.replace(/[\t ]+$/, '').replace(/^[\t ]+/, '')).join('\n').replace(/[\t ]+/g, ' ').trim();
 
     try {
       // Format 1: SEARCH / REPLACE block
@@ -222,15 +229,76 @@ export class IterativeHealer {
         const replaceBlock = patchContent.slice(sepIndex + 5);
 
         const currentContent = fs.readFileSync(absPath, 'utf8');
-        if (!currentContent.includes(searchBlock)) {
+        if (currentContent.includes(searchBlock)) {
+          // Exact match — fast path
+          const newContent = currentContent.replace(searchBlock, replaceBlock);
+          fs.writeFileSync(absPath, newContent, 'utf8');
+          return { success: true, method: 'search_replace_exact', bytesWritten: newContent.length };
+        }
+
+        // ── Relaxed whitespace fallback ──────────────────────────────────
+        if (relaxedWhitespace) {
+          const normSearch = _normWs(searchBlock);
+          const normContent = _normWs(currentContent);
+
+          if (normContent.includes(normSearch)) {
+            // Find the normalized match region in the original content by
+            // walking character-by-character tracking index mappings.
+            const normIdx = normContent.indexOf(normSearch);
+            // Walk original to find where normalized index maps: count chars
+            // that produce normContent up to normIdx.
+            let origStart = 0;
+            let nIdx = 0;
+            for (let i = 0; i < currentContent.length && nIdx < normIdx; i++) {
+              const ch = currentContent[i];
+              // Skip collapsed whitespace
+              if ((ch === ' ' || ch === '\t') && nIdx > 0 && normContent[nIdx - 1] === ' ') {
+                continue;
+              }
+              if (ch === '\n') {
+                // Normalized newline handling: skip trailing whitespace before \n
+                const pre = currentContent.slice(Math.max(0, i - 20), i);
+                const wsMatch = pre.match(/[\t ]+$/);
+                if (wsMatch) { i -= wsMatch[0].length; continue; }
+              }
+              nIdx++;
+              if (nIdx >= normIdx) { origStart = i + 1; break; }
+            }
+            // Walk to find end of normalized match
+            let origEnd = origStart;
+            let remaining = normSearch.length;
+            for (let i = origStart; i < currentContent.length && remaining > 0; i++) {
+              const ch = currentContent[i];
+              if ((ch === ' ' || ch === '\t') && i > origStart && currentContent[i - 1] === ' ') continue;
+              remaining--;
+              if (remaining <= 0) { origEnd = i + 1; break; }
+            }
+
+            const originalBlock = currentContent.slice(origStart, origEnd);
+            const newContent = currentContent.replace(originalBlock, replaceBlock);
+            fs.writeFileSync(absPath, newContent, 'utf8');
+            return {
+              success: true,
+              method: 'search_replace_relaxed',
+              bytesWritten: newContent.length,
+              note: 'Matched via relaxed whitespace normalization',
+            };
+          }
+
+          // Still not found — give a helpful error with whitespace diff
+          const searchPreview = searchBlock.slice(0, 120);
+          const normPreview = normSearch.slice(0, 120);
           return {
             success: false,
-            error: `Search block not found in ${relativePath}. Block start: ${searchBlock.slice(0, 80)}`,
+            error: `Search block not found in ${relativePath} (exact OR relaxed). Block start: ${searchPreview}`,
+            hint: `Normalized form: ${normPreview}. Try reading the file to copy the exact block.`,
           };
         }
-        const newContent = currentContent.replace(searchBlock, replaceBlock);
-        fs.writeFileSync(absPath, newContent, 'utf8');
-        return { success: true, method: 'search_replace', bytesWritten: newContent.length };
+
+        return {
+          success: false,
+          error: `Search block not found in ${relativePath}. Block start: ${searchBlock.slice(0, 80)}. Tip: set relaxed_whitespace=true`,
+        };
       }
 
       // Format 2: Unified diff (---/+++ lines with @@ hunks)
