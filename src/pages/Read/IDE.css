@@ -3410,12 +3410,13 @@
   flex-shrink: 0;
   width: 8px;
   height: 8px;
-  fill: hsla(43, 48%, 48%, 0.5);
-  transition: fill 0.12s ease;
+  background: hsla(43, 48%, 48%, 0.5);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  transition: background 0.12s ease;
 }
 
 .gutter-row--current .gutter-tick {
-  fill: var(--read-accent);
+  background: var(--read-accent);
 }
 
 /* Syllable bars — one small bar per syllable, indented after the line number. */

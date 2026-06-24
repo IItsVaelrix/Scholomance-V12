@@ -1,4 +1,4 @@
-import { forwardRef, useRef, useImperativeHandle } from 'react';
+import { forwardRef, memo, useRef, useImperativeHandle } from 'react';
 import { Z_BASE } from '../../data/stacking_tiers';
 import './IDE.css';
 
@@ -8,21 +8,11 @@ const MAX_BARS = 8;
 // Symmetric line marker - a small filled diamond that replaces the old asymmetric
 // ".)" suffix and divides the line number from the syllable bars. Fill/opacity
 // come from CSS (.gutter-tick), brightening on the current line.
-function GutterTick() {
-  return (
-    <svg
-      className="gutter-tick"
-      viewBox="0 0 8 8"
-      width="8"
-      height="8"
-      aria-hidden="true"
-      fill="currentColor"
-      style={{ width: 8, height: 8, display: 'block', flexShrink: 0 }}
-    >
-      <path d="M4 0.75 L7.25 4 L4 7.25 L0.75 4 Z" />
-    </svg>
-  );
-}
+// Memoized so it never re-renders (and therefore never re-layouts) when rows
+// shift or line heights change during typing.
+const GutterTick = memo(function GutterTick() {
+  return <span className="gutter-tick" aria-hidden="true" />;
+});
 
 const Gutter = forwardRef(function Gutter({
   overlayLines = [],
@@ -103,9 +93,12 @@ const Gutter = forwardRef(function Gutter({
       >
         {rows.map((row, i) => {
           const isCurrent = row.lineNumber != null && row.lineNumber === currentLine;
+          // Stable key prevents React from remounting rows (and their ticks) when
+          // a new line is inserted above and indices shift.
+          const key = row.lineNumber != null ? `line-${row.lineNumber}` : `blank-${i}`;
           return (
             <div
-              key={i}
+              key={key}
               className={`gutter-row${isCurrent ? ' gutter-row--current' : ''}`}
               style={rowStyle}
             >
