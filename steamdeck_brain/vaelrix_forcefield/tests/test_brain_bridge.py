@@ -90,9 +90,12 @@ class TestBrainBridgeAsk(unittest.TestCase):
             len(result["health_signals"]) > 0,
             "Brain-emitted PB-ERR-v1 bytecodes should be routed to BytecodeHealth",
         )
+        self.assertTrue(
+            any(s.startswith("PB-RED-v1") for s in result["health_signals"]),
+            "ERROR_BRAIN's CRIT bytecode should become a PB-RED-v1 distress signal",
+        )
         for signal in result["health_signals"]:
             self.assertTrue(verify_health(signal), f"Health signal should verify: {signal}")
-            self.assertTrue(signal.startswith("PB-RED-v1"))
 
     def test_code_brain_is_evidence_based(self):
         bridge = BrainBridge()

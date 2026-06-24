@@ -1325,22 +1325,23 @@ This is the upgrade from agent to organism.
 | TurboQuant chunk dispatch + brain lenses | `steamdeck_brain/vaelrix_forcefield/turboquant/` | ✅ Implemented |
 | Full Tool Governor (read/edit/test/run) | `steamdeck_brain/vaelrix_forcefield/tool_governor.py` | ✅ Implemented |
 | Persistent ForceField serialization | `steamdeck_brain/vaelrix_forcefield/persistence.py` | ✅ Implemented |
+| Determinism auditor integration | `steamdeck_brain/vaelrix_forcefield/determinism_auditor.py` | ✅ Implemented |
+| Personality-aware brain weighting | `steamdeck_brain/vaelrix_forcefield/personality_weighting.py` | ✅ Implemented |
 | Runtime wiring | `steamdeck_brain/steamdeck_brain.py`, `steamdeck_brain/action_engine.py` | ✅ Implemented |
-| Tests | `steamdeck_brain/vaelrix_forcefield/tests/` | ✅ 53 tests passing |
+| Tests | `steamdeck_brain/vaelrix_forcefield/tests/` | ✅ 59 tests passing |
 
 **Not yet implemented (post-MVP):**
 
-- Determinism auditor integration
-- Personality-aware brain weighting
 - Automatic submission of BytecodeHealth signals to diagnostic memory / immune system
 
 **Runtime behavior:**
 
 - `BrainBridge.ask()` initializes a fresh ForceField per user request.
 - The Amplifier Router selects relevant brains based on activation signals.
+- Personality-aware brain weighting computes per-brain influence weights from the task classification, priority, base brain weight, and user overrides.
 - TurboQuant dispatches compressed knowledge chunks to each active brain through its domain-specific lens (CODE_BRAIN, LORE_BRAIN, RISK_BRAIN, etc.).
 - Active brains execute in parallel via the Amplifier Executor.
-- The Council Arbiter merges, deduplicates, and flags conflicts across brain outputs.
+- The Council Arbiter merges, deduplicates, ranks, and flags conflicts across brain outputs, scaling each brain's resonance score by its personality weight.
 - Any PB-ERR-v1 bytecodes emitted by brains are routed through the PixelBrain Router into PB-OK-v1 / PB-RED-v1 BytecodeHealth signals.
 - Brain-requested tool calls are gated by the Tool Governor, which checks allowedTools, per-phase budget, reason, and duplicate calls.
 - Accepted findings, recommended next actions, gated tool calls, and health signals are injected into the synthesis prompt.
@@ -1350,6 +1351,8 @@ This is the upgrade from agent to organism.
 - `CODE_BRAIN` routes every keyword search through the Search Governor, performs real ripgrep calls for allowed searches, reads confirmed targets when blocked, and emits `read_file` tool calls for top evidence.
 - `BrainBridge.ask()` can resume a persisted session via `session_id` and save the final ForceField with `persist=True`.
 - ForceField sessions are serialized to SQLite as JSON blobs with migration-tracked schema.
+- The Determinism Auditor runs after the Amplifier Executor and flags missing seeds, unstable ordering, banned non-deterministic tools, and requested tool calls that break reproducibility.
+- `ActionEngine.parse_and_run()` blocks `run_command`, `execute`, `shell`, and `exec` when `deterministicMode` is enabled.
 - Blocked searches and blocked tool calls return the governor's reasoning instead of executing.
 - Allowed searches and tool calls are recorded in the ForceField history.
 
@@ -1365,13 +1368,15 @@ PYTHONPATH=/home/deck/Downloads/Scholomance-V12-main/steamdeck_brain \
     vaelrix_forcefield.tests.test_brain_bridge \
     vaelrix_forcefield.tests.test_turboquant \
     vaelrix_forcefield.tests.test_tool_governor \
-    vaelrix_forcefield.tests.test_persistence
+    vaelrix_forcefield.tests.test_persistence \
+    vaelrix_forcefield.tests.test_determinism_auditor \
+    vaelrix_forcefield.tests.test_personality_weighting
 ```
 
 Result:
 
 ```
-Ran 53 tests in ~1.3s
+Ran 59 tests in ~1.8s
 OK
 ```
 

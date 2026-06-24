@@ -53,6 +53,7 @@ class RoutingField:
     activeBrains: list[str] = field(default_factory=list)
     suppressedBrains: dict[str, str] = field(default_factory=dict)
     activationReasons: dict[str, str] = field(default_factory=dict)
+    personalityWeights: dict[str, float] = field(default_factory=dict)
     maxCouncilRounds: int = 2
 
 
@@ -175,6 +176,7 @@ class AmplifierBrain:
     memoryScope: MemoryScope = "shared"
     allowedTools: list[str] = field(default_factory=list)
     defaultSearchBudget: int = 3
+    weight: float = 1.0
 
 
 @dataclass

@@ -16,6 +16,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["code", "bug", "fix", "refactor", "test", "error", "function", "class", "import"],
         allowedTools=["search_code", "read_file", "replace_file_content", "run_tests"],
         defaultSearchBudget=5,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="TEST_BRAIN",
@@ -23,6 +24,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["test", "regression", "validate", "verify", "coverage", "qa"],
         allowedTools=["run_tests", "search_code", "read_file"],
         defaultSearchBudget=3,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="MEMORY_BRAIN",
@@ -30,6 +32,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["memory", "history", "pattern", "prior", "remember", "known", "before"],
         allowedTools=["memory_get", "memory_set", "codebase_search"],
         defaultSearchBudget=2,
+        weight=0.9,
     ),
     AmplifierBrain(
         id="RISK_BRAIN",
@@ -37,6 +40,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["risk", "safe", "regression", "dependency", "blast radius", "dangerous"],
         allowedTools=["search_code", "read_file", "diagnostic_scan"],
         defaultSearchBudget=3,
+        weight=1.1,
     ),
     AmplifierBrain(
         id="PIXEL_BRAIN",
@@ -44,6 +48,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["pixel", "sprite", "art", "visual", "palette", "silhouette", "thumbnail"],
         allowedTools=["read_file", "thumbnail"],
         defaultSearchBudget=1,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="RHYME_BRAIN",
@@ -51,6 +56,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["lyric", "verse", "rhyme", "cadence", "poem", "song"],
         allowedTools=["codebase_search"],
         defaultSearchBudget=2,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="PHONEME_BRAIN",
@@ -58,6 +64,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["phoneme", "pronunciation", "syllable", "sound", "vowel", "consonant"],
         allowedTools=["codebase_search"],
         defaultSearchBudget=2,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="LORE_BRAIN",
@@ -65,6 +72,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["lore", "canon", "mirrorborne", "symbol", "myth", "vaelrix"],
         allowedTools=["codebase_search", "archive_search"],
         defaultSearchBudget=2,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="CRITIQUE_BRAIN",
@@ -72,6 +80,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["critique", "review", "weakness", "improve", "grade", "score"],
         allowedTools=["read_file", "critique"],
         defaultSearchBudget=2,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="SEO_BRAIN",
@@ -79,6 +88,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["seo", "title", "tag", "description", "keyword", "curve", "golden"],
         allowedTools=["score_title", "search_similar"],
         defaultSearchBudget=2,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="AUDIO_BRAIN",
@@ -86,6 +96,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["audio", "music", "sound", "beat", "song", "track"],
         allowedTools=["read_file"],
         defaultSearchBudget=1,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="UI_BRAIN",
@@ -93,6 +104,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["ui", "interface", "widget", "screen", "layout", "component", "theme"],
         allowedTools=["read_file", "replace_file_content"],
         defaultSearchBudget=3,
+        weight=1.0,
     ),
     AmplifierBrain(
         id="DETERMINISM_BRAIN",
@@ -100,6 +112,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["deterministic", "stable", "reproducible", "stasis", "regression test"],
         allowedTools=["diagnostic_scan", "run_tests"],
         defaultSearchBudget=2,
+        weight=0.9,
     ),
     AmplifierBrain(
         id="ARCHITECTURE_BRAIN",
@@ -107,6 +120,7 @@ DEFAULT_AMPLIFIER_REGISTRY: list[AmplifierBrain] = [
         activationSignals=["architecture", "design", "structure", "pattern", "system", "organize"],
         allowedTools=["search_code", "read_file", "codebase_search"],
         defaultSearchBudget=4,
+        weight=1.0,
     ),
 ]
 

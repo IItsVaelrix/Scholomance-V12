@@ -20,6 +20,9 @@ _GOVERNED_TOOLS = {
     "run_command",
 }
 
+# Tools that break reproducibility when deterministic mode is enabled.
+_NON_DETERMINISTIC_TOOLS = {"run_command", "execute", "shell", "exec"}
+
 
 class ActionEngine:
     """
@@ -149,6 +152,27 @@ class ActionEngine:
                         args,
                         reason,
                     )
+
+            # ── ForceField Determinism Auditor ─────────────────────────────────
+            if tool_name in _NON_DETERMINISTIC_TOOLS and getattr(self.brain, "_current_force_field", None):
+                field = self.brain._current_force_field
+                if field.determinism.deterministicMode:
+                    result = (
+                        f"[ForceField Determinism Auditor blocked {tool_name}]\n"
+                        f"Reason: {tool_name} is non-deterministic and deterministicMode is enabled."
+                    )
+                    result_trunc = result[:500] + ('...' if len(result) > 500 else '')
+                    self.tool_log[-1]["result"] = result_trunc
+                    print(f"\033[2m{result_trunc}\033[0m")
+                    response = response[:match.start()] + response[match.end():]
+                    response = f"{response}\n\n--- TOOL RESULT [{tool_name}] ---\n{result}"
+
+                    followup = self.brain.model.generate(
+                        response,
+                        system=self.brain.system_prompt
+                    )
+                    response = f"{response}\n\n{followup}"
+                    continue
 
             result = dispatch_tool(tool_name, args, cortex=self._get_cortex())
 

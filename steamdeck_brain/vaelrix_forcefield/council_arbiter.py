@@ -20,32 +20,39 @@ def _normalize_finding(finding: str) -> str:
     return " ".join(finding.strip().lower().split())
 
 
-def _score_result(result: AmplifierResult) -> float:
+def _score_result(result: AmplifierResult, weights: dict[str, float] | None = None) -> float:
     r = result.resonance
-    return (
+    score = (
         r.intentMatch * 0.3
         + r.evidenceStrength * 0.25
         + r.novelty * 0.15
         + r.actionability * 0.25
         - r.conflictRisk * 0.2
     )
+    weight = (weights or {}).get(result.brainId, 1.0)
+    return score * weight
 
 
 def arbitrate_amplifier_results(
     field: VaelrixCortexForceField,
     results: list[AmplifierResult],
     conflict_risk_threshold: float = 0.75,
+    personality_weights: dict[str, float] | None = None,
 ) -> CouncilArbiterOutput:
     """
     Merge Amplifier outputs into accepted findings, rejected duplicates,
     flagged contradictions, and a recommended next action.
+
+    ``personality_weights`` scales each brain's resonance score by its
+    task-personality weight.
     """
     accepted: list[str] = []
     rejected: list[str] = []
     contradictions: list[str] = []
     seen: set[str] = set()
 
-    sorted_results = sorted(results, key=_score_result, reverse=True)
+    weights = personality_weights or field.routing.personalityWeights or {}
+    sorted_results = sorted(results, key=lambda r: _score_result(r, weights), reverse=True)
 
     for result in sorted_results:
         for finding in result.findings:

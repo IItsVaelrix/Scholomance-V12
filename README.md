@@ -1,17 +1,44 @@
-# Scholomance V11
+# Scholomance V13
 
-Scholomance is a ritual-themed language combat IDE where words are weapons. Players craft scrolls (verses) scored by phoneme density, rhyme quality, and linguistic heuristics across competing schools of magic. Built with React + Vite on the frontend and Fastify + SQLite on the backend.
+Scholomance is a ritual-themed language combat universe where words are weapons. This repository contains the full V13 monorepo: the React/Vite IDE game client, the Fastify backend and CODEx linguistic engines, the Godot runtime world, a portfolio of AI subsystems (NLP chatbot, literary GPT, DivTube pipeline), and the **Vaelrix Cortex ForceField** — a deterministic, multi-brain agent routing and safety layer used by coding agents.
+
+## What Is Scholomance?
+
+Players craft scrolls (verses) scored by phoneme density, rhyme quality, syllabic stress, and eight literary heuristics across competing schools of magic. The same codebase also serves as a testbed for deterministic AI orchestration, multi-agent collaboration, and self-diagnosing runtime health.
 
 ## Core Systems
 
+### Game Client
 - **Read** — IDE-style grimoire editor with Truesight phoneme analysis, rhyme diagramming, and real-time heuristic scoring.
 - **Listen** — Ambient audio station with school-themed atmospheres, unlock progression, and local track uploads.
 - **Watch** — Video-focused landing interface.
-- **CODEx Engine** — Linguistic analysis pipeline: tokenization, phoneme mapping, syllable/stress extraction, 8-heuristic scoring, and combat resolution.
-- **Hidden Harkov Model** — Deterministic token state machine that infers linguistic hidden states (stress anchors, terminal anchors, function gates) and feeds stage weights into the Judiciary voting system.
+- **Combat** — Turn-based verse combat resolved by the CODEx engine and the Judiciary voting system.
+
+### Linguistic & AI Engines
+- **CODEx Engine** — Tokenization, phoneme mapping, syllable/stress extraction, 8-heuristic scoring, and combat resolution.
+- **Hidden Harkov Model** — Deterministic token state machine that infers linguistic hidden states (stress anchors, terminal anchors, function gates) and feeds stage weights into the Judiciary.
 - **Rhyme Astrology** — Constellation-based rhyme relationship mapping across the lexicon (feature-flagged).
-- **Scholomance Dictionary** — Offline SQLite lexicon built from CMU Pronouncing Dictionary + Open English WordNet, serving definitions, rhyme families, synonyms, and antonyms.
+- **Scholomance Dictionary** — Offline SQLite lexicon built from CMU Pronouncing Dictionary + Open English WordNet.
 - **Super Corpus** — FTS5-indexed literary corpus built from curated verse, Project Gutenberg, and WordNet examples.
+
+### Agent & Runtime Infrastructure
+- **Vaelrix Cortex ForceField** (`steamdeck_brain/vaelrix_forcefield/`) — Deterministic routing layer for coding agents.
+  - Multi-brain Amplifier registry (CODE, TEST, RISK, ARCHITECTURE, UI, LORE, DETERMINISM, etc.).
+  - Search Governor and Tool Governor to prevent redundant or unsafe tool use.
+  - TurboQuant chunk dispatch with brain-specific lenses.
+  - PixelBrain Router — converts brain bytecodes into `BytecodeHealth` signals.
+  - Determinism Auditor — verifies reproducibility, stable ordering, and banned tools.
+  - Personality-aware brain weighting — scales brain influence by task classification and priority.
+  - SQLite persistence with migration-tracked schema.
+- **Scholomance Collab Control Plane** — MCP-compatible multi-agent task board, locks, bug reports, and diagnostic memory.
+- **Immunity / Stasis QA** — Pre-commit and CI rituals that freeze UI bytecode, run lint/typecheck/security audits, and reject regressions.
+- **Godot Runtime** — Procedural world scenes (`VoidmetalCaveWorld`, `SurfaceWorld`, `QbitWorld`) and golden combat tests.
+
+### Satellite Subsystems
+- **DivTube Downloader** — YouTube analysis, title/tag/thumbnail engines, content research, and Shorts repurposing.
+- **NLP Chatbot** — FastAPI-based conversational agent with local Python backend.
+- **Literary GPT** — Fine-tuned verse generation and criticism pipeline.
+- **OrChat** — Local-first chat runtime.
 
 ## Schools of Magic
 
@@ -31,36 +58,46 @@ Three unlockable schools (Divination, Necromancy, Abjuration) extend the system.
 
 - **Frontend**: React 18, React Router, Vite 7, Framer Motion, CSS custom properties for school theming.
 - **Backend**: Fastify 5, Zod validation, better-sqlite3, Redis (production sessions).
+- **Game Runtime**: Godot 4.6+ (native and Proton workflows).
 - **Analysis**: PhonemeEngine (CMU dict), DeepRhyme engine, 8-heuristic scoring, Hidden Harkov Model.
-- **Storage**: SQLite (user, collab, dictionary, corpus DBs), persistent disk in production.
-- **Testing**: Vitest + Testing Library, Playwright for visual regression.
+- **Agent Layer**: Python 3.10+, Vaelrix ForceField, SQLite persistence, MCP bridge.
+- **Storage**: SQLite (user, collab, dictionary, corpus, ForceField DBs), persistent disk in production.
+- **Testing**: Vitest + Testing Library, Playwright visual regression, Python `unittest`.
 
 ## Repository Map
 
 ```text
-src/pages/               Route pages (Watch, Listen, Read, Auth, Collab)
-src/components/          Shared UI (AmbientOrb, Navigation, VowelFamilyPanel, etc.)
-src/lib/                 Client engines (phonology, deepRhyme, syntax, Harkov model, PLS)
-src/hooks/               React hooks (progression, scoring, predictor, ambient player)
-src/data/                Static data (schools, palettes, vowel mappings)
-codex/core/              Domain logic (schemas, scoring, heuristics, combat, trie)
-codex/runtime/           Runtime orchestration (pipelines, cache, event bus)
-codex/services/          Adapter layer (dictionary, transport, persistence)
-codex/server/            Fastify server, auth, API routes, adapters, collab services
-tests/                   Unit, integration, accessibility, visual tests
-scripts/                 Build scripts (dictionary, corpus, rhyme astrology, security)
-security/                Security policy and QA artifacts
-public/                  Static assets, corpus.json, ritual_dataset.jsonl
+src/pages/                    Route pages (Watch, Listen, Read, Auth, Collab)
+src/components/               Shared UI (AmbientOrb, Navigation, VowelFamilyPanel, etc.)
+src/lib/                      Client engines (phonology, deepRhyme, syntax, Harkov model, PLS)
+src/hooks/                    React hooks (progression, scoring, predictor, ambient player)
+src/data/                     Static data (schools, palettes, vowel mappings)
+codex/core/                   Domain logic (schemas, scoring, heuristics, combat, trie)
+codex/runtime/                Runtime orchestration (pipelines, cache, event bus)
+codex/services/               Adapter layer (dictionary, transport, persistence)
+codex/server/                 Fastify server, auth, API routes, adapters, collab services
+codex/cli/                    CLI tools (scholo-immune, diagnostics)
+steamdeck_brain/              Vaelrix Cortex ForceField and substrate engine
+godot_project/                Godot scenes, scripts, and world assets
+divtube_downloader/           YouTube analysis and content pipeline
+nlp_chatbot/                  Conversational AI backend and terminal client
+literary_gpt/                 Verse generation and criticism tooling
+OrChat/                       Local-first chat runtime
+tests/                        Unit, integration, accessibility, visual, e2e tests
+scripts/                      Build scripts (dictionary, corpus, security, Godot exports)
+security/                     Security policy and QA artifacts
+public/                       Static assets, corpus.json, ritual_dataset.jsonl
 ```
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 20+
-- npm 10+
-- Python 3.10+ (for dictionary/corpus builds)
+- Node.js 20.20.2+ and npm 10.8.2+ (Volta/pnpm 10.33.4 supported)
+- Python 3.10+ (for dictionary/corpus builds and the ForceField)
+- Godot 4.6+ (for native Godot workflows; Proton path available)
 - Redis (production sessions; optional locally)
+- git-lfs (for LFS-tracked assets and hooks)
 
 ### Local Development
 
@@ -71,6 +108,30 @@ npm run dev:full             # starts backend + Vite frontend
 ```
 
 Open `http://localhost:5173`. Vite proxies `/api`, `/auth`, `/collab`, and `/audio` to `localhost:8080`.
+
+### Vaelrix ForceField (Python)
+
+```bash
+cd steamdeck_brain
+PYTHONPATH=. python -m unittest discover -s vaelrix_forcefield/tests -v
+```
+
+You can also use the ForceField directly from Python:
+
+```python
+from vaelrix_forcefield import BrainBridge
+
+bridge = BrainBridge()
+result = bridge.ask(
+    "Refactor the search governor to use deterministic ordering",
+    classification="structural",
+    priority="safety",
+    persist=True,
+)
+print(result["next_action"])
+print(result["personality_weights"])
+print(result["health_signals"])
+```
 
 ### Production
 
@@ -100,10 +161,11 @@ npm start                    # runs ritual-init.js then Fastify server
 | `ENABLE_DEV_AUTH` | No | `false` | Dev-only auth bypass. |
 | `ENABLE_COLLAB_API` | No | `true` dev / `false` prod | Enables authenticated `/collab/*` and `/mcp` routes. |
 | `ENABLE_RHYME_ASTROLOGY` | No | `false` | Enables `/api/rhyme-astrology/*` routes. |
-| `RHYME_ASTROLOGY_OUTPUT_DIR` | No | `./dict_data/rhyme-astrology` locally, `/var/data/rhyme-astrology` in production | Directory holding the rhyme-astrology SQLite artifacts and emotion priors JSON. |
+| `RHYME_ASTROLOGY_OUTPUT_DIR` | No | `./dict_data/rhyme-astrology` locally, `/var/data/rhyme-astrology` in production | Directory holding rhyme-astrology artifacts. |
 | `ENABLE_REDIS_SESSIONS` | No | `false` | Force Redis sessions in dev. |
 | `VITE_USE_CODEX_PIPELINE` | No | `true` | Client CODEx pipeline toggle. |
 | `VITE_USE_SERVER_PANEL_ANALYSIS` | No | `true` | Client panel analysis toggle. |
+| `VAELRIX_FORCEFIELD_DB` | No | `./vaelrix_forcefield.sqlite` | ForceField SQLite persistence path. |
 
 ## NPM Scripts
 
@@ -115,11 +177,20 @@ npm start                    # runs ritual-init.js then Fastify server
 | `npm run build` | Production frontend bundle. |
 | `npm test` | Vitest suite. |
 | `npm run lint` | ESLint (zero warnings). |
+| `npm run typecheck` | TypeScript check across all tsconfigs. |
 | `npm run test:visual` | Playwright visual regression (Chromium). |
+| `npm run test:qa` | Vitest QA suite. |
+| `npm run test:qa:stasis` | UI stasis bytecode QA test. |
 | `npm run security:qa` | Security QA checks. |
 | `npm run security:audit` | Dependency audit. |
+| `npm run immune:scan:all` | Full immunity pre-commit scan. |
+| `npm run diagnostic:scan` | Run PixelBrain diagnostic scan. |
 | `npm run build:rhyme-astrology:index` | Build Rhyme Astrology artifacts. |
 | `npm run db:setup` | Reset and seed local user DB. |
+| `npm run godot:native` | Launch Godot native editor. |
+| `npm run godot:world` | Launch VoidmetalCaveWorld scene. |
+| `npm run vaelrix` | Launch the Vaelrix agent daemon. |
+| `npm run chatbot` | Start the NLP chatbot API. |
 
 ## API Routes
 
@@ -155,6 +226,35 @@ npm start                    # runs ritual-init.js then Fastify server
 ### Audio (admin token required in production)
 - `GET /api/audio-files`, `POST /api/upload`, `DELETE|PATCH /api/audio-files/:filename`
 
+### Collab (auth required when enabled)
+- `/collab/*` — Task board, agent registry, bug reports, diagnostics, locks, memory, messaging.
+- `/mcp` — Model Context Protocol bridge endpoint.
+
+## Testing
+
+### JavaScript / TypeScript
+```bash
+npm test -- --run                              # unit + integration
+npm run test:qa                                # QA gate
+npm run test:visual                            # visual regression (Chromium)
+npm run test:visual:full                       # full browser matrix
+npm run lint
+npm run typecheck
+npm run security:qa
+```
+
+### Python
+```bash
+cd steamdeck_brain
+PYTHONPATH=. python -m unittest discover -s vaelrix_forcefield/tests -v
+```
+
+### Godot
+```bash
+npm run godot:test:combat-golden
+npm run godot:world:check
+```
+
 ## Deployment
 
 ### Render
@@ -177,20 +277,39 @@ docker run --rm -p 8080:8080 \
   scholomance
 ```
 
-## Testing
+## Vaelrix ForceField Architecture
 
-```bash
-npm test -- --run                              # unit + integration
-npx vitest run tests/accessibility.test.jsx    # accessibility gate
-npm run test:visual                            # visual regression (Chromium)
-npm run test:visual:full                       # full browser matrix
-```
+The ForceField is a Python subsystem for deterministic agent execution. Key modules:
+
+| Module | Purpose |
+|---|---|
+| `brain_bridge.py` | High-level `BrainBridge.ask()` pipeline entrypoint. |
+| `amplifier_registry.py` | Declarative registry of AmplifierBrains. |
+| `amplifier_router.py` | Selects active brains from query signals. |
+| `amplifier_executor.py` | Runs active brains concurrently. |
+| `council_arbiter.py` | Merges, deduplicates, and ranks brain findings. |
+| `personality_weighting.py` | Task-personality brain weight computation. |
+| `tool_governor.py` | Gates `read_file`, `replace_file_content`, `run_tests`, etc. |
+| `search_governor.py` | Prevents redundant or reasonless searches. |
+| `determinism_auditor.py` | Audits reproducibility and tool safety. |
+| `turboquant/` | Chunk dispatch and brain-specific lenses. |
+| `pixelbrain/router.py` | Routes brain bytecodes to BytecodeHealth. |
+| `persistence.py` | SQLite save/load for ForceField sessions. |
 
 ## Documentation
 
-- `CLAUDE.md` — AI agent context and ownership boundaries
-- `AI_ARCHITECTURE_V2.md` — Multi-agent architecture and CODEx layer contracts
-- `codex/README.md` — CODEx module details
-- `docs/operations/DEPLOY_RENDER.md` — Render deployment guide
-- `docs/operations/DICT_BUILD.md` — Offline dictionary build workflow
-- `docs/architecture/` — Unlockable schools, dictionary proxy, PLS integration
+- `AGENTS.md` — Active AI agent contract and read order.
+- `SHARED_PREAMBLE.md` — Repository-wide behavioral preamble.
+- `VAELRIX_LAW.md` — Determinism, documentation, and escalation laws.
+- `SCHEMA_CONTRACT.md` — Data/schema contracts.
+- `CLAUDE.md` — AI agent context and ownership boundaries.
+- `AI_ARCHITECTURE_V2.md` — Multi-agent architecture and CODEx layer contracts.
+- `codex/README.md` — CODEx module details.
+- `docs/operations/DEPLOY_RENDER.md` — Render deployment guide.
+- `docs/operations/DICT_BUILD.md` — Offline dictionary build workflow.
+- `steamdeck_brain/knowledge/scholomance-encyclopedia/PDR-archive/vaelrix-upgrade.pdr.md` — ForceField implementation PDR.
+- `docs/architecture/` — Unlockable schools, dictionary proxy, PLS integration.
+
+## License
+
+All rights reserved. Scholomance and Vaelrix are original properties of the project author.

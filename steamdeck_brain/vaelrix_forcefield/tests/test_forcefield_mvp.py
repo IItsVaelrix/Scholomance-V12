@@ -2,7 +2,7 @@
 
 import unittest
 
-from .. import (
+from vaelrix_forcefield import (
     apply_routing,
     arbitrate_amplifier_results,
     block_search,
@@ -18,7 +18,7 @@ from .. import (
     should_allow_search,
     update_force_field,
 )
-from ..types import AmplifierResult, ResonanceScore
+from vaelrix_forcefield.types import AmplifierResult, ResonanceScore
 
 
 class TestForceFieldCreation(unittest.TestCase):

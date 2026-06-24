@@ -20,7 +20,9 @@ from .amplifier_registry import get_registry
 from .amplifier_router import apply_routing
 from .brains import BRAIN_RUNNERS
 from .council_arbiter import arbitrate_amplifier_results
+from .determinism_auditor import audit_determinism
 from .forcefield import create_force_field
+from .personality_weighting import apply_personality_weights, compute_personality_weights
 from .persistence import load_force_field, save_force_field
 from .pixelbrain.router import route_amplifier_results_to_health
 from .tool_governor import record_tool_call, should_allow_tool_call
@@ -79,6 +81,7 @@ class BrainBridge:
             - next_action: recommended next action from the council
             - health_signals: list of BytecodeHealth bytecodes from brain outputs
             - gated_tool_calls: tool-call decisions from the Tool Governor
+            - personality_weights: dict of brain-id -> computed weight
             - arbiter_output: raw CouncilArbiterOutput
             - raw_results: list of AmplifierResult objects
             - field: the final ForceField
@@ -107,16 +110,24 @@ class BrainBridge:
             )
         field = apply_routing(field, self.registry)
 
+        # Compute and store personality-aware brain weights.
+        personality_weights = compute_personality_weights(field, self.registry)
+        field = apply_personality_weights(field, personality_weights)
+
         # Dispatch TurboQuant chunks through per-brain lenses.
         if self.turboquant_client is not None:
             field = dispatch_chunks_to_brains(field, self.turboquant_client, query=query)
 
         results = run_amplifiers(field, query=query, max_workers=max_workers, runners=self.runners)
 
+        # Run the determinism auditor over the execution state and brain outputs.
+        determinism_audit = audit_determinism(field, results)
+        results.append(determinism_audit)
+
         # Gate brain-requested tool calls through the Tool Governor.
         gated_tool_calls = self._gate_tool_calls(field, results)
 
-        arbiter_output = arbitrate_amplifier_results(field, results)
+        arbiter_output = arbitrate_amplifier_results(field, results, personality_weights=personality_weights)
 
         # Wire brain outputs through the PixelBrain Router into BytecodeHealth.
         health_signals = route_amplifier_results_to_health(results)
@@ -135,6 +146,7 @@ class BrainBridge:
             "next_action": arbiter_output.nextAction,
             "health_signals": health_signals,
             "gated_tool_calls": gated_tool_calls,
+            "personality_weights": personality_weights,
             "arbiter_output": arbiter_output,
             "raw_results": results,
             "field": field,
