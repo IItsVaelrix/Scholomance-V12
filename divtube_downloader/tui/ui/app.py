@@ -675,12 +675,38 @@ class DivTubeAgentApp(App):
             except Exception as e:
                 ui.log_msg(f"[#FF5C7A]✗ Failed to read {path}:[/] {e}")
 
+        def handle_undo_replace(ui, args):
+            from tui.services.tool_service import undo_replace, list_undoable
+            if args and args[0] in ("--list", "-l", "list"):
+                stack = list_undoable()
+                if not stack:
+                    ui.log_msg("[#6A5A6A]Nothing to undo — undo stack is empty.[/]")
+                    return
+                ui.log_msg(f"[bold {GOLD}]◀ UNDO STACK[/] [dim](newest last)[/]")
+                for entry in stack:
+                    ui.log_msg(
+                        f"  [dim]{entry['id']}[/]  {entry['path']}  "
+                        f"[dim]({entry['bytes']} bytes)[/]"
+                    )
+                return
+            target = args[0] if args else None
+            msg = undo_replace(target)
+            if msg.startswith("Error") or "Nothing to undo" in msg or "No undo entry" in msg:
+                ui.log_msg(f"[{WARNING}]{msg}[/]")
+            else:
+                ui.log_msg(f"[{SUCCESS}]⏪ {msg}[/]")
+
+        def handle_undo_list(ui, args):
+            handle_undo_replace(ui, ["--list"])
+
         r = self.registry.register
         r("/help",    lambda ui, args: ui.show_help(),                         "Show commands",          "/help")
         r("/exit",    lambda ui, args: ui.exit(),                              "Exit app",               "/exit")
         r("/clear",   handle_clear,                                            "Clear chat",             "/clear")
         r("/copy",    handle_copy,                                             "Copy active chat log",   "/copy")
         r("/code",    handle_code,                                             "View code in editor",    "/code <path>")
+        r("/undo-replace", handle_undo_replace,                                 "Roll back last write",   "/undo-replace [write_id|--list]")
+        r("/undo-list",    handle_undo_list,                                    "List pending undos",     "/undo-list")
         self.registry.register("/analyze", lambda ui, args: ui.agent.run_command("1", args[0] if args else "", ui.log_msg, ui), "Analyze URL", "/analyze <url>")
         self.registry.register("/download", lambda ui, args: ui.agent.run_command("2", args[0] if args else "", ui.log_msg, ui), "Download URL", "/download <url>")
         def handle_memory(ui, args):
@@ -691,6 +717,8 @@ class DivTubeAgentApp(App):
         r("/exit",    lambda ui, args: ui.exit(),                              "Exit app",               "/exit")
         r("/clear",   handle_clear,                                            "Clear chat",             "/clear")
         r("/code",    handle_code,                                             "View code in editor",    "/code <path>")
+        r("/undo-replace", handle_undo_replace,                                 "Roll back last write",   "/undo-replace [write_id|--list]")
+        r("/undo-list",    handle_undo_list,                                    "List pending undos",     "/undo-list")
         self.registry.register("/analyze", lambda ui, args: ui.agent.run_command("1", args[0] if args else "", ui.log_msg, ui), "Analyze URL", "/analyze <url>")
         self.registry.register("/download", lambda ui, args: ui.agent.run_command("2", args[0] if args else "", ui.log_msg, ui), "Download URL", "/download <url>")
         def handle_memory(ui, args):

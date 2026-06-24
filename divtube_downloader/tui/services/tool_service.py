@@ -1,3 +1,4 @@
+import difflib
 import json
 import os
 import subprocess
@@ -37,6 +38,191 @@ def _safe_path(path):
     if not joined.startswith(PROJECT_ROOT):
         return None
     return joined
+
+
+def _fuzzy_find_target(content, target, threshold):
+    """Find the best fuzzy match of `target` inside `content`.
+
+    Returns (matched_substring, score) where score is in [0.0, 1.0] measuring
+    what fraction of `target` was matched, or None if no contiguous block
+    crosses the threshold.
+
+    Strategy: anchor on the longest matching block, then sweep a window of
+    len(target) across a small neighborhood around that anchor and pick the
+    window with the highest difflib ratio. Anchoring keeps it O(n) for large
+    files instead of O(n*L) for a full scan.
+    """
+    if not target or not content or len(target) > len(content):
+        return None
+
+    target_len = len(target)
+    sm = difflib.SequenceMatcher(None, target, content, autojunk=False)
+    anchor = sm.find_longest_match(0, target_len, 0, len(content))
+    if anchor.size == 0:
+        return None
+
+    center = anchor.b + anchor.size // 2
+    margin = max(target_len, 256)
+    scan_start = max(0, center - margin)
+    scan_end = min(len(content) - target_len, center + margin)
+
+    best_score = 0.0
+    best_window = None
+    # Stride proportional to target size; finer near the anchor for accuracy.
+    stride = max(1, target_len // 8)
+    i = scan_start
+    while i <= scan_end:
+        window = content[i:i + target_len]
+        score = difflib.SequenceMatcher(None, target, window, autojunk=False).ratio()
+        if score > best_score:
+            best_score = score
+            best_window = window
+        i += stride
+    # Always check the exact-anchor window so a perfect match is never missed.
+    anchor_window = content[anchor.b:anchor.b + target_len]
+    anchor_score = difflib.SequenceMatcher(
+        None, target, anchor_window, autojunk=False
+    ).ratio()
+    if anchor_score > best_score:
+        best_score = anchor_score
+        best_window = anchor_window
+
+    if best_score >= threshold and best_window is not None:
+        return (best_window, best_score)
+    return None
+
+
+def _unified_diff(path, before, after, context=3):
+    """Return a unified diff string between before/after file contents."""
+    from_lines = before.splitlines(keepends=True)
+    to_lines = after.splitlines(keepends=True)
+    diff = difflib.unified_diff(
+        from_lines, to_lines,
+        fromfile=f"a/{path}", tofile=f"b/{path}", n=context,
+    )
+    return "".join(diff)
+
+
+def _side_by_side_pairs(before, after):
+    """Return list of (left_no, right_no, before_line, after_line, tag) for a
+    side-by-side diff. `tag` is one of:
+      ' ' — unchanged
+      '-' — only on the left (removed)
+      '+' — only on the right (added)
+      '~' — both sides differ (modified)
+    Missing side is None; line numbers are 1-based or None on the missing side.
+    """
+    a = before.splitlines()
+    b = after.splitlines()
+    sm = difflib.SequenceMatcher(a=a, b=b, autojunk=False)
+    pairs = []
+    la, lb = 1, 1
+    for tag, i1, i2, j1, j2 in sm.get_opcodes():
+        if tag == "equal":
+            for k in range(i2 - i1):
+                pairs.append((la + k, lb + k, a[i1 + k], b[j1 + k], " "))
+            la += i2 - i1
+            lb += j2 - j1
+        elif tag == "delete":
+            for k in range(i2 - i1):
+                pairs.append((la + k, None, a[i1 + k], None, "-"))
+            la += i2 - i1
+        elif tag == "insert":
+            for k in range(j2 - j1):
+                pairs.append((None, lb + k, None, b[j1 + k], "+"))
+            lb += j2 - j1
+        elif tag == "replace":
+            # Walk left/right rows in lockstep so each "modified" line pairs
+            # with its counterpart; extra rows on either side become add/remove.
+            n = max(i2 - i1, j2 - j1)
+            for k in range(n):
+                bl = a[i1 + k] if k < (i2 - i1) else None
+                al = b[j1 + k] if k < (j2 - j1) else None
+                if bl is not None and al is not None:
+                    pairs.append((la + k, lb + k, bl, al, "~"))
+                elif bl is not None:
+                    pairs.append((la + k, None, bl, None, "-"))
+                else:
+                    pairs.append((None, lb + k, None, al, "+"))
+            la += i2 - i1
+            lb += j2 - j1
+    return pairs
+
+
+# ---------------------------------------------------------------------------
+# Undo stack: every successful replace_file_content pushes a (id, path, before)
+# entry so /undo-replace can roll back the most recent write (or any specific
+# one by id). Bounded so a long agent run can't grow without limit.
+# ---------------------------------------------------------------------------
+
+_UNDO_STACK = []
+_UNDO_LIMIT = 50
+_NEXT_WRITE_ID = 0
+# Side channel for the TUI to render a side-by-side diff of a write. Keyed
+# by write_id; consumed (and removed) by get_pending_diff after the TUI has
+# rendered it. Kept separate from the LLM-bound result string so we don't
+# bloat the model's context with full file contents.
+_PENDING_DIFFS = {}
+
+
+def _push_undo(path, before_content):
+    """Record a write for later undo. Returns the assigned write_id."""
+    global _NEXT_WRITE_ID
+    _NEXT_WRITE_ID += 1
+    wid = f"w{_NEXT_WRITE_ID}"
+    _UNDO_STACK.append({"id": wid, "path": path, "before": before_content})
+    if len(_UNDO_STACK) > _UNDO_LIMIT:
+        dropped = _UNDO_STACK.pop(0)
+        _PENDING_DIFFS.pop(dropped["id"], None)
+    return wid
+
+
+def list_undoable():
+    """Return a snapshot of the undo stack (newest last), without the blob."""
+    return [
+        {"id": e["id"], "path": e["path"], "bytes": len(e["before"])}
+        for e in _UNDO_STACK
+    ]
+
+
+def get_pending_diff(write_id, *, consume=True):
+    """Return (and optionally remove) the {path, before, after} blob stashed
+    for side-by-side rendering. Returns None if the id is unknown or already
+    consumed."""
+    blob = _PENDING_DIFFS.get(write_id)
+    if blob is None:
+        return None
+    if consume:
+        _PENDING_DIFFS.pop(write_id, None)
+    return blob
+
+
+def undo_replace(write_id=None):
+    """Restore the file recorded under `write_id` (or the most recent write
+    if no id is given). Returns a human-readable status string."""
+    if not _UNDO_STACK:
+        return "Nothing to undo — undo stack is empty."
+    if write_id is None:
+        entry = _UNDO_STACK[-1]
+    else:
+        matches = [e for e in _UNDO_STACK if e["id"] == write_id]
+        if not matches:
+            return f"No undo entry with id {write_id!r}. Try /undo-list."
+        entry = matches[-1]
+    safe = _safe_path(entry["path"])
+    if not safe:
+        return f"Error: undo target path is unsafe: {entry['path']}"
+    try:
+        with open(safe, "w", encoding="utf-8") as f:
+            f.write(entry["before"])
+    except Exception as e:
+        return f"Error restoring {entry['path']}: {e}"
+    _UNDO_STACK.remove(entry)
+    _PENDING_DIFFS.pop(entry["id"], None)
+    return (
+        f"Restored {entry['path']} to its previous contents "
+        f"({len(entry['before'])} bytes). Undo id {entry['id']} consumed."
+    )
 
 
 SUCCESS_TAG = "[#7CFF8B]"
@@ -262,7 +448,7 @@ class ToolService:
                 "is_coding_action": True,
                 "function": {
                     "name": "replace_file_content",
-                    "description": "Edit a file by replacing a unique block of text.",
+                    "description": "Edit a file by replacing a unique block of text. Supports fuzzy (approximate) matching via fuzzy_threshold, and a dry_run preview that returns a unified diff without writing.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -272,11 +458,19 @@ class ToolService:
                             },
                             "target_content": {
                                 "type": "string",
-                                "description": "Exact text block to replace"
+                                "description": "Text block to replace. Exact by default; approximate when fuzzy_threshold < 1.0."
                             },
                             "replacement_content": {
                                 "type": "string",
                                 "description": "New text block"
+                            },
+                            "fuzzy_threshold": {
+                                "type": "number",
+                                "description": "Minimum difflib ratio (0.0-1.0) required to accept an approximate match. 1.0 = exact match only (default). 0.6-0.8 is a good range for 'replace this block approximately'."
+                            },
+                            "dry_run": {
+                                "type": "boolean",
+                                "description": "If true, compute the match and return the unified diff but do NOT write to the file."
                             }
                         },
                         "required": ["path", "target_content", "replacement_content"]
@@ -1117,22 +1311,108 @@ class ToolService:
         raw_path = kwargs.get("path", "")
         target = kwargs.get("target_content", "")
         replacement = kwargs.get("replacement_content", "")
+        # Optional params: fuzzy_threshold < 1.0 enables approximate matching;
+        # dry_run=True previews the diff without writing.
+        try:
+            fuzzy_threshold = float(kwargs.get("fuzzy_threshold", 1.0))
+        except (TypeError, ValueError):
+            fuzzy_threshold = 1.0
+        fuzzy_threshold = max(0.0, min(1.0, fuzzy_threshold))
+        dry_run = bool(kwargs.get("dry_run", False))
+
         safe = _safe_path(raw_path)
         if not safe or not os.path.isfile(safe):
-            return f"Error: File not found or invalid path: {raw_path}"
+            return f"Error: File not found or invalid path: {raw_path}."
         try:
             with open(safe, "r", errors="replace") as f:
                 content = f.read()
-            if target not in content:
-                return "Error: target_content not found exactly in the file."
-            if content.count(target) > 1:
-                return "Error: target_content appears multiple times. Provide more context to make it unique."
-            new_content = content.replace(target, replacement)
+
+            # Resolve which substring of `content` we are actually replacing.
+            actual_target = target
+            fuzzy_score = 1.0
+            exact_hit = target in content
+            if exact_hit:
+                occurrences = content.count(target)
+                if occurrences > 1:
+                    return (
+                        f"Error: target_content appears {occurrences} times in {raw_path}. "
+                        f"Provide more surrounding context to make it unique."
+                    )
+            else:
+                if fuzzy_threshold >= 1.0:
+                    closest = _fuzzy_find_target(content, target, 0.0)
+                    hint = ""
+                    if closest is not None:
+                        _, best = closest
+                        hint = (
+                            f" Closest fuzzy match scored {best:.2f} — try "
+                            f"fuzzy_threshold={max(0.5, best - 0.05):.2f} or pass "
+                            f"dry_run=True to preview the candidate block."
+                        )
+                    return f"Error: target_content not found in {raw_path}.{hint}"
+                match = _fuzzy_find_target(content, target, fuzzy_threshold)
+                if match is None:
+                    closest = _fuzzy_find_target(content, target, 0.0)
+                    if closest is not None:
+                        _, best = closest
+                        return (
+                            f"Error: No fuzzy match for target_content in {raw_path} "
+                            f"above threshold {fuzzy_threshold:.2f} "
+                            f"(best candidate scored {best:.2f}). Lower the threshold "
+                            f"or widen target_content."
+                        )
+                    return (
+                        f"Error: target_content not found in {raw_path}, even with "
+                        f"fuzzy matching at threshold {fuzzy_threshold:.2f}."
+                    )
+                actual_target, fuzzy_score = match
+                # Disallow ambiguous fuzzy hits: same substring appearing more
+                # than once would let one bad match silently rewrite the wrong
+                # location. The user can disambiguate by including more lines.
+                if content.count(actual_target) > 1:
+                    return (
+                        f"Error: fuzzy match for target_content appears "
+                        f"{content.count(actual_target)} times in {raw_path}. "
+                        f"Include more surrounding lines so the match is unique."
+                    )
+
+            # Replace ONLY the first occurrence of actual_target to be safe.
+            new_content = content.replace(actual_target, replacement, 1)
+            diff = _unified_diff(raw_path, content, new_content)
+
+            if dry_run:
+                header = (
+                    f"[DRY RUN] Would replace {len(actual_target)} chars in {raw_path} "
+                    f"(match score: {fuzzy_score:.2f}). No changes written."
+                )
+                return f"{header}\n{diff}" if diff else header
+
             with open(safe, "w", encoding="utf-8") as f:
                 f.write(new_content)
+
+            # Record for /undo-replace AND stash before/after for the TUI to
+            # render side-by-side. Keeping the blobs out of the LLM-bound
+            # result string is important — otherwise every write would bloat
+            # the conversation with full file contents.
+            write_id = _push_undo(raw_path, content)
+            _PENDING_DIFFS[write_id] = {
+                "path": raw_path,
+                "before": content,
+                "after": new_content,
+            }
+
             if callback:
                 callback(f"  [#7CFF8B]✓[/] replace_file_content({raw_path})")
-            return f"Successfully updated {raw_path}."
+            score_tag = (
+                f" [fuzzy {fuzzy_score:.2f}]" if fuzzy_score < 1.0 else ""
+            )
+            header = (
+                f"Successfully updated {raw_path}{score_tag} "
+                f"[write_id={write_id}].\n"
+                f"  ↪ type /undo-replace to roll back, or /undo-replace {write_id} "
+                f"to target this specific write."
+            )
+            return f"{header}\n{diff}" if diff else header
         except Exception as e:
             return f"Error modifying {raw_path}: {e}"
 
