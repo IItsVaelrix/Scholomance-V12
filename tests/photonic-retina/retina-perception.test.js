@@ -41,19 +41,22 @@ describe('assemblePerceptionFrame', () => {
 
   it('frameHash is a content fingerprint: ignores generation, reflects mask differences', () => {
     const base = {
-      changedMask: Uint8Array.from([1, 0]),
-      committedMask: Uint8Array.from([0, 1]),
-      shadowMask: Uint8Array.from([0, 1]),
-      rows: 1, cols: 2,
+      changedMask: Uint8Array.from([1, 0, 0]),
+      committedMask: Uint8Array.from([0, 1, 0]),
+      shadowMask: Uint8Array.from([0, 1, 0]),
+      rows: 1, cols: 3,
     };
     const g3 = assemblePerceptionFrame({ ...base, generation: 3 });
     const g9 = assemblePerceptionFrame({ ...base, generation: 9 });
     expect(g9.frameHash).toBe(g3.frameHash); // generation excluded
 
-    // A change in a non-attend mask (committed) still changes the hash.
+    // Flip committed on cell 2 (changed=0, shadow=0) so attendMask is UNCHANGED.
+    // The hash must still differ — proving committedMask is fingerprinted
+    // independently, not just via its effect on attendMask.
     const diffCommitted = assemblePerceptionFrame({
-      ...base, committedMask: Uint8Array.from([1, 1]), generation: 3,
+      ...base, committedMask: Uint8Array.from([0, 1, 1]), generation: 3,
     });
+    expect(Array.from(diffCommitted.attendMask)).toEqual(Array.from(g3.attendMask));
     expect(diffCommitted.frameHash).not.toBe(g3.frameHash);
   });
 
