@@ -182,7 +182,7 @@ PerceptionFrame {
   shadowMask:   Uint8Array, // 1 = lighting changed this tick
   changedMask:  Uint8Array, // 1 = own-value delta this tick (from packet delta)
   generation:   int,        // monotonic tick counter (caller-supplied, not wall-clock)
-  frameHash:    string,     // stableHash of the frame for caching / dedup
+  frameHash:    string,    // content fingerprint over all masks (excludes generation); equal content across ticks => equal hash
 }
 ```
 

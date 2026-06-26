@@ -12,6 +12,17 @@ function indicesOf(mask) {
   return Uint32Array.from(out);
 }
 
+/**
+ * Assembles a frozen PerceptionFrame from the three input masks.
+ *
+ * frameHash is a deterministic content fingerprint over all masks
+ * (cols, rows, attend/committed/shadow/changed); it intentionally EXCLUDES
+ * generation so identical frame content across ticks dedupes to the same hash.
+ *
+ * NOTE: the freeze applied to the returned frame is shallow. The input masks
+ * (changedMask, committedMask, shadowMask) are retained BY REFERENCE in the
+ * frozen frame; callers must not mutate input masks after assembly.
+ */
 function buildFrame(changedMask, committedMask, shadowMask, rows, cols, generation) {
   const total = countCells(rows, cols);
   const attendMask = new Uint8Array(total);
@@ -20,11 +31,15 @@ function buildFrame(changedMask, committedMask, shadowMask, rows, cols, generati
     attendMask[i] = ((changedMask[i] && !committedMask[i]) || shadowMask[i]) ? 1 : 0;
   }
   const attendIndices = indicesOf(attendMask);
+  // frameHash covers the full frame content; generation is excluded so that
+  // identical mask content across ticks produces the same hash (enables dedup).
   const frameHash = stableHash({
-    generation,
     cols,
     rows,
     attend: Array.from(attendMask),
+    committed: Array.from(committedMask),
+    shadow: Array.from(shadowMask),
+    changed: Array.from(changedMask),
   });
   return Object.freeze({
     cellCount: total,

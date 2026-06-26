@@ -39,6 +39,24 @@ describe('assemblePerceptionFrame', () => {
     expect(a.frameHash).toBe(b.frameHash);
   });
 
+  it('frameHash is a content fingerprint: ignores generation, reflects mask differences', () => {
+    const base = {
+      changedMask: Uint8Array.from([1, 0]),
+      committedMask: Uint8Array.from([0, 1]),
+      shadowMask: Uint8Array.from([0, 1]),
+      rows: 1, cols: 2,
+    };
+    const g3 = assemblePerceptionFrame({ ...base, generation: 3 });
+    const g9 = assemblePerceptionFrame({ ...base, generation: 9 });
+    expect(g9.frameHash).toBe(g3.frameHash); // generation excluded
+
+    // A change in a non-attend mask (committed) still changes the hash.
+    const diffCommitted = assemblePerceptionFrame({
+      ...base, committedMask: Uint8Array.from([1, 1]), generation: 3,
+    });
+    expect(diffCommitted.frameHash).not.toBe(g3.frameHash);
+  });
+
   it('throws on mask length mismatch', () => {
     expect(() => assemblePerceptionFrame({
       changedMask: Uint8Array.from([1]),
