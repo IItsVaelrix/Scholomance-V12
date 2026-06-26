@@ -81,7 +81,7 @@ export async function applyLatticePerception(lattice, cols, rows, perceptionOpti
  * @param {Object} [options.perception] - Opt-in perception config ({ enabled, previous, generation })
  * @returns {Object} Lattice grid with symmetry applied
  */
-export async function generateLatticeGrid(imageAnalysis, options) {
+export async function generateLatticeGrid(imageAnalysis, options = {}) {
   const { pixelData, dimensions } = imageAnalysis;
   const { width: srcW, height: srcH } = dimensions;
 

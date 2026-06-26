@@ -1,5 +1,5 @@
 // tests/pixelbrain/lattice-grid-perception-wire.test.js
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 // generateLatticeGrid runs microprocessor AMPs (symmetry) that may require
 // async/TS runtime; this test exercises the perception wiring on a prebuilt
