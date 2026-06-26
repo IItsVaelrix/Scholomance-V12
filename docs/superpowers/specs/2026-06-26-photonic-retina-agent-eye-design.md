@@ -114,14 +114,52 @@ Emits a `PerceptionFrame` (see contract below).
 
 ### Reused unchanged
 
-`encodeToPhotonicRetina`, `createPacketDelta`, `createLowBitPreview`, and the existing
-`phosphorylation` color commit. No edits to Retina core.
+`encodeToPhotonicRetina`, `createLowBitPreview`, and the existing `phosphorylation`
+color commit. No edits to Retina core. **`createPacketDelta` is NOT used for per-cell
+attribution** (see Cell Indexing Invariant) — the packet serves only as a whole-frame
+fingerprint / fast early-out.
+
+## Cell Indexing Invariant (resolves the packet-dimension risk)
+
+**Hard invariant: every PerceptionFrame mask indexes lattice cells in canonical
+row-major order — never Retina packet vector slots.**
+
+The Retina packet vector is unsuitable as the per-cell index source, verified in the
+encoder/normalizer:
+
+1. `packet.dimension === config.targetDimension` (default 256), i.e. the *compressed
+   vector size*, not the cell count. (`retina-normalize.js` final loop fills a fixed
+   `Float32Array(targetDimension)`.)
+2. The normalizers emit ~5 interleaved fields per cell (coordinates: `x,y,z,emphasis,
+   color`; lattice: `col,row,emphasis,color,occupied`), so vector slot ≠ cell even
+   before compression.
+3. The fill is `values[i % values.length]` — wrap-tiles on underflow, silently drops
+   trailing cells on overflow. Slot index carries no stable cell identity.
+
+Consequence: setting `targetDimension = cellCount` alone does **not** yield a 1:1 cell
+map with the current normalizers. We therefore adopt **Option A's principle (perception
+indexes cells, uncompressed) via Option C's mechanism**:
+
+- **Per-cell masks** (`changedMask`, `committedMask`, `shadowMask`, `attendMask`) are
+  built from **pre-compression lattice cell deltas** in canonical row-major order —
+  comparing the prior and current lattice cell arrays directly, cell-indexed.
+- **The Retina packet is retained only as a frame fingerprint**: `frameHash` / a cheap
+  "did anything change at all this tick" early-out, and for the existing
+  caching/dedup/diagnostics paths. It never indexes a mask.
+- A single shared `cellIndex(row, col, dimension)` helper defines the canonical order;
+  all masks derive their indexing from it. Test #2 locks it.
+
+**Future compression (deferred):** once stable, a compressed attention map can be added
+by storing a `cellIndexMap` beside the packet (Option B), translating compressed slots
+back to cell indices. Not in Phase 1.
 
 ## Data Flow (per tick)
 
 1. Pipeline produces/mutates lattice coordinates.
-2. `encodeToPhotonicRetina(coords)` → current `packet`.
-3. `createPacketDelta(prevPacket, packet)` → `placementChanged` cells.
+2. `encodeToPhotonicRetina(coords)` → current `packet` (fingerprint only; its
+   `frameHash` gives a cheap "did anything change at all" early-out).
+3. Cell-indexed diff of (prevCells, currCells) in canonical row-major order →
+   `changedMask` (per-cell own-value delta). **Not** from `createPacketDelta`.
 4. `qbit-placement-memory` evaluates evidence → `committed` bitmask.
 5. `shadow-amp` produces current shadow field; `retina-shadow-field`
    diffs (prevShadow, currShadow) → `shadowDelta`.
@@ -135,7 +173,9 @@ Numeric, deterministic, typed-array based (consumer is procedural/ML, not LLM):
 
 ```
 PerceptionFrame {
-  dimension:    int,        // matches the Retina packet dimension exactly
+  cellCount:    int,        // number of lattice cells; ALL masks are length cellCount
+  cols:         int,        // lattice width  — canonical row-major: index = row*cols+col
+  rows:         int,        // lattice height
   attendMask:   Uint8Array, // 1 = pipeline must process this cell, 0 = ignore
   attendIndices:Uint32Array,// dense list of attend cell indices (convenience)
   committedMask:Uint8Array, // 1 = placement settled
@@ -146,9 +186,9 @@ PerceptionFrame {
 }
 ```
 
-Indexing for every mask is the **same row-major cell order** as the Retina packet for
-the given `dimension`. This alignment is the single most important invariant (see
-Risks).
+Indexing for every mask is canonical **row-major lattice cell order**
+(`index = row*cols + col`), NOT Retina packet vector order. This alignment is the
+single most important invariant (see Cell Indexing Invariant / Risks).
 
 ## Error Handling
 
@@ -176,8 +216,10 @@ New `tests/photonic-retina/` and `tests/pixelbrain/` coverage:
 
 1. **placement-memory determinism** — same evidence → same `{committed, confidence}`;
    threshold boundary behaves like `COLLAPSE_THRESHOLD`.
-2. **mask alignment** — `attendMask`/`committedMask` indexing matches a known Retina
-   packet's cell order for several dimensions (guards the core invariant).
+2. **mask alignment** — `attendMask`/`committedMask` indexing matches the shared
+   `cellIndex(row, col, cols)` row-major order for several lattice sizes, and a known
+   single-cell edit lights exactly its own index (guards the core invariant). Includes
+   a negative test that the packet vector slot is NOT used as a cell index.
 3. **assembler composition** — `attendMask = (changed AND NOT committed) OR shadowDelta`
    verified against hand-built channels, including the key case: a committed,
    unchanged cell with a shadowDelta hit → `attend = 1`.
@@ -191,10 +233,12 @@ New `tests/photonic-retina/` and `tests/pixelbrain/` coverage:
 
 ## Risks
 
-1. **Mask / packet index drift (highest).** Every mask must use the exact same cell
-   ordering as the `PhotonicVectorPacket` for the dimension. A mismatch silently
-   attends/ignores the wrong cells. Mitigation: derive indexing from one shared helper;
-   test #2 locks it. (Compare prior canvas/ctx kerning-drift class of bug.)
+1. **Mask / packet index drift (highest).** The Retina packet vector is compressed
+   (`targetDimension`), interleaved (~5 fields/cell), and wrap/truncate-filled — its
+   slot index is NOT a cell index. Using it to index masks would silently attend/ignore
+   the wrong cells. Mitigation: masks are built from pre-compression lattice cells via a
+   single shared `cellIndex` helper, never from the packet (see Cell Indexing
+   Invariant); test #2 locks the ordering. (Compare prior canvas/ctx kerning-drift bug.)
 2. **Shadow-field snapshot cost.** Diffing full shadow fields each tick could rival the
    re-scan we're removing. Mitigation: shadow-amp already runs in the pipeline; reuse its
    output rather than recompute, and the shadowDelta is itself incremental.
