@@ -133,6 +133,11 @@ verseIRMicroprocessors.register('amp.coord-symmetry', async (payload, context) =
   return runCoordSymmetryAmp(payload, context);
 });
 
+verseIRMicroprocessors.register('amp.shadow-perception', async (payload, _context) => {
+  const { runShadowPerceptionAmp } = await import('../pixelbrain/shadow-perception-amp.js');
+  return runShadowPerceptionAmp(payload);
+});
+
 // --- IDE Microprocessors (Lazy) ---
 verseIRMicroprocessors.register('arbiter.predict', async (payload, context) => {
   try {
