@@ -279,9 +279,19 @@ class FileSelectScreen(ModalScreen[str]):
             olist.clear_options()
             return
 
+        # Capture the app on the UI thread. `self.app` is backed by the
+        # `active_app` ContextVar, which is NOT propagated into a bare
+        # threading.Thread — touching it inside run() raised NoActiveAppError
+        # (and, once the screen was torn down, "Event loop is closed").
+        app = self.app
+
         def run():
             paths = self.archive.search_paths(q, limit=100)
-            self.app.call_from_thread(self._apply_archive_results, req, paths)
+            try:
+                app.call_from_thread(self._apply_archive_results, req, paths)
+            except Exception:
+                # App/loop torn down before this late result arrived — drop it.
+                pass
 
         threading.Thread(target=run, daemon=True).start()
 
@@ -1251,6 +1261,7 @@ class DivTubeAgentApp(App):
 
         self.setup_turbo_commands()
         self.setup_daemon_commands()
+        self.setup_lab_commands()
 
     def setup_daemon_commands(self):
         """Brain daemon control commands."""
@@ -1323,6 +1334,62 @@ class DivTubeAgentApp(App):
             threading.Thread(target=run, daemon=True).start()
 
         r("/vaelrix", handle_vaelrix, "Ask Vaelrix (SteamDeck brain)", "/vaelrix <question>")
+
+    def setup_lab_commands(self):
+        """Intel Lab (full YouTube intel report) + Niche registry commands.
+
+        Both services were fully built but had no command entrypoint. Services
+        are created lazily on first use so app startup never pays for the intel
+        package import or the niche sqlite open."""
+        r = self.registry.register
+
+        def handle_intel(ui, args):
+            url = args[0].strip() if args else ""
+            if not url:
+                ui.log_msg(f"[{ERROR}]Usage:[/] /intel <youtube-url>")
+                return
+            if getattr(ui, "intel", None) is None:
+                from tui.services.intel_lab_service import IntelLabService
+                ui.intel = IntelLabService()
+            ui.log_msg(f"[{MUTED}]Running Intel Lab analysis on [bold]{url}[/]…[/]")
+            ui.intel.run_intel(url, ui.log_msg)
+
+        def handle_niche(ui, args):
+            if getattr(ui, "niche", None) is None:
+                from tui.services.niche_service import NicheService
+                ui.niche = NicheService()
+            sub = (args[0].lower() if args else "list")
+            rest = args[1:]
+
+            if sub == "list":
+                names = ui.niche.list_niches()
+                if not names:
+                    ui.log_msg(f"[{MUTED}]No niches registered.[/]")
+                    return
+                ui.log_msg(f"[{GOLD}]Niches:[/] " + ", ".join(names))
+            elif sub == "show":
+                if not rest:
+                    ui.log_msg(f"[{ERROR}]Usage:[/] /niche show <name>")
+                    return
+                ui.log_msg(f"[{GOLD}]{rest[0]}[/]\n{ui.niche.get_niche(rest[0])}")
+            elif sub in ("import", "export"):
+                if not rest:
+                    ui.log_msg(f"[{ERROR}]Usage:[/] /niche {sub} <file.nichepack>")
+                    return
+                try:
+                    if sub == "import":
+                        n = ui.niche.import_pack(rest[0])
+                        ui.log_msg(f"[{SUCCESS}]✔ Imported {n} niche(s) from {rest[0]}[/]")
+                    else:
+                        n = ui.niche.export_pack(rest[0])
+                        ui.log_msg(f"[{SUCCESS}]✔ Exported {n} niche(s) to {rest[0]}[/]")
+                except Exception as e:
+                    ui.log_msg(f"[{ERROR}]Niche {sub} failed:[/] {e}")
+            else:
+                ui.log_msg(f"[{ERROR}]Unknown subcommand '{sub}'.[/] Use list | show | import | export")
+
+        r("/intel", handle_intel, "Full YouTube intel report (telemetry + critique)", "/intel <url>")
+        r("/niche", handle_niche, "Niche registry: list/show/import/export", "/niche [list|show <name>|import <f>|export <f>]")
 
     def setup_turbo_commands(self):
         """TurboQuant SEO plugin commands (spec v1.0, phases 0-3)."""

@@ -98,7 +98,9 @@ public class YtDlpProvider implements DownloadProvider {
 
     private String getFormatArgument(String quality, String format) {
         if ("MP3 audio".equalsIgnoreCase(format)) {
-            return "bestaudio"; // Note: For actual MP3 conversion, we'd need --extract-audio --audio-format mp3
+            // Select the best audio stream; download() adds --extract-audio
+            // --audio-format mp3 to re-encode it to MP3 via ffmpeg.
+            return "bestaudio";
         }
         if ("Best".equalsIgnoreCase(quality)) {
             return "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best";
