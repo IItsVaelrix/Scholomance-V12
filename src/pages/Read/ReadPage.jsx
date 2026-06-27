@@ -672,16 +672,17 @@ export default function ReadPage() {
       return;
     }
 
-    // Spellcheck panel can still open on misspelled word clicks even if ritual prediction is off.
+    // Ritual prediction is fully dormant when the HEX TOOLS toggle is off:
+    // no spellcheck box, no tooltip — nothing surfaces unprompted.
+    if (!isPredictive) {
+      return;
+    }
+
     const isMisspelledWord = misspellings.some(
       (err) => normalizeComparableWord(err.word) === activation.normalizedWord
     );
     if (isMisspelledWord) {
       setShowSpellcheckPanel(true);
-    }
-
-    if (!isPredictive) {
-      return;
     }
 
     const pos = resolveTooltipPosition(activation.anchorRect);
@@ -765,6 +766,7 @@ export default function ReadPage() {
     if (!isPredictive) {
       setTooltipState({ token: null, position: { x: 0, y: 0 }, localAnalysis: null, pinned: false });
       setIsWordSheetOpen(false);
+      setShowSpellcheckPanel(false);
     }
   }, [isPredictive]);
 

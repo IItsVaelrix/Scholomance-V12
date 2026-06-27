@@ -42,6 +42,7 @@
     "yt:audio": "node scripts/yt-download.mjs audio",
     "yt:thumb": "node scripts/yt-download.mjs thumbnail",
     "yt:doctor": "node scripts/yt-download.mjs doctor",
+    "mud:vaelrix": "node scripts/mud-install-vaelrix.mjs",
     "build:corpus": "node scripts/generate_corpus.js",
     "verify:css-tokens": "node scripts/verify-css-tokens.js",
     "build": "node scripts/verify-css-tokens.js && node scripts/generate-school-styles.js && npm run build:corpus && vite build",

@@ -124,7 +124,7 @@ const router = createBrowserRouter([
           { path: "visualiser", element: <BytecodeVisualiserPage /> },
           { path: "card", element: <ResonanceCardPage /> },
           { path: "release", element: <VisualizerReleasePage /> },
-          { path: "oracle", element: <OraclePage /> },
+          { path: "oracle", element: <AdminRoute><OraclePage /></AdminRoute> },
         ],
       },
     ],

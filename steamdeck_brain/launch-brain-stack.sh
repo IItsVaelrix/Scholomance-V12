@@ -41,6 +41,9 @@ kill_port "$BRAIN_PORT"
 sleep 1
 
 echo "🦙 Starting Ollama..."
+# Steam Deck APU is an integrated GPU; Ollama skips iGPUs unless this is set, else
+# the model runs 100% on CPU. Offload to the GPU (RADV VANGOGH) over Vulkan.
+export OLLAMA_IGPU_ENABLE="${OLLAMA_IGPU_ENABLE:-1}"
 nohup ollama serve > /tmp/ollama.log 2>&1 &
 wait_for_port "$OLLAMA_PORT" "Ollama" 60
 

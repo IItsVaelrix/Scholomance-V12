@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { useAmbienceMixer } from '../../hooks/useAmbienceMixer';
 
 const CHANNEL_META = [
-  { id: 'rain', label: 'Rain' },
-  { id: 'cafe', label: 'Café Plaza' },
-  { id: 'wind', label: 'Wind through a house' },
+  { id: 'rain', label: 'Rain + Forest Stream' },
 ];
 
 export default function AmbienceTray({ service }) {

@@ -159,6 +159,9 @@ fi
 # ─── Step 3: Start Ollama Server ────────────────────────────────────────────
 echo -e "${YELLOW}[3/6]${NC} Starting Ollama server..."
 if ! pgrep -x ollama >/dev/null; then
+    # Steam Deck APU is an integrated GPU; Ollama skips iGPUs unless this is set, else
+    # the model runs 100% on CPU. Offload to the GPU (RADV VANGOGH) over Vulkan.
+    export OLLAMA_IGPU_ENABLE="${OLLAMA_IGPU_ENABLE:-1}"
     ollama serve &>/tmp/ollama.log &
     OLLAMA_PID=$!
     echo "  Ollama server starting (PID: $OLLAMA_PID)..."

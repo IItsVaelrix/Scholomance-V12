@@ -51,16 +51,24 @@ extractConstructionSkeleton({ mask, width, height }, opts) -> ConstructionResult
 - No filesystem, no `sharp`. Deterministic. Integer coordinates only.
 - This is the unit-tested heart of the feature.
 
-### 2. Thin I/O wrapper (the PNG entry point)
+### 2. Thin I/O wrappers (the asset entry points)
 
 ```
-imageToConstructionSkeleton(pngPathOrBuffer, opts) -> ConstructionResult
+imageToConstructionSkeleton(pngPathOrBuffer, opts) -> ConstructionResult   (async)
+pbrainToConstructionSkeleton(pbrainObjOrJson, opts) -> ConstructionResult
+maskFromCoordinates(coordinates, width, height)     -> Uint8Array
 ```
 
-- Decodes PNG via `sharp` (already a dependency) to raw RGBA + dimensions.
-- Builds the alpha mask: `alpha > opts.alphaThreshold` (default `8`).
-- Calls `extractConstructionSkeleton(...)`.
-- Keeping `sharp` isolated here means the core stays pure and testable without decoding.
+- **PNG** (`imageToConstructionSkeleton`): decodes via `sharp` (already a
+  dependency) to raw RGBA, builds the alpha mask `alpha > opts.alphaThreshold`
+  (default `8`), calls the core.
+- **PixelBrain export** (`pbrainToConstructionSkeleton`): the real asset format
+  is a `.pbrain.json` with a `coordinates` array and `metadata.manifest`
+  dimensions. This wrapper rasterizes the coordinates to a mask via
+  `maskFromCoordinates` (excluding any construction/reference guide cells so they
+  never pollute the silhouette) and calls the core. Accepts a parsed object or a
+  JSON string.
+- Keeping decoding in the wrappers means the core stays pure and testable.
 
 ## Algorithm (the core)
 

@@ -15,8 +15,11 @@ import { detectScheme, analyzeMeter } from "../../rhymeScheme.detector.js";
 import { normalizeVowelFamily } from "../../../phonology/vowelFamily.js";
 import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDevices.detector.js";
 import { resolveSonicChroma } from "../../../phonology/chroma.resolver.js";
+import { decodeBytecode } from "../bytecodeRenderer.js";
 import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColorRegistry.js";
 import { resolveVerseIrColor } from "../color/pcaChroma.js";
+import { auditTokenWeights } from "../../../tokenization/tokenWeightError.js";
+import { combineTokenWeights } from "../../../tokenization/tokenWeightSchema.js";
 
 /**
  * Executes a total linguistic synthesis of the given text.
@@ -74,6 +77,9 @@ export function synthesizeVerse(text, options = {}) {
         })
       : null;
 
+    const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
+    const decoded = visualBytecode ? decodeBytecode(visualBytecode) : null;
+
     const unifiedToken = {
       ...token,
       ...syntaxToken,
@@ -82,7 +88,7 @@ export function synthesizeVerse(text, options = {}) {
       verseIrColor,
       precomputed: {
         sonicChroma,
-        decoded: null,
+        decoded,
         hex: verseIrColor?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
       }
     };
@@ -98,6 +104,45 @@ export function synthesizeVerse(text, options = {}) {
   // 7. Authority Registry Unification
   const rhymeColorRegistry = buildResonancePalette(Array.from(tokenByIdentity.values()), currentSchool);
 
+  const rawDocWeights = analyzedDoc.parsed?.tokenWeights ?? {};
+  const combinedTokenWeights = {};
+
+  for (const [normalizedWord, unifiedToken] of tokenByNormalizedWord.entries()) {
+    if (!normalizedWord) continue;
+
+    const docWeight = rawDocWeights[normalizedWord] ?? null;
+    const syntacticWeight = typeof unifiedToken?.hhm?.tokenWeight === 'number'
+      ? unifiedToken.hhm.tokenWeight
+      : null;
+
+    if (docWeight === null && syntacticWeight === null) {
+      continue;
+    }
+
+    combinedTokenWeights[normalizedWord] = combineTokenWeights({
+      normalized: normalizedWord,
+      document: docWeight,
+      syntactic: syntacticWeight,
+      activation: null,
+    });
+  }
+
+  for (const [word, weight] of Object.entries(rawDocWeights)) {
+    if (!(word in combinedTokenWeights)) {
+      combinedTokenWeights[word] = weight;
+    }
+  }
+
+  let tokenWeightDiagnostic = null;
+  try {
+    tokenWeightDiagnostic = auditTokenWeights({
+      analyzedDocument: analyzedDoc,
+      rankedCandidates: [],
+    });
+  } catch (auditError) {
+    console.warn('[VerseSynthesis] tokenWeight audit failed silently:', auditError);
+  }
+
   return Object.freeze({
     timestamp: Date.now(), // EXEMPT
     verseIR,
@@ -111,7 +156,11 @@ export function synthesizeVerse(text, options = {}) {
     tokenByCharStart,
     tokenByNormalizedWord,
     rhymeColorRegistry,
-    totalSyllables: verseIR?.tokens?.reduce((n, t) => n + (t.syllableCount || 0), 0) || 0,
+    totalSyllables: verseIR.metadata?.syllableCount ?? verseIR.tokens.reduce((n, t) => n + (t.syllableCount || 0), 0),
+    tokenWeights: Object.keys(combinedTokenWeights).length > 0
+      ? combinedTokenWeights
+      : rawDocWeights,
+    tokenWeightDiagnostic,
     isPure: true
   });
 }
@@ -131,6 +180,8 @@ function createEmptyArtifact() {
     tokenByNormalizedWord: new Map(),
     rhymeColorRegistry: new Map(),
     totalSyllables: 0,
+    tokenWeights: {},
+    tokenWeightDiagnostic: null,
     isPure: true
   });
 }

@@ -53,19 +53,28 @@ public class YtDlpProvider implements DownloadProvider {
     @Override
     public void download(DownloadRequest request, DownloadProgressListener listener) throws DownloadException {
         String formatArg = getFormatArgument(request.getQuality(), request.getFormat());
-        
-        String[] command = {
-            "yt-dlp",
-            "-f", formatArg,
-            "--no-playlist",
-            "--no-cookies",
-            "--no-cookies-from-browser",
-            "-o", request.getSaveLocation() + "/%(title)s.%(ext)s",
-            request.getUrl()
-        };
+        boolean audioOnly = "MP3 audio".equalsIgnoreCase(request.getFormat());
+
+        java.util.List<String> command = new java.util.ArrayList<>();
+        command.add("yt-dlp");
+        command.add("--newline"); // emit each progress tick on its own line so it can be parsed live
+        command.add("-f");
+        command.add(formatArg);
+        if (audioOnly) {
+            // Extract and re-encode to MP3 (requires ffmpeg on PATH).
+            command.add("--extract-audio");
+            command.add("--audio-format");
+            command.add("mp3");
+        }
+        command.add("--no-playlist");
+        command.add("--no-cookies");
+        command.add("--no-cookies-from-browser");
+        command.add("-o");
+        command.add(request.getSaveLocation() + "/%(title)s.%(ext)s");
+        command.add(request.getUrl());
 
         try {
-            this.currentProcess = processRunner.runAsync(command, listener);
+            this.currentProcess = processRunner.runAsync(command.toArray(new String[0]), listener);
             int exitCode = currentProcess.waitFor();
             if (exitCode != 0) {
                 throw new DownloadException("Download process exited with code " + exitCode);

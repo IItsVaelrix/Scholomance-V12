@@ -16,11 +16,11 @@ function fakeService() {
 }
 
 describe('AmbienceTray', () => {
-  it('renders the three soundscapes and a master slider', () => {
+  it('renders the single soundscape and a master slider', () => {
     render(<AmbienceTray service={fakeService()} />);
-    expect(screen.getByRole('button', { name: /rain/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /café plaza/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /wind through a house/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /rain \+ forest stream/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /café plaza/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /wind through a house/i })).not.toBeInTheDocument();
     expect(screen.getByLabelText(/master ambience volume/i)).toBeInTheDocument();
   });
 

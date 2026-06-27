@@ -10,7 +10,7 @@ import {
   ChevronRight,
   User,
   LogOut,
-  MessageSquare,
+  Newspaper,
 } from "lucide-react";
 import { LINKS, INTERNAL_MODULES } from "../../data/library";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -24,7 +24,7 @@ const ICON_MAP = {
   listen: Headphones,
   read: BookOpen,
   visualiser: Activity,
-  oracle: MessageSquare,
+  blog: Newspaper,
 };
 
 const ROUTE_COPY = {

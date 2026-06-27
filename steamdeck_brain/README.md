@@ -216,6 +216,11 @@ making a 1B model feel like a Scholomance-trained archmage.
 | tinyllama:1.1b | ~700 MB | ~500 MB | 50-70 | Fast, weaker |
 
 All models run entirely on Steam Deck's CPU/GPU with ~1GB RAM overhead.
+
+> **GPU offload:** The Deck's APU (RADV VANGOGH) is an *integrated* GPU, which
+> Ollama skips by default — so models silently run on CPU. The stack sets
+> `OLLAMA_IGPU_ENABLE=1` (systemd EnvironmentFile + launch scripts) to offload to
+> the iGPU over Vulkan. Verify with `ollama ps` — `PROCESSOR` should read `100% GPU`.
 Substrate adds ~20MB for 100K documents.
 
 ## How to Make It Actually Smart

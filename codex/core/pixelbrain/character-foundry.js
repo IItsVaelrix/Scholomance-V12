@@ -12,6 +12,8 @@ import './character-hair-profiles.js';
 import './character-clothing-profiles.js';
 import './character-accessory-profiles.js';
 import './character-detail-profiles.js';
+import './scholo-chibi-face-profiles.js';
+import './scholomance-character-motif-amp.js';
 
 const CHARACTER_DEFAULTS = {
   canvas: { width: 32, height: 48 },
