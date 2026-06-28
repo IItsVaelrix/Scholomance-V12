@@ -97,3 +97,34 @@ def select_genes(task: str, registry: GeneRegistry | None = None) -> list[Retrie
         if len(gated) >= MAX_GENES:
             break
     return gated
+
+
+def format_context(genes: list[RetrievalGene]) -> str:
+    """Render gated genes as a markdown directive block (empty string if none)."""
+    if not genes:
+        return ""
+
+    lines = [
+        "## SCDNA genes active for this task",
+        "_Retrieved by intent match — treat as canonical directives for the components named._",
+        "",
+    ]
+    for gene in genes:
+        lines.append(
+            f"### {gene.identity.stableId}  "
+            f"({gene.domain.primary} · conf {gene.retrieval.confidence:.2f})"
+        )
+        lines.append(f"**Do:** {gene.instruction.imperative}")
+        if gene.instruction.requiredChecks:
+            lines.append("**Required checks:**")
+            lines.extend(f"- {check}" for check in gene.instruction.requiredChecks)
+        if gene.instruction.forbiddenDrift:
+            lines.append("**Forbidden drift:**")
+            lines.extend(f"- {drift}" for drift in gene.instruction.forbiddenDrift)
+        lines.append("")
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
+    """Full pipeline: task string -> directive block (empty when no genes apply)."""
+    return format_context(select_genes(task, registry=registry))

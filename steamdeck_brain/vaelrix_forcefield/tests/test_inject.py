@@ -1,4 +1,4 @@
-from vaelrix_forcefield.scdna.inject import distill_query
+from vaelrix_forcefield.scdna.inject import distill_query, build_injection, format_context
 from vaelrix_forcefield.scdna.compiler import compile_gene
 from vaelrix_forcefield.scdna.inject import select_genes, MAX_GENES
 
@@ -66,3 +66,23 @@ def test_select_caps_results():
         g = _pixel_gene(f"test.pixel.sprite.cap{i}")
         registry[g.identity.stableId] = g
     assert len(select_genes("render the pixel sprite", registry=registry)) == MAX_GENES
+
+
+def test_format_empty_is_empty_string():
+    assert format_context([]) == ""
+
+
+def test_build_injection_includes_directive_fields():
+    g = _pixel_gene("test.pixel.sprite.fmt")
+    registry = {g.identity.stableId: g}
+    block = build_injection("render the pixel sprite", registry=registry)
+    assert "test.pixel.sprite.fmt" in block
+    assert "Render the pixel sprite skeleton from its coordinates." in block
+    assert "Required checks:" in block
+    assert "Verify checksum before use." in block
+
+
+def test_build_injection_empty_when_no_match():
+    g = _pixel_gene("test.pixel.sprite.nomatch")
+    registry = {g.identity.stableId: g}
+    assert build_injection("write a haiku about the moon", registry=registry) == ""
