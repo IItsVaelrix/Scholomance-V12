@@ -63,6 +63,11 @@ def distill_query(task: str) -> str:
     return " ".join(out)
 
 
+# Tuning knob passed to detect_gene_matches. NOTE: the detector also enforces an
+# internal floor (_BASE_SCORE_MINIMUM = 0.5 on the raw overlap ratio), which
+# dominates this value — so the *effective* match floor is 0.5, not 0.35.
+# This constant only binds if that internal floor is ever lowered. Kept as the
+# documented loosen-matching surface; raising it above 0.5 would tighten matching.
 INJECT_SCORE_THRESHOLD = 0.35
 MIN_FRESHNESS = 0.5
 MAX_GENES = 3
