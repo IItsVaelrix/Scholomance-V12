@@ -128,3 +128,35 @@ def format_context(genes: list[RetrievalGene]) -> str:
 def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
     """Full pipeline: task string -> directive block (empty when no genes apply)."""
     return format_context(select_genes(task, registry=registry))
+
+
+import json
+import sys
+
+
+def main(argv: list[str] | None = None) -> int:
+    """UserPromptSubmit hook entrypoint. Never raises; never blocks the prompt."""
+    raw = sys.stdin.read()
+    try:
+        payload = json.loads(raw) if raw.strip() else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    task = str(payload.get("prompt", "") or "")
+    try:
+        block = build_injection(task)
+    except Exception:
+        block = ""
+
+    if block.strip():
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "UserPromptSubmit",
+                "additionalContext": block,
+            }
+        }))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

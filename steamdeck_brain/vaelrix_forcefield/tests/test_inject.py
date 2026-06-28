@@ -1,6 +1,13 @@
+import json
+import subprocess
+import sys
+from pathlib import Path
+
 from vaelrix_forcefield.scdna.inject import distill_query, build_injection, format_context
 from vaelrix_forcefield.scdna.compiler import compile_gene
 from vaelrix_forcefield.scdna.inject import select_genes, MAX_GENES
+
+_PKG_DIR = Path(__file__).resolve().parents[2]  # steamdeck_brain/
 
 
 def test_distill_keeps_pixel_domain_tokens():
@@ -86,3 +93,34 @@ def test_build_injection_empty_when_no_match():
     g = _pixel_gene("test.pixel.sprite.nomatch")
     registry = {g.identity.stableId: g}
     assert build_injection("write a haiku about the moon", registry=registry) == ""
+
+
+def _run_hook(stdin_text):
+    proc = subprocess.run(
+        [sys.executable, "-m", "vaelrix_forcefield.scdna.inject"],
+        input=stdin_text, capture_output=True, text=True, cwd=_PKG_DIR,
+    )
+    return proc
+
+
+def test_hook_emits_additional_context_for_matching_prompt():
+    # uses the committed registry; a void/ice claymore prompt should match a real gene
+    proc = _run_hook(json.dumps({"prompt": "render the void ice claymore sprite from coordinates"}))
+    assert proc.returncode == 0
+    out = proc.stdout.strip()
+    assert out, "expected non-empty stdout"
+    payload = json.loads(out)
+    assert payload["hookSpecificOutput"]["hookEventName"] == "UserPromptSubmit"
+    assert "claymore" in payload["hookSpecificOutput"]["additionalContext"].lower()
+
+
+def test_hook_silent_for_unrelated_prompt():
+    proc = _run_hook(json.dumps({"prompt": "write a haiku about the quiet moon"}))
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == ""
+
+
+def test_hook_survives_malformed_stdin():
+    proc = _run_hook("this is not json{{{")
+    assert proc.returncode == 0
+    assert proc.stdout.strip() == ""
