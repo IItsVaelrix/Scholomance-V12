@@ -55,3 +55,45 @@ def distill_query(task: str) -> str:
             seen.add(token)
             out.append(token)
     return " ".join(out)
+
+
+from .compiler import DEFAULT_REGISTRY_PATH, _load_json_registry
+from .detector import detect_gene_matches
+from .registry import DEFAULT_GENE_REGISTRY, GeneRegistry
+from .types import RetrievalGene
+
+INJECT_SCORE_THRESHOLD = 0.35
+MIN_FRESHNESS = 0.5
+MAX_GENES = 3
+
+
+def load_injection_registry() -> GeneRegistry:
+    """Committed JSON registry merged with the built-in defaults."""
+    registry = _load_json_registry(DEFAULT_REGISTRY_PATH)
+    registry.update(DEFAULT_GENE_REGISTRY)
+    return registry
+
+
+def select_genes(task: str, registry: GeneRegistry | None = None) -> list[RetrievalGene]:
+    """Distill the task, match genes, and apply forcefield-equivalent gating."""
+    if registry is None:
+        registry = load_injection_registry()
+
+    query = distill_query(task)
+    if not query:
+        return []
+
+    matches = detect_gene_matches(query, registry, score_threshold=INJECT_SCORE_THRESHOLD)
+
+    gated: list[RetrievalGene] = []
+    for gene in matches:
+        if gene.lifecycle.status != "active":
+            continue
+        if gene.retrieval.confidence < gene.retrieval.minConfidence:
+            continue
+        if gene.retrieval.freshness < MIN_FRESHNESS:
+            continue
+        gated.append(gene)
+        if len(gated) >= MAX_GENES:
+            break
+    return gated

@@ -1,4 +1,6 @@
 from vaelrix_forcefield.scdna.inject import distill_query
+from vaelrix_forcefield.scdna.compiler import compile_gene
+from vaelrix_forcefield.scdna.inject import select_genes, MAX_GENES
 
 
 def test_distill_keeps_pixel_domain_tokens():
@@ -19,3 +21,48 @@ def test_distill_empty_for_no_domain_signal():
 def test_distill_dedupes_and_preserves_order():
     q = distill_query("sprite sprite palette sprite")
     assert q.split() == ["sprite", "palette"]
+
+
+def _pixel_gene(stable_id, confidence=90, freshness=0.9):
+    gene, _compact, _warn = compile_gene(
+        stable_id=stable_id,
+        source_kind="sprite",
+        domain="pixel",
+        action="recall",
+        activation_brains=["PIXEL_BRAIN"],
+        imperative="Render the pixel sprite skeleton from its coordinates.",
+        short_meaning="pixel sprite skeleton render",
+        confidence=confidence,
+        freshness=freshness,
+        required_checks=["Verify checksum before use."],
+        registry={},
+        accept_checklist=True,
+    )
+    return gene
+
+
+def test_select_returns_matching_pixel_gene():
+    g = _pixel_gene("test.pixel.sprite.v1")
+    registry = {g.identity.stableId: g}
+    out = select_genes("render the pixel sprite", registry=registry)
+    assert [x.identity.stableId for x in out] == ["test.pixel.sprite.v1"]
+
+
+def test_select_empty_when_no_domain_signal():
+    g = _pixel_gene("test.pixel.sprite.v2")
+    registry = {g.identity.stableId: g}
+    assert select_genes("write a haiku about the moon", registry=registry) == []
+
+
+def test_select_gates_low_freshness():
+    g = _pixel_gene("test.pixel.sprite.v3", freshness=0.2)
+    registry = {g.identity.stableId: g}
+    assert select_genes("render the pixel sprite", registry=registry) == []
+
+
+def test_select_caps_results():
+    registry = {}
+    for i in range(MAX_GENES + 2):
+        g = _pixel_gene(f"test.pixel.sprite.cap{i}")
+        registry[g.identity.stableId] = g
+    assert len(select_genes("render the pixel sprite", registry=registry)) == MAX_GENES
