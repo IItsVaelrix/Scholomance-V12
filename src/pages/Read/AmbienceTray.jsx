@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Pause, Play } from 'lucide-react';
 import { useAmbienceMixer } from '../../hooks/useAmbienceMixer';
 
 const CHANNEL_META = [
@@ -6,7 +7,7 @@ const CHANNEL_META = [
 ];
 
 export default function AmbienceTray({ service }) {
-  const { state, setChannelEnabled, setChannelVolume, setMasterVolume } = useAmbienceMixer(service);
+  const { state, setChannelEnabled, setChannelVolume, setMasterVolume, stop } = useAmbienceMixer(service);
   const [collapsed, setCollapsed] = useState(false);
 
   if (collapsed) {
@@ -39,17 +40,31 @@ export default function AmbienceTray({ service }) {
 
       {CHANNEL_META.map(({ id, label }) => {
         const ch = state.channels[id];
+        const isPlaying = state.running && ch.enabled;
+        const TransportIcon = isPlaying ? Pause : Play;
+        const transportLabel = `${isPlaying ? 'Pause' : 'Play'} ${label}`;
+        const handleTransportClick = () => {
+          if (isPlaying) {
+            void stop();
+            return;
+          }
+          void setChannelEnabled(id, true);
+        };
+
         return (
           <div className="ambience-tray__row" key={id}>
             <button
               type="button"
-              className="ambience-tray__toggle"
-              aria-pressed={ch.enabled}
+              className="ambience-tray__transport"
+              aria-label={transportLabel}
+              aria-pressed={isPlaying}
+              title={transportLabel}
               disabled={!ch.available}
-              onClick={() => setChannelEnabled(id, !ch.enabled)}
+              onClick={handleTransportClick}
             >
-              {label}
+              <TransportIcon size={16} aria-hidden="true" />
             </button>
+            <span className="ambience-tray__label">{label}</span>
             <input
               type="range"
               min="0"

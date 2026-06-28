@@ -20,6 +20,11 @@ import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColo
 import { resolveVerseIrColor } from "../color/pcaChroma.js";
 import { auditTokenWeights } from "../../../tokenization/tokenWeightError.js";
 import { combineTokenWeights } from "../../../tokenization/tokenWeightSchema.js";
+// The canonical position-bound text identity used by the Lexical editor's
+// resolver (resolveTokenDataAtPosition). charStart.js is framework-agnostic
+// (no react/lexical imports), so importing the format keeps producer and
+// consumer on ONE definition instead of a drifting duplicate string.
+import { buildIdentityKey } from "../../../../../src/lib/lexical/charStart.js";
 
 /**
  * Executes a total linguistic synthesis of the given text.
@@ -94,6 +99,14 @@ export function synthesizeVerse(text, options = {}) {
     };
 
     tokenByIdentity.set(identityKey, unifiedToken);
+    // Also index by the position-bound text identity the Lexical resolver
+    // queries (buildIdentityKey(word, charStart)). The colon key
+    // `lineIndex:wordIndex:charStart` is for index-based consumers (ReadPage's
+    // truesightDebugWords); the editor's identity fallback never carried
+    // line/word indices, so without this dash key it could never match.
+    if (token.word) {
+      tokenByIdentity.set(buildIdentityKey(token.word, token.charStart), unifiedToken);
+    }
     tokenByCharStart.set(token.charStart, unifiedToken);
     
     if (!tokenByNormalizedWord.has(token.normalized)) {
