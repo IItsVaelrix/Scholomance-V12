@@ -68,7 +68,7 @@ def distill_query(task: str) -> str:
 # dominates this value — so the *effective* match floor is 0.5, not 0.35.
 # This constant only binds if that internal floor is ever lowered. Kept as the
 # documented loosen-matching surface; raising it above 0.5 would tighten matching.
-INJECT_SCORE_THRESHOLD = 0.35
+INJECT_SCORE_THRESHOLD = 0.35  # NOTE: effective floor is detector's hardcoded _BASE_SCORE_MINIMUM (0.5); this only further filters final_score, so values <=0.5 are inert
 MIN_FRESHNESS = 0.5
 MAX_GENES = 3
 
@@ -136,7 +136,7 @@ def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
     return format_context(select_genes(task, registry=registry))
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     """UserPromptSubmit hook entrypoint. Never raises; never blocks the prompt."""
     try:
         raw = sys.stdin.read()
@@ -145,6 +145,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         payload = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
+        payload = {}
+    if not isinstance(payload, dict):
         payload = {}
 
     task = str(payload.get("prompt", "") or "")

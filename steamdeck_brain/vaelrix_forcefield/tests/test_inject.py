@@ -138,3 +138,10 @@ def test_main_survives_stdin_read_error(monkeypatch, capsys):
     rc = inject.main()
     assert rc == 0
     assert capsys.readouterr().out.strip() == ""
+
+
+def test_hook_survives_non_object_json():
+    for body in ("123", "[1, 2, 3]", "\"just a string\""):
+        proc = _run_hook(body)
+        assert proc.returncode == 0, f"non-zero for {body!r}"
+        assert proc.stdout.strip() == "", f"unexpected output for {body!r}"
