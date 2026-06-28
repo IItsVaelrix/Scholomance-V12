@@ -124,3 +124,17 @@ def test_hook_survives_malformed_stdin():
     proc = _run_hook("this is not json{{{")
     assert proc.returncode == 0
     assert proc.stdout.strip() == ""
+
+
+def test_main_survives_stdin_read_error(monkeypatch, capsys):
+    import io
+    from vaelrix_forcefield.scdna import inject
+
+    class _Boom(io.IOBase):
+        def read(self, *a, **k):
+            raise OSError("stdin exploded")
+
+    monkeypatch.setattr("sys.stdin", _Boom())
+    rc = inject.main()
+    assert rc == 0
+    assert capsys.readouterr().out.strip() == ""

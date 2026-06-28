@@ -12,7 +12,13 @@ shrinks the prompt to domain-salient tokens first.
 
 from __future__ import annotations
 
-from .detector import normalize_text, tokenize
+import json
+import sys
+
+from .compiler import DEFAULT_REGISTRY_PATH, _load_json_registry
+from .detector import detect_gene_matches, normalize_text, tokenize
+from .registry import DEFAULT_GENE_REGISTRY, GeneRegistry
+from .types import RetrievalGene
 
 STOPWORDS: frozenset[str] = frozenset({
     "the", "and", "for", "with", "this", "that", "you", "your", "our", "can",
@@ -56,11 +62,6 @@ def distill_query(task: str) -> str:
             out.append(token)
     return " ".join(out)
 
-
-from .compiler import DEFAULT_REGISTRY_PATH, _load_json_registry
-from .detector import detect_gene_matches
-from .registry import DEFAULT_GENE_REGISTRY, GeneRegistry
-from .types import RetrievalGene
 
 INJECT_SCORE_THRESHOLD = 0.35
 MIN_FRESHNESS = 0.5
@@ -130,13 +131,12 @@ def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
     return format_context(select_genes(task, registry=registry))
 
 
-import json
-import sys
-
-
 def main(argv: list[str] | None = None) -> int:
     """UserPromptSubmit hook entrypoint. Never raises; never blocks the prompt."""
-    raw = sys.stdin.read()
+    try:
+        raw = sys.stdin.read()
+    except Exception:
+        raw = ""
     try:
         payload = json.loads(raw) if raw.strip() else {}
     except json.JSONDecodeError:
