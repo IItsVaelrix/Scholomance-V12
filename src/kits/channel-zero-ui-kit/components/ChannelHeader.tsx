@@ -22,7 +22,7 @@ const DEFAULT_NAV: ChannelNavItem[] = [
   { to: '/blog?kind=verdict', label: 'Verdicts', kind: 'verdict' },
 ];
 
-// External subscribe provider — Damien stores/sees nothing. Unset → disabled.
+// External subscribe provider -- Damien stores/sees nothing. Unset → disabled.
 const SUBSCRIBE_URL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BLOG_SUBSCRIBE_URL) || '';
 

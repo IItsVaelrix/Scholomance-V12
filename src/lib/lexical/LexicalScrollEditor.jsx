@@ -234,7 +234,7 @@ function LineHeightPlugin({ onLineHeight }) {
       if (!para) return;
       // Report ONE line's height, not the whole paragraph. In plain-text Lexical,
       // pressing Enter inserts <br> line breaks inside a SINGLE paragraph, so
-      // para.offsetHeight grows with every line — using it as the per-line height
+      // para.offsetHeight grows with every line -- using it as the per-line height
       // balloons every gutter row on each keystroke. The resolved line-height is
       // the true single-line height and stays constant regardless of line count.
       // (Loaded scrolls split into separate <p> per line, so they never hit this.)

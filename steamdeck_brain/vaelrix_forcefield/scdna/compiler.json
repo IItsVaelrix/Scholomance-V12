@@ -232,7 +232,7 @@
           "Do not derive canonical state from the raster preview."
         ],
         "requiredChecks": [
-          "Verify FNV-1a-32 checksum FB961601 before use.",
+          "Verify FNV-1a-32 checksum 6DB23A1A before use.",
           "Preserve vertical symmetry axis x=31.5."
         ]
       },
@@ -289,7 +289,7 @@
           "Do not derive canonical state from the raster preview."
         ],
         "requiredChecks": [
-          "Verify FNV-1a-32 checksum FB961601 with vaelrix_forcefield.pixelbrain.pbrain_checksum (Python json.dumps(packet-minus-checksum, separators=(',',':'))). JS verifiers fail: JSON.parse collapses float 64.0 to 64.",
+          "Verify FNV-1a-32 checksum 6DB23A1A with vaelrix_forcefield.pixelbrain.pbrain_checksum (Python json.dumps(packet-minus-checksum, separators=(',',':'))). JS verifiers fail: JSON.parse collapses float 64.0 to 64.",
           "Preserve vertical symmetry axis x=31.5."
         ]
       },

@@ -34,7 +34,7 @@ export default function AmbienceTray({ service }) {
           aria-label="Collapse ambience tray"
           onClick={() => setCollapsed(true)}
         >
-          –
+          -
         </button>
       </div>
 

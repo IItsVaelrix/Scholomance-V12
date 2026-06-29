@@ -128,6 +128,9 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-06-21-SCD64-Predictive-IntelliSense.md`](./2026-06-21-SCD64-Predictive-IntelliSense.md) | Draft | SCD64 + Predictive IntelliSense | High |
 | [`2026-06-21-SCD64-robust-pass.md`](./2026-06-21-SCD64-robust-pass.md) | Draft | SCD64 + Robust Pass | High |
 | [`2026-06-22-pixelbrain-youtube-intelligence-seo-pdr.md`](./2026-06-22-pixelbrain-youtube-intelligence-seo-pdr.md) | Draft | PixelBrain + YouTube Intelligence + SEO | High |
+| [`PDR-2026-06-27-READ-PRO-MONETIZATION.md`](./PDR-2026-06-27-READ-PRO-MONETIZATION.md) | Draft v2 | Read Pro + Freemium Monetization + Stripe Entitlements | Critical |
+| [`2026-06-29-pixelbrain-craft-gate-finish-suite-convergence-pdr.md`](./2026-06-29-pixelbrain-craft-gate-finish-suite-convergence-pdr.md) | Draft | PixelBrain \| Immunity \| CLI Gate \| AMP Finish Suite \| Visual Fidelity | Critical |
+| [`2026-06-29-pixelbrain-pipeline-golden-corpus-pdr.md`](./2026-06-29-pixelbrain-pipeline-golden-corpus-pdr.md) | In Progress | PixelBrain \| Immunity \| QA Corpus \| CLI Gate \| Visual Fidelity | Critical |
 | [`SCD64-robust-pass.md`](./SCD64-robust-pass.md) | Draft | SCD64 + Robust Pass | High |
 | [`Polarity PDR.md`](./Polarity%20PDR.md) | Draft | Polarity Music Video + PixelBrain Cinematic Lyric Video | High |
 | [`Polarity Spec PDR.md`](./Polarity%20Spec%20PDR.md) | Draft | Polarity Music Video + Technical Implementation Spec | High |

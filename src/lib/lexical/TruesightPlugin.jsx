@@ -57,7 +57,7 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
       const { analyzedWordsByCharStart: liveByCharStart, analyzedWordsByIdentity: liveByIdentity } = inputsRef.current;
       // Pass the live Maps straight through. resolveTokenDataAtPosition reads
       // them via .get(), so we no longer rebuild the entire map into an object
-      // (Object.fromEntries) on every single word lookup — that was O(N) per
+      // (Object.fromEntries) on every single word lookup -- that was O(N) per
       // word and O(N²) across a full recolor when the gate arrives.
       return resolveTokenDataAtPosition(node, text, liveByCharStart, liveByIdentity);
     };

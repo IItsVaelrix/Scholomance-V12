@@ -1,5 +1,5 @@
 /**
- * MarkdownLite — a dependency-free, XSS-safe renderer for the lightweight text
+ * MarkdownLite -- a dependency-free, XSS-safe renderer for the lightweight text
  * format used by user-authored blog posts.
  *
  * Supported syntax:
@@ -10,7 +10,7 @@
  *   inline **bold**       → <strong>
  *   inline *italic*       → <em>
  *
- * Everything is rendered as React text/elements — never `dangerouslySetInnerHTML`.
+ * Everything is rendered as React text/elements -- never `dangerouslySetInnerHTML`.
  * Raw HTML in the source is therefore shown as escaped text, never executed.
  */
 

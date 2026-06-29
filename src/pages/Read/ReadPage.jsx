@@ -673,7 +673,7 @@ export default function ReadPage() {
     }
 
     // Ritual prediction is fully dormant when the HEX TOOLS toggle is off:
-    // no spellcheck box, no tooltip — nothing surfaces unprompted.
+    // no spellcheck box, no tooltip -- nothing surfaces unprompted.
     if (!isPredictive) {
       return;
     }

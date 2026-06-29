@@ -129,7 +129,7 @@ function newId() {
   } catch {
     /* fall through */
   }
-  return `post-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
+  return `post-${Date.now().toString(36)}-${crypto.randomUUID().split('-')[0]}`;
 }
 
 function normalizeKind(kind) {

@@ -558,7 +558,7 @@ export function getArticle(slug: string): Article | undefined {
 /* ── seed → lightweight-text conversion ──────────────────────────────── */
 /* Used when an admin edits a seed: the rich JSX is flattened into the
  * MarkdownLite source format so it becomes an editable shadow post. The
- * original seed JSX is never mutated. Best-effort — tables flatten to text. */
+ * original seed JSX is never mutated. Best-effort -- tables flatten to text. */
 
 function inlineText(node: ReactNode): string {
   if (node == null || node === false || node === true) return '';

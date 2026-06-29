@@ -131,7 +131,7 @@ describe('Truesight charStart convention - single source of truth', () => {
 
   it('adds the joining newline for a NON-paragraph top-level block, matching $getScrollText', () => {
     // $getScrollText() is `root.getChildren().map(c => c.getTextContent()).join('\n')`
-    // — it joins ALL top-level children with '\n' regardless of type. So a
+    // -- it joins ALL top-level children with '\n' regardless of type. So a
     // heading (or any future block) at the root must contribute a joining
     // newline exactly like a paragraph. Keying the newline on type==='paragraph'
     // silently undercounted by one per non-paragraph block and drifted the gate.
@@ -214,7 +214,7 @@ describe('Truesight charStart convention - position-only lookup hierarchy', () =
     // index-based consumers like ReadPage.truesightDebugWords) AND
     // buildIdentityKey(word, charStart) (for THIS resolver). Pin that the
     // resolver's query format matches the dash key, so the identity fallback
-    // is no longer dead — and that the old colon-only map would NOT have matched.
+    // is no longer dead -- and that the old colon-only map would NOT have matched.
     const { leaves } = makeParagraphChain(['see', 'hear']);
     const node = leaves[2]; // 'hear'
     const cs = computeCharStartFromLexical(node);
@@ -225,7 +225,7 @@ describe('Truesight charStart convention - position-only lookup hierarchy', () =
     tokenByIdentity.set(`${profile.lineIndex}:${profile.wordIndex}:${profile.charStart}`, profile);
     tokenByIdentity.set(buildIdentityKey(profile.word, profile.charStart), profile);
 
-    // byCharStart deliberately absent — the only case the fallback exists for.
+    // byCharStart deliberately absent -- the only case the fallback exists for.
     expect(resolveTokenDataAtPosition(node, 'hear', null, tokenByIdentity)).toEqual(profile);
 
     // Regression guard: the colon key ALONE (the pre-fix producer output) never

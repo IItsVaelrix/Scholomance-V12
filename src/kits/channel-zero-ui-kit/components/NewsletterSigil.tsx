@@ -5,7 +5,7 @@ export type NewsletterSigilProps = {
   description?: string;
 };
 
-// External subscribe provider — the sole data controller. No email is ever
+// External subscribe provider -- the sole data controller. No email is ever
 // captured, stored, or exported here; Damien sees no subscriber data.
 const SUBSCRIBE_URL =
   (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BLOG_SUBSCRIBE_URL) || '';

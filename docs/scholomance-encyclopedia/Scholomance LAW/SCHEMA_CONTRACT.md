@@ -7,11 +7,22 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.29** | Last updated: 2026-06-20
+**Version: 1.30** | Last updated: 2026-06-29
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: PixelBrain pipeline golden corpus report contract
+- Version: 1.29 -> 1.30
+- Changed fields: added `PixelBrainPipelineCorpusCase` and `PixelBrainPipelineCorpusReport` as internal CLI/core diagnostic envelopes for mutation and finish-suite corpus execution; no persisted bytecode family is reserved
+- Breaking: no
+- Claude impact: no required UI change; any future `/pixelbrain` surface must treat corpus results as backend/core diagnostics only, not as client-authoritative asset truth
+- Gemini impact: QA-owned tests can import the corpus runner and assert stable case IDs, expected audit failures, embedded `PB-ERR-v1` bytecodes for forge mutations, and deterministic finish-suite invariants
 
 ---
 
@@ -472,6 +483,32 @@ interface PixelBrainCraftGateReport {
   bytecodeErrors: string[];   // extracted PB-ERR-v1 failures for immune memory
 }
 
+interface PixelBrainPipelineCorpusCase {
+  id: string;                  // stable corpus case id, e.g. "gate.bad-voxel-sort"
+  type: "mutation" | "golden";
+  status: "pass" | "fail";
+  expected: {
+    status?: "pass" | "fail";
+    auditId?: string;
+    invariant?: string;
+  };
+  observed: Record<string, unknown>;
+  bytecodeErrors: string[];    // PB-ERR-v1 values extracted from nested gate reports
+}
+
+interface PixelBrainPipelineCorpusReport {
+  contract: "pixelbrain.pipeline-corpus.v1"; // CLI/internal report, not a persisted bytecode family
+  schemaVersion: "0.1.0";
+  status: "pass" | "fail";
+  summary: {
+    cases: number;
+    passed: number;
+    failed: number;
+  };
+  cases: PixelBrainPipelineCorpusCase[];
+  bytecodeErrors: string[];
+}
+
 /*
 PixelBrain item voxel invariants:
 - `VoxelVolume` is process memory only. It may contain typed arrays and maps and must not be persisted as JSON.
@@ -484,6 +521,7 @@ PixelBrain item voxel invariants:
 - `energy` and `energyType` travel as a pair. If one is present, the other is required. `energy` is clamped `0..1`; `energyType` must be one of `EnergyType`.
 - VolumeLiftAMP may read only `EnergyType.STRUCTURAL` (`2`) to create depth. RADIANT/PHOTONIC channels may be carried for emission but cannot add mass.
 - `PixelBrainCraftGateReport` is the report shape for the planned CLI gate. It does not reserve `PB-FORGE-GATE-v1`; failures continue to use `PB-ERR-v1`, and learned cures may use `PB-XP-v1`.
+- `PixelBrainPipelineCorpusReport` is the internal mutation/golden corpus envelope. It does not reserve `PB-CORPUS-v1`; forge mutation evidence continues to flow through nested `PB-ERR-v1` craft-gate failures.
 */
 
 /*
@@ -2178,6 +2216,8 @@ Backward compatible until: [date or "immediate breaking change"]
 | 1.26 | 2026-06-07 | Added Eq Preset V2 schema and persistence endpoints | no |
 | 1.27 | 2026-06-19 | Registered `PB-VOXEL-ITEM-v1`, documented the in-memory `VoxelVolume` sibling, and added the CLI-only PixelBrain craft gate report contract | no |
 | 1.28 | 2026-06-19 | Registered `PB-SILH-BLUEPRINT-v1`, ratified the `.silh` grammar, and extended PixelBrain craft gate audits for silhouette blueprint and animation lockstep verification | no |
+| 1.29 | 2026-06-20 | Added Memory Cell Osmosis TurboQuant receptor contracts for diagnostic-memory anomaly evaluation | no |
+| 1.30 | 2026-06-29 | Added the internal PixelBrain pipeline golden corpus report contract for mutation and finish-suite corpus execution | no |
 
 ---
 
