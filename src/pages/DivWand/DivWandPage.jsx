@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ResizableBox } from 'react-resizable';
 import {
   Sparkles, Terminal, Save, AlertTriangle, CheckCircle,
   Sliders, Copy, AlignLeft, Grid, ZoomIn, ZoomOut, X,
@@ -330,7 +331,7 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
-export default function DivWandPage() {
+export default function DivWandPage({ onSendToVideoForge } = {}) {
   const isGodotExportEnabled = useGodotExportFlag();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [selectedPreset, setSelectedPreset]     = useState(PRESETS[0]);
@@ -489,6 +490,44 @@ export default function DivWandPage() {
   const canZoomIn  = zoomIdx < ZOOM_STEPS.length - 1;
   const canZoomOut = zoomIdx > 0;
 
+  const handleSendToVideoForge = useCallback(() => {
+    if (!onSendToVideoForge) return;
+
+    try {
+      const parsed = JSON.parse(proposalText);
+      const outcome = validateDivProposal(parsed);
+      if (!outcome.valid) {
+        throw new Error(outcome.errors?.[0] || 'Layout proposal is invalid');
+      }
+
+      const role = parsed.proposedLayout?.role || 'layout';
+      onSendToVideoForge({
+        source: 'divwand',
+        kind: 'pixelbrain',
+        name: `DivWand ${role}`,
+        pixelBrainPacket: {
+          source: 'divwand',
+          proposal: parsed,
+          metrics: {
+            nodeCount,
+            treeDepth,
+            lineCount,
+          },
+        },
+        metadata: {
+          source: 'divwand',
+          role,
+          nodeCount,
+          treeDepth,
+          lineCount,
+        },
+      });
+      setTerminalLogs(prev => [...prev, { type: 'success', text: 'Sent DivWand layout to VideoForge timeline.', ts: ts() }]);
+    } catch (e) {
+      setTerminalLogs(prev => [...prev, { type: 'error', text: `VideoForge handoff failed: ${e.message}`, ts: ts() }]);
+    }
+  }, [lineCount, nodeCount, onSendToVideoForge, proposalText, treeDepth]);
+
   // ── RENDER ────────────────────────────────────────────────────────────────
 
   return (
@@ -531,6 +570,19 @@ export default function DivWandPage() {
             >
               <Download size={13} aria-hidden="true" />
               Export
+            </button>
+          )}
+          {onSendToVideoForge && (
+            <button
+              className="dw-btn"
+              onClick={handleSendToVideoForge}
+              disabled={!validationResult.valid}
+              title="Send this layout proposal into VideoForge as a PixelBrain clip"
+              aria-label="Send DivWand layout proposal to VideoForge"
+              type="button"
+            >
+              <Grid size={13} aria-hidden="true" />
+              Send to Forge
             </button>
           )}
         </div>
@@ -641,27 +693,34 @@ export default function DivWandPage() {
 
           <div className={`dw-canvas${showGrid ? ' dw-canvas--grid' : ''}`}>
             <div className="dw-crt" aria-hidden="true" />
-            <div
-              className="dw-preview-root"
-              ref={previewRootRef}
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
-            >
-              {activeProposal ? (
-                <LayoutNode
-                  node={activeProposal.proposedLayout}
-                  depth={0}
-                  isInspectorActive={isInspectorActive}
-                  hoveredId={hoveredNodeInfo?.id ?? null}
-                  onHover={handleNodeHover}
-                  onLeave={handleNodeLeave}
-                  rootRef={previewRootRef}
-                />
-              ) : (
-                <div className="dw-preview-empty" role="status">
-                  <Sparkles size={26} aria-hidden="true" />
-                  <span>Invalid JSON - no preview</span>
+            <div style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}>
+              <ResizableBox
+                width={800}
+                height={480}
+                minConstraints={[320, 240]}
+                maxConstraints={[2400, 1600]}
+                resizeHandles={['se', 's', 'e']}
+                className="dw-preview-root"
+              >
+                <div ref={previewRootRef} style={{ width: '100%', height: '100%', position: 'relative' }}>
+                  {activeProposal ? (
+                    <LayoutNode
+                      node={activeProposal.proposedLayout}
+                      depth={0}
+                      isInspectorActive={isInspectorActive}
+                      hoveredId={hoveredNodeInfo?.id ?? null}
+                      onHover={handleNodeHover}
+                      onLeave={handleNodeLeave}
+                      rootRef={previewRootRef}
+                    />
+                  ) : (
+                    <div className="dw-preview-empty" role="status">
+                      <Sparkles size={26} aria-hidden="true" />
+                      <span>Invalid JSON - no preview</span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </ResizableBox>
             </div>
           </div>
 

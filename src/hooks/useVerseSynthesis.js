@@ -55,7 +55,10 @@ export function useVerseSynthesis(content, options = {}) {
       let result;
 
       if (USE_SERVER_ANALYSIS && ScholomanceDictionaryAPI.isEnabled()) {
-        const response = await ScholomanceDictionaryAPI.analyzePanels(text, { nluMode: 'generate' });
+        const response = await ScholomanceDictionaryAPI.analyzePanels(text, {
+          nluMode: 'direct',
+          analysisProfile: 'editor',
+        });
         if (response?.data) {
           result = response.data;
           // Hydrate Maps which are lost during JSON serialization

@@ -262,7 +262,7 @@ const INITIAL_PRESETS = [
 
 const REGISTERED_DRAWER_ROLES = ["shrine.window", "shrine.moon", "shrine.cabinet", "shrine.altar", "sigil.capsule", "text.vector", "ink.ballpoint"];
 
-export default function WandPage() {
+export default function WandPage({ onSendToVideoForge } = {}) {
   const isGodotExportEnabled = useGodotExportFlag();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [proposal, setProposal] = useState(INITIAL_PRESETS[0].proposal);
@@ -742,6 +742,37 @@ export default function WandPage() {
     }
   };
 
+  const handleSendToVideoForge = () => {
+    if (!onSendToVideoForge) return;
+
+    try {
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        throw new Error('Preview canvas is not ready');
+      }
+
+      const pf = proposal?.proposedFormula || {};
+      onSendToVideoForge({
+        source: 'wand',
+        kind: 'image',
+        name: `Wand ${pf.role || 'artifact'}`,
+        url: canvas.toDataURL('image/png'),
+        width: 800,
+        height: 600,
+        metadata: {
+          source: 'wand',
+          role: pf.role,
+          material: pf.material,
+          coordinateCount: metrics.pointCount,
+          proposal: JSON.parse(JSON.stringify(proposal)),
+        },
+      });
+      addTerminalLog('Sent Wand preview frame to VideoForge timeline.', 'success');
+    } catch (err) {
+      addTerminalLog(`VideoForge handoff failed: ${err.message}`, 'error');
+    }
+  };
+
   const handleLoadPreset = (presetProposal, name) => {
     // Deep-copy: presets are module-level constants (and saved catalog entries).
     // Editing must never mutate the source object that every card renders from.
@@ -895,6 +926,18 @@ export default function WandPage() {
             <Sparkles className="btn-icon" />
             Send → PixelBrain
           </button>
+          {onSendToVideoForge && (
+            <button
+              className="action-btn animate-btn"
+              onClick={handleSendToVideoForge}
+              type="button"
+              disabled={!validationResult.valid}
+              title="Send the current Wand canvas frame into VideoForge as an image clip"
+            >
+              <Layers className="btn-icon" />
+              Send → VideoForge
+            </button>
+          )}
         </div>
       </header>
 

@@ -38,6 +38,7 @@ import {
   ScholoTimeLabPage,
   PAGE_COMPONENTS,
 } from "./lib/routes.js";
+import VideoForgePage from "./pages/VideoForge/VideoForgePage.tsx";
 
 import { AdminRoute } from "./components/AdminRoute.jsx";
 
@@ -123,6 +124,7 @@ const router = createBrowserRouter([
           { path: "blog/:slug", element: <BlogArticlePage /> },
           { path: "visualiser", element: <BytecodeVisualiserPage /> },
           { path: "card", element: <ResonanceCardPage /> },
+          { path: "video-forge", element: <VideoForgePage /> },
           { path: "release", element: <VisualizerReleasePage /> },
           { path: "oracle", element: <AdminRoute><OraclePage /></AdminRoute> },
         ],
