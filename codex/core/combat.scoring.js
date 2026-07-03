@@ -1,5 +1,6 @@
 import {
   COMBAT_ARENA_SCHOOL,
+  EPIC_CAST_MIN_RARITY_ORDINAL,
   FAILURE_CAST_THRESHOLD,
   MIN_COMBAT_DAMAGE,
   clamp01,
@@ -10,6 +11,9 @@ import { buildCombatProfile } from './combat.profile.js';
 import { buildSpeakingTraces } from './speaking/index.js';
 import { calculateSyntacticBridge } from './spellweave.engine.js';
 import { evaluateSyntacticalChess } from './combat.syntax-chess.js';
+import { INEXPLICABLE_ELEMENT_DOMAINS } from './verseir-amplifier/plugins/inexplicableElements.js';
+import { hashString } from './pixelbrain/shared.js';
+import { tokenize } from './tokenizer.js';
 
 const SCORE_TO_DAMAGE_MULTIPLIER = 1.1;
 const SCORE_TO_DAMAGE_OFFSET = 6;
@@ -119,6 +123,78 @@ function isFailureCast(profile) {
     || (Number(profile?.tokenCount) || 0) <= 2
     || getDominantDensity(profile) < 0.24
   );
+}
+
+// ─── Cast events: discovery + epic animation cues ────────────────────────────
+
+const INEXPLICABLE_LEXEME_INDEX = (() => {
+  const index = new Map();
+  for (const domain of INEXPLICABLE_ELEMENT_DOMAINS) {
+    for (const lexeme of domain.lexemes) {
+      index.set(lexeme, domain.id);
+    }
+  }
+  return index;
+})();
+
+const SCHOOL_ANIMATION_MOTIFS = Object.freeze({
+  VOID: 'collapse-star',
+  SONIC: 'shatter-wave',
+  ALCHEMY: 'transmute-bloom',
+  PSYCHIC: 'mind-spiral',
+  WILL: 'force-lattice',
+});
+
+// U+241F (symbol for unit separator) keeps verse/weave boundaries unambiguous
+// in the seed text, so 'a b'+'c' never collides with 'a'+'b c'.
+const SEED_SEPARATOR = '␟';
+
+/**
+ * Builds the typed cast event descriptors the UI consumes. Pure data —
+ * dedupe of "first ever discovery" and the actual UI reactions belong to
+ * runtime/UI layers. Deterministic: same inputs, same events, same seeds.
+ */
+export function buildCastEvents({ verse = '', weave = '', rarity = null, bridge = null, syntacticalChess = null, school = null } = {}) {
+  const events = [];
+
+  const seen = new Set();
+  const scanSource = (text, source) => {
+    for (const token of tokenize(text)) {
+      if (!INEXPLICABLE_LEXEME_INDEX.has(token) || seen.has(token)) continue;
+      seen.add(token);
+      events.push({
+        type: 'DISCOVERY_INEXPLICABLE',
+        word: token,
+        domain: INEXPLICABLE_LEXEME_INDEX.get(token),
+        source,
+        seed: hashString(token) >>> 0,
+      });
+    }
+  };
+  scanSource(verse, 'verse');
+  scanSource(weave, 'weave');
+
+  if ((Number(rarity?.ordinal) || 0) >= EPIC_CAST_MIN_RARITY_ORDINAL) {
+    const motifBase = SCHOOL_ANIMATION_MOTIFS[school] || 'arcane-sigil';
+    const motif = bridge?.chainType === 'SEQUENCE' && (bridge?.strikes || 1) > 1
+      ? `${motifBase}-combo`
+      : motifBase;
+    events.push({
+      type: 'EPIC_CAST',
+      rarityId: rarity.id,
+      animationCue: {
+        seed: hashString(`${verse}${SEED_SEPARATOR}${weave}`) >>> 0,
+        school: school || null,
+        rarityId: rarity.id,
+        motif,
+      },
+    });
+  }
+
+  if (Array.isArray(bridge?.events)) events.push(...bridge.events);
+  if (Array.isArray(syntacticalChess?.events)) events.push(...syntacticalChess.events);
+
+  return events;
 }
 
 // Lore Sheet Rating Ladder
@@ -251,7 +327,19 @@ export function calculateCombatScore({
     ? "Syntactic Collapse: The Weave has frayed."
     : [profile.commentary || profile.rarity?.praise || '', ...syntacticalChess.diagnostics].filter(Boolean).join(' ');
 
+  const events = buildCastEvents({
+    verse: text,
+    weave,
+    rarity: profile.rarity,
+    bridge,
+    syntacticalChess,
+    school: bridge.school || profile.school,
+  });
+
   return {
+    events,
+    strikes: bridge.strikes || 1,
+    chainType: bridge.chainType || 'SINGLE',
     totalScore,
     traces: combinedTraces,
     explainTrace: combinedTraces,
