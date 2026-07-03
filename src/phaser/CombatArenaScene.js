@@ -1301,15 +1301,29 @@ export default function createCombatArenaScene(phaserRuntime) {
         ease: 'Linear'
       });
 
-      // 5. Floating Runes/Sparks
-      const runes = this.add.graphics();
-      runes.setBlendMode(Phaser.BlendModes.ADD);
-      runes.fillStyle(PALETTES.royal_purple.lit, 1);
-      runes.fillEllipse(x - 25, floatY - 45, 3, 3);
-      runes.fillEllipse(x + 30, floatY - 20, 2, 2);
-      runes.fillEllipse(x + 15, floatY - 55, 4, 4);
-      runes.fillEllipse(x - 30, floatY - 15, 2, 2);
-      bobContainer.add(runes);
+      // 5. High Fidelity Particle Emitter for Doom Fire Sparks
+      if (this.add.particles) {
+        const emitter = this.add.particles(x, floatY - 20, 'doom-fire', {
+          speed: { min: 20, max: 80 },
+          angle: { min: 250, max: 290 }, // Emits upwards
+          scale: { start: 0.3, end: 0 },
+          alpha: { start: 1, end: 0 },
+          lifespan: 1500,
+          blendMode: 'ADD',
+          frequency: 50,
+          tint: [0xff4400, 0xffaa00, 0xff0044]
+        });
+        bobContainer.add(emitter);
+      } else {
+        const runes = this.add.graphics();
+        runes.setBlendMode(Phaser.BlendModes.ADD);
+        runes.fillStyle(PALETTES.royal_purple.lit, 1);
+        runes.fillEllipse(x - 25, floatY - 45, 3, 3);
+        runes.fillEllipse(x + 30, floatY - 20, 2, 2);
+        runes.fillEllipse(x + 15, floatY - 55, 4, 4);
+        runes.fillEllipse(x - 30, floatY - 15, 2, 2);
+        bobContainer.add(runes);
+      }
 
       // 6. Slowly bob the entire matrix up and down asynchronously
       const bobDuration = Phaser.Math.Between(1500, 2500);
@@ -1361,15 +1375,15 @@ export default function createCombatArenaScene(phaserRuntime) {
       bg.fillStyle(0x020208, 1);
       bg.fillRect(-skyW/2, -skyH/2, skyW, skyH);
 
+      // Deep space volumetric nebula haze (underneath the island)
       bg.setBlendMode(Phaser.BlendModes.SCREEN);
-      for(let i=0; i<60; i++) {
-        bg.fillStyle(0x330055, Phaser.Math.FloatBetween(0.01, 0.05));
+      for(let i=0; i<40; i++) {
+        bg.fillStyle(0x1a053a, Phaser.Math.FloatBetween(0.02, 0.08));
         const nx = Phaser.Math.Between(-skyW/2, skyW/2);
-        const ny = Phaser.Math.Between(-skyH/2, skyH/4);
-        const rw = Phaser.Math.Between(800, 1500);
-        const rh = Phaser.Math.Between(400, 800);
-        const angle = Phaser.Math.FloatBetween(-0.2, 0.2);
-        
+        const ny = Phaser.Math.Between(-skyH/3, skyH/2); // Spread across the whole sky, slightly weighted down
+        const rw = Phaser.Math.Between(1500, 3000);
+        const rh = Phaser.Math.Between(1500, 3000); // Make them rounder/taller to avoid horizontal banding
+        const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
         bg.save();
         bg.translateCanvas(nx, ny);
         bg.rotateCanvas(angle);
@@ -1377,13 +1391,62 @@ export default function createCombatArenaScene(phaserRuntime) {
         bg.restore();
       }
 
-      for(let i=0; i<40; i++) {
-        bg.fillStyle(0x004466, Phaser.Math.FloatBetween(0.02, 0.06));
-        const nx = Phaser.Math.Between(-skyW/2, skyW/2);
-        const ny = Phaser.Math.Between(-skyH/3, skyH/2);
-        const rw = Phaser.Math.Between(600, 1200);
-        const rh = Phaser.Math.Between(300, 600);
-        bg.fillEllipse(nx, ny, rw, rh);
+      // Create a tiny canvas texture for the twinkling stars to use as fast sprites
+      if (!this.textures.exists('twinkle-star')) {
+        const starTex = this.textures.createCanvas('twinkle-star', 8, 8);
+        const sCtx = starTex.getContext();
+        sCtx.fillStyle = '#ffffff';
+        sCtx.beginPath();
+        sCtx.arc(4, 4, 4, 0, Math.PI * 2);
+        sCtx.fill();
+        starTex.refresh();
+      }
+
+      // Parallax Galaxy Core (Massive swirling spiral arms)
+      bg.setBlendMode(Phaser.BlendModes.ADD);
+      const spiralArms = 4;
+      for(let i=0; i<3000; i++) {
+        const armOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
+        const distance = Phaser.Math.FloatBetween(50, 2500);
+        // Golden ratio spiral rotation
+        const angle = (distance * 0.002) + (Math.floor(armOffset / (Math.PI*2/spiralArms)) * (Math.PI*2/spiralArms));
+        
+        // Add scatter / dust
+        const scatter = Phaser.Math.FloatBetween(-200, 200) * (distance / 500);
+        const sx = Math.cos(angle) * distance + scatter;
+        const sy = Math.sin(angle) * distance * 0.4 + scatter * 0.4 - 400; // Shift galaxy up and flatten
+        
+        const size = Phaser.Math.FloatBetween(0.5, 4.0);
+        
+        // Core is intensely bright/white/cyan, edges are deep purple
+        let color = 0xcceeff; // Core
+        if (distance > 1500) color = 0x330055;
+        else if (distance > 800) color = 0xff33cc;
+        else if (distance > 400) color = 0x00ffff;
+        
+        const brightness = Phaser.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance/2500));
+        
+        // Make ~15% of the stars twinkle independently
+        if (Math.random() > 0.85) {
+          const star = this.add.image(sx, sy, 'twinkle-star');
+          star.setBlendMode(Phaser.BlendModes.ADD);
+          star.setTint(color);
+          star.setScale(size / 8); // Base texture is 8x8
+          star.setAlpha(brightness);
+          
+          this.tweens.add({
+            targets: star,
+            alpha: 0,
+            duration: Phaser.Math.Between(1500, 5000), // Random speed
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+            delay: Phaser.Math.Between(0, 5000) // Random start offset so they never sync up
+          });
+        } else {
+          bg.fillStyle(color, brightness);
+          bg.fillEllipse(sx, sy, size, size);
+        }
       }
 
       bg.setBlendMode(Phaser.BlendModes.ADD);
