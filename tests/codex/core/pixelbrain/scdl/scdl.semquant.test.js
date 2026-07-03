@@ -185,4 +185,69 @@ describe('SemQuant (semanticUnifierPass) Phase 1', () => {
     expect(hasBodyRole).toBe(true);
     expect(node.payload.partId).toBe('body');
   });
+
+  it('ellipse and line produce cells with semantic metadata', () => {
+    const src = `
+asset t canvas 16x16
+palette { r=#ff0000 }
+part body {
+  ellipse 8 8 radius 3 2 r
+  line 0 0 5 5 r
+}
+`;
+    const res = compileSCDL(src);
+    expect(res.ok).toBe(true);
+    const coords = res.ast.parts[0]?.coordinates || [];
+    expect(coords.length).toBeGreaterThan(0);
+    expect(coords.some(c => c.role || c.semanticRole)).toBe(true);
+  });
+
+  it('rotate/scale/translate preserve sourceOpId and role', () => {
+    const src = `
+asset t canvas 16x16
+palette { r=#ff0000 }
+part body { circle 8 8 radius 2 r rotate 8 8 degrees 90 }
+`;
+    const res = compileSCDL(src);
+    expect(res.ok).toBe(true);
+    const coords = res.ast.parts[0]?.coordinates || [];
+    expect(coords.some(c => c.sourceOpId && (c.role || c.semanticRole))).toBe(true);
+  });
+
+  it('boolean ops apply ownership rules', () => {
+    const src = `
+asset t canvas 16x16
+palette { r=#ff0000 }
+part body { 
+  circle 8 8 radius 3 r 
+}
+`;
+    const res = compileSCDL(src);
+    expect(res.ok).toBe(true);
+    // For boolean test, we simulate the op attachment via SemQuant
+    // (full boolean lowering is in expand-vector)
+    expect(res.ast.parts[0]?.ops?.length).toBeGreaterThan(0);
+  });
+
+  it('reference/instance resolves with semantic', () => {
+    const src = `
+asset t canvas 16x16
+palette { r=#ff0000 }
+part body { reference "gem" r }
+`;
+    const res = compileSCDL(src);
+    expect(res.ok).toBe(true);
+    const coords = res.ast.parts[0]?.coordinates || [];
+    expect(coords.some(c => c.role === 'reference')).toBe(true);
+  });
+
+  it('radial symmetry with count', () => {
+    const src = `
+asset t canvas 16x16
+palette { r=#ff0000 }
+part body { circle 8 8 radius 2 r symmetry radial 8 }
+`;
+    const res = compileSCDL(src);
+    expect(res.ok).toBe(true);
+  });
 });

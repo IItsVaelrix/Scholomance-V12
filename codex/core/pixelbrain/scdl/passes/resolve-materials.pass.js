@@ -25,6 +25,7 @@ export function resolveMaterialsPass(ast, errors) {
         part.loc || l,
         { material: part.material, fallback: resolved, partId: part.id }
       ));
+      // For stricter authoring, could promote to error in future via SemQuant
     }
     return { ...part, material: resolved };
   });

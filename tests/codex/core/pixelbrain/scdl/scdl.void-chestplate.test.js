@@ -89,7 +89,9 @@ describe('SCDL Golden — void_chestplate', () => {
     const result = compileSCDL(loadFixture());
     const exports = exportSCDL(result.packet, ['json'], result.ast);
     expect(exports.json.ok).toBe(true);
-    expect(() => JSON.parse(exports.json.output)).not.toThrow();
+    const packet = JSON.parse(exports.json.output);
+    expect(packet.kind).toBe('pixelbrain.asset.v1');
+    expect(packet.id).toBe(result.packet.id);
   });
 
   it('exports svg — contains <rect> elements', () => {
@@ -112,6 +114,20 @@ describe('SCDL Golden — void_chestplate', () => {
     const gemPixel = config.pixels.find(p => p.x === 31 && p.y === 18);
     expect(gemPixel).toBeTruthy();
     expect(gemPixel.color).toBe(0x00E5FF);
+    expect(config.palette).toMatchObject({
+      void0: 0x05060D,
+      gold2: 0xD8B84C,
+      cyan2: 0x00E5FF,
+    });
+  });
+
+  it('exports png — valid PNG bytes', () => {
+    const result = compileSCDL(loadFixture());
+    const exports = exportSCDL(result.packet, ['png'], result.ast);
+    expect(exports.png.ok).toBe(true);
+    expect(exports.png.mimeType).toBe('image/png');
+    expect(exports.png.output).toBeInstanceOf(Uint8Array);
+    expect(Array.from(exports.png.output.slice(0, 8))).toEqual([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
   });
 
   it('lattice emitter produces pixelbrain.asset.v1 shape', () => {

@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { compileSCDL } from '../../../../../codex/core/pixelbrain/scdl/scdl.compiler.js';
+import { buildSCDLDiagnosticReport } from '../../../../../codex/core/pixelbrain/scdl/scdl.diagnostics.js';
 
 const VALID_SOURCE = `
 asset void_chestplate canvas 64x64
@@ -90,6 +91,7 @@ describe('SCDL Compiler — compileSCDL', () => {
     expect(result.ok).toBe(false);
     const errs = result.errors.filter(e => e.isError && e.isError());
     expect(errs.length).toBeGreaterThan(0);
+    expect(errs.some(e => e.label === 'SCDL-004')).toBe(true);
   });
 
   it('errors on out-of-bounds cell', () => {
@@ -140,5 +142,19 @@ describe('SCDL Compiler — compileSCDL', () => {
     const strict  = compileSCDL(src, { strict: true });
     expect(normal.ok).toBe(true);
     expect(strict.ok).toBe(false);
+  });
+
+  it('errors on unknown export target', () => {
+    const src = `asset x canvas 8x8\npart a material source {\n  cell 0 0 #FF0000\n}\nexport json unreal`;
+    const result = compileSCDL(src);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some(e => e.label === 'SCDL-010')).toBe(true);
+  });
+
+  it('diagnostic report output is deterministic for identical results', () => {
+    const src = `asset x canvas 4x4\npart a material source {\n  cell 99 99 #FF0000\n}\nexport json`;
+    const a = buildSCDLDiagnosticReport(compileSCDL(src));
+    const b = buildSCDLDiagnosticReport(compileSCDL(src));
+    expect(a).toEqual(b);
   });
 });
