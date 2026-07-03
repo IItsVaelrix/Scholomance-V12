@@ -2,13 +2,15 @@
  * SCDL Exporters
  *
  * Dispatcher and implementations for SCDL export targets:
- *   - json   → raw PixelBrainAssetPacket JSON string
- *   - svg    → SVG with one <rect> per coordinate
- *   - phaser → Phaser texture config JSON
- *   - png    → deterministic RGBA PNG bytes
+ *   - json     → raw PixelBrainAssetPacket JSON string
+ *   - svg      → SVG with one <rect> per coordinate
+ *   - phaser   → Phaser texture config JSON
+ *   - png      → deterministic RGBA PNG bytes
+ *   - aseprite → Aseprite binary via aseprite-binary-codec (SCDL v1.1)
  */
 
 import { emitLattice } from './scdl.lattice-emitter.js';
+import { encodeAsepriteBinary } from '../aseprite-binary-codec.js';
 
 /**
  * Export a compiled asset to one or more targets.
@@ -18,16 +20,18 @@ import { emitLattice } from './scdl.lattice-emitter.js';
  * @param {object} [ast]   - Optional: original SCDL AST
  * @returns {Record<string, {ok:boolean, output:string|object, mimeType:string}>}
  */
-export function exportSCDL(packet, targets, ast) {
+export function exportSCDL(packet, targets, ast, options = {}) {
   const lattice = emitLattice(packet, ast);
+  const includeSemantic = options.includeSemantic || false;
   const results = {};
 
   for (const target of targets) {
     switch (target) {
-      case 'json':   results[target] = exportJSON(packet);    break;
-      case 'svg':    results[target] = exportSVG(lattice);    break;
-      case 'phaser': results[target] = exportPhaser(lattice); break;
+      case 'json':   results[target] = exportJSON(packet, includeSemantic ? ast : null);    break;
+      case 'svg':    results[target] = exportSVG(lattice, includeSemantic);    break;
+      case 'phaser': results[target] = exportPhaser(lattice, includeSemantic); break;
       case 'png':    results[target] = exportPNG(lattice);    break;
+      case 'aseprite': results[target] = exportAseprite([packet], null, lattice.canvas); break;
       default:
         results[target] = {
           ok: false,
@@ -42,17 +46,25 @@ export function exportSCDL(packet, targets, ast) {
 
 // ─── JSON ─────────────────────────────────────────────────────────────────────
 
-function exportJSON(packet) {
+function exportJSON(packet, ast = null) {
+  const out = { ...packet };
+  if (ast && ast.parts) {
+    out.semantic = ast.parts.map(p => ({
+      id: p.id,
+      annotations: p.annotations || [],
+      ops: (p.ops || []).map(o => ({ id: o.id, annotations: o.annotations || [] }))
+    }));
+  }
   return {
     ok:       true,
-    output:   JSON.stringify(packet, null, 2),
+    output:   JSON.stringify(out, null, 2),
     mimeType: 'application/json',
   };
 }
 
 // ─── SVG ──────────────────────────────────────────────────────────────────────
 
-function exportSVG(lattice) {
+function exportSVG(lattice, includeSemantic = false) {
   const { width, height } = lattice.canvas;
   const coords = lattice.geometry.coordinates;
 
@@ -60,6 +72,10 @@ function exportSVG(lattice) {
   const pixelMap = new Map();
   for (const c of coords) {
     pixelMap.set(`${c.x},${c.y}`, c.color);
+  }
+
+  if (includeSemantic) {
+    // TODO: embed semantic annotations as metadata or comments
   }
 
   const rects = [];
@@ -141,6 +157,88 @@ function exportPNG(lattice) {
     output:   renderPngBytes(lattice.geometry.coordinates, lattice.canvas.width, lattice.canvas.height),
     mimeType: 'image/png',
   };
+}
+
+// ─── Aseprite (SCDL v1.1) ────────────────────────────────────────────────────
+
+/**
+ * Build an aseprite-binary-codec payload from frame packets.
+ *
+ * Per the animation-encoding white paper's Encoder Law:
+ *  - the layer table is fixed (union of every frame's part ids, merged in
+ *    painter order), identical names/order in every frame;
+ *  - every frame gets its OWN layers array and cell arrays — never shared;
+ *  - parts absent from a frame are present-but-empty layers.
+ *
+ * @param {object[]} framePackets - One PixelBrainAssetPacket per frame
+ * @param {object|null} frameLoop - SCDL-FRAME-LOOP-v1 manifest (durations)
+ * @param {{width:number,height:number}|null} [fallbackCanvas]
+ */
+export function buildAsepritePayload(framePackets, frameLoop = null, fallbackCanvas = null) {
+  const packets = (Array.isArray(framePackets) ? framePackets : [framePackets]).filter(Boolean);
+  const canvas = frameLoop?.canvas || packets[0]?.canvas || fallbackCanvas || { width: 1, height: 1 };
+  const defaultDuration = frameLoop?.defaultDurationMs ?? 400;
+
+  const layerOrder = _mergePartOrders(packets.map(p => _partOrder(p)));
+
+  const frames = packets.map((packet, i) => {
+    const byPart = new Map(layerOrder.map(name => [name, []]));
+    for (const c of (packet.geometry?.coordinates || [])) {
+      const cells = byPart.get(c.partId);
+      if (cells) cells.push({ x: c.x, y: c.y, color: c.color, emphasis: 1 });
+    }
+    return {
+      frame:    i,
+      duration: frameLoop?.frames?.[i]?.durationMs ?? defaultDuration,
+      layers:   layerOrder.map(name => ({ name, cells: byPart.get(name) })),
+    };
+  });
+
+  return { width: canvas.width, height: canvas.height, frames };
+}
+
+function exportAseprite(framePackets, frameLoop, fallbackCanvas) {
+  return {
+    ok:       true,
+    output:   encodeAsepriteBinary(buildAsepritePayload(framePackets, frameLoop, fallbackCanvas)),
+    mimeType: 'application/octet-stream',
+  };
+}
+
+/** First-appearance part order from a packet's coordinates (painter order). */
+function _partOrder(packet) {
+  const order = [];
+  const seen = new Set();
+  for (const c of (packet.geometry?.coordinates || [])) {
+    if (c.partId && !seen.has(c.partId)) {
+      seen.add(c.partId);
+      order.push(c.partId);
+    }
+  }
+  return order;
+}
+
+/**
+ * Merge per-frame part orders into one fixed layer table, preserving each
+ * frame's relative painter order: unseen parts insert after their nearest
+ * preceding part already in the table.
+ */
+function _mergePartOrders(orders) {
+  const table = orders.length ? [...orders[0]] : [];
+  const inTable = new Set(table);
+  for (const order of orders.slice(1)) {
+    order.forEach((name, i) => {
+      if (inTable.has(name)) return;
+      let insertAt = 0;
+      for (let j = i - 1; j >= 0; j--) {
+        const idx = table.indexOf(order[j]);
+        if (idx !== -1) { insertAt = idx + 1; break; }
+      }
+      table.splice(insertAt, 0, name);
+      inTable.add(name);
+    });
+  }
+  return table;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

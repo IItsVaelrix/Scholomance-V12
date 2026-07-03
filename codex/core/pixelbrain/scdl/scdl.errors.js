@@ -31,6 +31,10 @@ export const SCDL_ERROR_CODES = Object.freeze({
   DUPLICATE_PART_ID:     0x1009, // Part ID used more than once
   UNKNOWN_EXPORT_TARGET: 0x100A, // Export target not supported
   INVALID_VECTOR_OP:     0x100B, // Vector op has invalid params
+  FRAME_UNKNOWN_PART:    0x100C, // Frame targets unknown part id (replace or omit)
+  FRAME_INDEX_LAW:       0x100D, // Frame Index Law violation (sparse/out-of-order/duplicate/explicit 0)
+  FRAME_BAD_ANCHOR:      0x100E, // Added part missing/unknown 'after' anchor, or 'after' on a replacement
+  DEAD_FRAME:            0x100F, // Frame identical to base after expansion (warn)
 });
 
 const SCDL_CODE_LABELS = Object.freeze({
@@ -45,6 +49,10 @@ const SCDL_CODE_LABELS = Object.freeze({
   [SCDL_ERROR_CODES.DUPLICATE_PART_ID]:     'SCDL-009',
   [SCDL_ERROR_CODES.UNKNOWN_EXPORT_TARGET]: 'SCDL-010',
   [SCDL_ERROR_CODES.INVALID_VECTOR_OP]:     'SCDL-011',
+  [SCDL_ERROR_CODES.FRAME_UNKNOWN_PART]:    'SCDL-012',
+  [SCDL_ERROR_CODES.FRAME_INDEX_LAW]:       'SCDL-013',
+  [SCDL_ERROR_CODES.FRAME_BAD_ANCHOR]:      'SCDL-014',
+  [SCDL_ERROR_CODES.DEAD_FRAME]:            'SCDL-015',
 });
 
 // ─── SCDLError Class ─────────────────────────────────────────────────────────

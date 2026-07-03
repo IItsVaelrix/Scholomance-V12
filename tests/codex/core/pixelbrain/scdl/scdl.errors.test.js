@@ -67,8 +67,8 @@ describe('SCDL Error — SCDLError constructor', () => {
 });
 
 describe('SCDL_ERROR_CODES catalogue', () => {
-  it('has all 10 v1 codes', () => {
-    expect(Object.keys(SCDL_ERROR_CODES)).toHaveLength(10);
+  it('has all 15 codes (11 v1 + SCDL-012..015 frame codes from v1.1)', () => {
+    expect(Object.keys(SCDL_ERROR_CODES)).toHaveLength(15);
   });
 
   it('codes are unique numeric values', () => {

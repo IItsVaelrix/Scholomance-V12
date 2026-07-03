@@ -1,8 +1,8 @@
 # SCDL Compiler and Language White Paper and Instruction Manual
 
-**Date:** 2026-07-02 (Updated with PB-Semantics integration)  
-**Applies To:** Scholomance Coordinate Description Language (SCDL), SCDL-AST-v1 JSON contract, PB-Semantics / SemQuant unification layer, compile pass pipeline, SymmetryAMP integration, Phaser/SVG/JSON exporters, SCD64 + PB-SEM diagnostics, CLI utilities  
-**Implementation PDR:** [`scdl-v1-pdr.md`](../PDR-archive/scdl-v1-pdr.md)  
+**Date:** 2026-07-03 (Updated with SCDL v1.1 frames + CLI output directory)  
+**Applies To:** Scholomance Coordinate Description Language (SCDL v1.1), SCDL-AST-v1 JSON contract (version 1.1.0), SCDL-FRAME-LOOP-v1 manifest, PB-Semantics / SemQuant unification layer, compile pass pipeline, SymmetryAMP integration, Phaser/SVG/JSON/PNG/Aseprite exporters, SCD64 + PB-SEM diagnostics, CLI utilities  
+**Implementation PDR:** [`scdl-v1-pdr.md`](../PDR-archive/scdl-v1-pdr.md), [`2026-07-03-scdl-frames-and-cli-out-dir-pdr.md`](../PDR-archive/2026-07-03-scdl-frames-and-cli-out-dir-pdr.md)  
 **Implementation PIR:** [`PIR-20260702-SCDL-COMPILER.md`](../post-implementation-reports/PIR-20260702-SCDL-COMPILER.md), [`PIR-20260702-PB-SEMANTICS-SEMQUANT.md`](../post-implementation-reports/PIR-20260702-PB-SEMANTICS-SEMQUANT.md)
 
 ---
@@ -89,7 +89,13 @@ Parser output nodes now include stable `id` and `sourceSpan` metadata. Parts and
 ### 3.1 Formal Grammar Definition
 
 ```ebnf
-program       ::= asset_decl palette_block? part_block* export_decl?
+program       ::= asset_decl palette_block? part_block* loop_decl? frame_block* export_decl?
+
+loop_decl     ::= 'loop' NAME ['duration' INTEGER]
+frame_block   ::= 'frame' INTEGER [STRING] ['duration' INTEGER] '{' frame_item* '}'
+frame_item    ::= frame_part | omit_stmt
+frame_part    ::= 'part' IDENT ['after' IDENT] ['material' IDENT] '{' part_op* '}'
+omit_stmt     ::= 'omit' IDENT
 
 asset_decl    ::= 'asset' NAME 'canvas' DIMENSION
 DIMENSION     ::= INTEGER 'x' INTEGER
@@ -98,7 +104,7 @@ NAME          ::= [a-zA-Z_][a-zA-Z0-9_]*
 palette_block ::= 'palette' '{' color_entry* '}'
 color_entry   ::= NAME '=' HEX_COLOR
 
-part_block    ::= 'part' IDENT 'material' IDENT '{' part_op* '}'
+part_block    ::= 'part' IDENT ['material' IDENT] '{' part_op* '}'
 part_op       ::= symmetry_op
                | trace_op
                | fill_op
@@ -111,8 +117,19 @@ part_op       ::= symmetry_op
                | polygon_op
                | path_op
                | sphere_op
+               | ellipse_op
+               | line_op
+               | rotate_op
+               | scale_op
+               | translate_op
+               | union_op
+               | subtract_op
+               | intersect_op
+               | reference_op
+               | instance_op
+               | radial_symmetry_op
 
-symmetry_op   ::= 'symmetry' ( 'x' | 'y' | 'xy' )
+symmetry_op   ::= 'symmetry' ( 'x' | 'y' | 'xy' | 'radial' INTEGER )
 trace_op      ::= 'trace' 'outline' 'from' 'image.region' '(' STRING ')'
 fill_op       ::= 'fill' COLOR_REF
 rim_op        ::= 'rim' COLOR_REF 'at' COMPASS
@@ -125,8 +142,23 @@ rect_op       ::= 'rect' NUMBER NUMBER NUMBER NUMBER COLOR_REF
 polygon_op    ::= 'polygon' point_list COLOR_REF
 path_op       ::= 'path' STRING COLOR_REF
 sphere_op     ::= 'sphere' NUMBER NUMBER 'radius' NUMBER
-                  'light' NUMBER NUMBER
-                  COLOR_REF COLOR_REF COLOR_REF COLOR_REF COLOR_REF
+                  ['light' NUMBER NUMBER]
+                  COLOR_REF+
+ellipse_op    ::= 'ellipse' NUMBER NUMBER 'radius' NUMBER NUMBER COLOR_REF
+line_op       ::= 'line' NUMBER NUMBER NUMBER NUMBER COLOR_REF
+rotate_op     ::= 'rotate' NUMBER NUMBER ['degrees'] NUMBER
+scale_op      ::= 'scale' NUMBER NUMBER NUMBER ['sy' NUMBER]
+translate_op  ::= 'translate' NUMBER NUMBER NUMBER NUMBER
+union_op      ::= 'union' IDENT IDENT
+subtract_op   ::= 'subtract' IDENT IDENT
+intersect_op  ::= 'intersect' IDENT IDENT
+reference_op  ::= 'reference' STRING [COLOR_REF]
+instance_op   ::= 'instance' STRING [COLOR_REF]
+radial_symmetry_op ::= 'symmetry' 'radial' INTEGER
+
+(* sphere: the light vector is optional; colors are one-or-more shading
+   tiers, five (shine/core/core/rim/shadow) being the standard set.
+   instance is parsed as an alias of reference and emits a reference op. *)
 
 NUMBER        ::= SIGN? DIGIT+ ('.' DIGIT+)?
 SIGN          ::= '+' | '-'
@@ -208,11 +240,50 @@ After `expandVectorPass` + SemQuant, emitted cells carry provenance and role:
 
 This is the recommended modern authoring style for complex radial and shaded assets.
 
+### 3.4 Frames (SCDL v1.1)
+
+Multi-frame assets declare a `loop` and `frame` blocks after the base parts.
+Frame 0 is implicitly the base asset; each frame block carries part-level
+deltas only:
+
+```
+loop idle duration 400
+
+frame 1 "hood-dip" {
+  part hood material void_cloth {          # replacement: keeps hood's painter slot
+    circle 15.5 11 radius 7.5 hoodhi
+    circle 15.5 11.5 radius 6 hooddeep
+  }
+  part hoodbrow after face material void_cloth {   # addition: 'after' anchor mandatory
+    rect 12 7 8 2 hood
+  }
+}
+
+frame 2 "fade" {
+  omit eyespark                            # omission: part absent in this frame
+}
+```
+
+**Frame Index Law (SCDL-013):** indices are dense and declaration-ordered
+(`1, 2, ... N`). Sparse, duplicate, out-of-order, or explicit `frame 0`
+declarations are rejected — never normalized.
+
+**Replacement Ordering Law (SCDL-014):** a replacement keeps the replaced base
+part's painter-order slot and must not carry an `after` anchor; an added part
+must carry a known `after` anchor.
+
+**Base identity invariant:** adding frame blocks never changes the frame-0
+packet ID — the base compiles byte-identically with or without them.
+
+Each frame compiles to its own `PixelBrainAssetPacket`; the compiler also
+emits a `SCDL-FRAME-LOOP-v1` manifest (see §7.5). Reference asset:
+`fixtures/void_acolyte.scdl` (4-frame idle loop).
+
 ---
 
 ## 4. AST JSON Contract (`SCDL-AST-v1`)
 
-The parser transforms the source text into a structured JSON AST carrying a `contract` identifier and source checksum (sha256).
+The parser transforms the source text into a structured JSON AST carrying a `contract` identifier and a source checksum — a 64-bit `hashString` digest (from `codex/core/pixelbrain/shared.js`) of the normalized source, rendered as 16 hex characters.
 
 After the SemQuant pass, nodes carry additional semantic metadata:
 - `id`
@@ -258,11 +329,12 @@ These are propagated downstream into packet coordinates.
 
 ## 5. Compiler Pass Pipeline
 
-The compiler (`scdl.compiler.js`) runs a sequence of 9 pure functions to transform the AST into a `PixelBrainAssetPacket` and generate diagnostic metadata.
+The compiler (`scdl.compiler.js`) transforms the AST into a `PixelBrainAssetPacket` and generates diagnostic metadata through the stages below. Stage numbers describe the logical pipeline; in `scdl.compiler.js` the SemQuant stage runs as a fault-isolated block between `validatePass` and `resolveColorsPass` (its failures are downgraded to `PB-SEM-000` info diagnostics and can never abort compilation), and the code numbers the remaining deterministic passes 1–8.
 
 | Pass Name | Responsibility |
 |:---|:---|
 | **Pass 1: `validatePass`** | Asserts schema correctness. Checks for missing assets, non-positive canvas dimensions, duplicate part IDs, and unrecognized keywords. |
+| **Pass 1.5: `expandFramesPass`** (SCDL v1.1) | Runs immediately after `validatePass`. Materializes one virtual part list per frame from the base parts plus frame overrides (replace / add-after / omit); enforces the Frame Index Law and Replacement Ordering Law (SCDL-012/013/014/015). Frame 0 is the untouched base. All subsequent passes (including SemQuant) run once **per frame**; single-frame assets run the pipeline exactly once, unchanged. |
 | **Pass 2: `semanticUnifierPass`** (SemQuant) | Performs semantic annotation and type unification via `semantic-bridge.js` and `semantic-registry.js`. Resolves roles, parts, effects, materials, and construction guides into canonical form. Attaches `annotations`, `sourceOpId`, provenance, and lowering history. Emits PB-SEM diagnostics. |
 | **Pass 3: `resolveColorsPass`** | Evaluates all palette aliases (`void0`) against the palette block, translating them into literal `#RRGGBB` hex strings. Asserts hex color pattern matching. |
 | **Pass 4: `resolveMaterialsPass`** | Validates part materials against the system's `material-registry.js`. Emits warnings for unrecognized materials and normalizes them. |
@@ -278,13 +350,15 @@ The compiler (`scdl.compiler.js`) runs a sequence of 9 pure functions to transfo
 
 SCDL is the primary surface for **PB-Semantics (SemQuant)**.
 
-After `validatePass`, the compiler runs `semanticUnifierPass` (via `semantic-bridge.js`):
+After `validatePass`, the compiler converts the AST to IR (`semantic/adapters/scdl-to-ir.adapter.js`) and runs `semanticUnifierPass` (`semantic/semantic-unifier.js`) directly:
 
 ```js
 const ir = scdlAstToIR(ast);
 const unified = semanticUnifierPass(ir);
 // annotations, roles, sourceOpId, loweringSteps are attached back to AST ops/parts
 ```
+
+(`semantic-bridge.js` provides the packet-level enrichment API — `applyAuthoringSemantics()`, `enrichPacketWithSemantics()` — for consumers outside the compile pipeline.)
 
 Key artifacts:
 - `semantic-registry.js` — canonical `CanonicalRoles`, `ROLE_ALIASES`, `resolveRole()`
@@ -319,6 +393,18 @@ If a consumer needs to differentiate assets based on authoring provenance, it sh
 
 This policy ensures that pure semantic-only changes (e.g. richer provenance or role labels) do not invalidate existing deterministic outputs or caches.
 
+## 5.7 Boolean Operations and Semantic Ownership Rules
+
+Boolean ops (union, subtract, intersect) operate on geometry and must preserve or explicitly declare semantic meaning.
+
+Intended ownership contract:
+
+- `union A B`: Result inherits the dominant/outer part's role and material. Overlaps may emit ambiguity if roles conflict.
+- `subtract A B`: Result keeps the role, material, and annotations of A (the base). B is "cut out".
+- `intersect A B`: Requires compatible roles or explicit override; otherwise emits PB-SEM-002 AMBIGUOUS_ROLE.
+
+**Implementation status:** `passes/lower-booleans.js` is currently a placeholder. It parses the three verbs and tags the result cell with ownership metadata (`role`, `material`, `booleanOp`, `targets`), but it does not yet compute real set operations on the target parts' geometry, and PB-SEM-002 is not yet emitted on role conflicts. Treat the rules above as the contract the full implementation must satisfy, not as current behavior.
+
 ---
 
 ## 6. Bytecode Error & Diagnostic Registry
@@ -340,6 +426,10 @@ In alignment with Vaelrix Law 8, compile errors must emit `PB-ERR-v1` bytecode p
 | `0x1009` | `SCDL-009` | ERROR | `VALUE` | Duplicate part ID declared in the same asset scope. |
 | `0x100A` | `SCDL-010` | WARN | `VALUE` | Unrecognized export target (warns and ignores). |
 | `0x100B` | `SCDL-011` | ERROR | `VALUE` | Invalid vector op parameters (e.g. negative radius, malformed path, invalid light vector, or unsupported payload). |
+| `0x100C` | `SCDL-012` | ERROR | `STATE` | Frame targets unknown part id (replace or omit). |
+| `0x100D` | `SCDL-013` | ERROR | `VALUE` | Frame Index Law violation: duplicate, sparse, or out-of-declaration-order frame index, or explicit `frame 0`. |
+| `0x100E` | `SCDL-014` | ERROR | `STATE` | Added part missing/unknown `after` anchor, or `after` given on a replacement (Replacement Ordering Law). |
+| `0x100F` | `SCDL-015` | WARN | `STATE` | Frame identical to base after expansion (dead frame). |
 
 In addition, the SemQuant layer (integrated after validatePass) emits `PB-SEM-*` diagnostics for semantic issues:
 
@@ -380,7 +470,7 @@ Draws crisp pixel grids using SVG `<rect>` primitives matching the coordinates:
 </svg>
 ```
 
-### 7.3 Phaser Exporter
+### 7.3 Phaser Exporter (unchanged; see §7.4–7.5 for v1.1 additions)
 Generates a texture config JSON format for direct loader consumption. Colors are translated to **32-bit integers** (`(r << 16) | (g << 8) | b`) to allow instant graphics rendering.
 ```json
 {
@@ -396,6 +486,46 @@ Generates a texture config JSON format for direct loader consumption. Colors are
 }
 ```
 
+### 7.4 Aseprite Exporter (SCDL v1.1)
+
+The `aseprite` target lowers frame packets through
+`codex/core/pixelbrain/aseprite-binary-codec.js` into a real `.aseprite`
+binary. Per the animation-encoding white paper's Encoder Law:
+
+- The layer table is fixed: the union of every frame's part ids, merged in
+  painter order; identical names/order in every frame.
+- Every frame carries its **own deep-copied `layers`** and cell arrays.
+- Parts absent from a frame are present-but-empty layers.
+- Frame durations come from the `SCDL-FRAME-LOOP-v1` manifest.
+
+Multi-frame assets emit **one combined file** (`<asset>-aseprite.aseprite`,
+never a frame-infixed name). Verification of the encoded binary is limited to
+frame count and canvas dimensions — the codec's decoder has a known
+cell-accumulation bug.
+
+### 7.5 SCDL-FRAME-LOOP-v1 Manifest
+
+For multi-frame assets, `compileSCDL()` returns `frameLoop` (and the CLI
+writes `<asset>-frameloop.json`):
+
+```json
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "void_acolyte",
+  "loop": "idle",
+  "canvas": { "width": 32, "height": 48 },
+  "defaultDurationMs": 400,
+  "sourceChecksum": "…",
+  "frames": [
+    { "index": 0, "label": "base",       "durationMs": 400, "packet": "pbasset_2595caa6" },
+    { "index": 1, "label": "hood-dip",   "durationMs": 400, "packet": "pbasset_…" }
+  ]
+}
+```
+
+The manifest is compiler output — never hand-written. Canonical state is the
+frame packets; raster previews are never a source of truth.
+
 ---
 
 ## 8. CLI Command Manual
@@ -406,6 +536,19 @@ The Node.js CLI utility is located at `codex/core/pixelbrain/scdl/scdl.cli.js`.
 Compile an SCDL file and generate target files (defaults to `.json`):
 ```bash
 node codex/core/pixelbrain/scdl/scdl.cli.js compile fixtures/void_chestplate.scdl --export json,svg,phaser
+node codex/core/pixelbrain/scdl/scdl.cli.js compile fixtures/void_acolyte.scdl --export json,png,aseprite --out-dir fixtures/void_acolyte/
+```
+
+**Export Naming Law (SCDL v1.1):** outputs default to the **source file's
+directory** (never the process CWD; override with `--out-dir <dir>`), and all
+targets use target-suffixed names — there is no case where a bare
+`<asset>.<ext>` name is written:
+
+```
+Single-frame:  <asset>-json.json   <asset>-png.png   <asset>-svg.svg   <asset>-phaser.json
+Multi-frame:   <asset>-f<N>-<target>.<ext>  per frame
+               <asset>-frameloop.json
+               <asset>-aseprite.aseprite    (one combined file)
 ```
 
 ### 8.2 Parsing to AST

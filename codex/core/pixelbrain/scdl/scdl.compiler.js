@@ -20,6 +20,7 @@
 import { parseSCDL }            from './scdl.grammar.js';
 import { SCDLError, SCDL_ERROR_CODES, scdlError } from './scdl.errors.js';
 import { validatePass }         from './passes/validate.pass.js';
+import { expandFramesPass }     from './passes/expand-frames.pass.js';
 import { resolveColorsPass }    from './passes/resolve-colors.pass.js';
 import { resolveMaterialsPass } from './passes/resolve-materials.pass.js';
 import { expandVectorPass }     from './passes/expand-vector.pass.js';
@@ -85,9 +86,123 @@ export function compileSCDL(source, options = {}) {
   ast = _runPass('validate', ast, errors, validatePass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
 
-  // ── SemQuant / PB-Semantics thin slice (Phase 1) ─────────────────────────
-  // Convert SCDL AST → IR → annotate → attach annotations back.
-  // Does not change raster behavior. Adds semantic metadata + PB-SEM-* diagnostics.
+  // ── Expand Frames (SCDL v1.1) ────────────────────────────────────────────
+  // Materializes one virtual part list per frame; frame 0 is the base parts
+  // untouched. Enforces the Frame Index / Replacement Ordering laws.
+  let frameExpansion;
+  try {
+    frameExpansion = expandFramesPass(ast, errors);
+  } catch (e) {
+    errors.push(scdlError(
+      `Pass 'expandFrames' threw unexpectedly: ${e.message}`,
+      SCDL_ERROR_CODES.FRAME_INDEX_LAW,
+      { line: 1, col: 1 },
+      { pass: 'expandFrames', thrown: String(e) }
+    ));
+    return _failResult(errors, ast, source);
+  }
+  if (_hasFatal(errors)) return _failResult(errors, ast, source);
+
+  // ── Per-frame pipeline: SemQuant → colors → materials → vector →
+  //    symmetry → cells → packet. Runs once for single-frame assets.
+  const framePackets = [];
+  let frame0Ast = ast;
+  for (const spec of frameExpansion.frameSpecs) {
+    const frameAst = spec.index === 0 ? ast : { ...ast, parts: spec.parts };
+    const outcome = _runFramePipeline(frameAst, errors, options);
+    if (spec.index === 0) frame0Ast = outcome.ast;
+    if (outcome.fatal) return _failResult(errors, outcome.ast, source);
+    framePackets.push(outcome.packet);
+  }
+  ast = frame0Ast;
+  const packet = framePackets[0] || null;
+
+  // ── SCDL-FRAME-LOOP-v1 manifest (multi-frame assets only) ────────────────
+  const frameLoop = frameExpansion.hasFrames ? {
+    contract:          'SCDL-FRAME-LOOP-v1',
+    asset:             ast.asset,
+    loop:              frameExpansion.loop.name,
+    canvas:            { width: ast.canvas.width, height: ast.canvas.height },
+    defaultDurationMs: frameExpansion.loop.defaultDurationMs,
+    sourceChecksum:    ast.checksum,
+    frames: frameExpansion.frameSpecs.map((spec, i) => ({
+      index:      spec.index,
+      label:      spec.label,
+      durationMs: spec.durationMs,
+      packet:     framePackets[i]?.id || null,
+    })),
+  } : null;
+
+  // ── Emit Diagnostics ─────────────────────────────────────────────────────
+  const diagnostics = emitDiagnosticsPass(ast, errors, packet);
+
+  const hasErrors = errors.some(e =>
+    e.isError() || (strict && e.isWarn())
+  );
+
+  return Object.freeze({
+    ok:           !hasErrors,
+    ast:          hasErrors ? null : ast,
+    packet:       hasErrors ? null : packet,
+    framePackets: hasErrors ? Object.freeze([]) : Object.freeze(framePackets),
+    frameLoop:    hasErrors ? null : frameLoop,
+    errors:       Object.freeze(errors),
+    diagnostics:  Object.freeze(diagnostics),
+    regressionSeed: Object.freeze({
+      source:  source,
+      options: options,
+      checksum: ast?.checksum || null,
+    }),
+  });
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Run the per-frame portion of the pipeline on one frame's AST.
+ * @returns {{ ast: object, packet: object|null, fatal: boolean }}
+ */
+function _runFramePipeline(frameAst, errors, options) {
+  _applySemQuant(frameAst, errors, options);
+
+  let ast = frameAst;
+  ast = _runPass('resolveColors', ast, errors, resolveColorsPass);
+  if (_hasFatal(errors)) return { ast, packet: null, fatal: true };
+
+  ast = _runPass('resolveMaterials', ast, errors, resolveMaterialsPass);
+  // Material warnings are non-fatal
+
+  ast = _runPass('expandVector', ast, errors, expandVectorPass);
+
+  ast = _runPass('expandSymmetry', ast, errors, expandSymmetryPass);
+  if (_hasFatal(errors)) return { ast, packet: null, fatal: true };
+
+  ast = _runPass('expandCells', ast, errors, expandCellsPass);
+  if (_hasFatal(errors)) return { ast, packet: null, fatal: true };
+
+  let packet = null;
+  try {
+    packet = emitPacketPass(ast, errors);
+  } catch (e) {
+    errors.push(scdlError(
+      `Packet emit failed: ${e.message}`,
+      SCDL_ERROR_CODES.MISSING_ASSET,
+      { line: 1, col: 1 },
+      { thrown: String(e) }
+    ));
+    return { ast, packet: null, fatal: true };
+  }
+
+  return { ast, packet, fatal: false };
+}
+
+/**
+ * SemQuant / PB-Semantics thin slice (Phase 1).
+ * Convert SCDL AST → IR → annotate → attach annotations back.
+ * Does not change raster behavior. Adds semantic metadata + PB-SEM-* diagnostics.
+ * Failures never break compilation (downgraded to PB-SEM-000 info).
+ */
+function _applySemQuant(ast, errors, _options) {
   try {
     const irInput = scdlAstToIR(ast, { filePath: null });
     const semResult = semanticUnifierPass(irInput);
@@ -103,69 +218,13 @@ export function compileSCDL(source, options = {}) {
       attachSemanticAnnotations(ast, semResult.nodes);
     }
   } catch (e) {
-    // Never break compilation on semantic layer in Phase 1
     errors.push(createSemanticDiagnostic({
       code: 'PB-SEM-000',
       severity: 'info',
       message: `SemQuant (semanticUnifier) skipped due to internal error: ${e.message}`,
     }));
   }
-
-  // ── Pass 2: Resolve Colors ───────────────────────────────────────────────
-  ast = _runPass('resolveColors', ast, errors, resolveColorsPass);
-  if (_hasFatal(errors)) return _failResult(errors, ast, source);
-
-  // ── Pass 3: Resolve Materials ────────────────────────────────────────────
-  ast = _runPass('resolveMaterials', ast, errors, resolveMaterialsPass);
-  // Material warnings are non-fatal
-
-  // ── Pass 4: Expand Vector ops → cell ops (circle, ring, rect, polygon, path)
-  ast = _runPass('expandVector', ast, errors, expandVectorPass);
-
-  // ── Pass 5: Expand Symmetry (SymmetryAMP) ────────────────────────────────
-  ast = _runPass('expandSymmetry', ast, errors, expandSymmetryPass);
-  if (_hasFatal(errors)) return _failResult(errors, ast, source);
-
-  // ── Pass 6: Expand Cells ─────────────────────────────────────────────────
-  ast = _runPass('expandCells', ast, errors, expandCellsPass);
-  if (_hasFatal(errors)) return _failResult(errors, ast, source);
-
-  // ── Pass 7: Emit Packet ──────────────────────────────────────────────────
-  let packet = null;
-  try {
-    packet = emitPacketPass(ast, errors);
-  } catch (e) {
-    errors.push(scdlError(
-      `Packet emit failed: ${e.message}`,
-      SCDL_ERROR_CODES.MISSING_ASSET,
-      { line: 1, col: 1 },
-      { thrown: String(e) }
-    ));
-    return _failResult(errors, ast, source);
-  }
-
-  // ── Pass 8: Emit Diagnostics ─────────────────────────────────────────────
-  const diagnostics = emitDiagnosticsPass(ast, errors, packet);
-
-  const hasErrors = errors.some(e =>
-    e.isError() || (strict && e.isWarn())
-  );
-
-  return Object.freeze({
-    ok:           !hasErrors,
-    ast:          hasErrors ? null : ast,
-    packet:       hasErrors ? null : packet,
-    errors:       Object.freeze(errors),
-    diagnostics:  Object.freeze(diagnostics),
-    regressionSeed: Object.freeze({
-      source:  source,
-      options: options,
-      checksum: ast?.checksum || null,
-    }),
-  });
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function _runPass(name, ast, errors, passFn) {
   try {

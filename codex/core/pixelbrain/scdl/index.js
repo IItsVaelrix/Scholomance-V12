@@ -7,7 +7,7 @@
 
 export { compileSCDL }               from './scdl.compiler.js';
 export { parseSCDL, tokenize }       from './scdl.grammar.js';
-export { exportSCDL }                from './scdl.exporters.js';
+export { exportSCDL, buildAsepritePayload } from './scdl.exporters.js';
 export { emitLattice }               from './scdl.lattice-emitter.js';
 export { SCDL_ERROR_CODES, SCDLError, scdlError, scdlWarn, scdlInfo } from './scdl.errors.js';
 export { buildSCDLDiagnosticReport, formatSCDLDiagnostic } from './scdl.diagnostics.js';
@@ -17,3 +17,5 @@ export * as SemQuant from '../semantic/index.js';
 export { semanticUnifierPass } from '../semantic/semantic-unifier.js';
 export { scdlAstToIR } from '../semantic/adapters/scdl-to-ir.adapter.js';
 export { constructionSpecToIR } from '../semantic/adapters/construction-to-ir.adapter.js';
+export * from '../semantic-bridge.js';
+export * from '../semantic-registry.js';

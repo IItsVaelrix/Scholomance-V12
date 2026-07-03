@@ -11,10 +11,14 @@
 
 import { SCDL_ERROR_CODES, scdlError } from '../scdl.errors.js';
 
-const SUPPORTED_EXPORTS = new Set(['json', 'svg', 'phaser', 'png']);
+const SUPPORTED_EXPORTS = new Set(['json', 'svg', 'phaser', 'png', 'aseprite']);
 const KNOWN_OPS = new Set([
   'symmetry', 'trace', 'fill', 'rim', 'cell', 'glow',
   'circle', 'ring', 'rect', 'polygon', 'path', 'sphere',
+  // Wired extensions
+  'ellipse', 'line', 'rotate', 'scale', 'translate',
+  'union', 'subtract', 'intersect',
+  'reference', 'instance',
 ]);
 
 /**
@@ -69,7 +73,7 @@ export function validatePass(ast, errors) {
   for (const target of (ast.exports || [])) {
     if (!SUPPORTED_EXPORTS.has(target)) {
       errors.push(scdlError(
-        `Unknown export target '${target}' — supported: json, svg, phaser, png`,
+        `Unknown export target '${target}' — supported: json, svg, phaser, png, aseprite`,
         SCDL_ERROR_CODES.UNKNOWN_EXPORT_TARGET,
         l,
         { target }

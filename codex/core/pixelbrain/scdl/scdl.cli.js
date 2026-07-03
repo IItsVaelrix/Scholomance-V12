@@ -3,9 +3,10 @@
  * SCDL CLI
  *
  * Usage:
- *   node scdl.cli.js compile <file.scdl> [--export json,svg,phaser] [--out <file>]
+ *   node scdl.cli.js compile <file.scdl> [--export json,svg,phaser] [--out <file>] [--semantic]
  *   node scdl.cli.js parse   <file.scdl> [--out <file>]
  *   node scdl.cli.js check   <file.scdl>
+ *   (semantic includes annotations from SemQuant + wired engine primitives)
  *
  * Examples:
  *   node scdl.cli.js compile fixtures/void_chestplate.scdl --export json,svg,phaser
@@ -16,6 +17,8 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve, basename, dirname, extname, join } from 'node:path';
 import { compileSCDL, parseSCDL, exportSCDL } from './index.js';
+import { buildAsepritePayload } from './scdl.exporters.js';
+import { encodeAsepriteBinary } from '../aseprite-binary-codec.js';
 import { buildSCDLDiagnosticReport, formatSCDLDiagnostic } from './scdl.diagnostics.js';
 
 const [,, command, ...argv] = process.argv;
@@ -67,7 +70,14 @@ function cmdCompile(args) {
 
   const source  = readSource(filePath);
   const targets = (opts.flags.export || 'json').split(',').map(s => s.trim());
-  const outPath = opts.flags.out || null;
+  const outPath = typeof opts.flags.out === 'string' ? opts.flags.out : null;
+  // Export Naming Law (SCDL v1.1): outputs default to the SOURCE file's
+  // directory (never the CWD) and are always named <asset>-<target>.<ext>.
+  const outDir  = typeof opts.flags['out-dir'] === 'string'
+    ? resolve(opts.flags['out-dir'])
+    : dirname(resolve(filePath));
+  const name = basename(filePath, '.scdl');
+  const includeSemantic = opts.flags.semantic || false;
 
   console.log(`[SCDL] Compiling: ${filePath}`);
   const result = compileSCDL(source);
@@ -86,18 +96,49 @@ function cmdCompile(args) {
     }
   }
 
-  const exports = exportSCDL(result.packet, targets, result.ast);
-  for (const [target, out] of Object.entries(exports)) {
+  const multiFrame = Boolean(result.frameLoop) && result.framePackets.length > 1;
+
+  for (const target of targets) {
+    // aseprite is inherently multi-frame: one combined file, no frame infix
+    if (target === 'aseprite') {
+      const payload = buildAsepritePayload(result.framePackets, result.frameLoop);
+      writeOut(join(outDir, `${name}-aseprite.aseprite`), encodeAsepriteBinary(payload));
+      continue;
+    }
+
+    if (multiFrame) {
+      result.framePackets.forEach((framePacket, i) => {
+        const out = exportSCDL(framePacket, [target], result.ast, { includeSemantic })[target];
+        if (!out.ok) {
+          console.warn(`  [WARN] Export '${target}' (frame ${i}) failed: ${out.output}`);
+          return;
+        }
+        writeOut(join(outDir, `${name}-f${i}-${target}.${_targetExt(target)}`), _exportBytes(out));
+      });
+      continue;
+    }
+
+    const out = exportSCDL(result.packet, [target], result.ast, { includeSemantic })[target];
     if (!out.ok) {
       console.warn(`  [WARN] Export '${target}' failed: ${out.output}`);
       continue;
     }
-    const name = basename(filePath, '.scdl');
-    const dest = _targetPath({ outPath, sourceName: name, target, multi: targets.length > 1 });
-    writeOut(dest, out.output instanceof Uint8Array ? out.output : String(out.output));
+    const dest = outPath
+      ? _targetPath({ outPath, sourceName: name, target, multi: targets.length > 1 })
+      : join(outDir, `${name}-${target}.${_targetExt(target)}`);
+    writeOut(dest, _exportBytes(out));
+  }
+
+  if (multiFrame) {
+    writeOut(join(outDir, `${name}-frameloop.json`), JSON.stringify(result.frameLoop, null, 2));
+    console.log(`[SCDL] Frames: ${result.framePackets.length} (loop '${result.frameLoop.loop}')`);
   }
 
   console.log(`[SCDL] Done. Packet ID: ${result.packet.id}`);
+}
+
+function _exportBytes(out) {
+  return ArrayBuffer.isView(out.output) ? out.output : String(out.output);
 }
 
 function cmdParse(args) {
@@ -155,9 +196,10 @@ function cmdCheck(args) {
 
 function _targetExt(target) {
   switch (target) {
-    case 'svg': return 'svg';
-    case 'png': return 'png';
-    default:    return 'json';
+    case 'svg':      return 'svg';
+    case 'png':      return 'png';
+    case 'aseprite': return 'aseprite';
+    default:         return 'json';
   }
 }
 
@@ -184,8 +226,11 @@ switch (command) {
   default:
     console.log(`SCDL Compiler CLI
 Usage:
-  node scdl.cli.js compile <file.scdl> [--export json,svg,phaser] [--out <file>]
+  node scdl.cli.js compile <file.scdl> [--export json,svg,phaser,png,aseprite] [--out-dir <dir>] [--out <file>]
   node scdl.cli.js parse   <file.scdl> [--out <file>]
   node scdl.cli.js check   <file.scdl>
+
+Outputs default to the source file's directory, named <asset>-<target>.<ext>
+(multi-frame assets: <asset>-f<N>-<target>.<ext> plus <asset>-frameloop.json).
 `);
 }

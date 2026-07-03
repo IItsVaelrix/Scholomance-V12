@@ -29,6 +29,13 @@ describe('SCDL Parser — tokenizer', () => {
     expect(hex.value).toBe('#05060D');
   });
 
+  it('tokenizes malformed hex colours for SCDL diagnostics', () => {
+    const tokens = tokenize('color = #GGGGGG');
+    const badHex = tokens.find(t => t.type === 'BAD_HEX');
+    expect(badHex).toBeTruthy();
+    expect(badHex.value).toBe('#GGGGGG');
+  });
+
   it('skips comments', () => {
     const tokens = tokenize('# this is a comment\nasset foo canvas 10x10');
     const comments = tokens.filter(t => t.type === 'COMMENT');
@@ -128,6 +135,13 @@ describe('SCDL Parser — parseSCDL', () => {
   it('returns SCDL-AST-v1 contract', () => {
     const { rawAst } = parseSCDL(BASIC_SOURCE);
     expect(rawAst.contract).toBe('SCDL-AST-v1');
-    expect(rawAst.version).toBe('1.0.0');
+    expect(rawAst.version).toBe('1.1.0');
+  });
+
+  it('preserves malformed palette hex literals for compiler validation', () => {
+    const src = `asset x canvas 8x8\npalette { bad = #GGGGGG }\npart a material source {\n  fill bad\n}\nexport json`;
+    const { rawAst, errors } = parseSCDL(src);
+    expect(errors.filter(e => e.severity === 'ERROR')).toHaveLength(0);
+    expect(rawAst.palette.bad).toBe('#GGGGGG');
   });
 });

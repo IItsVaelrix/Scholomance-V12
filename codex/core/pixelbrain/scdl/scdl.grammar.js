@@ -5,7 +5,11 @@
  * Pure function: same input → same output. No side effects.
  *
  * Grammar summary:
- *   program       ::= asset_decl palette_block? part_block* export_decl?
+ *   program       ::= asset_decl palette_block? part_block* loop_decl? frame_block* export_decl?
+ *   loop_decl     ::= 'loop' NAME ['duration' INTEGER]                      (SCDL v1.1)
+ *   frame_block   ::= 'frame' INTEGER [STRING] ['duration' INTEGER]
+ *                     '{' (frame_part | 'omit' IDENT)* '}'                  (SCDL v1.1)
+ *   frame_part    ::= 'part' IDENT ['after' IDENT] ['material' IDENT] '{' part_op* '}'
  *   asset_decl    ::= 'asset' IDENT IDENT 'canvas' INT 'x' INT
  *   palette_block ::= 'palette' '{' (IDENT '=' HEX_COLOR)* '}'
  *   part_block    ::= 'part' IDENT 'material' IDENT '{' part_op* '}'
@@ -276,7 +280,12 @@ export function parseSCDL(source) {
       consume(); // 'symmetry'
       const axisTok = consume(TOKEN_TYPES.IDENT);
       const axis = axisTok?.value || 'x';
-      return { id: opId, op: 'symmetry', axis, loc: l, sourceSpan: l };
+      let count = 4;
+      if (axis === 'radial' || axis === 'rot') {
+        const nTok = consume(TOKEN_TYPES.INT);
+        count = nTok ? parseInt(nTok.value) : 4;
+      }
+      return { id: opId, op: 'symmetry', axis, count, loc: l, sourceSpan: l };
     }
 
     if (verb === 'trace') {
@@ -338,6 +347,54 @@ export function parseSCDL(source) {
       if (atValue('radius')) consume();
       const rTok = consume(TOKEN_TYPES.INT);
       return { id: opId, op: 'glow', radius: rTok ? parseInt(rTok.value, 10) : 1, hint: true, loc: l, sourceSpan: l };
+    }
+
+    // Extended ops wired from PixelBrain raster/SDF/gear/symmetry
+    if (verb === 'ellipse') {
+      consume();
+      const cxTok = consume(TOKEN_TYPES.INT);
+      const cyTok = consume(TOKEN_TYPES.INT);
+      if (atValue('radius')) consume();
+      const rxTok = consume(TOKEN_TYPES.INT);
+      if (atValue('ry')) consume();
+      const ryTok = consume(TOKEN_TYPES.INT);
+      const colRef = _parseColorRef();
+      return { id: opId, op: 'ellipse', cx: cxTok ? parseFloat(cxTok.value) : 0, cy: cyTok ? parseFloat(cyTok.value) : 0, rx: rxTok ? parseFloat(rxTok.value) : 0, ry: ryTok ? parseFloat(ryTok.value) : 0, colorRef: colRef, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'line') {
+      consume();
+      const x0Tok = consume(TOKEN_TYPES.INT);
+      const y0Tok = consume(TOKEN_TYPES.INT);
+      const x1Tok = consume(TOKEN_TYPES.INT);
+      const y1Tok = consume(TOKEN_TYPES.INT);
+      const colRef = _parseColorRef();
+      return { id: opId, op: 'line', x0: x0Tok ? parseFloat(x0Tok.value) : 0, y0: y0Tok ? parseFloat(y0Tok.value) : 0, x1: x1Tok ? parseFloat(x1Tok.value) : 0, y1: y1Tok ? parseFloat(y1Tok.value) : 0, colorRef: colRef, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'rotate' || verb === 'scale' || verb === 'translate') {
+      consume();
+      const cxTok = consume(TOKEN_TYPES.INT);
+      const cyTok = consume(TOKEN_TYPES.INT);
+      let p1 = 0, p2 = 0;
+      if (verb === 'rotate') { if (atValue('degrees')) consume(); const d = consume(TOKEN_TYPES.INT); p1 = d ? parseFloat(d.value) : 0; }
+      else if (verb === 'scale') { const s = consume(TOKEN_TYPES.INT); p1 = s ? parseFloat(s.value) : 1; if (atValue('sy')) { consume(); const sy = consume(TOKEN_TYPES.INT); p2 = sy ? parseFloat(sy.value) : p1; } }
+      else { const dx = consume(TOKEN_TYPES.INT); const dy = consume(TOKEN_TYPES.INT); p1 = dx ? parseFloat(dx.value) : 0; p2 = dy ? parseFloat(dy.value) : 0; }
+      return { id: opId, op: verb, cx: cxTok ? parseFloat(cxTok.value) : 0, cy: cyTok ? parseFloat(cyTok.value) : 0, param1: p1, param2: p2, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'union' || verb === 'subtract' || verb === 'intersect') {
+      consume();
+      const t1 = consume(TOKEN_TYPES.IDENT)?.value;
+      const t2 = consume(TOKEN_TYPES.IDENT)?.value;
+      return { id: opId, op: verb, targets: [t1, t2].filter(Boolean), loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'reference' || verb === 'instance') {
+      consume();
+      const refId = consume(TOKEN_TYPES.STRING)?.value || consume(TOKEN_TYPES.IDENT)?.value;
+      const colRef = _parseColorRef();
+      return { id: opId, op: 'reference', ref: refId, colorRef: colRef, loc: l, sourceSpan: l };
     }
 
     if (verb === 'circle') {
@@ -496,6 +553,89 @@ export function parseSCDL(source) {
     return { id: partId, material, ops, loc: l, sourceSpan: l };
   }
 
+  // ── loop declaration (SCDL v1.1) ──
+  // loop_decl ::= 'loop' NAME ['duration' INTEGER]
+  function parseLoop() {
+    if (!atValue('loop')) return null;
+    consume(); // 'loop'
+    const nameTok = consume(TOKEN_TYPES.IDENT);
+    let defaultDurationMs = 400;
+    if (atValue('duration')) {
+      consume();
+      const dTok = consume(TOKEN_TYPES.INT);
+      if (dTok) defaultDurationMs = parseInt(dTok.value, 10);
+    }
+    return { name: nameTok?.value || 'loop', defaultDurationMs };
+  }
+
+  // ── frame part (SCDL v1.1) ──
+  // frame_part ::= 'part' IDENT ['after' IDENT] ['material' IDENT] '{' part_op* '}'
+  function parseFramePart() {
+    const l = loc();
+    consume(); // 'part'
+    const idTok = consume(TOKEN_TYPES.IDENT);
+    let after = null;
+    if (atValue('after')) {
+      consume();
+      const aTok = consume(TOKEN_TYPES.IDENT);
+      after = aTok?.value || null;
+    }
+    let material = 'source';
+    if (atValue('material')) {
+      consume();
+      const matTok = consume(TOKEN_TYPES.IDENT);
+      material = matTok?.value || 'source';
+    }
+    expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' for frame part '${idTok?.value}'`);
+    const partId = idTok?.value || 'unnamed';
+    const ops = [];
+    let opIndex = 0;
+    while (!at(TOKEN_TYPES.RBRACE, TOKEN_TYPES.EOF)) {
+      const op = parseOp(partId, opIndex++);
+      if (op) ops.push(op);
+    }
+    consume(TOKEN_TYPES.RBRACE);
+    // mode (replace|add) is resolved against base part ids by expandFramesPass
+    return { mode: null, after, part: { id: partId, material, ops, loc: l, sourceSpan: l }, loc: l };
+  }
+
+  // ── frame block (SCDL v1.1) ──
+  // frame_block ::= 'frame' INTEGER [STRING] ['duration' INTEGER] '{' frame_item* '}'
+  function parseFrame() {
+    if (!atValue('frame')) return null;
+    const l = loc();
+    consume(); // 'frame'
+    const idxTok = consume(TOKEN_TYPES.INT);
+    const index = idxTok ? parseInt(idxTok.value, 10) : -1;
+    let label = null;
+    if (at(TOKEN_TYPES.STRING)) label = consume().value;
+    let durationMs = null;
+    if (atValue('duration')) {
+      consume();
+      const dTok = consume(TOKEN_TYPES.INT);
+      if (dTok) durationMs = parseInt(dTok.value, 10);
+    }
+    expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' for frame ${index}`);
+    const overrides = [];
+    while (!at(TOKEN_TYPES.RBRACE, TOKEN_TYPES.EOF)) {
+      if (atValue('omit')) {
+        const ol = loc();
+        consume(); // 'omit'
+        const idTok = consume(TOKEN_TYPES.IDENT);
+        overrides.push({ mode: 'omit', partId: idTok?.value || 'unknown', loc: ol });
+      } else if (atValue('part')) {
+        const ov = parseFramePart();
+        if (ov) overrides.push(ov);
+      } else {
+        const bad = peek();
+        errors.push(_mkErr(`Unknown frame item '${bad.value}'`, loc()));
+        consume(); // guarantee progress
+      }
+    }
+    consume(TOKEN_TYPES.RBRACE);
+    return { index, label, durationMs, overrides, loc: l };
+  }
+
   // ── export declaration ──
   function parseExport() {
     if (!atValue('export')) return null;
@@ -519,12 +659,18 @@ export function parseSCDL(source) {
     const p = parsePart();
     if (p) parts.push(p);
   }
+  const loopDecl = atValue('loop') ? parseLoop() : null;
+  const frames = [];
+  while (atValue('frame')) {
+    const f = parseFrame();
+    if (f) frames.push(f);
+  }
   const exports = (atValue('export') ? parseExport() : null) || ['json'];
 
   // Build AST
   const ast = {
     contract:       'SCDL-AST-v1',
-    version:        '1.0.0',
+    version:        '1.1.0',
     checksum,
     asset:          assetDecl?.asset || 'unnamed',
     type:           assetDecl?.type  || 'unknown',
@@ -534,6 +680,11 @@ export function parseSCDL(source) {
     exports,
     sourceLocation: assetDecl?.sourceLocation || { line: 1, col: 1 },
   };
+  // SCDL v1.1: loop/frames are present only for multi-frame assets
+  if (loopDecl || frames.length > 0) {
+    ast.loop   = loopDecl;
+    ast.frames = frames;
+  }
 
   return { ast: errors.some(e => e.severity === 'ERROR') ? null : ast, rawAst: ast, errors };
 }
