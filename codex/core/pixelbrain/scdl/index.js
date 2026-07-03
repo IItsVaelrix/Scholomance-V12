@@ -11,3 +11,9 @@ export { exportSCDL }                from './scdl.exporters.js';
 export { emitLattice }               from './scdl.lattice-emitter.js';
 export { SCDL_ERROR_CODES, SCDLError, scdlError, scdlWarn, scdlInfo } from './scdl.errors.js';
 export { buildSCDLDiagnosticReport, formatSCDLDiagnostic } from './scdl.diagnostics.js';
+
+// SemQuant / PB-Semantics (Phase 1)
+export * as SemQuant from '../semantic/index.js';
+export { semanticUnifierPass } from '../semantic/semantic-unifier.js';
+export { scdlAstToIR } from '../semantic/adapters/scdl-to-ir.adapter.js';
+export { constructionSpecToIR } from '../semantic/adapters/construction-to-ir.adapter.js';

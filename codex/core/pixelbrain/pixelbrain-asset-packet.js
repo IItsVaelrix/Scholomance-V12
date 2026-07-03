@@ -53,7 +53,7 @@ export function normalizePixelBrainCanvas(canvas = {}) {
 }
 
 export function normalizePixelBrainCoordinate(coord = {}) {
-  return Object.freeze({
+  const base = {
     ...clonePlain(coord),
     x: toFiniteNumber(coord.x ?? coord.snappedX, 0),
     y: toFiniteNumber(coord.y ?? coord.snappedY, 0),
@@ -62,7 +62,18 @@ export function normalizePixelBrainCoordinate(coord = {}) {
     snappedY: toFiniteNumber(coord.snappedY ?? coord.y, 0),
     color: String(coord.color || '#ffffff'),
     emphasis: toFiniteNumber(coord.emphasis ?? coord.pressure, 1),
-  });
+  };
+
+  // Preserve SemQuant / authoring semantic fields (partId, role, sourceOpId, semanticRole etc.)
+  // These are lightweight metadata for connective tissue between authoring and runtime.
+  if (coord.partId) base.partId = String(coord.partId);
+  if (coord.role) base.role = String(coord.role);
+  if (coord.sourceOpId) base.sourceOpId = String(coord.sourceOpId);
+  if (coord.material) base.material = String(coord.material);
+  if (coord.semanticRole) base.semanticRole = String(coord.semanticRole);
+  if (coord.semanticDomain) base.semanticDomain = String(coord.semanticDomain);
+
+  return Object.freeze(base);
 }
 
 function normalizePaletteRecord(palette, index = 0) {

@@ -14,7 +14,7 @@
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
-import { resolve, basename } from 'node:path';
+import { resolve, basename, dirname, extname, join } from 'node:path';
 import { compileSCDL, parseSCDL, exportSCDL } from './index.js';
 import { buildSCDLDiagnosticReport, formatSCDLDiagnostic } from './scdl.diagnostics.js';
 
@@ -46,7 +46,11 @@ function readSource(filePath) {
 
 function writeOut(outPath, content) {
   try {
-    writeFileSync(resolve(outPath), content, 'utf8');
+    if (typeof content === 'string') {
+      writeFileSync(resolve(outPath), content, 'utf8');
+    } else {
+      writeFileSync(resolve(outPath), content);
+    }
     console.log(`[SCDL] Written: ${outPath}`);
   } catch (e) {
     console.error(`[SCDL] Cannot write: ${outPath}\n${e.message}`);
@@ -88,11 +92,9 @@ function cmdCompile(args) {
       console.warn(`  [WARN] Export '${target}' failed: ${out.output}`);
       continue;
     }
-    const ext   = _targetExt(target);
-    const name  = basename(filePath, '.scdl');
-    const dest  = outPath || `${name}.${ext}`;
-    const dest2 = targets.length > 1 ? dest.replace(`.${ext}`, `-${target}.${ext}`) : dest;
-    writeOut(dest2, typeof out.output === 'string' ? out.output : JSON.stringify(out.output, null, 2));
+    const name = basename(filePath, '.scdl');
+    const dest = _targetPath({ outPath, sourceName: name, target, multi: targets.length > 1 });
+    writeOut(dest, out.output instanceof Uint8Array ? out.output : String(out.output));
   }
 
   console.log(`[SCDL] Done. Packet ID: ${result.packet.id}`);
@@ -154,9 +156,23 @@ function cmdCheck(args) {
 function _targetExt(target) {
   switch (target) {
     case 'svg': return 'svg';
-    case 'png': return 'png.json';
+    case 'png': return 'png';
     default:    return 'json';
   }
+}
+
+function _targetPath({ outPath, sourceName, target, multi }) {
+  const ext = _targetExt(target);
+  if (!outPath) {
+    return multi ? `${sourceName}-${target}.${ext}` : `${sourceName}.${ext}`;
+  }
+  if (!multi) return outPath;
+
+  const dir = dirname(outPath);
+  const file = basename(outPath);
+  const suffix = extname(file);
+  const stem = suffix ? file.slice(0, -suffix.length) : file;
+  return join(dir, `${stem}-${target}.${ext}`);
 }
 
 // ─── Dispatch ─────────────────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ import {
 import { runPixelBrainRenderFidelityPipeline } from './render-fidelity-pipeline.js';
 import { templatize, fillTemplate } from './template-fill-bridge.js';
 import { resolvePixelBrainPaletteAuthority } from './palette-authority-bridge.js';
+import { enrichPacketWithSemantics, applyAuthoringSemantics } from './semantic-bridge.js';
 
 const PIXELBRAIN_FIDELITY_KIND = 'pixelbrain.fidelity.v1';
 
@@ -160,6 +161,13 @@ function runStage(packet, stage, context) {
     case 'fidelity':
     case 'renderFidelity':
       return deriveRenderFidelityPacket(packet, options);
+    case 'semantic':
+      // Apply SemQuant authoring semantics if authoring source provided
+      if (options.authoringSource) {
+        return enrichPacketWithSemantics(packet, options.authoringSource, options);
+      }
+      // Or just return enriched if input already has
+      return enrichPacketWithSemantics(packet, null, options);
     case 'export': {
       if (typeof context.exportPacket === 'function') {
         return context.exportPacket(derivePixelBrainExportPacket(packet, options.target || 'json', options), options);

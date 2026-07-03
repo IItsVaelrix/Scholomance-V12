@@ -31,6 +31,7 @@ export function emitPacketPass(ast, _errors) {
         partId:   coord.partId || part.id,
         material: coord.material || part.material,
         role:     coord.role,
+        sourceOpId: coord.sourceOpId,
         _fillIntent: coord._fillIntent || false,
       });
     }
@@ -72,6 +73,7 @@ export function emitPacketPass(ast, _errors) {
       createdBy:  'scdl-compiler.v1',
       operations: [
         { op: 'parse',          checksum: ast.checksum },
+        { op: 'semantic-unifier', schemaVersion: 'PB-SEM-v1' },
         { op: 'compile',        partCount: ast.parts.length },
         { op: 'coordinates',    count: allCoordinates.length },
       ],

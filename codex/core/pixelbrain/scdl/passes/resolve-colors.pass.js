@@ -85,6 +85,13 @@ export function resolveColorsPass(ast, errors) {
       if (op.colorRef) {
         return { ...op, color: resolveRef(op.colorRef, opLoc), colorRef: undefined };
       }
+      if (op.tierColorRefs) {
+        return {
+          ...op,
+          tierColors: op.tierColorRefs.map(r => resolveRef(r, opLoc)),
+          tierColorRefs: undefined,
+        };
+      }
       return op;
     }),
   }));

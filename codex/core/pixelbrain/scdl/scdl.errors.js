@@ -30,6 +30,7 @@ export const SCDL_ERROR_CODES = Object.freeze({
   TRACE_INTENT:          0x1008, // trace stored as intent (info)
   DUPLICATE_PART_ID:     0x1009, // Part ID used more than once
   UNKNOWN_EXPORT_TARGET: 0x100A, // Export target not supported
+  INVALID_VECTOR_OP:     0x100B, // Vector op has invalid params
 });
 
 const SCDL_CODE_LABELS = Object.freeze({
@@ -43,6 +44,7 @@ const SCDL_CODE_LABELS = Object.freeze({
   [SCDL_ERROR_CODES.TRACE_INTENT]:          'SCDL-008',
   [SCDL_ERROR_CODES.DUPLICATE_PART_ID]:     'SCDL-009',
   [SCDL_ERROR_CODES.UNKNOWN_EXPORT_TARGET]: 'SCDL-010',
+  [SCDL_ERROR_CODES.INVALID_VECTOR_OP]:     'SCDL-011',
 });
 
 // ─── SCDLError Class ─────────────────────────────────────────────────────────

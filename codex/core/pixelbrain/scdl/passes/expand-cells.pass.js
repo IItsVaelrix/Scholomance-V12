@@ -79,14 +79,21 @@ export function expandCellsPass(ast, errors) {
       switch (op.op) {
         case 'cell': {
           if (boundsCheck(op.x, op.y, opLoc)) {
-            coordinates.push({
+            const coord = {
               x:        op.x,
               y:        op.y,
               color:    op.color || fillColor || '#000000',
-              partId:   part.id,
-              material: part.material,
-              role:     'explicit',
-            });
+              partId:   op.partId || part.id,
+              material: op.material || part.material,
+              role:     op.role || 'explicit',
+              sourceOpId: op.sourceOpId || op.id,
+            };
+            // Carry any semantic role from SemQuant if present on the op
+            if (Array.isArray(op.annotations)) {
+              const roleAnn = op.annotations.find(a => a.domain === 'role');
+              if (roleAnn) coord.role = roleAnn.canonicalType;
+            }
+            coordinates.push(coord);
           }
           break;
         }
@@ -101,6 +108,7 @@ export function expandCellsPass(ast, errors) {
             partId:   part.id,
             material: part.material,
             role:     'fill-intent',
+            sourceOpId: op.id,
             _fillIntent: true,
           });
           break;
@@ -118,6 +126,7 @@ export function expandCellsPass(ast, errors) {
                 partId:   part.id,
                 material: part.material,
                 role:     'rim',
+                sourceOpId: op.id,
                 compass:  op.compass,
               });
             }

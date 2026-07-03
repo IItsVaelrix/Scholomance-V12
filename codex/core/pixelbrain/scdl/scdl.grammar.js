@@ -9,8 +9,20 @@
  *   asset_decl    ::= 'asset' IDENT IDENT 'canvas' INT 'x' INT
  *   palette_block ::= 'palette' '{' (IDENT '=' HEX_COLOR)* '}'
  *   part_block    ::= 'part' IDENT 'material' IDENT '{' part_op* '}'
- *   part_op       ::= symmetry_op | trace_op | fill_op | rim_op | cell_op | glow_op
+ *   part_op       ::= symmetry_op | trace_op | fill_op | rim_op | cell_op
+ *                   | glow_op
+ *                   | circle_op | ring_op | rect_op | polygon_op | path_op
+ *                   | sphere_op
+ *   sphere_op     ::= 'sphere' NUMBER NUMBER 'radius' NUMBER ('light' NUMBER NUMBER)? color_ref+
  *   export_decl   ::= 'export' IDENT+
+ *
+ *   Vector ops (rasterized to cells by the expand-vector pass):
+ *   circle  cx cy 'radius' NUMBER color_ref
+ *   ring    cx cy 'radius' NUMBER 'width' NUMBER color_ref
+ *   rect    x y w h color_ref
+ *   polygon (NUMBER NUMBER)+ color_ref
+ *   path    STRING color_ref
+ *   sphere  cx cy 'radius' NUMBER ['light' NUMBER NUMBER] tier_color_ref+
  */
 
 import { hashString } from '../shared.js';
@@ -20,7 +32,8 @@ import { hashString } from '../shared.js';
 const TOKEN_TYPES = Object.freeze({
   IDENT:     'IDENT',
   HEX:       'HEX',
-  INT:       'INT',
+  BAD_HEX:   'BAD_HEX',
+  INT:       'INT', // signed numeric literal; dimensions still require integers
   STRING:    'STRING', // "body"
   LBRACE:    'LBRACE',
   RBRACE:    'RBRACE',
@@ -59,7 +72,7 @@ export function tokenize(source) {
     // Whitespace
     if (/\s/.test(ch)) { advance(); continue; }
 
-    // '#' — could be comment or hex colour
+    // '#' — could be comment, hex colour, or malformed hex literal
     if (ch === '#') {
       const startLoc = loc();
       // Look ahead to see if the next 6 characters are hex digits
@@ -86,6 +99,13 @@ export function tokenize(source) {
           hex += advance();
         }
         tokens.push({ type: TOKEN_TYPES.HEX, value: `#${hex}`, line: startLoc.line, col: startLoc.col });
+      } else if (!/\s/.test(src[pos + 1] || '')) {
+        advance(); // consume '#'
+        let raw = '#';
+        while (pos < src.length && !/\s/.test(peek()) && !['{', '}', '(', ')'].includes(peek())) {
+          raw += advance();
+        }
+        tokens.push({ type: TOKEN_TYPES.BAD_HEX, value: raw, line: startLoc.line, col: startLoc.col });
       } else {
         // It's a comment — consume to end of line
         while (pos < src.length && peek() !== '\n') advance();
@@ -112,13 +132,21 @@ export function tokenize(source) {
     if (ch === '=') { tokens.push({ type: TOKEN_TYPES.EQUALS, value: '=', line, col }); advance(); continue; }
     if (ch === '.') { tokens.push({ type: TOKEN_TYPES.DOT,    value: '.', line, col }); advance(); continue; }
 
-    // Integer
-    if (/[0-9]/.test(ch)) {
+    // Numeric literal
+    if (/[0-9-]/.test(ch)) {
       const startLoc = loc();
       let num = '';
+      if (peek() === '-') {
+        num += advance();
+        if (!/[0-9]/.test(peek())) continue;
+      }
       while (/[0-9]/.test(peek())) num += advance();
+      if (peek() === '.' && /[0-9]/.test(src[pos + 1] || '')) {
+        num += advance();
+        while (/[0-9]/.test(peek())) num += advance();
+      }
       // Check if followed by 'x' (dimension syntax: 64x64)
-      if (peek() === 'x' && /[0-9]/.test(src[pos + 1])) {
+      if (!num.includes('.') && !num.startsWith('-') && peek() === 'x' && /[0-9]/.test(src[pos + 1])) {
         tokens.push({ type: TOKEN_TYPES.INT, value: num, line: startLoc.line, col: startLoc.col });
         advance(); // consume 'x'
         tokens.push({ type: TOKEN_TYPES.X, value: 'x', line, col });
@@ -221,13 +249,13 @@ export function parseSCDL(source) {
     if (!atValue('palette')) return null;
     consume(); // 'palette'
     expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' after 'palette'`);
-    const palette = {};
+    const paletteEntries = {};
     while (!at(TOKEN_TYPES.RBRACE, TOKEN_TYPES.EOF)) {
       const nameTok = consume(TOKEN_TYPES.IDENT);
-      const eqTok   = consume(TOKEN_TYPES.EQUALS);
-      const hexTok  = consume(TOKEN_TYPES.HEX);
+      consume(TOKEN_TYPES.EQUALS);
+      const hexTok  = consume(TOKEN_TYPES.HEX) || consume(TOKEN_TYPES.BAD_HEX);
       if (nameTok && hexTok) {
-        palette[nameTok.value] = hexTok.value;
+        paletteEntries[nameTok.value] = hexTok.value;
       } else {
         const bad = peek();
         errors.push(_mkErr(`Unexpected token '${bad.value}' in palette block`, loc()));
@@ -235,96 +263,205 @@ export function parseSCDL(source) {
       }
     }
     consume(TOKEN_TYPES.RBRACE);
-    return palette;
+    return paletteEntries;
   }
 
   // ── part operations ──
-  function parseOp() {
+  function parseOp(partId, opIndex) {
     const l = loc();
     const verb = peek().value;
+    const opId = `op:${partId || 'part'}:${opIndex}:${verb}`;
 
     if (verb === 'symmetry') {
       consume(); // 'symmetry'
       const axisTok = consume(TOKEN_TYPES.IDENT);
       const axis = axisTok?.value || 'x';
-      return { op: 'symmetry', axis, loc: l };
+      return { id: opId, op: 'symmetry', axis, loc: l, sourceSpan: l };
     }
 
     if (verb === 'trace') {
       consume(); // 'trace'
-      // 'outline from image.region("key")'
-      if (atValue('outline')) consume(); // 'outline'
-      if (atValue('from'))    consume(); // 'from'
-      // Parse image.region("key") as a dotted call
+      if (atValue('outline')) consume();
+      if (atValue('from'))    consume();
       let region = 'image.region.unknown';
       if (atValue('image')) {
-        consume(); // 'image'
-        consume(TOKEN_TYPES.DOT); // '.'
-        const part1 = consume(TOKEN_TYPES.IDENT); // 'region'
+        consume();
+        consume(TOKEN_TYPES.DOT);
+        const part1 = consume(TOKEN_TYPES.IDENT);
         consume(TOKEN_TYPES.LPAREN);
         const keyTok = consume(TOKEN_TYPES.STRING);
         consume(TOKEN_TYPES.RPAREN);
-        if (part1 && keyTok) {
-          region = `image.${part1.value}.${keyTok.value}`;
-        }
+        if (part1 && keyTok) region = `image.${part1.value}.${keyTok.value}`;
       }
-      return { op: 'trace', source: region, intent: true, loc: l };
+      return { id: opId, op: 'trace', source: region, intent: true, loc: l, sourceSpan: l };
     }
 
     if (verb === 'fill') {
-      consume(); // 'fill'
+      consume();
       const colRef = _parseColorRef();
-      return { op: 'fill', colorRef: colRef, loc: l };
+      return { id: opId, op: 'fill', colorRef: colRef, loc: l, sourceSpan: l };
     }
 
     if (verb === 'rim') {
-      consume(); // 'rim'
+      consume();
       const colRef = _parseColorRef();
-      // 'at' <compass>
       let compass = 'north';
       if (atValue('at')) {
-        consume(); // 'at'
-        const parts = [];
-        while (at(TOKEN_TYPES.IDENT) &&
-               ['north','south','east','west'].includes(peek().value)) {
-          parts.push(consume().value);
+        consume();
+        const compassParts = [];
+        while (at(TOKEN_TYPES.IDENT) && ['north','south','east','west'].includes(peek().value)) {
+          compassParts.push(consume().value);
         }
-        compass = parts.join(' ') || 'north';
+        compass = compassParts.join(' ') || 'north';
       }
-      return { op: 'rim', colorRef: colRef, compass, loc: l };
+      return { id: opId, op: 'rim', colorRef: colRef, compass, loc: l, sourceSpan: l };
     }
 
     if (verb === 'cell') {
-      consume(); // 'cell'
+      consume();
       const xTok = consume(TOKEN_TYPES.INT);
       const yTok = consume(TOKEN_TYPES.INT);
       const colRef = _parseColorRef();
       return {
+        id: opId,
         op: 'cell',
         x: xTok ? parseInt(xTok.value, 10) : 0,
         y: yTok ? parseInt(yTok.value, 10) : 0,
         colorRef: colRef,
         loc: l,
+        sourceSpan: l,
       };
     }
 
     if (verb === 'glow') {
-      consume(); // 'glow'
-      if (atValue('radius')) consume(); // 'radius'
+      consume();
+      if (atValue('radius')) consume();
       const rTok = consume(TOKEN_TYPES.INT);
-      return { op: 'glow', radius: rTok ? parseInt(rTok.value, 10) : 1, hint: true, loc: l };
+      return { id: opId, op: 'glow', radius: rTok ? parseInt(rTok.value, 10) : 1, hint: true, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'circle') {
+      consume();
+      const cxTok = consume(TOKEN_TYPES.INT);
+      const cyTok = consume(TOKEN_TYPES.INT);
+      if (atValue('radius')) consume();
+      const rTok = consume(TOKEN_TYPES.INT);
+      const colRef = _parseColorRef();
+      return {
+        id: opId, op: 'circle',
+        cx: cxTok ? parseFloat(cxTok.value) : 0,
+        cy: cyTok ? parseFloat(cyTok.value) : 0,
+        radius: rTok ? parseFloat(rTok.value) : 0,
+        colorRef: colRef,
+        loc: l, sourceSpan: l,
+      };
+    }
+
+    if (verb === 'ring') {
+      consume();
+      const cxTok = consume(TOKEN_TYPES.INT);
+      const cyTok = consume(TOKEN_TYPES.INT);
+      if (atValue('radius')) consume();
+      const rTok = consume(TOKEN_TYPES.INT);
+      if (atValue('width')) consume();
+      const wTok = consume(TOKEN_TYPES.INT);
+      const colRef = _parseColorRef();
+      return {
+        id: opId, op: 'ring',
+        cx: cxTok ? parseFloat(cxTok.value) : 0,
+        cy: cyTok ? parseFloat(cyTok.value) : 0,
+        radius: rTok ? parseFloat(rTok.value) : 0,
+        width: wTok ? parseFloat(wTok.value) : 1,
+        colorRef: colRef,
+        loc: l, sourceSpan: l,
+      };
+    }
+
+    if (verb === 'rect') {
+      consume();
+      const xTok = consume(TOKEN_TYPES.INT);
+      const yTok = consume(TOKEN_TYPES.INT);
+      const wTok = consume(TOKEN_TYPES.INT);
+      const hTok = consume(TOKEN_TYPES.INT);
+      const colRef = _parseColorRef();
+      return {
+        id: opId, op: 'rect',
+        x: xTok ? parseFloat(xTok.value) : 0,
+        y: yTok ? parseFloat(yTok.value) : 0,
+        w: wTok ? parseFloat(wTok.value) : 0,
+        h: hTok ? parseFloat(hTok.value) : 0,
+        colorRef: colRef,
+        loc: l, sourceSpan: l,
+      };
+    }
+
+    if (verb === 'polygon') {
+      consume();
+      const points = [];
+      while (at(TOKEN_TYPES.INT)) {
+        const xt = consume();
+        const yt = consume(TOKEN_TYPES.INT);
+        if (xt && yt) points.push([parseFloat(xt.value), parseFloat(yt.value)]);
+        else break;
+      }
+      const colRef = _parseColorRef();
+      return { id: opId, op: 'polygon', points, colorRef: colRef, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'path') {
+      consume();
+      const dTok = consume(TOKEN_TYPES.STRING);
+      const colRef = _parseColorRef();
+      return { id: opId, op: 'path', d: dTok ? dTok.value : '', colorRef: colRef, loc: l, sourceSpan: l };
+    }
+
+    if (verb === 'sphere') {
+      consume();
+      const cxTok = consume(TOKEN_TYPES.INT);
+      const cyTok = consume(TOKEN_TYPES.INT);
+      if (atValue('radius')) consume();
+      const rTok = consume(TOKEN_TYPES.INT);
+
+      let lx = -1, ly = -1;
+      if (atValue('light')) {
+        consume();
+        const lxTok = consume(TOKEN_TYPES.INT);
+        const lyTok = consume(TOKEN_TYPES.INT);
+        if (lxTok) lx = parseFloat(lxTok.value);
+        if (lyTok) ly = parseFloat(lyTok.value);
+      }
+
+      const tierColorRefs = [];
+      while (tierColorRefs.length < 5 &&
+             (at(TOKEN_TYPES.IDENT) || at(TOKEN_TYPES.HEX) || at(TOKEN_TYPES.BAD_HEX))) {
+        tierColorRefs.push(_parseColorRef());
+      }
+
+      return {
+        id: opId, op: 'sphere',
+        cx: cxTok ? parseFloat(cxTok.value) : 0,
+        cy: cyTok ? parseFloat(cyTok.value) : 0,
+        radius: rTok ? parseFloat(rTok.value) : 0,
+        lx, ly,
+        tierColorRefs,
+        loc: l, sourceSpan: l,
+      };
     }
 
     // Unknown verb inside part
     const bad = peek();
     errors.push(_mkErr(`Unknown part op '${bad.value}'`, l));
-    consume(); // skip it
+    consume();
     return null;
   }
 
   function _parseColorRef() {
     if (at(TOKEN_TYPES.HEX)) {
       const tok = consume(TOKEN_TYPES.HEX);
+      return { kind: 'hex', value: tok.value };
+    }
+    if (at(TOKEN_TYPES.BAD_HEX)) {
+      const tok = consume(TOKEN_TYPES.BAD_HEX);
       return { kind: 'hex', value: tok.value };
     }
     if (at(TOKEN_TYPES.IDENT)) {
@@ -348,13 +485,15 @@ export function parseSCDL(source) {
       material = matTok?.value || 'source';
     }
     expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' for part '${idTok?.value}'`);
+    const partId = idTok?.value || 'unnamed';
     const ops = [];
+    let opIndex = 0;
     while (!at(TOKEN_TYPES.RBRACE, TOKEN_TYPES.EOF)) {
-      const op = parseOp();
+      const op = parseOp(partId, opIndex++);
       if (op) ops.push(op);
     }
     consume(TOKEN_TYPES.RBRACE);
-    return { id: idTok?.value || 'unnamed', material, ops, loc: l };
+    return { id: partId, material, ops, loc: l, sourceSpan: l };
   }
 
   // ── export declaration ──
@@ -415,13 +554,11 @@ function _tokenizeFull(source) {
     if (c === '\n') { line++; col = 1; } else { col++; }
     return c;
   }
-  function tok(type, value) { return { type, value, line, col }; }
-
   while (pos < src.length) {
     // whitespace
     if (/\s/.test(ch())) { adv(); continue; }
 
-    // '#' — could be hex colour or comment
+    // '#' — could be hex colour, malformed hex literal, or comment
     if (ch() === '#') {
       const savedLine = line, savedCol = col;
       adv(); // consume '#'
@@ -436,6 +573,12 @@ function _tokenizeFull(source) {
         // It's a hex colour
         for (let i = 0; i < 6; i++) adv();
         tokens.push({ type: TOKEN_TYPES.HEX, value: `#${hex}`, line: savedLine, col: savedCol });
+      } else if (!/\s/.test(ch())) {
+        let raw = '#';
+        while (pos < src.length && !/\s/.test(ch()) && !['{', '}', '(', ')'].includes(ch())) {
+          raw += adv();
+        }
+        tokens.push({ type: TOKEN_TYPES.BAD_HEX, value: raw, line: savedLine, col: savedCol });
       } else {
         // It's a comment — skip to end of line
         while (pos < src.length && ch() !== '\n') adv();
@@ -467,13 +610,21 @@ function _tokenizeFull(source) {
     }
 
     // number (and dimension 'x')
-    if (/[0-9]/.test(ch())) {
+    if (/[0-9-]/.test(ch())) {
       const sl = line, sc = col;
       let num = '';
+      if (ch() === '-') {
+        num += adv();
+        if (!/[0-9]/.test(ch())) continue;
+      }
       while (/[0-9]/.test(ch())) num += adv();
+      if (ch() === '.' && /[0-9]/.test(ahead(1))) {
+        num += adv();
+        while (/[0-9]/.test(ch())) num += adv();
+      }
       tokens.push({ type: TOKEN_TYPES.INT, value: num, line: sl, col: sc });
       // if followed by 'x' and more digits → dimension separator
-      if (ch() === 'x' && /[0-9]/.test(ahead(1))) {
+      if (!num.includes('.') && !num.startsWith('-') && ch() === 'x' && /[0-9]/.test(ahead(1))) {
         const xl = line, xc = col;
         adv(); // consume 'x'
         tokens.push({ type: TOKEN_TYPES.X, value: 'x', line: xl, col: xc });

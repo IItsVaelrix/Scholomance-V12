@@ -9,10 +9,13 @@
  *  - Export targets are supported
  */
 
-import { SCDLError, SCDL_ERROR_CODES, scdlError, scdlWarn } from '../scdl.errors.js';
+import { SCDL_ERROR_CODES, scdlError } from '../scdl.errors.js';
 
 const SUPPORTED_EXPORTS = new Set(['json', 'svg', 'phaser', 'png']);
-const KNOWN_OPS = new Set(['symmetry', 'trace', 'fill', 'rim', 'cell', 'glow']);
+const KNOWN_OPS = new Set([
+  'symmetry', 'trace', 'fill', 'rim', 'cell', 'glow',
+  'circle', 'ring', 'rect', 'polygon', 'path', 'sphere',
+]);
 
 /**
  * @param {object} ast - SCDL-AST-v1 (raw from parser)
@@ -58,13 +61,14 @@ export function validatePass(ast, errors) {
           { op: op.op, partId: part.id }
         ));
       }
+      validateVectorOp(op, part, errors, l);
     }
   }
 
   // 5 — export targets
   for (const target of (ast.exports || [])) {
     if (!SUPPORTED_EXPORTS.has(target)) {
-      errors.push(scdlWarn(
+      errors.push(scdlError(
         `Unknown export target '${target}' — supported: json, svg, phaser, png`,
         SCDL_ERROR_CODES.UNKNOWN_EXPORT_TARGET,
         l,
@@ -74,4 +78,52 @@ export function validatePass(ast, errors) {
   }
 
   return ast;
+}
+
+function validateVectorOp(op, part, errors, fallbackLoc) {
+  if (!['circle', 'ring', 'rect', 'polygon', 'path', 'sphere'].includes(op.op)) return;
+
+  const loc = op.loc || fallbackLoc;
+  const fail = (message, context = {}) => {
+    errors.push(scdlError(
+      message,
+      SCDL_ERROR_CODES.INVALID_VECTOR_OP,
+      loc,
+      { op: op.op, partId: part.id, ...context }
+    ));
+  };
+  const finite = value => Number.isFinite(value);
+  const positive = value => finite(value) && value > 0;
+
+  if (op.op === 'circle' && !positive(op.radius)) {
+    fail(`Invalid circle radius '${op.radius}' — must be > 0`, { radius: op.radius });
+  }
+  if (op.op === 'ring') {
+    if (!positive(op.radius)) fail(`Invalid ring radius '${op.radius}' — must be > 0`, { radius: op.radius });
+    if (!positive(op.width)) fail(`Invalid ring width '${op.width}' — must be > 0`, { width: op.width });
+  }
+  if (op.op === 'rect') {
+    if (!positive(op.w)) fail(`Invalid rect width '${op.w}' — must be > 0`, { width: op.w });
+    if (!positive(op.h)) fail(`Invalid rect height '${op.h}' — must be > 0`, { height: op.h });
+  }
+  if (op.op === 'polygon' && (!Array.isArray(op.points) || op.points.length < 3)) {
+    fail(`Invalid polygon — at least 3 points are required`, { pointCount: op.points?.length || 0 });
+  }
+  if (op.op === 'path' && !String(op.d || '').trim()) {
+    fail(`Invalid path — path data string is required`);
+  }
+  if (op.op === 'sphere') {
+    if (!positive(op.radius)) fail(`Invalid sphere radius '${op.radius}' — must be > 0`, { radius: op.radius });
+    if (!Array.isArray(op.tierColorRefs) || op.tierColorRefs.length !== 5) {
+      fail(`Invalid sphere tier color count '${op.tierColorRefs?.length || 0}' — expected 5`, {
+        tierColorCount: op.tierColorRefs?.length || 0,
+      });
+    }
+    if (!finite(op.lx) || !finite(op.ly) || (op.lx === 0 && op.ly === 0)) {
+      fail(`Invalid sphere light vector '${op.lx},${op.ly}' — must be a non-zero finite vector`, {
+        lx: op.lx,
+        ly: op.ly,
+      });
+    }
+  }
 }

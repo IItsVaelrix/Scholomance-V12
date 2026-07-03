@@ -2,10 +2,10 @@
  * SCDL Exporters
  *
  * Dispatcher and implementations for SCDL export targets:
- *   - json   → raw lattice JSON string
+ *   - json   → raw PixelBrainAssetPacket JSON string
  *   - svg    → SVG with one <rect> per coordinate
  *   - phaser → Phaser texture config JSON
- *   - png    → stub (signals render-pipeline delegation)
+ *   - png    → deterministic RGBA PNG bytes
  */
 
 import { emitLattice } from './scdl.lattice-emitter.js';
@@ -24,10 +24,10 @@ export function exportSCDL(packet, targets, ast) {
 
   for (const target of targets) {
     switch (target) {
-      case 'json':   results[target] = exportJSON(lattice);   break;
+      case 'json':   results[target] = exportJSON(packet);    break;
       case 'svg':    results[target] = exportSVG(lattice);    break;
       case 'phaser': results[target] = exportPhaser(lattice); break;
-      case 'png':    results[target] = exportPNGStub(lattice); break;
+      case 'png':    results[target] = exportPNG(lattice);    break;
       default:
         results[target] = {
           ok: false,
@@ -42,10 +42,10 @@ export function exportSCDL(packet, targets, ast) {
 
 // ─── JSON ─────────────────────────────────────────────────────────────────────
 
-function exportJSON(lattice) {
+function exportJSON(packet) {
   return {
     ok:       true,
-    output:   JSON.stringify(lattice, null, 2),
+    output:   JSON.stringify(packet, null, 2),
     mimeType: 'application/json',
   };
 }
@@ -118,6 +118,7 @@ function exportPhaser(lattice) {
     assetId: lattice.id,
     canvas:  { width, height },
     pixels,
+    palette: paletteInts,
     parts:   (lattice.parts || []).map(p => ({
       id:       p.id,
       material: p.material,
@@ -132,19 +133,13 @@ function exportPhaser(lattice) {
   };
 }
 
-// ─── PNG (stub) ───────────────────────────────────────────────────────────────
+// ─── PNG ─────────────────────────────────────────────────────────────────────
 
-function exportPNGStub(lattice) {
+function exportPNG(lattice) {
   return {
     ok:       true,
-    output:   JSON.stringify({
-      type:     'scdl-png-stub-v1',
-      message:  'PNG rendering delegates to render-fidelity-pipeline.js',
-      assetId:  lattice.id,
-      canvas:   lattice.canvas,
-      pixelCount: lattice.geometry.coordinates.length,
-    }, null, 2),
-    mimeType: 'application/json',
+    output:   renderPngBytes(lattice.geometry.coordinates, lattice.canvas.width, lattice.canvas.height),
+    mimeType: 'image/png',
   };
 }
 
@@ -156,4 +151,137 @@ function _hexToInt(hex) {
     ? raw.split('').map(c => c + c).join('')
     : raw;
   return parseInt(normalized.padEnd(6, '0'), 16) || 0;
+}
+
+function _hexToRgb(hex) {
+  const raw = String(hex || '').trim().replace('#', '');
+  if (!/^[0-9a-fA-F]{6}$/.test(raw)) return null;
+  const value = parseInt(raw, 16);
+  return {
+    r: (value >> 16) & 255,
+    g: (value >> 8) & 255,
+    b: value & 255,
+  };
+}
+
+function renderPngBytes(coordinates, width, height) {
+  const w = Math.max(1, Math.round(Number(width) || 1));
+  const h = Math.max(1, Math.round(Number(height) || 1));
+  const rgba = new Uint8Array(w * h * 4);
+
+  for (const c of coordinates || []) {
+    const x = Math.round(c?.x ?? c?.snappedX ?? -1);
+    const y = Math.round(c?.y ?? c?.snappedY ?? -1);
+    if (x < 0 || x >= w || y < 0 || y >= h) continue;
+    const rgb = _hexToRgb(c?.color);
+    if (!rgb) continue;
+    const off = (y * w + x) * 4;
+    rgba[off] = rgb.r;
+    rgba[off + 1] = rgb.g;
+    rgba[off + 2] = rgb.b;
+    rgba[off + 3] = 255;
+  }
+
+  return encodePng(w, h, rgba);
+}
+
+function encodePng(width, height, rgba) {
+  const ihdr = new Uint8Array(13);
+  writeU32BE(ihdr, 0, width);
+  writeU32BE(ihdr, 4, height);
+  ihdr[8] = 8;  // bit depth
+  ihdr[9] = 6;  // RGBA
+  ihdr[10] = 0; // compression
+  ihdr[11] = 0; // filter
+  ihdr[12] = 0; // interlace
+
+  const stride = width * 4;
+  const filtered = new Uint8Array((stride + 1) * height);
+  for (let y = 0; y < height; y += 1) {
+    filtered[y * (stride + 1)] = 0;
+    filtered.set(rgba.subarray(y * stride, y * stride + stride), y * (stride + 1) + 1);
+  }
+
+  return concatBytes([
+    new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    pngChunk('IHDR', ihdr),
+    pngChunk('IDAT', zlibStore(filtered)),
+    pngChunk('IEND', new Uint8Array(0)),
+  ]);
+}
+
+function zlibStore(data) {
+  const blocks = [];
+  for (let offset = 0; offset < data.length; offset += 65535) {
+    const chunk = data.subarray(offset, Math.min(offset + 65535, data.length));
+    const block = new Uint8Array(5 + chunk.length);
+    block[0] = offset + chunk.length >= data.length ? 1 : 0;
+    writeU16LE(block, 1, chunk.length);
+    writeU16LE(block, 3, (~chunk.length) & 0xffff);
+    block.set(chunk, 5);
+    blocks.push(block);
+  }
+
+  const checksum = new Uint8Array(4);
+  writeU32BE(checksum, 0, adler32(data));
+  return concatBytes([new Uint8Array([0x78, 0x01]), ...blocks, checksum]);
+}
+
+function pngChunk(type, data) {
+  const typeBytes = asciiBytes(type);
+  const lengthBytes = new Uint8Array(4);
+  writeU32BE(lengthBytes, 0, data.length);
+  const crcBytes = new Uint8Array(4);
+  writeU32BE(crcBytes, 0, crc32(concatBytes([typeBytes, data])));
+  return concatBytes([lengthBytes, typeBytes, data, crcBytes]);
+}
+
+function concatBytes(chunks) {
+  const total = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
+function asciiBytes(value) {
+  const out = new Uint8Array(value.length);
+  for (let i = 0; i < value.length; i += 1) out[i] = value.charCodeAt(i) & 0xff;
+  return out;
+}
+
+function writeU16LE(target, offset, value) {
+  target[offset] = value & 0xff;
+  target[offset + 1] = (value >>> 8) & 0xff;
+}
+
+function writeU32BE(target, offset, value) {
+  target[offset] = (value >>> 24) & 0xff;
+  target[offset + 1] = (value >>> 16) & 0xff;
+  target[offset + 2] = (value >>> 8) & 0xff;
+  target[offset + 3] = value & 0xff;
+}
+
+function adler32(data) {
+  let a = 1;
+  let b = 0;
+  for (const byte of data) {
+    a = (a + byte) % 65521;
+    b = (b + a) % 65521;
+  }
+  return ((b << 16) | a) >>> 0;
+}
+
+function crc32(data) {
+  let c = 0xffffffff;
+  for (const byte of data) {
+    c ^= byte;
+    for (let k = 0; k < 8; k += 1) {
+      c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+    }
+  }
+  return (c ^ 0xffffffff) >>> 0;
 }

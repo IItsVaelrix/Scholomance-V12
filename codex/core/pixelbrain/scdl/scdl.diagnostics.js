@@ -25,7 +25,6 @@ export function buildSCDLDiagnosticReport(result) {
     context:       d.context,
     assetId:       d.assetId,
     packetId:      d.packetId,
-    timestamp:     Date.now(), // EXEMPT — diagnostic timestamp only
   }));
 
   const errorCount = entries.filter(e => e.severity === 'ERROR').length;

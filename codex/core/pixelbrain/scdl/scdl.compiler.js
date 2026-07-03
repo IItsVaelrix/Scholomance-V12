@@ -3,7 +3,8 @@
  *
  * Runs the full pass pipeline on a parsed AST:
  *   validate → resolveColors → resolveMaterials →
- *   expandSymmetry → expandCells → emitPacket → emitDiagnostics
+ *   expandVector → expandSymmetry → expandCells →
+ *   emitPacket → emitDiagnostics
  *
  * Always returns a CompileResult — never throws.
  *
@@ -21,10 +22,15 @@ import { SCDLError, SCDL_ERROR_CODES, scdlError } from './scdl.errors.js';
 import { validatePass }         from './passes/validate.pass.js';
 import { resolveColorsPass }    from './passes/resolve-colors.pass.js';
 import { resolveMaterialsPass } from './passes/resolve-materials.pass.js';
+import { expandVectorPass }     from './passes/expand-vector.pass.js';
 import { expandSymmetryPass }   from './passes/expand-symmetry.pass.js';
 import { expandCellsPass }      from './passes/expand-cells.pass.js';
 import { emitPacketPass }       from './passes/emit-packet.pass.js';
 import { emitDiagnosticsPass }  from './passes/emit-diagnostics.pass.js';
+
+// SemQuant / PB-Semantics (Phase 1 thin slice)
+import { scdlAstToIR } from '../semantic/adapters/scdl-to-ir.adapter.js';
+import { semanticUnifierPass } from '../semantic/semantic-unifier.js';
 
 /**
  * Compile SCDL source text into a PixelBrainAssetPacket.
@@ -78,6 +84,43 @@ export function compileSCDL(source, options = {}) {
   ast = _runPass('validate', ast, errors, validatePass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
 
+  // ── SemQuant / PB-Semantics thin slice (Phase 1) ─────────────────────────
+  // Convert SCDL AST → IR → annotate → attach annotations back.
+  // Does not change raster behavior. Adds semantic metadata + PB-SEM-* diagnostics.
+  try {
+    const irInput = scdlAstToIR(ast, { filePath: null });
+    const semResult = semanticUnifierPass(irInput);
+
+    // Merge semantic diagnostics into main errors (as warnings for now)
+    for (const d of (semResult.diagnostics || [])) {
+      // Convert semantic diagnostic to a lightweight warning object the rest of system tolerates
+      errors.push({
+        message: d.message,
+        code: d.code,
+        severity: d.severity || 'warn',
+        loc: { line: 0, col: 0 },
+        isError: () => false,
+        isWarn: () => true,
+        semantic: true,
+      });
+    }
+
+    // Attach annotations + provenance back to AST for downstream use (thin bridge)
+    if (semResult.nodes && Array.isArray(ast.parts)) {
+      attachSemanticAnnotations(ast, semResult.nodes);
+    }
+  } catch (e) {
+    // Never break compilation on semantic layer in Phase 1
+    errors.push({
+      message: `SemQuant (semanticUnifier) skipped due to internal error: ${e.message}`,
+      code: 'PB-SEM-000',
+      severity: 'info',
+      loc: { line: 0, col: 0 },
+      isError: () => false,
+      isWarn: () => false,
+    });
+  }
+
   // ── Pass 2: Resolve Colors ───────────────────────────────────────────────
   ast = _runPass('resolveColors', ast, errors, resolveColorsPass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
@@ -86,15 +129,18 @@ export function compileSCDL(source, options = {}) {
   ast = _runPass('resolveMaterials', ast, errors, resolveMaterialsPass);
   // Material warnings are non-fatal
 
-  // ── Pass 4: Expand Symmetry (SymmetryAMP) ────────────────────────────────
+  // ── Pass 4: Expand Vector ops → cell ops (circle, ring, rect, polygon, path)
+  ast = _runPass('expandVector', ast, errors, expandVectorPass);
+
+  // ── Pass 5: Expand Symmetry (SymmetryAMP) ────────────────────────────────
   ast = _runPass('expandSymmetry', ast, errors, expandSymmetryPass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
 
-  // ── Pass 5: Expand Cells ─────────────────────────────────────────────────
+  // ── Pass 6: Expand Cells ─────────────────────────────────────────────────
   ast = _runPass('expandCells', ast, errors, expandCellsPass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
 
-  // ── Pass 6: Emit Packet ──────────────────────────────────────────────────
+  // ── Pass 7: Emit Packet ──────────────────────────────────────────────────
   let packet = null;
   try {
     packet = emitPacketPass(ast, errors);
@@ -108,7 +154,7 @@ export function compileSCDL(source, options = {}) {
     return _failResult(errors, ast, source);
   }
 
-  // ── Pass 7: Emit Diagnostics ─────────────────────────────────────────────
+  // ── Pass 8: Emit Diagnostics ─────────────────────────────────────────────
   const diagnostics = emitDiagnosticsPass(ast, errors, packet);
 
   const hasErrors = errors.some(e =>
@@ -159,4 +205,43 @@ function _failResult(errors, ast, source) {
     diagnostics: Object.freeze(diagnostics),
     regressionSeed: Object.freeze({ source, options: {}, checksum: ast?.checksum || null }),
   });
+}
+
+/**
+ * Thin bridge: attach SemQuant annotations back onto the original SCDL AST.
+ * Ops and parts get .annotations and .semantic (for Phase 1 inspection).
+ */
+function attachSemanticAnnotations(ast, irNodes) {
+  if (!ast || !Array.isArray(ast.parts) || !Array.isArray(irNodes)) return;
+
+  const byId = new Map();
+  for (const node of irNodes) {
+    if (node.id) byId.set(node.id, node);
+  }
+
+  for (const part of ast.parts) {
+    const partNode = byId.get(`scdl:part:${part.id}`);
+    if (partNode) {
+      part.annotations = partNode.annotations || [];
+      part.semantic = { annotations: partNode.annotations || [] };
+    }
+
+    if (Array.isArray(part.ops)) {
+      part.ops.forEach((op, idx) => {
+        const opId = op.id || `scdl:${part.id}:${idx}:${op.op}`;
+        const irNode = byId.get(opId);
+        if (irNode) {
+          op.annotations = irNode.annotations || [];
+          op.semantic = {
+            annotations: irNode.annotations || [],
+            provenance: irNode.provenance || {},
+          };
+          // carry lowering history for audit
+          if (irNode.provenance?.loweringSteps) {
+            op.loweringSteps = irNode.provenance.loweringSteps;
+          }
+        }
+      });
+    }
+  }
 }

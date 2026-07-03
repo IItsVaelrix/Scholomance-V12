@@ -66,6 +66,7 @@ export function emitLattice(packet, ast) {
       ),
     },
     palette: packet.palette?.sourcePalette?.[0]?.colors || [],
+    _paletteMap: Object.freeze({ ...(ast?.palette || {}) }),
     parts:   Object.freeze(Object.values(partsIndex)),
     provenance: Object.freeze({
       createdBy:  packet.provenance?.createdBy || 'scdl-compiler.v1',
