@@ -31,6 +31,7 @@ import { emitDiagnosticsPass }  from './passes/emit-diagnostics.pass.js';
 // SemQuant / PB-Semantics (Phase 1 thin slice)
 import { scdlAstToIR } from '../semantic/adapters/scdl-to-ir.adapter.js';
 import { semanticUnifierPass } from '../semantic/semantic-unifier.js';
+import { createSemanticDiagnostic } from '../semantic-registry.js';
 
 /**
  * Compile SCDL source text into a PixelBrainAssetPacket.
@@ -91,18 +92,10 @@ export function compileSCDL(source, options = {}) {
     const irInput = scdlAstToIR(ast, { filePath: null });
     const semResult = semanticUnifierPass(irInput);
 
-    // Merge semantic diagnostics into main errors (as warnings for now)
+    // Merge semantic diagnostics into main errors, encoded as PB-ERR-v1
+    // bytecode so they are visible to the shared decode/recovery tooling.
     for (const d of (semResult.diagnostics || [])) {
-      // Convert semantic diagnostic to a lightweight warning object the rest of system tolerates
-      errors.push({
-        message: d.message,
-        code: d.code,
-        severity: d.severity || 'warn',
-        loc: { line: 0, col: 0 },
-        isError: () => false,
-        isWarn: () => true,
-        semantic: true,
-      });
+      errors.push(createSemanticDiagnostic(d));
     }
 
     // Attach annotations + provenance back to AST for downstream use (thin bridge)
@@ -111,14 +104,11 @@ export function compileSCDL(source, options = {}) {
     }
   } catch (e) {
     // Never break compilation on semantic layer in Phase 1
-    errors.push({
-      message: `SemQuant (semanticUnifier) skipped due to internal error: ${e.message}`,
+    errors.push(createSemanticDiagnostic({
       code: 'PB-SEM-000',
       severity: 'info',
-      loc: { line: 0, col: 0 },
-      isError: () => false,
-      isWarn: () => false,
-    });
+      message: `SemQuant (semanticUnifier) skipped due to internal error: ${e.message}`,
+    }));
   }
 
   // ── Pass 2: Resolve Colors ───────────────────────────────────────────────

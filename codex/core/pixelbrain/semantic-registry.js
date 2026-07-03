@@ -9,6 +9,8 @@
  * so that different authoring surfaces and processing AMPS speak the same language.
  */
 
+import { encodeBytecodeError, ERROR_CATEGORIES, ERROR_SEVERITY, MODULE_IDS } from './bytecode-error.js';
+
 // === Core Semantic Constants (source of truth) ===
 export const SemanticDomains = Object.freeze({
   GEOMETRY: 'geometry',
@@ -44,6 +46,17 @@ export const SemanticDiagnosticCodes = Object.freeze({
   MISSING_MATERIAL_BINDING: 'PB-SEM-003',
   INVALID_EFFECT_TARGET: 'PB-SEM-004',
   PROVENANCE_LOSS: 'PB-SEM-005',
+});
+
+// PB-SEM numeric sub-range inside the ARTIFACT module space (0x1000–0x10FF).
+// SCDL owns 0x1001–0x10xx from the bottom; semantics claim 0x1080–0x108F.
+export const SEMANTIC_DIAGNOSTIC_BYTECODES = Object.freeze({
+  'PB-SEM-000': 0x1080, // internal/unclassified semantic diagnostic
+  'PB-SEM-001': 0x1081,
+  'PB-SEM-002': 0x1082,
+  'PB-SEM-003': 0x1083,
+  'PB-SEM-004': 0x1084,
+  'PB-SEM-005': 0x1085,
 });
 
 export const ROLE_ALIASES = Object.freeze({
@@ -116,6 +129,58 @@ export function resolveEffect(raw) {
   if (!raw) return null;
   const norm = String(raw).trim().toLowerCase();
   return EFFECT_ALIASES[norm] || norm;
+}
+
+// === PB-SEM diagnostic ↔ PB-ERR-v1 bytecode adapter ===
+
+/**
+ * Encode a semantic diagnostic (from semanticUnifierPass) as a PB-ERR-v1
+ * bytecode string, so PB-SEM issues are visible to the same decode/recovery
+ * tooling as every other PixelBrain error.
+ */
+export function semanticDiagnosticToBytecode(diag = {}) {
+  const code = SEMANTIC_DIAGNOSTIC_BYTECODES[diag.code] ?? SEMANTIC_DIAGNOSTIC_BYTECODES['PB-SEM-000'];
+  const severity = String(diag.severity || 'warn').toLowerCase();
+  const pbSeverity = severity === 'error' ? ERROR_SEVERITY.CRIT
+    : severity === 'info' ? ERROR_SEVERITY.INFO
+    : ERROR_SEVERITY.WARN;
+  const category = severity === 'error' ? ERROR_CATEGORIES.STATE : ERROR_CATEGORIES.VALUE;
+  return encodeBytecodeError(category, pbSeverity, MODULE_IDS.ARTIFACT, code, {
+    pbSemCode: diag.code || 'PB-SEM-000',
+    nodeId: diag.nodeId || null,
+    message: diag.message || '',
+  });
+}
+
+/**
+ * Wrap a semantic diagnostic in the SCDLError-compatible shape the compiler's
+ * error list expects (isError/isWarn/isInfo + bytecodeString + toJSON).
+ */
+export function createSemanticDiagnostic(diag = {}) {
+  const severity = String(diag.severity || 'warn').toLowerCase();
+  return {
+    message: diag.message || '',
+    code: diag.code || 'PB-SEM-000',
+    label: diag.code || 'PB-SEM-000',
+    severity,
+    loc: diag.loc || { line: 0, col: 0 },
+    nodeId: diag.nodeId || null,
+    semantic: true,
+    bytecodeString: semanticDiagnosticToBytecode(diag),
+    isError() { return severity === 'error'; },
+    isWarn() { return severity === 'warn'; },
+    isInfo() { return severity === 'info'; },
+    toJSON() {
+      return {
+        label: this.label,
+        severity: this.severity,
+        message: this.message,
+        loc: this.loc,
+        nodeId: this.nodeId,
+        bytecodeString: this.bytecodeString,
+      };
+    },
+  };
 }
 
 // Convenience: get a semantic metadata object for a coordinate or node

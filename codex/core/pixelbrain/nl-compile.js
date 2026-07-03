@@ -28,7 +28,8 @@ import { mapToCoordinates } from './coordinate-mapping.js';
 import { applySymmetryToLattice } from './symmetry-amp.js';
 import { coordsToLattice, latticeToCoords } from './lattice-coordinate-adapter.js';
 import { bytecodeToPalette } from './color-byte-mapping.js';
-import { createPixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
+import { fnv1a32Hex } from './shared.js';
+import { forgePacket } from './semantic-bridge.js';
 
 // applySymmetryToLattice only mirrors these; 'none' (and anything else) is a pass-through.
 const APPLICABLE_SYMMETRY = new Set(['vertical', 'horizontal', 'radial', 'diagonal']);
@@ -41,19 +42,9 @@ function canonicalize(value) {
   return `{${keys.map((k) => `${JSON.stringify(k)}:${canonicalize(value[k])}`).join(',')}}`;
 }
 
-function fnv1a32(input) {
-  const text = String(input ?? '');
-  let hash = 0x811c9dc5;
-  for (let i = 0; i < text.length; i += 1) {
-    hash ^= text.charCodeAt(i);
-    hash = Math.imul(hash, 0x01000193);
-  }
-  return hash >>> 0;
-}
-
-function fnv1a8Hex(input) {
-  return fnv1a32(input).toString(16).toUpperCase().padStart(8, '0');
-}
+// FNV-1a-32 upper-8-hex — shared canonical implementation (byte-identical
+// to the local copy this replaced).
+const fnv1a8Hex = fnv1a32Hex;
 
 // ── Deterministic HSL → #RRGGBB (the decreed mood tint) ──────────────────────
 function hslToHex(hueDeg, saturation, lightness) {
@@ -194,7 +185,7 @@ export async function compilePromptToAsset(prompt, options = {}) {
   const palettes = buildPalettes(hints, params.color);
 
   // 6. Emit the canonical packet.
-  const packet = createPixelBrainAssetPacket({
+  const packet = forgePacket({
     source: 'nl-compile',
     canvas: grid.canvas,
     coordinates,
@@ -203,7 +194,9 @@ export async function compilePromptToAsset(prompt, options = {}) {
       semanticPalette: palettes.semanticPalette,
     },
     material: params?.surface?.material || 'stone',
-  });
+  }, {
+    parts: [{ id: 'body', material: params?.surface?.material || 'stone' }],
+  }, { sourceKind: 'nl-compile' });
 
   // 7. Checksum the canonical integer-only geometry digest.
   const digest = canonicalGeometry(packet, params, palettes);

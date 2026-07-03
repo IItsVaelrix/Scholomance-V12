@@ -9,6 +9,7 @@ export { createIRNode } from './pixelbrain-ir-node.js';
 export { semanticUnifierPass } from './semantic-unifier.js';
 export { scdlAstToIR } from './adapters/scdl-to-ir.adapter.js';
 export { constructionSpecToIR } from './adapters/construction-to-ir.adapter.js';
+export { partsSpecToIR } from './adapters/parts-spec-to-ir.adapter.js';
 
 // Connective tissue bridge to rest of PixelBrain
 export * from '../semantic-bridge.js';

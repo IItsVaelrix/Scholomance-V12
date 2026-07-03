@@ -14,11 +14,12 @@
  */
 
 import { semanticUnifierPass, scdlAstToIR, constructionSpecToIR } from './semantic/index.js';
+import { partsSpecToIR } from './semantic/adapters/parts-spec-to-ir.adapter.js';
 import {
   imageToPixelBrainParams,
   mergeImageAndNLUParams,
 } from './image-to-semantic-bridge.js';
-import { normalizePixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
+import { createPixelBrainAssetPacket, normalizePixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
 
 /**
  * Apply SemQuant (authoring semantic unifier) to an authoring source and return enriched result.
@@ -36,6 +37,9 @@ export function applyAuthoringSemantics(input, options = {}) {
   } else if (input && input.center && (input.rings || input.radials)) {
     // Construction spec
     irInput = constructionSpecToIR(input, options);
+  } else if (input && Array.isArray(input.parts)) {
+    // Generic parts-based spec (item foundry, template grid, aseprite, NL)
+    irInput = partsSpecToIR(input, options);
   } else {
     return { nodes: [], diagnostics: [], annotations: [] };
   }
@@ -136,6 +140,23 @@ export function enrichPacketWithSemantics(packetInput, authoringSource, options 
       semanticPalette: basePacket.palette?.semanticPalette || [],
     },
   };
+}
+
+/**
+ * The packet-creation seam: create the canonical packet AND enrich it with
+ * authoring semantics in one step. Every producer that has any authoring
+ * context (SCDL AST, construction spec, or a parts-based spec) should emit
+ * through this instead of bare createPixelBrainAssetPacket, so packets carry
+ * semantic metadata regardless of authoring origin.
+ *
+ * Per the additive-semantics policy (SCDL white paper §5.6), enrichment never
+ * changes the packet id: the id derives from render-authoritative fields
+ * before semantic fields are attached.
+ */
+export function forgePacket(input, authoringSource = null, options = {}) {
+  const packet = createPixelBrainAssetPacket(input);
+  if (!authoringSource) return packet;
+  return Object.freeze(enrichPacketWithSemantics(packet, authoringSource, options));
 }
 
 /**

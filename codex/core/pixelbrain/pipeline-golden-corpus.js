@@ -23,7 +23,13 @@ export const PIPELINE_CORPUS_CASE_IDS = Object.freeze([
   'finish.detail-budget-tight-interior',
 ]);
 
-const PICKAXE_SPEC_URL = new URL('../../../specs/voidmetal-pickaxe.v1.json', import.meta.url);
+// Vitest serves modules over http, so import.meta.url is not always a file
+// URL; fall back to resolving from the repo root (the test/process cwd).
+const PICKAXE_SPEC_URL = (() => {
+  const fromModule = new URL('../../../specs/voidmetal-pickaxe.v1.json', import.meta.url);
+  if (fromModule.protocol === 'file:') return fromModule;
+  return `${process.cwd()}/specs/voidmetal-pickaxe.v1.json`;
+})();
 const LIGHT = Object.freeze({ angle: Math.PI * 1.25, ambient: 0.3 });
 const HEX_UNAUTHORIZED = '#123456';
 

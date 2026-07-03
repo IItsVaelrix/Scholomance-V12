@@ -101,6 +101,14 @@ export function hashString(value) {
 }
 
 /**
+ * FNV-1a-32 of a string as upper-case zero-padded 8-hex — the checksum
+ * presentation used by .pbrain packets, nl-compile digests, and chunk keys.
+ */
+export function fnv1a32Hex(value) {
+  return hashString(value).toString(16).toUpperCase().padStart(8, '0');
+}
+
+/**
  * Deterministic pseudo-random number generator for mathematical purity
  */
 export function pseudoRandom(seed) {

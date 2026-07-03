@@ -68,7 +68,7 @@ import {
 } from './chestplate-fidelity-pipeline.js';
 import { engraveMotifs, hashMotifs } from './motif-engraver.js';
 import { buildItemEffectShader } from './item-effect-shader.js';
-import { createPixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
+import { forgePacket } from './semantic-bridge.js';
 import { createShaderPacket, hashShaderPacket } from './shader-packet.js';
 import { MATERIAL_PALETTES, resolveMaterialId, SOURCE_MATERIAL } from './material-registry.js';
 import { exportToGodotShader } from '../../../src/lib/exporters/pixelbrainGodotShaderExport.js';
@@ -454,7 +454,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
         effect: 'TRANSCENDENT',
         source: 'foundry',
       };
-  const assetPacket = createPixelBrainAssetPacket({
+  const assetPacket = forgePacket({
     source: { kind: 'procedural', id: spec.id, label: `${spec.archetype} ${spec.id}` },
     canvas: spec.canvas,
     coordinates: polished,
@@ -491,7 +491,7 @@ export function forgeItemAsset(rawSpec, opts = {}) {
       },
       ...(constructionHints ? { constructionHints } : {}),
     },
-  });
+  }, { id: spec.id, parts: spec.parts }, { sourceKind: 'item-foundry' });
 
   // Validate route / loud failures
   let routeDiagnostics = { ok: true, failures: [] };
