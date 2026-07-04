@@ -3,6 +3,7 @@ import { generateBattleLeylines } from '../../codex/core/leyline.engine.js';
 import { processorBridge } from '../../codex/core/shared/processor-bridge.js';
 import { ITEM_DATABASE } from '../data/itemDatabase.js';
 import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyline.js';
+import { CombatStatController } from '../game/combat/combatStatController.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
@@ -406,6 +407,22 @@ export default function createCombatArenaScene(phaserRuntime) {
         };
       };
 
+      // --- Combat stat tree (slice 1) ---
+      this.stats = new CombatStatController();
+      this.stats.registerEntity('player', { tx: 4, ty: 6 });
+
+      // Sparring dummy: reuse the IdealHuman idle pose as a fixed attack target.
+      this.dummyGridPos = { tx: 4, ty: 4 };
+      const dummyScreen = this.getIsoTarget(this.dummyGridPos.tx, this.dummyGridPos.ty);
+      this.dummyContainer = this.add.container(dummyScreen.x, dummyScreen.y);
+      this.dummyContainer.setDepth(24);
+      const dummyImg = this.add.sprite(0, 0, 'ideal-human-f0');
+      dummyImg.setOrigin(0.5, FEET_ORIGIN_Y);
+      dummyImg.setTint(0x88aacc); // cool tint so it reads as "not the player"
+      this.dummyContainer.add(dummyImg);
+      this.dummyImg = dummyImg;
+      this.stats.registerEntity('dummy', { hp: 100, maxHp: 100, tx: this.dummyGridPos.tx, ty: this.dummyGridPos.ty });
+
       // Procedural smoke wisp — FBM noise with soft circular mask, light cool-gray
       if (!this.textures.exists('smoke-wisp')) {
         const w = 128, h = 128;
@@ -473,6 +490,16 @@ export default function createCombatArenaScene(phaserRuntime) {
         window.removeEventListener('combat-cast', this.boundHandleCombatCast);
       });
 
+      this.boundHandleHudAttack = () => this.performBasicAttack();
+      this.boundHandleHudEndTurn = () => this.endPlayerTurn();
+      window.addEventListener('combat-attack', this.boundHandleHudAttack);
+      window.addEventListener('combat-endturn', this.boundHandleHudEndTurn);
+      this.events.once('destroy', () => {
+        window.removeEventListener('combat-attack', this.boundHandleHudAttack);
+        window.removeEventListener('combat-endturn', this.boundHandleHudEndTurn);
+      });
+      this.emitCombatStats(); // seed the HUD with initial values
+
       this.events.emit('arena-ready');
     }
 
@@ -533,9 +560,57 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
     };
     
+    emitCombatStats = () => {
+      const p = this.stats?.getEntity('player');
+      const d = this.stats?.getEntity('dummy');
+      if (!p) return;
+      window.dispatchEvent(new CustomEvent('combat-stats-changed', {
+        detail: {
+          movementPointsRemaining: p.movementPointsRemaining,
+          movementPoints: p.movementPoints,
+          attackPoints: p.attackPoints,
+          attackRange: p.attackRange,
+          attackUsed: p.attackUsed,
+          dummyHp: d ? d.hp : null,
+          dummyMaxHp: d ? d.maxHp : null,
+        },
+      }));
+    };
+
+    performBasicAttack = () => {
+      if (!this.stats) return;
+      const [targetId] = this.stats.inRangeTargetIds('player', ['dummy']);
+      if (!targetId) return; // No valid target in range.
+      const result = this.stats.resolveAttack('player', targetId);
+      if (!result) return;
+      // Quick hit-flash on the dummy (tween-based; no setTintFill — Phaser 4 safe).
+      if (this.dummyContainer) {
+        this.tweens.add({
+          targets: this.dummyContainer,
+          alpha: 0.35,
+          yoyo: true,
+          duration: 80,
+          repeat: 1,
+        });
+        if (result.targetDefeated) {
+          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400, delay: 200 });
+        }
+      }
+      this.emitCombatStats();
+    };
+
+    endPlayerTurn = () => {
+      if (!this.stats) return;
+      this.stats.endTurn('player');
+      this.emitCombatStats();
+    };
+
     handleGlobalKeydown = (e) => {
       if (this.isWalking) return;
-      
+
+      if (e.key === 'f' || e.key === 'F') { this.performBasicAttack(); return; }
+      if (e.key === ' ' || e.key === 'Enter') { this.endPlayerTurn(); return; }
+
       let dx = 0;
       let dy = 0;
       if (e.key === 'ArrowUp' || e.key === 'w') { dx = -1; dy = 0; }
@@ -554,13 +629,23 @@ export default function createCombatArenaScene(phaserRuntime) {
       // Teleporter Collision (top right corner 8, 0)
       if (newTx === 8 && newTy === 0) {
         console.log("Blocked by Teleporter collision!");
-        return; 
+        return;
       }
-      
+
+      if (this.stats && !this.stats.canMove('player')) {
+        return; // Out of movement points this turn.
+      }
+
       this.isWalking = true;
       this.playerGridPos.tx = newTx;
       this.playerGridPos.ty = newTy;
-      
+
+      if (this.stats) {
+        this.stats.spendMove('player');
+        this.stats.setPosition('player', newTx, newTy);
+        this.emitCombatStats();
+      }
+
       const targetPos = this.getIsoTarget(newTx, newTy);
       
       const bobTargets = [this.playerImg, ...Object.values(this.playerArmorLayers)].filter(Boolean);
