@@ -154,6 +154,23 @@ export async function queryViolations({ cell, severity, layer, ruleId, limit = 1
 }
 
 /**
+ * Connect the diagnostic MCP layer to the collab panel.
+ */
+export function connectToMCPViaCollabPanel() {
+  collabPersistence.registerMCPBridge({
+    triggerFullScan,
+    getRecoveryHints,
+    getLatestReport,
+    getReportById,
+    queryViolations,
+    queryHealth,
+    runCells,
+    summary,
+  });
+  return { connected: true, via: 'collab-panel' };
+}
+
+/**
  * `diagnostic_query_health` — filter the latest report's health signals.
  *
  * @param {{cellId?: string, checkId?: string, moduleId?: string, limit?: number}} params
