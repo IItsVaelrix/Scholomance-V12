@@ -21,6 +21,7 @@ export class CombatStatController {
       maxHp,
       position: { tx, ty },
       attackUsed: false,
+      statuses: [],
     };
     this.entities.set(id, record);
     return record;
@@ -76,6 +77,36 @@ export class CombatStatController {
     target.hp = targetHp;
     attacker.attackUsed = true;
     return { damage, targetHp, targetDefeated: targetHp <= 0 };
+  }
+
+  applyStatus(id, { chainId, damagePerTurn, turns, disposition }) {
+    const e = this.entities.get(id);
+    if (!e) return e;
+    if (!Array.isArray(e.statuses)) e.statuses = [];
+    const existing = e.statuses.find((s) => s.chainId === chainId);
+    if (existing) {
+      existing.damagePerTurn = damagePerTurn;
+      existing.turns = turns;
+      existing.disposition = disposition;
+    } else {
+      e.statuses.push({ chainId, damagePerTurn, turns, disposition });
+    }
+    return e;
+  }
+
+  tickStatuses(id) {
+    const e = this.entities.get(id);
+    if (!e || !Array.isArray(e.statuses) || e.statuses.length === 0) return [];
+    const ticks = [];
+    for (const s of e.statuses) {
+      const damage = s.damagePerTurn;
+      const targetHp = Math.max(0, (e.hp ?? 0) - damage);
+      e.hp = targetHp;
+      s.turns -= 1;
+      ticks.push({ chainId: s.chainId, damage, targetHp, targetDefeated: targetHp <= 0 });
+    }
+    e.statuses = e.statuses.filter((s) => s.turns > 0);
+    return ticks;
   }
 
   endTurn(id) {
