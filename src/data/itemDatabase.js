@@ -40,8 +40,32 @@ export const ITEM_DATABASE = {
     assetId: 'VoidIceGreatsword',
     name: 'Void Ice Greatsword',
     type: 'weapon',
+    slot: 'mainHand',
     rarity: 'legendary',
     icon: '/assets/items/VoidIceGreatsword-icon.png',
     sprite: '/assets/items/VoidIceGreatsword-f0-png.png',
+  },
+  'item_shield_void': {
+    id: 'item_shield_void',
+    assetId: 'VoidIceShield',
+    name: 'Void Ice Aegis',
+    type: 'shield',
+    slot: 'offHand',
+    rarity: 'legendary',
+    icon: '/assets/items/VoidIceShield-icon.png',
+    sprite: '/assets/items/VoidIceShield-f0-png.png',
   }
 };
+
+/**
+ * Which hand an item occupies, or null if it is not a hand item.
+ * An explicit `slot` wins (lets a weapon be dual-wielded in the off hand);
+ * otherwise weapons default to the main hand and shields to the off hand.
+ */
+export function equipSlotOf(item) {
+  if (!item) return null;
+  if (item.slot === 'mainHand' || item.slot === 'offHand') return item.slot;
+  if (item.type === 'weapon') return 'mainHand';
+  if (item.type === 'shield') return 'offHand';
+  return null;
+}
