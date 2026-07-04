@@ -170,6 +170,8 @@ export function connectToMCPViaCollabPanel() {
   return { connected: true, via: 'collab-panel' };
 }
 
+connectToMCPViaCollabPanel();
+
 /**
  * `diagnostic_query_health` — filter the latest report's health signals.
  *
