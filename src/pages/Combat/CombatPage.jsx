@@ -21,6 +21,16 @@ export default function CombatPage() {
     return () => window.removeEventListener('combat-stats-changed', onStats);
   }, []);
 
+  // Feed the current incantation (verse + weave) to the Phaser scene so a swing
+  // can be enchanted. Respond to the scene's request, and push on every change.
+  useEffect(() => {
+    const emit = () => window.dispatchEvent(new CustomEvent('incantation-state', { detail: { verse, weave } }));
+    const onRequest = () => emit();
+    window.addEventListener('request-incantation-state', onRequest);
+    emit(); // push current value now (covers scene mounting before/after this effect)
+    return () => window.removeEventListener('request-incantation-state', onRequest);
+  }, [verse, weave]);
+
   useEffect(() => {
     const handleGlobalClick = (e) => {
       // Close tooltip on left click (e.button === 0)
