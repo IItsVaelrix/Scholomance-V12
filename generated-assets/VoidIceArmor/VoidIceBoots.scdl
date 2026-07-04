@@ -1,0 +1,95 @@
+asset VoidIceBoots canvas 64x128
+palette {
+  voiddark = #0B0E14
+  voidmid = #1A2230
+  voidlight = #2A384A
+  icecore = #FFFFFF
+  icelighthigh = #A3F4FF
+  iceglow = #06B6D4
+  icedark = #0369A1
+}
+part icon {
+  # Left boot
+  polygon 23 108 31 108 32 113 22 113 voiddark
+  line 23 113 32 113 iceglow
+  
+  # Right boot
+  polygon 33 108 41 108 42 113 32 113 voiddark
+  line 33 113 42 113 iceglow
+}
+
+loop walk duration 800
+
+frame 1 "contactL" {
+  part icon {
+    polygon 24 107 30 107 31 112 23 112 voiddark
+    line 23 112 31 112 iceglow
+    polygon 35 103 42 103 43 108 35 108 voiddark
+    line 35 108 43 108 iceglow
+  }
+}
+
+frame 2 "riseL" {
+  part icon {
+    polygon 24 107 30 107 31 112 23 112 voiddark
+    line 23 112 31 112 iceglow
+    polygon 37 97 45 97 45 102 37 102 voiddark
+    line 37 102 45 102 iceglow
+  }
+}
+
+frame 3 "passL" {
+  part icon {
+    polygon 24 107 30 107 31 112 23 112 voiddark
+    line 23 112 31 112 iceglow
+    polygon 37 97 45 97 45 102 37 102 voiddark
+    line 37 102 45 102 iceglow
+  }
+}
+
+frame 4 "fallL" {
+  part icon {
+    polygon 24 107 30 107 31 112 23 112 voiddark
+    line 23 112 31 112 iceglow
+    polygon 35 103 42 103 43 108 35 108 voiddark
+    line 35 108 43 108 iceglow
+  }
+}
+
+frame 5 "contactR" {
+  part icon {
+    polygon 21 103 27 103 28 108 20 108 voiddark
+    line 20 108 28 108 iceglow
+    polygon 34 107 40 107 41 112 33 112 voiddark
+    line 33 112 41 112 iceglow
+  }
+}
+
+frame 6 "riseR" {
+  part icon {
+    polygon 16 97 24 97 24 102 16 102 voiddark
+    line 16 102 24 102 iceglow
+    polygon 34 107 40 107 41 112 33 112 voiddark
+    line 33 112 41 112 iceglow
+  }
+}
+
+frame 7 "passR" {
+  part icon {
+    polygon 16 97 24 97 24 102 16 102 voiddark
+    line 16 102 24 102 iceglow
+    polygon 34 107 40 107 41 112 33 112 voiddark
+    line 33 112 41 112 iceglow
+  }
+}
+
+frame 8 "fallR" {
+  part icon {
+    polygon 21 103 27 103 28 108 20 108 voiddark
+    line 20 108 28 108 iceglow
+    polygon 34 107 40 107 41 112 33 112 voiddark
+    line 33 112 41 112 iceglow
+  }
+}
+
+export json svg phaser png

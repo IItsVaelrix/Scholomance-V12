@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { generateBattleLeylines } from '../../codex/core/leyline.engine.js';
 import { processorBridge } from '../../codex/core/shared/processor-bridge.js';
+import { ITEM_DATABASE } from '../data/itemDatabase.js';
 import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyline.js';
 
 const PALETTES = {
@@ -13,6 +14,10 @@ const PALETTES = {
   // Light checker cell — a subtly-lit arcane slate that reads against obsidian without going muddy.
   arcane_slate: { shine: 0x453a5e, lit: 0x2e2440, core: 0x1e1730, rim: 0x120c20, shadow: 0x080512 }
 };
+
+// Character walk cycle: f0 is the idle/rest pose, f1..f8 are the 8 walk frames.
+// The base body and every frame-locked armor asset export this same f0..f8 layout.
+const WALK_FRAME_COUNT = 8;
 
 // Geologic Bytecode Opcodes
 const OP = {
@@ -33,7 +38,24 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     preload() {
-      // Procedural generation, no static assets needed.
+      // Load actual ideal-human textures from generated-assets.
+      // f0 = idle/rest pose; f1..f8 = the 8-frame walk cycle.
+      for (let i = 0; i <= WALK_FRAME_COUNT; i++) {
+        const key = `ideal-human-f${i}`;
+        this.load.image(key, `/generated-assets/IdealHuman/IdealHuman-f${i}-png.png`);
+      }
+
+      // Load all armor sprite frames from the item database (same f0..f8 layout,
+      // frame-locked to the body so equipped walking stays in sync).
+      Object.values(ITEM_DATABASE).forEach(item => {
+        if (item.sprite) {
+          const basePath = item.sprite.replace('-f0-png.png', '');
+          for (let i = 0; i <= WALK_FRAME_COUNT; i++) {
+            if (i === 0) this.load.image(item.assetId, `${basePath}-f0-png.png`);
+            this.load.image(`${item.assetId}-f${i}`, `${basePath}-f${i}-png.png`);
+          }
+        }
+      });
     }
 
     getLambertColor(nx, ny, nz, palette) {
@@ -53,6 +75,7 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     create() {
+    console.log('[CombatArenaScene] Starting...');
       const { width, height } = this.scale;
       this.cameras.main.scrollX = -width / 2;
       // Shift camera slightly up to frame the obelisk peak
@@ -289,6 +312,100 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       this.drawTeleportationPortal();
 
+      // Spawn the new IdealHuman character model on the grid inside a Container
+      const playerPos = toIso(4, 6);
+      
+      const playerContainer = this.add.container(playerPos.x, playerPos.y - plateauZ);
+      playerContainer.setDepth(25); // Starts in front of obelisk
+      
+      // The SCDL export draws the figure on a 64x128 canvas with the feet at
+      // y~112, leaving ~16px of empty padding below. Origin (0.5, 1) would pin
+      // that empty canvas bottom to the tile center, floating the feet ~16px
+      // north (up-screen) onto the tile's back edge. Anchor to the feet row so
+      // the character plants on the tile CENTER. All body-part layers share this
+      // one canvas coordinate system, so every layer MUST use the same origin.
+      const FEET_ORIGIN_Y = 112 / 128; // = 0.875, the feet row of the shared canvas
+      const playerImg = this.add.sprite(0, 0, 'ideal-human-f0');
+      playerImg.setOrigin(0.5, FEET_ORIGIN_Y);
+      playerContainer.add(playerImg);
+
+      // Armor layers on top of base model
+      const armorLayers = {
+        chest: this.add.sprite(0, 0, 'ideal-human-f0').setOrigin(0.5, FEET_ORIGIN_Y).setVisible(false),
+        legs: this.add.sprite(0, 0, 'ideal-human-f0').setOrigin(0.5, FEET_ORIGIN_Y).setVisible(false),
+        boots: this.add.sprite(0, 0, 'ideal-human-f0').setOrigin(0.5, FEET_ORIGIN_Y).setVisible(false),
+        head: this.add.sprite(0, 0, 'ideal-human-f0').setOrigin(0.5, FEET_ORIGIN_Y).setVisible(false),
+        weapon: this.add.sprite(0, 0, 'ideal-human-f0').setOrigin(0.5, FEET_ORIGIN_Y).setVisible(false),
+      };
+      playerContainer.add(armorLayers.chest);
+      playerContainer.add(armorLayers.legs);
+      playerContainer.add(armorLayers.boots);
+      playerContainer.add(armorLayers.head);
+      playerContainer.add(armorLayers.weapon);
+      
+      // Register SCDL compiled frames as Phaser animations
+      this.anims.create({
+        key: 'player-walk',
+        frames: Array.from({ length: WALK_FRAME_COUNT }, (_, k) => ({ key: `ideal-human-f${k + 1}` })),
+        frameRate: 18,
+        repeat: -1
+      });
+      this.anims.create({
+        key: 'player-idle',
+        frames: [{ key: 'ideal-human-f0' }],
+        frameRate: 1,
+        repeat: -1
+      });
+
+      // Register animations for armor pieces
+      Object.values(ITEM_DATABASE).forEach(item => {
+        if (item.sprite) {
+          this.anims.create({
+            key: `${item.assetId}-walk`,
+            frames: Array.from({ length: WALK_FRAME_COUNT }, (_, k) => ({ key: `${item.assetId}-f${k + 1}` })),
+            frameRate: 18,
+            repeat: -1
+          });
+        }
+      });
+
+      playerImg.play('player-idle');
+
+      // Give him a subtle breathing animation (default idle)
+      this.idleTween = this.tweens.add({
+        targets: [playerImg, ...Object.values(armorLayers)],
+        scaleY: 0.98,
+        y: 1, // Local sink
+        duration: 1500,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
+
+      // Store player and input for the update loop
+      this.playerImg = playerImg;
+      this.playerArmorLayers = armorLayers;
+      this.playerContainer = playerContainer;
+      this.playerGridPos = { tx: 4, ty: 6 };
+      this.cursors = this.input.keyboard.createCursorKeys();
+      this.input.keyboard.on('keydown', this.handleGlobalKeydown);
+      
+      // Listen for React equipment changes
+      window.addEventListener('equipment-changed', this.handleEquipmentChange);
+      // Ask for initial equipment state
+      window.dispatchEvent(new CustomEvent('request-equipment-state'));
+      this.isWalking = false;
+
+      // Helper to compute grid to screen position
+      this.getIsoTarget = (tx, ty) => {
+        const ox = tx - Math.floor(gridSize / 2);
+        const oy = ty - Math.floor(gridSize / 2);
+        return {
+          x: (ox - oy) * (tw / 2),
+          y: (ox + oy) * (th / 2) - plateauZ
+        };
+      };
+
       // Procedural smoke wisp — FBM noise with soft circular mask, light cool-gray
       if (!this.textures.exists('smoke-wisp')) {
         const w = 128, h = 128;
@@ -350,8 +467,159 @@ export default function createCombatArenaScene(phaserRuntime) {
         });
       });
 
+      this.boundHandleCombatCast = this.handleCombatCast.bind(this);
+      window.addEventListener('combat-cast', this.boundHandleCombatCast);
+      this.events.once('destroy', () => {
+        window.removeEventListener('combat-cast', this.boundHandleCombatCast);
+      });
+
       this.events.emit('arena-ready');
     }
+
+    handleCombatCast(event) {
+      const { text, weave } = event.detail;
+      const weaveStr = (weave || '').toLowerCase();
+      const textStr = (text || '').toLowerCase();
+      
+      if (weaveStr.includes('enchant') && weaveStr.includes('flame') && textStr.includes('incinerator blade')) {
+        const sword = this.playerArmorLayers['weapon'];
+        if (sword && sword.visible) {
+          sword.setTint(0xff6600); // fiery
+          
+          if (this.add.particles) {
+            const flameEmitter = this.add.particles(0, 0, 'doom-fire', {
+              speed: { min: 30, max: 80 },
+              angle: { min: 250, max: 290 },
+              scale: { start: 0.5, end: 0 },
+              alpha: { start: 0.8, end: 0 },
+              blendMode: 'ADD',
+              lifespan: 500,
+              gravityY: -100,
+              tint: 0xffaa00
+            });
+            flameEmitter.startFollow(sword);
+            if (!this.activeEnchantments) this.activeEnchantments = [];
+            this.activeEnchantments.push(flameEmitter);
+            
+            console.log("Sword Enchanted with Flames! Bonus Burn Damage Applied.");
+          }
+        }
+      }
+    }
+
+    handleEquipmentChange = (event) => {
+      const equipment = event.detail;
+      if (!this.playerArmorLayers) return;
+      
+      const layerMap = {
+        'head': this.playerArmorLayers.head,
+        'chest': this.playerArmorLayers.chest,
+        'legs': this.playerArmorLayers.legs,
+        'boots': this.playerArmorLayers.boots,
+        'weapon': this.playerArmorLayers.weapon
+      };
+      
+      for (const [slot, sprite] of Object.entries(layerMap)) {
+        if (!sprite) continue;
+        const item = equipment[slot];
+        const assetId = item ? item.assetId : null;
+        const frame0Id = assetId ? `${assetId}-f0` : null;
+        if (frame0Id && this.textures.exists(frame0Id)) {
+          sprite.setTexture(frame0Id);
+          sprite.setVisible(true);
+        } else {
+          sprite.setVisible(false);
+        }
+      }
+    };
+    
+    handleGlobalKeydown = (e) => {
+      if (this.isWalking) return;
+      
+      let dx = 0;
+      let dy = 0;
+      if (e.key === 'ArrowUp' || e.key === 'w') { dx = -1; dy = 0; }
+      else if (e.key === 'ArrowDown' || e.key === 's') { dx = 1; dy = 0; }
+      else if (e.key === 'ArrowLeft' || e.key === 'a') { dx = 0; dy = 1; }
+      else if (e.key === 'ArrowRight' || e.key === 'd') { dx = 0; dy = -1; }
+      
+      if (dx === 0 && dy === 0) return;
+      
+      const newTx = this.playerGridPos.tx + dx;
+      const newTy = this.playerGridPos.ty + dy;
+      
+      // Grid bounds (0-8)
+      if (newTx < 0 || newTx > 8 || newTy < 0 || newTy > 8) return;
+      
+      // Teleporter Collision (top right corner 8, 0)
+      if (newTx === 8 && newTy === 0) {
+        console.log("Blocked by Teleporter collision!");
+        return; 
+      }
+      
+      this.isWalking = true;
+      this.playerGridPos.tx = newTx;
+      this.playerGridPos.ty = newTy;
+      
+      const targetPos = this.getIsoTarget(newTx, newTy);
+      
+      const bobTargets = [this.playerImg, ...Object.values(this.playerArmorLayers)].filter(Boolean);
+      if (this.playerImg) {
+        this.playerImg.play('player-walk', true);
+        Object.values(this.playerArmorLayers).forEach(layer => {
+          if (layer && layer.visible && layer.texture.key) {
+             const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+             const walkKey = baseAssetId + '-walk';
+             if (this.anims.exists(walkKey)) {
+                layer.play(walkKey, true);
+             }
+          }
+        });
+
+        // Procedural walk bob: pause the idle breathing and add a subtle vertical
+        // rise on each passing frame (~2 dips per stride) so the stride has weight.
+        // Applied to every layer together, on top of the feet-anchored origin.
+        if (this.idleTween) this.idleTween.pause();
+        bobTargets.forEach(s => { s.y = 0; s.scaleY = 1; });
+        if (this.walkBob) this.walkBob.stop();
+        this.walkBob = this.tweens.add({
+          targets: bobTargets,
+          y: -2.5,
+          duration: 90,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+      }
+
+      this.tweens.add({
+        targets: this.playerContainer,
+        x: targetPos.x,
+        y: targetPos.y,
+        duration: 350,
+        onComplete: () => {
+          this.isWalking = false;
+          // Stop the walk bob, settle the layers, and hand vertical motion back
+          // to the idle breathing tween.
+          if (this.walkBob) { this.walkBob.stop(); this.walkBob = null; }
+          bobTargets.forEach(s => { s.y = 0; s.scaleY = 1; });
+          if (this.idleTween) this.idleTween.resume();
+          if (this.playerImg) {
+            this.playerImg.play('player-idle', true);
+            Object.values(this.playerArmorLayers).forEach(layer => {
+               if (layer && layer.visible && layer.texture.key) {
+                 layer.stop();
+                 const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+                 const idleKey = baseAssetId + '-f0';
+                 if (this.textures.exists(idleKey)) {
+                   layer.setTexture(idleKey);
+                 }
+               }
+            });
+          }
+        }
+      });
+    };
 
     // Custom deterministic Value Noise since Phaser doesn't bundle SimplexNoise by default
     noise2D(x, y) {
@@ -1657,9 +1925,9 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
     
     drawTeleportationPortal() {
-      // Anchored Northeast on the island's grey rock terrain, far off the combat board
-      const px = 270;
-      const py = -260;
+      // Anchored on the Northeast grid tile (8,0)
+      const px = 320;
+      const py = -125;
       const pW = 48; // Portal width
       const pH = 160; // Portal height
 
@@ -1789,7 +2057,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (mechFront.postFX) mechFront.postFX.addBloom(0x00ffff, 1, 1, 1, 1.2);
       
       portalGroup.add(mechFront);
-      portalGroup.setDepth(50); // Teleporter on top of galaxy
+      portalGroup.setDepth(18); // Teleporter behind the player (player layers start at 20)
 
       // Arrays for 2D Water Ripple simulation
       let buf1 = new Float32Array(pW * pH);
