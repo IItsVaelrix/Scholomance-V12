@@ -15,6 +15,7 @@ import {
   selectSentinelAbilityByIntelligence,
 } from './combatIntelligence.js';
 import { computeBasicAttackDamage, readScholomanceStat } from './scholomanceStats.js';
+import { GUARD_DAMAGE_MULTIPLIER } from './combatStats.js';
 
 export const SENTINEL_BURN_DEBUFF = Object.freeze({
   chainId: 'sentinel_matrix_burn',
@@ -141,6 +142,7 @@ export function planSentinelAttack({
   sentinels,
   stats = null,
   intelligence = null,
+  stance = 'AGGRESSIVE',
   rng = Math.random,
 } = {}) {
   const abilities = record?.abilities || createSentinelAbilityState();
@@ -180,6 +182,11 @@ export function planSentinelAttack({
   let abilityId = /** @type {SentinelAbilityId} */ (selection.abilityId);
   let applyBurn = selection.applyBurn;
   let machineLearning = null;
+
+  if (abilityId === 'burn' && applyBurn && stance !== 'AGGRESSIVE') {
+    abilityId = 'fireball';
+    applyBurn = false;
+  }
 
   if (abilityId === 'machine_learning') {
     machineLearning = pickMachineLearningCounter(abilities, { intelligence: int });
@@ -264,7 +271,10 @@ export function resolveSentinelAbilityDamage(stats, sentinelId, targetId, plan =
   if (!plan.guaranteedHit && !inRange) return { hit: false, reason: 'out_of_range' };
 
   const baseDamage = computeBasicAttackDamage(attacker.scholomance);
-  const damage = Math.max(1, Math.round(baseDamage * (plan.damageMultiplier || 1)));
+  const boosted = Math.max(1, Math.round(baseDamage * (plan.damageMultiplier || 1)));
+  const damage = target.guarding
+    ? Math.max(1, Math.round(boosted * GUARD_DAMAGE_MULTIPLIER))
+    : boosted;
   const targetHp = Math.max(0, (target.hp ?? 0) - damage);
   target.hp = targetHp;
 

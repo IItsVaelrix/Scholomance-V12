@@ -106,6 +106,14 @@ describe('CombatStatController — attack', () => {
     const res = c.resolveAttack('player', 'glass');
     expect(res).toEqual({ damage: 5, apSpent: 3, attackPointsRemaining: 3, targetHp: 0, targetDefeated: true });
   });
+
+  it('halves basic-attack damage against a guarding target', () => {
+    const c = makeController();
+    c.setGuarding('dummy', true);
+    const res = c.resolveAttack('player', 'dummy');
+    expect(res.damage).toBe(3);
+    expect(c.getEntity('dummy').hp).toBe(97);
+  });
 });
 
 describe('CombatStatController — spell mana', () => {

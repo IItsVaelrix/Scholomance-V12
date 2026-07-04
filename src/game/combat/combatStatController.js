@@ -6,7 +6,7 @@
  * positions in and read decisions out.
  */
 import { BASE_MP_REGEN, MIN_COMBAT_DAMAGE, computeCombatManaRegen } from '../../../codex/core/combat.balance.js';
-import { buildDefaultStatBlock, BASIC_ATTACK_AP_COST } from './combatStats.js';
+import { buildDefaultStatBlock, BASIC_ATTACK_AP_COST, GUARD_DAMAGE_MULTIPLIER } from './combatStats.js';
 import { SPELL_CAST_MANA_COST } from './combatMana.js';
 import { buildDefaultScholomanceStatBlock, computeBasicAttackDamage } from './scholomanceStats.js';
 
@@ -130,7 +130,10 @@ export class CombatStatController {
     if (!this.canAttack(attackerId, targetId)) return null;
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
-    const damage = computeBasicAttackDamage(attacker.scholomance);
+    const rawDamage = computeBasicAttackDamage(attacker.scholomance);
+    const damage = target.guarding
+      ? Math.max(1, Math.round(rawDamage * GUARD_DAMAGE_MULTIPLIER))
+      : rawDamage;
     const targetHp = Math.max(0, (target.hp ?? 0) - damage);
     target.hp = targetHp;
     attacker.attackPointsRemaining -= BASIC_ATTACK_AP_COST;
@@ -148,7 +151,10 @@ export class CombatStatController {
     if (!this.canCastSpell(attackerId, targetId)) return null;
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
-    const spellDamage = Math.max(MIN_COMBAT_DAMAGE, Math.round(Number(damage) || 0));
+    const rawSpellDamage = Math.max(MIN_COMBAT_DAMAGE, Math.round(Number(damage) || 0));
+    const spellDamage = target.guarding
+      ? Math.max(1, Math.round(rawSpellDamage * GUARD_DAMAGE_MULTIPLIER))
+      : rawSpellDamage;
     const targetHp = Math.max(0, (target.hp ?? 0) - spellDamage);
     target.hp = targetHp;
     attacker.manaPointsRemaining -= SPELL_CAST_MANA_COST;

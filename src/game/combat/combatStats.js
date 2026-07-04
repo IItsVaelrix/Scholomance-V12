@@ -59,6 +59,9 @@ export const COMBAT_STATS = [
 /** AP a basic attack costs from the Attack Points pool. Pool 6 ÷ cost 3 = 2 attacks/turn. */
 export const BASIC_ATTACK_AP_COST = 3;
 
+/** Fraction of incoming damage a guarding entity takes. */
+export const GUARD_DAMAGE_MULTIPLIER = 0.5;
+
 /**
  * Build a fresh stat block seeded from the registry bases, then apply overrides.
  * `movementPointsRemaining` follows `movementPoints` and `attackPointsRemaining`
