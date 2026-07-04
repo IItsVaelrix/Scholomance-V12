@@ -11,6 +11,15 @@ export default function CombatPage() {
   const terminalRef = useRef(null);
   
   const [tooltip, setTooltip] = useState(null);
+  const [combatStats, setCombatStats] = useState(null);
+
+  useEffect(() => {
+    const onStats = (e) => {
+      if (e && e.detail) setCombatStats(e.detail);
+    };
+    window.addEventListener('combat-stats-changed', onStats);
+    return () => window.removeEventListener('combat-stats-changed', onStats);
+  }, []);
 
   useEffect(() => {
     const handleGlobalClick = (e) => {
@@ -175,6 +184,60 @@ export default function CombatPage() {
         </div>
       )}
       
+      {/* Combat Stat Tree — Slice 1 readout */}
+      {combatStats && (
+        <div style={{
+          position: 'absolute',
+          top: 24,
+          left: 24,
+          zIndex: 200,
+          background: 'linear-gradient(135deg, rgba(9,15,30,0.85), rgba(5,8,15,0.95))',
+          border: '1px solid rgba(0,255,255,0.25)',
+          borderRadius: 12,
+          padding: '12px 16px',
+          color: '#e6faff',
+          fontFamily: 'var(--dw-font-mono, monospace)',
+          fontSize: 13,
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 0 16px rgba(0,255,255,0.08)',
+          minWidth: 190,
+        }}>
+          <div style={{ display: 'flex', gap: 12, marginBottom: 8, letterSpacing: 0.5 }}>
+            <span>MP <b style={{ color: '#00ffff' }}>{combatStats.movementPointsRemaining}</b>/{combatStats.movementPoints}</span>
+            <span>ATK <b style={{ color: '#ffcc66' }}>{combatStats.attackPoints}</b></span>
+            <span>RNG <b style={{ color: '#aaffcc' }}>{combatStats.attackRange}</b></span>
+          </div>
+          {combatStats.dummyHp != null && (
+            <div style={{ marginBottom: 8, opacity: 0.85 }}>
+              Dummy HP <b style={{ color: '#ff88aa' }}>{combatStats.dummyHp}</b>/{combatStats.dummyMaxHp}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
+              disabled={combatStats.attackUsed}
+              style={{
+                flex: 1, padding: '6px 10px', borderRadius: 6, cursor: combatStats.attackUsed ? 'not-allowed' : 'pointer',
+                border: '1px solid rgba(255,204,102,0.4)', background: combatStats.attackUsed ? 'rgba(60,60,60,0.4)' : 'rgba(255,204,102,0.15)',
+                color: combatStats.attackUsed ? '#888' : '#ffcc66', fontFamily: 'inherit', fontSize: 12,
+              }}
+            >
+              Attack (F)
+            </button>
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
+              style={{
+                flex: 1, padding: '6px 10px', borderRadius: 6, cursor: 'pointer',
+                border: '1px solid rgba(0,255,255,0.4)', background: 'rgba(0,255,255,0.12)',
+                color: '#00ffff', fontFamily: 'inherit', fontSize: 12,
+              }}
+            >
+              End Turn (Space)
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* DivWand HUD Overlay */}
       <div className="dw-container" style={{
         position: 'absolute',
