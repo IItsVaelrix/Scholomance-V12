@@ -2,155 +2,181 @@
 
 **Date:** 2026-07-04
 **Status:** Approved (design), pending implementation plan
-**Scope owner:** live combat (`src/hooks/useBattleSession.js`), not the card-battler tactical engine
+**Target surface:** the **Phaser combat arena** (`src/phaser/CombatArenaScene.js` +
+`src/pages/Combat/CombatPage.jsx`) — the combat that is actually rendered and playable.
 
 ## Goal
 
 Establish the first three stats of the game's MMORPG stat tree — **movement points**,
-**attack points**, and **attack range** — as canonical, stat-driven combat primitives, and
-wire them into the live Combat page so they actually function in-game.
+**attack points**, and **attack range** — as canonical, stat-driven combat primitives, and wire
+them into the arena the player actually sees so they genuinely function.
 
-This is the first slice of a stat system designed to grow. The registry defined here is the
-tree root; future stats are added as new registry entries.
+This is the first slice of a stat system designed to grow. The registry defined here is the tree
+root; future stats are added as new registry entries.
 
 ## Current state (verified)
 
-- Live combat lives in `src/hooks/useBattleSession.js` (a React hook holding `battleState`).
-  Combat today is **spell-casting only**: the player writes scrolls, and damage comes from
-  scored text (`scoreData.damage`), not from any attack stat.
-- Entities are plain objects carrying half-baked movement fields at the top level:
-  - `mov` (per-move reach radius, default 2)
-  - `movesRemaining` / `maxMovesPerTurn` (moves per turn, default 1)
-  - `range` (default 2/3) — **defined but never consumed anywhere; dead stat**
-  - a `stats: { SYNT, META, MYTH, VIS, PSYC, CODEX, INT }` sub-object of *school aptitudes*
-    (a separate category, left untouched by this slice)
-- `moveEntity(delta)` exists and is exported from the hook but **has zero callers** — movement
-  is not wired to any UI.
-- There is **no attack action** of any kind.
-- `tests/unit/combatSelectors.movement.test.js` imports
-  `src/pages/Combat/state/combatSelectors.js`, which **does not exist** — the test is currently
-  broken. It expects a pure `selectBoardTiles(state, { targetingMode })` returning tiles flagged
-  `isReachable`.
+- **The rendered combat is the Phaser arena.** `CombatPage.jsx` renders `ArenaCombatView` →
+  `CombatArenaScene.js` and a spell-writing HUD that dispatches `combat-cast` CustomEvents to the
+  scene. This is the surface players interact with.
+- The arena already has a **player character** on an iso grid (`this.playerGridPos = { tx, ty }`)
+  with **working keyboard movement** (`handleGlobalKeydown`, arrow/WASD, walk animation + iso
+  tween). That movement is **unlimited**: no point cost, no turn, no cap.
+- The arena has **no enemy/target entity, no HP, no attack, no attack range, no stats, and no
+  turn concept.**
+- `src/hooks/useBattleSession.js` is a rich battle-state hook, but it has **zero consumers** —
+  nothing renders it. It is NOT the target of this slice.
+- `codex/core/tactical.engine.js` / `battle.schemas.js` are a separate card-battler system with
+  its own `movement`/`attack`/`range` stats. Not touched here.
+- `tests/unit/combatSelectors.movement.test.js` imports a nonexistent
+  `src/pages/Combat/state/combatSelectors.js` — a pre-existing broken test, unrelated to the
+  arena. Left as-is (out of scope; it belongs to the orphaned hook path).
 
 ## Decisions
 
+- **Target surface:** the Phaser arena (confirmed). Work must be visible/playable.
 - **Movement model:** a per-turn **movement-point pool** (default **3 MP**). Each tile stepped
-  costs **1 MP**. Move freely until the pool is exhausted. Replaces the `mov` + `movesRemaining`
-  shape.
-- **Attack model:** a **new basic-attack action**. Select an enemy within `attackRange`
-  (Manhattan tiles); deal `attackPoints` damage; consumes the turn's action.
-- **UI (this slice):** **keyboard-driven** (Approach A). No new Phaser plumbing. The pure
-  selectors this UI reads are exactly what a later click-to-move/attack upgrade would render.
+  costs **1 MP**. When the pool hits 0, the existing keyboard walk is blocked until End-Turn.
+- **Attack model:** a **new basic-attack action** — target an enemy within `attackRange`
+  (Manhattan tiles); deal `attackPoints` damage; usable **once per turn**.
+- **Attack target:** the arena has no enemy, so this slice adds a minimal **sparring dummy**
+  (reusing the existing `ideal-human-*` textures) at a fixed grid tile, carrying `hp`/`maxHp`. It
+  is the attack target and makes damage visible/testable. No dummy AI.
+- **Turn boundary:** an explicit **End-Turn control** (Space/Enter key **and** a HUD button) that
+  refills movement points to full and re-arms the basic attack. No opponent AI in this slice.
+- **Architecture principle:** stat/turn logic lives in **pure, framework-free modules** (fully
+  unit-tested). The Phaser scene and React HUD are thin consumers. No game logic buried in the
+  2400-line render file.
 
 ## Architecture (4 units)
 
-### 1. `combatStats` registry — the stat-tree root *(new)*
+### 1. `combatStats` registry — the stat-tree root *(new, pure)*
 
-Location: `src/pages/Combat/state/combatStats.js`.
+Location: `src/game/combat/combatStats.js`.
 
-Canonical, data-only definitions. One entry per stat:
-
-```js
-{ key, label, category, base, min, max, description }
-```
+Data-only definitions, one entry per stat: `{ key, label, category, base, min, max, description }`.
 
 Slice-1 entries:
 
-| key             | category   | base | min | max | meaning                                   |
-| --------------- | ---------- | ---- | --- | --- | ----------------------------------------- |
-| `movementPoints`| mobility   | 3    | 0   | 12  | MP pool per turn; 1 MP per tile stepped   |
-| `attackPoints`  | offense    | 10   | 0   | 999 | damage dealt by a basic attack            |
-| `attackRange`   | offense    | 1    | 0   | 12  | max Manhattan tiles a basic attack reaches |
+| key             | category | base | min | max | meaning                                    |
+| --------------- | -------- | ---- | --- | --- | ------------------------------------------ |
+| `movementPoints`| mobility | 3    | 0   | 12  | MP pool per turn; 1 MP per tile stepped    |
+| `attackPoints`  | offense  | 10   | 0   | 999 | damage dealt by a basic attack             |
+| `attackRange`   | offense  | 1    | 0   | 12  | max Manhattan tiles a basic attack reaches |
 
 Exports:
-- `COMBAT_STATS` — the ordered registry (array or keyed object).
+- `COMBAT_STATS` — ordered array of the definitions above.
 - `buildDefaultStatBlock(overrides = {})` — returns
-  `{ movementPoints, movementPointsRemaining, attackPoints, attackRange }`, seeded from
-  `base` values, with `movementPointsRemaining === movementPoints` at construction.
+  `{ movementPoints, movementPointsRemaining, attackPoints, attackRange }` seeded from `base`
+  values (with `movementPointsRemaining === movementPoints`), then shallow-merged with
+  `overrides`. If `overrides.movementPoints` is given without `movementPointsRemaining`, the
+  remaining pool is seeded to the overridden `movementPoints`.
 
-The tree grows by adding registry entries here; consumers iterate `COMBAT_STATS` rather than
-hard-coding stat names.
+The tree grows by adding registry entries here; consumers iterate `COMBAT_STATS`.
 
-> **Vocabulary note:** the separate card-battler schema (`codex/core/battle.schemas.js`) uses
-> `movement` / `attack` / `range` on `TacticalCardStats`. That is a different system; we do NOT
-> unify it here (YAGNI). Mapping is recorded for a future unification only:
-> `movementPoints↔movement`, `attackPoints↔attack`, `attackRange↔range`.
+> **Vocabulary note:** the card-battler schema uses `movement`/`attack`/`range`. Not unified here
+> (YAGNI). Future mapping only: `movementPoints↔movement`, `attackPoints↔attack`,
+> `attackRange↔range`.
 
-### 2. Pure selectors *(new)*
+### 2. `CombatStatController` — pure turn/stat engine *(new, pure)*
 
-Location: `src/pages/Combat/state/combatSelectors.js` (the path the orphaned test imports).
+Location: `src/game/combat/combatStatController.js`.
 
-- `selectBoardTiles(state, { targetingMode })` → array of tile view-models. Each tile carries at
-  least `{ position, occupantId, isReachable, isAttackable }`.
-  - `targetingMode: 'move'` → flood-fill from the active player over unoccupied tiles, marking
-    tiles reachable within `movementPointsRemaining` (step cost 1). If the pool is 0, nothing is
-    reachable.
-  - `targetingMode: 'attack'` → mark enemy-occupied tiles within `attackRange` (Manhattan) as
-    `isAttackable`.
-- No React, no side effects — fully unit-testable.
+Framework-free class holding per-entity state; the scene syncs grid positions into it and reads
+decisions back out. No Phaser, no React, no DOM — fully unit-testable.
 
-The orphaned test is repaired and updated to canonical stat names: a `movementPoints: 1` pool
-yields the 4 orthogonally-adjacent tiles reachable; a `0` pool yields none.
+Per-entity record: `{ ...statBlock, hp, maxHp, position: { tx, ty }, attackUsed }`.
 
-### 3. `useBattleSession` wiring *(modified)*
+Interface (exact):
+- `constructor()`
+- `registerEntity(id, { overrides = {}, hp = null, maxHp = null, tx = 0, ty = 0 } = {})` — builds
+  the stat block via `buildDefaultStatBlock(overrides)`, sets position and (optional) HP,
+  `attackUsed = false`. Returns the record.
+- `getEntity(id)` → the record (or `undefined`).
+- `setPosition(id, tx, ty)` → updates stored position.
+- `canMove(id)` → `boolean` (`movementPointsRemaining >= 1`).
+- `spendMove(id)` → if `canMove`, decrement `movementPointsRemaining` by 1 and return `true`;
+  else return `false` (no mutation).
+- `manhattan(id, targetId)` → `number` (`|dtx| + |dty|` between stored positions).
+- `inRangeTargetIds(attackerId, candidateIds)` → array of ids from `candidateIds` that are living
+  (`hp > 0` when HP tracked) and within `attackRange` Manhattan of the attacker.
+- `canAttack(attackerId, targetId)` → `boolean` (attacker `!attackUsed`, target within
+  `attackRange`, target `hp > 0` when HP tracked).
+- `resolveAttack(attackerId, targetId)` → if `canAttack`, subtract attacker `attackPoints` from
+  target `hp` (clamped ≥ 0), set attacker `attackUsed = true`, and return
+  `{ damage, targetHp, targetDefeated }`; else return `null`.
+- `endTurn(id)` → set `movementPointsRemaining = movementPoints` and `attackUsed = false`;
+  returns the record.
 
-- Build player/opponent stat fields from `buildDefaultStatBlock()` (player `movementPoints: 3`;
-  opponent seeded likewise). Remove the dead `mov` / `range` / `movesRemaining` /
-  `maxMovesPerTurn` fields in favor of `movementPoints` + `movementPointsRemaining` +
-  `attackPoints` + `attackRange`.
-- `moveEntity(delta)` — one-tile step (orthogonal). Guard: active player's turn, target tile
-  in-bounds and unoccupied, `movementPointsRemaining >= 1`. On success: move and decrement
-  `movementPointsRemaining` by 1. Movement never ends the turn.
-- `basicAttack(targetId)` *(new)* — guard: active player's turn, target is a living enemy entity,
-  Manhattan distance ≤ attacker `attackRange`, and the player has not already spent this turn's
-  action. On success: subtract `attackPoints` from `target.hp` (clamped ≥ 0), append a history/log
-  entry, and resolve the turn through the **same `handOffTurnToOpponent` path** casting uses.
-- Turn-start recovery restores `movementPointsRemaining = movementPoints` (replacing the current
-  `movesRemaining = maxMovesPerTurn` reset).
-- Export `basicAttack` from the hook's return object.
+### 3. `CombatArenaScene` wiring *(modified — `src/phaser/CombatArenaScene.js`)*
 
-### 4. Minimal UI *(modified — `src/pages/Combat/CombatPage.jsx`)*
+- Instantiate one `CombatStatController` in `create()`. `registerEntity('player', { tx:4, ty:6 })`
+  and spawn a **sparring dummy**: a container reusing `ideal-human-f0` (+ existing idle tween) at
+  a fixed tile (e.g. `tx:4, ty:3`), registered as `registerEntity('dummy', { hp:100, maxHp:100,
+  tx:4, ty:3 })`.
+- **Gate movement:** in `handleGlobalKeydown`, before starting the walk, require
+  `controller.canMove('player')`; if false, ignore the key (optionally flash "No MP"). On a
+  committed move, call `controller.spendMove('player')` and `controller.setPosition('player',
+  newTx, newTy)` (keep `playerGridPos` as-is; controller mirrors it).
+- **Basic attack:** on the attack key **`F`** (and on a `combat-attack` window event from the
+  HUD), pick the first `controller.inRangeTargetIds('player', ['dummy'])`; if present, call
+  `controller.resolveAttack('player', targetId)`, play a brief attack animation/flash on the
+  dummy, and — on `targetDefeated` — fade the dummy out.
+- **End turn:** on **Space or Enter** (and on a `combat-endturn` window event), call
+  `controller.endTurn('player')`.
+- **HUD sync:** after any state change (move/attack/end-turn/spawn), dispatch a
+  `window` CustomEvent `combat-stats-changed` with
+  `detail: { movementPointsRemaining, movementPoints, attackPoints, attackRange, attackUsed,
+  dummyHp, dummyMaxHp }`. Listen for `combat-attack` and `combat-endturn` events from the HUD.
+  Register/remove these listeners alongside the scene's existing keydown listener lifecycle.
 
-- **HUD readout** of the three stats for the active player (e.g. `MP 3/3 · ATK 10 · RNG 1`),
-  driven off `battleState`.
-- **Keyboard handlers:**
-  - Arrow keys / WASD → `moveEntity` single-tile steps (each spends 1 MP).
-  - `A` → toggle attack-targeting mode; while active, selecting the in-range enemy (Enter, or
-    the single valid target) calls `basicAttack`. `selectBoardTiles(state, {targetingMode:'attack'})`
-    determines validity.
-- Handlers no-op when it is not the player's turn or the relevant resource is exhausted.
+### 4. Stat HUD *(modified — `src/pages/Combat/CombatPage.jsx`)*
+
+- A small overlay panel (styled to match the existing DivWand HUD) showing:
+  `MP {remaining}/{max} · ATK {attackPoints} · RNG {attackRange}` and `Dummy HP {hp}/{max}`.
+- State comes from a `combat-stats-changed` window-event listener (registered in a `useEffect`,
+  cleaned up on unmount).
+- Two buttons: **Attack** (dispatch `combat-attack`, disabled when `attackUsed`) and **End Turn**
+  (dispatch `combat-endturn`). These mirror the `F` / `Space` keys.
 
 ## Turn / data flow
 
-Per player turn: **move** (spend up to 3 MP, 1/tile) **and** take **one action** — cast a scroll
-(existing) **or** `basicAttack` (new). Movement drains only the MP pool; the action resolves the
-turn via `handOffTurnToOpponent`, which restores the MP pool for the next turn.
+Per turn: move up to 3 tiles (1 MP each) **and** take one basic attack (if a target is in range).
+Space/Enter (or the End-Turn button) refills MP to 3 and re-arms the attack. The scene owns
+rendering + input; the controller owns all stat/turn decisions; the HUD is a read-only mirror
+plus two event-dispatching buttons.
 
 ## Error handling
 
-- All mutations funnel through `setBattleState` and return the previous state unchanged when a
-  guard fails (matches the existing `moveEntity` pattern) — no throws for invalid input.
-- Selectors treat missing/empty grid, missing active entity, or `movementPointsRemaining` absent
-  as "nothing reachable/attackable" (return safe empty flags), never throwing.
-- Damage clamps `target.hp` to `>= 0`.
+- Controller methods are guard-first and side-effect-free on failure: `spendMove`, `resolveAttack`
+  return `false`/`null` without mutating when preconditions fail. `manhattan`/`inRangeTargetIds`
+  tolerate missing entities by returning `Infinity`/`[]`.
+- The scene ignores movement when `canMove` is false and ignores attacks when there is no in-range
+  target; neither throws.
+- HUD event listeners are defensive: a malformed/absent `detail` leaves the last known state.
 
 ## Testing
 
-- **Unit (pure):** `combatSelectors.movement.test.js` (repaired) — reachable tiles for MP pools of
-  0 and 1; plus attack-targeting cases (enemy in vs out of `attackRange`).
-- **Unit (registry):** `buildDefaultStatBlock` returns the documented defaults and
-  `movementPointsRemaining === movementPoints`.
-- **Unit (hook logic):** extract/exercise the pure guards where practical — `moveEntity`
-  decrements MP and refuses at 0; `basicAttack` refuses out-of-range / already-acted and applies
-  `attackPoints` on success.
-- **Manual (in-app):** load a battle, walk with arrow keys watching MP tick 3→0, press `A` and
-  attack an adjacent enemy, confirm damage and turn hand-off, confirm MP restores next turn.
+- **Unit — registry** (`combatStats.test.js`): `buildDefaultStatBlock()` returns
+  `{ movementPoints:3, movementPointsRemaining:3, attackPoints:10, attackRange:1 }`; overrides
+  merge; overriding `movementPoints` seeds `movementPointsRemaining` to match.
+- **Unit — controller** (`combatStatController.test.js`):
+  - `spendMove` decrements and refuses at 0.
+  - `endTurn` refills `movementPointsRemaining` to `movementPoints` and clears `attackUsed`.
+  - `canAttack`/`inRangeTargetIds` respect `attackRange` (in vs out of range) and `hp > 0`.
+  - `resolveAttack` subtracts `attackPoints` (clamped ≥ 0), sets `attackUsed`, reports
+    `targetDefeated` at 0 HP, and refuses a second attack in the same turn.
+- **Manual (in-app):** load the arena, walk and watch MP tick 3→0 and further moves blocked; press
+  End-Turn (Space) and confirm MP refills; stand within `attackRange` of the dummy, press `F`,
+  confirm dummy HP drops by `attackPoints` and a second attack is refused until End-Turn; verify
+  the HUD readout + buttons stay in sync.
 
 ## Out of scope (deferred)
 
-- Phaser click-to-move/attack + tile highlighting (Approach B; the selectors make it a drop-in).
+- Opponent/dummy AI, movement, or retaliation.
 - Terrain-weighted movement cost, diagonal movement, pathfinding around obstacles.
-- Armor/mitigation on basic-attack damage (live entities have no armor field).
-- Opponent AI using movement or basic attack.
-- Unifying with the card-battler `TacticalCardStats` schema.
+- Tile-highlight rendering of reachable/attackable tiles in Phaser.
+- Armor/mitigation on damage.
+- Unifying with the card-battler `TacticalCardStats` schema, or wiring the orphaned
+  `useBattleSession` hook.
 - Any progression/skill-tree UI for *spending* points to raise stats.
