@@ -15,6 +15,7 @@ import {
 } from '../../codex/core/obelisk-puzzle.signals.js';
 import { grantItem, hasItem } from '../game/inventory/inventoryService.js';
 import { getScholomanceCombatBlock, grantScholomanceXpForAction } from '../game/character/scholomanceXpService.js';
+import { buildCompendiumRuntimeContext } from '../game/combat/spellweaveCompendium.persistence.js';
 import { SCHOLOMANCE_XP_ACTIONS } from '../../codex/core/scholomance-xp.schema.js';
 import { matchElement } from '../data/combatElementDatabase.js';
 import { ARM_RIG, getPose } from '../data/armRigConfig.js';
@@ -31,9 +32,11 @@ import {
 import {
   areAllSentinelsDefeated,
   buildSentinelBlockedTiles,
+  areAllSentinelsDefeated,
   buildSentinelSceneTargets,
   getAggroableSentinels,
   getSentinelAtTile as findSentinelAtTile,
+  shouldEngageCombatBattle,
   getSentinelDefinition,
   isSentinelId,
   SENTINEL_ROBOTS,
@@ -57,7 +60,7 @@ import {
 } from '../game/combat/combatTargetSelection.js';
 import { resolveCombatCastScore } from '../game/combat/combatCastScoring.js';
 import { SPELL_CAST_MANA_COST } from '../game/combat/combatMana.js';
-import { planSentinelReposition } from '../game/combat/combatIntelligence.js';
+import { driveEnemyTurn } from '../game/combat/ai/enemyCombatDriver.js';
 import {
   applySentinelBurnDebuff,
   createSentinelAbilityState,
@@ -655,7 +658,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         window.removeEventListener('keydown', this.boundHandleTargetCycleKey);
       });
 
-      this.boundHandleBattleStarted = () => this.engageCombatBattle();
+      this.boundHandleBattleStarted = () => {
+        if (this.canEngageCombatBattle()) this.engageCombatBattle();
+      };
       this.boundHandleBattleEnded = () => this.disengageCombatBattle();
       window.addEventListener(COMBAT_BATTLE_STARTED_EVENT, this.boundHandleBattleStarted);
       window.addEventListener(COMBAT_BATTLE_ENDED_EVENT, this.boundHandleBattleEnded);
@@ -664,7 +669,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         window.removeEventListener(COMBAT_BATTLE_ENDED_EVENT, this.boundHandleBattleEnded);
       });
 
-      if (consumeCombatBattleStarted()) {
+      if (consumeCombatBattleStarted() && this.canEngageCombatBattle()) {
         this.engageCombatBattle();
       }
 
@@ -672,7 +677,9 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     handleCombatCast(event) {
-      this.ensureCombatBattleEngaged();
+      if (this.canEngageCombatBattle()) {
+        this.ensureCombatBattleEngaged();
+      }
       const detail = event.detail || {};
       const sceneContext = this.buildSceneTargetRegistry();
       const resolvedTargets = detail.resolvedTargets
@@ -990,19 +997,44 @@ export default function createCombatArenaScene(phaserRuntime) {
       const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
       if (!record?.aggroed || record.defeated || !this.stats) return;
 
-      const repositionSteps = planSentinelReposition({
-        sentinelId,
+      const allies = this.getSentinelRecords()
+        .filter((entry) => entry.aggroed && !entry.defeated && entry.id !== sentinelId)
+        .map((entry) => entry.id);
+
+      const plan = driveEnemyTurn({
+        entityId: sentinelId,
+        record,
         stats: this.stats,
+        allies,
+        targetId: 'player',
         blocked: this.getBlockedTiles?.() || this._blockedTiles,
+        rng: Math.random,
       });
-      if (repositionSteps.length) {
-        this.applySentinelRepositionSteps(sentinelId, repositionSteps);
+      if (!plan) return;
+
+      if (plan.reasons?.length) {
+        this.events.emit('sentinel-ability', {
+          type: 'sentinel-ability',
+          sentinelId,
+          logLines: plan.reasons,
+        });
       }
+
+      if (plan.movement?.steps?.length) {
+        this.applySentinelRepositionSteps(sentinelId, plan.movement.steps);
+      }
+
+      if (plan.action?.kind === 'guard') {
+        this.stats.setGuarding(sentinelId, true);
+        return;
+      }
+      if (plan.action?.kind !== 'attack') return;
 
       record._pendingAttackPlan = planSentinelAttack({
         record,
         sentinels: this.getSentinelRecords(),
         stats: this.stats,
+        stance: plan.stance,
       });
 
       const launch = () => this.launchSentinelFireball(sentinelId);
@@ -1061,6 +1093,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       const victory = getGameVictoryService();
       victory.prime();
       void victory.playVictory();
+      window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_ENDED_EVENT));
 
       const playerEntity = this.stats?.getEntity('player') || null;
       const report = this.sessionTelemetry?.buildReport({
@@ -1141,11 +1174,19 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     buildSceneTargetRegistry() {
+      const sentinels = this.getSentinelRecords();
       return {
         sceneId: 'combat-arena',
         casterId: 'player',
         tick: this.turnTick ?? 0,
         selectedCombatTargetId: this.selectedCombatTargetId ?? null,
+        sentinels: sentinels.map(({ id, defeated, aggroed }) => ({
+          id,
+          defeated: !!defeated,
+          aggroed: !!aggroed,
+        })),
+        allSentinelsDefeated: areAllSentinelsDefeated(sentinels),
+        combatVictoryAchieved: !!this.combatVictoryAchieved,
         targets: [
           ...this.buildSentinelTargets(),
           {
@@ -2248,8 +2289,16 @@ export default function createCombatArenaScene(phaserRuntime) {
       return candidates[0]?.id || null;
     }
 
+    canEngageCombatBattle() {
+      return shouldEngageCombatBattle({
+        sentinels: this.getSentinelRecords(),
+        combatVictoryAchieved: this.combatVictoryAchieved,
+      });
+    }
+
     ensureCombatBattleEngaged() {
       if (this.combatBattleEngaged) return true;
+      if (!this.canEngageCombatBattle()) return false;
       return this.engageCombatBattle();
     }
 
@@ -2317,6 +2366,8 @@ export default function createCombatArenaScene(phaserRuntime) {
             weave: this._incantation.weave,
             defender,
             defenderSchool: defender?.school ?? target.metadata?.school ?? null,
+            scholomance: getScholomanceCombatBlock(),
+            compendiumContext: buildCompendiumRuntimeContext(),
             scoringEngine: this.scoringEngine,
           });
           scoreData = scored.scoreData;
@@ -2330,6 +2381,8 @@ export default function createCombatArenaScene(phaserRuntime) {
         weave: this._incantation.weave,
         defender,
         defenderSchool: defender?.school ?? target.metadata?.school ?? null,
+        scholomance: getScholomanceCombatBlock(),
+        compendiumContext: buildCompendiumRuntimeContext(),
       }) || scoreData;
 
       const spellDamage = Number(scoreData.damage ?? cast.damage) || 0;
