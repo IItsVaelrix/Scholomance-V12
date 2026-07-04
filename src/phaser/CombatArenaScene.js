@@ -5,6 +5,8 @@ import { ITEM_DATABASE } from '../data/itemDatabase.js';
 import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyline.js';
 import { CombatStatController } from '../game/combat/combatStatController.js';
 import { getRotationAtTime, getTimeForRotation } from '../../codex/core/pixelbrain/gear-glide-amp.js';
+import { resolveEnchant } from '../game/combat/enchantResolver.js';
+import { calculateCombatScore } from '../../codex/core/combat.scoring.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
@@ -502,6 +504,13 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
       this.emitCombatStats(); // seed the HUD with initial values
 
+      this._incantation = { verse: '', weave: '' };
+      this.enchantRng = () => (typeof window !== 'undefined' && window.__forceEnchant ? 0 : Math.random());
+      this.boundHandleIncantation = (e) => { if (e && e.detail) this._incantation = { verse: e.detail.verse || '', weave: e.detail.weave || '' }; };
+      window.addEventListener('incantation-state', this.boundHandleIncantation);
+      this.events.once('destroy', () => window.removeEventListener('incantation-state', this.boundHandleIncantation));
+      window.dispatchEvent(new CustomEvent('request-incantation-state'));
+
       this.events.emit('arena-ready');
     }
 
@@ -675,6 +684,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           attackUsed: p.attackUsed,
           dummyHp: d ? d.hp : null,
           dummyMaxHp: d ? d.maxHp : null,
+          dummyStatuses: d && Array.isArray(d.statuses) ? d.statuses.map((s) => ({ chainId: s.chainId, turns: s.turns })) : [],
         },
       }));
     };
@@ -685,24 +695,44 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (!targetId) return; // No valid target in range.
       const result = this.stats.resolveAttack('player', targetId);
       if (!result) return;
-      // Quick hit-flash on the dummy (tween-based; no setTintFill — Phaser 4 safe).
-      if (this.dummyContainer) {
-        this.tweens.add({
-          targets: this.dummyContainer,
-          alpha: 0.35,
-          yoyo: true,
-          duration: 80,
-          repeat: 1,
-        });
-        if (result.targetDefeated) {
-          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400, delay: 200 });
-        }
+
+      // Combat chess: does the current incantation ignite the swing?
+      let scoreData = {};
+      try {
+        scoreData = calculateCombatScore({ text: this._incantation.verse, weave: this._incantation.weave }) || {};
+      } catch (err) {
+        console.warn('[combat] score failed; plain swing.', err);
+      }
+      const outcome = resolveEnchant(this._incantation, scoreData, this.enchantRng);
+      const elemental = !!(outcome.element && outcome.success);
+      const element = elemental ? outcome.element : null;
+
+      this.performSwing(element);
+
+      const hitColor = elemental ? element.glowColor : 0xff3300;
+      this.showHitFeedback('dummy', { color: hitColor, amount: result.damage });
+      if (elemental) {
+        this.stats.applyStatus('dummy', element.status);
+      } else if (outcome.element && !outcome.success) {
+        this.showFizzle(); // matched an element but the enchant failed
+      }
+
+      if (result.targetDefeated && this.dummyContainer) {
+        this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400, delay: 200 });
       }
       this.emitCombatStats();
     };
 
     endPlayerTurn = () => {
       if (!this.stats) return;
+      // Damage-over-time resolves at end of the player's turn.
+      const ticks = this.stats.tickStatuses('dummy');
+      ticks.forEach((t) => {
+        this.showHitFeedback('dummy', { color: 0xffaa00, amount: t.damage });
+        if (t.targetDefeated && this.dummyContainer) {
+          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400 });
+        }
+      });
       this.stats.endTurn('player');
       this.emitCombatStats();
     };
