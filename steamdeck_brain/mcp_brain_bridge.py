@@ -109,22 +109,26 @@ def handle_tools_list() -> dict:
 def handle_tools_call(name: str, arguments: dict) -> dict:
     if name == "ask_brain":
         query = arguments.get("query", "")
-        # Direct ForceField + brain network (no Ollama, no daemon required)
+        # Direct ForceField + brain network (no Ollama, no daemon required).
+        # The model-free path is mandatory; we never fall back to the
+        # Ollama-backed daemon endpoint, so no 7B model is ever loaded.
         try:
-            # Prefer the direct tap. When PYTHONPATH includes steamdeck_brain this works.
             import direct_brain
             direct = direct_brain.forcefield_ask(query, deterministic=True)
             direct["via"] = "direct_forcefield"
+            direct["ollama_used"] = False
             return {"content": [{"type": "text", "text": json.dumps(direct, indent=2)}]}
-        except Exception:
-            # Fallback to old daemon if direct unavailable
-            result = _http_post("/ask", {"query": query, "show_context": arguments.get("show_context", False)})
-            if "error" in result and "not reachable" in str(result.get("error", "")):
-                result["hint"] = "Direct brain access preferred. Ensure steamdeck_brain/direct_brain.py works. Fallback daemon hint: ./steamdeck_brain/launch-brain-stack.sh"
+        except Exception as e:
             return {
                 "content": [{
                     "type": "text",
-                    "text": json.dumps(result, indent=2)
+                    "text": json.dumps({
+                        "error": str(e),
+                        "mode": "direct-forcefield",
+                        "ollama_used": False,
+                        "hint": "Direct brain access requires PYTHONPATH=steamdeck_brain. "
+                                "Daemon HTTP fallback intentionally disabled (no-llm mode).",
+                    }, indent=2)
                 }]
             }
 

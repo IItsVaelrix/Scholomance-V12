@@ -5,7 +5,10 @@
  * and all combat decisions. No Phaser, no React, no DOM. Callers sync grid
  * positions in and read decisions out.
  */
-import { buildDefaultStatBlock } from './combatStats.js';
+import { BASE_MP_REGEN, MIN_COMBAT_DAMAGE, computeCombatManaRegen } from '../../../codex/core/combat.balance.js';
+import { buildDefaultStatBlock, BASIC_ATTACK_AP_COST } from './combatStats.js';
+import { SPELL_CAST_MANA_COST } from './combatMana.js';
+import { buildDefaultScholomanceStatBlock, computeBasicAttackDamage } from './scholomanceStats.js';
 
 export class CombatStatController {
   constructor() {
@@ -13,14 +16,24 @@ export class CombatStatController {
     this.entities = new Map();
   }
 
-  registerEntity(id, { overrides = {}, hp = null, maxHp = null, tx = 0, ty = 0 } = {}) {
+  registerEntity(id, {
+    overrides = {},
+    scholomanceOverrides = {},
+    hp = null,
+    maxHp = null,
+    tx = 0,
+    ty = 0,
+  } = {}) {
     const record = {
       id,
       ...buildDefaultStatBlock(overrides),
+      scholomance: buildDefaultScholomanceStatBlock(scholomanceOverrides),
       hp,
       maxHp,
       position: { tx, ty },
       attackUsed: false,
+      manaUsed: false,
+      lastScoreData: null,
       statuses: [],
       guarding: false,
     };
@@ -49,6 +62,33 @@ export class CombatStatController {
     return true;
   }
 
+  grantMovementPoints(id, amount) {
+    const e = this.entities.get(id);
+    const grant = Math.max(0, Math.round(Number(amount) || 0));
+    if (!e || grant === 0) return e;
+    e.movementPointsRemaining += grant;
+    return e;
+  }
+
+  applyEquipmentModifiers(id, modifiers = {}) {
+    const e = this.entities.get(id);
+    if (!e) return e;
+    const base = buildDefaultStatBlock();
+    const bonusMp = Number(modifiers.movementPoints) || 0;
+    const bonusAtk = Number(modifiers.attackPoints) || 0;
+    const bonusRng = Number(modifiers.attackRange) || 0;
+    const prevMax = e.movementPoints;
+    const prevRemaining = e.movementPointsRemaining;
+    const prevAtkMax = e.attackPoints;
+    const prevAtkRemaining = e.attackPointsRemaining;
+    e.movementPoints = base.movementPoints + bonusMp;
+    e.attackPoints = base.attackPoints + bonusAtk;
+    e.attackRange = base.attackRange + bonusRng;
+    e.movementPointsRemaining = Math.max(0, prevRemaining + (e.movementPoints - prevMax));
+    e.attackPointsRemaining = Math.max(0, prevAtkRemaining + (e.attackPoints - prevAtkMax));
+    return e;
+  }
+
   manhattan(id, targetId) {
     const a = this.entities.get(id);
     const b = this.entities.get(targetId);
@@ -56,11 +96,28 @@ export class CombatStatController {
     return Math.abs(a.position.tx - b.position.tx) + Math.abs(a.position.ty - b.position.ty);
   }
 
+  isInAttackRange(attackerId, targetId) {
+    const attacker = this.entities.get(attackerId);
+    const target = this.entities.get(targetId);
+    if (!attacker || !target) return false;
+    if (target.hp !== null && target.hp <= 0) return false;
+    return this.manhattan(attackerId, targetId) <= attacker.attackRange;
+  }
+
   canAttack(attackerId, targetId) {
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
     if (!attacker || !target) return false;
-    if (attacker.attackUsed) return false;
+    if (attacker.attackPointsRemaining < BASIC_ATTACK_AP_COST) return false;
+    if (target.hp !== null && target.hp <= 0) return false;
+    return this.manhattan(attackerId, targetId) <= attacker.attackRange;
+  }
+
+  canCastSpell(attackerId, targetId) {
+    const attacker = this.entities.get(attackerId);
+    const target = this.entities.get(targetId);
+    if (!attacker || !target) return false;
+    if (attacker.manaPointsRemaining < SPELL_CAST_MANA_COST) return false;
     if (target.hp !== null && target.hp <= 0) return false;
     return this.manhattan(attackerId, targetId) <= attacker.attackRange;
   }
@@ -73,11 +130,37 @@ export class CombatStatController {
     if (!this.canAttack(attackerId, targetId)) return null;
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
-    const damage = attacker.attackPoints;
+    const damage = computeBasicAttackDamage(attacker.scholomance);
     const targetHp = Math.max(0, (target.hp ?? 0) - damage);
     target.hp = targetHp;
-    attacker.attackUsed = true;
-    return { damage, targetHp, targetDefeated: targetHp <= 0 };
+    attacker.attackPointsRemaining -= BASIC_ATTACK_AP_COST;
+    attacker.attackUsed = attacker.attackPointsRemaining < BASIC_ATTACK_AP_COST;
+    return {
+      damage,
+      apSpent: BASIC_ATTACK_AP_COST,
+      attackPointsRemaining: attacker.attackPointsRemaining,
+      targetHp,
+      targetDefeated: targetHp <= 0,
+    };
+  }
+
+  resolveSpellCast(attackerId, targetId, { damage = 0, scoreData = null } = {}) {
+    if (!this.canCastSpell(attackerId, targetId)) return null;
+    const attacker = this.entities.get(attackerId);
+    const target = this.entities.get(targetId);
+    const spellDamage = Math.max(MIN_COMBAT_DAMAGE, Math.round(Number(damage) || 0));
+    const targetHp = Math.max(0, (target.hp ?? 0) - spellDamage);
+    target.hp = targetHp;
+    attacker.manaPointsRemaining -= SPELL_CAST_MANA_COST;
+    attacker.manaUsed = attacker.manaPointsRemaining < SPELL_CAST_MANA_COST;
+    if (scoreData) attacker.lastScoreData = scoreData;
+    return {
+      damage: spellDamage,
+      manaSpent: SPELL_CAST_MANA_COST,
+      manaPointsRemaining: attacker.manaPointsRemaining,
+      targetHp,
+      targetDefeated: targetHp <= 0,
+    };
   }
 
   applyStatus(id, { chainId, damagePerTurn, turns, disposition }) {
@@ -121,8 +204,12 @@ export class CombatStatController {
     const e = this.entities.get(id);
     if (!e) return e;
     e.movementPointsRemaining = e.movementPoints;
+    e.attackPointsRemaining = e.attackPoints;
     e.attackUsed = false;
     e.guarding = false;
+    const manaRegen = computeCombatManaRegen(e.lastScoreData, { baseRegen: BASE_MP_REGEN });
+    e.manaPointsRemaining = Math.min(e.manaPoints, e.manaPointsRemaining + manaRegen);
+    e.manaUsed = e.manaPointsRemaining < SPELL_CAST_MANA_COST;
     return e;
   }
 }

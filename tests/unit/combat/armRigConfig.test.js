@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ARM_RIG, ARM_POSES, getPose } from '../../../src/data/armRigConfig.js';
-import { solveArm, gripWorld } from '../../../src/game/combat/armRig.js';
+import { solveArm, gripWorld, anchorWorld } from '../../../src/game/combat/armRig.js';
 
 describe('armRigConfig', () => {
   it('defines both arms with three segments and sprite keys', () => {
@@ -23,5 +23,13 @@ describe('armRigConfig', () => {
     const grip = gripWorld(ARM_RIG.right, getPose('carry').right);
     expect(grip.y).toBeGreaterThan(ARM_RIG.right.shoulder.y); // hand hangs down
     expect(() => solveArm(ARM_RIG.right, getPose('swing').right)).not.toThrow();
+  });
+
+  it('orbHold presents the left palm cradle near the orb anchor', () => {
+    const leftAngles = getPose('orbHold').left;
+    const cradle = anchorWorld(ARM_RIG.left, leftAngles, 'cradlePoint');
+    expect(cradle.y).toBeLessThan(60);
+    expect(cradle.y).toBeGreaterThan(48);
+    expect(Math.abs(cradle.x - 19)).toBeLessThanOrEqual(4);
   });
 });

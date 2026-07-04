@@ -1,4 +1,3 @@
-import Phaser from 'phaser';
 import { generateBattleLeylines } from '../../codex/core/leyline.engine.js';
 import { processorBridge } from '../../codex/core/shared/processor-bridge.js';
 import { ITEM_DATABASE } from '../data/itemDatabase.js';
@@ -9,10 +8,108 @@ import { resolveEnchant } from '../game/combat/enchantResolver.js';
 import { analyzeText } from '../../codex/core/analysis.pipeline.js';
 import { createCombatScoringEngine } from '../../codex/core/scoring.defaults.js';
 import { normalizeCombatScore } from '../../codex/core/combat.scoring.js';
+import { resolveObeliskPuzzle } from '../../codex/core/obelisk-puzzle.resolver.js';
+import {
+  OBELISK_DISCOVERY_FLASH_XP,
+  STORMHEART_ORB_ITEM_ID,
+} from '../../codex/core/obelisk-puzzle.signals.js';
+import { grantItem, hasItem } from '../game/inventory/inventoryService.js';
+import { getScholomanceCombatBlock, grantScholomanceXpForAction } from '../game/character/scholomanceXpService.js';
+import { SCHOLOMANCE_XP_ACTIONS } from '../../codex/core/scholomance-xp.schema.js';
 import { matchElement } from '../data/combatElementDatabase.js';
 import { ARM_RIG, getPose } from '../data/armRigConfig.js';
-import { solveArm, gripWorld } from '../game/combat/armRig.js';
+import { solveArm, gripWorld, anchorWorld } from '../game/combat/armRig.js';
 import { equipSlotOf } from '../data/itemDatabase.js';
+import { getHoldPresentation } from '../game/combat/heldItemPresentation.js';
+import {
+  buildBlockedSet,
+  DEFAULT_BLOCKED_TILES,
+  findPath,
+  getReachableTiles,
+  tileKey,
+} from '../game/combat/combatPathfinding.js';
+import {
+  areAllSentinelsDefeated,
+  buildSentinelBlockedTiles,
+  buildSentinelSceneTargets,
+  getAggroableSentinels,
+  getSentinelAtTile as findSentinelAtTile,
+  getSentinelDefinition,
+  isSentinelId,
+  SENTINEL_ROBOTS,
+  getSentinelCombatOverrides,
+  SENTINEL_STAT_DEFAULTS,
+} from '../game/combat/sentinelRobots.js';
+import { createCombatSessionTelemetry } from '../game/combat/combatSessionTelemetry.js';
+import {
+  COMBAT_BATTLE_ENDED_EVENT,
+  COMBAT_BATTLE_STARTED_EVENT,
+  COMBAT_FREE_ROAM_MOVEMENT_RANGE,
+  consumeCombatBattleStarted,
+} from '../game/combat/combatBattleIntro.js';
+import { getGameVictoryService } from '../lib/audio/gameVictory.service.js';
+import { buildInspectPresentation } from '../game/combat/combatInspectCopy.js';
+import { parseWeave } from '../../codex/core/spellweave.engine.js';
+import {
+  cycleCombatTargetId,
+  listTargetableCombatants,
+  mergeSelectedCombatTarget,
+} from '../game/combat/combatTargetSelection.js';
+import { resolveCombatCastScore } from '../game/combat/combatCastScoring.js';
+import { SPELL_CAST_MANA_COST } from '../game/combat/combatMana.js';
+import { planSentinelReposition } from '../game/combat/combatIntelligence.js';
+import {
+  applySentinelBurnDebuff,
+  createSentinelAbilityState,
+  notePlayerSpellCastOnSentinels,
+  planSentinelAttack,
+  resolveSentinelAbilityDamage,
+  tickPlayerCombatStatuses,
+  tickSentinelAbilityState,
+} from '../game/combat/sentinelCombatAbilities.js';
+import {
+  buildBestiaryRuntimeContext,
+  buildCombatDefenderProfile,
+  hasCombatBestiaryEntry,
+} from '../game/combat/bestiary/index.js';
+import {
+  extractParsedClauses,
+  resolveWeaveTargetsFromParsed,
+} from '../game/combat/weave-scene-targets.js';
+import { pickBestCandidate } from '../../codex/core/pixelbrain/iso-cell-picker.js';
+import {
+  applyCombatGatherIntent,
+  buildReachableLatticeKeys,
+  combatGridToLattice,
+  createCombatLatticeAuthority,
+  getPlayerLatticePosition,
+  heightmapToCombatCoord,
+  islandVoxelToLattice,
+  isPlayerLatticePick,
+  latticeCellKey,
+  registerCombatGridCell,
+  registerGatherableCell,
+  validateCombatGatherIntent,
+} from '../game/combat/combatLatticeAuthority.js';
+import { getGameAudioForgeService } from '../lib/audio/gameAudioForge.service.js';
+import { getGameBackgroundMusicService } from '../lib/audio/gameBackgroundMusic.service.js';
+import { getGameObeliskElectricService } from '../lib/audio/gameObeliskElectric.service.js';
+import { getGameBrazierFireService } from '../lib/audio/gameBrazierFire.service.js';
+import { getGameFireballImpactService } from '../lib/audio/gameFireballImpact.service.js';
+import { getGameSwordSliceService } from '../lib/audio/gameSwordSlice.service.js';
+import {
+  GAME_BACKGROUND_MUSIC_PACING,
+  GAME_OBELISK_MUSIC_SYNC,
+} from '../lib/audio/gameBackgroundMusic.config.js';
+import {
+  bpmBobOffset,
+  bpmBobShadow,
+  findSnareCrossings,
+  isDischargeSnareHit,
+  isLastChargeSnare,
+  resolveMusicBeatSnapshot,
+  snaresPerDischargeCycle,
+} from '../lib/audio/gameMusicBeatClock.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
@@ -28,6 +125,21 @@ const PALETTES = {
 // Character walk cycle: f0 is the idle/rest pose, f1..f8 are the 8 walk frames.
 // The base body and every frame-locked armor asset export this same f0..f8 layout.
 const WALK_FRAME_COUNT = 8;
+
+/** Painter-order depths for the combat arena (higher = nearer camera). */
+const ARENA_DEPTH = Object.freeze({
+  GRID: 10,
+  GRID_HIT: 15,
+  PORTAL: 18,
+  COMPARTMENT_PIT: 18,
+  CENTER_TILE_CAP: 11,
+  OBELISK_BODY: 28,
+  OBELISK_CHARGE: 29,
+  OBELISK_BOLT: 30,
+  TORCH: 31,
+  STORMHEART_ORB: 33,
+  PLAYER: 25,
+});
 
 // Geologic Bytecode Opcodes
 const OP = {
@@ -66,6 +178,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       for (const segKey of SEG_KEYS) {
         this.load.image(segKey, `/generated-assets/IdealHuman/${segKey}-png.png`);
       }
+      this.load.image('armL-hand-palm', '/generated-assets/IdealHuman/armL-hand-palm-png.png');
 
       // Load all armor sprite frames from the item database (same f0..f8 layout,
       // frame-locked to the body so equipped walking stays in sync).
@@ -98,6 +211,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     create() {
     console.log('[CombatArenaScene] Starting...');
+      this.obeliskState = this.hasStormheartOrb() ? 'looted' : 'active';
       const { width, height } = this.scale;
       this.cameras.main.scrollX = -width / 2;
       // Shift camera slightly up to frame the obelisk peak
@@ -127,6 +241,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.fireImageData = this.fireContext.createImageData(this.fireW, this.fireH);
       this.firePixels = new Float32Array(this.fireW * this.fireH);
       this._frameSeed = 1;
+      this._plasmaSmooth = 0;
+      this._arenaTickGen = 0;
+      this._arenaTickInFlight = false;
       
       // Bottom row will be dynamically seeded in update() for a flame shape
 
@@ -154,95 +271,24 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.drawGalaxyBackground();
       });
       
-      // Global left-click handler for interacting
-      this.input.on('pointerdown', (pointer) => {
-        try {
-          const hitObjects = this.input.hitTestPointer(pointer) || [];
-          if (hitObjects.length > 0) {
-            const gameObject = hitObjects[0];
-            
-            if ((pointer.button === 0 || (pointer.leftButtonDown && pointer.leftButtonDown())) && gameObject.interactData) {
-              console.log(`[Combat] Left-click: Interacting with Tile (${gameObject.interactData.tx}, ${gameObject.interactData.ty})`);
-              this.events.emit('tile-interact', {
-                ...gameObject.interactData,
-                type: 'interact'
-              });
-              
-              // Brief feedback flash for interact
-              if (gameObject.setFillStyle) {
-                gameObject.setFillStyle(PALETTES.void_ice.shine, 0.8);
-                this.time.delayedCall(150, () => {
-                  if (gameObject.input && gameObject.input.isOver) gameObject.setFillStyle(PALETTES.cyan_glow.shine, 0.3);
-                  else gameObject.setFillStyle(0xffffff, 0);
-                });
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Pointerdown error:", e);
-          this.events.emit('tile-error', { type: 'error', text: e.message });
-        }
-      });
-
-      // BULLETPROOF native right-click override via manual raycasting
+      this.movementArmed = false;
+      this.footstepIndex = 0;
+      this.musicBeatSync = {
+        lastExactBeat: null,
+        snareCount: 0,
+      };
+      this.latticeAuthority = createCombatLatticeAuthority();
+      this.latticePickCandidates = [];
+      this.equippedGatherTools = [];
+      this.islandTerrainRadius = 14;
+      this.boundCanvasPointerDown = (e) => this.handleCanvasPointerDown(e);
+      this.boundCanvasContextMenu = (e) => this.handleCanvasContextMenu(e);
       if (this.game.canvas) {
-        this.game.canvas.addEventListener('contextmenu', (e) => {
-          e.preventDefault();
-          try {
-            const canvasBounds = this.game.canvas.getBoundingClientRect();
-            const x = e.clientX - canvasBounds.left;
-            const y = e.clientY - canvasBounds.top;
-            
-            // Project DOM screen coordinates into Phaser World space
-            const worldPoint = this.cameras.main.getWorldPoint(x, y);
-            
-            // Iterate from top to bottom (z-index)
-            const children = this.sys.displayList.getChildren();
-            let hitTile = null;
-            
-            for (let i = children.length - 1; i >= 0; i--) {
-              const child = children[i];
-              if (child.inspectData && child.input && child.input.hitArea) {
-                // Polygons are mapped at 0,0 local, so worldPoint directly checks against the hitArea
-                if (Phaser.Geom.Polygon.Contains(child.input.hitArea, worldPoint.x, worldPoint.y)) {
-                  hitTile = child;
-                  break;
-                }
-              }
-            }
-            
-            if (hitTile) {
-              // Project the isometric lattice world coordinate into 2D screen space
-              let bounds = new Phaser.Geom.Rectangle();
-              Phaser.Geom.Polygon.GetAABB(hitTile.input.hitArea, bounds);
-              const tileWorldX = bounds.centerX;
-              const tileWorldY = bounds.centerY;
-                
-              // Convert world space to screen space
-              const displayPoint = new Phaser.Math.Vector2();
-              displayPoint.x = (tileWorldX - this.cameras.main.scrollX) * this.cameras.main.zoom;
-              displayPoint.y = (tileWorldY - this.cameras.main.scrollY) * this.cameras.main.zoom;
-                
-              console.log(`[Combat] Native Right-click: Inspecting Tile (${hitTile.inspectData.tx}, ${hitTile.inspectData.ty})`);
-              this.events.emit('tile-inspect', { 
-                ...hitTile.inspectData,
-                screenX: displayPoint.x, 
-                screenY: displayPoint.y,
-                type: 'inspect'
-              });
-              
-              if (hitTile.setFillStyle) {
-                hitTile.setFillStyle(PALETTES.amethyst.shine, 0.6);
-                this.time.delayedCall(150, () => {
-                  if (hitTile.input && hitTile.input.isOver) hitTile.setFillStyle(PALETTES.cyan_glow.shine, 0.3);
-                  else hitTile.setFillStyle(0xffffff, 0);
-                });
-              }
-            }
-          } catch (err) {
-            console.error("Contextmenu error:", err);
-            this.events.emit('tile-error', { type: 'error', text: err.message });
-          }
+        this.game.canvas.addEventListener('pointerdown', this.boundCanvasPointerDown);
+        this.game.canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
+        this.events.once('destroy', () => {
+          this.game.canvas?.removeEventListener('pointerdown', this.boundCanvasPointerDown);
+          this.game.canvas?.removeEventListener('contextmenu', this.boundCanvasContextMenu);
         });
       }
 
@@ -262,9 +308,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         const peaks = this.icePeakPositions;
         const peakZone = {
           getRandomPoint: (point) => {
-            const peak = Phaser.Utils.Array.GetRandom(peaks);
-            point.x = peak.x + Phaser.Math.Between(-6, 6);
-            point.y = peak.y + Phaser.Math.Between(-4, 4);
+            const peak = phaserRuntime.Utils.Array.GetRandom(peaks);
+            point.x = peak.x + phaserRuntime.Math.Between(-6, 6);
+            point.y = peak.y + phaserRuntime.Math.Between(-4, 4);
             return point;
           }
         };
@@ -321,16 +367,23 @@ export default function createCombatArenaScene(phaserRuntime) {
       const zScale = 4;
       const plateauZ = targetZ * zScale;
       
+      this.combatGridMetrics = { gridSize, tw, th, plateauZ, toIso };
+      this.combatBattleEngaged = false;
+      this.battleLeylinesActive = false;
+      this.leylineTileRegistry = new Map();
+
       this.draw3DGrid(gridSize, tw, th, toIso, plateauZ);
       
       // Draw the massive central obelisk
       this.drawObelisk(tw, th, plateauZ);
-      
-      // Place torches on the sides of the obelisk
-      const cx = 0;
-      const cy = -plateauZ;
-      this.drawTorch(cx - tw, cy); // Left
-      this.drawTorch(cx + tw, cy); // Right
+      if (this.hasStormheartOrb()) {
+        this.obeliskCompartmentPit?.destroy();
+        this.obeliskCompartmentPit = null;
+        this.hideObeliskTower();
+        this.revealCenterCompartmentTile();
+      } else {
+        this.restoreActiveObeliskTower();
+      }
       
       this.drawTeleportationPortal();
 
@@ -338,7 +391,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       const playerPos = toIso(4, 6);
       
       const playerContainer = this.add.container(playerPos.x, playerPos.y - plateauZ);
-      playerContainer.setDepth(25); // Starts in front of obelisk
+      playerContainer.setDepth(ARENA_DEPTH.PLAYER);
       
       // The SCDL export draws the figure on a 64x128 canvas with the feet at
       // y~112, leaving ~16px of empty padding below. Origin (0.5, 1) would pin
@@ -349,6 +402,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       const FEET_ORIGIN_Y = 112 / 128; // = 0.875, the feet row of the shared canvas
       const playerImg = this.add.sprite(0, 0, 'ideal-human-f0');
       playerImg.setOrigin(0.5, FEET_ORIGIN_Y);
+      playerImg.setInteractive({ useHandCursor: true, pixelPerfect: false });
+      playerImg.on('pointerdown', (pointer) => {
+        if (pointer.button === 0) this.toggleMovementArmed();
+      });
       playerContainer.add(playerImg);
 
       // Armor layers on top of base model
@@ -458,19 +515,25 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       // --- Combat stat tree (slice 1) ---
       this.stats = new CombatStatController();
-      this.stats.registerEntity('player', { tx: 4, ty: 6 });
+      this.stats.registerEntity('player', {
+        tx: 4,
+        ty: 6,
+        hp: 100,
+        maxHp: 100,
+        scholomanceOverrides: getScholomanceCombatBlock(),
+      });
 
-      // Sparring dummy: reuse the IdealHuman idle pose as a fixed attack target.
-      this.dummyGridPos = { tx: 4, ty: 4 };
-      const dummyScreen = this.getIsoTarget(this.dummyGridPos.tx, this.dummyGridPos.ty);
-      this.dummyContainer = this.add.container(dummyScreen.x, dummyScreen.y);
-      this.dummyContainer.setDepth(24);
-      const dummyImg = this.add.sprite(0, 0, 'ideal-human-f0');
-      dummyImg.setOrigin(0.5, FEET_ORIGIN_Y);
-      dummyImg.setTint(0x88aacc); // cool tint so it reads as "not the player"
-      this.dummyContainer.add(dummyImg);
-      this.dummyImg = dummyImg;
-      this.stats.registerEntity('dummy', { hp: 100, maxHp: 100, tx: this.dummyGridPos.tx, ty: this.dummyGridPos.ty });
+      this.sentinels = SENTINEL_ROBOTS.map((entry) => ({
+        ...entry,
+        defeated: false,
+        aggroed: false,
+        abilities: createSentinelAbilityState(),
+      }));
+      this.combatVictoryAchieved = false;
+      this.sessionTelemetry = createCombatSessionTelemetry();
+      this.spawnSentinelRobots();
+      this.rebuildBlockedTiles();
+
       this.createSwingTextures();
 
       // Procedural smoke wisp — FBM noise with soft circular mask, light cool-gray
@@ -517,16 +580,16 @@ export default function createCombatArenaScene(phaserRuntime) {
       mistConfigs.forEach((cfg, i) => {
         const m = this.add.image(cfg.x, cfg.y, 'smoke-wisp');
         m.setDepth(60); // Atmospheric haze drifts in front of the arena geometry (portal 50, torches 30)
-        m.setBlendMode(Phaser.BlendModes.NORMAL);
+        m.setBlendMode(phaserRuntime.BlendModes.NORMAL);
         m.setAlpha(cfg.alpha);
         m.setScale(cfg.scale);
         this.tweens.add({
           targets: m,
           alpha: cfg.alpha * 0.4,
           scale: cfg.scale * 1.08,
-          x: cfg.x + Phaser.Math.Between(-18, 18),
-          y: cfg.y + Phaser.Math.Between(-10, 10),
-          duration: Phaser.Math.Between(6500, 9500),
+          x: cfg.x + phaserRuntime.Math.Between(-18, 18),
+          y: cfg.y + phaserRuntime.Math.Between(-10, 10),
+          duration: phaserRuntime.Math.Between(6500, 9500),
           yoyo: true,
           repeat: -1,
           ease: 'Sine.easeInOut',
@@ -548,7 +611,11 @@ export default function createCombatArenaScene(phaserRuntime) {
         window.removeEventListener('combat-attack', this.boundHandleHudAttack);
         window.removeEventListener('combat-endturn', this.boundHandleHudEndTurn);
       });
-      this.emitCombatStats(); // seed the HUD with initial values
+      this.reachableTiles = new Set();
+      this.inspectHighlightTile = null;
+      this.selectedCombatTargetId = null;
+      this.emitCombatStats(); // seed the HUD with initial values + movement highlights
+      this.emitSceneContextState();
       this.applyArmPose('carry'); // place jointed arms at rest
 
       this._incantation = { verse: '', weave: '' };
@@ -559,42 +626,1008 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.events.once('destroy', () => window.removeEventListener('incantation-state', this.boundHandleIncantation));
       window.dispatchEvent(new CustomEvent('request-incantation-state'));
 
+      this.boundHandleSceneContextRequest = () => this.emitSceneContextState();
+      window.addEventListener('request-scene-context', this.boundHandleSceneContextRequest);
+      this.events.once('destroy', () => {
+        window.removeEventListener('request-scene-context', this.boundHandleSceneContextRequest);
+      });
+
+      this.boundHandleScholomanceStats = (event) => {
+        const scholomance = event?.detail?.scholomance;
+        const player = this.stats?.getEntity('player');
+        if (!player || !scholomance) return;
+        player.scholomance = { ...scholomance };
+        this.emitCombatStats();
+      };
+      window.addEventListener('scholomance-stats-updated', this.boundHandleScholomanceStats);
+      this.events.once('destroy', () => {
+        window.removeEventListener('scholomance-stats-updated', this.boundHandleScholomanceStats);
+      });
+
+      this.boundHandleTargetCycleKey = (event) => {
+        if (event.key !== 'Tab') return;
+        if (!this.getTargetableCombatantsOrdered().length) return;
+        event.preventDefault();
+        this.cycleCombatTarget();
+      };
+      window.addEventListener('keydown', this.boundHandleTargetCycleKey);
+      this.events.once('destroy', () => {
+        window.removeEventListener('keydown', this.boundHandleTargetCycleKey);
+      });
+
+      this.boundHandleBattleStarted = () => this.engageCombatBattle();
+      this.boundHandleBattleEnded = () => this.disengageCombatBattle();
+      window.addEventListener(COMBAT_BATTLE_STARTED_EVENT, this.boundHandleBattleStarted);
+      window.addEventListener(COMBAT_BATTLE_ENDED_EVENT, this.boundHandleBattleEnded);
+      this.events.once('destroy', () => {
+        window.removeEventListener(COMBAT_BATTLE_STARTED_EVENT, this.boundHandleBattleStarted);
+        window.removeEventListener(COMBAT_BATTLE_ENDED_EVENT, this.boundHandleBattleEnded);
+      });
+
+      if (consumeCombatBattleStarted()) {
+        this.engageCombatBattle();
+      }
+
       this.events.emit('arena-ready');
     }
 
     handleCombatCast(event) {
-      const { text, weave } = event.detail;
-      const weaveStr = (weave || '').toLowerCase();
-      const textStr = (text || '').toLowerCase();
-      
-      if (weaveStr.includes('enchant') && weaveStr.includes('flame') && textStr.includes('incinerator blade')) {
-        const sword = this.playerArmorLayers['weapon'];
-        if (sword && sword.visible) {
-          sword.setTint(0xff6600); // fiery
-          
-          if (this.add.particles) {
-            const flameEmitter = this.add.particles(0, 0, 'doom-fire', {
-              speed: { min: 30, max: 80 },
-              angle: { min: 250, max: 290 },
-              scale: { start: 0.5, end: 0 },
-              alpha: { start: 0.8, end: 0 },
-              blendMode: 'ADD',
-              lifespan: 500,
-              gravityY: -100,
-              tint: 0xffaa00
-            });
-            flameEmitter.startFollow(sword);
-            if (!this.activeEnchantments) this.activeEnchantments = [];
-            this.activeEnchantments.push(flameEmitter);
-            
-            console.log("Sword Enchanted with Flames! Bonus Burn Damage Applied.");
-          }
+      this.ensureCombatBattleEngaged();
+      const detail = event.detail || {};
+      const sceneContext = this.buildSceneTargetRegistry();
+      const resolvedTargets = detail.resolvedTargets
+        || detail.bridge?.resolvedTargets
+        || (detail.weave
+          ? resolveWeaveTargetsFromParsed(parseWeave(detail.weave), sceneContext, detail.weave)
+          : null);
+      const enriched = { ...detail, sceneContext, resolvedTargets };
+      const primaryId = resolvedTargets?.primaryTargetId;
+
+      if (primaryId === 'stormheart-orb') {
+        this.tryLootStormheartOrb();
+        return;
+      }
+
+      if (primaryId?.startsWith('gather:')) {
+        const target = sceneContext.targets.find((entry) => entry.id === primaryId);
+        const tool = this.getPrimaryGatherTool();
+        if (target?.metadata?.targetCell && tool) {
+          this.submitGatherIntent(
+            { ...target.metadata.targetCell, gatherable: true, requiredTool: target.metadata.requiredTool },
+            tool,
+          );
+        } else {
+          this.showFizzle();
+        }
+        return;
+      }
+
+      if (primaryId === 'obelisk') {
+        this.resolveObeliskCast(enriched);
+        return;
+      }
+
+      void this.performSpellCast({
+        castDetail: detail,
+        sceneContext,
+        resolvedTargets,
+      });
+    }
+
+    isPlayerAdjacentToTile(tx, ty) {
+      if (!this.playerGridPos) return false;
+      return Math.max(Math.abs(this.playerGridPos.tx - tx), Math.abs(this.playerGridPos.ty - ty)) <= 1;
+    }
+
+    isPlayerAdjacentToObelisk() {
+      return this.isPlayerAdjacentToTile(4, 4);
+    }
+
+    buildGatherableTargets() {
+      const targets = [];
+      if (!this.latticeAuthority?.cells) return targets;
+
+      const player = this.getPlayerGatherState();
+      for (const cell of this.latticeAuthority.cells.values()) {
+        const key = latticeCellKey(cell);
+        if (!cell.gatherable || this.latticeAuthority.depleted.has(key)) continue;
+
+        const tx = cell.combatTx ?? cell.x;
+        const ty = cell.combatTy ?? cell.z;
+        const dist = Math.abs(player.tx - tx) + Math.abs(player.ty - ty);
+
+        targets.push({
+          id: `gather:${tx},${ty},${cell.z}`,
+          label: 'Void Ore Spire',
+          kind: 'gatherable',
+          weaveObjects: ['STONE'],
+          tx,
+          ty,
+          z: cell.z,
+          inRange: dist <= 2,
+          reachable: true,
+          interactionPriority: 300,
+          metadata: {
+            targetCell: { x: cell.x, y: cell.y, z: cell.z },
+            requiredTool: cell.requiredTool,
+          },
+        });
+      }
+
+      return targets;
+    }
+
+    getSentinelRecords() {
+      return Array.isArray(this.sentinels) ? this.sentinels : [];
+    }
+
+    spawnSentinelRobots() {
+      for (const sentinel of this.getSentinelRecords()) {
+        const tile = this.getIsoTarget(sentinel.tx, sentinel.ty);
+        this.drawTorch(tile.x, tile.y, { sentinelId: sentinel.id });
+        this.stats.registerEntity(sentinel.id, {
+          hp: SENTINEL_STAT_DEFAULTS.hp,
+          maxHp: SENTINEL_STAT_DEFAULTS.maxHp,
+          tx: sentinel.tx,
+          ty: sentinel.ty,
+          overrides: getSentinelCombatOverrides(sentinel.id),
+          scholomanceOverrides: SENTINEL_STAT_DEFAULTS.scholomanceOverrides,
+        });
+      }
+    }
+
+    rebuildBlockedTiles() {
+      this._blockedTiles = buildBlockedSet(
+        buildSentinelBlockedTiles(this.getSentinelRecords(), [...DEFAULT_BLOCKED_TILES]),
+      );
+    }
+
+    getSentinelTorchEffect(sentinelId) {
+      if (!sentinelId || !this.torchEffects?.length) return null;
+      return this.torchEffects.find((entry) => entry.sentinelId === sentinelId) || null;
+    }
+
+    applySentinelAggroVisual(sentinelId) {
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (!effect) return;
+      if (effect.fireSprite) effect.fireSprite.setTint(0xff6644);
+      if (effect.ring1) effect.ring1.setAlpha(1);
+      if (effect.ring2) effect.ring2.setAlpha(1);
+      if (effect.bobContainer) {
+        this.tweens.add({
+          targets: effect.bobContainer,
+          scaleX: 1.12,
+          scaleY: 1.12,
+          duration: 180,
+          yoyo: true,
+          ease: 'Sine.easeOut',
+        });
+      }
+    }
+
+    emitFireballImpactSfx() {
+      const impact = getGameFireballImpactService();
+      impact.prime();
+      void impact.playImpact();
+    }
+
+    emitFireballImpactBurst(x, y) {
+      const burst = this.add.graphics().setDepth(65);
+      burst.fillStyle(0xff6600, 0.55);
+      burst.fillCircle(x, y, 18);
+      burst.fillStyle(0xffcc44, 0.75);
+      burst.fillCircle(x, y, 9);
+      burst.fillStyle(0xffffff, 0.9);
+      burst.fillCircle(x, y, 4);
+      this.tweens.add({
+        targets: burst,
+        alpha: 0,
+        scaleX: 1.45,
+        scaleY: 1.45,
+        duration: 260,
+        ease: 'Quad.easeOut',
+        onComplete: () => burst.destroy(),
+      });
+    }
+
+    buildSentinelFireball(startX, startY) {
+      const fireball = this.add.container(startX, startY).setDepth(64);
+      const halo = this.add.graphics();
+      halo.fillStyle(0xff4400, 0.38);
+      halo.fillCircle(0, 0, 16);
+      const core = this.add.graphics();
+      core.fillStyle(0xff9922, 0.95);
+      core.fillCircle(0, 0, 8);
+      core.fillStyle(0xffee88, 0.9);
+      core.fillCircle(0, 0, 4);
+      core.fillStyle(0xffffff, 0.95);
+      core.fillCircle(0, 0, 2);
+      fireball.add([halo, core]);
+      fireball.setScale(0.55);
+      fireball.setBlendMode(phaserRuntime.BlendModes.ADD);
+      return fireball;
+    }
+
+    launchSentinelFireball(sentinelId) {
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (!effect || !this.playerContainer || !this.stats?.canAttack?.(sentinelId, 'player')) {
+        this.resolveSentinelFireballHit(sentinelId);
+        return;
+      }
+
+      const startX = effect.bobContainer?.x ?? effect.anchorX;
+      const startY = (effect.bobContainer?.y ?? effect.anchorY) - 10;
+      const endX = this.playerContainer.x;
+      const endY = this.playerContainer.y - 36;
+      const fireball = this.buildSentinelFireball(startX, startY);
+
+      if (effect.fireSprite) {
+        const baseScaleX = effect.fireSprite.scaleX;
+        const baseScaleY = effect.fireSprite.scaleY;
+        this.tweens.add({
+          targets: effect.fireSprite,
+          scaleX: baseScaleX * 1.28,
+          scaleY: baseScaleY * 1.28,
+          duration: 140,
+          yoyo: true,
+          ease: 'Sine.easeOut',
+        });
+      }
+
+      this.tweens.add({
+        targets: fireball,
+        x: endX,
+        y: endY,
+        scaleX: 1.2,
+        scaleY: 1.2,
+        duration: 360,
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          this.emitFireballImpactBurst(endX, endY);
+          fireball.destroy();
+          this.resolveSentinelFireballHit(sentinelId);
+        },
+      });
+    }
+
+    resolveSentinelFireballHit(sentinelId) {
+      const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
+      if (!record || !this.stats) return;
+
+      const plan = record._pendingAttackPlan || planSentinelAttack({
+        record,
+        sentinels: this.getSentinelRecords(),
+        stats: this.stats,
+      });
+      record._pendingAttackPlan = null;
+
+      const result = resolveSentinelAbilityDamage(this.stats, sentinelId, 'player', plan);
+      if (!result?.hit) {
+        this.showPlayerCastHint('miss!');
+        this.events.emit('sentinel-ability', {
+          type: 'sentinel-ability',
+          sentinelId,
+          abilityId: plan.abilityId,
+          missed: true,
+          logLines: [`[SENTINEL] ${record.shortLabel || sentinelId} attack missed.`],
+        });
+        this.emitCombatStats();
+        return;
+      }
+
+      if (plan.applyBurn) {
+        applySentinelBurnDebuff(this.stats, plan);
+      }
+
+      this.emitFireballImpactSfx();
+      this.showHitFeedback('player', {
+        color: plan.abilityId === 'machine_learning' ? 0xaa66ff : 0xff7722,
+        amount: result.damage,
+        delay: 0,
+      });
+      const hint = plan.abilityId === 'machine_learning'
+        ? 'counter-cast!'
+        : plan.abilityId === 'burn'
+          ? 'matrix burn!'
+          : plan.alertActive
+            ? 'alert strike!'
+            : 'fireball!';
+      this.showPlayerCastHint(hint);
+      this.sessionTelemetry?.recordSentinelHit({
+        sentinelId,
+        damage: result.damage,
+      });
+      this.events.emit('sentinel-ability', {
+        type: 'sentinel-ability',
+        sentinelId,
+        abilityId: plan.abilityId,
+        damage: result.damage,
+        logLines: plan.logLines,
+        machineLearning: plan.machineLearning || null,
+      });
+      this.emitCombatStats();
+    }
+
+    applySentinelRepositionSteps(sentinelId, steps = []) {
+      if (!steps.length) return;
+      const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
+      if (!record || !this.stats) return;
+
+      const finalStep = steps[steps.length - 1];
+      record.tx = finalStep.tx;
+      record.ty = finalStep.ty;
+      this.stats.setPosition(sentinelId, finalStep.tx, finalStep.ty);
+      for (let i = 0; i < steps.length; i += 1) {
+        this.stats.spendMove(sentinelId);
+      }
+
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (effect?.bobContainer) {
+        const tile = this.getIsoTarget(finalStep.tx, finalStep.ty);
+        this.tweens.add({
+          targets: effect.bobContainer,
+          x: tile.x,
+          y: tile.y,
+          duration: 180 + steps.length * 40,
+          ease: 'Sine.easeInOut',
+        });
+        if (effect.shadow) {
+          this.tweens.add({
+            targets: effect.shadow,
+            x: tile.x,
+            y: tile.y + 8,
+            duration: 180 + steps.length * 40,
+            ease: 'Sine.easeInOut',
+          });
         }
       }
+
+      this.rebuildBlockedTiles();
+      this.emitSceneContextState();
+    }
+
+    performSentinelAttack(sentinelId, delay = 0) {
+      const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
+      if (!record?.aggroed || record.defeated || !this.stats) return;
+
+      const repositionSteps = planSentinelReposition({
+        sentinelId,
+        stats: this.stats,
+        blocked: this.getBlockedTiles?.() || this._blockedTiles,
+      });
+      if (repositionSteps.length) {
+        this.applySentinelRepositionSteps(sentinelId, repositionSteps);
+      }
+
+      record._pendingAttackPlan = planSentinelAttack({
+        record,
+        sentinels: this.getSentinelRecords(),
+        stats: this.stats,
+      });
+
+      const launch = () => this.launchSentinelFireball(sentinelId);
+      if (delay > 0) this.time.delayedCall(delay, launch);
+      else launch();
+    }
+
+    runSentinelRetaliation({ onlyNewlyAggroed = false } = {}) {
+      const attackers = this.getSentinelRecords().filter((entry) => (
+        !entry.defeated
+        && entry.aggroed
+        && (!onlyNewlyAggroed || entry._justAggroed)
+      ));
+      attackers.forEach((entry, index) => {
+        entry._justAggroed = false;
+        this.performSentinelAttack(entry.id, index * 220);
+      });
+    }
+
+    checkSentinelObeliskAggro(tx, ty) {
+      const candidates = getAggroableSentinels(this.getSentinelRecords(), tx, ty);
+      if (!candidates.length) return false;
+
+      const newlyAggroed = [];
+      for (const record of candidates) {
+        if (record.aggroed) continue;
+        record.aggroed = true;
+        record._justAggroed = true;
+        newlyAggroed.push(record);
+        this.applySentinelAggroVisual(record.id);
+      }
+
+      if (newlyAggroed.length) {
+        this.sessionTelemetry?.recordAggro({ count: newlyAggroed.length });
+        this.events.emit('sentinel-aggro', {
+          type: 'sentinel-aggro',
+          count: newlyAggroed.length,
+          tx,
+          ty,
+          text: 'Brazier matrices lock onto you — the tower is threatened.',
+        });
+        this.emitSceneContextState();
+      }
+
+      if (newlyAggroed.length && this.combatBattleEngaged) {
+        this.runSentinelRetaliation({ onlyNewlyAggroed: true });
+      }
+      return newlyAggroed.length > 0;
+    }
+
+    triggerCombatVictory() {
+      if (this.combatVictoryAchieved) return false;
+      this.combatVictoryAchieved = true;
+
+      void getGameBackgroundMusicService().stop();
+      const victory = getGameVictoryService();
+      victory.prime();
+      void victory.playVictory();
+
+      const playerEntity = this.stats?.getEntity('player') || null;
+      const report = this.sessionTelemetry?.buildReport({
+        playerEntity,
+        sentinelTotal: this.getSentinelRecords().length,
+      }) || null;
+
+      this.events.emit('combat-victory', {
+        type: 'combat-victory',
+        text: 'The flank sentinels are down. Victory!',
+        report,
+      });
+      return true;
+    }
+
+    defeatSentinel(sentinelId) {
+      const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
+      if (!record || record.defeated) return false;
+      record.defeated = true;
+
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (effect) {
+        if (effect.fireSprite) {
+          effect.fireSprite.setVisible(false);
+          effect.fireSprite.anims?.stop?.();
+        }
+        if (effect.bobContainer) {
+          this.tweens.add({
+            targets: effect.bobContainer,
+            alpha: 0.2,
+            y: effect.bobContainer.y + 18,
+            duration: 700,
+            ease: 'Quad.easeIn',
+          });
+        }
+        if (effect.shadow) {
+          this.tweens.add({
+            targets: effect.shadow,
+            alpha: 0,
+            duration: 500,
+          });
+        }
+        if (effect.ambient) effect.ambient.setVisible(false);
+        if (effect.ring1) effect.ring1.setVisible(false);
+        if (effect.ring2) effect.ring2.setVisible(false);
+      }
+
+      this.rebuildBlockedTiles();
+      this.refreshMovementHighlights();
+      if (this.selectedCombatTargetId === sentinelId) {
+        const remaining = this.getTargetableCombatantsOrdered().map((entry) => entry.id);
+        this.selectedCombatTargetId = cycleCombatTargetId(null, remaining);
+        this.refreshCombatTargetVisual();
+      }
+      this.emitSceneContextState();
+      this.emitCombatTargetSelected();
+      this.sessionTelemetry?.recordSentinelDefeated();
+      this.events.emit('sentinel-defeated', {
+        type: 'sentinel-defeated',
+        id: sentinelId,
+        label: record.label,
+        shortLabel: record.shortLabel,
+        tx: record.tx,
+        ty: record.ty,
+      });
+
+      if (areAllSentinelsDefeated(this.getSentinelRecords())) {
+        this.triggerCombatVictory();
+      }
+      return true;
+    }
+
+    buildSentinelTargets() {
+      return buildSentinelSceneTargets({
+        sentinels: this.getSentinelRecords(),
+        stats: this.stats,
+      });
+    }
+
+    buildSceneTargetRegistry() {
+      return {
+        sceneId: 'combat-arena',
+        casterId: 'player',
+        tick: this.turnTick ?? 0,
+        selectedCombatTargetId: this.selectedCombatTargetId ?? null,
+        targets: [
+          ...this.buildSentinelTargets(),
+          {
+            id: 'obelisk',
+            label: 'Central Obelisk',
+            kind: 'structure',
+            weaveObjects: ['OBELISK', 'STONE', 'FIRE', 'SPIRIT'],
+            tx: 4,
+            ty: 4,
+            inRange: this.isPlayerAdjacentToTile(4, 4),
+            reachable: this.obeliskState === 'active',
+            interactionPriority: 450,
+            metadata: {
+              obeliskState: this.obeliskState,
+              phase: this.obeliskFx?.phase,
+              intensity: this.obeliskFx?.intensity,
+            },
+          },
+          {
+            id: 'stormheart-orb',
+            label: 'Stormheart Orb',
+            kind: 'loot',
+            weaveObjects: ['SPIRIT', 'SOUL', 'FIRE'],
+            tx: 4,
+            ty: 4,
+            inRange: this.isPlayerAdjacentToTile(4, 4),
+            reachable: this.obeliskState === 'lowered' && !this.hasStormheartOrb(),
+            interactionPriority: 250,
+          },
+          ...this.buildGatherableTargets(),
+        ],
+      };
+    }
+
+    emitSceneContextState() {
+      const snapshot = this.buildSceneTargetRegistry();
+      window.dispatchEvent(new CustomEvent('scene-context-state', { detail: snapshot }));
+      return snapshot;
+    }
+
+    isCombatantAlive(targetId) {
+      const entity = this.stats?.getEntity(targetId);
+      if (!entity) return true;
+      return entity.hp === null || entity.hp > 0;
+    }
+
+    getTargetableCombatantsOrdered() {
+      const playerTx = this.playerGridPos?.tx ?? this.stats?.getEntity('player')?.position?.tx ?? 0;
+      const playerTy = this.playerGridPos?.ty ?? this.stats?.getEntity('player')?.position?.ty ?? 0;
+      return listTargetableCombatants(this.buildSceneTargetRegistry(), {
+        playerTx,
+        playerTy,
+        isAlive: (targetId) => this.isCombatantAlive(targetId),
+      });
+    }
+
+    emitCombatTargetSelected(targetId = this.selectedCombatTargetId) {
+      const sceneContext = this.buildSceneTargetRegistry();
+      const target = sceneContext.targets.find((entry) => entry.id === targetId);
+      window.dispatchEvent(new CustomEvent('combat-target-selected', {
+        detail: {
+          targetId: targetId || null,
+          label: target?.label || null,
+          shortLabel: target?.metadata?.shortLabel || null,
+          inRange: target?.inRange ?? false,
+        },
+      }));
+    }
+
+    refreshCombatTargetVisual() {
+      for (const effect of this.torchEffects || []) {
+        if (!effect.sentinelId || !effect.bobContainer) continue;
+        const selected = effect.sentinelId === this.selectedCombatTargetId;
+        if (!effect.targetRing) {
+          const ring = this.add.graphics();
+          ring.lineStyle(2.5, 0xff4466, 0.95);
+          ring.strokeEllipse(0, -20, 54, 24);
+          ring.setBlendMode(phaserRuntime.BlendModes.ADD);
+          effect.bobContainer.add(ring);
+          effect.targetRing = ring;
+        }
+        effect.targetRing.setVisible(selected);
+      }
+    }
+
+    selectCombatTarget(targetId) {
+      if (!targetId) return false;
+      const sceneContext = this.buildSceneTargetRegistry();
+      const target = sceneContext.targets.find((entry) => entry.id === targetId);
+      if (target?.kind !== 'combatant' || !this.isCombatantAlive(targetId)) return false;
+
+      this.selectedCombatTargetId = targetId;
+      this.refreshCombatTargetVisual();
+      this.emitSceneContextState();
+      this.emitCombatTargetSelected(targetId);
+      return true;
+    }
+
+    cycleCombatTarget() {
+      const ordered = this.getTargetableCombatantsOrdered();
+      if (!ordered.length) return null;
+      const nextId = cycleCombatTargetId(
+        this.selectedCombatTargetId,
+        ordered.map((entry) => entry.id),
+      );
+      return this.selectCombatTarget(nextId) ? nextId : null;
+    }
+
+    enrichObeliskAction(action) {
+      if (!action?.isObelisk) return action;
+      const next = {
+        ...action,
+        obeliskState: this.obeliskState || 'active',
+      };
+      if (this.obeliskState === 'active' && this.obeliskFx?.phase === 'charge' && this.obeliskFx.intensity >= 0.65) {
+        next.obeliskClue = 'The runes are swollen with unread discharge.';
+      }
+      if (this.obeliskState === 'lowered') {
+        next.obeliskClue = 'The obelisk has sunk into the plateau. Something gleams where the crown was.';
+        next.hasStormheartOrb = !this.hasStormheartOrb();
+      }
+      if (this.obeliskState === 'looted') {
+        next.obeliskClue = 'The obelisk is quiet. The crown socket is empty.';
+      }
+      return next;
+    }
+
+    hasStormheartOrb() {
+      return hasItem(STORMHEART_ORB_ITEM_ID);
+    }
+
+    resolveObeliskCast(detail) {
+      if (!this.obeliskFx || this.obeliskState !== 'active') return;
+      const verdict = resolveObeliskPuzzle(
+        {
+          state: this.obeliskState,
+          phase: this.obeliskFx.phase,
+          intensity: this.obeliskFx.intensity,
+        },
+        {
+          verse: detail.text || detail.verse || '',
+          weave: detail.weave || '',
+          bridge: detail.bridge || detail.combatScore?.bridge || null,
+          combatScore: detail,
+          playerAdjacent: this.isPlayerAdjacentToObelisk(),
+        },
+      );
+      if (verdict.kind === 'overload') {
+        this.beginObeliskDescent('overload', verdict);
+      } else if (verdict.kind === 'siphon') {
+        this.beginObeliskDescent('siphon', verdict);
+      } else if (verdict.kind === 'none') {
+        if (verdict.displayText) this.showPlayerCastHint(verdict.displayText);
+        this.events.emit('obelisk-reject', {
+          type: 'obelisk-reject',
+          verdict,
+          text: verdict.displayText,
+          hint: verdict.hint,
+          reason: verdict.reason,
+        });
+      }
+    }
+
+    getObeliskSinkDepth() {
+      const fx = this.obeliskFx;
+      if (!fx) return 280;
+      const capHeight = fx.capHeight || 60;
+      return fx.shaftHeight + capHeight + fx.bRadiusY + 36;
+    }
+
+    hideObeliskTower() {
+      const fx = this.obeliskFx;
+      if (fx) {
+        fx.phase = 'lowered';
+        fx.intensity = 0;
+        fx.chargeGfx?.clear();
+        fx.boltGfx?.clear();
+        fx.chargeGfx?.setVisible(false);
+        fx.boltGfx?.setVisible(false);
+      }
+      if (this.obeliskBody) {
+        this.obeliskBody.setVisible(false);
+        this.obeliskBody.setAlpha(0);
+      }
+    }
+
+    restoreActiveObeliskTower() {
+      if (this.obeliskState !== 'active') return;
+      const fx = this.obeliskFx;
+      if (this.obeliskBody) {
+        this.obeliskBody.setPosition(0, 0);
+        this.obeliskBody.setAlpha(1);
+        this.obeliskBody.setVisible(true);
+        this.obeliskBody.setDepth(ARENA_DEPTH.OBELISK_BODY);
+      }
+      if (fx) {
+        fx.phase = 'charge';
+        fx.intensity = 0;
+        fx.chargeGfx?.setPosition(0, 0);
+        fx.boltGfx?.setPosition(0, 0);
+        fx.chargeGfx?.setVisible(true);
+        fx.boltGfx?.setVisible(true);
+        fx.chargeGfx?.setDepth(ARENA_DEPTH.OBELISK_CHARGE);
+        fx.boltGfx?.setDepth(ARENA_DEPTH.OBELISK_BOLT);
+        fx.chargeGfx?.clear();
+        fx.boltGfx?.clear();
+      }
+      this.centerTileCap?.destroy();
+      this.centerTileCap = null;
+      this.obeliskCompartmentPit?.destroy();
+      this.obeliskCompartmentPit = null;
+    }
+
+    drawIsoTileTop(graphics, pt, tw, th, zOffset, palette) {
+      const py = pt.y - zOffset;
+      const p1 = { x: pt.x, y: py - th / 2 };
+      const p2 = { x: pt.x + tw / 2, y: py };
+      const p3 = { x: pt.x, y: py + th / 2 };
+      const p4 = { x: pt.x - tw / 2, y: py };
+      const topColor = this.getLambertColor(0, 0, 1, palette);
+
+      graphics.fillStyle(topColor, 1);
+      graphics.beginPath();
+      graphics.moveTo(p1.x, p1.y);
+      graphics.lineTo(p2.x, p2.y);
+      graphics.lineTo(p3.x, p3.y);
+      graphics.lineTo(p4.x, p4.y);
+      graphics.closePath();
+      graphics.fillPath();
+
+      graphics.lineStyle(1.5, palette.lit, 0.6);
+      graphics.strokePath();
+    }
+
+    drawIsoTileCap(graphics, pt, tw, th, zOffset, palette, depth = 8) {
+      const py = pt.y - zOffset;
+      const p1 = { x: pt.x, y: py - th / 2 };
+      const p2 = { x: pt.x + tw / 2, y: py };
+      const p3 = { x: pt.x, y: py + th / 2 };
+      const p4 = { x: pt.x - tw / 2, y: py };
+
+      const topColor = this.getLambertColor(0, 0, 1, palette);
+      const leftFaceColor = this.getLambertColor(-1, 1, 0, palette);
+      const rightFaceColor = this.getLambertColor(1, 1, 0, palette);
+
+      graphics.fillStyle(leftFaceColor, 1);
+      graphics.beginPath();
+      graphics.moveTo(p4.x, p4.y);
+      graphics.lineTo(p3.x, p3.y);
+      graphics.lineTo(p3.x, p3.y + depth);
+      graphics.lineTo(p4.x, p4.y + depth);
+      graphics.closePath();
+      graphics.fillPath();
+
+      graphics.fillStyle(rightFaceColor, 1);
+      graphics.beginPath();
+      graphics.moveTo(p3.x, p3.y);
+      graphics.lineTo(p2.x, p2.y);
+      graphics.lineTo(p2.x, p2.y + depth);
+      graphics.lineTo(p3.x, p3.y + depth);
+      graphics.closePath();
+      graphics.fillPath();
+
+      graphics.fillStyle(topColor, 1);
+      graphics.beginPath();
+      graphics.moveTo(p1.x, p1.y);
+      graphics.lineTo(p2.x, p2.y);
+      graphics.lineTo(p3.x, p3.y);
+      graphics.lineTo(p4.x, p4.y);
+      graphics.closePath();
+      graphics.fillPath();
+
+      graphics.lineStyle(1.5, palette.lit, 0.6);
+      graphics.strokePath();
+    }
+
+    revealCenterCompartmentTile() {
+      if (this.centerTileCap || !this.combatGridMetrics) return;
+      const { tw, th, plateauZ, toIso } = this.combatGridMetrics;
+      const pt = toIso(4, 4);
+      const cap = this.add.graphics().setDepth(ARENA_DEPTH.CENTER_TILE_CAP);
+      // Flush top face only — reads as a normal checker cell under the loot orb.
+      this.drawIsoTileTop(cap, pt, tw, th, plateauZ, PALETTES.arcane_slate);
+      this.centerTileCap = cap;
+    }
+
+    showObeliskCompartmentPit() {
+      const fx = this.obeliskFx;
+      const metrics = this.combatGridMetrics;
+      if (!fx || !metrics) return null;
+      const pit = this.add.graphics().setDepth(ARENA_DEPTH.COMPARTMENT_PIT);
+      const inset = 0.42;
+      const cx = fx.cx;
+      const cy = fx.cy;
+      const rx = fx.bRadiusX * inset;
+      const ry = fx.bRadiusY * inset;
+      const depthTint = PALETTES.obsidian.shadow;
+      pit.fillStyle(depthTint, 0.92);
+      pit.beginPath();
+      pit.moveTo(cx, cy - ry);
+      pit.lineTo(cx + rx, cy);
+      pit.lineTo(cx, cy + ry);
+      pit.lineTo(cx - rx, cy);
+      pit.closePath();
+      pit.fillPath();
+      pit.lineStyle(2, PALETTES.royal_purple.lit, 0.55);
+      pit.strokePath();
+      pit.setAlpha(0);
+      this.obeliskCompartmentPit = pit;
+      return pit;
+    }
+
+    finalizeObeliskDescent(path, verdict) {
+      this.obeliskState = 'lowered';
+      const pit = this.obeliskCompartmentPit;
+      if (pit) {
+        this.tweens.add({
+          targets: pit,
+          alpha: 0,
+          duration: 280,
+          onComplete: () => {
+            pit.destroy();
+            if (this.obeliskCompartmentPit === pit) this.obeliskCompartmentPit = null;
+          },
+        });
+      }
+      this.hideObeliskTower();
+      this.revealCenterCompartmentTile();
+      if (this.bloomFx) this.bloomFx.strength = this.baseBloom;
+      this.spawnStormheartOrb(path);
+      grantScholomanceXpForAction(
+        path === 'overload'
+          ? SCHOLOMANCE_XP_ACTIONS.OBELISK_DISCOVERY_OVERLOAD
+          : SCHOLOMANCE_XP_ACTIONS.OBELISK_DISCOVERY_SIPHON,
+      );
+      this.events.emit('obelisk-discovery', {
+        type: 'obelisk-discovery',
+        path,
+        verdict,
+        xpAmount: OBELISK_DISCOVERY_FLASH_XP,
+        text: path === 'overload'
+          ? 'The obelisk could not contain the verse.'
+          : "You drank the tower's breath.",
+      });
+      this.emitSceneContextState();
+    }
+
+    beginObeliskDescent(path, verdict) {
+      if (this.obeliskState !== 'active') return;
+      this.obeliskState = path === 'overload' ? 'meltdown' : 'siphoned';
+      if (path === 'siphon' && verdict?.manaGrant && this.stats) {
+        this.stats.grantMovementPoints('player', verdict.manaGrant);
+        this.emitCombatStats();
+      }
+      const fx = this.obeliskFx;
+      if (fx) {
+        fx.boltGfx?.clear();
+        if (path === 'overload') {
+          this.drawTeslaDischarge(1);
+        } else {
+          this.drawObeliskCharge(0.25);
+        }
+      }
+      if (this.bloomFx) {
+        this.bloomFx.strength = this.baseBloom + (path === 'overload' ? 1.5 : 0.5);
+      }
+
+      const sinkDepth = this.getObeliskSinkDepth();
+      const duration = path === 'overload' ? 1400 : 2000;
+      const pit = this.showObeliskCompartmentPit();
+      const targets = [this.obeliskBody, fx?.chargeGfx, fx?.boltGfx].filter(Boolean);
+
+      if (pit) {
+        this.tweens.add({
+          targets: pit,
+          alpha: 1,
+          duration: duration * 0.45,
+          ease: 'Sine.easeOut',
+        });
+      }
+
+      this.tweens.add({
+        targets,
+        y: `+=${sinkDepth}`,
+        duration,
+        ease: 'Cubic.easeIn',
+        onComplete: () => this.finalizeObeliskDescent(path, verdict),
+      });
+
+      if (this.obeliskBody) {
+        this.tweens.add({
+          targets: this.obeliskBody,
+          alpha: 0,
+          duration: duration * 0.35,
+          delay: duration * 0.55,
+          ease: 'Quad.easeIn',
+        });
+      }
+    }
+
+    spawnStormheartOrb(path) {
+      if (this.stormheartOrb || this.hasStormheartOrb()) {
+        if (this.hasStormheartOrb()) this.obeliskState = 'looted';
+        return;
+      }
+      const tile = this.getIsoTarget?.(4, 4);
+      const stormheartItem = ITEM_DATABASE[STORMHEART_ORB_ITEM_ID];
+      const textureKey = stormheartItem?.assetId || 'StormheartOrb';
+      const ORB_GRIP_X = 19 / 64;
+      const ORB_GRIP_Y = 55 / 128;
+      const orbY = tile ? tile.y - 20 : ((this.obeliskFx?.cy || 0) - 20);
+      const orb = this.add.sprite(tile?.x || 0, orbY, textureKey);
+      orb.setOrigin(ORB_GRIP_X, ORB_GRIP_Y);
+      orb.setScale(2.8);
+      orb.setDepth(ARENA_DEPTH.STORMHEART_ORB);
+      orb.setBlendMode(phaserRuntime.BlendModes.ADD);
+      orb.setTint(path === 'siphon' ? 0xbbddff : 0xddbbff);
+      orb.setAlpha(0.9);
+      orb.setInteractive(new phaserRuntime.Geom.Circle(0, 0, 22), phaserRuntime.Geom.Circle.Contains);
+      orb.interactData = { tx: 4, ty: 4, isGrid: true, isObelisk: true, isStormheartOrb: true };
+      orb.inspectData = orb.interactData;
+      orb.on('pointerover', () => this.input.setDefaultCursor('pointer'));
+      orb.on('pointerout', () => this.input.setDefaultCursor('default'));
+      this.stormheartOrb = orb;
+      this.tweens.add({
+        targets: orb,
+        y: orb.y - 8,
+        duration: 1300,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      this.tweens.add({
+        targets: orb,
+        alpha: 1,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
+    tryLootStormheartOrb() {
+      if (this.obeliskState !== 'lowered') return false;
+      if (this.hasStormheartOrb()) {
+        this.obeliskState = 'looted';
+        this.events.emit('obelisk-loot', {
+          type: 'obelisk-loot',
+          duplicate: true,
+          itemId: STORMHEART_ORB_ITEM_ID,
+          text: 'The crown socket is empty.',
+        });
+        return true;
+      }
+      grantItem(STORMHEART_ORB_ITEM_ID);
+      grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.OBELISK_LOOT, { duplicate: false });
+      this.obeliskState = 'looted';
+      if (this.stormheartOrb) {
+        this.tweens.add({
+          targets: this.stormheartOrb,
+          alpha: 0,
+          scaleX: 1.4,
+          scaleY: 1.4,
+          duration: 350,
+          onComplete: () => {
+            this.stormheartOrb?.destroy();
+            this.stormheartOrb = null;
+          },
+        });
+      }
+      this.events.emit('obelisk-loot', {
+        type: 'obelisk-loot',
+        itemId: STORMHEART_ORB_ITEM_ID,
+        itemName: 'Stormheart Orb',
+        text: 'Stormheart Orb acquired.',
+      });
+      return true;
     }
 
     handleEquipmentChange = (event) => {
       const equipment = event.detail || {};
+      this._lastEquipment = equipment;
       if (!this.playerArmorLayers) return;
 
       // Armor layers (frame-locked to the body).
@@ -626,103 +1659,225 @@ export default function createCombatArenaScene(phaserRuntime) {
         const payload = this.handPayloads && this.handPayloads[slot];
         if (!payload) continue;
         const item = hands[slot];
+        const presentation = slot === 'offHand' ? getHoldPresentation(item) : null;
         const frame0Id = item ? `${item.assetId}-f0` : null;
         if (frame0Id && this.textures.exists(frame0Id)) {
           payload.setTexture(frame0Id);
           payload.setVisible(true);
+          if (presentation?.idleAnim) {
+            this.ensureOrbIdleAnimation(item.assetId);
+            payload.play(`${item.assetId}-idle`);
+          } else if (payload.anims?.isPlaying) {
+            payload.stop();
+          }
         } else {
           payload.setVisible(false);
+          if (payload.anims?.isPlaying) payload.stop();
         }
+      }
+
+      this.applyArmPose('carry', { equipment });
+
+        this.syncEquippedGatherTools(equipment);
+
+        if (this.stats) {
+        const modifiers = Object.values(equipment).reduce((acc, item) => {
+          const itemModifiers = item?.combatModifiers;
+          if (!itemModifiers) return acc;
+          return {
+            movementPoints: (acc.movementPoints || 0) + (Number(itemModifiers.movementPoints) || 0),
+            attackPoints: (acc.attackPoints || 0) + (Number(itemModifiers.attackPoints) || 0),
+            attackRange: (acc.attackRange || 0) + (Number(itemModifiers.attackRange) || 0),
+          };
+        }, {});
+        this.stats.applyEquipmentModifiers('player', modifiers);
+        this.emitCombatStats();
       }
     };
     
-    applyArmPose = (poseName) => {
+    resolveCarryPoseName = (equipment = this._lastEquipment) => {
+      const offItem = equipment?.offhand;
+      return getHoldPresentation(offItem)?.pose === 'orbHold' ? 'orbHold' : 'carry';
+    };
+
+    ensureOrbIdleAnimation = (assetId) => {
+      const key = `${assetId}-idle`;
+      if (this.anims.exists(key)) return key;
+      const frames = [0, 1, 2, 3, 2, 1]
+        .filter((index) => this.textures.exists(`${assetId}-f${index}`))
+        .map((index) => ({ key: `${assetId}-f${index}` }));
+      if (!frames.length) return null;
+      this.anims.create({ key, frames, frameRate: 5, repeat: -1 });
+      return key;
+    };
+
+    stopOrbHoldFloat = () => {
+      if (this._orbHoldFloatTween) {
+        this._orbHoldFloatTween.stop();
+        this._orbHoldFloatTween = null;
+      }
+    };
+
+    startOrbHoldFloat = (payload) => {
+      this.stopOrbHoldFloat();
+      if (!payload) return;
+      this._orbHoldFloatTween = this.tweens.add({
+        targets: payload,
+        y: payload.y - 2,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    };
+
+    applyArmPose = (poseName, options = {}) => {
       if (!this.armSegments || !this._rigCanvas) return;
-      const pose = getPose(poseName);
-      const { OX, OY } = this._rigCanvas;
+      const equipment = options.equipment || this._lastEquipment || {};
+      const effectivePoseName = poseName === 'carry' ? this.resolveCarryPoseName(equipment) : poseName;
+      const pose = getPose(effectivePoseName);
+      const offPresentation = getHoldPresentation(equipment?.offhand);
+      const { OX, OY, CANVAS_W, CANVAS_H } = this._rigCanvas;
+      this.stopOrbHoldFloat();
+
       for (const side of ['right', 'left']) {
         const arm = ARM_RIG[side];
         const solved = solveArm(arm, pose[side]);
         solved.forEach((r, i) => {
-          const sprite = this.armSegments[arm.segments[i].spriteKey];
+          const seg = arm.segments[i];
+          const spriteKey = side === 'left' && offPresentation && seg.palmSpriteKey && effectivePoseName === 'orbHold'
+            ? offPresentation.handSpriteKey
+            : seg.spriteKey;
+          const sprite = this.armSegments[seg.spriteKey];
           if (!sprite) return;
+          if (sprite.texture.key !== spriteKey && this.textures.exists(spriteKey)) {
+            sprite.setTexture(spriteKey);
+          } else if (side === 'left' && !offPresentation && seg.spriteKey && sprite.texture.key !== seg.spriteKey) {
+            sprite.setTexture(seg.spriteKey);
+          }
           sprite.setPosition(r.jointX - OX, r.jointY - OY);
           sprite.setRotation(r.angleRad);
         });
-        const grip = gripWorld(arm, pose[side]);
+
+        const handSeg = arm.segments.find((s) => s.gripPoint);
         const payload = side === 'right' ? this.handPayloads.mainHand : this.handPayloads.offHand;
-        if (payload) {
-          payload.setPosition(grip.x - OX, grip.y - OY);
-          payload.setRotation(grip.angleRad);
+        if (!payload || !handSeg) continue;
+
+        const offItem = equipment?.offhand;
+        const usePalmCradle = side === 'left' && offPresentation && equipSlotOf(offItem) === 'offHand';
+        if (usePalmCradle) {
+          const anchor = anchorWorld(arm, pose[side], offPresentation.cradleAnchorKey);
+          const holdAnchor = offPresentation.holdAnchor;
+          payload.setOrigin(holdAnchor.x / CANVAS_W, holdAnchor.y / CANVAS_H);
+          payload.setPosition(anchor.x - OX, anchor.y - OY);
+          payload.setRotation(anchor.angleRad);
+          this.startOrbHoldFloat(payload);
+          continue;
         }
+
+        const grip = gripWorld(arm, pose[side]);
+        payload.setOrigin(handSeg.gripPoint.x / CANVAS_W, handSeg.gripPoint.y / CANVAS_H);
+        payload.setPosition(grip.x - OX, grip.y - OY);
+        payload.setRotation(grip.angleRad);
       }
     };
 
     createSwingTextures = () => {
-      if (this.textures.exists('swing-streak')) return;
-      // A white crescent: outer arc minus inner arc, so it reads as a fast blade trail.
+      if (this.textures.exists('slash-streak')) return;
+      // A horizontal tapered lens (pointed at both ends, thick in the middle) — a
+      // motion-blur streak that glides across as a level slash, NOT a rotating
+      // crescent. 200 wide x 40 tall, points meeting at the left/right tips.
       const g = this.add.graphics();
       g.fillStyle(0xffffff, 1);
-      g.beginPath();
-      g.arc(60, 60, 58, Phaser.Math.DegToRad(-70), Phaser.Math.DegToRad(70), false);
-      g.arc(60, 60, 30, Phaser.Math.DegToRad(70), Phaser.Math.DegToRad(-70), true);
-      g.closePath();
-      g.fillPath();
-      g.generateTexture('swing-streak', 120, 120);
+      g.fillPoints([
+        { x: 0, y: 20 }, { x: 55, y: 3 }, { x: 145, y: 3 },
+        { x: 200, y: 20 }, { x: 145, y: 37 }, { x: 55, y: 37 },
+      ], true);
+      g.generateTexture('slash-streak', 200, 40);
       g.destroy();
     };
 
-    performSwing = (element) => {
-      const SWING_BPM = 120;
-      const SWING_DEG_PER_BEAT = 360;   // 250ms for a 180° arc
-      const ARC = Math.PI;              // 180°
-      const START_ANGLE = Phaser.Math.DegToRad(-135); // overhead
-      const durationMs = getTimeForRotation(ARC, SWING_BPM, SWING_DEG_PER_BEAT);
-      const streakColor = element ? element.streakColor : 0xffffff;
-
-      // Optional blade: rotate the equipped weapon layer around the hand if one is shown.
-      const weapon = this.playerArmorLayers && this.playerArmorLayers.weapon;
-      const bladeActive = weapon && weapon.visible;
-      const restoreRotation = bladeActive ? weapon.rotation : 0;
-
-      // Streak sprite riding the arc in front of the player.
-      const px = this.playerContainer ? this.playerContainer.x : 0;
-      const py = this.playerContainer ? this.playerContainer.y : 0;
-      const streak = this.add.sprite(px, py - 40, 'swing-streak');
-      streak.setDepth(30);
-      streak.setTint(streakColor);
-      streak.setBlendMode(Phaser.BlendModes.ADD);
-      streak.setAlpha(0.9);
-
-      if (element && this.add.particles && this.textures.exists('doom-fire')) {
-        const burst = this.add.particles(px, py - 40, 'doom-fire', {
-          speed: { min: 40, max: 120 }, lifespan: 350, quantity: 12,
-          scale: { start: 0.5, end: 0 }, alpha: { start: 0.9, end: 0 },
-          blendMode: 'ADD', tint: element.particleTint,
-        });
-        this.time.delayedCall(120, () => burst && burst.stop());
-        this.time.delayedCall(600, () => burst && burst.destroy());
-      }
-
-      const proxy = { v: 0 };
-      const finish = () => {
-        if (bladeActive) weapon.rotation = restoreRotation;
-      };
-      this.tweens.add({
-        targets: proxy, v: 1, duration: durationMs, ease: 'Sine.easeIn',
-        onUpdate: () => {
-          const elapsed = proxy.v * durationMs;
-          const swept = Math.min(ARC, getRotationAtTime(elapsed, SWING_BPM, SWING_DEG_PER_BEAT));
-          const angle = START_ANGLE + swept;
-          if (bladeActive) weapon.rotation = angle;
-          streak.rotation = angle;
-        },
-        onComplete: finish,
+    // Apply explicit right-arm joint angles for one animation frame (null = rest).
+    // The FK sets each segment + the sword's POSITION (the hand translates the
+    // sword across). `swordRotRad`, when provided, orients the blade independently
+    // of the hand's spin so the BLADE leads the slash instead of pivoting like a
+    // wrench; without it the sword just follows the hand (rest/carry).
+    _overrideRightArm = (anglesDeg, swordRotRad = null) => {
+      if (!this.armSegments || !this._rigCanvas) return;
+      const { OX, OY, CANVAS_W, CANVAS_H } = this._rigCanvas;
+      const arm = ARM_RIG.right;
+      const use = anglesDeg || getPose('carry').right;
+      const solved = solveArm(arm, use);
+      solved.forEach((r, i) => {
+        const s = this.armSegments[arm.segments[i].spriteKey];
+        if (!s) return;
+        s.setPosition(r.jointX - OX, r.jointY - OY);
+        s.setRotation(r.angleRad);
       });
-      // Safety: guarantee the weapon is restored even if the tween is interrupted.
-      this.time.delayedCall(durationMs + 60, finish);
-      // Streak fades and lifts, then destroys.
-      this.tweens.add({ targets: streak, alpha: 0, y: py - 70, duration: durationMs + 80, ease: 'Quad.easeOut', onComplete: () => streak.destroy() });
+      const handSeg = arm.segments.find((s) => s.gripPoint);
+      const grip = gripWorld(arm, use);
+      const payload = this.handPayloads && this.handPayloads.mainHand;
+      if (payload && handSeg) {
+        payload.setOrigin(handSeg.gripPoint.x / CANVAS_W, handSeg.gripPoint.y / CANVAS_H);
+        payload.setPosition(grip.x - OX, grip.y - OY);
+        payload.setRotation(swordRotRad != null ? swordRotRad : grip.angleRad);
+      }
+    };
+
+    performSwing = (_element) => {
+      this.emitSwordSliceSfx();
+
+      const SWING_BPM = 120;
+      const SWING_DEG_PER_BEAT = 360;   // gear-glide: 250ms for a 180° arc
+      const ARC = Math.PI;
+      const strikeMs = getTimeForRotation(ARC, SWING_BPM, SWING_DEG_PER_BEAT);
+      const WINDUP_MS = 150;
+      const RECOVER_MS = 240;
+
+      const rest = getPose('carry').right;
+      const windup = getPose('swingWindup').right;
+      const strike = getPose('swing').right;
+      const lerp = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+      const lerp1 = (a, b, t) => a + (b - a) * t;
+      const D2R = phaserRuntime.Math.DegToRad;
+      // Blade orientation (deg) so the BLADE edge leads a right->left slash. These
+      // are the opposite sense to the hand's spin (which pointed the handle first).
+      // Flip the signs if the blade still trails.
+      const BLADE_WIND = 50;    // cocked, blade raised (blade leads, not handle)
+      const BLADE_STRIKE = 110; // followed-through, blade sweeps across leading-edge first
+
+      const finish = () => this._overrideRightArm(null);
+
+      // Phase 1 — windup: cock the arm out and raise the blade.
+      const p1 = { t: 0 };
+      this.tweens.add({
+        targets: p1, t: 1, duration: WINDUP_MS, ease: 'Quad.easeOut',
+        onUpdate: () => this._overrideRightArm(lerp(rest, windup, p1.t), D2R(lerp1(0, BLADE_WIND, p1.t))),
+        onComplete: () => {
+          // Phase 2 — strike: gear-glide-driven lateral sweep; the blade leads.
+          // No traveling streak here — the "slice" reads at the impact zone
+          // (showHitFeedback), so the swing itself stays clean.
+          const p2 = { v: 0 };
+          this.tweens.add({
+            targets: p2, v: 1, duration: strikeMs, ease: 'Quad.easeIn',
+            onUpdate: () => {
+              const phase = Math.min(ARC, getRotationAtTime(p2.v * strikeMs, SWING_BPM, SWING_DEG_PER_BEAT)) / ARC;
+              this._overrideRightArm(lerp(windup, strike, phase), D2R(lerp1(BLADE_WIND, BLADE_STRIKE, phase)));
+            },
+            onComplete: () => {
+              // Phase 3 — recover: settle arm + blade back to carry.
+              const p3 = { t: 0 };
+              this.tweens.add({
+                targets: p3, t: 1, duration: RECOVER_MS, ease: 'Sine.easeInOut',
+                onUpdate: () => this._overrideRightArm(lerp(strike, rest, p3.t), D2R(lerp1(BLADE_STRIKE, 0, p3.t))),
+                onComplete: finish,
+              });
+            },
+          });
+        },
+      });
+      // Safety: guarantee the arm returns to rest even if a tween is interrupted.
+      this.time.delayedCall(WINDUP_MS + strikeMs + RECOVER_MS + 150, finish);
     };
 
     floatingNumber = (x, y, text, color) => {
@@ -733,21 +1888,117 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.tweens.add({ targets: label, y: y - 48, alpha: 0, duration: 900, ease: 'Quad.easeOut', onComplete: () => label.destroy() });
     };
 
-    showHitFeedback = (targetId, { color, amount, prefix = '-' }) => {
-      const container = targetId === 'dummy' ? this.dummyContainer : null;
-      const sprite = targetId === 'dummy' ? this.dummyImg : null;
-      if (sprite) {
-        const base = 0x88aacc;
-        sprite.setTint(color);
-        this.tweens.add({
-          targets: sprite, alpha: 0.6, yoyo: true, duration: 90, repeat: 1,
-          onComplete: () => sprite.setTint(base),
+    // A compact arcane cut at the point of impact — two short crossed slashes that
+    // draw fast and fade, plus a tight spark burst. Contained to the target, NOT a
+    // wide wind-sweep.
+    impactSlash = (x, y, color) => {
+      for (const ang of [-24, 8]) {
+        const cut = this.add.sprite(x, y, 'slash-streak');
+        cut.setDepth(62).setBlendMode(phaserRuntime.BlendModes.ADD).setTint(color)
+          .setRotation(phaserRuntime.Math.DegToRad(ang)).setScale(0.04, 0.09).setAlpha(1);
+        this.tweens.add({ targets: cut, scaleX: 0.3, duration: 80, ease: 'Quad.easeOut' });
+        this.tweens.add({ targets: cut, alpha: 0, delay: 70, duration: 150, onComplete: () => cut.destroy() });
+      }
+      if (this.add.particles && this.textures.exists('doom-fire')) {
+        const spark = this.add.particles(x, y, 'doom-fire', {
+          speed: { min: 40, max: 130 }, lifespan: 220, quantity: 9, angle: { min: 190, max: 350 },
+          scale: { start: 0.24, end: 0 }, alpha: { start: 0.9, end: 0 }, blendMode: 'ADD', tint: color,
         });
+        this.time.delayedCall(80, () => spark && spark.stop());
+        this.time.delayedCall(400, () => spark && spark.destroy());
       }
-      if (container) {
-        const hex = '#' + color.toString(16).padStart(6, '0');
-        this.floatingNumber(container.x, container.y - 60, `${prefix}${amount}`, hex);
+    };
+
+    getTargetPresentation = (targetId) => {
+      if (targetId === 'player' && this.playerContainer) {
+        return {
+          container: this.playerContainer,
+          sprite: this.playerImg,
+          anchorX: this.playerContainer.x,
+          anchorY: this.playerContainer.y,
+        };
       }
+
+      if (isSentinelId(targetId)) {
+        const effect = this.getSentinelTorchEffect(targetId);
+        if (effect?.bobContainer) {
+          return {
+            container: effect.bobContainer,
+            sprite: effect.fireSprite || effect.bobContainer,
+            anchorX: effect.anchorX,
+            anchorY: effect.anchorY,
+          };
+        }
+      }
+
+      if (targetId === 'obelisk' && this.obeliskBody) {
+        return {
+          sprite: this.obeliskBody,
+          anchorX: this.obeliskBody.x,
+          anchorY: this.obeliskBody.y,
+        };
+      }
+
+      if (targetId === 'stormheart-orb' && this.stormheartOrb) {
+        return {
+          sprite: this.stormheartOrb,
+          anchorX: this.stormheartOrb.x,
+          anchorY: this.stormheartOrb.y,
+        };
+      }
+
+      if (targetId?.startsWith('gather:')) {
+        const coords = targetId.slice('gather:'.length).split(',');
+        const tx = Number(coords[0]);
+        const ty = Number(coords[1]);
+        const z = Number(coords[2]);
+        const pick = (this.latticePickCandidates || []).find((entry) => {
+          const cell = entry.cell || {};
+          const cellTx = cell.combatTx ?? cell.x;
+          const cellTy = cell.combatTy ?? cell.z;
+          return cellTx === tx && cellTy === ty && cell.z === z;
+        });
+        if (pick?.gameObject) {
+          return {
+            sprite: pick.gameObject,
+            anchorX: pick.gameObject.x,
+            anchorY: pick.gameObject.y,
+          };
+        }
+      }
+
+      return null;
+    };
+
+    showHitFeedback = (targetId, { color, amount, prefix = '-', delay = 0 }) => {
+      const presentation = this.getTargetPresentation(targetId);
+      const fire = () => {
+        if (presentation?.sprite?.setTint) {
+          const baseTint = presentation.tintBase;
+          presentation.sprite.setTint(color);
+          this.tweens.add({
+            targets: presentation.sprite,
+            alpha: 0.6,
+            yoyo: true,
+            duration: 90,
+            repeat: 1,
+            onComplete: () => {
+              if (baseTint != null) presentation.sprite.setTint(baseTint);
+              else presentation.sprite.clearTint?.();
+            },
+          });
+        }
+
+        const anchorX = presentation?.container?.x ?? presentation?.anchorX;
+        const anchorY = presentation?.container?.y ?? presentation?.anchorY;
+        if (anchorX != null && anchorY != null) {
+          this.impactSlash(anchorX, anchorY - 44, color);
+          const hex = `#${color.toString(16).padStart(6, '0')}`;
+          this.floatingNumber(anchorX, anchorY - 60, `${prefix}${amount}`, hex);
+        }
+      };
+      if (delay > 0) this.time.delayedCall(delay, fire);
+      else fire();
     };
 
     showFizzle = () => {
@@ -758,28 +2009,169 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.tweens.add({ targets: puff, y: puff.y - 30, alpha: 0, duration: 700, onComplete: () => puff.destroy() });
     };
 
+    showPlayerCastHint = (text) => {
+      if (!this.playerContainer || !text) return;
+      if (this._playerCastHint) {
+        this._playerCastHint.destroy();
+        this._playerCastHint = null;
+      }
+      const hint = this.add.text(this.playerContainer.x, this.playerContainer.y - 82, text, {
+        fontFamily: 'monospace',
+        fontSize: '13px',
+        color: '#e8c170',
+        fontStyle: 'italic',
+        stroke: '#1a1208',
+        strokeThickness: 2,
+      }).setOrigin(0.5).setDepth(62);
+      this._playerCastHint = hint;
+      this.tweens.add({
+        targets: hint,
+        y: hint.y - 28,
+        alpha: 0,
+        duration: 1100,
+        ease: 'Sine.easeOut',
+        onComplete: () => {
+          if (this._playerCastHint === hint) this._playerCastHint = null;
+          hint.destroy();
+        },
+      });
+    };
+
     emitCombatStats = () => {
       const p = this.stats?.getEntity('player');
-      const d = this.stats?.getEntity('dummy');
       if (!p) return;
+      this.emitSceneContextState();
+      if (!this.combatBattleEngaged) {
+        window.dispatchEvent(new CustomEvent('combat-stats-changed', { detail: null }));
+        this.refreshMovementHighlights();
+        return;
+      }
       window.dispatchEvent(new CustomEvent('combat-stats-changed', {
         detail: {
           movementPointsRemaining: p.movementPointsRemaining,
           movementPoints: p.movementPoints,
           attackPoints: p.attackPoints,
+          attackPointsRemaining: p.attackPointsRemaining,
           attackRange: p.attackRange,
           attackUsed: p.attackUsed,
-          dummyHp: d ? d.hp : null,
-          dummyMaxHp: d ? d.maxHp : null,
-          dummyStatuses: d && Array.isArray(d.statuses) ? d.statuses.map((s) => ({ chainId: s.chainId, turns: s.turns })) : [],
+          manaPoints: p.manaPoints,
+          manaPointsRemaining: p.manaPointsRemaining,
+          manaUsed: p.manaUsed,
+          scholomance: p.scholomance ? { ...p.scholomance } : null,
         },
       }));
+      this.refreshMovementHighlights();
     };
 
+    resolveCastTargets(options = {}) {
+      if (options.castDetail) {
+        const cast = options.castDetail;
+        this._incantation = {
+          verse: cast.text || cast.verse || '',
+          weave: cast.weave || '',
+        };
+      }
+
+      const sceneContext = options.sceneContext || this.buildSceneTargetRegistry();
+      const weave = this._incantation.weave || '';
+      let resolvedTargets = options.resolvedTargets;
+      if (!resolvedTargets) {
+        resolvedTargets = weave.trim()
+          ? resolveWeaveTargetsFromParsed(parseWeave(weave), sceneContext, weave)
+          : { primaryTargetId: null, unresolvedObjects: [], clauses: [] };
+      }
+
+      const canReachTarget = (id) => (
+        this.stats?.isInAttackRange('player', id)
+        || this.stats?.canCastSpell('player', id)
+        || this.stats?.canAttack('player', id)
+      );
+      resolvedTargets = mergeSelectedCombatTarget(
+        resolvedTargets,
+        this.selectedCombatTargetId,
+        sceneContext,
+        { canAttack: canReachTarget },
+      );
+
+      return { sceneContext, weave, resolvedTargets };
+    }
+
     performBasicAttack = async () => {
-      if (!this.stats) return;
-      const [targetId] = this.stats.inRangeTargetIds('player', ['dummy']);
-      if (!targetId) return; // No valid target in range.
+      if (!this.stats || !this.combatBattleEngaged) return;
+
+      const { sceneContext, weave, resolvedTargets: baseTargets } = this.resolveCastTargets({});
+      let resolvedTargets = baseTargets;
+
+      // Bare swing with no weave: nearest in-range combatant (tutorial scaffolding only).
+      if (!resolvedTargets.primaryTargetId && !weave.trim()) {
+        const fallbackCombatant = sceneContext.targets.find(
+          (entry) => entry.kind === 'combatant' && entry.inRange && entry.reachable !== false,
+        );
+        if (fallbackCombatant) {
+          resolvedTargets = { ...resolvedTargets, primaryTargetId: fallbackCombatant.id };
+        }
+      }
+
+      const targetId = resolvedTargets.primaryTargetId;
+
+      if (!targetId) {
+        this.showFizzle();
+        window.dispatchEvent(new CustomEvent('combat-target-miss', {
+          detail: {
+            weave,
+            unresolvedObjects: resolvedTargets.unresolvedObjects,
+            message: 'No valid target bound to the weave.',
+          },
+        }));
+        return;
+      }
+
+      const target = sceneContext.targets.find((entry) => entry.id === targetId);
+
+      if (targetId === 'obelisk') {
+        try {
+          const doc = analyzeText(this._incantation.verse || '');
+          const base = await this.scoringEngine.calculateScore(doc);
+          const scoreData = normalizeCombatScore(base, {
+            scrollText: this._incantation.verse,
+            weave,
+          }) || {};
+          this.resolveObeliskCast({
+            ...scoreData,
+            text: this._incantation.verse,
+            weave,
+            sceneContext,
+            resolvedTargets,
+          });
+        } catch (err) {
+          console.warn('[combat] obelisk cast failed.', err);
+          this.showFizzle();
+        }
+        return;
+      }
+
+      if (target?.kind === 'gatherable' && target.metadata?.targetCell) {
+        const tool = this.getPrimaryGatherTool();
+        if (tool) {
+          this.submitGatherIntent(
+            {
+              ...target.metadata.targetCell,
+              gatherable: true,
+              requiredTool: target.metadata.requiredTool,
+            },
+            tool,
+          );
+        } else {
+          this.showFizzle();
+        }
+        return;
+      }
+
+      if (target?.kind !== 'combatant' || !this.stats.canAttack('player', targetId)) {
+        this.showFizzle();
+        return;
+      }
+
       const result = this.stats.resolveAttack('player', targetId);
       if (!result) return;
 
@@ -806,38 +2198,693 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.performSwing(element);
 
       const hitColor = elemental ? element.glowColor : 0xff3300;
-      this.showHitFeedback('dummy', { color: hitColor, amount: result.damage });
+      // Sync the impact cut + glow + number to when the blade actually lands
+      // (after the windup, partway through the strike).
+      this.showHitFeedback(targetId, { color: hitColor, amount: result.damage, delay: 250 });
       if (elemental) {
-        this.stats.applyStatus('dummy', element.status);
+        this.stats.applyStatus(targetId, element.status);
       } else if (outcome.element && !outcome.success) {
         this.showFizzle(); // matched an element but the enchant failed
       }
 
-      if (result.targetDefeated && this.dummyContainer) {
-        this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400, delay: 200 });
+      grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.BASIC_ATTACK);
+      this.sessionTelemetry?.recordXpAction(SCHOLOMANCE_XP_ACTIONS.BASIC_ATTACK);
+      this.sessionTelemetry?.recordPlayerAttack({
+        damage: result.damage,
+        targetId,
+        elemental,
+      });
+      const targetEntity = this.stats.getEntity(targetId);
+      if (targetEntity && isSentinelId(targetId) && targetEntity.hp <= 0) {
+        this.defeatSentinel(targetId);
+      }
+      this.emitCombatStats();
+    };
+
+    resolveSpellCastTargetId(sceneContext, weave, resolvedTargets) {
+      let targetId = resolvedTargets?.primaryTargetId || null;
+      if (targetId) return targetId;
+
+      const objectTokens = extractParsedClauses(parseWeave(weave))
+        .map((clause) => clause.objectToken)
+        .filter(Boolean);
+
+      const candidates = (sceneContext?.targets || []).filter((entry) => (
+        entry.kind === 'combatant'
+        && entry.inRange
+        && entry.reachable !== false
+        && this.isCombatantAlive(entry.id)
+        && (
+          objectTokens.length === 0
+          || objectTokens.some((token) => entry.weaveObjects?.includes(token))
+        )
+      ));
+
+      if (this.selectedCombatTargetId) {
+        const selected = candidates.find((entry) => entry.id === this.selectedCombatTargetId);
+        if (selected) return selected.id;
+      }
+
+      return candidates[0]?.id || null;
+    }
+
+    ensureCombatBattleEngaged() {
+      if (this.combatBattleEngaged) return true;
+      return this.engageCombatBattle();
+    }
+
+    performSpellCast = async (options = {}) => {
+      if (!this.stats) {
+        if (options.castDetail) this.showFizzle();
+        return;
+      }
+
+      this.ensureCombatBattleEngaged();
+
+      const cast = options.castDetail || {};
+      const { sceneContext, weave, resolvedTargets } = this.resolveCastTargets(options);
+      const targetId = this.resolveSpellCastTargetId(sceneContext, weave, resolvedTargets);
+
+      if (!targetId) {
+        this.showFizzle();
+        window.dispatchEvent(new CustomEvent('combat-target-miss', {
+          detail: {
+            weave,
+            unresolvedObjects: resolvedTargets.unresolvedObjects,
+            message: 'No valid target bound to the weave.',
+          },
+        }));
+        return;
+      }
+
+      const target = sceneContext.targets.find((entry) => entry.id === targetId);
+      if (target?.kind !== 'combatant') {
+        this.showFizzle();
+        return;
+      }
+
+      if (cast.failureCast) {
+        this.showFizzle();
+        window.dispatchEvent(new CustomEvent('combat-spell-fizzle', {
+          detail: { reason: 'syntactic_collapse', weave },
+        }));
+        return;
+      }
+
+      if (!this.stats.canCastSpell('player', targetId)) {
+        this.showFizzle();
+        const player = this.stats.getEntity('player');
+        const reason = (player?.manaPointsRemaining ?? 0) < SPELL_CAST_MANA_COST ? 'no_mana' : 'out_of_range';
+        window.dispatchEvent(new CustomEvent('combat-spell-fizzle', {
+          detail: { reason, weave, targetId },
+        }));
+        return;
+      }
+
+      const defender = buildCombatDefenderProfile(buildBestiaryRuntimeContext({
+        enemyId: targetId,
+        target,
+        record: this.getSentinelRecords().find((entry) => entry.id === targetId) || null,
+        entity: this.stats.getEntity(targetId),
+      }));
+
+      let scoreData = cast;
+      const castLooksUnscored = !Number.isFinite(Number(cast?.totalScore)) || Number(cast.totalScore) <= 0;
+      if (castLooksUnscored) {
+        try {
+          const scored = await resolveCombatCastScore({
+            verse: this._incantation.verse,
+            weave: this._incantation.weave,
+            defender,
+            defenderSchool: defender?.school ?? target.metadata?.school ?? null,
+            scoringEngine: this.scoringEngine,
+          });
+          scoreData = scored.scoreData;
+        } catch (error) {
+          console.warn('[combat] spell cast scoring failed.', error);
+        }
+      }
+
+      scoreData = normalizeCombatScore(scoreData, {
+        scrollText: this._incantation.verse,
+        weave: this._incantation.weave,
+        defender,
+        defenderSchool: defender?.school ?? target.metadata?.school ?? null,
+      }) || scoreData;
+
+      const spellDamage = Number(scoreData.damage ?? cast.damage) || 0;
+      const result = this.stats.resolveSpellCast('player', targetId, {
+        damage: spellDamage,
+        scoreData,
+      });
+      if (!result) {
+        this.showFizzle();
+        return;
+      }
+
+      const outcome = resolveEnchant(this._incantation, scoreData, this.enchantRng);
+      const elemental = !!(outcome.element && outcome.success);
+      const element = elemental ? outcome.element : null;
+
+      this.performSwing(element);
+
+      const hitColor = elemental ? element.glowColor : 0x66ccff;
+      this.showHitFeedback(targetId, { color: hitColor, amount: result.damage, delay: 250 });
+      if (elemental) {
+        this.stats.applyStatus(targetId, element.status);
+      }
+
+      notePlayerSpellCastOnSentinels(this.getSentinelRecords(), {
+        ...cast,
+        weave,
+        syntacticalChess: scoreData?.syntacticalChess,
+      });
+
+      grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.WEAVE_CAST_LEGAL);
+      this.sessionTelemetry?.recordXpAction(SCHOLOMANCE_XP_ACTIONS.WEAVE_CAST_LEGAL);
+      this.sessionTelemetry?.recordPlayerAttack({
+        damage: result.damage,
+        targetId,
+        elemental,
+        castType: 'spell',
+      });
+
+      const targetEntity = this.stats.getEntity(targetId);
+      if (targetEntity && isSentinelId(targetId) && targetEntity.hp <= 0) {
+        this.defeatSentinel(targetId);
       }
       this.emitCombatStats();
     };
 
     endPlayerTurn = () => {
-      if (!this.stats) return;
-      // Damage-over-time resolves at end of the player's turn.
-      const ticks = this.stats.tickStatuses('dummy');
-      ticks.forEach((t) => {
-        this.showHitFeedback('dummy', { color: 0xffaa00, amount: t.damage });
-        if (t.targetDefeated && this.dummyContainer) {
-          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400 });
-        }
-      });
+      if (!this.stats || !this.combatBattleEngaged) return;
+      this.sessionTelemetry?.recordTurnEnd();
+
+      const burnTicks = tickPlayerCombatStatuses(this.stats);
+      for (const tick of burnTicks) {
+        this.events.emit('sentinel-ability', {
+          type: 'sentinel-ability',
+          abilityId: 'burn_tick',
+          logLines: [`[DEBUFF] Matrix Burn ticks for ${tick.damage} damage.`],
+          damage: tick.damage,
+        });
+        if (tick.targetHp <= 0) break;
+      }
+
+      tickSentinelAbilityState(this.getSentinelRecords());
       this.stats.endTurn('player');
+      this.disarmMovement();
+      for (const record of this.getSentinelRecords()) {
+        if (!record.aggroed || record.defeated) continue;
+        this.stats.endTurn(record.id);
+      }
+      if (this.combatBattleEngaged) {
+        this.runSentinelRetaliation();
+      }
       this.emitCombatStats();
     };
+
+    pointerEventToWorld(event) {
+      const rect = this.game.canvas.getBoundingClientRect();
+      const scaleX = this.game.canvas.width / rect.width;
+      const scaleY = this.game.canvas.height / rect.height;
+      const x = (event.clientX - rect.left) * scaleX;
+      const y = (event.clientY - rect.top) * scaleY;
+      return this.cameras.main.getWorldPoint(x, y);
+    }
+
+    registerLatticePickCandidate(cell, hitPolygon, gameObject = null) {
+      if (!cell || !hitPolygon) return;
+      this.latticePickCandidates.push({ cell, hitPolygon, gameObject });
+    }
+
+    collectLatticeHitsAt(worldX, worldY) {
+      const hits = [];
+      for (const entry of this.latticePickCandidates || []) {
+        if (entry.hitPolygon && phaserRuntime.Geom.Polygon.Contains(entry.hitPolygon, worldX, worldY)) {
+          hits.push(entry);
+        }
+      }
+      return hits;
+    }
+
+    pickLatticeAt(worldX, worldY, context = {}) {
+      const hits = this.collectLatticeHitsAt(worldX, worldY);
+      if (hits.length === 0) return null;
+      return pickBestCandidate(hits, context);
+    }
+
+    getEquippedGatherTools() {
+      return Array.isArray(this.equippedGatherTools) ? this.equippedGatherTools : [];
+    }
+
+    getPrimaryGatherTool() {
+      return this.getEquippedGatherTools()[0] || null;
+    }
+
+    syncEquippedGatherTools(equipment = {}) {
+      const tools = new Set();
+      for (const item of Object.values(equipment)) {
+        if (item?.gatherTool) tools.add(item.gatherTool);
+      }
+      this.equippedGatherTools = [...tools];
+    }
+
+    getPickContext() {
+      return {
+        toolId: this.getPrimaryGatherTool(),
+        playerCell: getPlayerLatticePosition(this.playerGridPos),
+        reachableKeys: this.movementArmed
+          ? buildReachableLatticeKeys(this.reachableTiles)
+          : new Set(),
+      };
+    }
+
+    toggleMovementArmed() {
+      this.movementArmed = !this.movementArmed;
+      if (this.playerImg) {
+        this.playerImg.setTint(this.movementArmed ? 0xaaffcc : 0xffffff);
+      }
+      this.refreshMovementHighlights();
+    }
+
+    disarmMovement() {
+      this.movementArmed = false;
+      if (this.playerImg) this.playerImg.clearTint();
+      this.refreshMovementHighlights();
+    }
+
+    isPlayerGameObject(obj) {
+      let cur = obj;
+      while (cur) {
+        if (cur === this.playerContainer) return true;
+        cur = cur.parentContainer;
+      }
+      return false;
+    }
+
+    ensureCombatArenaAmbience() {
+      const fire = getGameBrazierFireService();
+      fire.prime();
+      void fire.start();
+
+      const sword = getGameSwordSliceService();
+      sword.prime();
+      sword.setEnabled(true);
+
+      const fireball = getGameFireballImpactService();
+      fireball.prime();
+      fireball.setEnabled(true);
+    }
+
+    emitSwordSliceSfx() {
+      const sword = getGameSwordSliceService();
+      sword.prime();
+      void sword.playSlice();
+    }
+
+    handleCanvasPointerDown(event) {
+      this.ensureCombatArenaAmbience();
+      if (event.button !== 0 || this.isWalking) return;
+      try {
+        const world = this.pointerEventToWorld(event);
+        const pick = this.pickLatticeAt(world.x, world.y, this.getPickContext());
+
+        if (!pick) return;
+        const { cell } = pick;
+
+        if (isPlayerLatticePick(cell, this.playerGridPos)) {
+          this.toggleMovementArmed();
+          return;
+        }
+
+        const gatherTool = this.getPrimaryGatherTool();
+        if (cell.gatherable && gatherTool && cell.requiredTool === gatherTool) {
+          this.submitGatherIntent(cell, gatherTool);
+          return;
+        }
+
+        if (this.movementArmed && cell.combatTx != null && cell.combatTy != null) {
+          this.tryMoveToTile(cell.combatTx, cell.combatTy);
+        }
+      } catch (error) {
+        console.error('Pointerdown error:', error);
+        this.events.emit('tile-error', { type: 'error', text: error.message });
+      }
+    }
+
+    handleCanvasContextMenu(event) {
+      event.preventDefault();
+      try {
+        const world = this.pointerEventToWorld(event);
+        const pick = this.pickLatticeAt(world.x, world.y, this.getPickContext());
+        if (!pick) return;
+
+        const enriched = this.enrichObeliskAction({
+          ...pick.cell,
+          tx: pick.cell.combatTx ?? pick.cell.x,
+          ty: pick.cell.combatTy ?? pick.cell.z,
+          isGrid: pick.cell.interactionKind === 'grid',
+          isIsland: !!pick.cell.isIsland,
+          gatherable: !!pick.cell.gatherable,
+          height: pick.cell.height,
+          isStormheartOrb: false,
+          type: 'inspect',
+        });
+
+        const sentinel = findSentinelAtTile(enriched.tx, enriched.ty, this.getSentinelRecords());
+        if (sentinel) {
+          const entity = this.stats?.getEntity(sentinel.id);
+          enriched.isSentinel = true;
+          enriched.sentinelId = sentinel.id;
+          enriched.sentinelLabel = sentinel.shortLabel || sentinel.label;
+          enriched.hp = entity?.hp ?? null;
+          enriched.sentinelIntelligence = entity?.intelligence ?? null;
+          enriched.sentinelAggroed = !!sentinel.aggroed;
+          enriched.sentinelLine = entity?.hp > 0
+            ? (sentinel.aggroed
+              ? 'The matrix tracks you — it defends the tower.'
+              : 'A sentinel robot — dormant until the obelisk is threatened.')
+            : 'Scorched plating. The sentinel will not rise again.';
+          const bestiaryContext = buildBestiaryRuntimeContext({
+            enemyId: sentinel.id,
+            record: sentinel,
+            entity,
+            target: this.buildSceneTargetRegistry().targets.find((entry) => entry.id === sentinel.id),
+          });
+          enriched.enemyId = sentinel.id;
+          enriched.bestiaryAvailable = hasCombatBestiaryEntry(bestiaryContext);
+          enriched.bestiarySnapshot = {
+            hp: entity?.hp ?? null,
+            maxHp: entity?.maxHp ?? null,
+            aggroed: !!sentinel.aggroed,
+            defeated: !!sentinel.defeated,
+          };
+          if (!sentinel.defeated && (entity?.hp ?? 1) > 0) {
+            this.selectCombatTarget(sentinel.id);
+          }
+        }
+
+        if (enriched.isObelisk && this.tryLootStormheartOrb()) {
+          return;
+        }
+
+        if (pick.cell.combatTx != null && pick.cell.combatTy != null) {
+          this.setInspectHighlight(pick.cell.combatTx, pick.cell.combatTy);
+        }
+
+        const presentation = buildInspectPresentation(enriched);
+        const displayPoint = this.worldToScreenPoint(world.x, world.y);
+        this.events.emit('tile-inspect', {
+          ...enriched,
+          ...presentation,
+          screenX: displayPoint.x,
+          screenY: displayPoint.y,
+        });
+      } catch (error) {
+        console.error('Contextmenu error:', error);
+        this.events.emit('tile-error', { type: 'error', text: error.message });
+      }
+    }
+
+    worldToScreenPoint(worldX, worldY) {
+      return {
+        x: (worldX - this.cameras.main.scrollX) * this.cameras.main.zoom,
+        y: (worldY - this.cameras.main.scrollY) * this.cameras.main.zoom,
+      };
+    }
+
+    getPlayerGatherState() {
+      return {
+        tx: this.playerGridPos?.tx ?? 0,
+        ty: this.playerGridPos?.ty ?? 0,
+        tools: this.getEquippedGatherTools(),
+      };
+    }
+
+    submitGatherIntent(cell, toolId) {
+      const intent = {
+        targetCell: { x: cell.x, y: cell.y, z: cell.z },
+        toolId,
+      };
+      const verdict = validateCombatGatherIntent(this.latticeAuthority, this.getPlayerGatherState(), intent);
+      if (!verdict.ok) {
+      this.events.emit('tile-gather', {
+        type: 'gather',
+        ok: false,
+        code: verdict.code,
+        targetCell: intent.targetCell,
+        toolId,
+        characterLine: `This strike will not bite: ${verdict.code}.`,
+      });
+        return;
+      }
+
+      const applied = applyCombatGatherIntent(this.latticeAuthority, this.getPlayerGatherState(), intent);
+      const pickEntry = this.latticePickCandidates.find((entry) => latticeCellKey(entry.cell) === verdict.key);
+      if (pickEntry?.gameObject?.setFillStyle) {
+        pickEntry.gameObject.setFillStyle(0xffffff, 0);
+      }
+
+      const screen = pickEntry?.gameObject
+        ? this.worldToScreenPoint(pickEntry.gameObject.x, pickEntry.gameObject.y)
+        : this.worldToScreenPoint(this.cameras.main.scrollX, this.cameras.main.scrollY);
+      grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.GATHER_SUCCESS);
+      this.events.emit('tile-gather', {
+        type: 'gather',
+        ok: true,
+        yield: applied.yield,
+        targetCell: intent.targetCell,
+        toolId,
+        screenX: screen.x,
+        screenY: screen.y,
+        characterLine: `The ${toolId} bites; ${applied.yield} comes free in shards.`,
+      });
+    }
+
+    getBlockedTiles() {
+      return this._blockedTiles || buildBlockedSet();
+    }
+
+    isReachableTile(tx, ty) {
+      return !!this.reachableTiles?.has(tileKey(tx, ty));
+    }
+
+    restoreTileHighlight(tx, ty) {
+      const tile = this.gridTiles?.get(tileKey(tx, ty));
+      if (!tile) return;
+      if (this.inspectHighlightTile?.tx === tx && this.inspectHighlightTile?.ty === ty) {
+        tile.setFillStyle(PALETTES.amethyst.shine, 0.42);
+        return;
+      }
+      if (this.isReachableTile(tx, ty)) {
+        tile.setFillStyle(PALETTES.cyan_glow.shine, 0.18);
+      } else {
+        tile.setFillStyle(0xffffff, 0);
+      }
+    }
+
+    refreshMovementHighlights() {
+      if (!this.playerGridPos || !this.gridTiles) return;
+      if (!this.movementArmed) {
+        this.reachableTiles = new Set();
+        for (const [key, tile] of this.gridTiles) {
+          const [tx, ty] = key.split(',').map(Number);
+          if (this.inspectHighlightTile?.tx === tx && this.inspectHighlightTile?.ty === ty) continue;
+          tile.setFillStyle(0xffffff, 0);
+        }
+        return;
+      }
+      const mp = this.combatBattleEngaged
+        ? (this.stats?.getEntity('player')?.movementPointsRemaining ?? 0)
+        : COMBAT_FREE_ROAM_MOVEMENT_RANGE;
+      this.reachableTiles = getReachableTiles(this.playerGridPos, mp, this.getBlockedTiles());
+      for (const [key, tile] of this.gridTiles) {
+        const [tx, ty] = key.split(',').map(Number);
+        if (this.inspectHighlightTile?.tx === tx && this.inspectHighlightTile?.ty === ty) continue;
+        if (this.reachableTiles.has(key)) {
+          tile.setFillStyle(PALETTES.cyan_glow.shine, 0.18);
+        } else {
+          tile.setFillStyle(0xffffff, 0);
+        }
+      }
+    }
+
+    setInspectHighlight(tx, ty) {
+      if (this.inspectHighlightTimer) {
+        this.inspectHighlightTimer.remove(false);
+        this.inspectHighlightTimer = null;
+      }
+      if (this.inspectHighlightTile) {
+        this.restoreTileHighlight(this.inspectHighlightTile.tx, this.inspectHighlightTile.ty);
+      }
+      this.inspectHighlightTile = { tx, ty };
+      const tile = this.gridTiles?.get(tileKey(tx, ty));
+      if (tile) {
+        tile.setFillStyle(PALETTES.amethyst.shine, 0.42);
+      }
+      this.inspectHighlightTimer = this.time.delayedCall(2500, () => {
+        if (this.inspectHighlightTile?.tx === tx && this.inspectHighlightTile?.ty === ty) {
+          this.inspectHighlightTile = null;
+          this.restoreTileHighlight(tx, ty);
+        }
+        this.inspectHighlightTimer = null;
+      });
+    }
+
+    tryMoveToTile(tx, ty) {
+      if (!this.movementArmed || this.isWalking || !this.playerGridPos || !this.stats) return false;
+      const player = this.stats.getEntity('player');
+      if (!player) return false;
+      if (this.combatBattleEngaged && player.movementPointsRemaining < 1) return false;
+      if (this.playerGridPos.tx === tx && this.playerGridPos.ty === ty) return false;
+
+      const path = findPath(this.playerGridPos, { tx, ty }, this.getBlockedTiles());
+      if (path.length === 0) return false;
+      if (this.combatBattleEngaged && path.length > player.movementPointsRemaining) return false;
+
+      this.followGridPath(path);
+      return true;
+    }
+
+    emitFootstepForTile(tx, ty, stepIndex) {
+      const audio = getGameAudioForgeService();
+      const payload = {
+        surface: 'stone',
+        stepIndex,
+        tx,
+        ty,
+        battleId: 'combat-arena',
+      };
+      void audio.emitSfx('FOOTSTEP', payload);
+    }
+
+    emitObeliskElectricSfx(eventType, extra = {}) {
+      const sample = getGameObeliskElectricService();
+      sample.prime();
+
+      // Lightning sample is discharge-only; charge is visual buildup (no second staggered hit).
+      if (sample.shouldPreferSample()) {
+        if (eventType === 'OBELISK_DISCHARGE') {
+          void sample.playZap(eventType);
+        }
+        return;
+      }
+
+      const audio = getGameAudioForgeService();
+      void audio.emitSfx(eventType, {
+        battleId: 'combat-arena',
+        affinity: 'PSYCHIC',
+        pan: 0,
+        ...extra,
+      });
+    }
+
+    stepToTile(tx, ty) {
+      return new Promise((resolve) => {
+        this.playerGridPos.tx = tx;
+        this.playerGridPos.ty = ty;
+
+        const firstStep = this.footstepIndex;
+        this.footstepIndex += 1;
+        this.emitFootstepForTile(tx, ty, firstStep);
+        this.time.delayedCall(175, () => {
+          const midStep = this.footstepIndex;
+          this.footstepIndex += 1;
+          this.emitFootstepForTile(tx, ty, midStep);
+        });
+
+        if (this.stats) {
+          this.stats.setPosition('player', tx, ty);
+          if (this.combatBattleEngaged) {
+            this.stats.spendMove('player');
+            this.sessionTelemetry?.recordMove();
+          }
+          this.emitCombatStats();
+        }
+
+        const targetPos = this.getIsoTarget(tx, ty);
+        const bobTargets = [this.playerImg, ...Object.values(this.playerArmorLayers)].filter(Boolean);
+
+        if (this.playerImg) {
+          this.playerImg.play('player-walk', true);
+          Object.values(this.playerArmorLayers).forEach((layer) => {
+            if (layer && layer.visible && layer.texture.key) {
+              const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+              const walkKey = `${baseAssetId}-walk`;
+              if (this.anims.exists(walkKey)) {
+                layer.play(walkKey, true);
+              }
+            }
+          });
+
+          if (this.idleTween) this.idleTween.pause();
+          bobTargets.forEach((s) => { s.y = 0; s.scaleY = 1; });
+          if (this.walkBob) this.walkBob.stop();
+          this.walkBob = this.tweens.add({
+            targets: bobTargets,
+            y: -2.5,
+            duration: 90,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut',
+          });
+        }
+
+        this.tweens.add({
+          targets: this.playerContainer,
+          x: targetPos.x,
+          y: targetPos.y,
+          duration: 350,
+          onComplete: () => {
+            if (this.walkBob) { this.walkBob.stop(); this.walkBob = null; }
+            bobTargets.forEach((s) => { s.y = 0; s.scaleY = 1; });
+            if (this.idleTween) this.idleTween.resume();
+            if (this.playerImg) {
+              this.playerImg.play('player-idle', true);
+              Object.values(this.playerArmorLayers).forEach((layer) => {
+                if (layer && layer.visible && layer.texture.key) {
+                  layer.stop();
+                  const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+                  const idleKey = `${baseAssetId}-f0`;
+                  if (this.textures.exists(idleKey)) {
+                    layer.setTexture(idleKey);
+                  }
+                }
+              });
+            }
+            this.checkSentinelObeliskAggro(tx, ty);
+            resolve();
+          },
+        });
+      });
+    }
+
+    async followGridPath(path) {
+      if (this.isWalking || !Array.isArray(path) || path.length === 0) return;
+      this.isWalking = true;
+      try {
+        for (const step of path) {
+          if (this.combatBattleEngaged && !this.stats?.canMove('player')) break;
+          await this.stepToTile(step.tx, step.ty);
+        }
+      } finally {
+        this.isWalking = false;
+        this.refreshMovementHighlights();
+      }
+    }
 
     handleGlobalKeydown = (e) => {
       if (this.isWalking) return;
 
-      if (e.key === 'f' || e.key === 'F') { this.performBasicAttack(); return; }
-      if (e.key === ' ' || e.key === 'Enter') { this.endPlayerTurn(); return; }
+      if (this.combatBattleEngaged && (e.key === 'f' || e.key === 'F')) {
+        this.performBasicAttack();
+        return;
+      }
+      if (this.combatBattleEngaged && (e.key === ' ' || e.key === 'Enter')) {
+        this.endPlayerTurn();
+        return;
+      }
 
       let dx = 0;
       let dy = 0;
@@ -845,93 +2892,13 @@ export default function createCombatArenaScene(phaserRuntime) {
       else if (e.key === 'ArrowDown' || e.key === 's') { dx = 1; dy = 0; }
       else if (e.key === 'ArrowLeft' || e.key === 'a') { dx = 0; dy = 1; }
       else if (e.key === 'ArrowRight' || e.key === 'd') { dx = 0; dy = -1; }
-      
+
       if (dx === 0 && dy === 0) return;
-      
+      if (!this.movementArmed) return;
+
       const newTx = this.playerGridPos.tx + dx;
       const newTy = this.playerGridPos.ty + dy;
-      
-      // Grid bounds (0-8)
-      if (newTx < 0 || newTx > 8 || newTy < 0 || newTy > 8) return;
-      
-      // Teleporter Collision (top right corner 8, 0)
-      if (newTx === 8 && newTy === 0) {
-        console.log("Blocked by Teleporter collision!");
-        return;
-      }
-
-      if (this.stats && !this.stats.canMove('player')) {
-        return; // Out of movement points this turn.
-      }
-
-      this.isWalking = true;
-      this.playerGridPos.tx = newTx;
-      this.playerGridPos.ty = newTy;
-
-      if (this.stats) {
-        this.stats.spendMove('player');
-        this.stats.setPosition('player', newTx, newTy);
-        this.emitCombatStats();
-      }
-
-      const targetPos = this.getIsoTarget(newTx, newTy);
-      
-      const bobTargets = [this.playerImg, ...Object.values(this.playerArmorLayers)].filter(Boolean);
-      if (this.playerImg) {
-        this.playerImg.play('player-walk', true);
-        Object.values(this.playerArmorLayers).forEach(layer => {
-          if (layer && layer.visible && layer.texture.key) {
-             const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
-             const walkKey = baseAssetId + '-walk';
-             if (this.anims.exists(walkKey)) {
-                layer.play(walkKey, true);
-             }
-          }
-        });
-
-        // Procedural walk bob: pause the idle breathing and add a subtle vertical
-        // rise on each passing frame (~2 dips per stride) so the stride has weight.
-        // Applied to every layer together, on top of the feet-anchored origin.
-        if (this.idleTween) this.idleTween.pause();
-        bobTargets.forEach(s => { s.y = 0; s.scaleY = 1; });
-        if (this.walkBob) this.walkBob.stop();
-        this.walkBob = this.tweens.add({
-          targets: bobTargets,
-          y: -2.5,
-          duration: 90,
-          yoyo: true,
-          repeat: -1,
-          ease: 'Sine.easeInOut'
-        });
-      }
-
-      this.tweens.add({
-        targets: this.playerContainer,
-        x: targetPos.x,
-        y: targetPos.y,
-        duration: 350,
-        onComplete: () => {
-          this.isWalking = false;
-          // Stop the walk bob, settle the layers, and hand vertical motion back
-          // to the idle breathing tween.
-          if (this.walkBob) { this.walkBob.stop(); this.walkBob = null; }
-          bobTargets.forEach(s => { s.y = 0; s.scaleY = 1; });
-          if (this.idleTween) this.idleTween.resume();
-          if (this.playerImg) {
-            this.playerImg.play('player-idle', true);
-            Object.values(this.playerArmorLayers).forEach(layer => {
-               if (layer && layer.visible && layer.texture.key) {
-                 layer.stop();
-                 const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
-                 const idleKey = baseAssetId + '-f0';
-                 if (this.textures.exists(idleKey)) {
-                   layer.setTexture(idleKey);
-                 }
-               }
-            });
-          }
-        }
-      });
+      this.tryMoveToTile(newTx, newTy);
     };
 
     // Custom deterministic Value Noise since Phaser doesn't bundle SimplexNoise by default
@@ -1121,8 +3088,8 @@ export default function createCombatArenaScene(phaserRuntime) {
       voxels.forEach(v => {
         let isEdge = false;
         const neighbors = [[-1,0],[1,0],[0,-1],[0,1]];
-        for(let [dx,dy] of neighbors) {
-           const nx = v.x+dx, ny = v.y+dy;
+        for(let [neighborDx, neighborDy] of neighbors) {
+           const nx = v.x+neighborDx, ny = v.y+neighborDy;
            if (nx < 0 || ny < 0 || nx >= size || ny >= size || heightmap[nx][ny] <= 1) {
               isEdge = true;
               break;
@@ -1260,7 +3227,7 @@ export default function createCombatArenaScene(phaserRuntime) {
                         scale: { start: 0.2, end: 0 },
                         alpha: { start: 0.6, end: 0 },
                         lifespan: { min: 2000, max: 5000 },
-                        frequency: Phaser.Math.Between(400, 1500),
+                        frequency: phaserRuntime.Math.Between(400, 1500),
                         blendMode: 'ADD',
                         tint: 0xaaffff
                     });
@@ -1308,16 +3275,50 @@ export default function createCombatArenaScene(phaserRuntime) {
         graphics.strokePath();
 
         // Create an interactive zone wrapping this voxel's top geometry
-        const poly = new Phaser.Geom.Polygon(hitPolyPoints);
+        const poly = new phaserRuntime.Geom.Polygon(hitPolyPoints);
 
         const interactiveTile = this.add.polygon(0, 0, hitPolyPoints, 0xffffff, 0).setOrigin(0).setDepth(15);
-        interactiveTile.setInteractive(poly, Phaser.Geom.Polygon.Contains);
+        interactiveTile.setInteractive(poly, phaserRuntime.Geom.Polygon.Contains);
 
-        interactiveTile.inspectData = { tx: v.x, ty: v.y, isIsland: true, height: v.z };
-        interactiveTile.interactData = { tx: v.x, ty: v.y, isIsland: true, height: v.z };
+        const combatCoord = heightmapToCombatCoord(v.x, v.y, radius);
+        const islandLattice = islandVoxelToLattice(v.x, v.y, v.z);
+        const islandCell = isTallestPeak
+          ? registerGatherableCell(this.latticeAuthority, {
+            ...islandLattice,
+            combatTx: combatCoord.tx,
+            combatTy: combatCoord.ty,
+            isIsland: true,
+            height: v.z,
+          })
+          : {
+            ...islandLattice,
+            faceType: 'top',
+            gatherable: false,
+            interactionPriority: 5,
+            interactionKind: 'island',
+            combatTx: combatCoord.tx,
+            combatTy: combatCoord.ty,
+            isIsland: true,
+            height: v.z,
+          };
+        if (!isTallestPeak) {
+          this.latticeAuthority.cells.set(latticeCellKey(islandCell), islandCell);
+        }
+        this.registerLatticePickCandidate(islandCell, poly, interactiveTile);
+
+        interactiveTile.inspectData = {
+          tx: combatCoord.tx,
+          ty: combatCoord.ty,
+          isIsland: true,
+          height: v.z,
+          gatherable: !!islandCell.gatherable,
+        };
+        interactiveTile.interactData = interactiveTile.inspectData;
 
         interactiveTile.on('pointerover', () => {
-          interactiveTile.setFillStyle(PALETTES.cyan_glow.shine, 0.3); // Bright hover glow
+          if (islandCell.gatherable && this.getPrimaryGatherTool() === islandCell.requiredTool) {
+            interactiveTile.setFillStyle(PALETTES.void_ice.shine, 0.28);
+          }
           this.input.setDefaultCursor('pointer');
         });
 
@@ -1332,7 +3333,11 @@ export default function createCombatArenaScene(phaserRuntime) {
       const graphics = this.add.graphics();
       graphics.setDepth(10); // Arena grid on top of galaxy background (gene protected)
 
-      
+      this.combatGridSize = gridSize;
+      this.gridTiles = new Map();
+      if (!this.leylineTileRegistry) this.leylineTileRegistry = new Map();
+      this._blockedTiles = buildBlockedSet();
+
       const tiles = [];
       for (let tx = 0; tx < gridSize; tx++) {
         for (let ty = 0; ty < gridSize; ty++) {
@@ -1403,46 +3408,26 @@ export default function createCombatArenaScene(phaserRuntime) {
           this.drawVectorRune(pt.x, py, tw, th);
         }
 
-        // Render Leylines from the engine
-        // Double guard: leylines never appear on runes (diagonal tiles)
-        const leyline = this.leylines && this.leylines.find(l => l.coord.x === tx && l.coord.y === ty);
+        // Leylines are generated at boot but only rendered once battle starts.
+        const leyline = this.leylines && this.leylines.find((entry) => (
+          entry.coord.x === tx && entry.coord.y === ty
+        ));
         let lColor = null;
         if (leyline && !isDiagonal) {
-           const colors = {
-             'ALCHEMY': 0xff3300, 'PSYCHIC': 0xff00ff, 'VITAL': 0x00ffaa,
-             'SONIC': 0xffff00, 'LORE': 0x0088ff, 'CELESTIAL': 0xffffff,
-             'WARD': 0x88bbff, 'NECROTIC': 0x99ffcc, 'CODEX': 0xaa00ff,
-             'ENTROPY': 0x444444, 'VOID': 0x220044
-           };
-           lColor = colors[leyline.affinity] || 0xffffff;
-
-           // === TASK 1: Wire the actual PixelBrain PNG prop ===
-           // Use the generated high-fidelity fissure PNG (badlands cracks) instead of vector.
-           // Tint per affinity so color resonates correctly. The PNG carries the eroded structure.
-           if (!this.textures.exists('leyline-fissure')) {
-             this.textures.addBase64('leyline-fissure', combat_leylineUri);
-           }
-           const fissure = this.add.image(pt.x, py + 1, 'leyline-fissure');
-           fissure.setScale(0.48, 0.62); // Bumped for visibility. 0.32/0.42 read too small as a ground fissure indicator on the isometric tile.
-           fissure.setTint(lColor);
-           fissure.setAlpha(0.93);
-           fissure.setBlendMode(Phaser.BlendModes.ADD);
-           fissure.setDepth(8);
-
-           // Store for hover soundwave pulsing
-           if (!this.leylineVisuals) this.leylineVisuals = new Map();
-           this.leylineVisuals.set(`${tx},${ty}`, {
-             fissure,
-             color: lColor,
-             baseScaleX: fissure.scaleX,
-             baseScaleY: fissure.scaleY,
-             x: pt.x,
-             y: py
-           });
+          this.leylineTileRegistry.set(`${tx},${ty}`, {
+            leyline,
+            tx,
+            ty,
+            x: pt.x,
+            y: py,
+          });
+          if (this.battleLeylinesActive) {
+            lColor = this.spawnLeylineFissureAtTile(tx, ty, leyline, pt.x, py);
+          }
         }
 
         // Overlay an interactive invisible polygon on the top face for mouse events
-        const hitPoly = new Phaser.Geom.Polygon([
+        const hitPoly = new phaserRuntime.Geom.Polygon([
           p1.x, p1.y,
           p2.x, p2.y,
           p3.x, p3.y,
@@ -1450,39 +3435,56 @@ export default function createCombatArenaScene(phaserRuntime) {
         ]);
 
         const interactiveTile = this.add.polygon(0, 0, hitPoly.points, 0xffffff, 0).setOrigin(0).setDepth(15);
-        interactiveTile.setInteractive(hitPoly, Phaser.Geom.Polygon.Contains);
+        interactiveTile.setInteractive(hitPoly, phaserRuntime.Geom.Polygon.Contains);
         
+        const activeLeyline = (this.battleLeylinesActive && leyline && !isDiagonal)
+          ? { affinity: leyline.affinity, id: leyline.id }
+          : null;
+
         interactiveTile.inspectData = { 
           tx, ty, isGrid: true, 
-          leyline: (leyline && !isDiagonal) ? { affinity: leyline.affinity, id: leyline.id } : null,
+          leyline: activeLeyline,
           isObelisk: (tx === 4 && ty === 4)
         };
         
         interactiveTile.interactData = { 
           tx, ty, isGrid: true, 
-          leyline: (leyline && !isDiagonal) ? { affinity: leyline.affinity, id: leyline.id } : null,
+          leyline: activeLeyline,
           isObelisk: (tx === 4 && ty === 4)
         };
 
-        // Attach leyline data for targeted hover effects
-        if (leyline && !isDiagonal) {
+        const latticeCell = registerCombatGridCell(this.latticeAuthority, tx, ty, {
+          isObelisk: tx === 4 && ty === 4,
+          leyline: activeLeyline,
+          blocked: (tx === 8 && ty === 0) || (tx === 4 && ty === 4),
+        });
+        this.registerLatticePickCandidate(latticeCell, hitPoly, interactiveTile);
+
+        this.gridTiles.set(tileKey(tx, ty), interactiveTile);
+
+        // Attach leyline data for targeted hover effects once battle is live.
+        if (this.battleLeylinesActive && leyline && !isDiagonal && lColor != null) {
           interactiveTile.leylineHover = { tx, ty, color: lColor };
         }
 
         interactiveTile.on('pointerover', () => {
-          interactiveTile.setFillStyle(PALETTES.cyan_glow.shine, 0.3); // Bright hover glow
-          this.input.setDefaultCursor('pointer');
-
-          // Leyline-specific: pulse with soundwaves
-          if (interactiveTile.leylineHover) {
-            this.startLeylineSoundwavePulse(interactiveTile.leylineHover);
+          if (this.movementArmed && this.isReachableTile(tx, ty)) {
+            interactiveTile.setFillStyle(PALETTES.cyan_glow.shine, 0.34);
+            this.input.setDefaultCursor('pointer');
+            if (interactiveTile.leylineHover) {
+              this.startLeylineSoundwavePulse(interactiveTile.leylineHover);
+            }
+          } else if (this.inspectHighlightTile?.tx === tx && this.inspectHighlightTile?.ty === ty) {
+            interactiveTile.setFillStyle(PALETTES.amethyst.shine, 0.55);
+            this.input.setDefaultCursor('help');
+          } else {
+            this.input.setDefaultCursor('default');
           }
         });
 
         interactiveTile.on('pointerout', () => {
-          interactiveTile.setFillStyle(0xffffff, 0); // Hide
+          this.restoreTileHighlight(tx, ty);
           this.input.setDefaultCursor('default');
-
           if (interactiveTile.leylineHover) {
             this.stopLeylineSoundwavePulse(interactiveTile.leylineHover);
           }
@@ -1581,6 +3583,156 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.leylineWaves.delete(key);
     }
 
+    getLeylineAffinityColor(affinity) {
+      const colors = {
+        ALCHEMY: 0xff3300,
+        PSYCHIC: 0xff00ff,
+        VITAL: 0x00ffaa,
+        SONIC: 0xffff00,
+        LORE: 0x0088ff,
+        CELESTIAL: 0xffffff,
+        WARD: 0x88bbff,
+        NECROTIC: 0x99ffcc,
+        CODEX: 0xaa00ff,
+        ENTROPY: 0x444444,
+        VOID: 0x220044,
+      };
+      return colors[affinity] || 0xffffff;
+    }
+
+    spawnLeylineFissureAtTile(tx, ty, leyline, x, y, { initialAlpha = 0.93 } = {}) {
+      const color = this.getLeylineAffinityColor(leyline.affinity);
+      if (!this.textures.exists('leyline-fissure')) {
+        this.textures.addBase64('leyline-fissure', combat_leylineUri);
+      }
+
+      const fissure = this.add.image(x, y + 1, 'leyline-fissure');
+      fissure.setScale(0.48, 0.62);
+      fissure.setTint(color);
+      fissure.setAlpha(initialAlpha);
+      fissure.setBlendMode(phaserRuntime.BlendModes.ADD);
+      fissure.setDepth(8);
+
+      if (!this.leylineVisuals) this.leylineVisuals = new Map();
+      this.leylineVisuals.set(`${tx},${ty}`, {
+        fissure,
+        color,
+        baseScaleX: fissure.scaleX,
+        baseScaleY: fissure.scaleY,
+        x,
+        y,
+      });
+      return color;
+    }
+
+    engageCombatBattle() {
+      if (this.combatBattleEngaged) return false;
+      this.combatBattleEngaged = true;
+      const player = this.stats?.getEntity('player');
+      if (player) {
+        player.manaPointsRemaining = player.manaPoints;
+        player.manaUsed = false;
+      }
+      if (!this.selectedCombatTargetId) {
+        const nearest = this.getTargetableCombatantsOrdered()[0];
+        if (nearest) this.selectCombatTarget(nearest.id);
+      }
+      this.activateBattleLeylines();
+      this.runSentinelRetaliation({ onlyNewlyAggroed: true });
+      this.emitCombatStats();
+      return true;
+    }
+
+    disengageCombatBattle() {
+      if (!this.combatBattleEngaged) return false;
+      this.combatBattleEngaged = false;
+      this.deactivateBattleLeylines();
+      this.disarmMovement();
+      this.emitCombatStats();
+      return true;
+    }
+
+    deactivateBattleLeylines() {
+      if (!this.battleLeylinesActive) return false;
+      this.battleLeylinesActive = false;
+
+      if (this.leylineWaves) {
+        this.leylineWaves.forEach((entry) => {
+          entry.tweens.forEach((tween) => tween.stop());
+          entry.gfs.forEach((gfx) => gfx?.destroy?.());
+        });
+        this.leylineWaves.clear();
+      }
+
+      if (this.leylineVisuals) {
+        for (const visual of this.leylineVisuals.values()) {
+          visual.fissure?.destroy?.();
+        }
+        this.leylineVisuals.clear();
+      }
+
+      for (const [key, tile] of this.gridTiles || []) {
+        if (tile.inspectData) tile.inspectData.leyline = null;
+        if (tile.interactData) tile.interactData.leyline = null;
+        delete tile.leylineHover;
+
+        const [tx, ty] = key.split(',').map(Number);
+        const latticeKey = latticeCellKey(combatGridToLattice(tx, ty, 0));
+        const latticeCell = this.latticeAuthority?.cells?.get(latticeKey);
+        if (latticeCell) latticeCell.leyline = null;
+      }
+
+      this.emitSceneContextState();
+      return true;
+    }
+
+    activateBattleLeylines() {
+      if (this.battleLeylinesActive) return false;
+      this.battleLeylinesActive = true;
+
+      for (const [key, entry] of this.leylineTileRegistry.entries()) {
+        const color = this.spawnLeylineFissureAtTile(
+          entry.tx,
+          entry.ty,
+          entry.leyline,
+          entry.x,
+          entry.y,
+          { initialAlpha: 0 },
+        );
+
+        const tile = this.gridTiles?.get(key);
+        if (tile) {
+          const leylineData = { affinity: entry.leyline.affinity, id: entry.leyline.id };
+          tile.inspectData = { ...tile.inspectData, leyline: leylineData };
+          tile.interactData = { ...tile.interactData, leyline: leylineData };
+          tile.leylineHover = { tx: entry.tx, ty: entry.ty, color };
+        }
+
+        const latticeKey = latticeCellKey(combatGridToLattice(entry.tx, entry.ty, 0));
+        const latticeCell = this.latticeAuthority?.cells?.get(latticeKey);
+        if (latticeCell) {
+          latticeCell.leyline = { affinity: entry.leyline.affinity, id: entry.leyline.id };
+        }
+
+        const visual = this.leylineVisuals?.get(key);
+        if (visual?.fissure) {
+          this.tweens.add({
+            targets: visual.fissure,
+            alpha: 0.93,
+            scaleX: visual.baseScaleX * 1.08,
+            scaleY: visual.baseScaleY * 1.08,
+            duration: 680,
+            ease: 'Sine.easeOut',
+            yoyo: true,
+            hold: 120,
+          });
+        }
+      }
+
+      this.emitSceneContextState();
+      return true;
+    }
+
     // Ensure waves are cleaned if the scene shuts down
     shutdown() {
       if (this.leylineWaves) {
@@ -1594,7 +3746,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     drawVectorRune(x, y, tw, th) {
       const graphics = this.add.graphics();
-      graphics.setBlendMode(Phaser.BlendModes.ADD);
+      graphics.setBlendMode(phaserRuntime.BlendModes.ADD);
       
       graphics.fillStyle(PALETTES.cyan_glow.core, 0.4);
       graphics.fillEllipse(x, y, tw * 0.4, th * 0.4);
@@ -1627,7 +3779,8 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     drawObelisk(tw, th, zOffset) {
       const graphics = this.add.graphics();
-      graphics.setDepth(20); // Pillar on top (gene protected)
+      graphics.setDepth(ARENA_DEPTH.OBELISK_BODY);
+      this.obeliskBody = graphics;
       
       const cx = 0;
       const cy = -zOffset; // Center of the grid
@@ -1637,6 +3790,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       const shaftHeight = 160; // Reduced height to fit on screen
       const capHeight = 60;
+      const totalRise = shaftHeight + capHeight;
       
       // Base points
       const bLeft = { x: cx - bRadiusX, y: cy };
@@ -1729,18 +3883,18 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
       graphics.fillStyle(PALETTES.royal_purple.shine, 1);
       graphics.fillEllipse(tip.x, tip.y, 15, 15);
-      graphics.setBlendMode(Phaser.BlendModes.NORMAL);
+      graphics.setBlendMode(phaserRuntime.BlendModes.NORMAL);
 
       // ── Charge/discharge FX layers (animated in updateObeliskFx) ────────
       // Additive overlays sit above the obelisk: chargeGfx pulses the runes +
       // orb, boltGfx paints the tesla arcs during the discharge.
-      const chargeGfx = this.add.graphics().setDepth(900);
-      chargeGfx.setBlendMode(Phaser.BlendModes.ADD);
-      const boltGfx = this.add.graphics().setDepth(1000);
-      boltGfx.setBlendMode(Phaser.BlendModes.ADD);
+      const chargeGfx = this.add.graphics().setDepth(ARENA_DEPTH.OBELISK_CHARGE);
+      chargeGfx.setBlendMode(phaserRuntime.BlendModes.ADD);
+      const boltGfx = this.add.graphics().setDepth(ARENA_DEPTH.OBELISK_BOLT);
+      boltGfx.setBlendMode(phaserRuntime.BlendModes.ADD);
 
       this.obeliskFx = {
-        cx, cy, bRadiusX, bRadiusY, shaftHeight,
+        cx, cy, bRadiusX, bRadiusY, shaftHeight, capHeight, totalRise,
         orbX: tip.x, orbY: tip.y,
         spineX: tBottom.x, spineTopY: tBottom.y, baseY: bBottom.y,
         chargeGfx, boltGfx,
@@ -1884,9 +4038,145 @@ export default function createCombatArenaScene(phaserRuntime) {
       g.strokeEllipse(fx.orbX, fx.orbY, ringR * 2, ringR * 1.2);
     }
 
-    updateObeliskFx(time, delta) {
+    triggerMusicSyncedObeliskDischarge() {
+      const fx = this.obeliskFx;
+      if (!fx || this.obeliskState !== 'active') return;
+      fx.phase = 'discharge';
+      fx.t = 0;
+      fx.bolts = this.buildTeslaBolts();
+      this.emitObeliskElectricSfx('OBELISK_DISCHARGE', {
+        intensity: 1,
+        pulseIndex: this.musicBeatSync?.snareCount ?? 0,
+      });
+    }
+
+    getArenaBeatSnapshot(leadMs = 0) {
+      const music = getGameBackgroundMusicService();
+      const playbackMs = music.getPlaybackTimeMs();
+      const baseMs = playbackMs != null ? playbackMs : this.time.now;
+      const pacing = music.getState().pacing || GAME_BACKGROUND_MUSIC_PACING;
+      return resolveMusicBeatSnapshot(baseMs + leadMs, pacing);
+    }
+
+    getObeliskBeatSnapshot() {
+      return this.getArenaBeatSnapshot(GAME_OBELISK_MUSIC_SYNC.leadMs);
+    }
+
+    getObeliskSnaresPerDischarge() {
+      const pacing = getGameBackgroundMusicService().getState().pacing || GAME_BACKGROUND_MUSIC_PACING;
+      const [beatsPerBar] = pacing.timeSignature;
+      return snaresPerDischargeCycle(GAME_OBELISK_MUSIC_SYNC.dischargeEveryMeasures, beatsPerBar);
+    }
+
+    isMusicPlaybackSynced() {
+      return getGameBackgroundMusicService().isPlaybackActive();
+    }
+
+    syncMusicBeatCrossings(beatSnapshot) {
+      if (!beatSnapshot?.beat) return;
+      const exactBeat = beatSnapshot.beat.exactBeat;
+      const prev = this.musicBeatSync?.lastExactBeat;
+      const crossings = findSnareCrossings(prev, exactBeat);
+      const cycleSnares = this.getObeliskSnaresPerDischarge();
+
+      for (const beatIdx of crossings) {
+        this.musicBeatSync.snareCount += 1;
+        if (isDischargeSnareHit(this.musicBeatSync.snareCount, cycleSnares)) {
+          this.triggerMusicSyncedObeliskDischarge();
+        } else if (isLastChargeSnare(this.musicBeatSync.snareCount, cycleSnares)) {
+          this.emitObeliskElectricSfx('OBELISK_CHARGE', {
+            intensity: 0.95,
+            pulseIndex: this.musicBeatSync.snareCount,
+          });
+        }
+      }
+
+      this.musicBeatSync.lastExactBeat = exactBeat;
+    }
+
+    syncBraziersToBeat(beatSnapshot) {
+      if (!this.torchEffects?.length || !beatSnapshot?.beat) return;
+      const exactBeat = beatSnapshot.beat.exactBeat;
+
+      for (const effect of this.torchEffects) {
+        const sentinel = effect.sentinelId
+          ? this.getSentinelRecords().find((entry) => entry.id === effect.sentinelId)
+          : null;
+        if (sentinel?.defeated) continue;
+
+        const phaseOffset = effect.bobPhaseOffset ?? 0;
+        const bobY = bpmBobOffset(exactBeat, phaseOffset);
+        if (effect.bobContainer && effect.anchorX != null && effect.anchorY != null) {
+          effect.bobContainer.setPosition(effect.anchorX, effect.anchorY + bobY);
+        }
+        const shadow = bpmBobShadow(exactBeat, phaseOffset);
+        if (effect.shadow && effect.shadowBaseX != null && effect.shadowBaseY != null) {
+          effect.shadow.setPosition(effect.shadowBaseX, effect.shadowBaseY + bobY * 0.35);
+          effect.shadow.bobScale = shadow.scale;
+          effect.shadow.bobAlpha = shadow.alpha;
+        }
+        if (effect.ring1) {
+          effect.ring1.rotation = (effect.ring1BaseRot ?? 0) + exactBeat * Math.PI * 2;
+        }
+        if (effect.ring2) {
+          effect.ring2.rotation = (effect.ring2BaseRot ?? 0) - exactBeat * Math.PI * 1.5;
+        }
+      }
+    }
+
+    updateObeliskFxMusicDriven(delta, beatSnapshot) {
       const fx = this.obeliskFx;
       if (!fx) return 0;
+      if (this.obeliskState && this.obeliskState !== 'active') {
+        return 0;
+      }
+
+      fx.t += delta;
+      let plasmaTarget = 0;
+      const cycleSnares = this.getObeliskSnaresPerDischarge();
+      const snareCycle = (this.musicBeatSync?.snareCount ?? 0) % cycleSnares;
+      const cycleProgress = snareCycle / cycleSnares;
+      const beatFlicker = 1 + (Math.random() - 0.5) * 0.08;
+
+      if (fx.phase === 'discharge') {
+        const p = Math.min(1, fx.t / fx.dischargeMs);
+        const fade = 1 - p;
+        this.drawObeliskCharge(Math.max(fade, 0.6));
+        this.drawTeslaDischarge(fade);
+        if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fade * 1.6;
+        plasmaTarget = 1;
+        if (fx.t >= fx.dischargeMs) {
+          fx.phase = 'charge';
+          fx.t = 0;
+          fx.boltGfx.clear();
+        }
+      } else {
+        const phaseLift = beatSnapshot?.beat?.phase ?? 0;
+        fx.intensity = Math.min(1, (cycleProgress + phaseLift * 0.12) * beatFlicker);
+        fx.phase = 'charge';
+        this.drawObeliskCharge(fx.intensity);
+        if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fx.intensity * 0.6;
+        plasmaTarget = fx.intensity;
+      }
+
+      return plasmaTarget;
+    }
+
+    updateObeliskFx(time, delta) {
+      const beatSnapshot = this.getArenaBeatSnapshot();
+      this.syncBraziersToBeat(beatSnapshot);
+
+      if (this.isMusicPlaybackSynced()) {
+        const obeliskBeat = this.getObeliskBeatSnapshot();
+        this.syncMusicBeatCrossings(obeliskBeat);
+        return this.updateObeliskFxMusicDriven(delta, obeliskBeat);
+      }
+
+      const fx = this.obeliskFx;
+      if (!fx) return 0;
+      if (this.obeliskState && this.obeliskState !== 'active') {
+        return 0;
+      }
       fx.t += delta;
 
       let plasmaTarget = 0;
@@ -1899,9 +4189,18 @@ export default function createCombatArenaScene(phaserRuntime) {
         if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fx.intensity * 0.6;
         plasmaTarget = fx.intensity;
         if (fx.t >= fx.chargeMs) {
+          const pulseIndex = Math.floor(this.time.now / 1000);
+          this.emitObeliskElectricSfx('OBELISK_CHARGE', {
+            intensity: fx.intensity,
+            pulseIndex,
+          });
           fx.phase = 'discharge';
           fx.t = 0;
           fx.bolts = this.buildTeslaBolts();
+          this.emitObeliskElectricSfx('OBELISK_DISCHARGE', {
+            intensity: 1,
+            pulseIndex: pulseIndex + 1,
+          });
         }
       } else if (fx.phase === 'discharge') {
         const p = Math.min(1, fx.t / fx.dischargeMs);
@@ -1945,62 +4244,99 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
     }
 
-    async update(time, delta) {
-      // 1. Advance obelisk phase, draw orb/tesla, return raw plasma target
-      const plasmaTarget = this.updateObeliskFx(time, delta);
-      if (!this.firePixels) return;
+    syncPlasmaResonance(plasmaTarget, rate = 0.07) {
+      const current = this._plasmaSmooth || 0;
+      this._plasmaSmooth = current + (plasmaTarget - current) * rate;
+      this.applyPlasmaSmooth(this._plasmaSmooth);
+      return this._plasmaSmooth;
+    }
 
-      // 2. Hand the per-frame visual work to the AMP worker.
-      //    Falls back to direct (main-thread) execution if the worker is unavailable.
-      let result;
-      try {
-        result = await processorBridge.execute('arena.tick', {
-          firePixels: this.firePixels,
-          fireW: this.fireW,
-          fireH: this.fireH,
-          seed: this._frameSeed++,
-          torcheffects: (this.torchEffects || []).map(() => ({})),
-          plasma: {
-            target: plasmaTarget,
-            current: this._plasmaSmooth || 0,
-            rate: 0.07,
-          },
-        });
-      } catch (e) {
-        console.warn('[CombatArena] arena.tick failed, skipping frame:', e.message);
-        return;
+    buildArenaTickPayload(plasmaTarget, plasmaRate = 0.07) {
+      return {
+        firePixels: this.firePixels,
+        fireW: this.fireW,
+        fireH: this.fireH,
+        seed: this._frameSeed++,
+        torcheffects: (this.torchEffects || []).map(() => ({})),
+        plasma: {
+          target: plasmaTarget,
+          current: this._plasmaSmooth || 0,
+          rate: plasmaRate,
+        },
+      };
+    }
+
+    applyArenaTickResult(result, time) {
+      if (!result || !this.firePixels) return;
+
+      if (result.firePixelsNext && result.fireRgba) {
+        this.firePixels = result.firePixelsNext;
+        this.fireImageData.data.set(result.fireRgba);
+        this.fireContext.putImageData(this.fireImageData, 0, 0);
+        this.fireTexture.refresh();
       }
 
-      if (!result) return;
-
-      // 3. Doom fire: worker mapped the new intensity grid to RGBA already.
-      //    Swap it into the existing ImageData, push to the GPU, refresh the texture.
-      this.firePixels = result.firePixelsNext;
-      this.fireImageData.data.set(result.fireRgba);
-      this.fireContext.putImageData(this.fireImageData, 0, 0);
-      this.fireTexture.refresh();
-
-      // 4. Plasma: worker did the lerp; apply the smooth value to the torch sprites.
-      this._plasmaSmooth = result.plasma.smooth;
-      this.applyPlasmaSmooth(result.plasma.smooth);
-
-      // 5. Torch glow: apply worker-computed flicker to shadow/ambient, then
-      //    re-render the light-pool canvas (time-based, stays on main thread).
       if (this.torchEffects && result.torchData) {
-        const t = time * 0.001;
+        const glowPhase = this.getArenaBeatSnapshot()?.beat?.exactBeat ?? (time * 0.001);
         for (let i = 0; i < this.torchEffects.length && i < result.torchData.length; i++) {
           const effect = this.torchEffects[i];
-          const { shadowScale, ambientAlpha, ambientScale } = result.torchData[i];
-          effect.shadow.alpha = effect.shadow.bobAlpha * (0.85 + (result.torchData[i].flicker) * 0.15);
+          const { shadowScale, ambientAlpha, ambientScale, flicker } = result.torchData[i];
+          effect.shadow.alpha = effect.shadow.bobAlpha * (0.85 + flicker * 0.15);
           effect.shadow.setScale(effect.shadow.bobScale * shadowScale, effect.shadow.bobScale * shadowScale);
           effect.ambient.alpha = ambientAlpha;
           effect.ambient.setScale(ambientScale, ambientScale);
-          this.renderTorchGlowCanvas(effect, t);
+          this.renderTorchGlowCanvas(effect, glowPhase);
         }
       }
     }
 
-    renderTorchGlowCanvas(effect, t) {
+    async runArenaTickDirect(payload) {
+      const { arenaTickProcessor } = await import('../../codex/core/microprocessors/arena/arena-tick.processor.js');
+      return arenaTickProcessor(payload);
+    }
+
+    dispatchArenaVisualTick(payload, time) {
+      const tickGen = ++this._arenaTickGen;
+      const applyLatest = (result) => {
+        if (tickGen !== this._arenaTickGen) return;
+        this.applyArenaTickResult(result, time);
+      };
+
+      const runDirect = () => this.runArenaTickDirect(payload).then(applyLatest);
+
+      if (this._arenaTickInFlight) {
+        void runDirect().catch((e) => {
+          console.warn('[CombatArena] arena.tick direct fallback failed:', e.message);
+        });
+        return;
+      }
+
+      this._arenaTickInFlight = true;
+      processorBridge.execute('arena.tick', payload)
+        .catch(() => this.runArenaTickDirect(payload))
+        .then(applyLatest)
+        .catch((e) => console.warn('[CombatArena] arena.tick failed:', e.message))
+        .finally(() => {
+          if (tickGen === this._arenaTickGen) {
+            this._arenaTickInFlight = false;
+          }
+        });
+    }
+
+    update(time, delta) {
+      // Obelisk, brazier bob, and beat crossings stay on the main thread.
+      const plasmaTarget = this.updateObeliskFx(time, delta);
+      if (!this.firePixels) return;
+
+      // Plasma must track obelisk intensity every frame — never defer to worker round-trip.
+      const plasmaRate = 0.07;
+      this.syncPlasmaResonance(plasmaTarget, plasmaRate);
+
+      // Doom fire + torch flicker via AMP worker (direct fallback if worker is busy/slow).
+      this.dispatchArenaVisualTick(this.buildArenaTickPayload(plasmaTarget, plasmaRate), time);
+    }
+
+    renderTorchGlowCanvas(effect, beatPhase) {
       const ctx = effect.glowCtx;
       const size = effect.size;
       const cx = size / 2;
@@ -2027,14 +4363,14 @@ export default function createCombatArenaScene(phaserRuntime) {
       ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(1, 0.5);
-      ctx.rotate(t * 1.2);
+      ctx.rotate(beatPhase * Math.PI * 2 * 0.5);
       ctx.fillRect(-45, -5, 90, 10);
       ctx.restore();
 
       ctx.save();
       ctx.translate(cx, cy);
       ctx.scale(1, 0.5);
-      ctx.rotate(-t * 0.8);
+      ctx.rotate(-beatPhase * Math.PI * 2 * 0.33);
       ctx.fillRect(-45, -4, 90, 8);
       ctx.restore();
 
@@ -2042,7 +4378,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       ctx.translate(cx, cy);
       ctx.scale(1, 0.5);
       for (let i = 0; i < 3; i++) {
-        const angle = t * 2 + (i * Math.PI * 0.6);
+        const angle = beatPhase * Math.PI * 2 + (i * Math.PI * 0.6);
         const rx = Math.cos(angle) * 25;
         const ry = Math.sin(angle) * 25;
         ctx.beginPath();
@@ -2054,9 +4390,11 @@ export default function createCombatArenaScene(phaserRuntime) {
       effect.glowTex.refresh();
     }
     
-    drawTorch(x, y) {
+    drawTorch(x, y, options = {}) {
       if (!this.torchEffects) this.torchEffects = [];
       const tIndex = this.torchEffects.length;
+      const sentinelId = options.sentinelId || null;
+      const sentinelDef = sentinelId ? getSentinelDefinition(sentinelId) : null;
       
       // 0. Realistic ground shadow for the floating matrix
       const shadow = this.add.graphics();
@@ -2076,23 +4414,22 @@ export default function createCombatArenaScene(phaserRuntime) {
       const glowCtx = glowTex.getContext();
       
       const ambient = this.add.sprite(x, y + 10, texKey);
-      ambient.setBlendMode(Phaser.BlendModes.ADD);
+      ambient.setBlendMode(phaserRuntime.BlendModes.ADD);
       
-      // Container to synchronize floating bob animation
-      const bobContainer = this.add.container(0, 0);
+      const floatY = y - 15;
+      const bobContainer = this.add.container(x, floatY);
 
-      // 2. Floating Obsidian Crystal Base (Inverted Pyramid)
+      // 2. Floating Obsidian Crystal Base (Inverted Pyramid) — local to bobContainer
       const graphics = this.add.graphics();
-      const pw = 14;  
-      const ph = 7;   
-      const drop = 25; 
-      const floatY = y - 15; // Float above ground
-      
-      const tTop = { x: x, y: floatY - ph };
-      const tRight = { x: x + pw, y: floatY };
-      const tBottom = { x: x, y: floatY + ph };
-      const tLeft = { x: x - pw, y: floatY };
-      const bottomTip = { x: x, y: floatY + drop };
+      const pw = 14;
+      const ph = 7;
+      const drop = 25;
+
+      const tTop = { x: 0, y: -ph };
+      const tRight = { x: pw, y: 0 };
+      const tBottom = { x: 0, y: ph };
+      const tLeft = { x: -pw, y: 0 };
+      const bottomTip = { x: 0, y: drop };
 
       const palette = PALETTES.obsidian;
       const leftColor = this.getLambertColor(-1, 0.5, -0.5, palette);
@@ -2136,58 +4473,68 @@ export default function createCombatArenaScene(phaserRuntime) {
       bobContainer.add(graphics);
 
       // 3. Mount the dynamic Doom Fire texture
-      const fireSprite = this.add.sprite(x, floatY + 5, 'doom-fire');
+      const fireSprite = this.add.sprite(0, 5, 'doom-fire');
       fireSprite.setOrigin(0.5, 1);
       fireSprite.setScale(2.16);
-      fireSprite.setBlendMode(Phaser.BlendModes.ADD);
+      fireSprite.setBlendMode(phaserRuntime.BlendModes.ADD);
       if (fireSprite.postFX) {
         fireSprite._plasmaBloom = fireSprite.postFX.addBloom(0xccffff, 1, 1, 1, 0);
       }
       bobContainer.add(fireSprite);
 
-      this.torchEffects.push({ shadow, ambient, glowTex, glowCtx, size, fireSprite });
+      this.torchEffects.push({
+        shadow,
+        ambient,
+        glowTex,
+        glowCtx,
+        size,
+        fireSprite,
+        bobContainer,
+        anchorX: x,
+        anchorY: floatY,
+        shadowBaseX: x,
+        shadowBaseY: y + 10,
+        bobPhaseOffset: tIndex * 0.5,
+        ring1: null,
+        ring2: null,
+        ring1BaseRot: 0.3,
+        ring2BaseRot: -0.4,
+        sentinelId,
+        gridTx: sentinelDef?.tx ?? null,
+        gridTy: sentinelDef?.ty ?? null,
+      });
 
-      bobContainer.setDepth(30); // Ensure torches on top of galaxy
+      bobContainer.setDepth(ARENA_DEPTH.TORCH);
 
       // 4. Gyroscopic Containment Rings (Armillary Matrix)
       const ring1 = this.add.graphics();
-      ring1.setBlendMode(Phaser.BlendModes.ADD);
+      ring1.setBlendMode(phaserRuntime.BlendModes.ADD);
       ring1.lineStyle(2, PALETTES.royal_purple.shine, 0.9);
       ring1.strokeEllipse(0, 0, 45, 15);
-      ring1.setPosition(x, floatY - 20);
+      ring1.setPosition(0, -20);
       ring1.rotation = 0.3;
       ring1.setDepth(31);
 
       const ring2 = this.add.graphics();
-      ring2.setBlendMode(Phaser.BlendModes.ADD);
+      ring2.setBlendMode(phaserRuntime.BlendModes.ADD);
       ring2.lineStyle(1.5, PALETTES.royal_purple.core, 1);
       ring2.strokeEllipse(0, 0, 55, 12);
-      ring2.setPosition(x, floatY - 25);
+      ring2.setPosition(0, -25);
       ring2.rotation = -0.4;
       ring2.setDepth(31);
       
       bobContainer.add([ring1, ring2]);
-      bobContainer.setDepth(30);
-      
-      // Animate rings spinning in opposite directions
-      this.tweens.add({
-        targets: ring1,
-        rotation: ring1.rotation + Math.PI * 2,
-        duration: 6000,
-        repeat: -1,
-        ease: 'Linear'
-      });
-      this.tweens.add({
-        targets: ring2,
-        rotation: ring2.rotation - Math.PI * 2,
-        duration: 9000,
-        repeat: -1,
-        ease: 'Linear'
-      });
+      bobContainer.setDepth(ARENA_DEPTH.TORCH);
+
+      const torchEntry = this.torchEffects[this.torchEffects.length - 1];
+      torchEntry.ring1 = ring1;
+      torchEntry.ring2 = ring2;
+      torchEntry.ring1BaseRot = ring1.rotation;
+      torchEntry.ring2BaseRot = ring2.rotation;
 
       // 5. High Fidelity Particle Emitter for Doom Fire Sparks
       if (this.add.particles) {
-        const emitter = this.add.particles(x, floatY - 20, 'doom-fire', {
+        const emitter = this.add.particles(0, -20, 'doom-fire', {
           speed: { min: 20, max: 80 },
           angle: { min: 250, max: 290 }, // Emits upwards
           scale: { start: 0.3, end: 0 },
@@ -2200,41 +4547,16 @@ export default function createCombatArenaScene(phaserRuntime) {
         bobContainer.add(emitter);
       } else {
         const runes = this.add.graphics();
-        runes.setBlendMode(Phaser.BlendModes.ADD);
+        runes.setBlendMode(phaserRuntime.BlendModes.ADD);
         runes.fillStyle(PALETTES.royal_purple.lit, 1);
-        runes.fillEllipse(x - 25, floatY - 45, 3, 3);
-        runes.fillEllipse(x + 30, floatY - 20, 2, 2);
-        runes.fillEllipse(x + 15, floatY - 55, 4, 4);
-        runes.fillEllipse(x - 30, floatY - 15, 2, 2);
+        runes.fillEllipse(-25, -45, 3, 3);
+        runes.fillEllipse(30, -20, 2, 2);
+        runes.fillEllipse(15, -55, 4, 4);
+        runes.fillEllipse(-30, -15, 2, 2);
         bobContainer.add(runes);
       }
 
-      // 6. Slowly bob the entire matrix up and down asynchronously
-      const bobDuration = Phaser.Math.Between(1500, 2500);
-      const bobDelay = Phaser.Math.Between(0, 500);
-      
-      this.tweens.add({
-         targets: bobContainer,
-         y: -12, // Float higher
-         duration: bobDuration,
-         yoyo: true,
-         repeat: -1,
-         ease: 'Sine.easeInOut',
-         delay: bobDelay
-      });
-
-      // Synchronize the ground shadow with the float height
-      // We tween custom properties so the update loop can mix in chaotic flickering
-      this.tweens.add({
-         targets: shadow,
-         bobScale: 1.8,
-         bobAlpha: 0.3,
-         duration: bobDuration,
-         yoyo: true,
-         repeat: -1,
-         ease: 'Sine.easeInOut',
-         delay: bobDelay
-      });
+      // Levitation + shadow bob are driven by BGM beat clock in updateObeliskFx.
     }
     
     drawTeleportationPortal() {
@@ -2303,7 +4625,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       const pCtx = portalTex.getContext();
       
       const portalImg = this.add.image(0, 0, 'portal-energy');
-      portalImg.setBlendMode(Phaser.BlendModes.ADD);
+      portalImg.setBlendMode(phaserRuntime.BlendModes.ADD);
       portalImg.setAlpha(0.9);
       if (portalImg.postFX) portalImg.postFX.addBloom(0x4400ff, 1.5, 1.5, 2, 1.5);
       portalGroup.add(portalImg);
@@ -2370,7 +4692,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (mechFront.postFX) mechFront.postFX.addBloom(0x00ffff, 1, 1, 1, 1.2);
       
       portalGroup.add(mechFront);
-      portalGroup.setDepth(18); // Teleporter behind the player (player layers start at 20)
+      portalGroup.setDepth(ARENA_DEPTH.PORTAL);
 
       // Arrays for 2D Water Ripple simulation
       let buf1 = new Float32Array(pW * pH);
@@ -2512,7 +4834,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       const planetY = skyTop + 200;
       const planet = this.add.image(planetX, planetY, 'distant-planet').setScale(1.6);
       const planetRim = this.add.image(planetX, planetY, 'planet-rim').setScale(1.65);
-      planetRim.setBlendMode(Phaser.BlendModes.ADD);
+      planetRim.setBlendMode(phaserRuntime.BlendModes.ADD);
       planetRim.setAlpha(0.6);
       galaxyContainer.add([planet, planetRim]);
       this.tweens.add({
@@ -2526,14 +4848,14 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
 
       // Deep space volumetric nebula haze (underneath the island)
-      bg.setBlendMode(Phaser.BlendModes.SCREEN);
+      bg.setBlendMode(phaserRuntime.BlendModes.SCREEN);
       for(let i=0; i<40; i++) {
-        bg.fillStyle(0x1a053a, Phaser.Math.FloatBetween(0.02, 0.08));
-        const nx = Phaser.Math.Between(skyLeft, skyRight);
-        const ny = Phaser.Math.Between(skyTop, skyBottom); // Spread across the whole sky
-        const rw = Phaser.Math.Between(1500, 3000);
-        const rh = Phaser.Math.Between(1500, 3000); // Make them rounder/taller to avoid horizontal banding
-        const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
+        bg.fillStyle(0x1a053a, phaserRuntime.Math.FloatBetween(0.02, 0.08));
+        const nx = phaserRuntime.Math.Between(skyLeft, skyRight);
+        const ny = phaserRuntime.Math.Between(skyTop, skyBottom); // Spread across the whole sky
+        const rw = phaserRuntime.Math.Between(1500, 3000);
+        const rh = phaserRuntime.Math.Between(1500, 3000); // Make them rounder/taller to avoid horizontal banding
+        const angle = phaserRuntime.Math.FloatBetween(-Math.PI, Math.PI);
         bg.save();
         bg.translateCanvas(nx, ny);
         bg.rotateCanvas(angle);
@@ -2586,7 +4908,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       // Parallax Galaxy Core (Massive swirling spiral arms) - number scaled to area for appropriate density to fill viewport without cluttering arena
-      bg.setBlendMode(Phaser.BlendModes.ADD);
+      bg.setBlendMode(phaserRuntime.BlendModes.ADD);
       const spiralArms = 4;
       const area = skyW * skyH;
       // The spiral core is a fixed world-space object centered at the origin — its reach and
@@ -2595,17 +4917,17 @@ export default function createCombatArenaScene(phaserRuntime) {
       const spiralReach = 2500;
       const numSpiral = 3000;
       for(let i=0; i<numSpiral; i++) {
-        const armOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
-        const distance = Phaser.Math.FloatBetween(50, spiralReach);
+        const armOffset = phaserRuntime.Math.FloatBetween(0, Math.PI * 2);
+        const distance = phaserRuntime.Math.FloatBetween(50, spiralReach);
         // Golden ratio spiral rotation
         const angle = (distance * 0.002) + (Math.floor(armOffset / (Math.PI*2/spiralArms)) * (Math.PI*2/spiralArms));
         
         // Add scatter / dust
-        const scatter = Phaser.Math.FloatBetween(-200, 200) * (distance / 500);
+        const scatter = phaserRuntime.Math.FloatBetween(-200, 200) * (distance / 500);
         const sx = Math.cos(angle) * distance + scatter;
         const sy = Math.sin(angle) * distance * 0.4 + scatter * 0.4 - 400; // Shift galaxy up and flatten
         
-        const size = Phaser.Math.FloatBetween(0.5, 4.0);
+        const size = phaserRuntime.Math.FloatBetween(0.5, 4.0);
         
         // Core is intensely bright/white/cyan, edges are deep purple
         let color = 0xcceeff; // Core
@@ -2613,12 +4935,12 @@ export default function createCombatArenaScene(phaserRuntime) {
         else if (distance > 800) color = 0xff33cc;
         else if (distance > 400) color = 0x00ffff;
         
-        const brightness = Phaser.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance / spiralReach));
+        const brightness = phaserRuntime.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance / spiralReach));
         
         // Make ~15% of the stars twinkle independently
         if (Math.random() > 0.85) {
           const star = this.add.image(sx, sy, 'twinkle-star');
-          star.setBlendMode(Phaser.BlendModes.ADD);
+          star.setBlendMode(phaserRuntime.BlendModes.ADD);
           star.setTint(color);
           star.setScale(size / 8); // Base texture is 8x8
           star.setAlpha(brightness);
@@ -2627,11 +4949,11 @@ export default function createCombatArenaScene(phaserRuntime) {
           this.tweens.add({
             targets: star,
             alpha: 0,
-            duration: Phaser.Math.Between(1500, 5000), // Random speed
+            duration: phaserRuntime.Math.Between(1500, 5000), // Random speed
             yoyo: true,
             repeat: -1,
             ease: 'Sine.easeInOut',
-            delay: Phaser.Math.Between(0, 5000) // Random start offset so they never sync up
+            delay: phaserRuntime.Math.Between(0, 5000) // Random start offset so they never sync up
           });
         } else {
           bg.fillStyle(color, brightness);
@@ -2639,24 +4961,24 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
       }
 
-      bg.setBlendMode(Phaser.BlendModes.ADD);
+      bg.setBlendMode(phaserRuntime.BlendModes.ADD);
       const numFiller = Math.floor(area / 16000);
       for(let i=0; i<numFiller; i++) {
-        let sx = Phaser.Math.Between(skyLeft, skyRight);
-        let sy = Phaser.Math.Between(skyTop, skyBottom);
+        let sx = phaserRuntime.Math.Between(skyLeft, skyRight);
+        let sy = phaserRuntime.Math.Between(skyTop, skyBottom);
         if (Math.random() > 0.4) {
           const curve = Math.sin(sx / 800) * 300;
-          sy = curve + Phaser.Math.Between(-300, 300);
+          sy = curve + phaserRuntime.Math.Between(-300, 300);
         }
         
-        const size = Phaser.Math.FloatBetween(0.2, 2.5);
-        const brightness = Phaser.Math.FloatBetween(0.1, 1.0);
+        const size = phaserRuntime.Math.FloatBetween(0.2, 2.5);
+        const brightness = phaserRuntime.Math.FloatBetween(0.1, 1.0);
         const colors = [0xffffff, 0xcceeff, 0xffccff, 0xaaffcc, 0xffbb99];
         
         bg.fillStyle(colors[Math.floor(Math.random() * colors.length)], brightness);
         bg.fillCircle(sx, sy, size);
       }
-      bg.setBlendMode(Phaser.BlendModes.NORMAL);
+      bg.setBlendMode(phaserRuntime.BlendModes.NORMAL);
 
       // Shooting stars — periodic diagonal streaks across the upper sky
       if (!this.textures.exists('meteor')) {
@@ -2681,14 +5003,14 @@ export default function createCombatArenaScene(phaserRuntime) {
         loop: true,
         callback: () => {
           if (Math.random() > 0.4) return;
-          const startX = Phaser.Math.Between(skyLeft, skyRight / 2);
-          const startY = Phaser.Math.Between(skyTop, skyBottom / 2);
-          const dist = Phaser.Math.Between(500, 1200);
-          const drop = Phaser.Math.Between(80, 250);
+          const startX = phaserRuntime.Math.Between(skyLeft, skyRight / 2);
+          const startY = phaserRuntime.Math.Between(skyTop, skyBottom / 2);
+          const dist = phaserRuntime.Math.Between(500, 1200);
+          const drop = phaserRuntime.Math.Between(80, 250);
           const endX = startX + dist;
           const endY = startY + drop;
           const m = this.add.image(startX, startY, 'meteor');
-          m.setBlendMode(Phaser.BlendModes.ADD);
+          m.setBlendMode(phaserRuntime.BlendModes.ADD);
           m.setAlpha(0.95);
           m.setRotation(Math.atan2(drop, dist));
           galaxyContainer.add(m);
@@ -2698,7 +5020,7 @@ export default function createCombatArenaScene(phaserRuntime) {
             x: endX,
             y: endY,
             alpha: 0,
-            duration: Phaser.Math.Between(800, 1600),
+            duration: phaserRuntime.Math.Between(800, 1600),
             ease: 'Cubic.easeIn',
             onComplete: () => m.destroy()
           });

@@ -2,19 +2,26 @@ import { describe, expect, it } from 'vitest';
 import { COMBAT_STATS, buildDefaultStatBlock } from '../../../src/game/combat/combatStats.js';
 
 describe('combatStats registry', () => {
-  it('defines the three slice-1 stats with the documented bases', () => {
+  it('defines the slice-1 tactical stats with the documented bases', () => {
     const byKey = Object.fromEntries(COMBAT_STATS.map((s) => [s.key, s]));
     expect(byKey.movementPoints.base).toBe(3);
-    expect(byKey.attackPoints.base).toBe(10);
-    expect(byKey.attackRange.base).toBe(1);
+    expect(byKey.attackPoints.base).toBe(6);
+    expect(byKey.attackRange.base).toBe(2);
+    expect(byKey.manaPoints.base).toBe(100);
+    expect(byKey.intelligence.base).toBe(10);
+    expect(byKey.intelligence.label).toBe('INT');
   });
 
   it('buildDefaultStatBlock seeds defaults with a full movement pool', () => {
     expect(buildDefaultStatBlock()).toEqual({
       movementPoints: 3,
       movementPointsRemaining: 3,
-      attackPoints: 10,
-      attackRange: 1,
+      attackPoints: 6,
+      attackPointsRemaining: 6,
+      attackRange: 2,
+      manaPoints: 100,
+      manaPointsRemaining: 100,
+      intelligence: 10,
     });
   });
 
@@ -23,7 +30,11 @@ describe('combatStats registry', () => {
       movementPoints: 5,
       movementPointsRemaining: 5,
       attackPoints: 20,
-      attackRange: 1,
+      attackPointsRemaining: 20,
+      attackRange: 2,
+      manaPoints: 100,
+      manaPointsRemaining: 100,
+      intelligence: 10,
     });
   });
 

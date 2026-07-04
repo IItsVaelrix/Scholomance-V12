@@ -1,18 +1,43 @@
 /**
  * Authoritative semantic law for spellweave and combat only.
  *
- * This registry stays intentionally narrow: deterministic predicates, objects,
- * and status-chain helpers that the engine resolves authoritatively. Higher-
- * order interpretation such as metaphor, semantic fields, archetypes, and
- * register tension now belongs on the VerseIR amplifier substrate.
+ * Spellweave grammar is intent-first: the weave names force (INTENT), not verb
+ * predicates. Verse predicates remain for Syntax Chess / VerseIR; they are not
+ * weave tokens. Higher-order interpretation such as metaphor, semantic fields,
+ * archetypes, and register tension belongs on the VerseIR amplifier substrate.
  */
 
-export const INTENTS = {
-  OFFENSIVE: "OFFENSIVE",
-  DEFENSIVE: "DEFENSIVE",
-  HEALING: "HEALING",
-  UTILITY: "UTILITY",
-  DISRUPTION: "DISRUPTION"
+import { INTENTS } from './intent-classes.js';
+
+export { INTENTS };
+
+import {
+  flattenWeaveIntentRegistry,
+  formatIntentPath,
+  getIntentClassTree,
+  getIntentForest,
+  listAllWeaveIntentTokens,
+  listOctantsForClass,
+  lookupWeaveIntent,
+  resolveIntentPath,
+  WEAVE_INTENT_FOREST,
+} from './weave-intent-octree.js';
+
+/**
+ * Flat weave-intent registry (325 tokens) built from the per-class octrees.
+ * School is resolved from the Verse (dominantSchool), not from the weave token.
+ */
+export const WEAVE_INTENTS = flattenWeaveIntentRegistry();
+
+export {
+  WEAVE_INTENT_FOREST,
+  formatIntentPath,
+  getIntentClassTree,
+  getIntentForest,
+  listAllWeaveIntentTokens,
+  listOctantsForClass,
+  lookupWeaveIntent,
+  resolveIntentPath,
 };
 
 export const SEMANTIC_TIER_COUNT = 5;
@@ -56,7 +81,8 @@ export const OBJECTS = {
   BLOOD: { category: "PHYSICAL", multiplier: 1.3 },
   STONE: { category: "ELEMENTAL", multiplier: 0.9 },
   AIR: { category: "ELEMENTAL", multiplier: 0.8 },
-  FIRE: { category: "ELEMENTAL", multiplier: 1.1 }
+  FIRE: { category: "ELEMENTAL", multiplier: 1.1 },
+  OBELISK: { category: "STRUCTURE", multiplier: 1.0 },
 };
 
 /**
@@ -169,15 +195,41 @@ export function getSemanticTierLabel(school, chainId, tier) {
 }
 
 /**
- * Maps a word to a predicate or object if it exists.
- * @param {string} word 
+ * Maps a word to a weave token (intent, object, modifier, connector).
+ * Predicate verbs are excluded — spellweave is intent-based.
+ * @param {string} word
+ * @returns {Object|null}
+ */
+export function lookupWeaveToken(word) {
+  const upper = word.toUpperCase();
+  const weaveIntent = lookupWeaveIntent(upper);
+  if (weaveIntent) {
+    return {
+      type: 'INTENT',
+      token: upper,
+      intent: weaveIntent.intent,
+      intentClass: weaveIntent.intentClass,
+      manner: weaveIntent.manner,
+      powerScale: weaveIntent.powerScale,
+      schoolAffinity: weaveIntent.schoolAffinity,
+      path: weaveIntent.path,
+      octantLabel: weaveIntent.octantLabel,
+      description: weaveIntent.description,
+    };
+  }
+  if (OBJECTS[upper]) return { type: 'OBJECT', ...OBJECTS[upper] };
+  if (MODIFIERS[upper]) return { type: 'MODIFIER', ...MODIFIERS[upper] };
+  if (CONNECTORS[upper]) return { type: 'CONNECTOR', ...CONNECTORS[upper] };
+  return null;
+}
+
+/**
+ * Maps a word to any semantic registry entry, including verse predicates.
+ * @param {string} word
  * @returns {Object|null}
  */
 export function lookupSemanticToken(word) {
   const upper = word.toUpperCase();
-  if (PREDICATES[upper]) return { type: "PREDICATE", ...PREDICATES[upper] };
-  if (OBJECTS[upper]) return { type: "OBJECT", ...OBJECTS[upper] };
-  if (MODIFIERS[upper]) return { type: "MODIFIER", ...MODIFIERS[upper] };
-  if (CONNECTORS[upper]) return { type: "CONNECTOR", ...CONNECTORS[upper] };
-  return null;
+  if (PREDICATES[upper]) return { type: 'PREDICATE', ...PREDICATES[upper] };
+  return lookupWeaveToken(word);
 }

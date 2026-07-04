@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   CONNECTORS,
   MODIFIERS,
+  WEAVE_INTENTS,
   getSemanticSchoolRegistry,
   lookupSemanticToken,
+  lookupWeaveToken,
 } from '../../codex/core/semantics.registry.js';
 
 const COMBAT_SCHOOLS = ['SONIC', 'PSYCHIC', 'ALCHEMY', 'WILL', 'VOID'];
@@ -21,9 +23,17 @@ describe('semantic token classes', () => {
     expect(lookupSemanticToken('while')).toMatchObject({ type: 'CONNECTOR', chainType: 'SUSTAINED' });
   });
 
-  it('keeps predicates and objects primary', () => {
-    expect(lookupSemanticToken('strike')?.type).toBe('PREDICATE');
-    expect(lookupSemanticToken('flesh')?.type).toBe('OBJECT');
+  it('keeps verse predicates in semantic lookup while weave uses octree leaves', () => {
+    expect(lookupSemanticToken('ignite')?.type).toBe('PREDICATE');
+    expect(lookupWeaveToken('ignite')).toMatchObject({ type: 'INTENT', intentClass: 'OFFENSIVE', manner: 'FLAME' });
+    expect(lookupWeaveToken('offensive')).toMatchObject({ type: 'INTENT', intent: 'OFFENSIVE' });
+    expect(lookupWeaveToken('flesh')?.type).toBe('OBJECT');
+  });
+
+  it('exposes the octree-backed weave intent registry', () => {
+    expect(Object.keys(WEAVE_INTENTS).length).toBe(325);
+    expect(lookupWeaveToken('REND')).toMatchObject({ type: 'INTENT', intentClass: 'OFFENSIVE' });
+    expect(lookupWeaveToken('OFFENSIVE')).toMatchObject({ type: 'INTENT', manner: 'BROAD' });
   });
 
   it('exposes every declared modifier and connector through lookup', () => {

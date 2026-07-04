@@ -8,7 +8,7 @@ import { buildTokenGraph, createGraphNode, createSchoolAnchorNode } from './toke
 import { buildContextActivation } from './token-graph/activation.js';
 import { traverseTokenGraph } from './token-graph/traverse.js';
 import { scoreGraphCandidates } from './token-graph/score.js';
-import { lookupSemanticToken, INTENTS } from './semantics.registry.js';
+import { lookupSemanticToken, lookupWeaveToken, INTENTS } from './semantics.registry.js';
 import { phoneticMatcher } from './phonetic_matcher.js';
 import { tokenize } from './tokenizer.js';
 
@@ -17,7 +17,8 @@ import { tokenize } from './tokenizer.js';
  * @property {string} intent - The resolved action intent.
  * @property {string} school - The resolved school.
  * @property {number} resonance - Magnitude multiplier.
- * @property {string[]} predicates - Extracted predicates.
+ * @property {string[]} intents - Extracted weave intents.
+ * @property {string[]} predicates - Deprecated alias; always empty (intent-based weave).
  * @property {string[]} objects - Extracted objects.
  * @property {boolean} collapsed - Whether the spell collapsed due to poor syntax.
  * @property {WeaveClause[]} clauses - Ordered clause parse of the weave.
@@ -44,7 +45,7 @@ function uniqueTokens(text) {
 }
 
 function buildSpellTokenNode(token) {
-  const semantic = lookupSemanticToken(token);
+  const semantic = lookupWeaveToken(token);
   return createGraphNode({
     id: `lexeme:${token}`,
     token,
@@ -85,7 +86,7 @@ function buildSpellweaveGraph(verseTokens, weaveTokens, dominantSchool) {
   if (schoolAnchor) nodes.push(schoolAnchor);
 
   weaveTokens.forEach((weaveToken) => {
-    const weaveSemantic = lookupSemanticToken(weaveToken);
+    const weaveSemantic = lookupWeaveToken(weaveToken);
     const weaveNodeId = `lexeme:${weaveToken}`;
 
     if (weaveSemantic?.school && schoolAnchor) {
@@ -161,17 +162,17 @@ function buildSpellweaveGraph(verseTokens, weaveTokens, dominantSchool) {
     });
   });
 
-  const predicates = weaveTokens.filter((token) => lookupSemanticToken(token)?.type === 'PREDICATE');
-  const objects = weaveTokens.filter((token) => lookupSemanticToken(token)?.type === 'OBJECT');
-  predicates.forEach((predicate) => {
+  const intents = weaveTokens.filter((token) => lookupWeaveToken(token)?.type === 'INTENT');
+  const objects = weaveTokens.filter((token) => lookupWeaveToken(token)?.type === 'OBJECT');
+  intents.forEach((intent) => {
     objects.forEach((objectToken) => {
       addBidirectionalEdge(
         edges,
-        `lexeme:${predicate}`,
+        `lexeme:${intent}`,
         `lexeme:${objectToken}`,
         'SYNTACTIC_COMPATIBILITY',
         0.8,
-        ['predicate_object_binding'],
+        ['intent_object_binding'],
       );
     });
   });
@@ -231,26 +232,26 @@ function evaluateSpellweaveAlignment(verseTokens, weaveTokens, dominantSchool) {
 
 /**
  * @typedef {Object} WeaveClause
- * @property {string[]} predicates - Predicates in spoken order.
+ * @property {string[]} intents - Weave intents in spoken order.
  * @property {string[]} objects - Objects in spoken order.
  * @property {string[]} modifiers - Modifiers in spoken order.
- * @property {string[]} sequence - Role stream ('P'|'O'|'M') in spoken order.
+ * @property {string[]} sequence - Role stream ('I'|'O'|'M') in spoken order.
  * @property {'legal'|'inverted'|'unfocused'|'dangling'|'collapsed'|'inert'} legality
  * @property {string|null} connector - Connector that introduced this clause.
  */
 
 const CLAUSE_LEGALITY_PENALTIES = Object.freeze({
   legal: 0,
-  inverted: 0.15,   // object spoken before its predicate — the spell recoils
-  unfocused: 0.08,  // predicate with no object — force without a vessel
-  dangling: 0.10,   // modifier with no predicate — intent bleeds away
+  inverted: 0.15,   // object spoken before its intent — the spell recoils
+  unfocused: 0.08,  // intent with no object — force without a vessel
+  dangling: 0.10,   // modifier with no intent — manner bleeds away
   collapsed: 0,     // handled by the collapse path, not a penalty
   inert: 0,         // no semantic tokens at all
 });
 
 function createClause(connector = null) {
   return {
-    predicates: [],
+    intents: [],
     objects: [],
     modifiers: [],
     sequence: [],
@@ -260,17 +261,17 @@ function createClause(connector = null) {
 }
 
 function resolveClauseLegality(clause) {
-  if (clause.predicates.length > 3) return 'collapsed';
-  const hasPredicate = clause.predicates.length > 0;
+  if (clause.intents.length > 3) return 'collapsed';
+  const hasIntent = clause.intents.length > 0;
   const hasObject = clause.objects.length > 0;
   const hasModifier = clause.modifiers.length > 0;
-  if (!hasPredicate && !hasObject && !hasModifier) return 'inert';
-  if (!hasPredicate && hasModifier && !hasObject) return 'dangling';
-  if (!hasPredicate) return 'inverted';
+  if (!hasIntent && !hasObject && !hasModifier) return 'inert';
+  if (!hasIntent && hasModifier && !hasObject) return 'dangling';
+  if (!hasIntent) return 'inverted';
   if (!hasObject) return 'unfocused';
-  const firstPredicate = clause.sequence.indexOf('P');
+  const firstIntent = clause.sequence.indexOf('I');
   const firstObject = clause.sequence.indexOf('O');
-  return firstObject < firstPredicate ? 'inverted' : 'legal';
+  return firstObject < firstIntent ? 'inverted' : 'legal';
 }
 
 function resolveChainType(connectors) {
@@ -281,16 +282,14 @@ function resolveChainType(connectors) {
 
 /**
  * Parses the Spellweave as an ordered clause grammar:
- *   [MODIFIER]* PREDICATE [MODIFIER]* OBJECT (CONNECTOR clause)*
- * Word order is law: an object spoken before its predicate inverts the
+ *   [MODIFIER]* INTENT [MODIFIER]* OBJECT (CONNECTOR clause)*
+ * Word order is law: an object spoken before its intent inverts the
  * clause; a modifier with nothing to bind to dangles.
- *
- * The flat `predicates`/`objects`/`tokens` fields keep the historical
- * unique-token shape for existing consumers.
  *
  * @param {string} weave
  * @returns {{
- *   predicates: string[], objects: string[], tokens: string[],
+ *   intents: string[], objects: string[], tokens: string[],
+ *   predicates: string[],
  *   clauses: WeaveClause[], chainType: string, strikes: number,
  *   syntax: { legalOrder: number, modifierPower: number, danglingModifiers: number, clauseCount: number }
  * }}
@@ -309,16 +308,16 @@ export function parseWeave(weave) {
   };
 
   orderedTokens.forEach((token) => {
-    const semantic = lookupSemanticToken(token);
+    const semantic = lookupWeaveToken(token);
     if (semantic?.type === 'CONNECTOR') {
       commitClause(current);
       connectors.push({ token, chainType: semantic.chainType });
       current = createClause(token);
       return;
     }
-    if (semantic?.type === 'PREDICATE') {
-      current.predicates.push(token);
-      current.sequence.push('P');
+    if (semantic?.type === 'INTENT') {
+      current.intents.push(token);
+      current.sequence.push('I');
     } else if (semantic?.type === 'OBJECT') {
       current.objects.push(token);
       current.sequence.push('O');
@@ -337,18 +336,19 @@ export function parseWeave(weave) {
   const modifierPower = activeClauses.reduce((power, clause) => {
     if (clause.legality === 'dangling') return power;
     return clause.modifiers.reduce((clausePower, modifier) => {
-      const scale = Number(lookupSemanticToken(modifier)?.powerScale) || 1;
+      const scale = Number(lookupWeaveToken(modifier)?.powerScale) || 1;
       return clausePower * scale;
     }, power);
   }, 1);
 
   return {
-    predicates: [...new Set(activeClauses.flatMap((clause) => clause.predicates))],
+    intents: [...new Set(activeClauses.flatMap((clause) => clause.intents))],
     objects: [...new Set(activeClauses.flatMap((clause) => clause.objects))],
+    predicates: [],
     tokens: [...new Set(orderedTokens)],
     clauses,
     chainType: resolveChainType(connectors),
-    strikes: Math.max(1, activeClauses.filter((clause) => clause.predicates.length > 0).length),
+    strikes: Math.max(1, activeClauses.filter((clause) => clause.intents.length > 0).length),
     syntax: {
       legalOrder: activeClauses.length > 0 ? legalClauses.length / activeClauses.length : 0,
       modifierPower: clamp(modifierPower, 1, 2),
@@ -387,12 +387,12 @@ function buildWeaveSyntaxEvents(parsed, collapsed) {
  */
 export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
   const parsed = parseWeave(weave);
-  const { predicates, objects, tokens: weaveTokens, clauses, chainType, strikes, syntax } = parsed;
+  const { intents, objects, tokens: weaveTokens, clauses, chainType, strikes, syntax } = parsed;
   const verseTokens = uniqueTokens(verse).map((token) => token.toUpperCase());
   const alignment = evaluateSpellweaveAlignment(verseTokens, weaveTokens, dominantSchool);
 
   // Collapse is clause-scoped: any single clause carrying more than three
-  // predicates frays the weave, however the rest is structured.
+  // intents frays the weave, however the rest is structured.
   const collapsed = clauses.some((clause) => clause.legality === 'collapsed');
 
   if (collapsed) {
@@ -400,7 +400,8 @@ export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
       intent: INTENTS.UTILITY,
       school: dominantSchool,
       resonance: Math.max(0.1, 0.18 + (alignment.graphAlignment * 0.32)),
-      predicates,
+      intents,
+      predicates: [],
       objects,
       collapsed: true,
       clauses,
@@ -411,11 +412,10 @@ export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
     };
   }
 
-  const firstArmedClause = clauses.find((clause) => clause.predicates.length > 0);
-  const primaryPredicate = firstArmedClause?.predicates[0] || predicates[0] || 'STRIKE';
-  const predicateData = lookupSemanticToken(primaryPredicate) || {
+  const firstArmedClause = clauses.find((clause) => clause.intents.length > 0);
+  const primaryIntentToken = firstArmedClause?.intents[0] || intents[0] || 'OFFENSIVE';
+  const intentData = lookupWeaveToken(primaryIntentToken) || {
     intent: INTENTS.OFFENSIVE,
-    school: dominantSchool,
   };
 
   let resonance = 0.55
@@ -423,12 +423,6 @@ export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
     + (alignment.schoolResonance * 0.25)
     + (alignment.phoneticHarmony * 0.12)
     + (alignment.syntaxLegality * 0.18);
-
-  if (predicateData.school === dominantSchool) {
-    resonance += 0.12;
-  } else {
-    resonance -= 0.06;
-  }
 
   if (objects.length > 1) {
     resonance += 0.06;
@@ -454,10 +448,11 @@ export function calculateSyntacticBridge({ verse, weave, dominantSchool }) {
   }
 
   return {
-    intent: predicateData.intent,
-    school: predicateData.school,
+    intent: intentData.intent,
+    school: dominantSchool,
     resonance: Math.max(0.1, resonance),
-    predicates,
+    intents,
+    predicates: [],
     objects,
     collapsed: false,
     clauses,

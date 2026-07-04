@@ -36,15 +36,21 @@ export function solveArm(arm, anglesDeg = []) {
   return results;
 }
 
-/** Resolve the hand segment's gripPoint in canvas space. */
-export function gripWorld(arm, anglesDeg = []) {
+/** Resolve a hand-segment anchor (gripPoint, cradlePoint, …) in canvas space. */
+export function anchorWorld(arm, anglesDeg = [], anchorKey = 'gripPoint') {
   const solved = solveArm(arm, anglesDeg);
-  const handIdx = arm.segments.findIndex((s) => s.gripPoint);
+  const handIdx = arm.segments.findIndex((s) => s[anchorKey]);
   if (handIdx < 0) return { x: 0, y: 0, angleRad: 0 };
   const seg = arm.segments[handIdx];
+  const anchor = seg[anchorKey];
   const { jointX, jointY, angleRad } = solved[handIdx];
-  const dx = seg.gripPoint.x - seg.pivot.x;
-  const dy = seg.gripPoint.y - seg.pivot.y;
+  const dx = anchor.x - seg.pivot.x;
+  const dy = anchor.y - seg.pivot.y;
   const p = advance(jointX, jointY, dx, dy, angleRad, arm.mirror);
   return { x: p.x, y: p.y, angleRad };
+}
+
+/** Resolve the hand segment's gripPoint in canvas space. */
+export function gripWorld(arm, anglesDeg = []) {
+  return anchorWorld(arm, anglesDeg, 'gripPoint');
 }

@@ -36,7 +36,20 @@ export default defineConfig({
       '/api': 'http://localhost:8080',
       '^/auth/.*': { target: 'http://localhost:8080' },
       '^/collab/.*': { target: 'http://localhost:8080' },
-      '/audio': 'http://localhost:8080',
+      // Backend owns uploaded archive tracks under /audio/*, but static files
+      // in public/audio/ (ambience, scholosound) must be served by Vite.
+      '/audio': {
+        target: 'http://localhost:8080',
+        bypass(req) {
+          const url = req.url || '';
+          if (
+            url.startsWith('/audio/ambience/')
+            || url.startsWith('/audio/scholosound/')
+          ) {
+            return url;
+          }
+        },
+      },
     },
   },
   test: {

@@ -1,25 +1,369 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
+import { resetObeliskTutorialForDevSession } from '../../game/combat/obeliskTutorialDevReset.js';
 import ArenaCombatView from './ArenaCombatView.jsx';
-import { calculateCombatScore } from '../../../codex/core/combat.scoring.js';
+import { resolveCombatCastScore } from '../../game/combat/combatCastScoring.js';
+import { resolveCombatWeaveCast } from '../../game/combat/combatWeaveCast.js';
+import {
+  installSceneContextBridge,
+  requestSceneContext,
+} from '../../game/combat/sceneContextBridge.js';
+import { mergeSelectedCombatTarget } from '../../game/combat/combatTargetSelection.js';
+import {
+  deriveCastModeHint,
+  extractParsedClauses,
+  findSceneTargetLabel,
+  lookupSceneEnemyToken,
+  resolveWeaveTargetsFromParsed,
+} from '../../game/combat/weave-scene-targets.js';
+import { parseWeave } from '../../../codex/core/spellweave.engine.js';
+import { lookupWeaveToken } from '../../../codex/core/semantics.registry.js';
+import { tokenize } from '../../../codex/core/tokenizer.js';
 import { Sparkles, Zap, Trash2 } from 'lucide-react';
 import '../DivWand/DivWandPage.css'; // Reuse the sleek DivWand CSS
+import './CombatPage.css';
+import { grantScholomanceXpForAction } from '../../game/character/scholomanceXpService.js';
+import { SCHOLOMANCE_XP_ACTIONS } from '../../../codex/core/scholomance-xp.schema.js';
+import { OBELISK_DISCOVERY_FLASH_XP } from '../../../codex/core/obelisk-puzzle.signals.js';
+import DiscoveryFlash from '../../ui/combat/DiscoveryFlash.jsx';
+import CombatResultsOverlay from '../../ui/combat/CombatResultsOverlay.jsx';
+import CombatBeastiaryOverlay from '../../ui/combat/CombatBeastiaryOverlay.jsx';
+import CombatMatrixIntro from '../../ui/combat/CombatMatrixIntro.jsx';
+import {
+  buildBestiaryContextFromScene,
+  buildBestiaryRuntimeContext,
+  buildCombatBestiaryDossier,
+  buildCombatDefenderProfile,
+} from '../../game/combat/bestiary/index.js';
+import {
+  COMBAT_BATTLE_ENDED_EVENT,
+  COMBAT_BATTLE_STARTED_EVENT,
+  markCombatBattleStarted,
+  resetCombatBattleEngagement,
+} from '../../game/combat/combatBattleIntro.js';
+import { getGameVictoryService } from '../../lib/audio/gameVictory.service.js';
+import { hasManaForSpell, SPELL_CAST_MANA_COST } from '../../game/combat/combatMana.js';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+
+const WEAVE_FILLER_TOKENS = new Set([
+  'THE', 'A', 'AN', 'MY', 'YOUR', 'HIS', 'HER', 'THEIR', 'OUR', 'ITS',
+  'OF', 'FOR', 'FROM', 'INTO', 'THROUGH', 'UPON', 'AGAINST', 'WITHIN',
+  'THIS', 'THAT', 'THESE', 'THOSE',
+]);
+
+const CLAUSE_LABELS = {
+  legal: 'BRIDGE STABLE',
+  inverted: 'ORDER INVERTED',
+  unfocused: 'NEEDS OBJECT',
+  dangling: 'DANGLING MODIFIER',
+  collapsed: 'SYNTACTIC COLLAPSE',
+  inert: 'AWAITING ANCHOR',
+};
+
+const CLAUSE_MESSAGES = {
+  legal: 'Intent and object are bound in spoken order.',
+  inverted: 'Object appears before its intent; the clause recoils.',
+  unfocused: 'An intent has force, but no registry object to receive it.',
+  dangling: 'A modifier is present without an intent to bind.',
+  collapsed: 'A clause is carrying too many intents.',
+  inert: 'No weave intent, object, or modifier has been found.',
+};
+
+function classifyToken(token, sceneContext = null) {
+  const semantic = lookupWeaveToken(token);
+  if (semantic) {
+    return {
+      token,
+      role: semantic.type,
+      status: 'semantic',
+      detail: semantic.manner || semantic.octantLabel || semantic.intent || semantic.category || semantic.chainType || 'registered',
+    };
+  }
+  const enemy = lookupSceneEnemyToken(token, sceneContext);
+  if (enemy) {
+    return {
+      token,
+      role: 'ENEMY',
+      status: 'semantic',
+      detail: enemy.target.label,
+    };
+  }
+  if (WEAVE_FILLER_TOKENS.has(token)) {
+    return {
+      token,
+      role: 'FILLER',
+      status: 'filler',
+      detail: 'ignored grammar glue',
+    };
+  }
+  return {
+    token,
+    role: 'UNKNOWN',
+    status: 'unknown',
+    detail: 'not in spellweave registry',
+  };
+}
+
+function buildWeaveFeedback(weave, sceneContext = null) {
+  const rawTokens = tokenize(weave).map((token) => token.toUpperCase());
+  const tokens = rawTokens.map((token) => classifyToken(token, sceneContext));
+  const unknownTokens = tokens.filter((token) => token.status === 'unknown');
+  const parsed = parseWeave(weave);
+  const resolvedTargets = sceneContext
+    ? resolveWeaveTargetsFromParsed(parsed, sceneContext, weave)
+    : null;
+  const modeHint = resolvedTargets?.modeHint
+    || deriveCastModeHint(extractParsedClauses(parsed));
+  const targetHints = (resolvedTargets?.clauses || []).map((clause) => {
+    const source = clause.nameToken || clause.objectToken || 'TARGET';
+    if (!clause.resolvedTarget) {
+      return `${source} → unresolved`;
+    }
+    const label = findSceneTargetLabel(sceneContext, clause.resolvedTarget.id);
+    return `${source} → ${label}`;
+  });
+  const activeClauses = parsed.clauses.filter((clause) => clause.legality !== 'inert');
+  const worstClause = activeClauses.find((clause) => clause.legality === 'collapsed')
+    || activeClauses.find((clause) => clause.legality === 'inverted')
+    || activeClauses.find((clause) => clause.legality === 'dangling')
+    || activeClauses.find((clause) => clause.legality === 'unfocused')
+    || activeClauses[0]
+    || parsed.clauses[0]
+    || { legality: 'inert' };
+
+  if (!weave.trim()) {
+    return {
+      status: 'IDLE',
+      label: 'AWAITING WEAVE',
+      message: 'Type an intent-object clause, for example: REND FLESH or OFFENSIVE FLESH.',
+      parsed,
+      tokens,
+      targetHints,
+      resolvedTargets,
+      modeHint,
+    };
+  }
+
+  if (unknownTokens.length > 0) {
+    return {
+      status: 'RED',
+      label: 'TOKEN UNRESOLVED',
+      message: `${unknownTokens.map((token) => token.token).join(', ')} ignored by the parser.`,
+      parsed,
+      tokens,
+      targetHints,
+      resolvedTargets,
+      modeHint,
+    };
+  }
+
+  const legality = worstClause.legality;
+  const status = legality === 'legal'
+    ? 'GREEN'
+    : (legality === 'inverted' || legality === 'collapsed' ? 'RED' : 'YELLOW');
+
+  const targetMessage = [
+    modeHint ? `Mode: ${modeHint}` : null,
+    targetHints.length > 0 ? `Targets: ${targetHints.join(' · ')}` : null,
+  ].filter(Boolean).join(' · ') || null;
+
+  return {
+    status,
+    label: CLAUSE_LABELS[legality] || 'WEAVE UNSTABLE',
+    message: targetMessage || CLAUSE_MESSAGES[legality] || 'The weave needs a clearer intent-object bridge.',
+    parsed,
+    tokens,
+    targetHints,
+    resolvedTargets,
+    modeHint,
+  };
+}
 
 export default function CombatPage() {
+  const devObeliskResetRef = useRef(false);
+  if (import.meta.env.DEV && !devObeliskResetRef.current) {
+    devObeliskResetRef.current = true;
+    resetObeliskTutorialForDevSession();
+  }
+
   const [verse, setVerse] = useState('');
   const [weave, setWeave] = useState('');
   const [terminalLogs, setTerminalLogs] = useState([]);
   const terminalRef = useRef(null);
+  const verseEditorRef = useRef(null);
+  const weaveInputRef = useRef(null);
   
   const [tooltip, setTooltip] = useState(null);
   const [combatStats, setCombatStats] = useState(null);
+  const [sceneContext, setSceneContext] = useState(null);
+  const [discoveryFlash, setDiscoveryFlash] = useState(null);
+  const [combatResults, setCombatResults] = useState(null);
+  const [battleStarted, setBattleStarted] = useState(false);
+  const [battleIntroActive, setBattleIntroActive] = useState(false);
+  const [selectedCombatTarget, setSelectedCombatTarget] = useState(null);
+  const [beastiaryDossier, setBeastiaryDossier] = useState(null);
+  const battleStartedRef = useRef(false);
+  const battleIntroActiveRef = useRef(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  useEffect(() => {
+    battleStartedRef.current = battleStarted;
+  }, [battleStarted]);
+
+  useEffect(() => {
+    battleIntroActiveRef.current = battleIntroActive;
+  }, [battleIntroActive]);
+
+  const handleBattleIntroComplete = () => {
+    setBattleIntroActive(false);
+    setBattleStarted(true);
+    markCombatBattleStarted();
+    window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_STARTED_EVENT));
+  };
+
+  const handleCombatResultsDismiss = () => {
+    setCombatResults(null);
+    setBattleStarted(false);
+    resetCombatBattleEngagement();
+    getGameVictoryService().stopVictory();
+    window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_ENDED_EVENT));
+  };
+  const weaveFeedback = useMemo(
+    () => buildWeaveFeedback(weave, sceneContext),
+    [weave, sceneContext],
+  );
+  const hasSpellMana = combatStats == null
+    ? true
+    : hasManaForSpell(combatStats.manaPointsRemaining);
+  const canInvoke = Boolean(
+    verse.trim()
+    && weave.trim()
+    && weaveFeedback.status !== 'RED'
+    && hasSpellMana,
+  );
+
+  useEffect(() => {
+    if (verseEditorRef.current && verseEditorRef.current.textContent !== verse) {
+      verseEditorRef.current.textContent = verse;
+    }
+  }, [verse]);
+
+  const isSpellweaveFocused = () => {
+    const active = document.activeElement;
+    return active === verseEditorRef.current || active === weaveInputRef.current;
+  };
+
+  const blurSpellweaveFocus = () => {
+    const active = document.activeElement;
+    if (active === verseEditorRef.current || active === weaveInputRef.current) {
+      active.blur();
+    }
+  };
+
+  const handleSpellweaveKeyDown = (event) => {
+    event.stopPropagation();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      blurSpellweaveFocus();
+    }
+  };
+
+  const handleSpellweaveKeyUp = (event) => {
+    event.stopPropagation();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+    }
+  };
+
+  useEffect(() => {
+    const onEscape = (event) => {
+      if (event.key !== 'Escape' || !isSpellweaveFocused()) return;
+      event.preventDefault();
+      event.stopPropagation();
+      blurSpellweaveFocus();
+    };
+    window.addEventListener('keydown', onEscape, true);
+    return () => window.removeEventListener('keydown', onEscape, true);
+  }, []);
+
+  const handleVerseInput = (event) => {
+    setVerse(event.currentTarget.textContent || '');
+  };
 
   useEffect(() => {
     const onStats = (e) => {
-      if (e && e.detail) setCombatStats(e.detail);
+      setCombatStats(e?.detail ?? null);
     };
     window.addEventListener('combat-stats-changed', onStats);
     return () => window.removeEventListener('combat-stats-changed', onStats);
   }, []);
+
+  useEffect(() => {
+    const uninstall = installSceneContextBridge();
+    const onSceneContext = (e) => {
+      if (e?.detail) setSceneContext(e.detail);
+    };
+    window.addEventListener('scene-context-state', onSceneContext);
+    return () => {
+      uninstall();
+      window.removeEventListener('scene-context-state', onSceneContext);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onSpellFizzle = (e) => {
+      const reason = e?.detail?.reason;
+      const ts = new Date().toISOString().split('T')[1].slice(0, 8);
+      const message = reason === 'no_mana'
+        ? 'Not enough Mana to Invoke.'
+        : reason === 'out_of_range'
+          ? 'Target is out of spell range.'
+          : reason === 'syntactic_collapse'
+            ? 'The weave collapsed before it could land.'
+            : 'The spell fizzled.';
+      setTerminalLogs((prev) => [...prev, { type: 'error', text: `[MANA] ${message}`, ts }]);
+    };
+    window.addEventListener('combat-spell-fizzle', onSpellFizzle);
+    return () => window.removeEventListener('combat-spell-fizzle', onSpellFizzle);
+  }, []);
+
+  useEffect(() => {
+    const onTargetMiss = (e) => {
+      const message = e?.detail?.message || 'No valid target bound to the weave.';
+      const ts = new Date().toISOString().split('T')[1].slice(0, 8);
+      setTerminalLogs((prev) => [...prev, { type: 'error', text: `[TARGET] ${message}`, ts }]);
+    };
+    window.addEventListener('combat-target-miss', onTargetMiss);
+    return () => window.removeEventListener('combat-target-miss', onTargetMiss);
+  }, []);
+
+  useEffect(() => {
+    const onTargetSelected = (e) => {
+      const detail = e?.detail || {};
+      setSelectedCombatTarget(detail.targetId ? detail : null);
+      if (!detail.targetId) return;
+      const ts = new Date().toISOString().split('T')[1].slice(0, 8);
+      const label = detail.shortLabel || detail.label || detail.targetId;
+      const range = detail.inRange ? 'in range' : 'out of range';
+      setTerminalLogs((prev) => [
+        ...prev,
+        { type: 'info', text: `[TARGET] Locked ${label} (${range})`, ts },
+      ]);
+    };
+    window.addEventListener('combat-target-selected', onTargetSelected);
+    return () => window.removeEventListener('combat-target-selected', onTargetSelected);
+  }, []);
+
+  useEffect(() => {
+    if (sceneContext?.selectedCombatTargetId) {
+      const label = findSceneTargetLabel(sceneContext, sceneContext.selectedCombatTargetId);
+      setSelectedCombatTarget({
+        targetId: sceneContext.selectedCombatTargetId,
+        label,
+      });
+    } else if (sceneContext && !sceneContext.selectedCombatTargetId) {
+      setSelectedCombatTarget(null);
+    }
+  }, [sceneContext]);
 
   // Feed the current incantation (verse + weave) to the Phaser scene so a swing
   // can be enchanted. Respond to the scene's request, and push on every change.
@@ -33,10 +377,10 @@ export default function CombatPage() {
 
   useEffect(() => {
     const handleGlobalClick = (e) => {
-      // Close tooltip on left click (e.button === 0)
-      if (e.button === 0) {
-        setTooltip(null);
-      }
+      if (e.button !== 0) return;
+      // Keep inspect tooltip alive for in-tooltip actions (e.g. View Beastiary).
+      if (e.target.closest?.('.combat-tooltip')) return;
+      setTooltip(null);
     };
     window.addEventListener('mousedown', handleGlobalClick);
     return () => window.removeEventListener('mousedown', handleGlobalClick);
@@ -76,32 +420,95 @@ export default function CombatPage() {
     }
   }, [terminalLogs]);
 
-  const handleCast = () => {
+  const ensureBattleEngaged = async () => {
+    if (battleStartedRef.current) return;
+    setBattleIntroActive(false);
+    setBattleStarted(true);
+    markCombatBattleStarted();
+    window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_STARTED_EVENT));
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+  };
+
+  const openBeastiaryForEnemy = (enemyId, entitySnapshot = null) => {
+    if (!enemyId) return;
+    const authorityContext = sceneContext;
+    const context = entitySnapshot
+      ? buildBestiaryRuntimeContext({
+        enemyId,
+        target: authorityContext?.targets?.find((entry) => entry.id === enemyId),
+        entitySnapshot,
+      })
+      : buildBestiaryContextFromScene(authorityContext, enemyId);
+    const dossier = buildCombatBestiaryDossier(context);
+    if (dossier) setBeastiaryDossier(dossier);
+    setTooltip(null);
+  };
+
+  const handleCast = async () => {
     try {
-      const result = calculateCombatScore({ text: verse, weave });
+      await ensureBattleEngaged();
+      const freshContext = await requestSceneContext();
+      if (freshContext) setSceneContext(freshContext);
+      const authorityContext = freshContext || sceneContext;
+      const parsed = parseWeave(weave);
+      const weaveResolved = resolveWeaveTargetsFromParsed(parsed, authorityContext || undefined, weave);
+      const resolvedTargets = mergeSelectedCombatTarget(
+        weaveResolved,
+        authorityContext?.selectedCombatTargetId ?? null,
+        authorityContext || undefined,
+      );
+      const defender = resolvedTargets.primaryTargetId
+        ? buildCombatDefenderProfile(
+          buildBestiaryContextFromScene(authorityContext, resolvedTargets.primaryTargetId),
+        )
+        : null;
+      const castScore = await resolveCombatCastScore({
+        verse,
+        weave,
+        defender,
+        defenderSchool: defender?.school ?? null,
+      });
+      const result = resolveCombatWeaveCast({
+        verse,
+        weave,
+        sceneContext: authorityContext,
+        scoreData: castScore.scoreData,
+        analyzedDoc: castScore.analyzedDoc,
+        defender,
+        defenderSchool: defender?.school ?? null,
+      });
       const ts = new Date().toISOString().split('T')[1].slice(0, 8);
       
-      // Emit to Phaser Arena
       window.dispatchEvent(new CustomEvent('combat-cast', { 
-        detail: { ...result, text: verse, weave } 
+        detail: { ...result, text: verse, weave, sceneContext: authorityContext } 
       }));
       
       const newLogs = [];
       newLogs.push({ type: 'info', text: `[CAST] Verse: "${verse}" | Weave: "${weave}"`, ts });
+
+      const targetId = result.resolvedTargets?.primaryTargetId;
+      if (targetId) {
+        const targetLabel = findSceneTargetLabel(authorityContext, targetId) || targetId;
+        const mode = result.resolvedTargets?.modeHint ? ` [${result.resolvedTargets.modeHint}]` : '';
+        newLogs.push({ type: 'info', text: `[TARGET] ${targetLabel}${mode}`, ts });
+      } else if (result.resolvedTargets?.unresolvedObjects?.length) {
+        newLogs.push({
+          type: 'error',
+          text: `[TARGET] Unresolved: ${result.resolvedTargets.unresolvedObjects.join(', ')}`,
+          ts,
+        });
+      }
       
       if (result.failureCast) {
+        grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.WEAVE_CAST_FAILURE);
         newLogs.push({ type: 'error', text: `SYNTACTIC COLLAPSE! The weave has frayed.`, ts });
       } else {
-        // Intercept Enchantment request
-        const weaveStr = (weave || '').toLowerCase();
-        const textStr = (verse || '').toLowerCase();
-        if (weaveStr.includes('enchant') && weaveStr.includes('flame') && textStr.includes('incinerator blade')) {
-           result.damage = (result.damage || 0) + 200;
-           result.commentary = (result.commentary || '') + " [🔥 Incinerator Blade Active: Burn Damage applied!]";
-        }
-
         const intentStr = result.intent.bridgeIntent || result.intent.speechAct || 'UNKNOWN';
-        newLogs.push({ type: 'success', text: `Intent: ${intentStr} | Damage: ${result.damage} | School: ${result.school}`, ts });
+        newLogs.push({
+          type: 'success',
+          text: `Intent: ${intentStr} | Damage: ${result.damage} | School: ${result.school} | Mana: ${SPELL_CAST_MANA_COST}`,
+          ts,
+        });
         if (result.commentary) {
           newLogs.push({ type: 'info', text: `Analysis: ${result.commentary}`, ts });
         }
@@ -121,126 +528,266 @@ export default function CombatPage() {
       setTerminalLogs(prev => [...prev, { type: 'error', text: `Phaser Input Crash: ${action.text}`, ts }]);
       return;
     }
-    
-    let text = `Inspected Tile (${action.tx}, ${action.ty})`;
-    let title = 'Combat Grid';
-    let details = [];
-    
-    if (action.isIsland) {
-      text = `Inspected Void Terrain [Elevation: ${action.height}] at (${action.tx}, ${action.ty})`;
-      title = 'Void Terrain';
-      details.push(`Elevation: ${action.height}`);
-      details.push(`Coordinate: (${action.tx}, ${action.ty})`);
-    } else if (action.isGrid) {
-      if (action.isObelisk) {
-        text += ' — [CENTRAL OBELISK]';
-        title = 'Central Obelisk';
-        details.push('Immovable Structure');
-      } else if (action.leyline) {
-        text += ` — [LEYLINE NODE: ${action.leyline.affinity}]`;
-        title = 'Leyline Node';
-        details.push(`Affinity: ${action.leyline.affinity}`);
-        details.push(`Node ID: ${action.leyline.id}`);
-      } else {
-        text += ' — [EMPTY COMBAT GRID]';
-        title = 'Empty Tile';
-        details.push('Ready for deployment.');
+
+    if (action.type === 'combat-victory') {
+      const victory = getGameVictoryService();
+      victory.prime();
+      void victory.playVictory();
+      setTerminalLogs(prev => [
+        ...prev,
+        { type: 'success', text: `[VICTORY] ${action.text}`, ts },
+      ]);
+      if (action.report) {
+        setCombatResults({
+          id: Date.now(),
+          report: action.report,
+        });
       }
+      return;
+    }
+
+    if (action.type === 'sentinel-aggro') {
+      setTerminalLogs(prev => [
+        ...prev,
+        { type: 'error', text: `[SENTINEL] ${action.text}`, ts },
+      ]);
+      if (!battleStartedRef.current && !battleIntroActiveRef.current) {
+        setBattleIntroActive(true);
+      }
+      return;
+    }
+
+    if (action.type === 'sentinel-defeated') {
+      setTerminalLogs(prev => [
+        ...prev,
+        {
+          type: 'success',
+          text: `[SENTINEL] ${action.label || action.id} offline — containment matrix collapsed.`,
+          ts,
+        },
+      ]);
+      return;
+    }
+
+    if (action.type === 'sentinel-ability') {
+      const lines = Array.isArray(action.logLines) ? action.logLines : [];
+      if (lines.length) {
+        setTerminalLogs((prev) => [
+          ...prev,
+          ...lines.map((text) => ({
+            type: action.missed ? 'info' : 'error',
+            text,
+            ts,
+          })),
+        ]);
+      }
+      return;
+    }
+
+    if (action.type === 'obelisk-reject') {
+      const label = action.text || 'rejected';
+      const hintLine = action.hint ? ` ${action.hint}` : '';
+      setTerminalLogs(prev => [
+        ...prev,
+        { type: 'info', text: `[OBELISK] ${label}${hintLine}`, ts },
+      ]);
+      return;
+    }
+
+    if (action.type === 'obelisk-discovery') {
+      const pathLabel = action.path === 'siphon' ? 'SIPHON' : 'OVERLOAD';
+      const discoveryLogs = [
+        { type: 'success', text: `[OBELISK ${pathLabel}] ${action.text}`, ts },
+        { type: 'info', text: `Stormheart Orb exposed at central crown socket.`, ts },
+      ];
+      if (action.path === 'siphon' && action.verdict?.manaGrant) {
+        discoveryLogs.push({
+          type: 'success',
+          text: `[SIPHON REWARD] +${action.verdict.manaGrant} movement points restored.`,
+          ts,
+        });
+      }
+      setTerminalLogs(prev => [...prev, ...discoveryLogs]);
+      setDiscoveryFlash({
+        id: Date.now(),
+        xpAmount: action.xpAmount ?? OBELISK_DISCOVERY_FLASH_XP,
+      });
+      return;
+    }
+
+    if (action.type === 'gather') {
+      const gatherTitle = action.ok ? 'Gather Success' : 'Gather Failed';
+      const gatherDetails = [
+        action.ok ? `Yield: ${action.yield}` : `Denied: ${action.code}`,
+        action.toolId ? `Tool: ${action.toolId}` : null,
+      ].filter(Boolean);
+      if (action.characterLine) {
+        setTerminalLogs(prev => [
+          ...prev,
+          {
+            type: action.ok ? 'success' : 'error',
+            text: action.ok ? `[GATHER] ${action.characterLine}` : `[GATHER] ${action.code}`,
+            ts,
+          },
+        ]);
+      }
+      setTooltip({
+        x: action.screenX || window.innerWidth / 2,
+        y: action.screenY || window.innerHeight / 2,
+        title: gatherTitle,
+        details: action.characterLine ? [...gatherDetails, action.characterLine] : gatherDetails,
+      });
+      return;
+    }
+
+    if (action.type === 'obelisk-loot') {
+      setTerminalLogs(prev => [
+        ...prev,
+        {
+          type: action.duplicate ? 'info' : 'success',
+          text: action.duplicate ? `[REWARD] ${action.text}` : `[REWARD] ${action.itemName || action.itemId} acquired.`,
+          ts,
+        },
+      ]);
+      setTooltip({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+        title: action.duplicate ? 'Empty Crown Socket' : 'Stormheart Orb',
+        details: [
+          action.text,
+          action.itemId,
+        ].filter(Boolean),
+      });
+      return;
     }
     
-    setTerminalLogs(prev => [...prev, { type: 'info', text, ts }]);
-    
+    const title = action.title || 'Combat Grid';
+    const details = Array.isArray(action.details) ? [...action.details] : [];
+    const characterLine = action.characterLine || null;
+    const text = characterLine
+      ? `Inspected (${action.tx}, ${action.ty}) — "${characterLine}"`
+      : `Inspected Tile (${action.tx}, ${action.ty})`;
+
+    setTerminalLogs(prev => [
+      ...prev,
+      { type: 'info', text, ts },
+      ...(characterLine ? [{ type: 'info', text: `"${characterLine}"`, ts }] : []),
+    ]);
+
     if (action.screenX && action.screenY) {
       setTooltip({
         x: action.screenX,
         y: action.screenY,
         title,
-        details
+        details: characterLine ? [...details, characterLine] : details,
+        enemyId: action.enemyId || action.sentinelId || null,
+        bestiaryAvailable: !!action.bestiaryAvailable,
+        entitySnapshot: action.bestiarySnapshot || null,
       });
     }
   };
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100vh', overflow: 'hidden' }}>
-      {/* 3D Battlefield Background */}
+    <div className="combat-page-shell">
       <ArenaCombatView onCast={handleArenaCast} />
+
+      {battleIntroActive && (
+        <CombatMatrixIntro
+          reducedMotion={prefersReducedMotion}
+          onComplete={handleBattleIntroComplete}
+        />
+      )}
+
+      {discoveryFlash && (
+        <DiscoveryFlash
+          key={discoveryFlash.id}
+          xpAmount={discoveryFlash.xpAmount}
+          reducedMotion={prefersReducedMotion}
+          onComplete={() => setDiscoveryFlash(null)}
+        />
+      )}
+
+      {combatResults && (
+        <CombatResultsOverlay
+          key={combatResults.id}
+          report={combatResults.report}
+          reducedMotion={prefersReducedMotion}
+          onDismiss={handleCombatResultsDismiss}
+        />
+      )}
+
+      {beastiaryDossier && (
+        <CombatBeastiaryOverlay
+          dossier={beastiaryDossier}
+          onDismiss={() => setBeastiaryDossier(null)}
+        />
+      )}
       
       {/* Tooltip Overlay */}
       {tooltip && (
-        <div style={{
-          position: 'absolute',
-          left: tooltip.x + 15,
-          top: tooltip.y + 15,
-          background: 'rgba(5, 8, 15, 0.95)',
-          border: '1px solid rgba(100, 200, 255, 0.4)',
-          borderRadius: 8,
-          padding: 12,
-          color: '#fff',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.8), inset 0 0 10px rgba(0, 255, 255, 0.1)',
-          pointerEvents: 'none',
-          zIndex: 1000,
-          minWidth: 180,
-          backdropFilter: 'blur(8px)',
-          fontFamily: 'var(--dw-font-sans, sans-serif)'
-        }}>
-          <h4 style={{ margin: '0 0 8px 0', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1, color: '#00ffff', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: 4 }}>
+        <div
+          className={`combat-tooltip${tooltip.bestiaryAvailable ? ' combat-tooltip--interactive' : ''}`}
+          style={{
+            left: tooltip.x + 15,
+            top: tooltip.y + 15,
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <h4 className="combat-tooltip__title">
             {tooltip.title}
           </h4>
-          <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: 12, color: '#aaa', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <ul className="combat-tooltip__list">
             {tooltip.details.map((d, i) => (
               <li key={i}>{d}</li>
             ))}
           </ul>
+          {tooltip.bestiaryAvailable && tooltip.enemyId && (
+            <button
+              type="button"
+              className="combat-tooltip__beastiary-btn"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openBeastiaryForEnemy(tooltip.enemyId, tooltip.entitySnapshot);
+              }}
+            >
+              View Beastiary
+            </button>
+          )}
         </div>
       )}
       
       {/* Combat Stat Tree — Slice 1 readout */}
-      {combatStats && (
-        <div style={{
-          position: 'absolute',
-          top: 24,
-          left: 24,
-          zIndex: 200,
-          background: 'linear-gradient(135deg, rgba(9,15,30,0.85), rgba(5,8,15,0.95))',
-          border: '1px solid rgba(0,255,255,0.25)',
-          borderRadius: 12,
-          padding: '12px 16px',
-          color: '#e6faff',
-          fontFamily: 'var(--dw-font-mono, monospace)',
-          fontSize: 13,
-          backdropFilter: 'blur(12px)',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.6), inset 0 0 16px rgba(0,255,255,0.08)',
-          minWidth: 190,
-        }}>
-          <div style={{ display: 'flex', gap: 12, marginBottom: 8, letterSpacing: 0.5 }}>
-            <span>MP <b style={{ color: '#00ffff' }}>{combatStats.movementPointsRemaining}</b>/{combatStats.movementPoints}</span>
-            <span>ATK <b style={{ color: '#ffcc66' }}>{combatStats.attackPoints}</b></span>
-            <span>RNG <b style={{ color: '#aaffcc' }}>{combatStats.attackRange}</b></span>
+      {battleStarted && !combatResults && combatStats && (
+        <div className="combat-stat-card">
+          <div className="combat-stat-card__target" aria-live="polite">
+            <span className="combat-stat-card__target-label">Target</span>
+            <b className="combat-stat-card__target-value">
+              {selectedCombatTarget?.shortLabel
+                || selectedCombatTarget?.label
+                || (selectedCombatTarget?.targetId
+                  ? findSceneTargetLabel(sceneContext, selectedCombatTarget.targetId)
+                  : null)
+                || 'Tab / right-click enemy'}
+            </b>
           </div>
-          {combatStats.dummyHp != null && (
-            <div style={{ marginBottom: 8, opacity: 0.85 }}>
-              Dummy HP <b style={{ color: '#ff88aa' }}>{combatStats.dummyHp}</b>/{combatStats.dummyMaxHp}
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="combat-stat-card__row">
+            <span>MP <b className="combat-stat-card__value combat-stat-card__value--cyan">{combatStats.movementPointsRemaining}</b>/{combatStats.movementPoints}</span>
+            <span>Mana <b className="combat-stat-card__value combat-stat-card__value--violet">{combatStats.manaPointsRemaining ?? combatStats.manaPoints}</b>/{combatStats.manaPoints}</span>
+            <span>AP <b className="combat-stat-card__value combat-stat-card__value--gold">{combatStats.attackPointsRemaining ?? combatStats.attackPoints}</b>/{combatStats.attackPoints}</span>
+            <span>RNG <b className="combat-stat-card__value combat-stat-card__value--green">{combatStats.attackRange}</b></span>
+          </div>
+          <div className="combat-stat-card__actions">
             <button
+              className="combat-action-btn combat-action-btn--attack"
               onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
               disabled={combatStats.attackUsed}
-              style={{
-                flex: 1, padding: '6px 10px', borderRadius: 6, cursor: combatStats.attackUsed ? 'not-allowed' : 'pointer',
-                border: '1px solid rgba(255,204,102,0.4)', background: combatStats.attackUsed ? 'rgba(60,60,60,0.4)' : 'rgba(255,204,102,0.15)',
-                color: combatStats.attackUsed ? '#888' : '#ffcc66', fontFamily: 'inherit', fontSize: 12,
-              }}
             >
               Attack (F)
             </button>
             <button
+              className="combat-action-btn combat-action-btn--turn"
               onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
-              style={{
-                flex: 1, padding: '6px 10px', borderRadius: 6, cursor: 'pointer',
-                border: '1px solid rgba(0,255,255,0.4)', background: 'rgba(0,255,255,0.12)',
-                color: '#00ffff', fontFamily: 'inherit', fontSize: 12,
-              }}
             >
               End Turn (Space)
             </button>
@@ -249,30 +796,14 @@ export default function CombatPage() {
       )}
 
       {/* DivWand HUD Overlay */}
-      <div className="dw-container" style={{
-        position: 'absolute',
-        bottom: 32,
-        left: '50%',
-        transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)`,
-        width: 800,
-        height: 350,
-        minWidth: 400,
-        minHeight: 200,
-        background: 'linear-gradient(135deg, rgba(9, 15, 30, 0.85) 0%, rgba(5, 8, 15, 0.95) 100%)',
-        backdropFilter: 'blur(24px) saturate(150%)',
-        WebkitBackdropFilter: 'blur(24px) saturate(150%)',
-        border: '1px solid rgba(0, 255, 255, 0.2)',
-        borderRadius: 16,
-        boxShadow: '0 24px 64px rgba(0,0,0,0.8), inset 0 0 32px rgba(0, 255, 255, 0.1), 0 0 12px rgba(0, 255, 255, 0.1)',
-        display: 'flex',
-        flexDirection: 'column',
-        resize: 'both',
-        overflow: 'hidden',
-        zIndex: 100
-      }}>
+      <div
+        className="dw-container combat-hud"
+        style={{
+          transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)`,
+        }}
+      >
         <header 
-          className="dw-header" 
-          style={{ background: 'rgba(5, 8, 15, 0.6)', cursor: 'grab', userSelect: 'none' }}
+          className="dw-header combat-hud__header" 
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
@@ -280,15 +811,18 @@ export default function CombatPage() {
         >
           <div className="dw-header-title">
             <Sparkles className="dw-header-icon" size={16} aria-hidden="true" />
-            <h1 className="dw-header-h1">DivWand HUD</h1>
+            <h1 className="dw-header-h1">Combat Spellweave</h1>
             <span className="dw-header-sub">Spellweave Syntactic Bridge</span>
           </div>
           <div className="dw-header-actions">
             <button
               className="dw-btn dw-btn--primary"
               onClick={handleCast}
-              disabled={!verse.trim()}
-              title="Invoke Spellweave"
+              disabled={!canInvoke}
+              title={hasSpellMana
+                ? 'Invoke Spellweave (10 Mana) — engages battle if needed'
+                : 'Not enough Mana'}
+              aria-label="Cast this spell"
             >
               <Zap size={13} aria-hidden="true" />
               Invoke
@@ -296,59 +830,114 @@ export default function CombatPage() {
           </div>
         </header>
 
-        <div className="dw-body" style={{ flexDirection: 'row', background: 'transparent' }}>
+        <div className="dw-body combat-hud__body">
           {/* Input Pane */}
-          <div className="dw-pane dw-pane--editor" style={{ flex: 1.2, background: 'transparent' }}>
-            <div className="dw-pane-bar" style={{ background: 'transparent' }}>
+          <div className="dw-pane dw-pane--editor combat-hud__editor-pane">
+            <div className="dw-pane-bar combat-hud__pane-bar">
               <span className="dw-pane-label">Verse (Incantation)</span>
             </div>
-            <div className="dw-textarea-wrap" style={{ height: 80, minHeight: 80, background: 'rgba(0,0,0,0.4)', borderRadius: 6, margin: '0 12px' }}>
-              <textarea
-                className="dw-textarea"
-                value={verse}
-                onChange={e => setVerse(e.target.value)}
-                placeholder="Speak your verse to shape the aether..."
-                style={{ fontSize: 14, background: 'transparent' }}
+            <div className="dw-textarea-wrap combat-hud__verse-wrap">
+              <div
+                ref={verseEditorRef}
+                className="combat-hud__verse-editor"
+                contentEditable
+                role="textbox"
+                tabIndex={0}
+                aria-multiline="true"
+                aria-label="Verse input"
+                data-placeholder="Speak your verse to shape the aether..."
+                onInput={handleVerseInput}
+                onKeyDown={handleSpellweaveKeyDown}
+                onKeyUp={handleSpellweaveKeyUp}
+                onBeforeInput={(event) => event.stopPropagation()}
+                onPaste={(event) => event.stopPropagation()}
+                suppressContentEditableWarning
               />
             </div>
-            <div className="dw-pane-bar" style={{ background: 'transparent', marginTop: 4 }}>
-              <span className="dw-pane-label">Weave (Predicate Object)</span>
+            <div className="dw-pane-bar combat-hud__pane-bar combat-hud__pane-bar--spaced">
+              <span className="dw-pane-label">Weave (Intent Object)</span>
             </div>
-            <div className="dw-textarea-wrap" style={{ height: 40, minHeight: 40, background: 'rgba(0,0,0,0.4)', borderRadius: 6, margin: '0 12px 12px 12px', display: 'flex', alignItems: 'center' }}>
+            <div className="dw-textarea-wrap combat-hud__weave-wrap">
               <input
+                ref={weaveInputRef}
+                className="combat-hud__weave-input"
                 value={weave}
                 onChange={e => setWeave(e.target.value)}
-                placeholder="e.g. STRIKE VOID"
-                style={{ fontSize: 14, background: 'transparent', border: 'none', color: '#fff', outline: 'none', width: '100%', padding: '8px 12px', fontFamily: 'var(--dw-font-mono)' }}
+                placeholder="e.g. REND FLESH THEN SHATTER STONE"
+                aria-label="Weave input"
+                aria-describedby="combat-syntactic-integrity"
+                onKeyDown={handleSpellweaveKeyDown}
+                onKeyUp={handleSpellweaveKeyUp}
               />
+            </div>
+            <div
+              id="combat-syntactic-integrity"
+              className={`combat-integrity combat-integrity--${weaveFeedback.status.toLowerCase()}`}
+              role="status"
+              aria-live="polite"
+              aria-label="Syntactic integrity"
+            >
+              <div className="combat-integrity__copy">
+                <span className="combat-integrity__label">{weaveFeedback.label}</span>
+                <span className="combat-integrity__message">{weaveFeedback.message}</span>
+              </div>
+              <div className="combat-integrity__metrics" aria-hidden="true">
+                <span>{weaveFeedback.parsed.chainType}</span>
+                <span>{weaveFeedback.parsed.syntax.clauseCount} clause</span>
+                <span>x{weaveFeedback.parsed.syntax.modifierPower.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="combat-token-strip" aria-label="Live weave token classification">
+              {weaveFeedback.tokens.length === 0 ? (
+                <span className="combat-token-pill combat-token-pill--ghost">INTENT OBJECT</span>
+              ) : weaveFeedback.tokens.map((token, index) => (
+                <span
+                  key={`${token.token}-${index}`}
+                  className={`combat-token-pill combat-token-pill--${token.status}`}
+                  title={`${token.role}: ${token.detail}`}
+                >
+                  <b>{token.token}</b>
+                  <small>{token.role}</small>
+                </span>
+              ))}
             </div>
           </div>
 
           {/* Terminal / Output Pane */}
-          <div className="dw-pane dw-pane--terminal" style={{ flex: 0.8, borderLeft: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.2)' }}>
-            <div className="dw-terminal" style={{ height: '100%', background: 'transparent' }}>
-              <div className="dw-terminal-header" style={{ background: 'transparent' }}>
-                <span className="dw-terminal-label">Syntactic Feedback</span>
-                <button className="dw-tool-btn" onClick={() => setTerminalLogs([])}>
+          <div className="dw-pane dw-pane--terminal combat-hud__terminal-pane">
+            <div className="dw-terminal combat-terminal">
+              <div className="combat-terminal__header">
+                <div className="combat-terminal__title-group">
+                  <span className="combat-terminal__eyebrow">Parser Trace</span>
+                  <span className="combat-terminal__label">Syntactic Feedback</span>
+                </div>
+                <span className="combat-terminal__status">
+                  <span className="combat-terminal__status-dot" aria-hidden="true" />
+                  linked
+                </span>
+                <button
+                  className="dw-tool-btn combat-terminal__clear"
+                  onClick={() => setTerminalLogs([])}
+                  aria-label="Clear syntactic feedback terminal"
+                >
                   <Trash2 size={12} /> Clear
                 </button>
               </div>
-              <div className="dw-terminal-content" ref={terminalRef} style={{ padding: '0 12px 12px 12px', flex: 1, overflowY: 'auto', position: 'relative' }}>
-                {/* CRT Scanline Overlay */}
-                <div style={{
-                  position: 'absolute',
-                  top: 0, left: 0, right: 0, bottom: 0,
-                  background: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06))',
-                  backgroundSize: '100% 4px, 6px 100%',
-                  pointerEvents: 'none',
-                  zIndex: 10
-                }} />
-                
-                <div style={{ position: 'relative', zIndex: 11, textShadow: '0 0 4px rgba(0,255,255,0.4)' }}>
-                  {terminalLogs.length === 0 && <span className="dw-terminal-line dw-terminal-line--info" style={{ opacity: 0.5 }}>Awaiting invocation...</span>}
+              <div className="combat-terminal__content" ref={terminalRef}>
+                <div className="combat-terminal__scanline" aria-hidden="true" />
+                <div className="combat-terminal__log">
+                  {terminalLogs.length === 0 && (
+                    <div className="combat-terminal__empty" aria-live="polite">
+                      <span className="combat-terminal__prompt">scholo://combat/syntax</span>
+                      <span className="combat-terminal__empty-line">parser armed; awaiting verse payload</span>
+                      <span className="combat-terminal__empty-line">bridge state: lexical channel open</span>
+                      <span className="combat-terminal__cursor" aria-hidden="true" />
+                    </div>
+                  )}
                   {terminalLogs.map((log, i) => (
-                    <div key={i} className={`dw-terminal-line dw-terminal-line--${log.type}`}>
-                      <span className="dw-terminal-ts" style={{ color: '#0ff' }}>[{log.ts}]</span> <span style={{ color: log.type === 'error' ? '#ff3366' : '#fff' }}>{log.text}</span>
+                    <div key={i} className={`combat-terminal__line combat-terminal__line--${log.type}`}>
+                      <span className="combat-terminal__ts">[{log.ts}]</span>
+                      <span className="combat-terminal__text">{log.text}</span>
                     </div>
                   ))}
                 </div>

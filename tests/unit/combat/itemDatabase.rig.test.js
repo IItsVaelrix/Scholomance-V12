@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ITEM_DATABASE, equipSlotOf } from '../../../src/data/itemDatabase.js';
+import { ITEM_DATABASE, equipSlotOf, inventorySlotOf } from '../../../src/data/itemDatabase.js';
+import { STORMHEART_ORB_ITEM_ID } from '../../../codex/core/obelisk-puzzle.signals.js';
 
 describe('itemDatabase rig slots', () => {
   it('has a shield in the off-hand slot', () => {
@@ -22,5 +23,11 @@ describe('itemDatabase rig slots', () => {
   it('returns null for a non-hand item', () => {
     expect(equipSlotOf({ type: 'head' })).toBe(null);
     expect(equipSlotOf(null)).toBe(null);
+  });
+
+  it('routes the Stormheart orb to the off hand', () => {
+    const orb = ITEM_DATABASE[STORMHEART_ORB_ITEM_ID];
+    expect(equipSlotOf(orb)).toBe('offHand');
+    expect(inventorySlotOf(orb)).toBe('offhand');
   });
 });

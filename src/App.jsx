@@ -3,6 +3,9 @@ import { useOutlet, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import Navigation from "./components/Navigation/Navigation.jsx";
 import AtmosphereSync from "./components/AtmosphereSync.jsx";
+import GameBackgroundMusicSync from "./components/GameBackgroundMusicSync.jsx";
+import GameAudioForgeSync from "./components/GameAudioForgeSync.jsx";
+import GameObeliskElectricSync from "./components/GameObeliskElectricSync.jsx";
 import { SongProvider } from "./hooks/useCurrentSong.jsx";
 import { CODExProvider } from "./hooks/useCODExPipeline.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
@@ -14,6 +17,7 @@ import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion.js";
 import { MotionInspector } from "./ui/animation/components/MotionInspector";
 import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
 import { InventoryOverlay } from "./ui/inventory/InventoryOverlay.jsx";
+import { CharacterCompendiumOverlay } from "./ui/character/CharacterCompendiumOverlay.jsx";
 
 const fullMotionVariants = {
   initial: { opacity: 0, y: 20 },
@@ -68,6 +72,9 @@ export default function App() {
           <AuthScopedProviders>
             <SongProvider>
               <AtmosphereSync />
+              <GameBackgroundMusicSync />
+              <GameAudioForgeSync />
+              <GameObeliskElectricSync />
               {/* Hide global decorative layers on battle page so only the pure grid is visible */}
               {!isBattlePage && (
                 <>
@@ -86,6 +93,7 @@ export default function App() {
               )}
 
               <InventoryOverlay />
+              <CharacterCompendiumOverlay />
 
               <div className="page-container">
                 {!isBattlePage && (

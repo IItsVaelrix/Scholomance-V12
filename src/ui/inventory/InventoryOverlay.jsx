@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './InventoryOverlay.module.css';
-import { ITEM_DATABASE } from '../../data/itemDatabase.js';
+import { getInventorySnapshot, setInventorySnapshot } from '../../game/inventory/inventoryService.js';
+import { inventorySlotOf } from '../../data/itemDatabase.js';
 
 // Using the recently compiled IdealHuman PNG for the character preview
 const CHARACTER_IMAGE_URL = '/generated-assets/IdealHuman/IdealHuman-png.png';
@@ -19,12 +20,6 @@ const EQUIPMENT_SLOTS = [
   { id: 'boots', label: 'Boots', pos: 'boots' },
 ];
 
-// Dynamically fetch items from the modular database and assign them to initial slots
-const INITIAL_INVENTORY = Object.values(ITEM_DATABASE).map((item, index) => ({
-  ...item,
-  slotIndex: index
-}));
-
 const MODEL_ANCHORS = {
   head: { top: '15%', left: '50%', scale: 0.35 },
   chest: { top: '38%', left: '50%', scale: 0.45 },
@@ -39,24 +34,25 @@ const MODEL_ANCHORS = {
 
 export function InventoryOverlay() {
   const [isOpen, setIsOpen] = useState(false);
-  const [inventory, setInventory] = useState(() => {
-    const inv = Array(24).fill(null);
-    INITIAL_INVENTORY.forEach(item => {
-      inv[item.slotIndex] = item;
-    });
-    return inv;
-  });
-  const [equipped, setEquipped] = useState({
-    head: null,
-    amulet: null,
-    chest: null,
-    weapon: null,
-    offhand: null,
-    ring1: null,
-    ring2: null,
-    legs: null,
-    boots: null,
-  });
+  const [inventory, setInventory] = useState(() => getInventorySnapshot().slots);
+  const [equipped, setEquipped] = useState(() => getInventorySnapshot().equipped);
+
+  useEffect(() => {
+    const syncInventory = (event) => {
+      const detail = event?.detail;
+      if (!detail) return;
+      setInventory(detail.slots);
+      setEquipped(detail.equipped);
+    };
+    window.addEventListener('inventory-changed', syncInventory);
+    return () => window.removeEventListener('inventory-changed', syncInventory);
+  }, []);
+
+  const persistInventory = (nextInventory, nextEquipped) => {
+    setInventory(nextInventory);
+    setEquipped(nextEquipped);
+    setInventorySnapshot({ slots: nextInventory, equipped: nextEquipped });
+  };
 
   // Sync state to Phaser
   useEffect(() => {
@@ -75,26 +71,18 @@ export function InventoryOverlay() {
     const item = inventory[slotIndex];
     if (!item) return;
 
-    let targetSlot = item.type;
-    
-    if (equipped[targetSlot] === undefined && targetSlot !== 'ring') return;
-
-    if (targetSlot === 'ring') {
-      targetSlot = equipped.ring1 ? 'ring2' : 'ring1';
-    }
+    const targetSlot = inventorySlotOf(item, equipped);
+    if (!targetSlot || equipped[targetSlot] === undefined) return;
 
     const currentEquipped = equipped[targetSlot];
     
-    setInventory(prev => {
-      const newInv = [...prev];
-      newInv[slotIndex] = currentEquipped;
-      return newInv;
-    });
-
-    setEquipped(prev => ({
-      ...prev,
-      [targetSlot]: item
-    }));
+    const newInv = [...inventory];
+    newInv[slotIndex] = currentEquipped;
+    const newEquipped = {
+      ...equipped,
+      [targetSlot]: item,
+    };
+    persistInventory(newInv, newEquipped);
   };
 
   const handleUnequip = (slotId) => {
@@ -104,22 +92,23 @@ export function InventoryOverlay() {
     const emptyIndex = inventory.findIndex(i => i === null);
     if (emptyIndex === -1) return;
 
-    setEquipped(prev => ({
-      ...prev,
-      [slotId]: null
-    }));
-
-    setInventory(prev => {
-      const newInv = [...prev];
-      newInv[emptyIndex] = item;
-      return newInv;
-    });
+    const newEquipped = {
+      ...equipped,
+      [slotId]: null,
+    };
+    const newInv = [...inventory];
+    newInv[emptyIndex] = item;
+    persistInventory(newInv, newEquipped);
   };
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger if user is typing in an input
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      // Don't trigger if user is typing in an input or spellweave editor
+      if (
+        e.target.tagName === 'INPUT'
+        || e.target.tagName === 'TEXTAREA'
+        || e.target.isContentEditable
+      ) return;
       
       if (e.key.toLowerCase() === 'i') {
         setIsOpen((prev) => !prev);

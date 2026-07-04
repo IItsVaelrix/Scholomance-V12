@@ -14,7 +14,7 @@
  *
  * @param {object} game - Phaser.Game instance.
  * @param {string} sceneKey - Registered scene key, e.g. 'CombatArenaScene'.
- * @param {(action: object) => void} handler - Receives tile-inspect/tile-error payloads.
+ * @param {(action: object) => void} handler - Receives arena action payloads.
  */
 export function bridgeArenaScene(game, sceneKey, handler) {
   const wire = () => {
@@ -23,9 +23,25 @@ export function bridgeArenaScene(game, sceneKey, handler) {
 
     // Drop any prior listeners so a hot reload / remount can't double-fire.
     scene.events.off('tile-inspect');
+    scene.events.off('tile-interact');
     scene.events.off('tile-error');
+    scene.events.off('obelisk-discovery');
+    scene.events.off('obelisk-loot');
+    scene.events.off('obelisk-reject');
+    scene.events.off('sentinel-defeated');
+    scene.events.off('sentinel-aggro');
+    scene.events.off('combat-victory');
+    scene.events.off('tile-gather');
     scene.events.on('tile-inspect', handler);
+    scene.events.on('tile-interact', handler);
     scene.events.on('tile-error', handler);
+    scene.events.on('tile-gather', handler);
+    scene.events.on('obelisk-discovery', handler);
+    scene.events.on('obelisk-loot', handler);
+    scene.events.on('obelisk-reject', handler);
+    scene.events.on('sentinel-defeated', handler);
+    scene.events.on('sentinel-aggro', handler);
+    scene.events.on('combat-victory', handler);
     return true;
   };
 

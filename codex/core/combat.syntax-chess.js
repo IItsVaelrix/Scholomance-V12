@@ -93,6 +93,17 @@ export const SYNTACTIC_ARCHETYPE_PROFILES = Object.freeze({
     syntaxWeaknesses: Object.freeze(['COMMAND']),
     syntaxResistances: Object.freeze(['WARD']),
   }),
+  SENTINEL_BRAZIER_BASE: Object.freeze({
+    archetype: 'BRAZIER_SENTINEL',
+    weaknessFamilies: Object.freeze(['DISSONANCE', 'CORROSION', 'FRACTURE']),
+    resistanceFamilies: Object.freeze(['RESONANCE', 'FORCE', 'LIGHT']),
+    favoredDevices: Object.freeze(['sonic_imagery', 'assonance', 'process_language']),
+    punishedTerms: Object.freeze(['resonance', 'song', 'choir', 'ring']),
+    symbolicBody: Object.freeze(['matrix', 'brazier', 'torch', 'ring', 'containment', 'flame']),
+    // the matrix buckles under dissonant questioning and decisive command
+    syntaxWeaknesses: Object.freeze(['PROBE', 'COMMAND']),
+    syntaxResistances: Object.freeze(['LITANY', 'WARD']),
+  }),
 });
 
 function clampBetween(value, min, max) {
@@ -360,7 +371,13 @@ export function createNeutralSyntacticalChessResult() {
 
 export function resolveSyntacticProfile(enemy = null) {
   if (enemy?.syntacticProfile) return enemy.syntacticProfile;
+  if (enemy?.role === 'sentinel' || enemy?.bestiaryId === 'sentinel-brazier') {
+    return SYNTACTIC_ARCHETYPE_PROFILES.SENTINEL_BRAZIER_BASE;
+  }
   const name = String(enemy?.name || '').toLowerCase();
+  if (name.includes('sentinel') || name.includes('brazier')) {
+    return SYNTACTIC_ARCHETYPE_PROFILES.SENTINEL_BRAZIER_BASE;
+  }
   if (name.includes('shade') || name.includes('revenant') || name.includes('cryptonym') || name.includes('hollow')) {
     return SYNTACTIC_ARCHETYPE_PROFILES.SHADE_BASE;
   }

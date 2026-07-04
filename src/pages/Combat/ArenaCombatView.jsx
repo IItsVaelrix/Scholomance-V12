@@ -1,5 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter';
+import { getGameBrazierFireService } from '../../lib/audio/gameBrazierFire.service.js';
+import { getGameFireballImpactService } from '../../lib/audio/gameFireballImpact.service.js';
+import { getGameSwordSliceService } from '../../lib/audio/gameSwordSlice.service.js';
+import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { bridgeArenaScene } from './arenaBridge.js';
 
 // Import FACTORIES (not classes). They receive Phaser at runtime.
@@ -8,12 +12,39 @@ import createCombatArenaScene from '../../phaser/CombatArenaScene';
 export default function ArenaCombatView({ onCast }) {
   const containerRef = useRef(null);
   const gameRef = useRef(null);
+  const prefersReducedMotion = usePrefersReducedMotion();
   
   // Store the latest callback to avoid re-mounting Phaser on every render/keystroke
   const onCastRef = useRef(onCast);
   useEffect(() => {
     onCastRef.current = onCast;
   }, [onCast]);
+
+  useEffect(() => {
+    const fire = getGameBrazierFireService();
+    const sword = getGameSwordSliceService();
+    const fireball = getGameFireballImpactService();
+    if (!prefersReducedMotion) {
+      fire.prime();
+      fire.setEnabled(true);
+      void fire.start();
+
+      sword.prime();
+      sword.setEnabled(true);
+
+      fireball.prime();
+      fireball.setEnabled(true);
+    } else {
+      fire.setEnabled(false);
+      void fire.stop();
+      sword.setEnabled(false);
+      fireball.setEnabled(false);
+    }
+
+    return () => {
+      void fire.stop();
+    };
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
     // StrictMode double-invokes this effect (mount → cleanup → mount). The
@@ -78,14 +109,9 @@ export default function ArenaCombatView({ onCast }) {
 
   return (
     // Pure container for the Phaser arena. All visual UI elements removed.
-    <div 
-      ref={containerRef} 
-      style={{ 
-        width: '100%', 
-        height: '100vh', 
-        background: '#05080f',
-        overflow: 'hidden'
-      }} 
+    <div
+      ref={containerRef}
+      className="combat-arena-mount"
     />
   );
 }
