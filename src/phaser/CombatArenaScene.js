@@ -6,7 +6,13 @@ import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyli
 import { CombatStatController } from '../game/combat/combatStatController.js';
 import { getRotationAtTime, getTimeForRotation } from '../../codex/core/pixelbrain/gear-glide-amp.js';
 import { resolveEnchant } from '../game/combat/enchantResolver.js';
-import { calculateCombatScore } from '../../codex/core/combat.scoring.js';
+import { analyzeText } from '../../codex/core/analysis.pipeline.js';
+import { createCombatScoringEngine } from '../../codex/core/scoring.defaults.js';
+import { normalizeCombatScore } from '../../codex/core/combat.scoring.js';
+import { matchElement } from '../data/combatElementDatabase.js';
+import { ARM_RIG, getPose } from '../data/armRigConfig.js';
+import { solveArm, gripWorld } from '../game/combat/armRig.js';
+import { equipSlotOf } from '../data/itemDatabase.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
@@ -47,6 +53,18 @@ export default function createCombatArenaScene(phaserRuntime) {
       for (let i = 0; i <= WALK_FRAME_COUNT; i++) {
         const key = `ideal-human-f${i}`;
         this.load.image(key, `/generated-assets/IdealHuman/IdealHuman-f${i}-png.png`);
+      }
+
+      // Two-arm rig (Slice 3): armless body walk frames + 6 jointed segment sprites.
+      for (let i = 0; i <= WALK_FRAME_COUNT; i++) {
+        this.load.image(`body-noarms-f${i}`, `/generated-assets/IdealHuman/IdealHuman-body-noArms-f${i}-png.png`);
+      }
+      // The SCDL CLI names outputs after the SOURCE filename stem, so the segment
+      // files armR-upper.scdl… compile to armR-upper-png.png…; the texture key
+      // equals the armRigConfig spriteKey.
+      const SEG_KEYS = ['armR-upper', 'armR-fore', 'armR-hand', 'armL-upper', 'armL-fore', 'armL-hand'];
+      for (const segKey of SEG_KEYS) {
+        this.load.image(segKey, `/generated-assets/IdealHuman/${segKey}-png.png`);
       }
 
       // Load all armor sprite frames from the item database (same f0..f8 layout,
@@ -346,17 +364,45 @@ export default function createCombatArenaScene(phaserRuntime) {
       playerContainer.add(armorLayers.boots);
       playerContainer.add(armorLayers.head);
       playerContainer.add(armorLayers.weapon);
-      
+
+      // --- Two-arm rig (Slice 3) ---
+      // The baked body no longer contains arms; the arms are jointed segment
+      // sprites (canvas 64x128, origin at each segment's joint pivot). Body
+      // origin (0.5,0.875) => a canvas point (px,py) maps to container-local
+      // (px-32, py-112).
+      playerImg.setTexture('body-noarms-f0');
+      const CANVAS_W = 64, CANVAS_H = 128, OX = 32, OY = 112;
+      this._rigCanvas = { OX, OY, CANVAS_W, CANVAS_H };
+      this.armSegments = {};
+      for (const side of ['right', 'left']) {
+        for (const seg of ARM_RIG[side].segments) {
+          const s = this.add.sprite(0, 0, seg.spriteKey);
+          s.setOrigin(seg.pivot.x / CANVAS_W, seg.pivot.y / CANVAS_H);
+          playerContainer.add(s);
+          this.armSegments[seg.spriteKey] = s;
+        }
+      }
+      // Hand payloads (main = right, off = left); textures set by equipment.
+      this.handPayloads = {
+        mainHand: this.add.sprite(0, 0, 'ideal-human-f0').setVisible(false),
+        offHand: this.add.sprite(0, 0, 'ideal-human-f0').setVisible(false),
+      };
+      playerContainer.add(this.handPayloads.mainHand);
+      playerContainer.add(this.handPayloads.offHand);
+
       // Register SCDL compiled frames as Phaser animations
+      // Body walk/idle use the ARMLESS body frames — the arms are the jointed
+      // segment sprites overlaid on top (they hold a carry pose during walk;
+      // walk-swing articulation is deferred).
       this.anims.create({
         key: 'player-walk',
-        frames: Array.from({ length: WALK_FRAME_COUNT }, (_, k) => ({ key: `ideal-human-f${k + 1}` })),
+        frames: Array.from({ length: WALK_FRAME_COUNT }, (_, k) => ({ key: `body-noarms-f${k + 1}` })),
         frameRate: 18,
         repeat: -1
       });
       this.anims.create({
         key: 'player-idle',
-        frames: [{ key: 'ideal-human-f0' }],
+        frames: [{ key: 'body-noarms-f0' }],
         frameRate: 1,
         repeat: -1
       });
@@ -503,8 +549,10 @@ export default function createCombatArenaScene(phaserRuntime) {
         window.removeEventListener('combat-endturn', this.boundHandleHudEndTurn);
       });
       this.emitCombatStats(); // seed the HUD with initial values
+      this.applyArmPose('carry'); // place jointed arms at rest
 
       this._incantation = { verse: '', weave: '' };
+      this.scoringEngine = createCombatScoringEngine();
       this.enchantRng = () => (typeof window !== 'undefined' && window.__forceEnchant ? 0 : Math.random());
       this.boundHandleIncantation = (e) => { if (e && e.detail) this._incantation = { verse: e.detail.verse || '', weave: e.detail.weave || '' }; };
       window.addEventListener('incantation-state', this.boundHandleIncantation);
@@ -546,22 +594,20 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     handleEquipmentChange = (event) => {
-      const equipment = event.detail;
+      const equipment = event.detail || {};
       if (!this.playerArmorLayers) return;
-      
-      const layerMap = {
-        'head': this.playerArmorLayers.head,
-        'chest': this.playerArmorLayers.chest,
-        'legs': this.playerArmorLayers.legs,
-        'boots': this.playerArmorLayers.boots,
-        'weapon': this.playerArmorLayers.weapon
+
+      // Armor layers (frame-locked to the body).
+      const armorMap = {
+        head: this.playerArmorLayers.head,
+        chest: this.playerArmorLayers.chest,
+        legs: this.playerArmorLayers.legs,
+        boots: this.playerArmorLayers.boots,
       };
-      
-      for (const [slot, sprite] of Object.entries(layerMap)) {
+      for (const [slot, sprite] of Object.entries(armorMap)) {
         if (!sprite) continue;
         const item = equipment[slot];
-        const assetId = item ? item.assetId : null;
-        const frame0Id = assetId ? `${assetId}-f0` : null;
+        const frame0Id = item ? `${item.assetId}-f0` : null;
         if (frame0Id && this.textures.exists(frame0Id)) {
           sprite.setTexture(frame0Id);
           sprite.setVisible(true);
@@ -569,8 +615,49 @@ export default function createCombatArenaScene(phaserRuntime) {
           sprite.setVisible(false);
         }
       }
+
+      // Hands: route every equipped item to a hand by its slot (main/off).
+      const hands = { mainHand: null, offHand: null };
+      for (const item of Object.values(equipment)) {
+        const slot = equipSlotOf(item);
+        if (slot) hands[slot] = item;
+      }
+      for (const slot of ['mainHand', 'offHand']) {
+        const payload = this.handPayloads && this.handPayloads[slot];
+        if (!payload) continue;
+        const item = hands[slot];
+        const frame0Id = item ? `${item.assetId}-f0` : null;
+        if (frame0Id && this.textures.exists(frame0Id)) {
+          payload.setTexture(frame0Id);
+          payload.setVisible(true);
+        } else {
+          payload.setVisible(false);
+        }
+      }
     };
     
+    applyArmPose = (poseName) => {
+      if (!this.armSegments || !this._rigCanvas) return;
+      const pose = getPose(poseName);
+      const { OX, OY } = this._rigCanvas;
+      for (const side of ['right', 'left']) {
+        const arm = ARM_RIG[side];
+        const solved = solveArm(arm, pose[side]);
+        solved.forEach((r, i) => {
+          const sprite = this.armSegments[arm.segments[i].spriteKey];
+          if (!sprite) return;
+          sprite.setPosition(r.jointX - OX, r.jointY - OY);
+          sprite.setRotation(r.angleRad);
+        });
+        const grip = gripWorld(arm, pose[side]);
+        const payload = side === 'right' ? this.handPayloads.mainHand : this.handPayloads.offHand;
+        if (payload) {
+          payload.setPosition(grip.x - OX, grip.y - OY);
+          payload.setRotation(grip.angleRad);
+        }
+      }
+    };
+
     createSwingTextures = () => {
       if (this.textures.exists('swing-streak')) return;
       // A white crescent: outer arc minus inner arc, so it reads as a fast blade trail.
@@ -689,19 +776,28 @@ export default function createCombatArenaScene(phaserRuntime) {
       }));
     };
 
-    performBasicAttack = () => {
+    performBasicAttack = async () => {
       if (!this.stats) return;
       const [targetId] = this.stats.inRangeTargetIds('player', ['dummy']);
       if (!targetId) return; // No valid target in range.
       const result = this.stats.resolveAttack('player', targetId);
       if (!result) return;
 
-      // Combat chess: does the current incantation ignite the swing?
+      // Combat chess: does the current incantation ignite the swing? Only score when
+      // the incantation actually names an element (scoring is the async engine path).
+      const combined = `${this._incantation.verse || ''} ${this._incantation.weave || ''}`;
       let scoreData = {};
-      try {
-        scoreData = calculateCombatScore({ text: this._incantation.verse, weave: this._incantation.weave }) || {};
-      } catch (err) {
-        console.warn('[combat] score failed; plain swing.', err);
+      if (matchElement(combined)) {
+        try {
+          const doc = analyzeText(this._incantation.verse || '');
+          const base = await this.scoringEngine.calculateScore(doc);
+          scoreData = normalizeCombatScore(base, {
+            scrollText: this._incantation.verse,
+            weave: this._incantation.weave,
+          }) || {};
+        } catch (err) {
+          console.warn('[combat] score failed; plain swing.', err);
+        }
       }
       const outcome = resolveEnchant(this._incantation, scoreData, this.enchantRng);
       const elemental = !!(outcome.element && outcome.success);
