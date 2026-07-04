@@ -1,0 +1,50 @@
+asset ArmLHand canvas 64x128
+palette {
+  # Expanded Skin Tones for Smooth Shading (7 stops)
+  skinpeak  = #FFF1E0
+  skinshine = #FDE8D0
+  skinhi2   = #DCAE80
+  skin      = #C08850
+  skinmid   = #A77040
+  skinshade = #885830
+  skinshadow= #6A4030
+  skindark  = #4A2818
+  skindeep  = #30180F
+
+  # Hair
+  hairhi    = #3D3D3D
+  hair      = #1F1F1F
+  hairshade = #0A0A0A
+  
+  # Eyes
+  eye       = #06B6D4
+  sclera    = #FFFFFF
+
+  # Void Ice Armor
+  voiddark = #0B0E14
+  voidmid = #1A2230
+  voidlight = #2A384A
+  icecore = #FFFFFF
+  icelighthigh = #A3F4FF
+  iceglow = #06B6D4
+  icedark = #0369A1
+}
+part armL material skin_light {
+  polygon 17 59 21 59 20 64 18 64 skin
+  line 17 60 17 63 skinhi2
+  line 22 60 22 63 skin
+  cell 22 64 skinmid
+  cell 21 65 skinshade
+  line 20 65 20 71 skin
+  cell 20 72 skinmid
+  line 19 65 19 72 skin
+  cell 19 73 skinmid
+  line 18 65 18 70 skinmid
+  cell 18 71 skinshade
+  line 17 65 17 68 skinshade
+  cell 17 69 skindark
+  cell 20 64 skinshine
+  cell 19 64 skinshine
+  cell 18 64 skinhi2
+  cell 17 64 skinmid
+}

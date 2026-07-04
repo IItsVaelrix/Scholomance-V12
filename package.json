@@ -24,6 +24,7 @@
     "battle": "npm --prefix \"Scholomance OS\" run battle --",
     "battle:editor": "npm --prefix \"Scholomance OS\" run battle:editor --",
     "combat:all": "node scripts/combat-all.js",
+    "assets:armrig": "node scripts/build-arm-rig-assets.mjs",
     "dev:dict": "python scripts/serve_scholomance_dict.py --db scholomance_dict.sqlite --port 8787",
     "dev:all": "node -e \"const cmd = process.platform === 'win32' ? 'start /B npm run dev:dict && start /B npm run dev:server && start /B npm run dev:relay && vite' : 'npm run dev:dict & npm run dev:server & npm run dev:relay & vite'; require('child_process').execSync(cmd, { stdio: 'inherit' });\"",
     "dev:full": "node --env-file=.env codex/server/index.js & vite",
