@@ -38,12 +38,19 @@
  */
 
 /**
+ * @typedef {Object} CombatAIBlock
+ * @property {(context: BestiaryRuntimeContext) => object} [buildProfile]
+ * @property {(context: BestiaryRuntimeContext) => object} [buildAbilityKit]
+ */
+
+/**
  * @typedef {Object} CombatBestiaryEntry
  * @property {string} id - archetype slug (sentinel-brazier, void-wraith, ...)
  * @property {number} [priority] - higher wins when multiple entries match
  * @property {(context: BestiaryRuntimeContext) => boolean} matches
  * @property {(context: BestiaryRuntimeContext) => CombatBestiaryDossier | null} [buildDossier]
  * @property {(context: BestiaryRuntimeContext) => object | null} [buildDefender]
+ * @property {CombatAIBlock} [combatAI]
  */
 
 export {};

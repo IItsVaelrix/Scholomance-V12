@@ -6,6 +6,7 @@ import {
   SENTINEL_STAT_DEFAULTS,
 } from '../../sentinelRobots.js';
 import { getIntelligenceTier } from '../../combatIntelligence.js';
+import { computeBasicAttackDamage } from '../../scholomanceStats.js';
 
 export const SENTINEL_BRAZIER_BESTIARY_ID = 'sentinel-brazier';
 
@@ -121,5 +122,29 @@ export const sentinelBrazierBestiaryEntry = {
         counsel: 'Press DISSONANCE and FRACTURE imagery with PROBE or COMMAND sentence forms. Avoid feeding RESONANCE or sustained LITANY/WARD chains — you strengthen the matrix.',
       },
     };
+  },
+  combatAI: {
+    buildProfile() {
+      return {
+        isRanged: true,
+        preferredRange: 3,
+        minRange: 1,
+        role: 'caster',
+        aggression: 0.7,
+        weightOverrides: {},
+      };
+    },
+    buildAbilityKit(context) {
+      const entity = context?.entity || {};
+      const damage = computeBasicAttackDamage(entity.scholomance);
+      const attackRange = Number.isFinite(entity.attackRange) ? entity.attackRange : 2;
+      return {
+        isRanged: true,
+        preferredRange: 3,
+        minRange: 1,
+        estimateAttackDamage: () => damage,
+        canActFromRange: (dist) => dist <= attackRange,
+      };
+    },
   },
 };
