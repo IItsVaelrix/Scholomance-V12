@@ -4,6 +4,7 @@ import { processorBridge } from '../../codex/core/shared/processor-bridge.js';
 import { ITEM_DATABASE } from '../data/itemDatabase.js';
 import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyline.js';
 import { CombatStatController } from '../game/combat/combatStatController.js';
+import { getRotationAtTime, getTimeForRotation } from '../../codex/core/pixelbrain/gear-glide-amp.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
@@ -422,6 +423,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.dummyContainer.add(dummyImg);
       this.dummyImg = dummyImg;
       this.stats.registerEntity('dummy', { hp: 100, maxHp: 100, tx: this.dummyGridPos.tx, ty: this.dummyGridPos.ty });
+      this.createSwingTextures();
 
       // Procedural smoke wisp — FBM noise with soft circular mask, light cool-gray
       if (!this.textures.exists('smoke-wisp')) {
@@ -560,6 +562,106 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
     };
     
+    createSwingTextures = () => {
+      if (this.textures.exists('swing-streak')) return;
+      // A white crescent: outer arc minus inner arc, so it reads as a fast blade trail.
+      const g = this.add.graphics();
+      g.fillStyle(0xffffff, 1);
+      g.beginPath();
+      g.arc(60, 60, 58, Phaser.Math.DegToRad(-70), Phaser.Math.DegToRad(70), false);
+      g.arc(60, 60, 30, Phaser.Math.DegToRad(70), Phaser.Math.DegToRad(-70), true);
+      g.closePath();
+      g.fillPath();
+      g.generateTexture('swing-streak', 120, 120);
+      g.destroy();
+    };
+
+    performSwing = (element) => {
+      const SWING_BPM = 120;
+      const SWING_DEG_PER_BEAT = 360;   // 250ms for a 180° arc
+      const ARC = Math.PI;              // 180°
+      const START_ANGLE = Phaser.Math.DegToRad(-135); // overhead
+      const durationMs = getTimeForRotation(ARC, SWING_BPM, SWING_DEG_PER_BEAT);
+      const streakColor = element ? element.streakColor : 0xffffff;
+
+      // Optional blade: rotate the equipped weapon layer around the hand if one is shown.
+      const weapon = this.playerArmorLayers && this.playerArmorLayers.weapon;
+      const bladeActive = weapon && weapon.visible;
+      const restoreRotation = bladeActive ? weapon.rotation : 0;
+
+      // Streak sprite riding the arc in front of the player.
+      const px = this.playerContainer ? this.playerContainer.x : 0;
+      const py = this.playerContainer ? this.playerContainer.y : 0;
+      const streak = this.add.sprite(px, py - 40, 'swing-streak');
+      streak.setDepth(30);
+      streak.setTint(streakColor);
+      streak.setBlendMode(Phaser.BlendModes.ADD);
+      streak.setAlpha(0.9);
+
+      if (element && this.add.particles && this.textures.exists('doom-fire')) {
+        const burst = this.add.particles(px, py - 40, 'doom-fire', {
+          speed: { min: 40, max: 120 }, lifespan: 350, quantity: 12,
+          scale: { start: 0.5, end: 0 }, alpha: { start: 0.9, end: 0 },
+          blendMode: 'ADD', tint: element.particleTint,
+        });
+        this.time.delayedCall(120, () => burst && burst.stop());
+        this.time.delayedCall(600, () => burst && burst.destroy());
+      }
+
+      const proxy = { v: 0 };
+      const finish = () => {
+        if (bladeActive) weapon.rotation = restoreRotation;
+      };
+      this.tweens.add({
+        targets: proxy, v: 1, duration: durationMs, ease: 'Sine.easeIn',
+        onUpdate: () => {
+          const elapsed = proxy.v * durationMs;
+          const swept = Math.min(ARC, getRotationAtTime(elapsed, SWING_BPM, SWING_DEG_PER_BEAT));
+          const angle = START_ANGLE + swept;
+          if (bladeActive) weapon.rotation = angle;
+          streak.rotation = angle;
+        },
+        onComplete: finish,
+      });
+      // Safety: guarantee the weapon is restored even if the tween is interrupted.
+      this.time.delayedCall(durationMs + 60, finish);
+      // Streak fades and lifts, then destroys.
+      this.tweens.add({ targets: streak, alpha: 0, y: py - 70, duration: durationMs + 80, ease: 'Quad.easeOut', onComplete: () => streak.destroy() });
+    };
+
+    floatingNumber = (x, y, text, color) => {
+      const label = this.add.text(x, y, text, {
+        fontFamily: 'monospace', fontSize: '22px', color, fontStyle: 'bold',
+        stroke: '#000000', strokeThickness: 4,
+      }).setOrigin(0.5).setDepth(60);
+      this.tweens.add({ targets: label, y: y - 48, alpha: 0, duration: 900, ease: 'Quad.easeOut', onComplete: () => label.destroy() });
+    };
+
+    showHitFeedback = (targetId, { color, amount, prefix = '-' }) => {
+      const container = targetId === 'dummy' ? this.dummyContainer : null;
+      const sprite = targetId === 'dummy' ? this.dummyImg : null;
+      if (sprite) {
+        const base = 0x88aacc;
+        sprite.setTint(color);
+        this.tweens.add({
+          targets: sprite, alpha: 0.6, yoyo: true, duration: 90, repeat: 1,
+          onComplete: () => sprite.setTint(base),
+        });
+      }
+      if (container) {
+        const hex = '#' + color.toString(16).padStart(6, '0');
+        this.floatingNumber(container.x, container.y - 60, `${prefix}${amount}`, hex);
+      }
+    };
+
+    showFizzle = () => {
+      if (!this.playerContainer) return;
+      const puff = this.add.text(this.playerContainer.x, this.playerContainer.y - 70, 'fizzle', {
+        fontFamily: 'monospace', fontSize: '14px', color: '#9aa0a6', fontStyle: 'italic',
+      }).setOrigin(0.5).setDepth(60);
+      this.tweens.add({ targets: puff, y: puff.y - 30, alpha: 0, duration: 700, onComplete: () => puff.destroy() });
+    };
+
     emitCombatStats = () => {
       const p = this.stats?.getEntity('player');
       const d = this.stats?.getEntity('dummy');
