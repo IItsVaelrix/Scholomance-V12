@@ -137,7 +137,40 @@ Or run the daemon manually (foreground):
 ```bash
 python3 brain_daemon.py --model qwen3.5:9b --port 9090
 ```
-python3 brain_daemon.py --model qwen3.5:9b --port 9090
+
+## MCP Server for CLI Agents (opencode, Grok, Claude, Cursor, Gemini, Codex, etc.)
+
+The brain network is exposed as a stdio MCP server so any MCP-compatible CLI agent can use it as a tool server.
+
+1. Start the daemon (so the HTTP backend is up):
+   ```bash
+   ./launch-brain-stack.sh
+   ```
+
+2. Configure your agent to use the MCP server defined in the project root:
+
+   - `mcp.json` (standard for many clients)
+   - `opencode.json` (for opencode.ai / compatible)
+
+   The entry:
+   ```json
+   "scholomance-brain": {
+     "command": "python3",
+     "args": ["steamdeck_brain/mcp_brain_bridge.py"],
+     "cwd": "/full/path/to/Scholomance-V12-main",
+     "env": { "PYTHONPATH": "steamdeck_brain" }
+   }
+   ```
+
+3. Tools available via the MCP:
+   - `ask_brain` — query the full brain + genes (main entrypoint)
+   - `get_brain_health`
+   - `get_scdna_genes`
+   - `list_available_brains`
+
+This is how the daemon becomes available to *all* CLI agents.
+
+See `steamdeck_brain/mcp_brain_bridge.py` for the implementation.
 ## Usage Examples
 
 ```bash

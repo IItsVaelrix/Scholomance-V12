@@ -188,6 +188,12 @@ verseIRMicroprocessors.register('compose.formula.v1', async (payload, context) =
   return composeFormulaProcessor(payload, payload?.params || {}, context);
 });
 
+// --- Arena Visual Tick (offloaded per-frame arena work) ---
+verseIRMicroprocessors.register('arena.tick', async (payload, context) => {
+  const { arenaTickProcessor } = await import('./arena/arena-tick.processor.js');
+  return arenaTickProcessor(payload, context);
+});
+
 verseIRMicroprocessors.register('amp.turboquant.similarity', async (payload, _context) => {
   const { runTurboQuantAmp } = await import('./turboquant-amp.js');
   return runTurboQuantAmp(payload);

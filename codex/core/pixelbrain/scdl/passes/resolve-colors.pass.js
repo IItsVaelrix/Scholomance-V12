@@ -11,6 +11,7 @@
  */
 
 import { SCDL_ERROR_CODES, scdlError } from '../scdl.errors.js';
+import { mapParts } from '../graph-walk.js';
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/;
 
@@ -78,7 +79,7 @@ export function resolveColorsPass(ast, errors) {
     }
   }
 
-  const resolvedParts = ast.parts.map(part => ({
+  const resolvePart = part => ({
     ...part,
     ops: part.ops.map(op => {
       const opLoc = op.loc || l;
@@ -94,7 +95,18 @@ export function resolveColorsPass(ast, errors) {
       }
       return op;
     }),
-  }));
+  });
 
-  return { ...ast, parts: resolvedParts };
+  if (!ast.graphMode) {
+    return { ...ast, parts: ast.parts.map(resolvePart) };
+  }
+
+  const roots = mapParts(ast.roots, resolvePart);
+  const defs = (ast.defs || []).map(def => ({ ...def, nodes: mapParts(def.nodes, resolvePart) }));
+  return {
+    ...ast,
+    roots,
+    defs,
+    parts: roots.filter(n => n.kind === 'part').map(n => n.part),
+  };
 }

@@ -5,6 +5,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    // Prevent multiple React copies (common with Rete.js, Three Fiber, Lexical, etc.)
+    // This fixes "Invalid hook call" and "Cannot read properties of null (reading 'useState')"
+    dedupe: ['react', 'react-dom'],
+  },
   worker: {
     format: 'es',
   },

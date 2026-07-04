@@ -135,7 +135,7 @@ describe('SCDL Parser — parseSCDL', () => {
   it('returns SCDL-AST-v1 contract', () => {
     const { rawAst } = parseSCDL(BASIC_SOURCE);
     expect(rawAst.contract).toBe('SCDL-AST-v1');
-    expect(rawAst.version).toBe('1.1.0');
+    expect(rawAst.version).toBe('1.2.0');
   });
 
   it('preserves malformed palette hex literals for compiler validation', () => {

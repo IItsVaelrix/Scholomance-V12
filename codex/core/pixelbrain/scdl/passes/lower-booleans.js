@@ -9,7 +9,7 @@
  * Called from expand-vector.pass.js
  */
 
-import { pushCell, inBounds } from './expand-vector.pass.js'; // shared helpers (would be extracted)
+import { pushCell, inBounds } from '../render/raster-core.js'; // shared helpers extracted to raster-core
 
 export function applyBooleanOp(boolOp, targets, part, W, H, ops, errors) {
   // Simplified: in practice collect cell sets from previous ops

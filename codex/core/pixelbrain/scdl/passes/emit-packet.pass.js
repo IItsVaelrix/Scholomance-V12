@@ -8,7 +8,9 @@
 import {
   createPixelBrainAssetPacket,
   normalizePixelBrainCanvas,
+  stableJson,
 } from '../../pixelbrain-asset-packet.js';
+import { hashString } from '../../shared.js';
 
 /**
  * @param {object} ast - Fully expanded SCDL AST
@@ -16,6 +18,8 @@ import {
  * @returns {import('../../pixelbrain-asset-packet.js').PixelBrainAssetPacket}
  */
 export function emitPacketPass(ast, _errors) {
+  if (ast.sceneGraph) return emitSceneGraphPacket(ast);
+
   const canvas = normalizePixelBrainCanvas(ast.canvas);
 
   // Flatten all coordinates from all parts
@@ -96,3 +100,44 @@ function _primaryMaterial(parts) {
   if (!parts || parts.length === 0) return 'source';
   return parts[0].material || 'source';
 }
+
+function emitSceneGraphPacket(ast) {
+  const canvas = normalizePixelBrainCanvas(ast.canvas);
+  const sceneGraph = ast.sceneGraph;
+  const id = `pbasset_${hashString(stableJson(sceneGraph)).toString(16).padStart(8, '0')}`;
+
+  const paletteColors = Object.values(ast.palette || {}).filter(Boolean);
+  const sourcePalette = paletteColors.length
+    ? [{ key: 'scdl-source', colors: paletteColors, source: 'scdl', weights: [] }]
+    : [];
+
+  const countNodes = nodes => (nodes || []).reduce(
+    (n, node) => n + 1 + (node.kind === 'group' ? countNodes(node.children) : 0), 0
+  );
+
+  return createPixelBrainAssetPacket({
+    id, // identity law: hash of the canonical program, never pixels
+    canvas,
+    geometry: { mode: 'scene-graph', sceneGraph, coordinates: [] },
+    palette: { sourcePalette, authority: 'scdl.emit-packet.v1' },
+    source: { kind: 'scdl', id: ast.asset, label: `SCDL:${ast.asset}` },
+    material: { id: 'source' },
+    provenance: {
+      createdBy: 'scdl-compiler.v1',
+      operations: [
+        { op: 'parse', checksum: ast.checksum },
+        { op: 'semantic-unifier', schemaVersion: 'PB-SEM-v1' },
+        { op: 'scene-graph', defCount: Object.keys(sceneGraph.defs).length, rootNodeCount: countNodes(sceneGraph.roots) },
+      ],
+    },
+    metadata: {
+      tags: ['scdl', 'scene-graph', ast.type],
+      notes: [
+        `SCDL scene-graph asset: ${ast.asset}`,
+        `Canvas: ${canvas.width}x${canvas.height}`,
+        `Defs: ${Object.keys(sceneGraph.defs).join(', ') || '(none)'}`,
+      ],
+    },
+  });
+}
+

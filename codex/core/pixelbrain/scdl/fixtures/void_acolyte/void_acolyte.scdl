@@ -96,7 +96,10 @@ part amulet material cyan_glow {
   glow radius 2
 }
 
-# --- idle loop: tiny movement, ominous presence ---
+# --- idle loop: tiny ritual motion, ominous presence ---
+# f0 rest → f1 hood-dip (inhale: hood + shoulders sink) →
+# f2 glow-surge (energy peak: eyes flare, amulet + orb spark, still low) →
+# f3 gold-glint (release: hood rises, staff band gleams, hem settles) → f0
 loop idle duration 400
 
 frame 1 "hood-dip" {
@@ -106,6 +109,11 @@ frame 1 "hood-dip" {
   }
   part hoodbrow after face material void_cloth {
     rect 12 7 8 2 hood
+  }
+  part arms material void_cloth {
+    symmetry x
+    rect 7 19 3 8 robehi
+    rect 7 27 2 2 skin
   }
 }
 
@@ -117,11 +125,24 @@ frame 2 "glow-surge" {
   part hoodbrow after face material void_cloth {
     rect 12 7 8 2 hood
   }
+  part arms material void_cloth {
+    symmetry x
+    rect 7 19 3 8 robehi
+    rect 7 27 2 2 skin
+  }
   part eyes material cyan_glow {
     symmetry x
     cell 13 11 eye
     cell 13 10 eyebright
     glow radius 2
+  }
+  part amulet material cyan_glow {
+    cell 15 21 eyebright
+    cell 16 21 eyebright
+    glow radius 3
+  }
+  part orbspark after orb material cyan_glow {
+    cell 22 5 orbshine
   }
 }
 
@@ -131,6 +152,9 @@ frame 3 "gold-glint" {
     line 26 13 26 46 wooddark
     cell 25 26 glint
     cell 25 27 glint
+  }
+  part hemsettle after robe material void_cloth {
+    cell 4 45 robeshade
   }
 }
 

@@ -7,11 +7,57 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.30** | Last updated: 2026-06-29
+**Version: 1.31** | Last updated: 2026-07-02
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: SCDL v1 vector authoring ops
+- Version: 1.30 -> 1.31
+- Changed fields: registered SCDL vector AST op variants `circle`, `ring`, `rect`, `polygon`, `path`, and `sphere`; documented the deterministic `expandVectorPass` lowering step before symmetry; reserved `SCDL-011 INVALID_VECTOR_OP` for invalid vector authoring parameters
+- Breaking: no
+- Claude impact: no required UI change; authoring or dev-harness surfaces may render SCDL-derived assets only after compiler lowering and must not treat vector source ops as runtime pixel truth
+- Gemini impact: tests should assert signed/decimal vector parsing, deterministic vector-to-cell lowering, vector-before-symmetry ordering, `sphere` tier behavior, path curve flattening, and `SCDL-011` diagnostics
+
+---
+
+## SCDL Vector Authoring Contract
+
+SCDL vector ops are authoring-time AST instructions. They are never persisted as final asset geometry. `expandVectorPass` lowers them into ordinary `cell` ops before `expandSymmetryPass`, `expandCellsPass`, packet emission, and exporter output.
+
+```ts
+type SCDLColorRef =
+  | { kind: "hex"; value: string }
+  | { kind: "alias"; value: string };
+
+type SCDLVectorOp =
+  | { op: "circle"; cx: number; cy: number; radius: number; colorRef?: SCDLColorRef; color?: string }
+  | { op: "ring"; cx: number; cy: number; radius: number; width: number; colorRef?: SCDLColorRef; color?: string }
+  | { op: "rect"; x: number; y: number; w: number; h: number; colorRef?: SCDLColorRef; color?: string }
+  | { op: "polygon"; points: Array<[number, number]>; colorRef?: SCDLColorRef; color?: string }
+  | { op: "path"; d: string; colorRef?: SCDLColorRef; color?: string }
+  | {
+      op: "sphere";
+      cx: number;
+      cy: number;
+      radius: number;
+      lx: number;          // signed finite light vector x; default -1
+      ly: number;          // signed finite light vector y; default -1
+      tierColorRefs?: SCDLColorRef[];
+      tierColors?: string[]; // exactly 5 after resolveColors: shine, glow, core, rim, shadow
+    };
+```
+
+Invariants:
+- Numeric vector coordinates may be signed or decimal; emitted lattice cells remain integer coordinates.
+- `sphere` uses fixed tier thresholds `[0.999, 0.70, 0.10, -0.40]`; the exact center cell maps explicitly to the final tier rather than relying on `NaN` comparison behavior.
+- Invalid vector parameters emit `SCDL-011` through `PB-ERR-v1`; examples include non-positive radii, non-positive ring width, non-positive rect dimensions, fewer than three polygon points, empty paths, missing sphere tier colors, or a zero light vector.
+- Path support includes `M/L/H/V/Q/T/C/S/Z`; `A` preserves endpoint continuity as a straight segment until full arc rasterization is required by an approved asset.
 
 ---
 

@@ -7,11 +7,11 @@
     "height": 48
   },
   "defaultDurationMs": 400,
-  "sourceChecksum": "0000000086673376",
+  "sourceChecksum": "0000000072e01057",
   "frames": [
     {
       "index": 0,
-      "label": "base",
+      "label": "rest",
       "durationMs": 400,
       "packet": "pbasset_2595caa6"
     },
@@ -19,19 +19,19 @@
       "index": 1,
       "label": "hood-dip",
       "durationMs": 400,
-      "packet": "pbasset_3d938949"
+      "packet": "pbasset_80c6dd3f"
     },
     {
       "index": 2,
       "label": "glow-surge",
       "durationMs": 400,
-      "packet": "pbasset_444daef7"
+      "packet": "pbasset_d0d580c4"
     },
     {
       "index": 3,
       "label": "gold-glint",
       "durationMs": 400,
-      "packet": "pbasset_563d18af"
+      "packet": "pbasset_b85c4328"
     }
   ]
 }

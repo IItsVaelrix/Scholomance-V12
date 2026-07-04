@@ -137,7 +137,32 @@ def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
 
 
 def main() -> int:
-    """UserPromptSubmit hook entrypoint. Never raises; never blocks the prompt."""
+    """UserPromptSubmit hook entrypoint or CLI. Never raises.
+
+    Usage as hook: pipe JSON {"prompt": "..."}
+    Usage as CLI: python -m ... --prompt "your task here" [--agent grok|codex|gemini|opencode]
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--prompt", type=str, default=None, help="Direct prompt string for CLI use")
+    parser.add_argument("--agent", type=str, default=None, help="Target agent for context formatting (grok, codex, gemini, opencode)")
+    args = parser.parse_args()
+
+    if args.prompt:
+        task = args.prompt
+        try:
+            block = build_injection(task)
+        except Exception:
+            block = ""
+        if block.strip():
+            if args.agent:
+                print(f"## SCDNA Genes for {args.agent}\n{block}")
+            else:
+                print(block)
+        return 0
+
+    # Hook mode (stdin JSON)
     try:
         raw = sys.stdin.read()
     except Exception:

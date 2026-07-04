@@ -1,34 +1,18 @@
 import Phaser from 'phaser';
 import { generateBattleLeylines } from '../../codex/core/leyline.engine.js';
+import { processorBridge } from '../../codex/core/shared/processor-bridge.js';
+import { combat_leylineUri } from '../pages/Combat/assets/generated/combat-leyline.js';
 
 const PALETTES = {
   voidsteel: { shine: 0x4a5a7a, lit: 0x2a3a5a, core: 0x1a2a4a, rim: 0x0a1020, shadow: 0x050510 },
-  void_ice: { shine: 0xffffff, lit: 0xcceeff, core: 0x88bbdd, rim: 0x447799, shadow: 0x224466 },
+  void_ice: { shine: 0x88bbdd, lit: 0x447799, core: 0x224466, rim: 0x112233, shadow: 0x08111a },
   obsidian: { shine: 0x332244, lit: 0x221133, core: 0x110022, rim: 0x0a0011, shadow: 0x05000a },
   amethyst: { shine: 0xffaaff, lit: 0xcc55ff, core: 0x8800bb, rim: 0x440077, shadow: 0x220044 },
-  cyan_glow: { shine: 0xffffff, lit: 0xaaffff, core: 0x00ffff, rim: 0x0088cc, shadow: 0x004488 },
-  royal_purple: { shine: 0xd8b2ff, lit: 0x9b66ff, core: 0x6600cc, rim: 0x330066, shadow: 0x1a0033 }
+  cyan_glow: { shine: 0x00ffff, lit: 0x0088cc, core: 0x004488, rim: 0x002244, shadow: 0x001122 },
+  royal_purple: { shine: 0xd8b2ff, lit: 0x9b66ff, core: 0x6600cc, rim: 0x330066, shadow: 0x1a0033 },
+  // Light checker cell — a subtly-lit arcane slate that reads against obsidian without going muddy.
+  arcane_slate: { shine: 0x453a5e, lit: 0x2e2440, core: 0x1e1730, rim: 0x120c20, shadow: 0x080512 }
 };
-
-// Generate 36-color Indigo Palette for Doom Fire
-const INDIGO_PALETTE = [{ r: 0, g: 0, b: 0, a: 0 }]; // Index 0 is transparent
-for (let i = 1; i < 36; i++) {
-  let r, g, b;
-  const t = i / 35;
-  if (t < 0.2) {
-    r = 0; g = 0; b = t * 5 * 255; // Black to Deep Blue
-  } else if (t < 0.5) {
-    const t2 = (t - 0.2) / 0.3;
-    r = t2 * 120; g = 0; b = 255; // Blue to Indigo/Purple
-  } else if (t < 0.8) {
-    const t2 = (t - 0.5) / 0.3;
-    r = 120 - t2 * 120; g = t2 * 255; b = 255; // Purple to Cyan
-  } else {
-    const t2 = (t - 0.8) / 0.2;
-    r = t2 * 255; g = 255; b = 255; // Cyan to White
-  }
-  INDIGO_PALETTE.push({ r: Math.floor(r), g: Math.floor(g), b: Math.floor(b), a: 255 });
-}
 
 // Geologic Bytecode Opcodes
 const OP = {
@@ -74,8 +58,21 @@ export default function createCombatArenaScene(phaserRuntime) {
       // Shift camera slightly up to frame the obelisk peak
       this.cameras.main.scrollY = -height / 2 - 40;
       
-      // Zoom out to give the island breathing room and reveal the space around it
+      // Zoom out to give the island breathing room and reveal the space around it.
+      // Universe bg is now massively oversized + resize handler to ensure it always fills the full viewport (no side black bars).
       this.cameras.main.setZoom(1.1);
+
+      // Subtle camera idle drift to sell "alive" parallax-on-stars
+      // Note: galaxy redraw on resize ensures full viewport fill even after drift/zoom
+      this.tweens.add({
+        targets: this.cameras.main,
+        scrollX: this.cameras.main.scrollX + 3,
+        scrollY: this.cameras.main.scrollY - 2,
+        duration: 7000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
 
       // Initialize Doom Fire Canvas Texture (32x48 grid)
       this.fireW = 32;
@@ -83,7 +80,8 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.fireTexture = this.textures.createCanvas('doom-fire', this.fireW, this.fireH);
       this.fireContext = this.fireTexture.getContext();
       this.fireImageData = this.fireContext.createImageData(this.fireW, this.fireH);
-      this.firePixels = new Array(this.fireW * this.fireH).fill(0);
+      this.firePixels = new Float32Array(this.fireW * this.fireH);
+      this._frameSeed = 1;
       
       // Bottom row will be dynamically seeded in update() for a flame shape
 
@@ -99,6 +97,17 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       this.drawGalaxyBackground();
+
+      // Keep camera centered on universe when window resizes (prevents black bars shifting)
+      // ALSO refresh galaxy bg so it continues to take up the WHOLE viewport (gene-enforced).
+      this.scale.on('resize', (gameSize) => {
+        this.cameras.main.scrollX = -gameSize.width / 2;
+        this.cameras.main.scrollY = -gameSize.height / 2 - 40;
+        if (this.galaxyBg) {
+          this.galaxyBg.destroy();
+        }
+        this.drawGalaxyBackground();
+      });
       
       // Global left-click handler for interacting
       this.input.on('pointerdown', (pointer) => {
@@ -199,6 +208,36 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       this.drawVoxelTerrain(heightmap, terrainSize, terrainRadius);
 
+      // Sporadic ice smoke — one shared emitter, single particle per burst,
+      // 3–5s gaps. Caps simultaneous wisps well under 3.
+      if (this.icePeakPositions && this.icePeakPositions.length > 0) {
+        // Continuous vapor. Each puff is emitted from a random peak and its alpha ramps
+        // 0 → peak → 0 across its life, so wisps breathe in and out instead of the old
+        // one-particle-every-few-seconds burst that popped in and out like a god particle.
+        const peaks = this.icePeakPositions;
+        const peakZone = {
+          getRandomPoint: (point) => {
+            const peak = Phaser.Utils.Array.GetRandom(peaks);
+            point.x = peak.x + Phaser.Math.Between(-6, 6);
+            point.y = peak.y + Phaser.Math.Between(-4, 4);
+            return point;
+          }
+        };
+        const iceSmokeEmitter = this.add.particles(0, 0, 'ice-smoke', {
+          speed: { min: 3, max: 9 },
+          angle: { min: 255, max: 285 },              // gentle upward drift
+          scale: { start: 0.16, end: 0.6 },           // a small puff that expands as it rises
+          alpha: { values: [0, 0.22, 0.18, 0], ease: 'Sine.easeInOut' }, // fade in, hold, fade out
+          rotate: { min: -15, max: 15 },
+          lifespan: { min: 4500, max: 7000 },
+          frequency: 850,                             // a soft, steady stream — no dead gaps
+          quantity: 1,
+          blendMode: 'NORMAL',
+          emitZone: { type: 'random', source: peakZone },
+        });
+        iceSmokeEmitter.setDepth(40); // Ice vapor drifts in front of the arena geometry, like the snow
+      }
+
       // Draw the crisp combat grid on top
       const gridSize = 9;
       const tw = 80;
@@ -213,11 +252,22 @@ export default function createCombatArenaScene(phaserRuntime) {
       };
 
       // Generate battle leylines from the engine
+      // Leylines must NEVER appear on runes. Runes live exclusively on the diagonals.
+      const runeBlocked = [];
+      for (let i = 0; i < gridSize; i++) {
+        runeBlocked.push({ x: i, y: i });                 // main diagonal
+        runeBlocked.push({ x: i, y: gridSize - 1 - i });  // anti-diagonal
+      }
+      // dedupe center (already blocked)
+      const uniqueBlocked = [...new Set(runeBlocked.map(c => `${c.x},${c.y}`))]
+        .map(k => { const [x,y] = k.split(',').map(Number); return {x,y}; })
+        .filter(c => !(c.x === 4 && c.y === 4));
+
       this.leylines = generateBattleLeylines({
          battleSeed: 1337,
          width: gridSize,
          height: gridSize,
-         blockedCoords: [{x: 4, y: 4}], // Center obelisk is blocked
+         blockedCoords: [{x: 4, y: 4}, ...uniqueBlocked], // Center + all rune diagonals blocked
          count: 5 // Scatter 5 leylines across the battlefield
       });
 
@@ -236,6 +286,69 @@ export default function createCombatArenaScene(phaserRuntime) {
       const cy = -plateauZ;
       this.drawTorch(cx - tw, cy); // Left
       this.drawTorch(cx + tw, cy); // Right
+      
+      this.drawTeleportationPortal();
+
+      // Procedural smoke wisp — FBM noise with soft circular mask, light cool-gray
+      if (!this.textures.exists('smoke-wisp')) {
+        const w = 128, h = 128;
+        const sTex = this.textures.createCanvas('smoke-wisp', w, h);
+        const sCtx = sTex.getContext();
+        const imageData = sCtx.createImageData(w, h);
+        const data = imageData.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let n = 0, amp = 1, freq = 0.05, max = 0;
+            for (let o = 0; o < 4; o++) {
+              n += this.smoothNoise2D(x * freq, y * freq) * amp;
+              max += amp;
+              amp *= 0.5;
+              freq *= 2;
+            }
+            n = Math.max(0, (n / max - 0.45) * 2.4);
+            const dx = x - w / 2, dy = y - h / 2;
+            const r = Math.sqrt(dx * dx + dy * dy) / (w / 2);
+            const edge = Math.max(0, 1 - r);
+            const edgeSoft = edge * edge * (3 - 2 * edge);
+            const a = Math.min(1, n * edgeSoft) * 0.9;
+            const idx = (y * w + x) * 4;
+            data[idx] = 210;
+            data[idx + 1] = 205;
+            data[idx + 2] = 220;
+            data[idx + 3] = Math.floor(a * 255);
+          }
+        }
+        sCtx.putImageData(imageData, 0, 0);
+        sTex.refresh();
+      }
+
+      // Continuous mist mass — large overlapping sprites with offset breathing cycles
+      const mistConfigs = [
+        { x: -320, y: 290, scale: 3.4, alpha: 0.18 },
+        { x: -160, y: 260, scale: 3.9, alpha: 0.20 },
+        { x: 20,   y: 305, scale: 3.6, alpha: 0.22 },
+        { x: 200,  y: 270, scale: 3.7, alpha: 0.20 },
+        { x: 340,  y: 295, scale: 3.2, alpha: 0.18 }
+      ];
+      mistConfigs.forEach((cfg, i) => {
+        const m = this.add.image(cfg.x, cfg.y, 'smoke-wisp');
+        m.setDepth(60); // Atmospheric haze drifts in front of the arena geometry (portal 50, torches 30)
+        m.setBlendMode(Phaser.BlendModes.NORMAL);
+        m.setAlpha(cfg.alpha);
+        m.setScale(cfg.scale);
+        this.tweens.add({
+          targets: m,
+          alpha: cfg.alpha * 0.4,
+          scale: cfg.scale * 1.08,
+          x: cfg.x + Phaser.Math.Between(-18, 18),
+          y: cfg.y + Phaser.Math.Between(-10, 10),
+          duration: Phaser.Math.Between(6500, 9500),
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut',
+          delay: i * 700
+        });
+      });
 
       this.events.emit('arena-ready');
     }
@@ -398,7 +511,16 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     drawVoxelTerrain(heightmap, size, radius) {
+      this.icePeakPositions = [];
       const graphics = this.add.graphics();
+      graphics.setDepth(5); // Island terrain above galaxy but below grid if needed (gene protected)
+      
+      const shimmerGraphics = this.add.graphics();
+      shimmerGraphics.setDepth(6); // Ice peaks sit just above the island terrain (5), below the grid (10)
+      if (shimmerGraphics.postFX) {
+        shimmerGraphics.postFX.addShine(1, 0.2, 5, false); // Shimmer shader
+        shimmerGraphics.postFX.addBloom(0x00ffff, 1, 1, 1.5, 1.2); // Ice bloom
+      }
       
       const vTw = 60; // voxel tile width
       const vTh = 30; // voxel tile height
@@ -428,8 +550,11 @@ export default function createCombatArenaScene(phaserRuntime) {
 
         // Quantize height for chunked bitmask look
         let blockZ = Math.floor(v.z) * zScale;
+        let isTallestPeak = false;
         if (isEdge) {
-           blockZ += 80 + Math.random() * 60; // Make perimeter walls massively tall
+           const extraHeight = 80 + Math.random() * 60;
+           blockZ += extraHeight; // Make perimeter walls massively tall
+           if (extraHeight > 125) isTallestPeak = true; // Only top ~25% of perimeter walls
         }
         
         // Base coordinate (0,0 is center)
@@ -502,26 +627,85 @@ export default function createCombatArenaScene(phaserRuntime) {
         let hitPolyPoints;
 
         if (isEdge) {
-           // Obsidian Crystal Wall Tip
-           const tip = { x: pTopCenter.x, y: pTopCenter.y - 30 - Math.random() * 40 };
+           const variant = Math.random() > 0.5 ? 1 : 2;
+           let tip;
+           if (variant === 1) {
+               // Variant 1: Centered Spire
+               tip = { x: pTopCenter.x, y: pTopCenter.y - 30 - Math.random() * 40 };
+           } else {
+               // Variant 2: Asymmetrical Slanted Shard
+               const lean = Math.random() > 0.5 ? 25 : -25;
+               tip = { x: pTopCenter.x + lean, y: pTopCenter.y - 15 - Math.random() * 25 };
+           }
            
-           // Left Crystal Face
-           graphics.fillStyle(leftColor, 1);
-           graphics.beginPath();
-           graphics.moveTo(pTopLeft.x, pTopLeft.y);
-           graphics.lineTo(pTopBottom.x, pTopBottom.y);
-           graphics.lineTo(tip.x, tip.y);
-           graphics.closePath();
-           graphics.fillPath();
-           
-           // Right Crystal Face
-           graphics.fillStyle(rightColor, 1);
-           graphics.beginPath();
-           graphics.moveTo(pTopBottom.x, pTopBottom.y);
-           graphics.lineTo(pTopRight.x, pTopRight.y);
-           graphics.lineTo(tip.x, tip.y);
-           graphics.closePath();
-           graphics.fillPath();
+           if (isTallestPeak) {
+               // Obsidian Crystal Wall Tip transitions to Shining Ice Peak
+               const icyLeft = this.getLambertColor(-1, 1, 0, PALETTES.cyan_glow);
+               const icyRight = this.getLambertColor(1, 1, 0, PALETTES.cyan_glow);
+
+               // Left Crystal Face
+               shimmerGraphics.fillStyle(icyLeft, 1);
+               shimmerGraphics.beginPath();
+               shimmerGraphics.moveTo(pTopLeft.x, pTopLeft.y);
+               shimmerGraphics.lineTo(pTopBottom.x, pTopBottom.y);
+               shimmerGraphics.lineTo(tip.x, tip.y);
+               shimmerGraphics.closePath();
+               shimmerGraphics.fillPath();
+               
+               // Right Crystal Face
+               shimmerGraphics.fillStyle(icyRight, 1);
+               shimmerGraphics.beginPath();
+               shimmerGraphics.moveTo(pTopBottom.x, pTopBottom.y);
+               shimmerGraphics.lineTo(pTopRight.x, pTopRight.y);
+               shimmerGraphics.lineTo(tip.x, tip.y);
+               shimmerGraphics.closePath();
+               shimmerGraphics.fillPath();
+
+               // Add stroke details to the shimmer layer
+               shimmerGraphics.lineStyle(1.5, PALETTES.cyan_glow.shine, 0.8);
+               shimmerGraphics.beginPath();
+               shimmerGraphics.moveTo(pTopLeft.x, pTopLeft.y);
+               shimmerGraphics.lineTo(tip.x, tip.y);
+               shimmerGraphics.lineTo(pTopRight.x, pTopRight.y);
+               shimmerGraphics.moveTo(pTopBottom.x, pTopBottom.y);
+               shimmerGraphics.lineTo(tip.x, tip.y);
+               shimmerGraphics.strokePath();
+               
+                // Emit softly drifting snowflakes from the frozen peak
+                if (this.add.particles) {
+                    const snow = this.add.particles(tip.x, tip.y, 'twinkle-star', {
+                        speedY: { min: 10, max: 30 },
+                        speedX: { min: -15, max: 15 },
+                        scale: { start: 0.2, end: 0 },
+                        alpha: { start: 0.6, end: 0 },
+                        lifespan: { min: 2000, max: 5000 },
+                        frequency: Phaser.Math.Between(400, 1500),
+                        blendMode: 'ADD',
+                        tint: 0xaaffff
+                    });
+                    snow.setDepth(40); // Falling snow is atmospheric — in front of the arena geometry
+
+                    // Record this peak for the shared ice-smoke emitter
+                    this.icePeakPositions.push({ x: tip.x, y: tip.y });
+                }
+           } else {
+               // Normal Obsidian Crystal Wall Tip
+               graphics.fillStyle(leftColor, 1);
+               graphics.beginPath();
+               graphics.moveTo(pTopLeft.x, pTopLeft.y);
+               graphics.lineTo(pTopBottom.x, pTopBottom.y);
+               graphics.lineTo(tip.x, tip.y);
+               graphics.closePath();
+               graphics.fillPath();
+               
+               graphics.fillStyle(rightColor, 1);
+               graphics.beginPath();
+               graphics.moveTo(pTopBottom.x, pTopBottom.y);
+               graphics.lineTo(pTopRight.x, pTopRight.y);
+               graphics.lineTo(tip.x, tip.y);
+               graphics.closePath();
+               graphics.fillPath();
+           }
 
            hitPolyPoints = [tip.x, tip.y, pTopRight.x, pTopRight.y, pTopBottom.x, pTopBottom.y, pTopLeft.x, pTopLeft.y];
         } else {
@@ -545,7 +729,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         // Create an interactive zone wrapping this voxel's top geometry
         const poly = new Phaser.Geom.Polygon(hitPolyPoints);
 
-        const interactiveTile = this.add.polygon(0, 0, hitPolyPoints, 0xffffff, 0).setOrigin(0);
+        const interactiveTile = this.add.polygon(0, 0, hitPolyPoints, 0xffffff, 0).setOrigin(0).setDepth(15);
         interactiveTile.setInteractive(poly, Phaser.Geom.Polygon.Contains);
 
         interactiveTile.inspectData = { tx: v.x, ty: v.y, isIsland: true, height: v.z };
@@ -565,6 +749,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     draw3DGrid(gridSize, tw, th, toIso, zOffset) {
       const graphics = this.add.graphics();
+      graphics.setDepth(10); // Arena grid on top of galaxy background (gene protected)
 
       
       const tiles = [];
@@ -580,14 +765,13 @@ export default function createCombatArenaScene(phaserRuntime) {
         const depth = 8; 
         
         const isDiagonal = (tx === ty) || (tx === gridSize - 1 - ty);
-        // User requested platforms to be obsidian black
+        // Dark checker cell (and all rune diagonals) are obsidian black.
         let palette = PALETTES.obsidian;
-        
-        // Slight variation for checkerboard to keep the grid readable
+
+        // Light checker cell: a clean, intentional arcane-slate tone — reads as a board,
+        // stays dark and grimoire. Diagonals stay obsidian so the rune tiles are uniform.
         if (!isDiagonal && (tx + ty) % 2 === 0) {
-           palette = {
-             shine: 0x443355, lit: 0x332244, core: 0x1a0a2a, rim: 0x0d001a, shadow: 0x05000a
-           };
+           palette = PALETTES.arcane_slate;
         }
 
         const topColor = this.getLambertColor(0, 0, 1, palette);
@@ -639,27 +823,41 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
 
         // Render Leylines from the engine
+        // Double guard: leylines never appear on runes (diagonal tiles)
         const leyline = this.leylines && this.leylines.find(l => l.coord.x === tx && l.coord.y === ty);
-        if (leyline) {
+        let lColor = null;
+        if (leyline && !isDiagonal) {
            const colors = {
              'ALCHEMY': 0xff3300, 'PSYCHIC': 0xff00ff, 'VITAL': 0x00ffaa,
              'SONIC': 0xffff00, 'LORE': 0x0088ff, 'CELESTIAL': 0xffffff,
              'WARD': 0x88bbff, 'NECROTIC': 0x99ffcc, 'CODEX': 0xaa00ff,
              'ENTROPY': 0x444444, 'VOID': 0x220044
            };
-           const lColor = colors[leyline.affinity] || 0xffffff;
-           
-           // Draw a glowing isometric aura
-           graphics.fillStyle(lColor, 0.2);
-           graphics.fillEllipse(pt.x, py, tw * 0.7, th * 0.7);
-           
-           // Inner bright core
-           graphics.fillStyle(lColor, 0.7);
-           graphics.fillEllipse(pt.x, py, tw * 0.35, th * 0.35);
-           
-           // Outer pulsing rim
-           graphics.lineStyle(1.5, lColor, 0.9);
-           graphics.strokeEllipse(pt.x, py, tw * 0.7, th * 0.7);
+           lColor = colors[leyline.affinity] || 0xffffff;
+
+           // === TASK 1: Wire the actual PixelBrain PNG prop ===
+           // Use the generated high-fidelity fissure PNG (badlands cracks) instead of vector.
+           // Tint per affinity so color resonates correctly. The PNG carries the eroded structure.
+           if (!this.textures.exists('leyline-fissure')) {
+             this.textures.addBase64('leyline-fissure', combat_leylineUri);
+           }
+           const fissure = this.add.image(pt.x, py + 1, 'leyline-fissure');
+           fissure.setScale(0.48, 0.62); // Bumped for visibility. 0.32/0.42 read too small as a ground fissure indicator on the isometric tile.
+           fissure.setTint(lColor);
+           fissure.setAlpha(0.93);
+           fissure.setBlendMode(Phaser.BlendModes.ADD);
+           fissure.setDepth(8);
+
+           // Store for hover soundwave pulsing
+           if (!this.leylineVisuals) this.leylineVisuals = new Map();
+           this.leylineVisuals.set(`${tx},${ty}`, {
+             fissure,
+             color: lColor,
+             baseScaleX: fissure.scaleX,
+             baseScaleY: fissure.scaleY,
+             x: pt.x,
+             y: py
+           });
         }
 
         // Overlay an interactive invisible polygon on the top face for mouse events
@@ -670,31 +868,147 @@ export default function createCombatArenaScene(phaserRuntime) {
           p4.x, p4.y
         ]);
 
-        const interactiveTile = this.add.polygon(0, 0, hitPoly.points, 0xffffff, 0).setOrigin(0);
+        const interactiveTile = this.add.polygon(0, 0, hitPoly.points, 0xffffff, 0).setOrigin(0).setDepth(15);
         interactiveTile.setInteractive(hitPoly, Phaser.Geom.Polygon.Contains);
         
         interactiveTile.inspectData = { 
           tx, ty, isGrid: true, 
-          leyline: leyline ? { affinity: leyline.affinity, id: leyline.id } : null,
+          leyline: (leyline && !isDiagonal) ? { affinity: leyline.affinity, id: leyline.id } : null,
           isObelisk: (tx === 4 && ty === 4)
         };
         
         interactiveTile.interactData = { 
           tx, ty, isGrid: true, 
-          leyline: leyline ? { affinity: leyline.affinity, id: leyline.id } : null,
+          leyline: (leyline && !isDiagonal) ? { affinity: leyline.affinity, id: leyline.id } : null,
           isObelisk: (tx === 4 && ty === 4)
         };
+
+        // Attach leyline data for targeted hover effects
+        if (leyline && !isDiagonal) {
+          interactiveTile.leylineHover = { tx, ty, color: lColor };
+        }
 
         interactiveTile.on('pointerover', () => {
           interactiveTile.setFillStyle(PALETTES.cyan_glow.shine, 0.3); // Bright hover glow
           this.input.setDefaultCursor('pointer');
+
+          // Leyline-specific: pulse with soundwaves
+          if (interactiveTile.leylineHover) {
+            this.startLeylineSoundwavePulse(interactiveTile.leylineHover);
+          }
         });
 
         interactiveTile.on('pointerout', () => {
           interactiveTile.setFillStyle(0xffffff, 0); // Hide
           this.input.setDefaultCursor('default');
+
+          if (interactiveTile.leylineHover) {
+            this.stopLeylineSoundwavePulse(interactiveTile.leylineHover);
+          }
         });
       });
+    }
+
+    // PixelBrain: Hover soundwave pulse for leylines
+    // When hovering a leyline tile, create expanding soundwave rings in the affinity color.
+    // Feels like sonic resonance pulsing outward from the fissures.
+    startLeylineSoundwavePulse(leylineData) {
+      const key = `${leylineData.tx},${leylineData.ty}`;
+      if (!this.leylineVisuals || !this.leylineVisuals.has(key)) return;
+      if (this.leylineWaves && this.leylineWaves.has(key)) return; // already pulsing
+
+      const visual = this.leylineVisuals.get(key);
+      const { x, y, color } = visual;
+
+      if (!this.leylineWaves) this.leylineWaves = new Map();
+      const waveEntry = { gfs: [], tweens: [] };
+      this.leylineWaves.set(key, waveEntry);
+
+      // Create 3 staggered expanding soundwave rings (isometric ellipse)
+      // Each ring gets its own Graphics so they don't fight on clear()
+      for (let i = 0; i < 3; i++) {
+        const delay = i * 160;
+        const progress = { val: 0 };
+
+        const ringGfx = this.add.graphics();
+        ringGfx.setPosition(x, y);
+        ringGfx.setDepth(7);
+        waveEntry.gfs.push(ringGfx);
+
+        const tween = this.tweens.add({
+          targets: progress,
+          val: 1,
+          duration: 720,
+          delay,
+          repeat: -1,
+          ease: 'Sine.easeOut',
+          onUpdate: () => {
+            const p = progress.val;
+            ringGfx.clear();
+
+            const maxW = 52;
+            const maxH = 24; // isometric squash
+
+            const w = maxW * p;
+            const h = maxH * p;
+            const alpha = Math.max(0.08, (1 - p) * 0.75);
+
+            // Outer wave ring
+            ringGfx.lineStyle(2.5, color, alpha);
+            ringGfx.strokeEllipse(0, 0, w, h);
+
+            // Inner detail ring for richer soundwave texture
+            if (p > 0.2) {
+              ringGfx.lineStyle(1, color, alpha * 0.6);
+              ringGfx.strokeEllipse(0, 0, w * 0.55, h * 0.55);
+            }
+          }
+        });
+
+        waveEntry.tweens.push(tween);
+      }
+
+      // Subtle pulse on the fissure itself for extra presence
+      if (visual.fissure && visual.baseScaleX) {
+        const pulseTween = this.tweens.add({
+          targets: visual.fissure,
+          scaleX: visual.baseScaleX * 1.07,
+          scaleY: visual.baseScaleY * 1.07,
+          duration: 380,
+          yoyo: true,
+          repeat: -1,
+          ease: 'Sine.easeInOut'
+        });
+        waveEntry.tweens.push(pulseTween);
+      }
+    }
+
+    stopLeylineSoundwavePulse(leylineData) {
+      const key = `${leylineData.tx},${leylineData.ty}`;
+      if (!this.leylineWaves || !this.leylineWaves.has(key)) return;
+
+      const entry = this.leylineWaves.get(key);
+      entry.tweens.forEach(t => t.stop());
+      entry.gfs.forEach(g => g && g.destroy());
+
+      // Restore fissure scale
+      const visual = this.leylineVisuals && this.leylineVisuals.get(key);
+      if (visual && visual.fissure && visual.baseScaleX) {
+        visual.fissure.setScale(visual.baseScaleX, visual.baseScaleY);
+      }
+
+      this.leylineWaves.delete(key);
+    }
+
+    // Ensure waves are cleaned if the scene shuts down
+    shutdown() {
+      if (this.leylineWaves) {
+        this.leylineWaves.forEach(entry => {
+          entry.tweens.forEach(t => t.stop());
+          entry.gfs.forEach(g => g && g.destroy());
+        });
+        this.leylineWaves.clear();
+      }
     }
 
     drawVectorRune(x, y, tw, th) {
@@ -732,6 +1046,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     drawObelisk(tw, th, zOffset) {
       const graphics = this.add.graphics();
+      graphics.setDepth(20); // Pillar on top (gene protected)
       
       const cx = 0;
       const cy = -zOffset; // Center of the grid
@@ -990,8 +1305,10 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     updateObeliskFx(time, delta) {
       const fx = this.obeliskFx;
-      if (!fx) return;
+      if (!fx) return 0;
       fx.t += delta;
+
+      let plasmaTarget = 0;
 
       if (fx.phase === 'charge') {
         const p = Math.min(1, fx.t / fx.chargeMs);
@@ -999,6 +1316,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         fx.intensity = Math.min(1, p * p * flicker);
         this.drawObeliskCharge(fx.intensity);
         if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fx.intensity * 0.6;
+        plasmaTarget = fx.intensity;
         if (fx.t >= fx.chargeMs) {
           fx.phase = 'discharge';
           fx.t = 0;
@@ -1010,6 +1328,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.drawObeliskCharge(Math.max(fade, 0.6)); // orb stays hot mid-blast
         this.drawTeslaDischarge(fade);
         if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fade * 1.6;
+        plasmaTarget = 1; // peak plasma during the bolt strike
         if (fx.t >= fx.dischargeMs) {
           fx.phase = 'cooldown';
           fx.t = 0;
@@ -1020,162 +1339,138 @@ export default function createCombatArenaScene(phaserRuntime) {
         fx.intensity = (1 - p) * 0.5;
         this.drawObeliskCharge(fx.intensity);
         if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fx.intensity * 0.2;
+        plasmaTarget = (1 - p) * 0.35;
         if (fx.t >= fx.cooldownMs) {
           fx.phase = 'charge';
           fx.t = 0;
         }
       }
+
+      return plasmaTarget;
     }
 
-    update(time, delta) {
-      this.updateObeliskFx(time, delta);
+    applyPlasmaSmooth(plasma) {
+      if (!this.torchEffects) return;
+      for (const effect of this.torchEffects) {
+        if (!effect.fireSprite) continue;
+        const baseScale = 2.16;
+        effect.fireSprite.setScale(baseScale + plasma * 0.55);
+        const g = Math.floor(255 - plasma * 75);
+        const tint = (255 << 16) | (g << 8) | 255;
+        effect.fireSprite.setTint(tint);
+        if (effect.fireSprite._plasmaBloom) {
+          effect.fireSprite._plasmaBloom.strength = plasma * 1.2;
+        }
+      }
+    }
+
+    async update(time, delta) {
+      // 1. Advance obelisk phase, draw orb/tesla, return raw plasma target
+      const plasmaTarget = this.updateObeliskFx(time, delta);
       if (!this.firePixels) return;
-      
-      // Dynamic Flame Seeding (Full, round base)
-      const cx = this.fireW / 2;
-      const radius = this.fireW / 2 - 2; // Leave a tiny gap on edges
-      for (let x = 0; x < this.fireW; x++) {
-        const dist = Math.abs(x - cx);
-        let base = 0;
-        if (dist <= radius) {
-           // Elliptical arc creates a very full, round bottom
-           const normalized = dist / radius;
-           base = Math.sqrt(1 - normalized * normalized) * 35;
-        }
-        if (base > 0) {
-           base -= Math.floor(Math.random() * 5); // Add chaotic flicker
-        }
-        this.firePixels[(this.fireH - 1) * this.fireW + x] = Math.max(0, base);
+
+      // 2. Hand the per-frame visual work to the AMP worker.
+      //    Falls back to direct (main-thread) execution if the worker is unavailable.
+      let result;
+      try {
+        result = await processorBridge.execute('arena.tick', {
+          firePixels: this.firePixels,
+          fireW: this.fireW,
+          fireH: this.fireH,
+          seed: this._frameSeed++,
+          torcheffects: (this.torchEffects || []).map(() => ({})),
+          plasma: {
+            target: plasmaTarget,
+            current: this._plasmaSmooth || 0,
+            rate: 0.07,
+          },
+        });
+      } catch (e) {
+        console.warn('[CombatArena] arena.tick failed, skipping frame:', e.message);
+        return;
       }
 
-      // Doom Fire Algorithm execution pass (Teardrop Shaped)
-      for (let x = 0; x < this.fireW; x++) {
-        for (let y = 1; y < this.fireH; y++) {
-          const src = y * this.fireW + x;
-          const pixel = this.firePixels[src];
-          
-          if (pixel === 0) {
-            this.firePixels[src - this.fireW] = 0;
-          } else {
-            const rand = Math.floor(Math.random() * 3);
-            const drift = rand - 1; // -1, 0, or 1
-            const dstX = x + drift;
-            
-            // Prevent wrapping around array edges which causes blocky artifacts
-            if (dstX >= 0 && dstX < this.fireW) {
-              const dst = (y - 1) * this.fireW + dstX;
-              
-              let cooling = (rand & 1); // Standard random decay
-              
-              // Force taper: thinness at the top
-              const heightPercent = 1.0 - (y / this.fireH); // 0 at base, 1 at peak
-              const distFromCenter = Math.abs(dstX - cx);
-              
-              // Teardrop envelope: allowed width shrinks sharply near the top
-              const allowedWidth = radius * (1 - Math.pow(heightPercent, 1.5));
-              
-              if (distFromCenter > allowedWidth) {
-                 cooling += 2; // Cool rapidly outside the teardrop
-              }
+      if (!result) return;
 
-              this.firePixels[dst] = Math.max(0, pixel - cooling);
-            }
-          }
-        }
-      }
-      
-      // Map intensities to the Indigo Palette and write to ImageData
-      const data = this.fireImageData.data;
-      for (let i = 0; i < this.firePixels.length; i++) {
-        const intensity = Math.max(0, Math.min(35, Math.floor(this.firePixels[i])));
-        const color = INDIGO_PALETTE[intensity];
-        const idx = i * 4;
-        data[idx] = color.r;
-        data[idx+1] = color.g;
-        data[idx+2] = color.b;
-        data[idx+3] = color.a;
-      }
-      
-      // Render to the dynamic canvas texture
+      // 3. Doom fire: worker mapped the new intensity grid to RGBA already.
+      //    Swap it into the existing ImageData, push to the GPU, refresh the texture.
+      this.firePixels = result.firePixelsNext;
+      this.fireImageData.data.set(result.fireRgba);
       this.fireContext.putImageData(this.fireImageData, 0, 0);
       this.fireTexture.refresh();
 
-      // Apply chaotic flickering to shadows and ambient glows based on fire
-      if (this.torchEffects) {
-         const t = time * 0.001;
-         this.torchEffects.forEach(effect => {
-            const flicker = Math.random();
-            
-            // Shadow flickers slightly to mimic fire jitter
-            effect.shadow.alpha = effect.shadow.bobAlpha * (0.85 + flicker * 0.15);
-            const sScale = effect.shadow.bobScale * (0.96 + flicker * 0.08);
-            effect.shadow.setScale(sScale, sScale);
-            
-            // Ambient glow overall intensity flickers aggressively
-            effect.ambient.alpha = 0.3 + flicker * 0.5;
-            const aScale = 0.95 + flicker * 0.1;
-            effect.ambient.setScale(aScale, aScale);
-            
-            // Re-render the light pool with internal dynamic sweeping shadows
-            const ctx = effect.glowCtx;
-            const size = effect.size;
-            const cx = size / 2;
-            const cy = size / 2;
-            
-            ctx.clearRect(0, 0, size, size);
-            
-            // Draw the soft radial light base
-            ctx.globalCompositeOperation = 'source-over';
-            const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 35);
-            grd.addColorStop(0, 'rgba(51, 0, 170, 1)'); // intense core
-            grd.addColorStop(1, 'rgba(51, 0, 170, 0)'); // fade out
-            
-            ctx.fillStyle = grd;
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(1, 0.5); // Squash into isometric ellipse
-            ctx.beginPath();
-            ctx.arc(0, 0, 35, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.restore();
-            
-            // Erase shadows to mimic physical objects crossing the firelight
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.8)'; // Soft but distinct shadows
-            
-            // Spinning ring 1 shadow
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(1, 0.5); // Shadows conform to ground perspective
-            ctx.rotate(t * 1.2); 
-            ctx.fillRect(-45, -5, 90, 10);
-            ctx.restore();
-            
-            // Spinning ring 2 shadow
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(1, 0.5);
-            ctx.rotate(-t * 0.8);
-            ctx.fillRect(-45, -4, 90, 8);
-            ctx.restore();
-            
-            // Floating runes (3 small shadows orbiting)
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.scale(1, 0.5);
-            for(let i = 0; i < 3; i++) {
-               const angle = t * 2 + (i * Math.PI * 0.6);
-               const rx = Math.cos(angle) * 25;
-               const ry = Math.sin(angle) * 25;
-               ctx.beginPath();
-               ctx.arc(rx, ry, 6, 0, Math.PI * 2);
-               ctx.fill();
-            }
-            ctx.restore();
-            
-            effect.glowTex.refresh();
-         });
+      // 4. Plasma: worker did the lerp; apply the smooth value to the torch sprites.
+      this._plasmaSmooth = result.plasma.smooth;
+      this.applyPlasmaSmooth(result.plasma.smooth);
+
+      // 5. Torch glow: apply worker-computed flicker to shadow/ambient, then
+      //    re-render the light-pool canvas (time-based, stays on main thread).
+      if (this.torchEffects && result.torchData) {
+        const t = time * 0.001;
+        for (let i = 0; i < this.torchEffects.length && i < result.torchData.length; i++) {
+          const effect = this.torchEffects[i];
+          const { shadowScale, ambientAlpha, ambientScale } = result.torchData[i];
+          effect.shadow.alpha = effect.shadow.bobAlpha * (0.85 + (result.torchData[i].flicker) * 0.15);
+          effect.shadow.setScale(effect.shadow.bobScale * shadowScale, effect.shadow.bobScale * shadowScale);
+          effect.ambient.alpha = ambientAlpha;
+          effect.ambient.setScale(ambientScale, ambientScale);
+          this.renderTorchGlowCanvas(effect, t);
+        }
       }
+    }
+
+    renderTorchGlowCanvas(effect, t) {
+      const ctx = effect.glowCtx;
+      const size = effect.size;
+      const cx = size / 2;
+      const cy = size / 2;
+
+      ctx.clearRect(0, 0, size, size);
+
+      ctx.globalCompositeOperation = 'source-over';
+      const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, 35);
+      grd.addColorStop(0, 'rgba(51, 0, 170, 1)');
+      grd.addColorStop(1, 'rgba(51, 0, 170, 0)');
+      ctx.fillStyle = grd;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, 0.5);
+      ctx.beginPath();
+      ctx.arc(0, 0, 35, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, 0.5);
+      ctx.rotate(t * 1.2);
+      ctx.fillRect(-45, -5, 90, 10);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, 0.5);
+      ctx.rotate(-t * 0.8);
+      ctx.fillRect(-45, -4, 90, 8);
+      ctx.restore();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(1, 0.5);
+      for (let i = 0; i < 3; i++) {
+        const angle = t * 2 + (i * Math.PI * 0.6);
+        const rx = Math.cos(angle) * 25;
+        const ry = Math.sin(angle) * 25;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      effect.glowTex.refresh();
     }
     
     drawTorch(x, y) {
@@ -1201,8 +1496,6 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       const ambient = this.add.sprite(x, y + 10, texKey);
       ambient.setBlendMode(Phaser.BlendModes.ADD);
-      
-      this.torchEffects.push({ shadow, ambient, glowTex, glowCtx, size });
       
       // Container to synchronize floating bob animation
       const bobContainer = this.add.container(0, 0);
@@ -1264,10 +1557,17 @@ export default function createCombatArenaScene(phaserRuntime) {
       // 3. Mount the dynamic Doom Fire texture
       const fireSprite = this.add.sprite(x, floatY + 5, 'doom-fire');
       fireSprite.setOrigin(0.5, 1);
-      fireSprite.setScale(1.8); 
+      fireSprite.setScale(2.16);
       fireSprite.setBlendMode(Phaser.BlendModes.ADD);
+      if (fireSprite.postFX) {
+        fireSprite._plasmaBloom = fireSprite.postFX.addBloom(0xccffff, 1, 1, 1, 0);
+      }
       bobContainer.add(fireSprite);
-      
+
+      this.torchEffects.push({ shadow, ambient, glowTex, glowCtx, size, fireSprite });
+
+      bobContainer.setDepth(30); // Ensure torches on top of galaxy
+
       // 4. Gyroscopic Containment Rings (Armillary Matrix)
       const ring1 = this.add.graphics();
       ring1.setBlendMode(Phaser.BlendModes.ADD);
@@ -1275,6 +1575,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       ring1.strokeEllipse(0, 0, 45, 15);
       ring1.setPosition(x, floatY - 20);
       ring1.rotation = 0.3;
+      ring1.setDepth(31);
 
       const ring2 = this.add.graphics();
       ring2.setBlendMode(Phaser.BlendModes.ADD);
@@ -1282,8 +1583,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       ring2.strokeEllipse(0, 0, 55, 12);
       ring2.setPosition(x, floatY - 25);
       ring2.rotation = -0.4;
+      ring2.setDepth(31);
       
       bobContainer.add([ring1, ring2]);
+      bobContainer.setDepth(30);
       
       // Animate rings spinning in opposite directions
       this.tweens.add({
@@ -1353,6 +1656,200 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
     }
     
+    drawTeleportationPortal() {
+      // Anchored Northeast on the island's grey rock terrain, far off the combat board
+      const px = 270;
+      const py = -260;
+      const pW = 48; // Portal width
+      const pH = 160; // Portal height
+
+      const portalGroup = this.add.container(px, py);
+
+      // 0. Solid 3D Isometric Support Platform
+      const mechPlatform = this.add.graphics();
+      const platW = 60; // Width of the platform
+      const platH = 30; // Isometric depth
+      const platZ = 20; // Vertical thickness
+      
+      mechPlatform.lineStyle(2, 0x447799, 1);
+      
+      // Top face
+      mechPlatform.fillStyle(0x0a101a, 1);
+      mechPlatform.beginPath();
+      mechPlatform.moveTo(0, 85 - platH);
+      mechPlatform.lineTo(platW, 85);
+      mechPlatform.lineTo(0, 85 + platH);
+      mechPlatform.lineTo(-platW, 85);
+      mechPlatform.closePath();
+      mechPlatform.fillPath();
+      mechPlatform.strokePath();
+
+      // Left face
+      mechPlatform.fillStyle(0x050a10, 1);
+      mechPlatform.beginPath();
+      mechPlatform.moveTo(-platW, 85);
+      mechPlatform.lineTo(0, 85 + platH);
+      mechPlatform.lineTo(0, 85 + platH + platZ);
+      mechPlatform.lineTo(-platW, 85 + platZ);
+      mechPlatform.closePath();
+      mechPlatform.fillPath();
+      mechPlatform.strokePath();
+
+      // Right face
+      mechPlatform.fillStyle(0x0f1520, 1);
+      mechPlatform.beginPath();
+      mechPlatform.moveTo(0, 85 + platH);
+      mechPlatform.lineTo(platW, 85);
+      mechPlatform.lineTo(platW, 85 + platZ);
+      mechPlatform.lineTo(0, 85 + platH + platZ);
+      mechPlatform.closePath();
+      mechPlatform.fillPath();
+      mechPlatform.strokePath();
+      
+      portalGroup.add(mechPlatform);
+
+      // 1. Arcane/Technological Skeleton (Backplate)
+      const mechBack = this.add.graphics();
+      mechBack.fillStyle(0x0a101a, 1);
+      mechBack.fillRect(-22, -80, 44, 160);
+      portalGroup.add(mechBack);
+
+      // 2. Holographic Portal Energy Surface (Cellular Drip Algorithm)
+      if (!this.textures.exists('portal-energy')) {
+        this.textures.createCanvas('portal-energy', pW, pH);
+      }
+      const portalTex = this.textures.get('portal-energy');
+      const pCtx = portalTex.getContext();
+      
+      const portalImg = this.add.image(0, 0, 'portal-energy');
+      portalImg.setBlendMode(Phaser.BlendModes.ADD);
+      portalImg.setAlpha(0.9);
+      if (portalImg.postFX) portalImg.postFX.addBloom(0x4400ff, 1.5, 1.5, 2, 1.5);
+      portalGroup.add(portalImg);
+
+      // 3. Imposing Mechanical Skeleton (Front frame)
+      const mechFront = this.add.graphics();
+      mechFront.fillStyle(0x1a2a3a, 1);
+      mechFront.lineStyle(2, 0x0f1520, 1);
+
+      mechFront.beginPath();
+      // Outer border (sharp, angled geometry)
+      mechFront.moveTo(-35, 85);
+      mechFront.lineTo(-35, -85);
+      mechFront.lineTo(-15, -105);
+      mechFront.lineTo(15, -105);
+      mechFront.lineTo(35, -85);
+      mechFront.lineTo(35, 85);
+      // Inner hole cutting through
+      mechFront.lineTo(20, 85);
+      mechFront.lineTo(20, -80);
+      mechFront.lineTo(0, -100);
+      mechFront.lineTo(-20, -80);
+      mechFront.lineTo(-20, 85);
+      mechFront.closePath();
+      mechFront.fillPath();
+      mechFront.strokePath();
+
+      // Obsidian Bezel filling the top triangle gap
+      mechFront.fillStyle(0x161220, 1); // Darker obsidian for left side
+      mechFront.beginPath();
+      mechFront.moveTo(-20, -80);
+      mechFront.lineTo(0, -100);
+      mechFront.lineTo(0, -85); // inner point
+      mechFront.closePath();
+      mechFront.fillPath();
+
+      mechFront.fillStyle(0x1f192b, 1); // Brighter obsidian for right side
+      mechFront.beginPath();
+      mechFront.moveTo(20, -80);
+      mechFront.lineTo(0, -100);
+      mechFront.lineTo(0, -85);
+      mechFront.closePath();
+      mechFront.fillPath();
+
+      // Sharp highlight stroke for the obsidian bezel
+      mechFront.lineStyle(1, 0x443366, 0.8);
+      mechFront.beginPath();
+      mechFront.moveTo(-20, -80);
+      mechFront.lineTo(0, -100);
+      mechFront.lineTo(20, -80);
+      mechFront.lineTo(0, -85);
+      mechFront.closePath();
+      mechFront.strokePath();
+
+      // Arcane tech nodes
+      mechFront.fillStyle(0x00ffff, 1);
+      const nodes = [
+        {x: -25, y: -75}, {x: 25, y: -75},
+        {x: -25, y: -10}, {x: 25, y: -10},
+        {x: -25, y: 55},  {x: 25, y: 55},
+        {x: 0, y: -95}
+      ];
+      nodes.forEach(n => mechFront.fillCircle(n.x, n.y, 3));
+      if (mechFront.postFX) mechFront.postFX.addBloom(0x00ffff, 1, 1, 1, 1.2);
+      
+      portalGroup.add(mechFront);
+      portalGroup.setDepth(50); // Teleporter on top of galaxy
+
+      // Arrays for 2D Water Ripple simulation
+      let buf1 = new Float32Array(pW * pH);
+      let buf2 = new Float32Array(pW * pH);
+      let angle = 0;
+
+      this.time.addEvent({
+        delay: 30, // ~33fps
+        loop: true,
+        callback: () => {
+          // Cellular Drip Algorithm simulating splashing water
+          if (Math.random() > 0.4) {
+             const rx = 4 + Math.floor(Math.random() * (pW - 8));
+             const ry = 4 + Math.floor(Math.random() * (pH - 8));
+             buf1[ry * pW + rx] = 500;
+          }
+          
+          // Spiral of Energy generator in the center
+          angle += 0.2;
+          const cx = Math.floor(pW / 2 + Math.cos(angle) * 10);
+          const cy = Math.floor(pH / 2 + Math.sin(angle) * 30);
+          if (cx > 0 && cx < pW && cy > 0 && cy < pH) {
+              buf1[cy * pW + cx] = 1200;
+          }
+
+          const imgData = pCtx.createImageData(pW, pH);
+          const data = imgData.data;
+
+          for (let y = 1; y < pH - 1; y++) {
+            for (let x = 1; x < pW - 1; x++) {
+              const idx = y * pW + x;
+              // Ripple formula
+              buf2[idx] = (
+                buf1[idx - 1] + buf1[idx + 1] + 
+                buf1[idx - pW] + buf1[idx + pW]
+              ) / 2 - buf2[idx];
+              
+              buf2[idx] *= 0.94; // Viscosity
+              
+              const val = Math.max(0, Math.min(255, buf2[idx]));
+              const cIdx = idx * 4;
+              
+              // Dark indigo color mapping
+              data[cIdx] = Math.floor(val * 0.5);      // R
+              data[cIdx+1] = Math.floor(val * 0.1);    // G
+              data[cIdx+2] = Math.floor(val + 50);     // B
+              data[cIdx+3] = val > 10 ? 255 : 150;     // A
+            }
+          }
+          
+          pCtx.putImageData(imgData, 0, 0);
+          portalTex.refresh();
+          
+          const temp = buf1;
+          buf1 = buf2;
+          buf2 = temp;
+        }
+      });
+    }
+    
     drawIsoRing(graphics, cx, cy, radius, thickness, color, alpha) {
       graphics.lineStyle(thickness, color, alpha);
       graphics.beginPath();
@@ -1367,20 +1864,92 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     drawGalaxyBackground() {
+      const galaxyContainer = this.add.container(0, 0);
+      galaxyContainer.setDepth(-1000); // Galaxy container behind entire arena
+      this.galaxyBg = galaxyContainer; // for destroy in resize
       const bg = this.add.graphics();
-      const skyW = 6000;
-      const skyH = 4000;
+      galaxyContainer.add(bg);
+      // GALAXY MUST FILL THE ENTIRE CURRENT VIEWPORT (enforced by SCDNA_Gene_Combat_Galaxy_Viewport_Fill.md).
+      // Explicitly compute visible world rect from camera + margin so fill and all stars/arms ALWAYS cover 100% of the rendered viewport with no gaps/black.
+      // This guarantees the galaxy takes up the WHOLE viewport regardless of size/zoom.
+      // Dynamic to current view. Agents are **strictly forbidden** from changing this (see gene).
+      const cam = this.cameras.main;
+      const gw = this.scale.width;
+      const gh = this.scale.height;
+      const zoom = cam.zoom || 1;
+      const viewLeft = cam.scrollX;
+      const viewTop = cam.scrollY;
+      const viewW = gw / zoom;
+      const viewH = gh / zoom;
+      const margin = Math.max(200, Math.min(gw, gh) * 0.2);
+      const skyLeft = viewLeft - margin;
+      const skyTop = viewTop - margin;
+      const skyRight = viewLeft + viewW + margin;
+      const skyBottom = viewTop + viewH + margin;
+      const skyW = skyRight - skyLeft;
+      const skyH = skyBottom - skyTop;
       
-      // Deep space void covering massive area
+      // Deep space void covering the entire visible viewport + margin
       bg.fillStyle(0x020208, 1);
-      bg.fillRect(-skyW/2, -skyH/2, skyW, skyH);
+      bg.fillRect(skyLeft, skyTop, skyW, skyH);
+
+      // Distant planet — anchors cosmic scale, breathes softly via rim glow
+      if (!this.textures.exists('distant-planet')) {
+        const pTex = this.textures.createCanvas('distant-planet', 200, 200);
+        const pCtx = pTex.getContext();
+        const grd = pCtx.createRadialGradient(70, 70, 10, 100, 100, 90);
+        grd.addColorStop(0, 'rgba(160,100,220,1)');
+        grd.addColorStop(0.3, 'rgba(80,40,140,1)');
+        grd.addColorStop(0.7, 'rgba(30,15,60,1)');
+        grd.addColorStop(1, 'rgba(10,5,30,0)');
+        pCtx.fillStyle = grd;
+        pCtx.fillRect(0, 0, 200, 200);
+        pCtx.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 6; i++) {
+          const y = 50 + i * 18;
+          pCtx.fillStyle = `rgba(${30 + i * 4}, ${15 + i * 2}, ${50 + i * 5}, 0.18)`;
+          pCtx.beginPath();
+          pCtx.ellipse(100, y, 85 - i * 2, 3, 0, 0, Math.PI * 2);
+          pCtx.fill();
+        }
+        pCtx.globalCompositeOperation = 'source-over';
+        pTex.refresh();
+      }
+      if (!this.textures.exists('planet-rim')) {
+        const rTex = this.textures.createCanvas('planet-rim', 200, 200);
+        const rCtx = rTex.getContext();
+        const rgrd = rCtx.createRadialGradient(100, 100, 80, 100, 100, 100);
+        rgrd.addColorStop(0, 'rgba(120,80,200,0)');
+        rgrd.addColorStop(0.5, 'rgba(120,80,200,0.4)');
+        rgrd.addColorStop(1, 'rgba(80,50,160,0)');
+        rCtx.fillStyle = rgrd;
+        rCtx.fillRect(0, 0, 200, 200);
+        rTex.refresh();
+      }
+      // Position planet in upper left of current view for consistent cosmic feel
+      const planetX = skyLeft + 350;
+      const planetY = skyTop + 200;
+      const planet = this.add.image(planetX, planetY, 'distant-planet').setScale(1.6);
+      const planetRim = this.add.image(planetX, planetY, 'planet-rim').setScale(1.65);
+      planetRim.setBlendMode(Phaser.BlendModes.ADD);
+      planetRim.setAlpha(0.6);
+      galaxyContainer.add([planet, planetRim]);
+      this.tweens.add({
+        targets: planetRim,
+        alpha: 0.85,
+        scale: 1.75,
+        duration: 6000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut'
+      });
 
       // Deep space volumetric nebula haze (underneath the island)
       bg.setBlendMode(Phaser.BlendModes.SCREEN);
       for(let i=0; i<40; i++) {
         bg.fillStyle(0x1a053a, Phaser.Math.FloatBetween(0.02, 0.08));
-        const nx = Phaser.Math.Between(-skyW/2, skyW/2);
-        const ny = Phaser.Math.Between(-skyH/3, skyH/2); // Spread across the whole sky, slightly weighted down
+        const nx = Phaser.Math.Between(skyLeft, skyRight);
+        const ny = Phaser.Math.Between(skyTop, skyBottom); // Spread across the whole sky
         const rw = Phaser.Math.Between(1500, 3000);
         const rh = Phaser.Math.Between(1500, 3000); // Make them rounder/taller to avoid horizontal banding
         const angle = Phaser.Math.FloatBetween(-Math.PI, Math.PI);
@@ -1402,12 +1971,51 @@ export default function createCombatArenaScene(phaserRuntime) {
         starTex.refresh();
       }
 
-      // Parallax Galaxy Core (Massive swirling spiral arms)
+      // Ice smoke texture — wispy vapor (hot air meeting cold air), stretched FBM
+      if (!this.textures.exists('ice-smoke')) {
+        const w = 128, h = 128;
+        const iTex = this.textures.createCanvas('ice-smoke', w, h);
+        const iCtx = iTex.getContext();
+        const imageData = iCtx.createImageData(w, h);
+        const data = imageData.data;
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let n = 0, amp = 1, freq = 0.04, max = 0;
+            for (let o = 0; o < 5; o++) {
+              n += this.smoothNoise2D(x * freq * 1.3, y * freq * 0.55) * amp;
+              max += amp;
+              amp *= 0.5;
+              freq *= 2;
+            }
+            n = Math.max(0, (n / max - 0.35) * 2.6);
+            const dx = x - w / 2, dy = y - h / 2;
+            const r = Math.sqrt(dx * dx + dy * dy) / (w / 2);
+            const edge = Math.max(0, 1 - r);
+            const edgeSoft = edge * edge * (3 - 2 * edge);
+            const a = Math.min(1, n * edgeSoft) * 0.95;
+            const idx = (y * w + x) * 4;
+            data[idx] = 240;
+            data[idx + 1] = 248;
+            data[idx + 2] = 255;
+            data[idx + 3] = Math.floor(a * 255);
+          }
+        }
+        iCtx.putImageData(imageData, 0, 0);
+        iTex.refresh();
+      }
+
+      // Parallax Galaxy Core (Massive swirling spiral arms) - number scaled to area for appropriate density to fill viewport without cluttering arena
       bg.setBlendMode(Phaser.BlendModes.ADD);
       const spiralArms = 4;
-      for(let i=0; i<3000; i++) {
+      const area = skyW * skyH;
+      // The spiral core is a fixed world-space object centered at the origin — its reach and
+      // star count must NOT scale with the viewport (that shrank it to a pale nub). Restore the
+      // original dense 3000-star, 2500px-radius colored spiral.
+      const spiralReach = 2500;
+      const numSpiral = 3000;
+      for(let i=0; i<numSpiral; i++) {
         const armOffset = Phaser.Math.FloatBetween(0, Math.PI * 2);
-        const distance = Phaser.Math.FloatBetween(50, 2500);
+        const distance = Phaser.Math.FloatBetween(50, spiralReach);
         // Golden ratio spiral rotation
         const angle = (distance * 0.002) + (Math.floor(armOffset / (Math.PI*2/spiralArms)) * (Math.PI*2/spiralArms));
         
@@ -1424,7 +2032,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         else if (distance > 800) color = 0xff33cc;
         else if (distance > 400) color = 0x00ffff;
         
-        const brightness = Phaser.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance/2500));
+        const brightness = Phaser.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance / spiralReach));
         
         // Make ~15% of the stars twinkle independently
         if (Math.random() > 0.85) {
@@ -1433,6 +2041,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           star.setTint(color);
           star.setScale(size / 8); // Base texture is 8x8
           star.setAlpha(brightness);
+          galaxyContainer.add(star);
           
           this.tweens.add({
             targets: star,
@@ -1450,9 +2059,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       bg.setBlendMode(Phaser.BlendModes.ADD);
-      for(let i=0; i<1500; i++) {
-        let sx = Phaser.Math.Between(-skyW/2, skyW/2);
-        let sy = Phaser.Math.Between(-skyH/2, skyH/2);
+      const numFiller = Math.floor(area / 16000);
+      for(let i=0; i<numFiller; i++) {
+        let sx = Phaser.Math.Between(skyLeft, skyRight);
+        let sy = Phaser.Math.Between(skyTop, skyBottom);
         if (Math.random() > 0.4) {
           const curve = Math.sin(sx / 800) * 300;
           sy = curve + Phaser.Math.Between(-300, 300);
@@ -1466,6 +2076,53 @@ export default function createCombatArenaScene(phaserRuntime) {
         bg.fillCircle(sx, sy, size);
       }
       bg.setBlendMode(Phaser.BlendModes.NORMAL);
+
+      // Shooting stars — periodic diagonal streaks across the upper sky
+      if (!this.textures.exists('meteor')) {
+        const mTex = this.textures.createCanvas('meteor', 6, 60);
+        const mCtx = mTex.getContext();
+        const grd = mCtx.createLinearGradient(0, 3, 60, 3);
+        grd.addColorStop(0, 'rgba(255,255,255,1)');
+        grd.addColorStop(0.1, 'rgba(180,220,255,0.7)');
+        grd.addColorStop(0.5, 'rgba(100,150,255,0.3)');
+        grd.addColorStop(1, 'rgba(50,100,200,0)');
+        mCtx.fillStyle = grd;
+        mCtx.beginPath();
+        mCtx.moveTo(0, 3);
+        mCtx.lineTo(60, 0);
+        mCtx.lineTo(60, 6);
+        mCtx.closePath();
+        mCtx.fill();
+        mTex.refresh();
+      }
+      this.time.addEvent({
+        delay: 1500,
+        loop: true,
+        callback: () => {
+          if (Math.random() > 0.4) return;
+          const startX = Phaser.Math.Between(skyLeft, skyRight / 2);
+          const startY = Phaser.Math.Between(skyTop, skyBottom / 2);
+          const dist = Phaser.Math.Between(500, 1200);
+          const drop = Phaser.Math.Between(80, 250);
+          const endX = startX + dist;
+          const endY = startY + drop;
+          const m = this.add.image(startX, startY, 'meteor');
+          m.setBlendMode(Phaser.BlendModes.ADD);
+          m.setAlpha(0.95);
+          m.setRotation(Math.atan2(drop, dist));
+          galaxyContainer.add(m);
+          if (m.postFX) m.postFX.addBloom(0xaaccff, 1, 1, 1, 1.2);
+          this.tweens.add({
+            targets: m,
+            x: endX,
+            y: endY,
+            alpha: 0,
+            duration: Phaser.Math.Between(800, 1600),
+            ease: 'Cubic.easeIn',
+            onComplete: () => m.destroy()
+          });
+        }
+      });
     }
   };
 }

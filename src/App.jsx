@@ -47,6 +47,9 @@ export default function App() {
   const shouldReduceMotion = prefersReducedMotion;
   const pageVariants = shouldReduceMotion ? reducedMotionVariants : fullMotionVariants;
 
+  // Remove navigation bar only on the battle/combat page so the grid can fill the full viewport.
+  const isBattlePage = location.pathname === '/combat' || location.pathname.startsWith('/combat/');
+
   useEffect(() => {
     const main = document.getElementById("main-content");
     if (main) {
@@ -64,12 +67,17 @@ export default function App() {
           <AuthScopedProviders>
             <SongProvider>
               <AtmosphereSync />
-              <div className="aurora-background" aria-hidden="true" />
-              <div className="vignette" aria-hidden="true" />
-              <div className="scanlines" aria-hidden="true" />
+              {/* Hide global decorative layers on battle page so only the pure grid is visible */}
+              {!isBattlePage && (
+                <>
+                  <div className="aurora-background" aria-hidden="true" />
+                  <div className="vignette" aria-hidden="true" />
+                  <div className="scanlines" aria-hidden="true" />
+                </>
+              )}
               
               {/* Animation AMP Debug Tooling (Phase 4) */}
-              {import.meta.env.DEV && (
+              {import.meta.env.DEV && !isBattlePage && (
                 <>
                   <MotionInspector />
                   <MotionDebugBadge />
@@ -77,10 +85,12 @@ export default function App() {
               )}
 
               <div className="page-container">
-                <a href="#main-content" className="skip-link">
-                  Skip to main content
-                </a>
-                <Navigation />
+                {!isBattlePage && (
+                  <a href="#main-content" className="skip-link">
+                    Skip to main content
+                  </a>
+                )}
+                {!isBattlePage && <Navigation />}
                 <div className="page-body">
                   <AnimatePresence mode="wait" initial={false}>
                     <motion.main

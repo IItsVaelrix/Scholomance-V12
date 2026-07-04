@@ -10,6 +10,7 @@
  */
 
 import { SCDL_ERROR_CODES, scdlError } from '../scdl.errors.js';
+import { walkSceneNodes } from '../graph-walk.js';
 
 const SUPPORTED_EXPORTS = new Set(['json', 'svg', 'phaser', 'png', 'aseprite']);
 const KNOWN_OPS = new Set([
@@ -79,6 +80,64 @@ export function validatePass(ast, errors) {
         { target }
       ));
     }
+  }
+
+  // ── SCDL v1.2 scene-graph structural checks ──────────────────────────────
+  if (ast.graphMode) {
+    // 4b — op verbs + vector params inside def/group parts (root parts were
+    // already covered by the ast.parts loop above; skip them here)
+    walkSceneNodes(ast, (node, containerKind) => {
+      if (node.kind === 'part' && containerKind !== 'root') {
+        for (const op of (node.part.ops || [])) {
+          if (!KNOWN_OPS.has(op.op)) {
+            errors.push(scdlError(
+              `Unknown op '${op.op}' in part '${node.part.id}'`,
+              SCDL_ERROR_CODES.UNKNOWN_VERB, op.loc || l, { op: op.op, partId: node.part.id }
+            ));
+          }
+          validateVectorOp(op, node.part, errors, l);
+        }
+      }
+      // transform sanity (groups + instances)
+      const t = node.transform;
+      if (t) {
+        const bad =
+          t._missingAt ||
+          ![t.tx, t.ty, t.theta, t.sx, t.sy].every(Number.isFinite) ||
+          t.sx === 0 || t.sy === 0;
+        if (bad) {
+          errors.push(scdlError(
+            t._missingAt
+              ? `Instance '${node.ref || node.id}' is missing its mandatory 'at x y' clause`
+              : `Invalid transform on '${node.id || node.ref}' — params must be finite, scale nonzero`,
+            SCDL_ERROR_CODES.INVALID_TRANSFORM, node.loc || l,
+            { node: node.id || node.ref, transform: { ...t } }
+          ));
+        }
+      }
+    });
+
+    // Shared id namespace per scope (root scope + each group + each def body)
+    const checkScope = (nodes, scopeLabel) => {
+      const seenIds = new Set();
+      for (const node of nodes || []) {
+        const id = node.kind === 'part' ? node.part.id
+                 : node.kind === 'group' ? node.id
+                 : node.name; // instance: only named instances claim an id
+        if (id) {
+          if (seenIds.has(id)) {
+            errors.push(scdlError(
+              `Duplicate node id '${id}' in ${scopeLabel}`,
+              SCDL_ERROR_CODES.DUPLICATE_PART_ID, node.loc || l, { partId: id, scope: scopeLabel }
+            ));
+          }
+          seenIds.add(id);
+        }
+        if (node.kind === 'group') checkScope(node.children, `group '${node.id}'`);
+      }
+    };
+    checkScope(ast.roots, 'scene root');
+    for (const def of (ast.defs || [])) checkScope(def.nodes, `def '${def.id}'`);
   }
 
   return ast;

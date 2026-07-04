@@ -25,14 +25,20 @@ import { analyzeAudio, AudioAnalysis } from '../../video/editor/core/audio-analy
 import { useAudioReactivity } from './hooks/useAudioReactivity';
 import { AudioReactivityAdapter } from '../../video/editor/core/audio-reactivity-adapter';
 import { getValueAtFrame } from '../../video/editor/core/keyframe-engine';
+import {
+  DEFAULT_FRAGMENT_SOURCE,
+  createShaderPacket,
+  hashShaderPacket,
+} from '../../lib/pixelbrain.adapter.js';
 
 import WandPage from '../Wand/WandPage';
 import DivWandPage from '../DivWand/DivWandPage';
+import PhotonicBridgeLab from '../internal/photonic-bridge/PhotonicBridgeLab';
 
 const DEFAULT_FPS = 30;
 
 type ForgeArtifactHandoff = {
-  source: 'wand' | 'divwand';
+  source: 'wand' | 'divwand' | 'photonic';
   kind: 'image' | 'pixelbrain';
   name: string;
   url?: string;
@@ -47,6 +53,10 @@ const WandPageWithForge = WandPage as ComponentType<{
 }>;
 
 const DivWandPageWithForge = DivWandPage as ComponentType<{
+  onSendToVideoForge?: (artifact: ForgeArtifactHandoff) => void;
+}>;
+
+const PhotonicBridgeLabWithForge = PhotonicBridgeLab as ComponentType<{
   onSendToVideoForge?: (artifact: ForgeArtifactHandoff) => void;
 }>;
 
@@ -76,7 +86,7 @@ export default function VideoForgePage() {
   const [exportFormat, setExportFormat] = useState<'mp4' | 'webm' | 'gif' | 'png-sequence' | 'json'>('mp4');
   const [exportQuality, setExportQuality] = useState(90);
   
-  const [activeApp, setActiveApp] = useState<'timeline' | 'wand' | 'divwand'>('timeline');
+  const [activeApp, setActiveApp] = useState<'timeline' | 'wand' | 'divwand' | 'photonic'>('timeline');
 
   // Timeline scale - dynamic to fill project duration (Phase 3 fidelity)
   const [zoomLevel, setZoomLevel] = useState(1);
@@ -628,6 +638,76 @@ export default function VideoForgePage() {
     if (track) addClip(track.id, 'pixelbrain');
   };
 
+  const addWebGLShaderClip = () => {
+    const track = normalized.timeline.tracks.find((t) => t.type === 'pixelbrain') || normalized.timeline.tracks[3];
+    if (!track) {
+      setStatus('No PixelBrain track available for shader');
+      return;
+    }
+
+    const shaderId = makeId('shader');
+    const packet = createShaderPacket({
+      id: shaderId,
+      label: 'Void Ripple WebGL Shader',
+      fragmentSource: DEFAULT_FRAGMENT_SOURCE,
+      canvas: {
+        width: normalized.canvas.width,
+        height: normalized.canvas.height,
+      },
+      deterministicSeed: 1701,
+    });
+    const checksum = hashShaderPacket(packet);
+    const assetId = makeId('asset-shader');
+    const clipId = makeId('clip-shader');
+    const clip: TimelineClip = {
+      id: clipId,
+      trackId: track.id,
+      kind: 'pixelbrain',
+      startFrame: playhead,
+      durationFrames: Math.floor(fps * 6),
+      assetId,
+      transform: makeDefaultTransform(),
+      opacity: { defaultValue: 1 },
+      effects: [],
+      transitions: [],
+      keyframes: [],
+      metadata: {
+        source: 'webgl-shader',
+        label: packet.label,
+        shaderId: packet.id,
+        shaderChecksum: checksum,
+      },
+    };
+
+    updateProject((p) => {
+      const tracks = p.timeline.tracks.map((t) =>
+        t.id === track.id ? { ...t, clips: [...t.clips, clip] } : t
+      );
+
+      return {
+        ...p,
+        assets: [
+          ...p.assets,
+          {
+            id: assetId,
+            kind: 'pixelbrain',
+            name: packet.label,
+            pixelBrainPacket: packet,
+            metadata: {
+              source: 'webgl-shader',
+              shaderId: packet.id,
+              shaderChecksum: checksum,
+              contract: packet.contract,
+            },
+          },
+        ],
+        timeline: { ...p.timeline, tracks },
+      };
+    });
+    setSelectedClipId(clipId);
+    setStatus(`Added WebGL shader ${checksum}`);
+  };
+
   const handleForgeArtifactHandoff = useCallback((artifact: ForgeArtifactHandoff) => {
     const clipKind: 'image' | 'pixelbrain' = artifact.kind === 'pixelbrain' ? 'pixelbrain' : 'image';
     const track = normalized.timeline.tracks.find((t) => t.type === clipKind)
@@ -889,6 +969,7 @@ export default function VideoForgePage() {
         <button onClick={() => setActiveApp('timeline')} style={{ background: activeApp === 'timeline' ? '#2c3344' : 'transparent', border: '1px solid #2c3344', color: activeApp === 'timeline' ? '#fff' : '#888', padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>🎬 Video Forge Timeline</button>
         <button onClick={() => setActiveApp('wand')} style={{ background: activeApp === 'wand' ? '#2c3344' : 'transparent', border: '1px solid #2c3344', color: activeApp === 'wand' ? '#fff' : '#888', padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>🪄 Canvas Wand Studio</button>
         <button onClick={() => setActiveApp('divwand')} style={{ background: activeApp === 'divwand' ? '#2c3344' : 'transparent', border: '1px solid #2c3344', color: activeApp === 'divwand' ? '#fff' : '#888', padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>✨ Div Wand DOM Studio</button>
+        <button onClick={() => setActiveApp('photonic')} style={{ background: activeApp === 'photonic' ? '#2c3344' : 'transparent', border: '1px solid #2c3344', color: activeApp === 'photonic' ? '#fff' : '#888', padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 12 }}>Photonic Bridge Lab</button>
       </div>
 
       {activeApp === 'wand' && (
@@ -900,6 +981,12 @@ export default function VideoForgePage() {
       {activeApp === 'divwand' && (
         <div style={{ border: '1px solid #2c3344', borderRadius: 6, overflow: 'hidden' }}>
           <DivWandPageWithForge onSendToVideoForge={handleForgeArtifactHandoff} />
+        </div>
+      )}
+
+      {activeApp === 'photonic' && (
+        <div style={{ border: '1px solid #2c3344', borderRadius: 6, overflow: 'hidden' }}>
+          <PhotonicBridgeLabWithForge onSendToVideoForge={handleForgeArtifactHandoff} />
         </div>
       )}
 
@@ -962,6 +1049,7 @@ export default function VideoForgePage() {
             <button onClick={addVideoClip} style={{fontSize:10, padding:'2px 7px'}}>+ VIDEO</button>
             <button onClick={addTextClipDirect} style={{fontSize:10, padding:'2px 7px'}}>+ TEXT</button>
             <button onClick={addPixelBrainClip} style={{fontSize:10, padding:'2px 7px'}}>+ PIXELBRAIN</button>
+            <button onClick={addWebGLShaderClip} style={{fontSize:10, padding:'2px 7px'}}>+ SHADER</button>
             <button onClick={addSolid} style={{fontSize:10, padding:'2px 7px'}}>+ SOLID</button>
           </div>
 
@@ -1530,6 +1618,32 @@ export default function VideoForgePage() {
               />
             </div>
           )}
+
+          {activeClip.kind === 'pixelbrain' && (() => {
+            const asset = normalized.assets.find((a) => a.id === activeClip.assetId) as any;
+            const packet = asset?.pixelBrainPacket;
+            if (!packet || packet.contract !== 'PB-SHADER-v1') return null;
+
+            return (
+              <div
+                aria-label="Selected WebGL shader packet"
+                style={{
+                  marginTop: 8,
+                  border: '1px solid #312e81',
+                  background: '#0c1020',
+                  color: '#c4b5fd',
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 11,
+                  padding: 8,
+                }}
+              >
+                <div>WEBGL SHADER • {packet.contract}</div>
+                <div>ID: {packet.id}</div>
+                <div>HASH: {activeClip.metadata?.shaderChecksum || asset.metadata?.shaderChecksum || 'pending'}</div>
+                <div>CANVAS: {packet.canvas?.width}x{packet.canvas?.height}</div>
+              </div>
+            );
+          })()}
         </div>
       )}
 

@@ -41,7 +41,7 @@ and the load-latency problem.
 
 ```ebnf
 program       ::= asset_decl palette_block? def_block* scene_item* loop_decl? frame_block* export_decl?
-scene_item    ::= part_block | group_block
+scene_item    ::= part_block | group_block | instance_stmt  // root-level instance accepted (painter order)
 def_block     ::= 'def' IDENT '{' (part_block | group_block | instance_stmt)* '}'
 group_block   ::= 'group' IDENT transform? '{' (part_block | group_block | instance_stmt)* '}'
 instance_stmt ::= 'instance' IDENT ['as' IDENT] transform ['material' IDENT]

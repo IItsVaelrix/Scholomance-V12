@@ -277,7 +277,8 @@ packet ID — the base compiles byte-identically with or without them.
 
 Each frame compiles to its own `PixelBrainAssetPacket`; the compiler also
 emits a `SCDL-FRAME-LOOP-v1` manifest (see §7.5). Reference asset:
-`fixtures/void_acolyte.scdl` (4-frame idle loop).
+`fixtures/void_acolyte/void_acolyte.scdl` (4-frame idle loop, co-located
+with its exports so the default out-dir writes in place).
 
 ---
 
@@ -517,7 +518,7 @@ writes `<asset>-frameloop.json`):
   "defaultDurationMs": 400,
   "sourceChecksum": "…",
   "frames": [
-    { "index": 0, "label": "base",       "durationMs": 400, "packet": "pbasset_2595caa6" },
+    { "index": 0, "label": "rest",       "durationMs": 400, "packet": "pbasset_2595caa6" },
     { "index": 1, "label": "hood-dip",   "durationMs": 400, "packet": "pbasset_…" }
   ]
 }
@@ -536,7 +537,7 @@ The Node.js CLI utility is located at `codex/core/pixelbrain/scdl/scdl.cli.js`.
 Compile an SCDL file and generate target files (defaults to `.json`):
 ```bash
 node codex/core/pixelbrain/scdl/scdl.cli.js compile fixtures/void_chestplate.scdl --export json,svg,phaser
-node codex/core/pixelbrain/scdl/scdl.cli.js compile fixtures/void_acolyte.scdl --export json,png,aseprite --out-dir fixtures/void_acolyte/
+node codex/core/pixelbrain/scdl/scdl.cli.js compile fixtures/void_acolyte/void_acolyte.scdl --export json,png,svg,phaser,aseprite
 ```
 
 **Export Naming Law (SCDL v1.1):** outputs default to the **source file's

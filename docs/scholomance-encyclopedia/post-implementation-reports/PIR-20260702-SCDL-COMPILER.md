@@ -11,7 +11,7 @@
 
 We have fully implemented **SCDL (Scholomance Coordinate Description Language) — version 1.0.0**, a human-authored language that compiles directly to the PixelBrain asset packet and runtime contracts. The entire compiler pipeline has been built from scratch, tested, verified, and integrated into the `Scholomance-V12-main` ecosystem.
 
-All 51 unit and integration tests are passing successfully, covering the parser, error system, compiler passes, and golden regression testing.
+All 56 unit and integration tests are passing successfully, covering the parser, error system, compiler passes, golden regression testing, deterministic diagnostics, and export contract completion.
 
 ---
 
@@ -24,9 +24,9 @@ All new files were added without modifying any existing core files:
   - **`scdl.compiler.js`**: functional pass orchestrator (`validate` → `resolve-colors` → `resolve-materials` → `expand-symmetry` → `expand-cells` → `emit-packet` → `emit-diagnostics`).
   - **`scdl.errors.js`**: Fully integrated with the existing `PB-ERR-v1` bytecode error system, mapping error categories/severities/contexts.
   - **`scdl.lattice-emitter.js`**: Formatter for the standard `pixelbrain.asset.v1` lattice packet.
-  - **`scdl.exporters.js`**: Exporter system for JSON, SVG, and Phaser configurations (using 32-bit color integers for Phaser consumption).
-  - **`scdl.diagnostics.js`**: Maps compiler errors to the `DiagnosticReport` diagnostic standard.
-  - **`scdl.cli.js`**: Node.js CLI utility offering `compile`, `parse`, and `check` commands.
+  - **`scdl.exporters.js`**: Exporter system for JSON, SVG, Phaser configurations (using 32-bit color integers for Phaser consumption), and deterministic PNG bytes.
+  - **`scdl.diagnostics.js`**: Maps compiler errors to the `DiagnosticReport` diagnostic standard without volatile timestamps in SCDL-derived report entries.
+  - **`scdl.cli.js`**: Node.js CLI utility offering `compile`, `parse`, and `check` commands, including binary PNG writes and target-specific multi-export filenames.
   - **`fixtures/void_chestplate.scdl`**: The canonical reference chestplate fixture.
 
 - **`docs/scholomance-encyclopedia/`**
@@ -34,30 +34,40 @@ All new files were added without modifying any existing core files:
   - **`post-implementation-reports/PIR-20260702-SCDL-COMPILER.md`**: This post-implementation report.
 
 - **`tests/codex/core/pixelbrain/scdl/`**
-  - **`scdl.parser.test.js`**: Verifies tokenizer, string/hex parsing, and AST shape.
+  - **`scdl.parser.test.js`**: Verifies tokenizer, string/hex parsing, malformed hex preservation, and AST shape.
   - **`scdl.errors.test.js`**: Verifies `PB-ERR-v1` bytecode compatibility and deterministic behavior.
-  - **`scdl.compiler.test.js`**: Verifies compiler passes, bounds checking, and strict/lenient validation settings.
-  - **`scdl.void-chestplate.test.js`**: Golden regression test validating output stability, Phaser exports, and SymmetryAMP integration.
+  - **`scdl.compiler.test.js`**: Verifies compiler passes, bounds checking, unknown export errors, deterministic diagnostics, and strict/lenient validation settings.
+  - **`scdl.void-chestplate.test.js`**: Golden regression test validating output stability, JSON packet export, SVG export, Phaser exports, PNG export, and SymmetryAMP integration.
 
 ---
 
 ## 3. Verification & Testing
 
 ### Automated Test Suite
-Tests are run using Vitest. All 51 tests passed successfully:
+Tests are run using Vitest. All 56 tests passed successfully:
 ```bash
 npx vitest run tests/codex/core/pixelbrain/scdl/
 ```
 Output:
 ```
  ✓ tests/codex/core/pixelbrain/scdl/scdl.errors.test.js (9 tests)
- ✓ tests/codex/core/pixelbrain/scdl/scdl.parser.test.js (14 tests)
- ✓ tests/codex/core/pixelbrain/scdl/scdl.compiler.test.js (15 tests)
- ✓ tests/codex/core/pixelbrain/scdl/scdl.void-chestplate.test.js (13 tests)
+ ✓ tests/codex/core/pixelbrain/scdl/scdl.parser.test.js (16 tests)
+ ✓ tests/codex/core/pixelbrain/scdl/scdl.compiler.test.js (17 tests)
+ ✓ tests/codex/core/pixelbrain/scdl/scdl.void-chestplate.test.js (14 tests)
 
  Test Files  4 passed (4)
-      Tests  51 passed (51)
+      Tests  56 passed (56)
 ```
+
+### Completion Audit Addendum
+The 2026-07-02 completion audit closed the remaining contract gaps:
+- Malformed hex literals such as `#GGGGGG` are preserved by the parser and reported as `SCDL-004`.
+- Unknown export targets now fail compilation as `SCDL-010`, matching the PDR catalogue.
+- JSON export emits the raw `pixelbrain.asset.v1` packet; lattice output remains available through `emitLattice()`.
+- Phaser export includes the named integer palette map.
+- PNG export emits real deterministic RGBA PNG bytes instead of a placeholder JSON stub.
+- SCDL diagnostic reports are stable across identical compile results.
+- CLI multi-export output paths now use target-specific extensions.
 
 ### Determinism Verification
 Compiling `void_chestplate.scdl` twice results in identical, stable, and deterministic output files, conforming to Vaelrix Law 6:

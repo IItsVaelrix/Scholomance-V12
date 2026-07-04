@@ -63,6 +63,12 @@ part_op       ::= symmetry_op
                | rim_op
                | cell_op
                | glow_op
+               | circle_op
+               | ring_op
+               | rect_op
+               | polygon_op
+               | path_op
+               | sphere_op
 
 symmetry_op   ::= 'symmetry' ( 'x' | 'y' | 'xy' )
 trace_op      ::= 'trace' 'outline' 'from' 'image.region' '(' STRING ')'
@@ -70,6 +76,13 @@ fill_op       ::= 'fill' COLOR_REF
 rim_op        ::= 'rim' COLOR_REF 'at' COMPASS
 cell_op       ::= 'cell' INTEGER INTEGER COLOR_REF
 glow_op       ::= 'glow' 'radius' INTEGER
+circle_op     ::= 'circle' NUMBER NUMBER 'radius' NUMBER COLOR_REF
+ring_op       ::= 'ring' NUMBER NUMBER 'radius' NUMBER 'width' NUMBER COLOR_REF
+rect_op       ::= 'rect' NUMBER NUMBER NUMBER NUMBER COLOR_REF
+polygon_op    ::= 'polygon' (NUMBER NUMBER){3,} COLOR_REF
+path_op       ::= 'path' STRING COLOR_REF
+sphere_op     ::= 'sphere' NUMBER NUMBER 'radius' NUMBER
+                  ('light' NUMBER NUMBER)? COLOR_REF COLOR_REF COLOR_REF COLOR_REF COLOR_REF
 
 COLOR_REF     ::= HEX_COLOR | NAME           // palette alias or literal hex
 COMPASS       ::= 'north' | 'south' | 'east' | 'west'
@@ -77,6 +90,7 @@ COMPASS       ::= 'north' | 'south' | 'east' | 'west'
                | 'south' 'west' | 'south' 'east'
 HEX_COLOR     ::= '#' [0-9A-Fa-f]{6}
 NAME          ::= [a-zA-Z_][a-zA-Z0-9_]*
+NUMBER        ::= '-'? [0-9]+ ('.' [0-9]+)?
 
 export_decl   ::= 'export' export_target+
 export_target ::= 'json' | 'svg' | 'phaser' | 'png'
@@ -141,6 +155,9 @@ export json svg phaser
       "material": "cyan_glow",
       "ops": [
         { "op": "cell", "x": 31, "y": 18, "color": "#00E5FF" },
+        { "op": "circle", "cx": 31.5, "cy": 18.5, "radius": 2, "color": "#00E5FF" },
+        { "op": "sphere", "cx": 31.5, "cy": 18.5, "radius": 2, "lx": -1, "ly": -1,
+          "tierColors": ["#FFFFFF", "#D8B84C", "#00E5FF", "#05060D", "#000000"] },
         { "op": "glow", "radius": 2, "hint": true }
       ]
     }
@@ -159,10 +176,11 @@ export json svg phaser
 | 1 | `validatePass` | raw AST | validated AST or error |
 | 2 | `resolveColorsPass` | validated AST | hex-resolved AST |
 | 3 | `resolveMaterialsPass` | color AST | material-validated AST |
-| 4 | `expandSymmetryPass` | material AST | symmetry-expanded ops |
-| 5 | `expandCellsPass` | symmetry AST | coordinate array |
-| 6 | `emitPacketPass` | coord AST | `PixelBrainAssetPacket` |
-| 7 | `emitDiagnosticsPass` | packet + errors | `DiagnosticReport` |
+| 4 | `expandVectorPass` | material AST | vector ops lowered to `cell` ops |
+| 5 | `expandSymmetryPass` | vector-expanded AST | symmetry-expanded ops |
+| 6 | `expandCellsPass` | symmetry AST | coordinate array |
+| 7 | `emitPacketPass` | coord AST | `PixelBrainAssetPacket` |
+| 8 | `emitDiagnosticsPass` | packet + errors | `DiagnosticReport` |
 
 ---
 
@@ -180,6 +198,7 @@ export json svg phaser
 | SCDL-008 | INFO | STATE | `trace` stored as intent (runtime resolution) |
 | SCDL-009 | ERROR | VALUE | Duplicate part ID |
 | SCDL-010 | ERROR | VALUE | Unknown export target |
+| SCDL-011 | ERROR | VALUE | Invalid vector op parameters |
 
 All errors encode as `PB-ERR-v1-{CAT}-{SEV}-SCDL-{CODE_HEX}-{CTX_B64}-{CHECKSUM}`
 using the existing `encodeBytecodeError()` infrastructure.
@@ -216,6 +235,13 @@ a custom SCDL Phaser loader plugin:
 ```
 Colors are encoded as 32-bit integers `(r << 16 | g << 8 | b)` for direct
 Phaser `Graphics.fillStyle()` consumption.
+
+### `png`
+Deterministic 8-bit RGBA PNG bytes emitted directly from the compiled lattice
+coordinates. Transparent pixels remain alpha 0; occupied cells are written from
+their resolved hex colors. The encoder is dependency-free and emits a standard
+PNG stream with uncompressed zlib blocks, preserving deterministic output across
+Node environments.
 
 ---
 

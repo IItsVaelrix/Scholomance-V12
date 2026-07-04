@@ -1,6 +1,6 @@
 {
   "kind": "pixelbrain.asset.v1",
-  "id": "pbasset_563d18af",
+  "id": "pbasset_b85c4328",
   "schemaVersion": 1,
   "source": {
     "kind": "scdl",
@@ -8939,6 +8939,20 @@
         "emphasis": 1
       },
       {
+        "x": 4,
+        "y": 45,
+        "color": "#241743",
+        "partId": "hemsettle",
+        "material": "void_cloth",
+        "role": "explicit",
+        "sourceOpId": "op:hemsettle:0:cell",
+        "_fillIntent": false,
+        "z": 0,
+        "snappedX": 4,
+        "snappedY": 45,
+        "emphasis": 1
+      },
+      {
         "x": 11,
         "y": 26,
         "color": "#A8862F",
@@ -15481,7 +15495,7 @@
     "operations": [
       {
         "op": "parse",
-        "checksum": "0000000086673376"
+        "checksum": "0000000072e01057"
       },
       {
         "op": "semantic-unifier",
@@ -15489,11 +15503,11 @@
       },
       {
         "op": "compile",
-        "partCount": 11
+        "partCount": 12
       },
       {
         "op": "coordinates",
-        "count": 1102
+        "count": 1103
       }
     ]
   },
@@ -15504,6 +15518,7 @@
       "staff:bark",
       "orb:void_core",
       "robe:void_cloth",
+      "hemsettle:void_cloth",
       "belt:gold",
       "arms:void_cloth",
       "boots:voidsteel",
@@ -15516,7 +15531,7 @@
     "notes": [
       "SCDL asset: void_acolyte",
       "Canvas: 32x48",
-      "Parts: staff, orb, robe, belt, arms, boots, hood, face, eyes, eyespark, amulet"
+      "Parts: staff, orb, robe, hemsettle, belt, arms, boots, hood, face, eyes, eyespark, amulet"
     ],
     "compatibility": {}
   },

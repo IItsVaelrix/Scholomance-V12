@@ -371,6 +371,69 @@
         "supersededBy": null,
         "quarantineReason": null
       }
+    },
+    "WAND_CHEMICAL_STROKE_PROPAGATION": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "WAND_CHEMICAL_STROKE_PROPAGATION",
+        "contentHash": "scdna-wand-stroke-chem-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "pixel",
+        "secondary": ["architecture", "formula", "propagation", "scdl", "tactical"],
+        "activationBrains": [
+          "PIXEL_BRAIN",
+          "ARCHITECTURE_BRAIN",
+          "LORE_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.92,
+        "confidence": 0.95,
+        "originalConfidence": 0.95,
+        "freshness": 0.95,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "route",
+        "imperative": "When handling mathematical stroke formulas or Wand propagation tasks, treat the formula as a chemical reaction law. Do not perform culinary batch sampling or parameter jitter. Instead: 1) Parse the stroke formula's parametric kinetics (path, width(t), pressure, bleed). 2) Propagate by recursive generative unfolding using PixelBrain/SCDL laws as reaction mechanisms (symmetry as replication catalyst, material resonance as reagent selection, vector/ring/path ops as bonding, TurboQuant as crystallization/quantization step, photonic scoring as selection pressure). 3) Output expanded geometry or sub-formulas that self-organize according to the original law. Prioritize deterministic rule application over trial-and-error variations.",
+        "forbiddenDrift": [
+          "Do not implement propagation as repeated calls with small random param tweaks",
+          "Do not rely on score-and-pick from multiple independent evaluations",
+          "Do not treat the stroke as a static recipe to be varied and tasted",
+          "Do not bypass the formula's own math in favor of external heuristics"
+        ],
+        "requiredChecks": [
+          "Verify that propagation applies the original formula's functions recursively or via field rules",
+          "Confirm use of symmetry, material, and SCDL-compatible ops as the propagation operators",
+          "Ensure TurboQuant and photonic mechanisms are used for state selection, not just post-filtering",
+          "Validate output remains expressible as efficient SCDL or PixelBrain packet"
+        ]
+      },
+      "risk": {
+        "riskClass": "medium",
+        "blastRadius": "module",
+        "staleRisk": 0.1,
+        "misuseRisk": 0.4
+      },
+      "english": {
+        "shortMeaning": "Wand stroke formulas must propagate chemically via generative rules, not culinarily via batch sampling.",
+        "expandedMeaning": "The Wand's core power is authoring pure mathematical models of strokes. Propagation must honor that by letting the model act as a reaction law that unfolds deterministically using the engine's existing symmetries, quantizers, and perception systems. This produces self-consistent, evolvable art instead of ad-hoc variations.",
+        "operatorInstruction": "When this gene is active for a prompt involving Wand, stroke formulas, propagation, tactical art assets, or procedural pixel generation: redirect any 'try variations' thinking toward recursive application of the formula's math under PixelBrain laws. Use the formula parameters as kinetics, not as knobs for manual experimentation."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
     }
   }
 }

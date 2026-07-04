@@ -275,7 +275,7 @@ describe('SCDL v1.1 frames — SCDL-FRAME-LOOP-v1 manifest', () => {
     expect(m.sourceChecksum).toBe(r.ast.checksum);
     expect(m.frames.length).toBe(4);
     expect(m.frames[0]).toEqual({
-      index: 0, label: 'base', durationMs: 200, packet: r.framePackets[0].id,
+      index: 0, label: 'rest', durationMs: 200, packet: r.framePackets[0].id,
     });
     expect(m.frames[1].label).toBe('shift');
     expect(m.frames[1].durationMs).toBe(200); // defaulted from loop decl

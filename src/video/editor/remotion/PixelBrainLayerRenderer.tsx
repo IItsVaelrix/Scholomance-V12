@@ -1,6 +1,7 @@
 /* eslint-disable react/no-unknown-property */
 import { ThreeCanvas } from '@remotion/three';
 import { useCurrentFrame, useVideoConfig } from 'remotion';
+import { WebGLShaderLayer } from '../../../pages/VideoForge/WebGLShaderLayer';
 
 // Stub for actual pixel brain lattice geometry rendering
 function LatticeGeometry({ timeOverride }: { timeOverride: number }) {
@@ -12,9 +13,25 @@ function LatticeGeometry({ timeOverride }: { timeOverride: number }) {
   );
 }
 
-export function PixelBrainLayerRenderer({ packet: _packet }: { packet: unknown }) {
+export function PixelBrainLayerRenderer({ packet }: { packet: unknown }) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+
+  if (
+    packet &&
+    typeof packet === 'object' &&
+    (packet as { contract?: string }).contract === 'PB-SHADER-v1'
+  ) {
+    return (
+      <WebGLShaderLayer
+        packet={packet as any}
+        frame={frame}
+        fps={fps}
+        width={width}
+        height={height}
+      />
+    );
+  }
 
   return (
     <ThreeCanvas width={width} height={height}>

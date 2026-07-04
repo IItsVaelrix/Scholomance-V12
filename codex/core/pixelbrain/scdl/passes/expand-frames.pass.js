@@ -41,7 +41,7 @@ export function expandFramesPass(ast, errors) {
 
   const frameSpecs = [{
     index:      0,
-    label:      'base',
+    label:      'rest',
     durationMs: loop.defaultDurationMs,
     parts:      ast.parts,
   }];

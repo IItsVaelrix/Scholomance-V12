@@ -78,6 +78,7 @@ function cmdCompile(args) {
     : dirname(resolve(filePath));
   const name = basename(filePath, '.scdl');
   const includeSemantic = opts.flags.semantic || false;
+  const shade = opts.flags.shade === 'material' ? 'material' : undefined;
 
   console.log(`[SCDL] Compiling: ${filePath}`);
   const result = compileSCDL(source);
@@ -108,7 +109,7 @@ function cmdCompile(args) {
 
     if (multiFrame) {
       result.framePackets.forEach((framePacket, i) => {
-        const out = exportSCDL(framePacket, [target], result.ast, { includeSemantic })[target];
+        const out = exportSCDL(framePacket, [target], result.ast, { includeSemantic, shade })[target];
         if (!out.ok) {
           console.warn(`  [WARN] Export '${target}' (frame ${i}) failed: ${out.output}`);
           return;
@@ -118,7 +119,7 @@ function cmdCompile(args) {
       continue;
     }
 
-    const out = exportSCDL(result.packet, [target], result.ast, { includeSemantic })[target];
+    const out = exportSCDL(result.packet, [target], result.ast, { includeSemantic, shade })[target];
     if (!out.ok) {
       console.warn(`  [WARN] Export '${target}' failed: ${out.output}`);
       continue;
@@ -226,7 +227,7 @@ switch (command) {
   default:
     console.log(`SCDL Compiler CLI
 Usage:
-  node scdl.cli.js compile <file.scdl> [--export json,svg,phaser,png,aseprite] [--out-dir <dir>] [--out <file>]
+  node scdl.cli.js compile <file.scdl> [--export json,svg,phaser,png,aseprite] [--out-dir <dir>] [--out <file>] [--shade material]
   node scdl.cli.js parse   <file.scdl> [--out <file>]
   node scdl.cli.js check   <file.scdl>
 

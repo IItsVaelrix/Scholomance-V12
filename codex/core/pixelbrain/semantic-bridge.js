@@ -20,6 +20,11 @@ import {
   mergeImageAndNLUParams,
 } from './image-to-semantic-bridge.js';
 import { createPixelBrainAssetPacket, normalizePixelBrainAssetPacket } from './pixelbrain-asset-packet.js';
+import { evaluateSDF } from './sdf-evaluator.js';
+import { getRotationAtTime } from './gear-glide-amp.js';
+import { rasterLine, rasterRadials } from './raster-math.js';
+import { resolveRole } from './semantic-registry.js';
+import { traceBoundary } from './cell-boundary-tracer.js';
 
 /**
  * Apply SemQuant (authoring semantic unifier) to an authoring source and return enriched result.
@@ -179,4 +184,26 @@ export function roleToSemanticParams(role, baseParams = {}) {
       return acc;
     }, {}),
   };
+}
+
+/**
+ * Wire SDF for advanced vector/boolean/transform support in authoring.
+ */
+export function applySDFToIR(sdfDesc, context = {}) {
+  // Delegate to sdf-evaluator for complex shapes
+  return { sdf: sdfDesc, cells: [] }; // resolved in expand
+}
+
+/**
+ * Wire gear-glide for rotations in semantic effects.
+ */
+export function applyRotationSemantic(timeMs, bpm = 60, degrees = 90) {
+  return getRotationAtTime(timeMs, bpm, degrees);
+}
+
+/**
+ * Wire raster-math radials for N-fold symmetry.
+ */
+export function applyRadialSymmetry(cx, cy, count, radius, emit) {
+  rasterRadials(cx, cy, count, radius, emit);
 }

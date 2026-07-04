@@ -508,8 +508,9 @@ export function parseSCDL(source) {
     // Unknown verb inside part
     const bad = peek();
     errors.push(_mkErr(`Unknown part op '${bad.value}'`, l));
+    const badVerb = bad ? bad.value : 'unknown';
     consume();
-    return null;
+    return { id: opId, op: badVerb, loc: l, sourceSpan: l };
   }
 
   function _parseColorRef() {
@@ -647,6 +648,111 @@ export function parseSCDL(source) {
     return targets;
   }
 
+  // ── def block (SCDL v1.2) ──
+  // def_block ::= 'def' IDENT '{' (part_block)* '}'
+  function parseDef() {
+    if (!atValue('def')) return null;
+    const l = loc();
+    consume(); // 'def'
+    const idTok = consume(TOKEN_TYPES.IDENT);
+    expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' for def '${idTok?.value}'`);
+    const nodes = parseSceneNodes();
+    consume(TOKEN_TYPES.RBRACE);
+    return { id: idTok?.value || 'unnamed_def', nodes, loc: l };
+  }
+
+  // Shared body parser for def bodies (Task 5: parts only; Task 6 extends).
+  function parseSceneNodes() {
+    const nodes = [];
+    while (!at(TOKEN_TYPES.RBRACE, TOKEN_TYPES.EOF)) {
+      if (atValue('part')) {
+        const p = parsePart();
+        if (p) nodes.push({ kind: 'part', part: p });
+      } else if (atValue('group')) {
+        const g = parseGroup();
+        if (g) nodes.push(g);
+      } else if (atValue('instance')) {
+        const i = parseInstance();
+        if (i) nodes.push(i);
+      } else {
+        break;
+      }
+    }
+    return nodes;
+  }
+
+  // ── transform clause (SCDL v1.2) ──
+  // 'at' NUMBER NUMBER ['rotate' NUMBER] ['scale' NUMBER [NUMBER]] ['mirror' ('x'|'y'|'xy')]
+  function parseTransformClause({ required = false } = {}) {
+    const t = { tx: 0, ty: 0, theta: 0, sx: 1, sy: 1, mirror: null };
+    if (atValue('at')) {
+      consume();
+      const xTok = consume(TOKEN_TYPES.INT);
+      const yTok = consume(TOKEN_TYPES.INT);
+      t.tx = xTok ? parseFloat(xTok.value) : 0;
+      t.ty = yTok ? parseFloat(yTok.value) : 0;
+    } else if (required) {
+      t._missingAt = true;
+    }
+    if (atValue('rotate')) {
+      consume();
+      const dTok = consume(TOKEN_TYPES.INT);
+      t.theta = dTok ? parseFloat(dTok.value) : 0;
+    }
+    if (atValue('scale')) {
+      consume();
+      const sxTok = consume(TOKEN_TYPES.INT);
+      t.sx = sxTok ? parseFloat(sxTok.value) : 1;
+      t.sy = t.sx;
+      if (at(TOKEN_TYPES.INT)) {
+        const syTok = consume(TOKEN_TYPES.INT);
+        t.sy = syTok ? parseFloat(syTok.value) : t.sx;
+      }
+    }
+    if (atValue('mirror')) {
+      consume();
+      const mTok = consume(TOKEN_TYPES.IDENT);
+      t.mirror = ['x', 'y', 'xy'].includes(mTok?.value) ? mTok.value : null;
+    }
+    return t;
+  }
+
+  // ── group block (SCDL v1.2) ──
+  function parseGroup() {
+    if (!atValue('group')) return null;
+    const l = loc();
+    consume(); // 'group'
+    const idTok = consume(TOKEN_TYPES.IDENT);
+    const transform = parseTransformClause();
+    expect(TOKEN_TYPES.LBRACE, undefined, `Expected '{' for group '${idTok?.value}'`);
+    const children = parseSceneNodes();
+    consume(TOKEN_TYPES.RBRACE);
+    return { kind: 'group', id: idTok?.value || 'unnamed_group', transform, children, loc: l };
+  }
+
+  // ── instance statement (SCDL v1.2) ──
+  // 'instance' IDENT ['as' IDENT] transform ['material' IDENT]
+  function parseInstance() {
+    if (!atValue('instance')) return null;
+    const l = loc();
+    consume(); // 'instance'
+    const refTok = consume(TOKEN_TYPES.IDENT);
+    let name = null;
+    if (atValue('as')) {
+      consume();
+      const nTok = consume(TOKEN_TYPES.IDENT);
+      name = nTok?.value || null;
+    }
+    const transform = parseTransformClause({ required: true });
+    let materialOverride = null;
+    if (atValue('material')) {
+      consume();
+      const mTok = consume(TOKEN_TYPES.IDENT);
+      materialOverride = mTok?.value || null;
+    }
+    return { kind: 'instance', ref: refTok?.value || 'unknown', name, transform, materialOverride, loc: l };
+  }
+
   // ── Program ──
   const assetDecl = parseAsset();
   if (!assetDecl) {
@@ -654,11 +760,25 @@ export function parseSCDL(source) {
   }
 
   const palette = (atValue('palette') ? parsePalette() : null) || {};
-  const parts = [];
-  while (atValue('part')) {
-    const p = parsePart();
-    if (p) parts.push(p);
+  const defs = [];
+  while (atValue('def')) {
+    const d = parseDef();
+    if (d) defs.push(d);
   }
+  const roots = [];
+  while (atValue('part') || atValue('group') || atValue('instance')) {
+    if (atValue('part')) {
+      const p = parsePart();
+      if (p) roots.push({ kind: 'part', part: p });
+    } else if (atValue('group')) {
+      const g = parseGroup();
+      if (g) roots.push(g);
+    } else {
+      const i = parseInstance();
+      if (i) roots.push(i);
+    }
+  }
+  const parts = roots.filter(n => n.kind === 'part').map(n => n.part);
   const loopDecl = atValue('loop') ? parseLoop() : null;
   const frames = [];
   while (atValue('frame')) {
@@ -670,13 +790,16 @@ export function parseSCDL(source) {
   // Build AST
   const ast = {
     contract:       'SCDL-AST-v1',
-    version:        '1.1.0',
+    version:        '1.2.0',
     checksum,
     asset:          assetDecl?.asset || 'unnamed',
     type:           assetDecl?.type  || 'unknown',
     canvas:         assetDecl?.canvas || { width: 0, height: 0 },
     palette,
     parts,
+    defs,
+    roots,
+    graphMode: defs.length > 0 || roots.some(n => n.kind !== 'part'),
     exports,
     sourceLocation: assetDecl?.sourceLocation || { line: 1, col: 1 },
   };

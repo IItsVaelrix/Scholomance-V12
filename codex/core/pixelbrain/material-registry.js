@@ -845,6 +845,22 @@ export const MATERIAL_PALETTES = Object.freeze({
     }),
     rules: Object.freeze({ preserveAlpha: true, preserveShape: true, boostHighlightsToWhite: true }),
   }),
+  snow: Object.freeze({
+    id: 'snow',
+    emissionFactor: DEFAULT_EMISSION_FACTOR,
+    label: 'Snow',
+    category: MATERIAL_CATEGORIES.ORGANIC,
+    anchors: Object.freeze({
+      void: '#5F728F',
+      shadow: '#8094B2',
+      deep: '#A8B8D0',
+      body: '#C7D8EA',
+      frost: '#E3EEF8',
+      spectral: '#F5FBFF',
+      whiteCore: '#FFFFFF',
+    }),
+    rules: Object.freeze({ preserveAlpha: true, preserveShape: true, boostHighlightsToWhite: true }),
+  }),
 });
 
 /**
@@ -915,6 +931,7 @@ export const MATERIAL_SHADER_INDEX = Object.freeze({
   trim_comet_gold: 57,
   neon_mint_signal: 58,
   slime_gel: 59,
+  snow: 60,
 });
 
 export const MATERIAL_OPTIONS = Object.freeze(

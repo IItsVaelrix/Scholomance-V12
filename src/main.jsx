@@ -50,26 +50,16 @@ import { AdminRoute } from "./components/AdminRoute.jsx";
 // /combat-godot-spike during `npm run dev`.
 let devSpikeRoutes = [];
 if (import.meta.env.DEV) {
-  // Godot WASM spike retained as the documented fallback path. The Phaser 4 spike was
-  // retired once its verdict (uplift = go) folded into the real ResonanceScene on 2026-06-05.
-  const CombatGodotSpike = React.lazy(() =>
-    import("./pages/CombatGodotSpike/CombatGodotSpike.jsx")
-  );
   const ImmuneHarness = React.lazy(() =>
     import("./pages/_dev/ImmuneHarness.jsx")
   );
   const LexicalHarness = React.lazy(() =>
     import("./pages/_dev/LexicalHarness.jsx")
   );
+  const GrimMonstersHarness = React.lazy(() =>
+    import("./pages/_dev/GrimMonstersHarness.jsx")
+  );
   devSpikeRoutes = [
-    {
-      path: "combat-godot-spike",
-      element: (
-        <React.Suspense fallback={null}>
-          <CombatGodotSpike />
-        </React.Suspense>
-      ),
-    },
     {
       // TrueSight Immune Probe harness (SPATIAL-IMMUNE-DIAGNOSTICS.md).
       path: "__immune/truesight",
@@ -85,6 +75,14 @@ if (import.meta.env.DEV) {
       element: (
         <React.Suspense fallback={null}>
           <LexicalHarness />
+        </React.Suspense>
+      ),
+    },
+    {
+      path: "__grim/monsters",
+      element: (
+        <React.Suspense fallback={null}>
+          <GrimMonstersHarness />
         </React.Suspense>
       ),
     },

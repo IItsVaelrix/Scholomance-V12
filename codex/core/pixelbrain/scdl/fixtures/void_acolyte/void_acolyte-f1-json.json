@@ -1,6 +1,6 @@
 {
   "kind": "pixelbrain.asset.v1",
-  "id": "pbasset_3d938949",
+  "id": "pbasset_80c6dd3f",
   "schemaVersion": 1,
   "source": {
     "kind": "scdl",
@@ -9234,45 +9234,6 @@
       },
       {
         "x": 7,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 7,
-        "snappedY": 18,
-        "emphasis": 1
-      },
-      {
-        "x": 8,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 8,
-        "snappedY": 18,
-        "emphasis": 1
-      },
-      {
-        "x": 9,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 9,
-        "snappedY": 18,
-        "emphasis": 1
-      },
-      {
-        "x": 7,
         "y": 19,
         "color": "#4B3585",
         "partId": "arms",
@@ -9633,45 +9594,6 @@
         "z": 0,
         "snappedX": 8,
         "snappedY": 28,
-        "emphasis": 1
-      },
-      {
-        "x": 24,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 24,
-        "snappedY": 18,
-        "emphasis": 1
-      },
-      {
-        "x": 23,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 23,
-        "snappedY": 18,
-        "emphasis": 1
-      },
-      {
-        "x": 22,
-        "y": 18,
-        "color": "#4B3585",
-        "partId": "arms",
-        "material": "void_cloth",
-        "role": "explicit",
-        "_fillIntent": false,
-        "z": 0,
-        "snappedX": 22,
-        "snappedY": 18,
         "emphasis": 1
       },
       {
@@ -15691,7 +15613,7 @@
     "operations": [
       {
         "op": "parse",
-        "checksum": "0000000086673376"
+        "checksum": "0000000072e01057"
       },
       {
         "op": "semantic-unifier",
@@ -15703,7 +15625,7 @@
       },
       {
         "op": "coordinates",
-        "count": 1117
+        "count": 1111
       }
     ]
   },

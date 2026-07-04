@@ -20,7 +20,7 @@ const DEFAULT_CANVAS = Object.freeze({
   background: '#00000000',
 });
 
-function stableJson(value) {
+export function stableJson(value) {
   if (value === undefined || typeof value === 'function' || typeof value === 'symbol') return 'null';
   if (value === null || typeof value !== 'object') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`;
@@ -156,11 +156,13 @@ function normalizeGeometry(input = {}) {
       : [];
 
   const normalizedCoordinates = Object.freeze(coordinates.map(normalizePixelBrainCoordinate));
+  const sceneGraph = input.geometry?.sceneGraph || null;
   return Object.freeze({
     mode: input.geometry?.mode || (cells.length ? 'template-grid' : 'coordinates'),
     bounds: Object.freeze(clonePlain(input.geometry?.bounds || {})),
     coordinates: normalizedCoordinates,
     cells: Object.freeze(clonePlain(cells)),
+    ...(sceneGraph ? { sceneGraph: Object.freeze(clonePlain(sceneGraph)) } : {}),
   });
 }
 

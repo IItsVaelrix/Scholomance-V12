@@ -35,6 +35,14 @@ export const SCDL_ERROR_CODES = Object.freeze({
   FRAME_INDEX_LAW:       0x100D, // Frame Index Law violation (sparse/out-of-order/duplicate/explicit 0)
   FRAME_BAD_ANCHOR:      0x100E, // Added part missing/unknown 'after' anchor, or 'after' on a replacement
   DEAD_FRAME:            0x100F, // Frame identical to base after expansion (warn)
+
+  // SCDL v1.2 — scene graph (PR-1)
+  UNKNOWN_DEF_REF:       0x1010, // instance references undeclared def
+  DEF_CYCLE:             0x1011, // def reference cycle
+  DEPTH_CAP:             0x1012, // graph depth exceeds cap (8)
+  INVALID_TRANSFORM:     0x1013, // non-finite transform params or scale 0
+  DEAD_INSTANCE:         0x1014, // instance fully clipped off-canvas (warn)
+  DEAD_DEF:              0x1015, // def declared but never instanced (warn)
 });
 
 const SCDL_CODE_LABELS = Object.freeze({
@@ -53,6 +61,14 @@ const SCDL_CODE_LABELS = Object.freeze({
   [SCDL_ERROR_CODES.FRAME_INDEX_LAW]:       'SCDL-013',
   [SCDL_ERROR_CODES.FRAME_BAD_ANCHOR]:      'SCDL-014',
   [SCDL_ERROR_CODES.DEAD_FRAME]:            'SCDL-015',
+
+  // SCDL v1.2 — scene graph (PR-1)
+  [SCDL_ERROR_CODES.UNKNOWN_DEF_REF]:       'SCDL-016',
+  [SCDL_ERROR_CODES.DEF_CYCLE]:             'SCDL-017',
+  [SCDL_ERROR_CODES.DEPTH_CAP]:             'SCDL-018',
+  [SCDL_ERROR_CODES.INVALID_TRANSFORM]:     'SCDL-019',
+  [SCDL_ERROR_CODES.DEAD_INSTANCE]:         'SCDL-020',
+  [SCDL_ERROR_CODES.DEAD_DEF]:              'SCDL-021',
 });
 
 // ─── SCDLError Class ─────────────────────────────────────────────────────────

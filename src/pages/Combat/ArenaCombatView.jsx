@@ -34,7 +34,7 @@ export default function ArenaCombatView({ onCast }) {
         buildScenes: [createCombatArenaScene],
         signal: controller.signal,
         config: {
-          type: 0,                    // Phaser.AUTO
+          type: 2,                    // Phaser.WEBGL (force GPU)
           width: '100%',
           height: '100%',
           transparent: false,

@@ -24,6 +24,7 @@ import { expandFramesPass }     from './passes/expand-frames.pass.js';
 import { resolveColorsPass }    from './passes/resolve-colors.pass.js';
 import { resolveMaterialsPass } from './passes/resolve-materials.pass.js';
 import { expandVectorPass }     from './passes/expand-vector.pass.js';
+import { buildSceneGraphPass } from './passes/build-scene-graph.pass.js';
 import { expandSymmetryPass }   from './passes/expand-symmetry.pass.js';
 import { expandCellsPass }      from './passes/expand-cells.pass.js';
 import { emitPacketPass }       from './passes/emit-packet.pass.js';
@@ -85,6 +86,16 @@ export function compileSCDL(source, options = {}) {
   // ── Pass 1: Validate ─────────────────────────────────────────────────────
   ast = _runPass('validate', ast, errors, validatePass);
   if (_hasFatal(errors)) return _failResult(errors, ast, source);
+
+  // Early graph + frames rejection (before expandFrames mutates for legacy flat parts)
+  if (ast.graphMode && ((ast.frames && ast.frames.length) || ast.loop)) {
+    errors.push(scdlError(
+      'Scene-graph assets do not support frames yet (planned: PR-3)',
+      SCDL_ERROR_CODES.FRAME_INDEX_LAW, { line: 1, col: 1 },
+      { reason: 'graph-frames-pr3' }
+    ));
+    return _failResult(errors, ast, source);
+  }
 
   // ── Expand Frames (SCDL v1.1) ────────────────────────────────────────────
   // Materializes one virtual part list per frame; frame 0 is the base parts
@@ -171,6 +182,22 @@ function _runFramePipeline(frameAst, errors, options) {
 
   ast = _runPass('resolveMaterials', ast, errors, resolveMaterialsPass);
   // Material warnings are non-fatal
+
+  if (ast.graphMode) {
+    ast = _runPass('buildSceneGraph', ast, errors, buildSceneGraphPass);
+    if (_hasFatal(errors)) return { ast, packet: null, fatal: true };
+    let packet = null;
+    try {
+      packet = emitPacketPass(ast, errors);
+    } catch (e) {
+      errors.push(scdlError(
+        `Packet emit failed: ${e.message}`,
+        SCDL_ERROR_CODES.MISSING_ASSET, { line: 1, col: 1 }, { thrown: String(e) }
+      ));
+      return { ast, packet: null, fatal: true };
+    }
+    return { ast, packet, fatal: false };
+  }
 
   ast = _runPass('expandVector', ast, errors, expandVectorPass);
 

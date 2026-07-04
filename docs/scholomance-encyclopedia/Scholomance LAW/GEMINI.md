@@ -216,3 +216,16 @@ If HOLD: [exact condition that must be met before merge]
 - **Codex context**: `CODEX.md`
 - **Claude context**: `CLAUDE.md`
 - **Unity context**: `UNITY.md`
+
+## SCDNA Gene Injection (Proactive Context)
+
+Use the SCDNA system for dynamic, intent-matched rules and directives.
+
+- Run the injector for relevant prompts: `python -m vaelrix_forcefield.scdna.inject --prompt "..." --agent gemini`
+- Genes are stored in `steamdeck_brain/vaelrix_forcefield/scdna/compiler.json` (merged with defaults in registry.py).
+- Relevant domains for you: architecture, code, pixel, risk, determinism.
+- The hook `scripts/scdna-gene-inject.sh` (and variants) can be wired into your environment for automatic injection on prompt submit.
+- Always incorporate active genes into your reasoning, especially for propagation, formulas, PixelBrain, and architectural decisions.
+- Example gene (WAND_CHEMICAL_STROKE_PROPAGATION): Use chemical/rule-based unfolding for stroke formulas rather than batch sampling.
+
+This ensures consistent, evolvable "DNA" across agents without manual repetition. Genes provide imperatives, checks, and forbidden drifts.

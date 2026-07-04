@@ -1,7 +1,7 @@
 {
   "type": "scdl-phaser-v1",
   "key": "void_acolyte",
-  "assetId": "pbasset_563d18af",
+  "assetId": "pbasset_b85c4328",
   "canvas": {
     "width": 32,
     "height": 48
@@ -2696,6 +2696,11 @@
       "x": 22,
       "y": 17,
       "color": 4928901
+    },
+    {
+      "x": 4,
+      "y": 45,
+      "color": 2365251
     },
     {
       "x": 7,

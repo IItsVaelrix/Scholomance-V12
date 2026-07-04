@@ -10,10 +10,7 @@ import { validateDivProposal } from '../../lib/engine.adapter.js';
 import { VoxelScenePortal } from './components/VoxelScenePortal.jsx';
 import { WorldScenePortal } from './components/WorldScenePortal.jsx';
 import { generateCatalogId } from '../../lib/catalogId.js';
-import { useGodotExportFlag } from '../../hooks/useGodotExportFlag.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
-import { downloadTextFile } from '../../components/GodotExportButton/downloadTextFile.js';
-import { buildDivWandGodotExport } from '../../lib/godot-export/divwandGodotExport.js';
 import obsidianChoirCrystalProposal from './obsidian-choir-crystal.formula.json';
 import './DivWandPage.css';
 
@@ -332,7 +329,6 @@ const LayoutNode = memo(function LayoutNode({ node, depth, isInspectorActive, ho
 // ── PAGE ──────────────────────────────────────────────────────────────────────
 
 export default function DivWandPage({ onSendToVideoForge } = {}) {
-  const isGodotExportEnabled = useGodotExportFlag();
   const prefersReducedMotion = usePrefersReducedMotion();
   const [selectedPreset, setSelectedPreset]     = useState(PRESETS[0]);
   const [proposalText, setProposalText]         = useState(() => JSON.stringify(PRESETS[0].proposal, null, 2));
@@ -420,17 +416,6 @@ export default function DivWandPage({ onSendToVideoForge } = {}) {
       }]);
     } catch (e) {
       setTerminalLogs(prev => [...prev, { type: 'error', text: `Register failed: ${e.message}`, ts: ts() }]);
-    }
-  }, [proposalText]);
-
-  const handleGodotArtifactExport = useCallback(() => {
-    try {
-      const parsed = JSON.parse(proposalText);
-      const artifactText = buildDivWandGodotExport(parsed);
-      downloadTextFile(`divwand_${parsed.proposedLayout?.role || 'layout'}_${Date.now()}.divwand`, artifactText);
-      setTerminalLogs(prev => [...prev, { type: 'success', text: 'Godot DivWand artifact exported.', ts: ts() }]);
-    } catch (e) {
-      setTerminalLogs(prev => [...prev, { type: 'error', text: `Godot export failed: ${e.message}`, ts: ts() }]);
     }
   }, [proposalText]);
 
@@ -560,18 +545,7 @@ export default function DivWandPage({ onSendToVideoForge } = {}) {
             <Save size={13} aria-hidden="true" />
             Register
           </button>
-          {isGodotExportEnabled && (
-            <button
-              className="dw-btn"
-              onClick={handleGodotArtifactExport}
-              title="Export Godot DivWand artifact"
-              aria-label="Export Godot DivWand artifact"
-              type="button"
-            >
-              <Download size={13} aria-hidden="true" />
-              Export
-            </button>
-          )}
+
           {onSendToVideoForge && (
             <button
               className="dw-btn"

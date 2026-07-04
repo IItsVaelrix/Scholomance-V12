@@ -11,6 +11,7 @@
 
 import { emitLattice } from './scdl.lattice-emitter.js';
 import { encodeAsepriteBinary } from '../aseprite-binary-codec.js';
+import { renderSceneGraph, framebufferToCoordinates, renderMaterialCoordinateFramebuffer } from '../scene-graph-renderer.js';
 
 /**
  * Export a compiled asset to one or more targets.
@@ -21,7 +22,13 @@ import { encodeAsepriteBinary } from '../aseprite-binary-codec.js';
  * @returns {Record<string, {ok:boolean, output:string|object, mimeType:string}>}
  */
 export function exportSCDL(packet, targets, ast, options = {}) {
-  const lattice = emitLattice(packet, ast);
+  const isGraph = packet?.geometry?.mode === 'scene-graph';
+  const rawLattice = isGraph
+    ? _latticeFromSceneGraph(packet, options)
+    : emitLattice(packet, ast);
+  const lattice = !isGraph && options.shade === 'material'
+    ? _materialShadeLattice(rawLattice, options)
+    : rawLattice;
   const includeSemantic = options.includeSemantic || false;
   const results = {};
 
@@ -31,17 +38,54 @@ export function exportSCDL(packet, targets, ast, options = {}) {
       case 'svg':    results[target] = exportSVG(lattice, includeSemantic);    break;
       case 'phaser': results[target] = exportPhaser(lattice, includeSemantic); break;
       case 'png':    results[target] = exportPNG(lattice);    break;
-      case 'aseprite': results[target] = exportAseprite([packet], null, lattice.canvas); break;
+      case 'aseprite':
+        results[target] = isGraph
+          ? { ok: false, output: 'aseprite export for scene-graph assets lands in PR-3', mimeType: 'text/plain' }
+          : exportAseprite([packet], null, lattice.canvas);
+        break;
       default:
-        results[target] = {
-          ok: false,
-          output: `Unknown export target '${target}'`,
-          mimeType: 'text/plain',
-        };
+        results[target] = { ok: false, output: `Unknown export target '${target}'`, mimeType: 'text/plain' };
     }
   }
 
   return results;
+}
+
+function _materialShadeLattice(lattice, options = {}) {
+  const fb = renderMaterialCoordinateFramebuffer(lattice.geometry.coordinates, lattice.canvas, {
+    shade: 'material',
+    antialias: options.antialias,
+    antialiasStrength: options.antialiasStrength,
+    bloom: options.bloom,
+    bloomStrength: options.bloomStrength,
+  });
+  return Object.freeze({
+    ...lattice,
+    geometry: {
+      mode: 'coordinates',
+      coordinates: framebufferToCoordinates(fb),
+    },
+  });
+}
+
+/** Forward-render a scene-graph packet into the lattice view exporters consume. */
+function _latticeFromSceneGraph(packet, options = {}) {
+  const fb = renderSceneGraph(packet.geometry.sceneGraph, packet.canvas, {
+    shade: options.shade || 'material',
+  });
+  return Object.freeze({
+    kind: packet.kind,
+    id: packet.id,
+    source: packet.source,
+    canvas: { width: packet.canvas.width, height: packet.canvas.height },
+    geometry: { mode: 'coordinates', coordinates: framebufferToCoordinates(fb) },
+    palette: packet.palette?.sourcePalette?.[0]?.colors || [],
+    _paletteMap: Object.freeze({}),
+    parts: Object.freeze([]),
+    provenance: packet.provenance,
+    scdlSource: 'SCDL-AST-v1',
+    regressionSeed: null,
+  });
 }
 
 // ─── JSON ─────────────────────────────────────────────────────────────────────

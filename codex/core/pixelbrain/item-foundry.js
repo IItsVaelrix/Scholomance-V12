@@ -71,10 +71,7 @@ import { buildItemEffectShader } from './item-effect-shader.js';
 import { forgePacket } from './semantic-bridge.js';
 import { createShaderPacket, hashShaderPacket } from './shader-packet.js';
 import { MATERIAL_PALETTES, resolveMaterialId, SOURCE_MATERIAL } from './material-registry.js';
-import { exportToGodotShader } from '../../../src/lib/exporters/pixelbrainGodotShaderExport.js';
 import { exportToPhaserPipeline } from '../../../src/lib/exporters/pixelbrainPhaserShaderExport.js';
-import { createPixelBrainArtifact } from '../../../src/lib/godot-export/artifactSchemas.js';
-import { serializeStable } from '../../../src/lib/godot-export/stableSerialize.js';
 import { normalizeItemSpec, hashItemSpec, validateItemSpec } from './item-spec.js';
 import { hashString } from './shared.js';
 import { SDFShapeAMP } from './sdf-shape-amp.js';
@@ -573,19 +570,9 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     }
   }
 
-  // 8. Godot artifact + shader exports
-  const godotArtifact = serializeStable(createPixelBrainArtifact({
-    canvas: spec.canvas,
-    palettes: [],
-    coordinates: polished,
-    formula: null,
-    bytecode: spec.bytecode,
-  })) + '\n';
-
-  let godotShader = null;
+  // 8. Phaser shader exports
   let phaserPipeline = null;
   if (shader?.packet) {
-    godotShader = exportToGodotShader(shader.packet);
     phaserPipeline = exportToPhaserPipeline(shader.packet);
   }
 
@@ -646,8 +633,8 @@ export function forgeItemAsset(rawSpec, opts = {}) {
     }),
     routeDiagnostics: Object.freeze(routeDiagnostics),
     expansion: expansion ? Object.freeze(expansion) : null,
-    godotArtifact,
-    godotShader,
+    godotArtifact: null,
+    godotShader: null,
     phaserPipeline,
     png,
     volume,
