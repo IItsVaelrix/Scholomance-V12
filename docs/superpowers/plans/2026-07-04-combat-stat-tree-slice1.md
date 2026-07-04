@@ -6,7 +6,7 @@
 
 **Architecture:** Two pure, framework-free modules hold all stat/turn logic — a data-only `combatStats` registry (the stat-tree root) and a `CombatStatController` class (MP pool, attack-once-per-turn, range checks, HP). The Phaser scene (`CombatArenaScene.js`) and a small React HUD (`CombatPage.jsx`) are thin consumers that talk to the controller and to each other via `window` CustomEvents, following the scene's existing `combat-cast` event pattern.
 
-**Tech Stack:** ES modules (`"type": "module"`), React 18, Phaser 3, Vitest (jsdom, globals enabled).
+**Tech Stack:** ES modules (`"type": "module"`), React 18, **Phaser 4.1**, Vitest (jsdom, globals enabled).
 
 ## Global Constraints
 
@@ -443,12 +443,17 @@ Add these two class methods on the scene:
       if (!targetId) return; // No valid target in range.
       const result = this.stats.resolveAttack('player', targetId);
       if (!result) return;
-      // Quick hit-flash on the dummy.
-      if (this.dummyImg) {
-        this.dummyImg.setTintFill(0xffffff);
-        this.time.delayedCall(90, () => this.dummyImg && this.dummyImg.setTint(0x88aacc));
+      // Quick hit-flash on the dummy (tween-based; no setTintFill — Phaser 4 safe).
+      if (this.dummyContainer) {
+        this.tweens.add({
+          targets: this.dummyContainer,
+          alpha: 0.35,
+          yoyo: true,
+          duration: 80,
+          repeat: 1,
+        });
         if (result.targetDefeated) {
-          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400 });
+          this.tweens.add({ targets: this.dummyContainer, alpha: 0, duration: 400, delay: 200 });
         }
       }
       this.emitCombatStats();
