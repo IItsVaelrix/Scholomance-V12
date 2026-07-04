@@ -20,7 +20,7 @@ import {
   AnimationAmpError,
   AMP_ERROR_CODES,
 } from '../../contracts/animation.types.ts';
-import { processorBridge } from '../../../shared/processor-bridge.js';
+import { runTurboQuantAmp } from '../../../microprocessors/turboquant-amp.js';
 
 // Calibrated against corrected cosine similarity. The previous 0.75 threshold
 // was tuned to the old inflated inner-product primitive and over-dampened
@@ -74,8 +74,8 @@ export const turboQuantMotionProcessor: MotionProcessor = {
     }
 
     try {
-      // Offload heavy structural similarity computing to the WebWorker
-      return await processorBridge.execute('amp.turboquant.similarity', state) as MotionWorkingState;
+      // Direct call to TurboQuant similarity function since we are already in the worker
+      return (await runTurboQuantAmp(state)) as MotionWorkingState;
     } catch (err: any) {
       if (err instanceof AnimationAmpError) {
         throw err;

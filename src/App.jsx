@@ -13,6 +13,7 @@ import { PredictorProvider } from "./hooks/usePredictor.jsx";
 import { usePrefersReducedMotion } from "./hooks/usePrefersReducedMotion.js";
 import { MotionInspector } from "./ui/animation/components/MotionInspector";
 import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
+import { InventoryOverlay } from "./ui/inventory/InventoryOverlay.jsx";
 
 const fullMotionVariants = {
   initial: { opacity: 0, y: 20 },
@@ -83,6 +84,8 @@ export default function App() {
                   <MotionDebugBadge />
                 </>
               )}
+
+              <InventoryOverlay />
 
               <div className="page-container">
                 {!isBattlePage && (

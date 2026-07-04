@@ -62,12 +62,25 @@ export default function CombatPage() {
       const result = calculateCombatScore({ text: verse, weave });
       const ts = new Date().toISOString().split('T')[1].slice(0, 8);
       
+      // Emit to Phaser Arena
+      window.dispatchEvent(new CustomEvent('combat-cast', { 
+        detail: { ...result, text: verse, weave } 
+      }));
+      
       const newLogs = [];
       newLogs.push({ type: 'info', text: `[CAST] Verse: "${verse}" | Weave: "${weave}"`, ts });
       
       if (result.failureCast) {
         newLogs.push({ type: 'error', text: `SYNTACTIC COLLAPSE! The weave has frayed.`, ts });
       } else {
+        // Intercept Enchantment request
+        const weaveStr = (weave || '').toLowerCase();
+        const textStr = (verse || '').toLowerCase();
+        if (weaveStr.includes('enchant') && weaveStr.includes('flame') && textStr.includes('incinerator blade')) {
+           result.damage = (result.damage || 0) + 200;
+           result.commentary = (result.commentary || '') + " [🔥 Incinerator Blade Active: Burn Damage applied!]";
+        }
+
         const intentStr = result.intent.bridgeIntent || result.intent.speechAct || 'UNKNOWN';
         newLogs.push({ type: 'success', text: `Intent: ${intentStr} | Damage: ${result.damage} | School: ${result.school}`, ts });
         if (result.commentary) {
