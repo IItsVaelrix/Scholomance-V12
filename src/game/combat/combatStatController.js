@@ -22,6 +22,7 @@ export class CombatStatController {
       position: { tx, ty },
       attackUsed: false,
       statuses: [],
+      guarding: false,
     };
     this.entities.set(id, record);
     return record;
@@ -109,11 +110,19 @@ export class CombatStatController {
     return ticks;
   }
 
+  setGuarding(id, value) {
+    const e = this.entities.get(id);
+    if (!e) return e;
+    e.guarding = !!value;
+    return e;
+  }
+
   endTurn(id) {
     const e = this.entities.get(id);
     if (!e) return e;
     e.movementPointsRemaining = e.movementPoints;
     e.attackUsed = false;
+    e.guarding = false;
     return e;
   }
 }
