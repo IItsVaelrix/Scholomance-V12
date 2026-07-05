@@ -698,6 +698,7 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     handleCombatCast(event) {
+      if (this.cutsceneInputLock) return;
       if (this.canEngageCombatBattle()) {
         this.ensureCombatBattleEngaged();
       }
@@ -1350,7 +1351,6 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (this.portalPhase !== PORTAL_PHASE.DORMANT) return false;
       this.portalPhase = PORTAL_PHASE.UNSEALING;
       this.playPortalIceCutscene(() => {
-        applyIceBiome(this);
         this.portalPhase = PORTAL_PHASE.BECKONING;
         this.events.emit('portal-unsealed', {
           type: 'portal-unsealed',
@@ -1361,33 +1361,125 @@ export default function createCombatArenaScene(phaserRuntime) {
       return true;
     }
 
+    restartCameraIdleDrift() {
+      const cam = this.cameras.main;
+      this.tweens.add({
+        targets: cam,
+        scrollX: cam.scrollX + 3,
+        scrollY: cam.scrollY - 2,
+        duration: 7000,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
     playPortalIceCutscene(onComplete) {
       const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
-      const overlay = this.add.container(0, 0).setDepth(200).setScrollFactor(0);
-      const starfield = this.add.graphics();
-      starfield.fillStyle(0x02040a, 0.82);
-      starfield.fillRect(-2000, -2000, 4000, 4000);
-      overlay.add(starfield);
+      const cam = this.cameras.main;
+      const cx = cam.width / 2;
+      const cy = cam.height / 2;
+      const vw = cam.width;
+      const vh = cam.height;
+
+      this.cutsceneInputLock = true;
+      this.tweens.killTweensOf(cam);
+
+      const savedCam = {
+        scrollX: cam.scrollX,
+        scrollY: cam.scrollY,
+        zoom: cam.zoom,
+      };
+
+      const overlay = this.add.container(cx, cy).setDepth(10000).setScrollFactor(0);
+
+      const space = this.add.graphics();
+      space.fillStyle(0x020610, 0.9);
+      space.fillRect(-vw, -vh, vw * 2, vh * 2);
+      overlay.add(space);
+
+      const stars = this.add.graphics();
+      for (let i = 0; i < 96; i += 1) {
+        const sx = phaserRuntime.Math.Between(Math.floor(-vw * 0.48), Math.floor(vw * 0.48));
+        const sy = phaserRuntime.Math.Between(Math.floor(-vh * 0.48), Math.floor(vh * 0.48));
+        stars.fillStyle(0xffffff, phaserRuntime.Math.FloatBetween(0.15, 0.95));
+        stars.fillCircle(sx, sy, phaserRuntime.Math.FloatBetween(0.6, 2.2));
+      }
+      overlay.add(stars);
+
+      const islandView = this.add.graphics();
+      islandView.fillStyle(0x1a2840, 0.95);
+      islandView.fillEllipse(0, vh * 0.1, vw * 0.38, vh * 0.14);
+      islandView.lineStyle(2, 0x4a6a8a, 0.7);
+      islandView.strokeEllipse(0, vh * 0.1, vw * 0.38, vh * 0.14);
+      overlay.add(islandView);
 
       const beam = this.add.graphics();
       beam.setBlendMode(phaserRuntime.BlendModes.ADD);
       overlay.add(beam);
 
       const flash = this.add.graphics();
-      flash.setAlpha(0);
       overlay.add(flash);
+
+      const beamTargetY = vh * 0.1;
+      const beamTopY = -vh * 0.72;
+      let iceApplied = false;
 
       const drawBeam = (progress) => {
         beam.clear();
-        const topY = -900 + progress * 700;
-        beam.fillStyle(0xa8d8ff, 0.15);
-        beam.fillTriangle(-40, topY, 40, topY, 0, 420);
-        beam.fillStyle(0xe8f4ff, 0.55);
-        beam.fillTriangle(-12, topY + 40, 12, topY + 40, 0, 420);
+        const headY = beamTopY + progress * (beamTargetY - beamTopY);
+        const width = 18 + progress * 52;
+        beam.fillStyle(0x66aacc, 0.22);
+        beam.fillTriangle(-width, headY, width, headY, 0, beamTargetY + 28);
+        beam.fillStyle(0xe8f8ff, 0.82);
+        beam.fillTriangle(-width * 0.32, headY + 42, width * 0.32, headY + 42, 0, beamTargetY + 14);
+        if (progress > 0.62) {
+          const impact = (progress - 0.62) / 0.38;
+          beam.fillStyle(0xffffff, 0.35 * impact);
+          beam.fillCircle(0, beamTargetY, 24 + impact * 96);
+          beam.lineStyle(3, 0xc8eeff, 0.5 * impact);
+          beam.strokeEllipse(0, beamTargetY, vw * 0.38 * (0.85 + impact * 0.15), vh * 0.14 * (0.85 + impact * 0.15));
+        }
       };
 
-      const duration = reduced ? 800 : 3200;
-      let elapsed = 0;
+      if (!reduced) {
+        this.tweens.add({
+          targets: cam,
+          zoom: 0.5,
+          duration: 1500,
+          ease: 'Cubic.easeOut',
+        });
+      }
+
+      this.events.emit('sentinel-ability', {
+        type: 'sentinel-ability',
+        logLines: ['[PORTAL] An ice ray answers from orbit — the island is in its crosshairs.'],
+      });
+
+      const finishCutscene = () => {
+        this.tweens.add({
+          targets: overlay,
+          alpha: 0,
+          duration: reduced ? 220 : 520,
+          onComplete: () => {
+            overlay.destroy();
+            this.tweens.add({
+              targets: cam,
+              zoom: savedCam.zoom,
+              scrollX: savedCam.scrollX,
+              scrollY: savedCam.scrollY,
+              duration: 700,
+              ease: 'Sine.easeInOut',
+              onComplete: () => {
+                this.cutsceneInputLock = false;
+                this.restartCameraIdleDrift();
+                onComplete?.();
+              },
+            });
+          },
+        });
+      };
+
       const tick = this.time.addEvent({
         delay: 16,
         loop: true,
@@ -1395,28 +1487,31 @@ export default function createCombatArenaScene(phaserRuntime) {
           elapsed += 16;
           const p = Math.min(1, elapsed / duration);
           drawBeam(p);
-          if (p > 0.72) {
+
+          if (p > 0.68) {
             flash.clear();
-            flash.fillStyle(0xd8eeff, 0.35 * (p - 0.72) / 0.28);
-            flash.fillRect(-2000, -2000, 4000, 4000);
+            flash.fillStyle(0xd8eeff, 0.5 * (p - 0.68) / 0.32);
+            flash.fillRect(-vw, -vh, vw * 2, vh * 2);
           }
+
+          if (!iceApplied && p >= 0.76) {
+            iceApplied = true;
+            applyIceBiome(this);
+            if (!reduced) cam.shake(400, 0.007);
+          }
+
           if (p >= 1) {
             tick.remove(false);
-            this.tweens.add({
-              targets: overlay,
-              alpha: 0,
-              duration: reduced ? 180 : 420,
-              onComplete: () => {
-                overlay.destroy();
-                onComplete?.();
-              },
-            });
+            finishCutscene();
           }
         },
       });
 
-      if (!reduced) {
-        this.cameras.main.shake(420, 0.004);
+      if (reduced) {
+        drawBeam(1);
+        applyIceBiome(this);
+        iceApplied = true;
+        this.time.delayedCall(280, finishCutscene);
       }
     }
 
@@ -2825,6 +2920,7 @@ export default function createCombatArenaScene(phaserRuntime) {
     };
 
     endPlayerTurn = () => {
+      if (this.cutsceneInputLock) return;
       if (!this.stats || !this.combatBattleEngaged) return;
       this.sessionTelemetry?.recordTurnEnd();
 
@@ -3222,6 +3318,7 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     tryMoveToTile(tx, ty) {
+      if (this.cutsceneInputLock) return false;
       if (!this.movementArmed || this.isWalking || !this.playerGridPos || !this.stats) return false;
       const player = this.stats.getEntity('player');
       if (!player) return false;
