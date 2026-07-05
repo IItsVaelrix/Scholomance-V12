@@ -1351,14 +1351,36 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (this.portalPhase !== PORTAL_PHASE.DORMANT) return false;
       this.portalPhase = PORTAL_PHASE.UNSEALING;
       this.playPortalIceCutscene(() => {
+        this.enterPortalExplorationMode();
         this.portalPhase = PORTAL_PHASE.BECKONING;
         this.events.emit('portal-unsealed', {
           type: 'portal-unsealed',
-          text: 'The ward unseals. The island freezes.',
+          text: 'The ward unseals. The island freezes. Seek the northeast portal.',
         });
         this.emitSceneContextState();
       });
       return true;
+    }
+
+    /** Leave turn-based combat after sentinels fall; free-roam to the portal. */
+    enterPortalExplorationMode() {
+      this.disengageCombatBattle();
+      const player = this.stats?.getEntity('player');
+      if (player) {
+        player.movementPointsRemaining = player.movementPoints;
+        player.attackPointsRemaining = player.attackPoints;
+        player.attackUsed = false;
+        player.voidLockedTurnsRemaining = 0;
+        player.guarding = false;
+      }
+      this.selectedCombatTargetId = null;
+      this.refreshCombatTargetVisual();
+      window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_ENDED_EVENT));
+      // Re-arm after battle-ended listeners — disengageCombatBattle disarms movement.
+      this.movementArmed = true;
+      if (this.playerImg) this.playerImg.setTint(0xaaffcc);
+      this.refreshMovementHighlights();
+      this.emitCombatStats();
     }
 
     restartCameraIdleDrift() {
@@ -1480,6 +1502,17 @@ export default function createCombatArenaScene(phaserRuntime) {
         });
       };
 
+      if (reduced) {
+        drawBeam(1);
+        flash.fillStyle(0xd8eeff, 0.45);
+        flash.fillRect(-vw, -vh, vw * 2, vh * 2);
+        applyIceBiome(this);
+        this.time.delayedCall(320, finishCutscene);
+        return;
+      }
+
+      const duration = 4200;
+      let elapsed = 0;
       const tick = this.time.addEvent({
         delay: 16,
         loop: true,
@@ -1497,7 +1530,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           if (!iceApplied && p >= 0.76) {
             iceApplied = true;
             applyIceBiome(this);
-            if (!reduced) cam.shake(400, 0.007);
+            cam.shake(400, 0.007);
           }
 
           if (p >= 1) {
@@ -1506,13 +1539,6 @@ export default function createCombatArenaScene(phaserRuntime) {
           }
         },
       });
-
-      if (reduced) {
-        drawBeam(1);
-        applyIceBiome(this);
-        iceApplied = true;
-        this.time.delayedCall(280, finishCutscene);
-      }
     }
 
     isPortalBeckoning() {

@@ -628,9 +628,13 @@ export default function CombatPage() {
     }
 
     if (action.type === 'portal-unsealed') {
+      setBattleIntroActive(false);
+      setBattleStarted(false);
+      resetCombatBattleEngagement();
       setTerminalLogs(prev => [
         ...prev,
         { type: 'info', text: `[PORTAL] ${action.text}`, ts },
+        { type: 'info', text: '[PORTAL] Free roam — walk the lattice to the northeast gate, then weave at the portal.', ts },
       ]);
       return;
     }
@@ -640,9 +644,10 @@ export default function CombatPage() {
         ...prev,
         { type: 'error', text: `[PORTAL] ${action.text}`, ts },
       ]);
-      if (!battleStartedRef.current && !battleIntroActiveRef.current) {
-        setBattleIntroActive(true);
-      }
+      setBattleIntroActive(false);
+      setBattleStarted(true);
+      markCombatBattleStarted();
+      window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_STARTED_EVENT));
       return;
     }
 
