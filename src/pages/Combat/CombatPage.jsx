@@ -885,49 +885,53 @@ export default function CombatPage() {
       
       <div className="combat-hud-stack" aria-label="Combat interface">
         {/* Combat Stat Tree — centered top rail */}
-        {battleStarted && !combatResults && combatStats && (
+        {!combatResults && combatStats && (
           <div className="combat-stat-card">
-            <div className="combat-stat-card__target" aria-live="polite">
-              <span className="combat-stat-card__target-label">Target</span>
-              <b className="combat-stat-card__target-value">
-                {selectedCombatTarget?.shortLabel
-                  || selectedCombatTarget?.label
-                  || (selectedCombatTarget?.targetId
-                    ? findSceneTargetLabel(sceneContext, selectedCombatTarget.targetId)
-                    : null)
-                  || 'Tab / right-click enemy'}
-              </b>
-            </div>
             <CombatResourceBars stats={combatStats} />
-            <div className="combat-stat-card__actions">
-              <button
-                className="combat-action-btn combat-action-btn--attack"
-                onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
-                disabled={combatStats.attackUsed}
-              >
-                Attack (F)
-              </button>
-              {hasIcicleSlam && (
-                <button
-                  className="combat-action-btn combat-action-btn--icicle"
-                  onClick={() => window.dispatchEvent(new CustomEvent('combat-icicle-slam'))}
-                  disabled={!canIcicleSlam}
-                  title={canIcicleSlam
-                    ? `Icicle Slam (${ICICLE_SLAM_AP_COST} AP, 3 hits)`
-                    : (combatStats?.icicleSlamCooldown ?? 0) > 0
-                      ? `Icicle Slam cooling down (${combatStats.icicleSlamCooldown} turns)`
-                      : `Need ${ICICLE_SLAM_AP_COST} AP and a distant target`}
-                >
-                  Icicle Slam
-                </button>
-              )}
-              <button
-                className="combat-action-btn combat-action-btn--turn"
-                onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
-              >
-                End Turn (Space)
-              </button>
-            </div>
+            {battleStarted && (
+              <>
+                <div className="combat-stat-card__target" aria-live="polite">
+                  <span className="combat-stat-card__target-label">Target</span>
+                  <b className="combat-stat-card__target-value">
+                    {selectedCombatTarget?.shortLabel
+                      || selectedCombatTarget?.label
+                      || (selectedCombatTarget?.targetId
+                        ? findSceneTargetLabel(sceneContext, selectedCombatTarget.targetId)
+                        : null)
+                      || 'Tab / right-click enemy'}
+                  </b>
+                </div>
+                <div className="combat-stat-card__actions">
+                  <button
+                    className="combat-action-btn combat-action-btn--attack"
+                    onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
+                    disabled={combatStats.attackUsed}
+                  >
+                    Attack (F)
+                  </button>
+                  {hasIcicleSlam && (
+                    <button
+                      className="combat-action-btn combat-action-btn--icicle"
+                      onClick={() => window.dispatchEvent(new CustomEvent('combat-icicle-slam'))}
+                      disabled={!canIcicleSlam}
+                      title={canIcicleSlam
+                        ? `Icicle Slam (${ICICLE_SLAM_AP_COST} AP, 3 hits)`
+                        : (combatStats?.icicleSlamCooldown ?? 0) > 0
+                          ? `Icicle Slam cooling down (${combatStats.icicleSlamCooldown} turns)`
+                          : `Need ${ICICLE_SLAM_AP_COST} AP and a distant target`}
+                    >
+                      Icicle Slam
+                    </button>
+                  )}
+                  <button
+                    className="combat-action-btn combat-action-btn--turn"
+                    onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
+                  >
+                    End Turn (Space)
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

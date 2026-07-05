@@ -3130,33 +3130,33 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
     };
 
+    buildPlayerCombatStatsDetail = (playerEntity) => ({
+      hp: playerEntity.hp,
+      maxHp: playerEntity.maxHp,
+      movementPointsRemaining: playerEntity.movementPointsRemaining,
+      movementPoints: playerEntity.movementPoints,
+      attackPoints: playerEntity.attackPoints,
+      attackPointsRemaining: playerEntity.attackPointsRemaining,
+      attackRange: playerEntity.attackRange,
+      attackUsed: playerEntity.attackUsed,
+      spellweaveUsed: playerEntity.spellweaveUsed,
+      manaPoints: playerEntity.manaPoints,
+      manaPointsRemaining: playerEntity.manaPointsRemaining,
+      manaUsed: playerEntity.manaUsed,
+      scholomance: getEffectiveScholomance(playerEntity),
+      icicleSlamCooldown: playerEntity.icicleSlamCooldown ?? 0,
+      grantedAbilities: Array.isArray(playerEntity.grantedAbilities)
+        ? [...playerEntity.grantedAbilities]
+        : [],
+      battleEngaged: !!this.combatBattleEngaged,
+    });
+
     emitCombatStats = () => {
       const p = this.stats?.getEntity('player');
       if (!p) return;
       this.emitSceneContextState();
-      if (!this.combatBattleEngaged) {
-        window.dispatchEvent(new CustomEvent('combat-stats-changed', { detail: null }));
-        this.refreshMovementHighlights();
-        return;
-      }
       window.dispatchEvent(new CustomEvent('combat-stats-changed', {
-        detail: {
-          hp: p.hp,
-          maxHp: p.maxHp,
-          movementPointsRemaining: p.movementPointsRemaining,
-          movementPoints: p.movementPoints,
-          attackPoints: p.attackPoints,
-          attackPointsRemaining: p.attackPointsRemaining,
-          attackRange: p.attackRange,
-          attackUsed: p.attackUsed,
-          spellweaveUsed: p.spellweaveUsed,
-          manaPoints: p.manaPoints,
-          manaPointsRemaining: p.manaPointsRemaining,
-          manaUsed: p.manaUsed,
-          scholomance: getEffectiveScholomance(p),
-          icicleSlamCooldown: p.icicleSlamCooldown ?? 0,
-          grantedAbilities: Array.isArray(p.grantedAbilities) ? [...p.grantedAbilities] : [],
-        },
+        detail: this.buildPlayerCombatStatsDetail(p),
       }));
       this.refreshMovementHighlights();
     };
