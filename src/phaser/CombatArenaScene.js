@@ -14,6 +14,16 @@ import {
   STORMHEART_ORB_ITEM_ID,
 } from '../../codex/core/obelisk-puzzle.signals.js';
 import { grantItem, hasItem } from '../game/inventory/inventoryService.js';
+import { resolveCombatLootGrant } from '../game/combat/combatLootDrops.js';
+import {
+  LOOT_CHEST_PNG_SCALE,
+  planCombatChestDrop,
+} from '../game/combat/combatLootChest.js';
+import {
+  getLootChestOpenAnimKey,
+  preloadLootChestTextures,
+  registerLootChestAnimations,
+} from '../game/combat/lootChestVisuals.js';
 import { getScholomanceCombatBlock, grantScholomanceXpForAction } from '../game/character/scholomanceXpService.js';
 import { buildCompendiumRuntimeContext } from '../game/combat/spellweaveCompendium.persistence.js';
 import { SCHOLOMANCE_XP_ACTIONS } from '../../codex/core/scholomance-xp.schema.js';
@@ -29,6 +39,7 @@ import {
   getReachableTiles,
   tileKey,
 } from '../game/combat/combatPathfinding.js';
+import { ARENA_SORT_LAYER, getGridSortDepth } from '../game/combat/arenaDepthSorting.js';
 import {
   areAllSentinelsDefeated,
   buildSentinelBlockedTiles,
@@ -49,16 +60,42 @@ import {
   PORTAL_WARDEN_ID,
 } from '../game/combat/portalPhase.js';
 import {
+  applyVoidAcolyteHitDamage,
   createVoidAcolyteAbilityState,
   planVoidAcolyteAttack,
   resolveVoidAcolyteAbility,
   tickVoidAcolyteAbilityState,
 } from '../game/combat/voidAcolyteCombatAbilities.js';
 import {
+  emitVoidAcolyteSpellCast,
+  emitVoidAcolyteSpellHit,
+  isVoidAcolyteIceSpell,
+  isVoidAcolyteVoidSpell,
+} from '../game/combat/voidAcolyteSpellAudio.js';
+import { playIcicleBlastVfx, playVoidAcolyteSpellVfx } from '../game/combat/void1BossSpellVfx.js';
+import { aggregateEquipmentBonuses } from '../game/combat/equipmentCombatBonuses.js';
+import {
+  applyPlayerIcicleSlamHit,
+  ICICLE_SLAM_AP_COST,
+  resolvePlayerIcicleSlam,
+} from '../game/combat/iceSlimeStaffAbilities.js';
+import { getEffectiveScholomance } from '../game/combat/scholomanceStats.js';
+import {
+  getPortalWardenDuelLayout,
   getVoidAcolyteSpawnTile,
   isPortalWardenId,
   VOID_ACOLYTE_STAT_DEFAULTS,
 } from '../game/combat/voidAcolyteRobots.js';
+import {
+  createVoid1WardenSprite,
+  playVoid1SpriteAnim,
+  pickVoid1StrikeAnim,
+  preloadVoid1Textures,
+  registerVoid1Animations,
+  VOID1_ANIM,
+  void1StrikeDelayMs,
+} from '../game/combat/void1CombatVisuals.js';
+import { VOID1_BOSS_SUBTITLE } from '../data/void1Animations.js';
 import { createCombatSessionTelemetry } from '../game/combat/combatSessionTelemetry.js';
 import {
   COMBAT_BATTLE_ENDED_EVENT,
@@ -75,7 +112,7 @@ import {
   mergeSelectedCombatTarget,
 } from '../game/combat/combatTargetSelection.js';
 import { resolveCombatCastScore } from '../game/combat/combatCastScoring.js';
-import { SPELL_CAST_MANA_COST } from '../game/combat/combatMana.js';
+import { SPELL_CAST_AP_COST } from '../game/combat/combatMana.js';
 import { driveEnemyTurn } from '../game/combat/ai/enemyCombatDriver.js';
 import {
   applySentinelBurnDebuff,
@@ -115,6 +152,7 @@ import { getGameBackgroundMusicService } from '../lib/audio/gameBackgroundMusic.
 import { getGameObeliskElectricService } from '../lib/audio/gameObeliskElectric.service.js';
 import { getGameBrazierFireService } from '../lib/audio/gameBrazierFire.service.js';
 import { getGameFireballImpactService } from '../lib/audio/gameFireballImpact.service.js';
+import { getGameIceSpellImpactService } from '../lib/audio/gameIceSpellImpact.service.js';
 import { getGameSwordSliceService } from '../lib/audio/gameSwordSlice.service.js';
 import {
   GAME_BACKGROUND_MUSIC_PACING,
@@ -157,6 +195,7 @@ const ARENA_DEPTH = Object.freeze({
   OBELISK_BOLT: 30,
   TORCH: 31,
   STORMHEART_ORB: 33,
+  LOOT_CHEST: 32,
   PLAYER: 25,
 });
 
@@ -208,6 +247,16 @@ export default function createCombatArenaScene(phaserRuntime) {
             if (i === 0) this.load.image(item.assetId, `${basePath}-f0-png.png`);
             this.load.image(`${item.assetId}-f${i}`, `${basePath}-f${i}-png.png`);
           }
+        }
+      });
+
+      preloadLootChestTextures(this.load);
+
+      preloadVoid1Textures(this.load);
+      this.load.on('loaderror', (file) => {
+        const key = String(file?.key || '');
+        if (key.startsWith('void1-') || key.startsWith('Void1-')) {
+          console.error('[Void1] Failed to load texture:', file?.key, file?.url);
         }
       });
     }
@@ -415,7 +464,6 @@ export default function createCombatArenaScene(phaserRuntime) {
       const playerPos = toIso(4, 6);
       
       const playerContainer = this.add.container(playerPos.x, playerPos.y - plateauZ);
-      playerContainer.setDepth(ARENA_DEPTH.PLAYER);
       
       // The SCDL export draws the figure on a 64x128 canvas with the feet at
       // y~112, leaving ~16px of empty padding below. Origin (0.5, 1) would pin
@@ -501,6 +549,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
 
       playerImg.play('player-idle');
+
+      registerVoid1Animations(this.anims);
+      registerLootChestAnimations(this.anims);
 
       // Give him a subtle breathing animation (default idle)
       this.idleTween = this.tweens.add({
@@ -629,11 +680,14 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       this.boundHandleHudAttack = () => this.performBasicAttack();
       this.boundHandleHudEndTurn = () => this.endPlayerTurn();
+      this.boundHandleIcicleSlam = () => this.performIcicleSlam();
       window.addEventListener('combat-attack', this.boundHandleHudAttack);
       window.addEventListener('combat-endturn', this.boundHandleHudEndTurn);
+      window.addEventListener('combat-icicle-slam', this.boundHandleIcicleSlam);
       this.events.once('destroy', () => {
         window.removeEventListener('combat-attack', this.boundHandleHudAttack);
         window.removeEventListener('combat-endturn', this.boundHandleHudEndTurn);
+        window.removeEventListener('combat-icicle-slam', this.boundHandleIcicleSlam);
       });
       this.reachableTiles = new Set();
       this.inspectHighlightTile = null;
@@ -808,6 +862,36 @@ export default function createCombatArenaScene(phaserRuntime) {
           scholomanceOverrides: SENTINEL_STAT_DEFAULTS.scholomanceOverrides,
         });
       }
+      this.refreshSortableEntityDepths();
+    }
+
+    refreshSortableEntityDepths() {
+      const playerPos = this.playerGridPos;
+      if (this.playerContainer && playerPos) {
+        this.playerContainer.setDepth(
+          getGridSortDepth(playerPos.tx, playerPos.ty, ARENA_SORT_LAYER.PLAYER),
+        );
+      }
+
+      for (const effect of this.torchEffects || []) {
+        const tx = effect.gridTx;
+        const ty = effect.gridTy;
+        if (!Number.isFinite(tx) || !Number.isFinite(ty)) continue;
+        effect.shadow?.setDepth(getGridSortDepth(tx, ty, ARENA_SORT_LAYER.TORCH_SHADOW));
+        effect.ambient?.setDepth(getGridSortDepth(tx, ty, ARENA_SORT_LAYER.TORCH_AMBIENT));
+        effect.bobContainer?.setDepth(getGridSortDepth(tx, ty, ARENA_SORT_LAYER.TORCH_BODY));
+      }
+
+      for (const chest of this.combatLootChests || []) {
+        chest.sprite?.setDepth(getGridSortDepth(chest.tx, chest.ty, ARENA_SORT_LAYER.LOOT_CHEST));
+      }
+
+      const warden = this.portalWardenEffect;
+      if (warden?.container && Number.isFinite(warden.tx) && Number.isFinite(warden.ty)) {
+        warden.container.setDepth(
+          getGridSortDepth(warden.tx, warden.ty, ARENA_SORT_LAYER.PORTAL_WARDEN),
+        );
+      }
     }
 
     rebuildBlockedTiles() {
@@ -842,6 +926,12 @@ export default function createCombatArenaScene(phaserRuntime) {
 
     emitFireballImpactSfx() {
       const impact = getGameFireballImpactService();
+      impact.prime();
+      void impact.playImpact();
+    }
+
+    emitIceSpellImpactSfx() {
+      const impact = getGameIceSpellImpactService();
       impact.prime();
       void impact.playImpact();
     }
@@ -1083,19 +1173,83 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.stats.spendMove(wardenId);
       }
 
-      if (this.portalWardenEffect?.container) {
+      const effect = this.portalWardenEffect;
+      if (effect?.container) {
         const tile = this.getIsoTarget(finalStep.tx, finalStep.ty);
+        if (effect.wardenVisual) {
+          playVoid1SpriteAnim(effect.wardenVisual, VOID1_ANIM.WALK, { returnToIdle: false });
+        }
         this.tweens.add({
-          targets: this.portalWardenEffect.container,
+          targets: effect.container,
           x: tile.x,
           y: tile.y,
           duration: 180 + steps.length * 40,
           ease: 'Sine.easeInOut',
+          onComplete: () => {
+            if (effect.wardenVisual) {
+              playVoid1SpriteAnim(effect.wardenVisual, VOID1_ANIM.IDLE);
+            }
+          },
         });
+        effect.tx = finalStep.tx;
+        effect.ty = finalStep.ty;
       }
 
       this.rebuildBlockedTiles();
       this.emitSceneContextState();
+    }
+
+    emitVoidAcolyteAbilitySfx(abilityId) {
+      if (isVoidAcolyteVoidSpell(abilityId)) {
+        const audio = getGameAudioForgeService();
+        audio.prime();
+        emitVoidAcolyteSpellHit(audio, abilityId);
+        return;
+      }
+      if (isVoidAcolyteIceSpell(abilityId)) {
+        this.emitIceSpellImpactSfx();
+      }
+    }
+
+    getVoidAcolytePlayerImpactPoint() {
+      return {
+        x: this.playerContainer?.x ?? 0,
+        y: this.playerContainer?.y ?? 0,
+      };
+    }
+
+    getVoidAcolyteBossCastPoint() {
+      const effect = this.portalWardenEffect;
+      return {
+        x: effect?.container?.x ?? effect?.tx ?? 0,
+        y: effect?.container?.y ?? effect?.ty ?? 0,
+      };
+    }
+
+    finishVoidAcolyteStrike(wardenId, plan, result) {
+      const record = this.getPortalWardenRecord();
+      if (!record || !this.stats) return;
+
+      this.sessionTelemetry?.recordSentinelHit?.({
+        sentinelId: wardenId,
+        damage: result.damage ?? result.totalDamage ?? 0,
+      });
+      this.events.emit('sentinel-ability', {
+        type: 'sentinel-ability',
+        sentinelId: wardenId,
+        abilityId: plan.abilityId,
+        damage: result.damage ?? result.totalDamage ?? 0,
+        logLines: plan.logLines,
+      });
+      this.emitCombatStats();
+
+      const playerEntity = this.stats.getEntity('player');
+      if (playerEntity?.hp <= 0) {
+        const defeatText = plan.abilityId === 'icicle_blast'
+          ? 'The rime claims you.'
+          : 'The void claims you.';
+        this.events.emit('combat-defeat', { type: 'combat-defeat', text: defeatText });
+      }
     }
 
     resolveVoidAcolyteStrike(wardenId) {
@@ -1128,8 +1282,53 @@ export default function createCombatArenaScene(phaserRuntime) {
         return;
       }
 
+      const playerPoint = this.getVoidAcolytePlayerImpactPoint();
+      const bossPoint = this.getVoidAcolyteBossCastPoint();
+
+      if (result.staged && plan.abilityId === 'icicle_blast') {
+        this.showPlayerCastHint('icicle blast!');
+        playVoidAcolyteSpellVfx(this, 'icicle_blast', {
+          targetX: playerPoint.x,
+          targetY: playerPoint.y,
+          hitCount: result.hitCount,
+          phaserRuntime,
+          onHit: (index) => {
+            const hit = applyVoidAcolyteHitDamage(this.stats, 'player', result.damagePerHit);
+            if (!hit) return;
+            this.emitVoidAcolyteAbilitySfx('icicle_blast');
+            this.showHitFeedback('player', {
+              color: 0x66ccff,
+              amount: hit.damage,
+              delay: 0,
+            });
+            if (index === 0) {
+              this.sessionTelemetry?.recordSentinelHit?.({
+                sentinelId: wardenId,
+                damage: result.totalDamage,
+              });
+              this.events.emit('sentinel-ability', {
+                type: 'sentinel-ability',
+                sentinelId: wardenId,
+                abilityId: plan.abilityId,
+                damage: result.totalDamage,
+                logLines: plan.logLines,
+              });
+            }
+            this.emitCombatStats();
+            if (hit.targetDefeated) {
+              this.events.emit('combat-defeat', {
+                type: 'combat-defeat',
+                text: 'The rime claims you.',
+              });
+            }
+          },
+        });
+        return;
+      }
+
       if (result.pulled) {
         this.playerGridPos = { tx: result.pulled.tx, ty: result.pulled.ty };
+        this.refreshSortableEntityDepths();
         const tile = this.getIsoTarget(result.pulled.tx, result.pulled.ty);
         if (this.playerContainer) {
           this.tweens.add({
@@ -1142,6 +1341,15 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
       }
 
+      playVoidAcolyteSpellVfx(this, plan.abilityId, {
+        targetX: playerPoint.x,
+        targetY: playerPoint.y,
+        fromX: bossPoint.x,
+        fromY: bossPoint.y,
+        phaserRuntime,
+      });
+
+      this.emitVoidAcolyteAbilitySfx(plan.abilityId);
       this.showHitFeedback('player', {
         color: plan.abilityId === 'void_execution' ? 0xaa44ff : 0x66ccff,
         amount: result.damage,
@@ -1153,23 +1361,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           ? 'void gravity!'
           : 'void lash!';
       this.showPlayerCastHint(hint);
-      this.sessionTelemetry?.recordSentinelHit?.({
-        sentinelId: wardenId,
-        damage: result.damage,
-      });
-      this.events.emit('sentinel-ability', {
-        type: 'sentinel-ability',
-        sentinelId: wardenId,
-        abilityId: plan.abilityId,
-        damage: result.damage,
-        logLines: plan.logLines,
-      });
-      this.emitCombatStats();
-
-      const playerEntity = this.stats.getEntity('player');
-      if (playerEntity?.hp <= 0) {
-        this.events.emit('combat-defeat', { type: 'combat-defeat', text: 'The void claims you.' });
-      }
+      this.finishVoidAcolyteStrike(wardenId, plan, result);
     }
 
     performVoidAcolyteAttack(wardenId, delay = 0) {
@@ -1211,8 +1403,23 @@ export default function createCombatArenaScene(phaserRuntime) {
         stance: plan.stance,
       });
 
+      const abilityId = record._pendingAttackPlan?.abilityId;
+      if (isVoidAcolyteVoidSpell(abilityId) || isVoidAcolyteIceSpell(abilityId)) {
+        const audio = getGameAudioForgeService();
+        audio.prime();
+        if (isVoidAcolyteVoidSpell(abilityId)) {
+          emitVoidAcolyteSpellCast(audio, abilityId);
+        }
+      }
+      const wardenVisual = this.portalWardenEffect?.wardenVisual;
+      if (wardenVisual) {
+        playVoid1SpriteAnim(wardenVisual, pickVoid1StrikeAnim(abilityId));
+      }
+
       const launch = () => this.resolveVoidAcolyteStrike(wardenId);
-      if (delay > 0) this.time.delayedCall(delay, launch);
+      const strikeDelay = void1StrikeDelayMs(abilityId);
+      const totalDelay = Math.max(delay || 0, strikeDelay);
+      if (totalDelay > 0) this.time.delayedCall(totalDelay, launch);
       else launch();
     }
 
@@ -1340,6 +1547,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         tx: record.tx,
         ty: record.ty,
       });
+      this.spawnCombatLootChest(sentinelId, record.tx, record.ty);
 
       if (areAllSentinelsDefeated(this.getSentinelRecords())) {
         this.triggerPortalUnseal();
@@ -1576,9 +1784,121 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
     }
 
+    applyPlayerFlipX(flipX) {
+      const targets = [
+        this.playerImg,
+        ...Object.values(this.playerArmorLayers || {}),
+        ...Object.values(this.armSegments || {}),
+        ...Object.values(this.handPayloads || {}),
+      ].filter(Boolean);
+      targets.forEach((sprite) => sprite.setFlipX(flipX));
+    }
+
+    beginPlayerWalkMotion() {
+      const bobTargets = [
+        this.playerImg,
+        ...Object.values(this.playerArmorLayers || {}),
+      ].filter(Boolean);
+      if (!this.playerImg) return bobTargets;
+
+      this.playerImg.play('player-walk', true);
+      Object.values(this.playerArmorLayers || {}).forEach((layer) => {
+        if (layer?.visible && layer.texture?.key) {
+          const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+          const walkKey = `${baseAssetId}-walk`;
+          if (this.anims.exists(walkKey)) layer.play(walkKey, true);
+        }
+      });
+
+      if (this.idleTween) this.idleTween.pause();
+      bobTargets.forEach((sprite) => { sprite.y = 0; sprite.scaleY = 1; });
+      if (this.walkBob) this.walkBob.stop();
+      this.walkBob = this.tweens.add({
+        targets: bobTargets,
+        y: -2.5,
+        duration: 90,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+      return bobTargets;
+    }
+
+    endPlayerWalkMotion(bobTargets = []) {
+      if (this.walkBob) {
+        this.walkBob.stop();
+        this.walkBob = null;
+      }
+      bobTargets.forEach((sprite) => { sprite.y = 0; sprite.scaleY = 1; });
+      if (this.idleTween) this.idleTween.resume();
+      if (!this.playerImg) return;
+      this.playerImg.play('player-idle', true);
+      Object.values(this.playerArmorLayers || {}).forEach((layer) => {
+        if (layer?.visible && layer.texture?.key) {
+          layer.stop();
+          const baseAssetId = layer.texture.key.replace(/-f\d+$/, '');
+          const idleKey = `${baseAssetId}-f0`;
+          if (this.textures.exists(idleKey)) layer.setTexture(idleKey);
+        }
+      });
+    }
+
+    snapPlayerToGridTile(tx, ty, { animate = false, duration = 380 } = {}) {
+      if (!this.playerGridPos) return Promise.resolve(false);
+      const fromTx = this.playerGridPos.tx;
+      const faceRight = tx >= fromTx;
+      this.applyPlayerFlipX(!faceRight);
+
+      this.playerGridPos = { tx, ty };
+      this.stats?.setPosition('player', tx, ty);
+      this.refreshSortableEntityDepths();
+      const tile = this.getIsoTarget(tx, ty);
+      if (!this.playerContainer) {
+        this.emitCombatStats();
+        this.refreshMovementHighlights();
+        return Promise.resolve(true);
+      }
+      if (animate) {
+        const bobTargets = this.beginPlayerWalkMotion();
+        return new Promise((resolve) => {
+          this.tweens.add({
+            targets: this.playerContainer,
+            x: tile.x,
+            y: tile.y,
+            duration,
+            ease: 'Cubic.easeInOut',
+            onComplete: () => {
+              this.endPlayerWalkMotion(bobTargets);
+              this.emitCombatStats();
+              this.refreshMovementHighlights();
+              resolve(true);
+            },
+          });
+        });
+      }
+
+      this.playerContainer.setPosition(tile.x, tile.y);
+      this.emitCombatStats();
+      this.refreshMovementHighlights();
+      return Promise.resolve(true);
+    }
+
+    layoutPortalWardenDuel(duel = getPortalWardenDuelLayout()) {
+      if (duel.boss.tx !== duel.player.tx) {
+        const faceRight = duel.boss.tx > duel.player.tx;
+        this.applyPlayerFlipX(!faceRight);
+      }
+      this.disarmMovement();
+      this.isWalking = false;
+      this.tweens.killTweensOf(this.playerContainer);
+      return this.snapPlayerToGridTile(duel.player.tx, duel.player.ty, { animate: false });
+    }
+
     spawnPortalWarden() {
       if (this.portalPhase !== PORTAL_PHASE.BECKONING || this.portalWarden) return false;
-      const spawn = getVoidAcolyteSpawnTile();
+      const duel = getPortalWardenDuelLayout();
+      this.layoutPortalWardenDuel(duel);
+      const spawn = duel.boss;
       this.portalWarden = {
         id: PORTAL_WARDEN_ID,
         role: 'void-acolyte',
@@ -1608,28 +1928,63 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.drawPortalWardenVisual(spawn.tx, spawn.ty);
       this.rebuildBlockedTiles();
       this.ensureCombatBattleEngaged();
+      this.selectCombatTarget(PORTAL_WARDEN_ID);
       this.events.emit('portal-warden-spawn', {
         type: 'portal-warden-spawn',
-        text: 'A Void Acolyte steps through the seal.',
+        text: `${VOID_ACOLYTE_STAT_DEFAULTS.label} steps through the seal.`,
       });
       this.emitSceneContextState();
-      this.performVoidAcolyteAttack(PORTAL_WARDEN_ID, 0);
+      this.time.delayedCall(180, () => {
+        if (this.portalPhase === PORTAL_PHASE.ENGAGED && this.getPortalWardenRecord()) {
+          this.performVoidAcolyteAttack(PORTAL_WARDEN_ID, 0);
+        }
+      });
       return true;
     }
 
     drawPortalWardenVisual(tx, ty) {
+      if (this.portalWardenEffect?.container) {
+        this.portalWardenEffect.container.destroy();
+        this.portalWardenEffect = null;
+      }
+
       const tile = this.getIsoTarget(tx, ty);
-      const container = this.add.container(tile.x, tile.y).setDepth(62);
-      const body = this.add.graphics();
-      body.fillStyle(0x1a1030, 1);
-      body.fillEllipse(0, -18, 34, 48);
-      body.fillStyle(0x66ccff, 0.9);
-      body.fillCircle(0, -42, 8);
-      body.lineStyle(2, 0xaa66ff, 0.9);
-      body.lineBetween(-6, -30, 10, -8);
-      container.add(body);
-      if (container.postFX) container.postFX.addBloom(0x6644ff, 1, 1, 2, 1.2);
-      this.portalWardenEffect = { container, tx, ty };
+      const container = this.add.container(tile.x, tile.y);
+      const wardenVisual = createVoid1WardenSprite(this, phaserRuntime);
+      const playerTx = this.playerGridPos?.tx ?? getPortalWardenDuelLayout().player.tx;
+      const faceLeft = tx > playerTx;
+      wardenVisual.setFlip?.(faceLeft);
+      const parts = [
+        wardenVisual.shadow,
+        ...(wardenVisual.containerLayers || []),
+        wardenVisual.fallback,
+        wardenVisual.targetRing,
+      ].filter(Boolean);
+      container.add(parts);
+      container.setScale(0.25);
+      container.setAlpha(0);
+
+      this.tweens.add({
+        targets: container,
+        scaleX: 1,
+        scaleY: 1,
+        alpha: 1,
+        duration: 480,
+        ease: 'Back.easeOut',
+      });
+
+      this.portalWardenEffect = {
+        container,
+        wardenVisual,
+        sprite: wardenVisual.sprite,
+        fallback: wardenVisual.fallback,
+        targetRing: wardenVisual.targetRing,
+        shadow: wardenVisual.shadow,
+        tx,
+        ty,
+      };
+      this.refreshSortableEntityDepths();
+      this.showPlayerCastHint('Void1 emerges!');
     }
 
     getPortalWardenRecord() {
@@ -1640,11 +1995,15 @@ export default function createCombatArenaScene(phaserRuntime) {
       const record = this.getPortalWardenRecord();
       if (!record) return false;
       record.defeated = true;
-      if (this.portalWardenEffect?.container) {
+      const effect = this.portalWardenEffect;
+      if (effect?.wardenVisual?.body?.anims) effect.wardenVisual.body.anims.stop();
+      if (effect?.wardenVisual?.composite?.anims) effect.wardenVisual.composite.anims.stop();
+      if (effect?.sprite?.anims) effect.sprite.anims.stop();
+      if (effect?.container) {
         this.tweens.add({
-          targets: this.portalWardenEffect.container,
+          targets: effect.container,
           alpha: 0.15,
-          y: this.portalWardenEffect.container.y + 24,
+          y: effect.container.y + 24,
           duration: 700,
           ease: 'Quad.easeIn',
         });
@@ -1652,8 +2011,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.portalPhase = PORTAL_PHASE.CLEARED;
       this.rebuildBlockedTiles();
       this.emitSceneContextState();
+      this.spawnCombatLootChest(record.id, record.tx, record.ty);
       this.triggerCombatVictory({
-        text: 'The Void Acolyte falls. The dimensional seal collapses.',
+        text: `${VOID_ACOLYTE_STAT_DEFAULTS.label} falls. The dimensional seal collapses.`,
       });
       return true;
     }
@@ -1714,7 +2074,10 @@ export default function createCombatArenaScene(phaserRuntime) {
             metadata: {
               school: VOID_ACOLYTE_STAT_DEFAULTS.school,
               role: 'void-acolyte',
+              boss: VOID_ACOLYTE_STAT_DEFAULTS.label,
+              spriteAsset: VOID_ACOLYTE_STAT_DEFAULTS.spriteAsset,
               shortLabel: VOID_ACOLYTE_STAT_DEFAULTS.shortLabel,
+              subtitle: VOID1_BOSS_SUBTITLE,
               aggroed: true,
             },
           }] : []),
@@ -1798,6 +2161,10 @@ export default function createCombatArenaScene(phaserRuntime) {
           effect.targetRing = ring;
         }
         effect.targetRing.setVisible(selected);
+      }
+      if (this.portalWardenEffect?.targetRing) {
+        const selected = this.selectedCombatTargetId === PORTAL_WARDEN_ID;
+        this.portalWardenEffect.targetRing.setVisible(selected);
       }
     }
 
@@ -2158,6 +2525,161 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
     }
 
+    getCombatLootChestAt(tx, ty) {
+      if (!Array.isArray(this.combatLootChests)) return null;
+      return this.combatLootChests.find((entry) => entry.tx === tx && entry.ty === ty && !entry.opened) || null;
+    }
+
+    spawnCombatLootChest(enemyId, tx, ty) {
+      if (!Number.isFinite(tx) || !Number.isFinite(ty)) return null;
+      if (this.getCombatLootChestAt(tx, ty)) return null;
+
+      const plan = planCombatChestDrop(enemyId);
+      const tile = this.getIsoTarget?.(tx, ty);
+      if (!tile) return null;
+
+      const chestId = `chest-${enemyId}-${tx}-${ty}-${this.combatLootChests?.length || 0}`;
+      const floorY = tile.y;
+      const sprite = this.add.sprite(tile.x, floorY, plan.textureKey);
+      sprite.setOrigin(0.5, 1);
+      sprite.setScale(1.8 / LOOT_CHEST_PNG_SCALE);
+      sprite.setAlpha(0.35);
+
+      sprite.setInteractive(new phaserRuntime.Geom.Rectangle(-14, -18, 28, 24), phaserRuntime.Geom.Rectangle.Contains);
+      sprite.interactData = {
+        tx,
+        ty,
+        isGrid: true,
+        isLootChest: true,
+        chestId,
+        chestTier: plan.tier,
+        chestLabel: plan.label,
+      };
+      sprite.inspectData = sprite.interactData;
+
+      const record = {
+        id: chestId,
+        enemyId,
+        tx,
+        ty,
+        tier: plan.tier,
+        label: plan.label,
+        textureKey: plan.textureKey,
+        loot: plan.loot,
+        opened: false,
+        sprite,
+      };
+
+      if (!Array.isArray(this.combatLootChests)) this.combatLootChests = [];
+      this.combatLootChests.push(record);
+
+      sprite.on('pointerover', () => this.input.setDefaultCursor('pointer'));
+      sprite.on('pointerout', () => this.input.setDefaultCursor('default'));
+      sprite.on('pointerdown', (pointer) => {
+        if (pointer.button !== 0 || this.cutsceneInputLock) return;
+        this.openCombatLootChest(chestId);
+      });
+
+      this.tweens.add({
+        targets: sprite,
+        alpha: 1,
+        scaleX: 2.4 / LOOT_CHEST_PNG_SCALE,
+        scaleY: 2.4 / LOOT_CHEST_PNG_SCALE,
+        duration: 420,
+        ease: 'Back.easeOut',
+      });
+      this.tweens.add({
+        targets: sprite,
+        y: baseY - 4,
+        duration: 1200,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+
+      this.events.emit('combat-chest-spawn', {
+        type: 'combat-chest-spawn',
+        chestId,
+        enemyId,
+        tx,
+        ty,
+        tier: plan.tier,
+        label: plan.label,
+        hasLoot: Boolean(plan.loot),
+      });
+      this.refreshSortableEntityDepths();
+      return record;
+    }
+
+    openCombatLootChest(chestId) {
+      const chest = this.combatLootChests?.find((entry) => entry.id === chestId && !entry.opened);
+      if (!chest) return null;
+
+      chest.opened = true;
+      const finalizeOpen = () => this.finalizeCombatLootChestOpen(chest);
+
+      if (chest.sprite) {
+        const animKey = getLootChestOpenAnimKey(chest.tier);
+        if (this.anims.exists(animKey)) {
+          chest.sprite.play(animKey);
+          chest.sprite.once('animationcomplete', (animation) => {
+            if (animation.key !== animKey) return;
+            finalizeOpen();
+          });
+          return chest;
+        }
+        finalizeOpen();
+        return chest;
+      }
+
+      return finalizeOpen();
+    }
+
+    finalizeCombatLootChestOpen(chest) {
+      if (chest.sprite) {
+        this.tweens.add({
+          targets: chest.sprite,
+          alpha: 0,
+          scaleX: (2.4 / LOOT_CHEST_PNG_SCALE) * 1.08,
+          scaleY: (2.4 / LOOT_CHEST_PNG_SCALE) * 1.08,
+          y: chest.sprite.y - 8,
+          duration: 220,
+          onComplete: () => {
+            chest.sprite?.destroy();
+            chest.sprite = null;
+          },
+        });
+      }
+
+      if (!chest.loot) {
+        this.events.emit('combat-loot', {
+          type: 'combat-loot',
+          enemyId: chest.enemyId,
+          chestTier: chest.tier,
+          chestLabel: chest.label,
+          granted: false,
+          empty: true,
+          text: `${chest.label} — empty.`,
+        });
+        return { empty: true, chest };
+      }
+
+      const outcome = resolveCombatLootGrant(chest.loot, { hasItem, grantItem });
+      this.events.emit('combat-loot', {
+        type: 'combat-loot',
+        enemyId: outcome.enemyId,
+        itemId: outcome.itemId,
+        itemName: outcome.itemName,
+        chestTier: chest.tier,
+        chestLabel: chest.label,
+        duplicate: Boolean(outcome.duplicate),
+        inventoryFull: Boolean(outcome.inventoryFull),
+        granted: Boolean(outcome.granted),
+        text: outcome.text,
+      });
+      return outcome;
+    }
+
     tryLootStormheartOrb() {
       if (this.obeliskState !== 'lowered') return false;
       if (this.hasStormheartOrb()) {
@@ -2251,15 +2773,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.syncEquippedGatherTools(equipment);
 
         if (this.stats) {
-        const modifiers = Object.values(equipment).reduce((acc, item) => {
-          const itemModifiers = item?.combatModifiers;
-          if (!itemModifiers) return acc;
-          return {
-            movementPoints: (acc.movementPoints || 0) + (Number(itemModifiers.movementPoints) || 0),
-            attackPoints: (acc.attackPoints || 0) + (Number(itemModifiers.attackPoints) || 0),
-            attackRange: (acc.attackRange || 0) + (Number(itemModifiers.attackRange) || 0),
-          };
-        }, {});
+        const modifiers = aggregateEquipmentBonuses(equipment);
         this.stats.applyEquipmentModifiers('player', modifiers);
         this.emitCombatStats();
       }
@@ -2501,6 +3015,15 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
       }
 
+      if (isPortalWardenId(targetId) && this.portalWardenEffect?.container) {
+        return {
+          container: this.portalWardenEffect.container,
+          sprite: this.portalWardenEffect.sprite || this.portalWardenEffect.container,
+          anchorX: this.portalWardenEffect.container.x,
+          anchorY: this.portalWardenEffect.container.y,
+        };
+      }
+
       if (targetId === 'obelisk' && this.obeliskBody) {
         return {
           sprite: this.obeliskBody,
@@ -2618,16 +3141,21 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
       window.dispatchEvent(new CustomEvent('combat-stats-changed', {
         detail: {
+          hp: p.hp,
+          maxHp: p.maxHp,
           movementPointsRemaining: p.movementPointsRemaining,
           movementPoints: p.movementPoints,
           attackPoints: p.attackPoints,
           attackPointsRemaining: p.attackPointsRemaining,
           attackRange: p.attackRange,
           attackUsed: p.attackUsed,
+          spellweaveUsed: p.spellweaveUsed,
           manaPoints: p.manaPoints,
           manaPointsRemaining: p.manaPointsRemaining,
           manaUsed: p.manaUsed,
-          scholomance: p.scholomance ? { ...p.scholomance } : null,
+          scholomance: getEffectiveScholomance(p),
+          icicleSlamCooldown: p.icicleSlamCooldown ?? 0,
+          grantedAbilities: Array.isArray(p.grantedAbilities) ? [...p.grantedAbilities] : [],
         },
       }));
       this.refreshMovementHighlights();
@@ -2665,6 +3193,70 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       return { sceneContext, weave, resolvedTargets };
     }
+
+    performIcicleSlam = async () => {
+      if (!this.stats || !this.combatBattleEngaged) return;
+
+      const targetId = this.selectedCombatTargetId
+        || this.buildSceneTargetRegistry().targets.find((entry) => (
+          entry.kind === 'combatant' && entry.inRange && this.isCombatantAlive(entry.id)
+        ))?.id;
+
+      if (!targetId) {
+        this.showFizzle();
+        return;
+      }
+
+      const result = resolvePlayerIcicleSlam(this.stats, 'player', targetId);
+      if (!result) {
+        this.showFizzle();
+        return;
+      }
+
+      const presentation = this.getTargetPresentation(targetId);
+      const entity = this.stats.getEntity(targetId);
+      const tile = entity ? this.getIsoTarget?.(entity.position.tx, entity.position.ty) : null;
+      const targetX = presentation?.anchorX ?? tile?.x ?? 0;
+      const targetY = presentation?.anchorY ?? tile?.y ?? 0;
+
+      this.showPlayerCastHint('icicle slam!');
+      const iceImpact = getGameIceSpellImpactService();
+      iceImpact.prime();
+      iceImpact.setEnabled(true);
+
+      playIcicleBlastVfx(this, {
+        targetX,
+        targetY,
+        hitCount: result.hitCount,
+        phaserRuntime,
+        onHit: (index) => {
+          const hit = applyPlayerIcicleSlamHit(this.stats, targetId, result.damagePerHit);
+          if (!hit) return;
+          void iceImpact.playImpact?.();
+          this.showHitFeedback(targetId, {
+            color: 0x66ccff,
+            amount: hit.damage,
+            delay: 0,
+          });
+          if (index === 0) {
+            this.sessionTelemetry?.recordPlayerAttack?.({
+              damage: result.totalDamage,
+              targetId,
+              elemental: true,
+              abilityId: result.abilityId,
+            });
+          }
+          this.emitCombatStats();
+          const targetEntity = this.stats.getEntity(targetId);
+          if (targetEntity && isSentinelId(targetId) && targetEntity.hp <= 0) {
+            this.defeatSentinel(targetId);
+          }
+          if (targetEntity && isPortalWardenId(targetId) && targetEntity.hp <= 0) {
+            this.defeatPortalWarden();
+          }
+        },
+      });
+    };
 
     performBasicAttack = async () => {
       if (!this.stats || !this.combatBattleEngaged) return;
@@ -2876,7 +3468,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (!this.stats.canCastSpell('player', targetId)) {
         this.showFizzle();
         const player = this.stats.getEntity('player');
-        const reason = (player?.manaPointsRemaining ?? 0) < SPELL_CAST_MANA_COST ? 'no_mana' : 'out_of_range';
+        let reason = 'out_of_range';
+        if (player?.spellweaveUsed) reason = 'already_invoked';
+        else if ((player?.attackPointsRemaining ?? 0) < SPELL_CAST_AP_COST) reason = 'no_ap';
         window.dispatchEvent(new CustomEvent('combat-spell-fizzle', {
           detail: { reason, weave, targetId },
         }));
@@ -3096,6 +3690,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       const fireball = getGameFireballImpactService();
       fireball.prime();
       fireball.setEnabled(true);
+
+      const iceImpact = getGameIceSpellImpactService();
+      iceImpact.prime();
+      iceImpact.setEnabled(true);
     }
 
     emitSwordSliceSfx() {
@@ -3226,6 +3824,12 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
 
         if (enriched.isObelisk && this.tryLootStormheartOrb()) {
+          return;
+        }
+
+        const lootChest = this.getCombatLootChestAt(enriched.tx, enriched.ty);
+        if (lootChest) {
+          this.openCombatLootChest(lootChest.id);
           return;
         }
 
@@ -3425,6 +4029,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       return new Promise((resolve) => {
         this.playerGridPos.tx = tx;
         this.playerGridPos.ty = ty;
+        this.refreshSortableEntityDepths();
 
         const firstStep = this.footstepIndex;
         this.footstepIndex += 1;
@@ -5145,8 +5750,6 @@ export default function createCombatArenaScene(phaserRuntime) {
         gridTy: sentinelDef?.ty ?? null,
       });
 
-      bobContainer.setDepth(ARENA_DEPTH.TORCH);
-
       // 4. Gyroscopic Containment Rings (Armillary Matrix)
       const ring1 = this.add.graphics();
       ring1.setBlendMode(phaserRuntime.BlendModes.ADD);
@@ -5154,7 +5757,6 @@ export default function createCombatArenaScene(phaserRuntime) {
       ring1.strokeEllipse(0, 0, 45, 15);
       ring1.setPosition(0, -20);
       ring1.rotation = 0.3;
-      ring1.setDepth(31);
 
       const ring2 = this.add.graphics();
       ring2.setBlendMode(phaserRuntime.BlendModes.ADD);
@@ -5162,10 +5764,8 @@ export default function createCombatArenaScene(phaserRuntime) {
       ring2.strokeEllipse(0, 0, 55, 12);
       ring2.setPosition(0, -25);
       ring2.rotation = -0.4;
-      ring2.setDepth(31);
       
       bobContainer.add([ring1, ring2]);
-      bobContainer.setDepth(ARENA_DEPTH.TORCH);
 
       const torchEntry = this.torchEffects[this.torchEffects.length - 1];
       torchEntry.ring1 = ring1;

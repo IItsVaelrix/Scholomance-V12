@@ -34,6 +34,7 @@ import DiscoveryFlash from '../../ui/combat/DiscoveryFlash.jsx';
 import CombatResultsOverlay from '../../ui/combat/CombatResultsOverlay.jsx';
 import CombatBeastiaryOverlay from '../../ui/combat/CombatBeastiaryOverlay.jsx';
 import SpellweaveCompendiumOverlay from '../../ui/combat/SpellweaveCompendiumOverlay.jsx';
+import CombatResourceBars from '../../ui/combat/CombatResourceBars.jsx';
 import CombatMatrixIntro from '../../ui/combat/CombatMatrixIntro.jsx';
 import {
   buildBestiaryContextFromScene,
@@ -48,7 +49,8 @@ import {
   resetCombatBattleEngagement,
 } from '../../game/combat/combatBattleIntro.js';
 import { getGameVictoryService } from '../../lib/audio/gameVictory.service.js';
-import { hasManaForSpell, SPELL_CAST_MANA_COST } from '../../game/combat/combatMana.js';
+import { hasApForSpellweaveInvoke, SPELL_CAST_AP_COST } from '../../game/combat/combatMana.js';
+import { ICICLE_SLAM_AP_COST } from '../../game/combat/iceSlimeStaffAbilities.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 
 const WEAVE_FILLER_TOKENS = new Set([
@@ -277,14 +279,27 @@ export default function CombatPage() {
     () => buildWeaveFeedback(weave, sceneContext),
     [weave, sceneContext],
   );
-  const hasSpellMana = combatStats == null
+  const hasInvokeAp = combatStats == null
     ? true
-    : hasManaForSpell(combatStats.manaPointsRemaining);
+    : hasApForSpellweaveInvoke(combatStats.attackPointsRemaining);
   const canInvoke = Boolean(
     verse.trim()
     && weave.trim()
     && weaveFeedback.status !== 'RED'
-    && hasSpellMana,
+    && hasInvokeAp
+    && !combatStats?.spellweaveUsed,
+  );
+  const hasIcicleSlam = combatStats?.grantedAbilities?.includes('icicle_slam');
+  const canIcicleSlam = Boolean(
+    battleStarted
+    && !combatResults
+    && hasIcicleSlam
+    && (combatStats?.icicleSlamCooldown ?? 0) === 0
+    && (combatStats?.attackPointsRemaining ?? 0) >= ICICLE_SLAM_AP_COST
+    && (
+      selectedCombatTarget?.targetId
+      || sceneContext?.targets?.some((entry) => entry.kind === 'combatant' && entry.inRange)
+    ),
   );
 
   useEffect(() => {
@@ -359,14 +374,16 @@ export default function CombatPage() {
     const onSpellFizzle = (e) => {
       const reason = e?.detail?.reason;
       const ts = new Date().toISOString().split('T')[1].slice(0, 8);
-      const message = reason === 'no_mana'
-        ? 'Not enough Mana to Invoke.'
-        : reason === 'out_of_range'
-          ? 'Target is out of spell range.'
-          : reason === 'syntactic_collapse'
-            ? 'The weave collapsed before it could land.'
-            : 'The spell fizzled.';
-      setTerminalLogs((prev) => [...prev, { type: 'error', text: `[MANA] ${message}`, ts }]);
+      const message = reason === 'no_ap'
+        ? `Not enough AP to Invoke (costs ${SPELL_CAST_AP_COST}).`
+        : reason === 'already_invoked'
+          ? 'You already Invoked spellweave this turn.'
+          : reason === 'out_of_range'
+            ? 'Target is out of spell range.'
+            : reason === 'syntactic_collapse'
+              ? 'The weave collapsed before it could land.'
+              : 'The spell fizzled.';
+      setTerminalLogs((prev) => [...prev, { type: 'error', text: `[INVOKE] ${message}`, ts }]);
     };
     window.addEventListener('combat-spell-fizzle', onSpellFizzle);
     return () => window.removeEventListener('combat-spell-fizzle', onSpellFizzle);
@@ -431,34 +448,6 @@ export default function CombatPage() {
     window.addEventListener('mousedown', handleGlobalClick);
     return () => window.removeEventListener('mousedown', handleGlobalClick);
   }, []);
-
-  // Dragging state
-  const [pos, setPos] = useState({ x: 0, y: 0 });
-  const isDragging = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-
-  const handlePointerDown = (e) => {
-    // Only drag if clicking on the header background, not buttons
-    if (e.target.tagName.toLowerCase() === 'button' || e.target.closest('button')) return;
-    
-    isDragging.current = true;
-    dragStart.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
-    e.target.setPointerCapture(e.pointerId);
-  };
-
-  const handlePointerMove = (e) => {
-    if (!isDragging.current) return;
-    setPos({
-      x: e.clientX - dragStart.current.x,
-      y: e.clientY - dragStart.current.y
-    });
-  };
-
-  const handlePointerUp = (e) => {
-    if (!isDragging.current) return;
-    isDragging.current = false;
-    e.target.releasePointerCapture(e.pointerId);
-  };
 
   useEffect(() => {
     if (terminalRef.current) {
@@ -563,7 +552,7 @@ export default function CombatPage() {
         const intentStr = result.intent.bridgeIntent || result.intent.speechAct || 'UNKNOWN';
         newLogs.push({
           type: 'success',
-          text: `Intent: ${intentStr} | Damage: ${result.damage} | School: ${result.school} | Mana: ${SPELL_CAST_MANA_COST}`,
+          text: `Intent: ${intentStr} | Damage: ${result.damage} | School: ${result.school} | AP: ${SPELL_CAST_AP_COST}`,
           ts,
         });
         if (result.commentary) {
@@ -754,6 +743,42 @@ export default function CombatPage() {
       });
       return;
     }
+
+    if (action.type === 'combat-chest-spawn') {
+      setTerminalLogs(prev => [
+        ...prev,
+        {
+          type: 'info',
+          text: `[CHEST] ${action.label} materializes at (${action.tx}, ${action.ty}).`,
+          ts,
+        },
+      ]);
+      return;
+    }
+
+    if (action.type === 'combat-loot') {
+      const logType = action.duplicate || action.inventoryFull || action.empty ? 'info' : 'success';
+      setTerminalLogs(prev => [
+        ...prev,
+        {
+          type: logType,
+          text: `[LOOT] ${action.text}`,
+          ts,
+        },
+      ]);
+      if (action.granted || action.duplicate || action.empty) {
+        setTooltip({
+          x: window.innerWidth / 2,
+          y: window.innerHeight / 2,
+          title: action.chestLabel || (action.duplicate ? 'Already Claimed' : (action.itemName || 'Loot Chest')),
+          details: [
+            action.text,
+            action.itemId,
+          ].filter(Boolean),
+        });
+      }
+      return;
+    }
     
     const title = action.title || 'Combat Grid';
     const details = Array.isArray(action.details) ? [...action.details] : [];
@@ -858,58 +883,57 @@ export default function CombatPage() {
         </div>
       )}
       
-      {/* Combat Stat Tree — Slice 1 readout */}
-      {battleStarted && !combatResults && combatStats && (
-        <div className="combat-stat-card">
-          <div className="combat-stat-card__target" aria-live="polite">
-            <span className="combat-stat-card__target-label">Target</span>
-            <b className="combat-stat-card__target-value">
-              {selectedCombatTarget?.shortLabel
-                || selectedCombatTarget?.label
-                || (selectedCombatTarget?.targetId
-                  ? findSceneTargetLabel(sceneContext, selectedCombatTarget.targetId)
-                  : null)
-                || 'Tab / right-click enemy'}
-            </b>
+      <div className="combat-hud-stack" aria-label="Combat interface">
+        {/* Combat Stat Tree — centered top rail */}
+        {battleStarted && !combatResults && combatStats && (
+          <div className="combat-stat-card">
+            <div className="combat-stat-card__target" aria-live="polite">
+              <span className="combat-stat-card__target-label">Target</span>
+              <b className="combat-stat-card__target-value">
+                {selectedCombatTarget?.shortLabel
+                  || selectedCombatTarget?.label
+                  || (selectedCombatTarget?.targetId
+                    ? findSceneTargetLabel(sceneContext, selectedCombatTarget.targetId)
+                    : null)
+                  || 'Tab / right-click enemy'}
+              </b>
+            </div>
+            <CombatResourceBars stats={combatStats} />
+            <div className="combat-stat-card__actions">
+              <button
+                className="combat-action-btn combat-action-btn--attack"
+                onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
+                disabled={combatStats.attackUsed}
+              >
+                Attack (F)
+              </button>
+              {hasIcicleSlam && (
+                <button
+                  className="combat-action-btn combat-action-btn--icicle"
+                  onClick={() => window.dispatchEvent(new CustomEvent('combat-icicle-slam'))}
+                  disabled={!canIcicleSlam}
+                  title={canIcicleSlam
+                    ? `Icicle Slam (${ICICLE_SLAM_AP_COST} AP, 3 hits)`
+                    : (combatStats?.icicleSlamCooldown ?? 0) > 0
+                      ? `Icicle Slam cooling down (${combatStats.icicleSlamCooldown} turns)`
+                      : `Need ${ICICLE_SLAM_AP_COST} AP and a distant target`}
+                >
+                  Icicle Slam
+                </button>
+              )}
+              <button
+                className="combat-action-btn combat-action-btn--turn"
+                onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
+              >
+                End Turn (Space)
+              </button>
+            </div>
           </div>
-          <div className="combat-stat-card__row">
-            <span>MP <b className="combat-stat-card__value combat-stat-card__value--cyan">{combatStats.movementPointsRemaining}</b>/{combatStats.movementPoints}</span>
-            <span>Mana <b className="combat-stat-card__value combat-stat-card__value--violet">{combatStats.manaPointsRemaining ?? combatStats.manaPoints}</b>/{combatStats.manaPoints}</span>
-            <span>AP <b className="combat-stat-card__value combat-stat-card__value--gold">{combatStats.attackPointsRemaining ?? combatStats.attackPoints}</b>/{combatStats.attackPoints}</span>
-            <span>RNG <b className="combat-stat-card__value combat-stat-card__value--green">{combatStats.attackRange}</b></span>
-          </div>
-          <div className="combat-stat-card__actions">
-            <button
-              className="combat-action-btn combat-action-btn--attack"
-              onClick={() => window.dispatchEvent(new CustomEvent('combat-attack'))}
-              disabled={combatStats.attackUsed}
-            >
-              Attack (F)
-            </button>
-            <button
-              className="combat-action-btn combat-action-btn--turn"
-              onClick={() => window.dispatchEvent(new CustomEvent('combat-endturn'))}
-            >
-              End Turn (Space)
-            </button>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* DivWand HUD Overlay */}
-      <div
-        className="dw-container combat-hud"
-        style={{
-          transform: `translate(calc(-50% + ${pos.x}px), ${pos.y}px)`,
-        }}
-      >
-        <header 
-          className="dw-header combat-hud__header" 
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-        >
+        {/* DivWand HUD — centered bottom dock */}
+        <div className="dw-container combat-hud">
+        <header className="dw-header combat-hud__header">
           <div className="dw-header-title">
             <Sparkles className="dw-header-icon" size={16} aria-hidden="true" />
             <h1 className="dw-header-h1">Combat Spellweave</h1>
@@ -928,9 +952,11 @@ export default function CombatPage() {
               className="dw-btn dw-btn--primary"
               onClick={handleCast}
               disabled={!canInvoke}
-              title={hasSpellMana
-                ? 'Invoke Spellweave (10 Mana) — engages battle if needed'
-                : 'Not enough Mana'}
+              title={canInvoke
+                ? `Invoke Spellweave (${SPELL_CAST_AP_COST} AP, once per turn) — engages battle if needed`
+                : combatStats?.spellweaveUsed
+                  ? 'Already Invoked this turn'
+                  : `Need ${SPELL_CAST_AP_COST} AP to Invoke`}
               aria-label="Cast this spell"
             >
               <Zap size={13} aria-hidden="true" />
@@ -1053,6 +1079,7 @@ export default function CombatPage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
       </div>
     </div>
