@@ -32,7 +32,6 @@ import {
 import {
   areAllSentinelsDefeated,
   buildSentinelBlockedTiles,
-  areAllSentinelsDefeated,
   buildSentinelSceneTargets,
   getAggroableSentinels,
   getSentinelAtTile as findSentinelAtTile,
@@ -43,6 +42,23 @@ import {
   getSentinelCombatOverrides,
   SENTINEL_STAT_DEFAULTS,
 } from '../game/combat/sentinelRobots.js';
+import { applyIceBiome, resolveVoxelPaletteBand } from '../game/combat/arenaBiomeTransform.js';
+import {
+  PORTAL_PHASE,
+  PORTAL_TILE,
+  PORTAL_WARDEN_ID,
+} from '../game/combat/portalPhase.js';
+import {
+  createVoidAcolyteAbilityState,
+  planVoidAcolyteAttack,
+  resolveVoidAcolyteAbility,
+  tickVoidAcolyteAbilityState,
+} from '../game/combat/voidAcolyteCombatAbilities.js';
+import {
+  getVoidAcolyteSpawnTile,
+  isPortalWardenId,
+  VOID_ACOLYTE_STAT_DEFAULTS,
+} from '../game/combat/voidAcolyteRobots.js';
 import { createCombatSessionTelemetry } from '../game/combat/combatSessionTelemetry.js';
 import {
   COMBAT_BATTLE_ENDED_EVENT,
@@ -299,7 +315,11 @@ export default function createCombatArenaScene(phaserRuntime) {
       const terrainRadius = 14; 
       const terrainSize = terrainRadius * 2 + 1;
       const heightmap = this.runGeologicVM(terrainSize, terrainRadius);
-      
+
+      this.arenaBiome = 'void';
+      this.portalPhase = PORTAL_PHASE.DORMANT;
+      this.portalWarden = null;
+      this.portalWardenEffect = null;
       this.drawVoxelTerrain(heightmap, terrainSize, terrainRadius);
 
       // Sporadic ice smoke — one shared emitter, single particle per burst,
@@ -330,6 +350,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           emitZone: { type: 'random', source: peakZone },
         });
         iceSmokeEmitter.setDepth(40); // Ice vapor drifts in front of the arena geometry, like the snow
+        this.iceSmokeEmitter = iceSmokeEmitter;
       }
 
       // Draw the crisp combat grid on top
@@ -714,6 +735,11 @@ export default function createCombatArenaScene(phaserRuntime) {
         return;
       }
 
+      if (primaryId === 'combat-portal') {
+        this.tryEnterPortal();
+        return;
+      }
+
       void this.performSpellCast({
         castDetail: detail,
         sceneContext,
@@ -784,9 +810,10 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     rebuildBlockedTiles() {
-      this._blockedTiles = buildBlockedSet(
-        buildSentinelBlockedTiles(this.getSentinelRecords(), [...DEFAULT_BLOCKED_TILES]),
-      );
+      const tiles = buildSentinelBlockedTiles(this.getSentinelRecords(), [...DEFAULT_BLOCKED_TILES]);
+      const warden = this.getPortalWardenRecord();
+      if (warden) tiles.push({ tx: warden.tx, ty: warden.ty });
+      this._blockedTiles = buildBlockedSet(tiles);
     }
 
     getSentinelTorchEffect(sentinelId) {
@@ -1042,6 +1069,158 @@ export default function createCombatArenaScene(phaserRuntime) {
       else launch();
     }
 
+    applyVoidAcolyteRepositionSteps(wardenId, steps = []) {
+      if (!steps.length) return;
+      const record = this.getPortalWardenRecord();
+      if (!record || record.id !== wardenId || !this.stats) return;
+
+      const finalStep = steps[steps.length - 1];
+      record.tx = finalStep.tx;
+      record.ty = finalStep.ty;
+      this.stats.setPosition(wardenId, finalStep.tx, finalStep.ty);
+      for (let i = 0; i < steps.length; i += 1) {
+        this.stats.spendMove(wardenId);
+      }
+
+      if (this.portalWardenEffect?.container) {
+        const tile = this.getIsoTarget(finalStep.tx, finalStep.ty);
+        this.tweens.add({
+          targets: this.portalWardenEffect.container,
+          x: tile.x,
+          y: tile.y,
+          duration: 180 + steps.length * 40,
+          ease: 'Sine.easeInOut',
+        });
+      }
+
+      this.rebuildBlockedTiles();
+      this.emitSceneContextState();
+    }
+
+    resolveVoidAcolyteStrike(wardenId) {
+      const record = this.getPortalWardenRecord();
+      if (!record || !this.stats) return;
+
+      const plan = record._pendingAttackPlan || planVoidAcolyteAttack({
+        record,
+        stats: this.stats,
+      });
+      record._pendingAttackPlan = null;
+
+      const result = resolveVoidAcolyteAbility(
+        this.stats,
+        wardenId,
+        'player',
+        plan,
+        this.getBlockedTiles?.() || this._blockedTiles,
+      );
+
+      if (!result?.hit) {
+        this.events.emit('sentinel-ability', {
+          type: 'sentinel-ability',
+          sentinelId: wardenId,
+          abilityId: plan.abilityId,
+          missed: true,
+          logLines: [`[VOID] ${record.shortLabel} attack missed.`],
+        });
+        this.emitCombatStats();
+        return;
+      }
+
+      if (result.pulled) {
+        this.playerGridPos = { tx: result.pulled.tx, ty: result.pulled.ty };
+        const tile = this.getIsoTarget(result.pulled.tx, result.pulled.ty);
+        if (this.playerContainer) {
+          this.tweens.add({
+            targets: this.playerContainer,
+            x: tile.x,
+            y: tile.y,
+            duration: 280,
+            ease: 'Cubic.easeIn',
+          });
+        }
+      }
+
+      this.showHitFeedback('player', {
+        color: plan.abilityId === 'void_execution' ? 0xaa44ff : 0x66ccff,
+        amount: result.damage,
+        delay: 0,
+      });
+      const hint = plan.abilityId === 'void_execution'
+        ? 'execution!'
+        : plan.abilityId === 'void_gravity'
+          ? 'void gravity!'
+          : 'void lash!';
+      this.showPlayerCastHint(hint);
+      this.sessionTelemetry?.recordSentinelHit?.({
+        sentinelId: wardenId,
+        damage: result.damage,
+      });
+      this.events.emit('sentinel-ability', {
+        type: 'sentinel-ability',
+        sentinelId: wardenId,
+        abilityId: plan.abilityId,
+        damage: result.damage,
+        logLines: plan.logLines,
+      });
+      this.emitCombatStats();
+
+      const playerEntity = this.stats.getEntity('player');
+      if (playerEntity?.hp <= 0) {
+        this.events.emit('combat-defeat', { type: 'combat-defeat', text: 'The void claims you.' });
+      }
+    }
+
+    performVoidAcolyteAttack(wardenId, delay = 0) {
+      const record = this.getPortalWardenRecord();
+      if (!record?.aggroed || record.defeated || !this.stats) return;
+
+      const plan = driveEnemyTurn({
+        entityId: wardenId,
+        record,
+        stats: this.stats,
+        allies: [],
+        targetId: 'player',
+        blocked: this.getBlockedTiles?.() || this._blockedTiles,
+        rng: Math.random,
+      });
+      if (!plan) return;
+
+      if (plan.reasons?.length) {
+        this.events.emit('sentinel-ability', {
+          type: 'sentinel-ability',
+          sentinelId: wardenId,
+          logLines: plan.reasons,
+        });
+      }
+
+      if (plan.movement?.steps?.length) {
+        this.applyVoidAcolyteRepositionSteps(wardenId, plan.movement.steps);
+      }
+
+      if (plan.action?.kind === 'guard') {
+        this.stats.setGuarding(wardenId, true);
+        return;
+      }
+      if (plan.action?.kind !== 'attack') return;
+
+      record._pendingAttackPlan = planVoidAcolyteAttack({
+        record,
+        stats: this.stats,
+        stance: plan.stance,
+      });
+
+      const launch = () => this.resolveVoidAcolyteStrike(wardenId);
+      if (delay > 0) this.time.delayedCall(delay, launch);
+      else launch();
+    }
+
+    runPortalWardenRetaliation() {
+      const record = this.getPortalWardenRecord();
+      if (!record?.aggroed) return;
+      this.performVoidAcolyteAttack(record.id, 0);
+    }
+
     runSentinelRetaliation({ onlyNewlyAggroed = false } = {}) {
       const attackers = this.getSentinelRecords().filter((entry) => (
         !entry.defeated
@@ -1085,7 +1264,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       return newlyAggroed.length > 0;
     }
 
-    triggerCombatVictory() {
+    triggerCombatVictory({ text = 'The flank sentinels are down. Victory!' } = {}) {
       if (this.combatVictoryAchieved) return false;
       this.combatVictoryAchieved = true;
 
@@ -1099,11 +1278,12 @@ export default function createCombatArenaScene(phaserRuntime) {
       const report = this.sessionTelemetry?.buildReport({
         playerEntity,
         sentinelTotal: this.getSentinelRecords().length,
+        portalWardenDefeated: this.portalPhase === PORTAL_PHASE.CLEARED,
       }) || null;
 
       this.events.emit('combat-victory', {
         type: 'combat-victory',
-        text: 'The flank sentinels are down. Victory!',
+        text,
         report,
       });
       return true;
@@ -1161,9 +1341,185 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
 
       if (areAllSentinelsDefeated(this.getSentinelRecords())) {
-        this.triggerCombatVictory();
+        this.triggerPortalUnseal();
       }
       return true;
+    }
+
+    triggerPortalUnseal() {
+      if (this.portalPhase !== PORTAL_PHASE.DORMANT) return false;
+      this.portalPhase = PORTAL_PHASE.UNSEALING;
+      this.playPortalIceCutscene(() => {
+        applyIceBiome(this);
+        this.portalPhase = PORTAL_PHASE.BECKONING;
+        this.events.emit('portal-unsealed', {
+          type: 'portal-unsealed',
+          text: 'The ward unseals. The island freezes.',
+        });
+        this.emitSceneContextState();
+      });
+      return true;
+    }
+
+    playPortalIceCutscene(onComplete) {
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+      const overlay = this.add.container(0, 0).setDepth(200).setScrollFactor(0);
+      const starfield = this.add.graphics();
+      starfield.fillStyle(0x02040a, 0.82);
+      starfield.fillRect(-2000, -2000, 4000, 4000);
+      overlay.add(starfield);
+
+      const beam = this.add.graphics();
+      beam.setBlendMode(phaserRuntime.BlendModes.ADD);
+      overlay.add(beam);
+
+      const flash = this.add.graphics();
+      flash.setAlpha(0);
+      overlay.add(flash);
+
+      const drawBeam = (progress) => {
+        beam.clear();
+        const topY = -900 + progress * 700;
+        beam.fillStyle(0xa8d8ff, 0.15);
+        beam.fillTriangle(-40, topY, 40, topY, 0, 420);
+        beam.fillStyle(0xe8f4ff, 0.55);
+        beam.fillTriangle(-12, topY + 40, 12, topY + 40, 0, 420);
+      };
+
+      const duration = reduced ? 800 : 3200;
+      let elapsed = 0;
+      const tick = this.time.addEvent({
+        delay: 16,
+        loop: true,
+        callback: () => {
+          elapsed += 16;
+          const p = Math.min(1, elapsed / duration);
+          drawBeam(p);
+          if (p > 0.72) {
+            flash.clear();
+            flash.fillStyle(0xd8eeff, 0.35 * (p - 0.72) / 0.28);
+            flash.fillRect(-2000, -2000, 4000, 4000);
+          }
+          if (p >= 1) {
+            tick.remove(false);
+            this.tweens.add({
+              targets: overlay,
+              alpha: 0,
+              duration: reduced ? 180 : 420,
+              onComplete: () => {
+                overlay.destroy();
+                onComplete?.();
+              },
+            });
+          }
+        },
+      });
+
+      if (!reduced) {
+        this.cameras.main.shake(420, 0.004);
+      }
+    }
+
+    isPortalBeckoning() {
+      return this.portalPhase === PORTAL_PHASE.BECKONING;
+    }
+
+    isPlayerAdjacentToPortal() {
+      return this.isPlayerAdjacentToTile(PORTAL_TILE.tx, PORTAL_TILE.ty);
+    }
+
+    tryEnterPortal() {
+      if (!this.isPortalBeckoning() || !this.isPlayerAdjacentToPortal()) {
+        this.showPlayerCastHint('portal sealed');
+        return false;
+      }
+      return this.spawnPortalWarden();
+    }
+
+    spawnPortalWarden() {
+      if (this.portalPhase !== PORTAL_PHASE.BECKONING || this.portalWarden) return false;
+      const spawn = getVoidAcolyteSpawnTile();
+      this.portalWarden = {
+        id: PORTAL_WARDEN_ID,
+        role: 'void-acolyte',
+        label: VOID_ACOLYTE_STAT_DEFAULTS.label,
+        shortLabel: VOID_ACOLYTE_STAT_DEFAULTS.shortLabel,
+        tx: spawn.tx,
+        ty: spawn.ty,
+        defeated: false,
+        aggroed: true,
+        abilities: createVoidAcolyteAbilityState(),
+      };
+      this.portalPhase = PORTAL_PHASE.ENGAGED;
+      this.stats.registerEntity(PORTAL_WARDEN_ID, {
+        hp: VOID_ACOLYTE_STAT_DEFAULTS.hp,
+        maxHp: VOID_ACOLYTE_STAT_DEFAULTS.maxHp,
+        tx: spawn.tx,
+        ty: spawn.ty,
+        overrides: {
+          intelligence: VOID_ACOLYTE_STAT_DEFAULTS.intelligence,
+          movementPoints: VOID_ACOLYTE_STAT_DEFAULTS.movementPoints,
+          attackRange: VOID_ACOLYTE_STAT_DEFAULTS.attackRange,
+          attackPoints: 11,
+        },
+        scholomanceOverrides: VOID_ACOLYTE_STAT_DEFAULTS.scholomanceOverrides,
+      });
+      this.drawPortalWardenVisual(spawn.tx, spawn.ty);
+      this.rebuildBlockedTiles();
+      this.ensureCombatBattleEngaged();
+      this.events.emit('portal-warden-spawn', {
+        type: 'portal-warden-spawn',
+        text: 'A Void Acolyte steps through the seal.',
+      });
+      this.emitSceneContextState();
+      this.performVoidAcolyteAttack(PORTAL_WARDEN_ID, 0);
+      return true;
+    }
+
+    drawPortalWardenVisual(tx, ty) {
+      const tile = this.getIsoTarget(tx, ty);
+      const container = this.add.container(tile.x, tile.y).setDepth(62);
+      const body = this.add.graphics();
+      body.fillStyle(0x1a1030, 1);
+      body.fillEllipse(0, -18, 34, 48);
+      body.fillStyle(0x66ccff, 0.9);
+      body.fillCircle(0, -42, 8);
+      body.lineStyle(2, 0xaa66ff, 0.9);
+      body.lineBetween(-6, -30, 10, -8);
+      container.add(body);
+      if (container.postFX) container.postFX.addBloom(0x6644ff, 1, 1, 2, 1.2);
+      this.portalWardenEffect = { container, tx, ty };
+    }
+
+    getPortalWardenRecord() {
+      return this.portalWarden && !this.portalWarden.defeated ? this.portalWarden : null;
+    }
+
+    defeatPortalWarden() {
+      const record = this.getPortalWardenRecord();
+      if (!record) return false;
+      record.defeated = true;
+      if (this.portalWardenEffect?.container) {
+        this.tweens.add({
+          targets: this.portalWardenEffect.container,
+          alpha: 0.15,
+          y: this.portalWardenEffect.container.y + 24,
+          duration: 700,
+          ease: 'Quad.easeIn',
+        });
+      }
+      this.portalPhase = PORTAL_PHASE.CLEARED;
+      this.rebuildBlockedTiles();
+      this.emitSceneContextState();
+      this.triggerCombatVictory({
+        text: 'The Void Acolyte falls. The dimensional seal collapses.',
+      });
+      return true;
+    }
+
+    redrawVoxelTerrain() {
+      if (!this._terrainHeightmap) return;
+      this.drawVoxelTerrain(this._terrainHeightmap, this._terrainSize, this._terrainRadius);
     }
 
     buildSentinelTargets() {
@@ -1187,8 +1543,40 @@ export default function createCombatArenaScene(phaserRuntime) {
         })),
         allSentinelsDefeated: areAllSentinelsDefeated(sentinels),
         combatVictoryAchieved: !!this.combatVictoryAchieved,
+        portalPhase: this.portalPhase || PORTAL_PHASE.DORMANT,
         targets: [
           ...this.buildSentinelTargets(),
+          ...(this.isPortalBeckoning() ? [{
+            id: 'combat-portal',
+            label: 'Dimensional Portal',
+            kind: 'structure',
+            weaveObjects: ['PORTAL', 'VOID', 'SPIRIT'],
+            tx: PORTAL_TILE.tx,
+            ty: PORTAL_TILE.ty,
+            inRange: this.isPlayerAdjacentToPortal(),
+            reachable: true,
+            interactionPriority: 520,
+            weaveAliases: Object.freeze(['PORTAL', 'GATE', 'VOID GATE']),
+            metadata: { role: 'portal', portalPhase: this.portalPhase },
+          }] : []),
+          ...(this.getPortalWardenRecord() ? [{
+            id: PORTAL_WARDEN_ID,
+            label: VOID_ACOLYTE_STAT_DEFAULTS.label,
+            kind: 'combatant',
+            weaveObjects: [...VOID_ACOLYTE_STAT_DEFAULTS.weaveObjects],
+            tx: this.portalWarden.tx,
+            ty: this.portalWarden.ty,
+            inRange: this.stats?.isInAttackRange?.('player', PORTAL_WARDEN_ID) ?? false,
+            reachable: true,
+            interactionPriority: VOID_ACOLYTE_STAT_DEFAULTS.interactionPriority,
+            weaveAliases: Object.freeze(['ACOLYTE', 'WARDEN', 'VOID ACOLYTE']),
+            metadata: {
+              school: VOID_ACOLYTE_STAT_DEFAULTS.school,
+              role: 'void-acolyte',
+              shortLabel: VOID_ACOLYTE_STAT_DEFAULTS.shortLabel,
+              aggroed: true,
+            },
+          }] : []),
           {
             id: 'obelisk',
             label: 'Central Obelisk',
@@ -2259,6 +2647,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (targetEntity && isSentinelId(targetId) && targetEntity.hp <= 0) {
         this.defeatSentinel(targetId);
       }
+      if (targetEntity && isPortalWardenId(targetId) && targetEntity.hp <= 0) {
+        this.defeatPortalWarden();
+      }
       this.emitCombatStats();
     };
 
@@ -2293,6 +2684,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       return shouldEngageCombatBattle({
         sentinels: this.getSentinelRecords(),
         combatVictoryAchieved: this.combatVictoryAchieved,
+        portalWarden: this.portalWarden,
       });
     }
 
@@ -2426,6 +2818,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (targetEntity && isSentinelId(targetId) && targetEntity.hp <= 0) {
         this.defeatSentinel(targetId);
       }
+      if (targetEntity && isPortalWardenId(targetId) && targetEntity.hp <= 0) {
+        this.defeatPortalWarden();
+      }
       this.emitCombatStats();
     };
 
@@ -2445,14 +2840,25 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       tickSentinelAbilityState(this.getSentinelRecords());
+      const warden = this.getPortalWardenRecord();
+      if (warden) tickVoidAcolyteAbilityState(warden);
       this.stats.endTurn('player');
       this.disarmMovement();
       for (const record of this.getSentinelRecords()) {
         if (!record.aggroed || record.defeated) continue;
         this.stats.endTurn(record.id);
       }
+      if (warden?.aggroed) {
+        this.stats.endTurn(warden.id);
+      }
       if (this.combatBattleEngaged) {
         this.runSentinelRetaliation();
+        this.runPortalWardenRetaliation();
+      }
+
+      const wardenEntity = this.stats.getEntity(PORTAL_WARDEN_ID);
+      if (wardenEntity && wardenEntity.hp <= 0) {
+        this.defeatPortalWarden();
       }
       this.emitCombatStats();
     };
@@ -2604,6 +3010,36 @@ export default function createCombatArenaScene(phaserRuntime) {
           isStormheartOrb: false,
           type: 'inspect',
         });
+
+        if (
+          enriched.tx === PORTAL_TILE.tx
+          && enriched.ty === PORTAL_TILE.ty
+          && this.isPortalBeckoning()
+        ) {
+          enriched.isPortal = true;
+          enriched.portalPhase = this.portalPhase;
+        }
+
+        const warden = this.getPortalWardenRecord();
+        if (warden && warden.tx === enriched.tx && warden.ty === enriched.ty) {
+          const entity = this.stats?.getEntity(warden.id);
+          enriched.isSentinel = true;
+          enriched.sentinelId = warden.id;
+          enriched.sentinelLabel = warden.shortLabel || warden.label;
+          enriched.hp = entity?.hp ?? null;
+          enriched.sentinelIntelligence = entity?.intelligence ?? null;
+          enriched.sentinelAggroed = !!warden.aggroed;
+          enriched.sentinelLine = 'The hollow reaches for you — execution is near.';
+          enriched.enemyId = warden.id;
+          enriched.bestiaryAvailable = hasCombatBestiaryEntry(buildBestiaryRuntimeContext({
+            enemyId: warden.id,
+            record: warden,
+            entity,
+          }));
+          if ((entity?.hp ?? 1) > 0) {
+            this.selectCombatTarget(warden.id);
+          }
+        }
 
         const sentinel = findSentinelAtTile(enriched.tx, enriched.ty, this.getSentinelRecords());
         if (sentinel) {
@@ -3112,12 +3548,20 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     drawVoxelTerrain(heightmap, size, radius) {
+      this._terrainHeightmap = heightmap;
+      this._terrainSize = size;
+      this._terrainRadius = radius;
       this.icePeakPositions = [];
+      this._terrainGraphics?.destroy();
+      this._terrainShimmerGraphics?.destroy();
+
       const graphics = this.add.graphics();
       graphics.setDepth(5); // Island terrain above galaxy but below grid if needed (gene protected)
-      
+      this._terrainGraphics = graphics;
+
       const shimmerGraphics = this.add.graphics();
       shimmerGraphics.setDepth(6); // Ice peaks sit just above the island terrain (5), below the grid (10)
+      this._terrainShimmerGraphics = shimmerGraphics;
       if (shimmerGraphics.postFX) {
         shimmerGraphics.postFX.addShine(1, 0.2, 5, false); // Shimmer shader
         shimmerGraphics.postFX.addBloom(0x00ffff, 1, 1, 1.5, 1.2); // Ice bloom
@@ -3174,17 +3618,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         const dx = hRight - hLeft;
         const dy = hDown - hUp;
         
-        // Color ramping based on elevation bands
-        let palette = PALETTES.voidsteel; // deep trench rock
-        if (isEdge) {
-           palette = PALETTES.obsidian; // Force the wall perimeter to be obsidian
-        } else if (v.z > 22) {
-           palette = PALETTES.cyan_glow; // glowing peaks
-        } else if (v.z > 14) {
-           palette = PALETTES.void_ice; // snowy/icy slopes
-        } else if (v.z > 8) {
-           palette = PALETTES.obsidian; // mid rock
-        }
+        const biome = this.arenaBiome === 'frozen' ? 'frozen' : 'void';
+        const band = resolveVoxelPaletteBand(biome, { z: v.z, isEdge });
+        let palette = PALETTES[band] || PALETTES.voidsteel;
         // Top face normal is affected by slope
         const topColor = this.getLambertColor(-dx, -dy, 4, palette);
         // Left face normal (-1, 1, 0)

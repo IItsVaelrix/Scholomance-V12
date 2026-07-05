@@ -31,6 +31,9 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.off('sentinel-defeated');
     scene.events.off('sentinel-aggro');
     scene.events.off('combat-victory');
+    scene.events.off('portal-unsealed');
+    scene.events.off('portal-warden-spawn');
+    scene.events.off('sentinel-ability');
     scene.events.off('tile-gather');
     scene.events.on('tile-inspect', handler);
     scene.events.on('tile-interact', handler);
@@ -42,6 +45,9 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.on('sentinel-defeated', handler);
     scene.events.on('sentinel-aggro', handler);
     scene.events.on('combat-victory', handler);
+    scene.events.on('portal-unsealed', handler);
+    scene.events.on('portal-warden-spawn', handler);
+    scene.events.on('sentinel-ability', handler);
     return true;
   };
 

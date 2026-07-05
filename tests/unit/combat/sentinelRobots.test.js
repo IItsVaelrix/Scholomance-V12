@@ -8,6 +8,7 @@ import {
   getSentinelIntelligenceProfile,
   isPlayerNearObelisk,
   isSentinelId,
+  shouldEngageCombatBattle,
   OBELISK_AGGRO_RADIUS,
   SENTINEL_ROBOTS,
 } from '../../../src/game/combat/sentinelRobots.js';
@@ -83,6 +84,17 @@ describe('sentinelRobots', () => {
     expect(areAllSentinelsDefeated(oneDown)).toBe(false);
     const allDown = alive.map((entry) => ({ ...entry, defeated: true }));
     expect(areAllSentinelsDefeated(allDown)).toBe(true);
+  });
+
+  it('blocks battle engagement after victory or when all sentinels are down', () => {
+    const allDown = alive.map((entry) => ({ ...entry, defeated: true }));
+    expect(shouldEngageCombatBattle({ sentinels: alive })).toBe(true);
+    expect(shouldEngageCombatBattle({ sentinels: allDown })).toBe(false);
+    expect(shouldEngageCombatBattle({
+      sentinels: allDown,
+      portalWarden: { aggroed: true, defeated: false },
+    })).toBe(true);
+    expect(shouldEngageCombatBattle({ sentinels: alive, combatVictoryAchieved: true })).toBe(false);
   });
 
   it('lists aggroable sentinels only when the player threatens the tower', () => {

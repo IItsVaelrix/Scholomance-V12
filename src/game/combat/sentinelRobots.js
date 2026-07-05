@@ -161,6 +161,25 @@ export function areAllSentinelsDefeated(sentinels = []) {
   return sentinels.every((entry) => entry.defeated);
 }
 
+/**
+ * Whether combat battle mode / battle music should engage.
+ * Obelisk puzzle play continues after the flank sentinels are down.
+ *
+ * @param {object} [options]
+ * @param {Array<{ defeated?: boolean }>} [options.sentinels]
+ * @param {boolean} [options.combatVictoryAchieved]
+ */
+export function shouldEngageCombatBattle({
+  sentinels = [],
+  combatVictoryAchieved = false,
+  portalWarden = null,
+} = {}) {
+  if (combatVictoryAchieved) return false;
+  if (portalWarden?.aggroed && !portalWarden?.defeated) return true;
+  if (!sentinels.length) return true;
+  return !areAllSentinelsDefeated(sentinels);
+}
+
 export function buildSentinelBlockedTiles(sentinels = [], baseBlocked = []) {
   const tiles = [...baseBlocked];
   for (const entry of sentinels) {

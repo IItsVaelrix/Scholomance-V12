@@ -84,6 +84,21 @@ export function buildInspectPresentation(action = {}) {
     };
   }
 
+  if (action.isPortal) {
+    return {
+      title: 'Dimensional Portal',
+      details: [
+        `Coordinate: (${action.tx}, ${action.ty})`,
+        action.portalPhase === 'beckoning'
+          ? 'The ward is unsealed — the seal flickers cyan over ice.'
+          : 'A dimensional aperture bound to the northeast lattice.',
+      ],
+      characterLine: action.portalPhase === 'beckoning'
+        ? 'The Portal beckons... if you dare.'
+        : 'Cold light churns behind the frame, but the seal still holds.',
+    };
+  }
+
   if (action.isGrid && action.leyline) {
     return {
       title: 'Leyline Node',

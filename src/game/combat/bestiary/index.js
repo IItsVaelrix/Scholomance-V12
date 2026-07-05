@@ -1,5 +1,6 @@
 import { registerCombatBestiaryEntry } from './combatBestiary.registry.js';
 import { sentinelBrazierBestiaryEntry } from './entries/sentinelBrazier.entry.js';
+import { voidAcolyteBestiaryEntry } from './entries/voidAcolyte.entry.js';
 
 let bootstrapped = false;
 
@@ -14,6 +15,7 @@ let bootstrapped = false;
 export function bootstrapCombatBestiary() {
   if (bootstrapped) return;
   registerCombatBestiaryEntry(sentinelBrazierBestiaryEntry);
+  registerCombatBestiaryEntry(voidAcolyteBestiaryEntry);
   bootstrapped = true;
 }
 

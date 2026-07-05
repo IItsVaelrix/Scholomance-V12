@@ -7,8 +7,16 @@
  */
 import { BASE_MP_REGEN, MIN_COMBAT_DAMAGE, computeCombatManaRegen } from '../../../codex/core/combat.balance.js';
 import { buildDefaultStatBlock, BASIC_ATTACK_AP_COST, GUARD_DAMAGE_MULTIPLIER } from './combatStats.js';
+import { isWalkable } from './combatPathfinding.js';
 import { SPELL_CAST_MANA_COST } from './combatMana.js';
 import { buildDefaultScholomanceStatBlock, computeBasicAttackDamage } from './scholomanceStats.js';
+
+const CARDINAL_DELTAS = Object.freeze([
+  { tx: 0, ty: 1 },
+  { tx: 0, ty: -1 },
+  { tx: 1, ty: 0 },
+  { tx: -1, ty: 0 },
+]);
 
 export class CombatStatController {
   constructor() {
@@ -36,6 +44,7 @@ export class CombatStatController {
       lastScoreData: null,
       statuses: [],
       guarding: false,
+      voidLockedTurnsRemaining: 0,
     };
     this.entities.set(id, record);
     return record;
@@ -51,9 +60,24 @@ export class CombatStatController {
     return e;
   }
 
+  isVoidLocked(id) {
+    const e = this.entities.get(id);
+    return !!e && (e.voidLockedTurnsRemaining ?? 0) > 0;
+  }
+
+  setVoidLocked(id, turns) {
+    const e = this.entities.get(id);
+    if (!e) return e;
+    const lock = Math.max(0, Math.floor(Number(turns) || 0));
+    e.voidLockedTurnsRemaining = lock;
+    if (lock > 0) e.movementPointsRemaining = 0;
+    return e;
+  }
+
   canMove(id) {
     const e = this.entities.get(id);
-    return !!e && e.movementPointsRemaining >= 1;
+    if (!e || this.isVoidLocked(id)) return false;
+    return e.movementPointsRemaining >= 1;
   }
 
   spendMove(id) {
@@ -206,10 +230,54 @@ export class CombatStatController {
     return e;
   }
 
+  /**
+   * Pull target to a walkable tile adjacent to puller.
+   * @param {string} pullerId
+   * @param {string} targetId
+   * @param {Set<string>} [blocked]
+   * @returns {{ tx: number, ty: number } | null}
+   */
+  pullEntityAdjacent(pullerId, targetId, blocked = new Set()) {
+    const puller = this.entities.get(pullerId);
+    const target = this.entities.get(targetId);
+    if (!puller || !target) return null;
+
+    const occupied = new Set();
+    for (const [id, entity] of this.entities) {
+      if (id === targetId) continue;
+      if (entity.hp !== null && entity.hp <= 0) continue;
+      occupied.add(`${entity.position.tx},${entity.position.ty}`);
+    }
+
+    const candidates = [];
+    for (const delta of CARDINAL_DELTAS) {
+      const tx = puller.position.tx + delta.tx;
+      const ty = puller.position.ty + delta.ty;
+      const key = `${tx},${ty}`;
+      if (!isWalkable(tx, ty, blocked) || occupied.has(key)) continue;
+      const dist = Math.abs(tx - target.position.tx) + Math.abs(ty - target.position.ty);
+      candidates.push({ tx, ty, dist });
+    }
+    if (!candidates.length) return null;
+
+    candidates.sort((a, b) => a.dist - b.dist);
+    const dest = candidates[0];
+    this.setPosition(targetId, dest.tx, dest.ty);
+    return { tx: dest.tx, ty: dest.ty };
+  }
+
   endTurn(id) {
     const e = this.entities.get(id);
     if (!e) return e;
-    e.movementPointsRemaining = e.movementPoints;
+    if ((e.voidLockedTurnsRemaining ?? 0) > 0) {
+      e.voidLockedTurnsRemaining -= 1;
+      if (e.voidLockedTurnsRemaining > 0) {
+        e.movementPointsRemaining = 0;
+      }
+    }
+    if (!this.isVoidLocked(id)) {
+      e.movementPointsRemaining = e.movementPoints;
+    }
     e.attackPointsRemaining = e.attackPoints;
     e.attackUsed = false;
     e.guarding = false;

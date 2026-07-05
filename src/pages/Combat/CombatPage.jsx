@@ -15,18 +15,25 @@ import {
   lookupSceneEnemyToken,
   resolveWeaveTargetsFromParsed,
 } from '../../game/combat/weave-scene-targets.js';
-import { parseWeave } from '../../../codex/core/spellweave.engine.js';
+import { parseWeave, resolveWeaveLexeme } from '../../../codex/core/spellweave.engine.js';
+import { shouldEngageCombatBattle } from '../../game/combat/sentinelRobots.js';
 import { lookupWeaveToken } from '../../../codex/core/semantics.registry.js';
 import { tokenize } from '../../../codex/core/tokenizer.js';
 import { Sparkles, Zap, Trash2 } from 'lucide-react';
 import '../DivWand/DivWandPage.css'; // Reuse the sleek DivWand CSS
 import './CombatPage.css';
-import { grantScholomanceXpForAction } from '../../game/character/scholomanceXpService.js';
+import { getScholomanceCombatBlock, grantScholomanceXpForAction } from '../../game/character/scholomanceXpService.js';
+import {
+  buildCompendiumRuntimeContext,
+  getSpellweaveCompendiumLedger,
+  recordCompendiumDiscoveries,
+} from '../../game/combat/spellweaveCompendium.persistence.js';
 import { SCHOLOMANCE_XP_ACTIONS } from '../../../codex/core/scholomance-xp.schema.js';
 import { OBELISK_DISCOVERY_FLASH_XP } from '../../../codex/core/obelisk-puzzle.signals.js';
 import DiscoveryFlash from '../../ui/combat/DiscoveryFlash.jsx';
 import CombatResultsOverlay from '../../ui/combat/CombatResultsOverlay.jsx';
 import CombatBeastiaryOverlay from '../../ui/combat/CombatBeastiaryOverlay.jsx';
+import SpellweaveCompendiumOverlay from '../../ui/combat/SpellweaveCompendiumOverlay.jsx';
 import CombatMatrixIntro from '../../ui/combat/CombatMatrixIntro.jsx';
 import {
   buildBestiaryContextFromScene,
@@ -78,6 +85,17 @@ function classifyToken(token, sceneContext = null) {
       detail: semantic.manner || semantic.octantLabel || semantic.intent || semantic.category || semantic.chainType || 'registered',
     };
   }
+  const nlp = resolveWeaveLexeme(token);
+  if (nlp && nlp.source !== 'registry') {
+    const resolved = lookupWeaveToken(nlp.token);
+    return {
+      token,
+      role: resolved?.type || 'LEXEME',
+      status: 'nlp',
+      canonical: nlp.token,
+      detail: `${nlp.source} → ${nlp.token.toLowerCase()}`,
+    };
+  }
   const enemy = lookupSceneEnemyToken(token, sceneContext);
   if (enemy) {
     return {
@@ -107,6 +125,7 @@ function buildWeaveFeedback(weave, sceneContext = null) {
   const rawTokens = tokenize(weave).map((token) => token.toUpperCase());
   const tokens = rawTokens.map((token) => classifyToken(token, sceneContext));
   const unknownTokens = tokens.filter((token) => token.status === 'unknown');
+  const nlpTokens = tokens.filter((token) => token.status === 'nlp');
   const parsed = parseWeave(weave);
   const resolvedTargets = sceneContext
     ? resolveWeaveTargetsFromParsed(parsed, sceneContext, weave)
@@ -148,6 +167,20 @@ function buildWeaveFeedback(weave, sceneContext = null) {
       status: 'RED',
       label: 'TOKEN UNRESOLVED',
       message: `${unknownTokens.map((token) => token.token).join(', ')} ignored by the parser.`,
+      parsed,
+      tokens,
+      targetHints,
+      resolvedTargets,
+      modeHint,
+    };
+  }
+
+  if (nlpTokens.length > 0 && activeClauses.every((clause) => clause.legality === 'legal')) {
+    const counsel = nlpTokens.map((token) => `${token.token}→${token.canonical}`).join(', ');
+    return {
+      status: 'GREEN',
+      label: 'NLP BRIDGE',
+      message: `Natural speech resolved (${counsel}). ${CLAUSE_MESSAGES.legal}`,
       parsed,
       tokens,
       targetHints,
@@ -201,6 +234,8 @@ export default function CombatPage() {
   const [battleIntroActive, setBattleIntroActive] = useState(false);
   const [selectedCombatTarget, setSelectedCombatTarget] = useState(null);
   const [beastiaryDossier, setBeastiaryDossier] = useState(null);
+  const [compendiumOpen, setCompendiumOpen] = useState(false);
+  const [compendiumLedger, setCompendiumLedger] = useState(() => getSpellweaveCompendiumLedger());
   const battleStartedRef = useRef(false);
   const battleIntroActiveRef = useRef(false);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -212,6 +247,17 @@ export default function CombatPage() {
   useEffect(() => {
     battleIntroActiveRef.current = battleIntroActive;
   }, [battleIntroActive]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.target?.isContentEditable) return;
+      if (event.key === 'k' || event.key === 'K') {
+        setCompendiumOpen((open) => !open);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const handleBattleIntroComplete = () => {
     setBattleIntroActive(false);
@@ -420,8 +466,15 @@ export default function CombatPage() {
     }
   }, [terminalLogs]);
 
-  const ensureBattleEngaged = async () => {
+  const ensureBattleEngaged = async (context = sceneContext) => {
     if (battleStartedRef.current) return;
+    const freshContext = context || await requestSceneContext();
+    if (!shouldEngageCombatBattle({
+      sentinels: freshContext?.sentinels,
+      combatVictoryAchieved: freshContext?.combatVictoryAchieved,
+    })) {
+      return;
+    }
     setBattleIntroActive(false);
     setBattleStarted(true);
     markCombatBattleStarted();
@@ -446,9 +499,9 @@ export default function CombatPage() {
 
   const handleCast = async () => {
     try {
-      await ensureBattleEngaged();
       const freshContext = await requestSceneContext();
       if (freshContext) setSceneContext(freshContext);
+      await ensureBattleEngaged(freshContext || sceneContext);
       const authorityContext = freshContext || sceneContext;
       const parsed = parseWeave(weave);
       const weaveResolved = resolveWeaveTargetsFromParsed(parsed, authorityContext || undefined, weave);
@@ -462,11 +515,15 @@ export default function CombatPage() {
           buildBestiaryContextFromScene(authorityContext, resolvedTargets.primaryTargetId),
         )
         : null;
+      const scholomance = getScholomanceCombatBlock();
+      const compendiumContext = buildCompendiumRuntimeContext();
       const castScore = await resolveCombatCastScore({
         verse,
         weave,
         defender,
         defenderSchool: defender?.school ?? null,
+        scholomance,
+        compendiumContext,
       });
       const result = resolveCombatWeaveCast({
         verse,
@@ -512,6 +569,19 @@ export default function CombatPage() {
         if (result.commentary) {
           newLogs.push({ type: 'info', text: `Analysis: ${result.commentary}`, ts });
         }
+        const tierLines = castScore.scoreData?.compendiumCounselLines
+          || castScore.scoreData?.tierBreakdown?.map((entry) => (
+            `[COMPENDIUM] ${entry.counsel} (+${entry.amplifier.toFixed(2)})`
+          ))
+          || [];
+        for (const line of tierLines.slice(0, 3)) {
+          newLogs.push({ type: 'success', text: line, ts });
+        }
+        if (castScore.scoreData?.newlyDiscoveredEntryIds?.length) {
+          const ledger = recordCompendiumDiscoveries(castScore.scoreData.newlyDiscoveredEntryIds);
+          setCompendiumLedger(ledger);
+          grantScholomanceXpForAction(SCHOLOMANCE_XP_ACTIONS.COMPENDIUM_DISCOVERY);
+        }
       }
       
       setTerminalLogs(prev => [...prev, ...newLogs]);
@@ -550,6 +620,25 @@ export default function CombatPage() {
       setTerminalLogs(prev => [
         ...prev,
         { type: 'error', text: `[SENTINEL] ${action.text}`, ts },
+      ]);
+      if (!battleStartedRef.current && !battleIntroActiveRef.current) {
+        setBattleIntroActive(true);
+      }
+      return;
+    }
+
+    if (action.type === 'portal-unsealed') {
+      setTerminalLogs(prev => [
+        ...prev,
+        { type: 'info', text: `[PORTAL] ${action.text}`, ts },
+      ]);
+      return;
+    }
+
+    if (action.type === 'portal-warden-spawn') {
+      setTerminalLogs(prev => [
+        ...prev,
+        { type: 'error', text: `[PORTAL] ${action.text}`, ts },
       ]);
       if (!battleStartedRef.current && !battleIntroActiveRef.current) {
         setBattleIntroActive(true);
@@ -722,6 +811,13 @@ export default function CombatPage() {
           onDismiss={() => setBeastiaryDossier(null)}
         />
       )}
+
+      {compendiumOpen && (
+        <SpellweaveCompendiumOverlay
+          ledger={compendiumLedger}
+          onDismiss={() => setCompendiumOpen(false)}
+        />
+      )}
       
       {/* Tooltip Overlay */}
       {tooltip && (
@@ -815,6 +911,14 @@ export default function CombatPage() {
             <span className="dw-header-sub">Spellweave Syntactic Bridge</span>
           </div>
           <div className="dw-header-actions">
+            <button
+              type="button"
+              className="dw-btn"
+              onClick={() => setCompendiumOpen(true)}
+              title="Spellweave Compendium (K)"
+            >
+              Compendium
+            </button>
             <button
               className="dw-btn dw-btn--primary"
               onClick={handleCast}
