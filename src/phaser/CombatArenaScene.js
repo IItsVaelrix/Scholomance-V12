@@ -1353,6 +1353,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.playPortalIceCutscene(() => {
         this.enterPortalExplorationMode();
         this.portalPhase = PORTAL_PHASE.BECKONING;
+        this.refreshPortalInteractionState();
         this.events.emit('portal-unsealed', {
           type: 'portal-unsealed',
           text: 'The ward unseals. The island freezes. Seek the northeast portal.',
@@ -1550,11 +1551,29 @@ export default function createCombatArenaScene(phaserRuntime) {
     }
 
     tryEnterPortal() {
-      if (!this.isPortalBeckoning() || !this.isPlayerAdjacentToPortal()) {
+      if (!this.isPortalBeckoning()) {
         this.showPlayerCastHint('portal sealed');
         return false;
       }
+      if (!this.isPlayerAdjacentToPortal()) {
+        this.showPlayerCastHint('cross to the threshold');
+        return false;
+      }
       return this.spawnPortalWarden();
+    }
+
+    refreshPortalInteractionState() {
+      if (!this.portalVisual) return;
+      const beckoning = this.isPortalBeckoning();
+      if (beckoning) {
+        this.portalVisual.setInteractive(
+          this.portalHitArea,
+          phaserRuntime.Geom.Rectangle.Contains,
+        );
+        this.portalVisual.input.cursor = 'pointer';
+      } else {
+        this.portalVisual.disableInteractive();
+      }
     }
 
     spawnPortalWarden() {
@@ -1572,6 +1591,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         abilities: createVoidAcolyteAbilityState(),
       };
       this.portalPhase = PORTAL_PHASE.ENGAGED;
+      this.refreshPortalInteractionState();
       this.stats.registerEntity(PORTAL_WARDEN_ID, {
         hp: VOID_ACOLYTE_STAT_DEFAULTS.hp,
         maxHp: VOID_ACOLYTE_STAT_DEFAULTS.maxHp,
@@ -3096,6 +3116,15 @@ export default function createCombatArenaScene(phaserRuntime) {
 
         if (isPlayerLatticePick(cell, this.playerGridPos)) {
           this.toggleMovementArmed();
+          return;
+        }
+
+        if (
+          cell.combatTx === PORTAL_TILE.tx
+          && cell.combatTy === PORTAL_TILE.ty
+          && this.isPortalBeckoning()
+        ) {
+          this.tryEnterPortal();
           return;
         }
 
@@ -5305,6 +5334,20 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       portalGroup.add(mechFront);
       portalGroup.setDepth(ARENA_DEPTH.PORTAL);
+
+      this.portalHitArea = new phaserRuntime.Geom.Rectangle(-36, -108, 72, 200);
+      this.portalVisual = portalGroup;
+      portalGroup.on('pointerdown', (pointer) => {
+        if (pointer.button !== 0 || this.cutsceneInputLock) return;
+        this.tryEnterPortal();
+      });
+      portalGroup.on('pointerover', () => {
+        if (this.isPortalBeckoning()) this.input.setDefaultCursor('pointer');
+      });
+      portalGroup.on('pointerout', () => {
+        this.input.setDefaultCursor('default');
+      });
+      this.refreshPortalInteractionState();
 
       // Arrays for 2D Water Ripple simulation
       let buf1 = new Float32Array(pW * pH);

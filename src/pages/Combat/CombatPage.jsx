@@ -634,7 +634,7 @@ export default function CombatPage() {
       setTerminalLogs(prev => [
         ...prev,
         { type: 'info', text: `[PORTAL] ${action.text}`, ts },
-        { type: 'info', text: '[PORTAL] Free roam — walk the lattice to the northeast gate, then weave at the portal.', ts },
+        { type: 'info', text: '[PORTAL] Free roam — walk to the northeast gate and click the portal from an adjacent tile.', ts },
       ]);
       return;
     }

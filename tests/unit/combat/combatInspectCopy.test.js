@@ -26,6 +26,18 @@ describe('buildInspectPresentation', () => {
     expect(copy.characterLine).toContain('tower');
   });
 
+  it('describes a beckoning portal with click guidance', () => {
+    const copy = buildInspectPresentation({
+      isPortal: true,
+      tx: 8,
+      ty: 0,
+      portalPhase: 'beckoning',
+    });
+    expect(copy.title).toBe('Dimensional Portal');
+    expect(copy.characterLine).toContain('beckons');
+    expect(copy.details.join(' ')).toContain('click the portal');
+  });
+
   it('describes a leyline node with affinity dialogue', () => {
     const copy = buildInspectPresentation({
       isGrid: true,

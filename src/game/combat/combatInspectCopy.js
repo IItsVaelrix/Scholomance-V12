@@ -92,6 +92,9 @@ export function buildInspectPresentation(action = {}) {
         action.portalPhase === 'beckoning'
           ? 'The ward is unsealed — the seal flickers cyan over ice.'
           : 'A dimensional aperture bound to the northeast lattice.',
+        ...(action.portalPhase === 'beckoning'
+          ? ['Stand on an adjacent tile, then click the portal to step through.']
+          : []),
       ],
       characterLine: action.portalPhase === 'beckoning'
         ? 'The Portal beckons... if you dare.'
