@@ -10,9 +10,9 @@ Players craft scrolls (verses) scored by phoneme density, rhyme quality, syllabi
 
 ### Game Client
 - **Read** — IDE-style grimoire editor with Truesight phoneme analysis, rhyme diagramming, and real-time heuristic scoring.
-- **Listen** — Ambient audio station with school-themed atmospheres, unlock progression, and local track uploads.
+- **Listen** — Ambient audio station featuring the live Ambience Mixer, school-themed atmospheres, unlock progression, and local track uploads.
 - **Watch** — Video-focused landing interface.
-- **Combat** — Turn-based verse combat resolved by the CODEx engine and the Judiciary voting system.
+- **Combat** — Turn-based verse combat with live resource HUDs (Health, Mana, AP, MP) and predictive pathfinding, resolved by the CODEx engine and the Judiciary.
 
 ### Linguistic & AI Engines
 - **CODEx Engine** — Tokenization, phoneme mapping, syllable/stress extraction, 8-heuristic scoring, and combat resolution.
@@ -22,6 +22,7 @@ Players craft scrolls (verses) scored by phoneme density, rhyme quality, syllabi
 - **Super Corpus** — FTS5-indexed literary corpus built from curated verse, Project Gutenberg, and WordNet examples.
 
 ### Agent & Runtime Infrastructure
+- **PixelBrain & SCDL Compiler** (`codex/core/pixelbrain/`) — Declarative vector and material transmutation pipeline for generating Phaser, Aseprite, and UI assets dynamically.
 - **Vaelrix Cortex ForceField** (`steamdeck_brain/vaelrix_forcefield/`) — Deterministic routing layer for coding agents.
   - Multi-brain Amplifier registry (CODE, TEST, RISK, ARCHITECTURE, UI, LORE, DETERMINISM, etc.).
   - Search Governor and Tool Governor to prevent redundant or unsafe tool use.
