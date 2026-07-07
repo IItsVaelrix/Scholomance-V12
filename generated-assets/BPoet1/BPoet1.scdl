@@ -1,0 +1,106 @@
+# BPoet1.scdl
+# SCDL v1.1 character model — Battle Poet (BPoet1).
+# Features a fixed and pronounced face (using sphere for proper 3D shading)
+# and uses the same art style/materials as the combat page (voidsteel, cyan_glow).
+
+asset BPoet1 canvas 32x48
+
+palette {
+  robe      = #20284A
+  robeshade = #111633
+  robehi    = #465178
+  robeacc   = #D6DAEF
+  skinshine = #FDE8D0
+  skin      = #C08850
+  skinshade = #885830
+  skinshadow= #6A4030
+  gold      = #D4AF37
+  golddark  = #8A6D1F
+  eye       = #06B6D4
+  eyebright = #E0F2FE
+  hair      = #3A2070
+  hairhi    = #7A50D0
+  hairshade = #1A1030
+  boot      = #16101F
+  staff     = #111B44
+  staffhi   = #4E6096
+  sigil     = #B8F7FF
+}
+
+part staff material deep_indigo_steel {
+  line 24 10 24 46 staff
+  line 25 10 25 46 staffhi
+  circle 24.5 9 radius 2.5 golddark
+  cell 24 9 gold
+  glow radius 1
+}
+
+part sigil material cyan_glow {
+  cell 24 9 sigil
+  cell 25 9 sigil
+  cell 24 8 sigil
+  glow radius 2
+}
+
+part robe material voidsteel {
+  polygon 10 16 22 16 26 46 6 46 robe
+  rect 16 24 2 22 robeshade
+  line 21 27 24 43 robeshade
+  rect 7 44 18 2 golddark
+  cell 5 44 robe
+  cell 5 45 robeshade
+  cell 22 16 robehi
+}
+
+part belt material gold {
+  rect 11 25 10 2 golddark
+  cell 15 25 gold
+  cell 16 25 gold
+}
+
+part arms material void_cloth {
+  symmetry x
+  rect 7 17 3 9 robehi
+  rect 7 26 2 2 skin
+}
+
+part boots material obsidian {
+  symmetry x
+  rect 10 45 4 3 boot
+}
+
+part head material skin_light {
+  sphere 16 11.5 radius 5.5 light -1 -1 skinshine skin skin skinshade skinshadow
+}
+
+part eyes material cyan_glow {
+  symmetry x
+  cell 13.5 11 eye
+  glow radius 1
+}
+
+part eyespark material cyan_glow {
+  symmetry x
+  cell 13.5 10.5 eyebright
+}
+
+# Fixed and pronounced face feature: A pronounced chin/jaw and nose using shading
+part face_details material skin_light {
+  # Nose
+  cell 16 13 skinshine
+  cell 16 14 skin
+  # Jaw/Chin pronounced shading
+  line 14 16 18 16 skinshine
+  cell 16 17 skinshade
+}
+
+part hair material hair_void {
+  circle 16 9.5 radius 6 hair
+  circle 16 8.5 radius 5.5 hairhi
+  rect 11 7 10 3 hairhi
+  # long hair cascading behind shoulders
+  polygon 9 12 12 12 10 22 7 20 hairshade
+  polygon 20 12 23 12 25 20 22 22 hairshade
+}
+
+export json svg phaser png

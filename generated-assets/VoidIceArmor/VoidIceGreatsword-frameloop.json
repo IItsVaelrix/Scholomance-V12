@@ -1,0 +1,67 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "VoidIceGreatsword",
+  "loop": "walk",
+  "canvas": {
+    "width": 64,
+    "height": 128
+  },
+  "defaultDurationMs": 800,
+  "sourceChecksum": "00000000ed7fc2d8",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 800,
+      "packet": "pbasset_3cb28627"
+    },
+    {
+      "index": 1,
+      "label": "contactL",
+      "durationMs": 800,
+      "packet": "pbasset_c93f45bc"
+    },
+    {
+      "index": 2,
+      "label": "riseL",
+      "durationMs": 800,
+      "packet": "pbasset_c93f45bc"
+    },
+    {
+      "index": 3,
+      "label": "passL",
+      "durationMs": 800,
+      "packet": "pbasset_c93f45bc"
+    },
+    {
+      "index": 4,
+      "label": "fallL",
+      "durationMs": 800,
+      "packet": "pbasset_c93f45bc"
+    },
+    {
+      "index": 5,
+      "label": "contactR",
+      "durationMs": 800,
+      "packet": "pbasset_f66b87d0"
+    },
+    {
+      "index": 6,
+      "label": "riseR",
+      "durationMs": 800,
+      "packet": "pbasset_313cdf49"
+    },
+    {
+      "index": 7,
+      "label": "passR",
+      "durationMs": 800,
+      "packet": "pbasset_313cdf49"
+    },
+    {
+      "index": 8,
+      "label": "fallR",
+      "durationMs": 800,
+      "packet": "pbasset_f66b87d0"
+    }
+  ]
+}

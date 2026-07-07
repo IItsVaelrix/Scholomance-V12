@@ -54,6 +54,7 @@ export function forgeArmor(spec, skeleton) {
     throw new Error(`forgeArmor failed: Missing required anatomy anchors for HUMANOID: ${anatomyCheck.missingAnchors.join(', ')}`);
   }
 
+
   const expansion = expandShapeGrammar(spec, skeleton, chestplateGrammar);
 
   const routeDefinition = {

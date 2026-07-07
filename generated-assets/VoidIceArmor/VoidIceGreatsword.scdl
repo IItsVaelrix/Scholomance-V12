@@ -1,0 +1,81 @@
+asset VoidIceGreatsword canvas 64x128
+palette {
+  voiddark = #0B0E14
+  voidmid = #1A2230
+  voidlight = #2A384A
+  icecore = #FFFFFF
+  icelighthigh = #A3F4FF
+  iceglow = #06B6D4
+  icedark = #0369A1
+}
+part icon {
+  # Handle
+  rect 45 60 2 10 voiddark
+  # Pommel
+  cell 45 70 iceglow
+  # Guard
+  polygon 41 58 51 58 49 61 43 61 voidmid
+  # Blade
+  polygon 44 58 48 58 49 20 46 12 43 20 icelighthigh
+  line 46 20 46 58 iceglow
+}
+
+loop walk duration 800
+
+frame 1 "contactL" {
+  part icon {}
+}
+
+frame 2 "riseL" {
+  part icon {}
+}
+
+frame 3 "passL" {
+  part icon {}
+}
+
+frame 4 "fallL" {
+  part icon {}
+}
+
+frame 5 "contactR" {
+  part icon {
+    rect 45 57 2 16 voiddark
+    cell 45 67 iceglow
+    polygon 41 55 51 55 49 58 43 58 voidmid
+    polygon 44 55 48 55 49 17 46 9 43 17 icelighthigh
+    line 46 17 46 55 iceglow
+  }
+}
+
+frame 6 "riseR" {
+  part icon {
+    rect 45 52 2 11 voiddark
+    cell 45 62 iceglow
+    polygon 41 50 51 50 49 53 43 53 voidmid
+    polygon 44 50 48 50 49 12 46 4 43 12 icelighthigh
+    line 46 12 46 50 iceglow
+  }
+}
+
+frame 7 "passR" {
+  part icon {
+    rect 45 52 2 11 voiddark
+    cell 45 62 iceglow
+    polygon 41 50 51 50 49 53 43 53 voidmid
+    polygon 44 50 48 50 49 12 46 4 43 12 icelighthigh
+    line 46 12 46 50 iceglow
+  }
+}
+
+frame 8 "fallR" {
+  part icon {
+    rect 45 57 2 16 voiddark
+    cell 45 67 iceglow
+    polygon 41 55 51 55 49 58 43 58 voidmid
+    polygon 44 55 48 55 49 17 46 9 43 17 icelighthigh
+    line 46 17 46 55 iceglow
+  }
+}
+
+export json svg phaser png

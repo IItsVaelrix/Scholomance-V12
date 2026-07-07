@@ -1,0 +1,22 @@
+# Void1-armR-upper.scdl — right shoulder → elbow joint segment
+
+asset Void1ArmRUpper canvas 32x48
+
+palette {
+  robehi    = #4E3880
+  robemid   = #352560
+  robeshade = #1B1230
+  golddark  = #A8862F
+  joint     = #0A0712
+  cyandim   = #0077A8
+}
+
+part armR_upper material void_cloth {
+  polygon 22 18 26 18 27 26 23 26 robehi
+  line 26 19 26 25 robeshade
+  line 23 19 23 25 robemid
+  rect 22 25 5 1 golddark
+  cell 24 26 joint
+  cell 23 26 cyandim
+}
+export json png

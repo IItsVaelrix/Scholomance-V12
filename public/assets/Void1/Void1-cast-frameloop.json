@@ -1,0 +1,43 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "Void1Cast",
+  "loop": "cast",
+  "canvas": {
+    "width": 32,
+    "height": 48
+  },
+  "defaultDurationMs": 150,
+  "sourceChecksum": "00000000c34302f9",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 150,
+      "packet": "pbasset_6eaad300"
+    },
+    {
+      "index": 1,
+      "label": "raise",
+      "durationMs": 150,
+      "packet": "pbasset_71fb5d18"
+    },
+    {
+      "index": 2,
+      "label": "channel",
+      "durationMs": 150,
+      "packet": "pbasset_535eb4df"
+    },
+    {
+      "index": 3,
+      "label": "release",
+      "durationMs": 150,
+      "packet": "pbasset_134e7be5"
+    },
+    {
+      "index": 4,
+      "label": "recover",
+      "durationMs": 150,
+      "packet": "pbasset_c41dd75b"
+    }
+  ]
+}

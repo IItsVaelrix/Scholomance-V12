@@ -1,0 +1,45 @@
+asset VoidIceHelm canvas 64x128
+palette {
+  voiddark = #0B0E14
+  voidmid = #1A2230
+  voidlight = #2A384A
+  icecore = #FFFFFF
+  icelighthigh = #A3F4FF
+  iceglow = #06B6D4
+  icedark = #0369A1
+}
+part icon {
+  # Base obsidian dome
+  sphere 32 16 radius 6.5 light -1 -1 icedark voiddark voiddark voidmid voidlight
+  # Cyan glowing eyes slit
+  line 27 18 31 18 iceglow
+  line 33 18 37 18 iceglow
+  cell 29 18 icecore
+  cell 35 18 icecore
+  
+  # Ice horns
+  polygon 26 12 28 12 25 5 24 5 iceglow
+  polygon 38 12 36 12 39 5 40 5 iceglow
+  line 26 5 28 12 icelighthigh
+  line 38 5 36 12 icelighthigh
+}
+
+loop walk duration 800
+
+frame 1 "hold1" {}
+
+frame 2 "hold2" {}
+
+frame 3 "hold3" {}
+
+frame 4 "hold4" {}
+
+frame 5 "hold5" {}
+
+frame 6 "hold6" {}
+
+frame 7 "hold7" {}
+
+frame 8 "hold8" {}
+
+export json svg phaser png

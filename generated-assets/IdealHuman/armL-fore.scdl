@@ -1,0 +1,37 @@
+asset ArmLFore canvas 64x128
+palette {
+  # Expanded Skin Tones for Smooth Shading (7 stops)
+  skinpeak  = #FFF1E0
+  skinshine = #FDE8D0
+  skinhi2   = #DCAE80
+  skin      = #C08850
+  skinmid   = #A77040
+  skinshade = #885830
+  skinshadow= #6A4030
+  skindark  = #4A2818
+  skindeep  = #30180F
+
+  # Hair
+  hairhi    = #3D3D3D
+  hair      = #1F1F1F
+  hairshade = #0A0A0A
+  
+  # Eyes
+  eye       = #06B6D4
+  sclera    = #FFFFFF
+
+  # Void Ice Armor
+  voiddark = #0B0E14
+  voidmid = #1A2230
+  voidlight = #2A384A
+  icecore = #FFFFFF
+  icelighthigh = #A3F4FF
+  iceglow = #06B6D4
+  icedark = #0369A1
+}
+part armL material skin_light {
+  polygon 17 46 22 46 21 58 19 58 skin
+  line 17 47 17 52 skinmid
+  line 18 46 19 57 skinhi2
+  line 22 47 21 57 skinshade
+}

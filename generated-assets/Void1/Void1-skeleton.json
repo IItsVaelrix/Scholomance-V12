@@ -1,0 +1,44 @@
+{
+  "contract": "PB-CONSTRUCTION-SKELETON-v1",
+  "asset": "Void1",
+  "canvas": { "width": 32, "height": 48 },
+  "joints": {
+    "head": {
+      "top": { "x": 15, "y": 2 },
+      "center": { "x": 15, "y": 10 },
+      "chin": { "x": 15, "y": 15 }
+    },
+    "torso": {
+      "shoulderL": { "x": 8, "y": 18 },
+      "shoulderR": { "x": 23, "y": 18 },
+      "hipL": { "x": 10, "y": 30 },
+      "hipR": { "x": 21, "y": 30 }
+    },
+    "armL": {
+      "elbow": { "x": 7, "y": 26 },
+      "wrist": { "x": 7, "y": 34 }
+    },
+    "armR": {
+      "elbow": { "x": 24, "y": 26 },
+      "wrist": { "x": 24, "y": 34 },
+      "grip": { "x": 23, "y": 33 }
+    },
+    "legL": {
+      "knee": { "x": 10, "y": 38 },
+      "ankle": { "x": 10, "y": 44 }
+    },
+    "legR": {
+      "knee": { "x": 21, "y": 38 },
+      "ankle": { "x": 21, "y": 44 }
+    }
+  },
+  "segments": [
+    "Void1-body-noArms",
+    "Void1-armL-upper",
+    "Void1-armL-fore",
+    "Void1-armL-hand",
+    "Void1-armR-upper",
+    "Void1-armR-fore",
+    "Void1-armR-hand"
+  ]
+}

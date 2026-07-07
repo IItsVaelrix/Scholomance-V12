@@ -1,0 +1,40 @@
+asset void_spores canvas 64x64
+
+palette {
+  floor_dark = #0f172a
+  spore_dim  = #a855f7
+  spore_mid  = #d8b4fe
+  spore_lit  = #faf5ff
+  crack_line = #3b0764
+}
+
+part base material rock {
+  polygon 32 16 60 30 32 44 4 30 floor_dark
+  
+  # cracks
+  line 32 16 20 30 crack_line
+  line 20 30 32 40 crack_line
+  line 32 40 48 30 crack_line
+  line 48 30 40 20 crack_line
+}
+
+part spores material energy {
+  glow radius 1
+  # small spore clusters in the cracks
+  cell 24 28 spore_mid
+  cell 26 26 spore_lit
+  cell 22 30 spore_dim
+  
+  cell 40 32 spore_mid
+  cell 42 34 spore_lit
+  cell 38 30 spore_dim
+  
+  cell 32 24 spore_lit
+  
+  # floating spore motes
+  cell 16 16 spore_dim
+  cell 48 16 spore_dim
+  cell 32 10 spore_mid
+}
+
+export png

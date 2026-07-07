@@ -8,7 +8,7 @@
  *
  * Runs in the Microprocessor WebWorker via processorBridge. Uses a
  * deterministic mulberry32 PRNG seeded per-frame so jitter values are
- * reproducible (Math.random cannot be shared across the postMessage // EXEMPT
+ * reproducible (Math.random() cannot be shared across the postMessage // EXEMPT
  * boundary).
  *
  * Pure: takes the current fire intensity buffer in, returns the new

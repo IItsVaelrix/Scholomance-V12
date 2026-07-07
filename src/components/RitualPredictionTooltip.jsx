@@ -220,13 +220,15 @@ function cleanWordLists(activeWord, lex) {
   const normalized = normalizeWord(activeWord);
   const normalizeItem = (w) => normalizeWord(typeof w === 'string' ? w : w?.word);
 
-  const seen = new Set([normalized]);
-  const takeUnique = (list, limit = 8) => (list || []).filter((w) => {
-    const n = normalizeItem(w);
-    if (!n || seen.has(n)) return false;
-    seen.add(n);
-    return true;
-  }).slice(0, limit);
+  const takeUnique = (list, limit = 8) => {
+    const seen = new Set([normalized]);
+    return (list || []).filter((w) => {
+      const n = normalizeItem(w);
+      if (!n || seen.has(n)) return false;
+      seen.add(n);
+      return true;
+    }).slice(0, limit);
+  };
 
   return {
     rhymes: takeUnique(lex.rhymes, 8),
@@ -373,6 +375,9 @@ const RitualPredictionTooltip = ({
     return buildRitualPrediction({ word: activeWord, line: 0, column: 0, contextLine: seedContextLine, surroundingText: seedContextLine });
   }, [predictionProp, activeWord, seedContextLine]);
 
+  // Single prediction authority: once the lexicon lookup for the active word
+  // resolves, the backend is the source of truth — role and resonance tiers are
+  // reconciled from it. Until then the local heuristic renders as provisional.
   const prediction = useMemo(() => {
     if (!basePrediction) return basePrediction;
     const lexMatch = lookupData && normalizeWord(lookupData.word) === normalizeWord(activeWord)

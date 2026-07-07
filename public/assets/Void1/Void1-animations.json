@@ -1,0 +1,60 @@
+{
+  "contract": "VOID1-ANIMATIONS-v1",
+  "asset": "Void1",
+  "canvas": {
+    "width": 32,
+    "height": 48
+  },
+  "animations": {
+    "idle": {
+      "scdl": "Void1.scdl",
+      "loop": "idle",
+      "frames": 4,
+      "defaultDurationMs": 400,
+      "labels": [
+        "rest",
+        "hood-dip",
+        "void-surge",
+        "halo-flicker"
+      ]
+    },
+    "walk": {
+      "scdl": "Void1-walk.scdl",
+      "loop": "walk",
+      "frames": 5,
+      "defaultDurationMs": 200,
+      "labels": [
+        "rest",
+        "stride-L",
+        "pass-mid",
+        "stride-R",
+        "pass-mid2"
+      ]
+    },
+    "cast": {
+      "scdl": "Void1-cast.scdl",
+      "loop": "cast",
+      "frames": 5,
+      "defaultDurationMs": 150,
+      "labels": [
+        "rest",
+        "raise",
+        "channel",
+        "release",
+        "recover"
+      ]
+    },
+    "attack": {
+      "scdl": "Void1-attack.scdl",
+      "loop": "attack",
+      "frames": 4,
+      "defaultDurationMs": 120,
+      "labels": [
+        "rest",
+        "windup",
+        "strike",
+        "recover"
+      ]
+    }
+  }
+}

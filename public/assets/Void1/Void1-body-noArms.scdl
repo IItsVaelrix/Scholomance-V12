@@ -1,0 +1,277 @@
+# Void1.scdl
+# Evil void acolyte — symmetry-locked about x=15.5, top-left lit.
+# v5 Phase 2: asymmetric value ramps + unified cyan rim/core/bright glow.
+
+asset Void1BodyNoArms canvas 32x48
+
+palette {
+  void0     = #08060F
+  voiddeep  = #0F0A1A
+  hoodhi    = #5C4585
+  hood      = #2C1F4D
+  hooddeep  = #16102A
+  hoodshade = #201638
+  hoodlit   = #6A5098
+  robe      = #2C1F4D
+  robesoft  = #3D2D62
+  robemid   = #352560
+  robecore  = #1E1535
+  robeshade = #1B1230
+  robehi    = #4E3880
+  robelight = #5A4288
+  robepale  = #6B5590
+  robefold  = #231838
+  cyan      = #00E5FF
+  cyanbright= #A8F4FF
+  cyandim   = #0077A8
+  cyanrim   = #005A80
+  gold      = #D8B84C
+  goldhi    = #E8CC6A
+  goldmid   = #C4A03E
+  golddark  = #A8862F
+  halo      = #C8D0DC
+  halodim   = #8899AA
+  orbshine  = #C8A8E8
+  orbcore   = #6B4A8C
+  orbrim    = #3D2558
+  orbdeep   = #1E0F30
+  staff     = #12101C
+  staffhi   = #1E1A2E
+  boot      = #08060F
+  joint     = #0A0712
+}
+
+# --- void scepter: vertical shaft, orb crown with matched glow ramp ---
+part staff_shaft material voidsteel {
+  line 25 9 25 46 staff
+  line 26 9 26 46 staffhi
+  cell 25 14 cyanrim
+  cell 26 14 staff
+  cell 25 15 cyandim
+  cell 25 20 cyan
+  cell 26 20 staffhi
+  cell 25 21 cyandim
+  cell 25 26 cyanrim
+  cell 26 26 staff
+  cell 25 27 cyandim
+  cell 25 32 cyan
+  cell 26 32 staffhi
+  cell 25 33 cyandim
+  cell 25 38 cyanrim
+  cell 26 38 staff
+}
+
+part staff_collar material void_core {
+  symmetry x
+  rect 23 8 3 2 orbrim
+  rect 24 8 2 2 orbcore
+  cell 24 9 orbshine
+}
+
+part staff_crescent material cyan_glow {
+  symmetry x
+  path "M 22 4 Q 20 8 22 11 Q 24 8 22 4" cyanrim
+  path "M 22 4 Q 20 8 22 11" voiddeep
+  cell 23 6 cyandim
+  cell 23 7 cyan
+  cell 22 7 voiddeep
+}
+
+part staff_orb material void_core {
+  sphere 25.5 6.5 radius 4 light -1 -1 orbshine orbcore orbcore orbrim orbdeep
+  cell 24 5 orbshine
+  cell 24 7 orbrim
+  cell 26 7 orbrim
+  cell 27 6 voiddeep
+  glow radius 2
+}
+
+part staff_orb_glow material cyan_glow {
+  symmetry x
+  cell 24 8 cyanrim
+  cell 25 8 cyandim
+  cell 25 7 cyan
+  cell 25 6 cyanbright
+  glow radius 1
+}
+
+part staff_halo material void_cloth {
+  symmetry x
+  cell 22 2 halodim
+  cell 23 1 halo
+  cell 24 0 cyanrim
+  cell 25 0 cyandim
+  cell 25 1 cyan
+  cell 26 0 cyanrim
+}
+
+part staff_guard material cyan_glow {
+  symmetry x
+  polygon 25 34 25 36 22 37 22 35 cyanrim
+  polygon 25 34 25 36 28 37 28 35 cyanrim
+  cell 24 35 cyandim
+  cell 25 35 cyan
+  cell 26 35 cyandim
+  cell 25 36 voiddeep
+}
+
+part staff_pommel material cyan_glow {
+  symmetry x
+  cell 25 46 cyandim
+  cell 25 45 cyan
+  cell 24 45 cyanrim
+  cell 26 45 cyanrim
+  cell 25 44 voiddeep
+  glow radius 1
+}
+
+# --- hood: symmetric shape, asymmetric top-left shading ---
+part hood material void_cloth {
+  polygon 15 2 12 4 10 8 9 12 8 16 22 16 21 12 20 8 18 4 hoodhi
+  polygon 15 3 13 5 11 9 10 15 20 15 19 9 17 5 hood
+  polygon 15 4 13 6 11 10 10 14 18 10 18 14 20 10 hooddeep
+  line 15 3 15 14 hooddeep
+}
+
+part hood_shade material void_cloth {
+  cell 12 6 hoodlit
+  cell 13 5 hoodhi
+  cell 18 8 hoodshade
+  cell 19 10 hooddeep
+  line 9 11 9 14 robehi
+  line 21 11 21 14 hooddeep
+  line 10 15 14 15 robeshade
+  line 17 15 20 15 hoodshade
+}
+
+part void_horns material cyan_glow {
+  symmetry x
+  path "M 12 5 Q 10 2 11 0" voiddeep
+  path "M 12 5 Q 10 2 11 0" cyanrim
+  cell 11 1 cyandim
+  cell 11 2 hooddeep
+  glow radius 1
+}
+
+part face_void material void_cloth {
+  rect 12 10 8 5 void0
+  rect 13 11 6 3 voiddeep
+  line 13 10 18 10 hooddeep
+}
+
+part eyes material cyan_glow {
+  symmetry x
+  rect 11 11 3 1 cyanrim
+  rect 12 13 2 1 cyanrim
+  rect 12 12 2 1 cyandim
+  rect 12 12 2 1 cyan
+  cell 13 12 cyanbright
+  glow radius 1
+}
+
+part shoulders material void_cloth {
+  rect 7 16 18 2 robehi
+  rect 7 16 18 1 golddark
+  rect 8 17 16 1 goldmid
+  cell 8 17 goldhi
+  cell 23 17 gold
+  cell 8 18 joint
+  cell 23 18 joint
+  rect 7 18 4 1 robepale
+  rect 21 18 4 1 hoodshade
+}
+
+part chest_cross_rim material cyan_glow {
+  symmetry x
+  rect 11 21 10 1 cyanrim
+  rect 11 23 10 1 cyanrim
+  rect 13 18 6 1 cyanrim
+  rect 13 26 6 1 cyanrim
+  rect 14 19 1 8 cyanrim
+  rect 17 19 1 8 cyanrim
+  glow radius 1
+}
+
+part chest_cross material cyan_glow {
+  rect 12 22 8 1 cyandim
+  rect 13 22 6 1 cyan
+  rect 14 19 4 8 cyandim
+  rect 15 19 2 8 cyan
+  rect 15 20 2 6 cyanbright
+  cell 15 22 cyanbright
+  glow radius 1
+}
+
+part chest_ao material void_cloth {
+  rect 13 23 4 4 robecore
+}
+
+part robe material void_cloth {
+  polygon 7 18 24 18 24 39 25 41 25 43 6 43 6 41 7 39 robe
+  polygon 8 18 23 18 23 38 24 40 24 42 7 42 7 40 8 38 robesoft
+  line 7 21 6 40 robefold
+  line 24 21 25 40 robefold
+  line 9 19 9 40 robehi
+  line 10 20 10 39 robelight
+  line 11 21 11 38 robepale
+  line 21 20 21 39 robecore
+  line 22 19 22 40 robeshade
+  rect 14 19 3 22 robecore
+  rect 7 42 18 1 golddark
+  rect 8 43 16 1 goldmid
+  cell 8 43 goldhi
+  cell 15 43 gold
+  cell 23 43 gold
+}
+
+part collar material void_cloth {
+  rect 9 17 14 2 robehi
+  rect 9 17 14 1 golddark
+  rect 10 17 12 1 goldmid
+  cell 10 18 golddark
+  cell 13 17 goldhi
+  cell 14 17 gold
+  cell 15 17 goldhi
+  cell 16 17 gold
+  cell 17 17 goldmid
+  rect 9 17 5 2 robepale
+  rect 18 17 5 2 hoodshade
+}
+
+part sash material cyan_glow {
+  rect 8 28 16 2 cyanrim
+  rect 9 28 14 1 cyandim
+  rect 10 28 12 1 cyan
+  rect 11 28 10 1 cyanbright
+  cell 10 30 joint
+  cell 21 30 joint
+}
+
+part legL material void_cloth {
+  polygon 9 30 12 30 11 43 8 43 robeshade
+  line 9 31 9 42 robemid
+  line 8 32 8 42 robehi
+  line 10 32 10 42 robepale
+  cell 10 30 joint
+  cell 10 38 joint
+  cell 10 43 joint
+}
+
+part legR material void_cloth {
+  polygon 20 30 23 30 24 43 21 43 robeshade
+  line 23 31 23 42 robemid
+  line 24 32 24 42 robe
+  line 22 32 22 42 robecore
+  cell 21 30 joint
+  cell 21 38 joint
+  cell 21 43 joint
+}
+
+part boots material voidsteel {
+  symmetry x
+  rect 9 44 5 4 boot
+  cell 10 47 golddark
+  cell 11 46 robeshade
+}
+
+

@@ -1,0 +1,32 @@
+asset hologram_fern canvas 64x64
+
+palette {
+  stem       = #2dd4bf
+  fern_mid   = #0d9488
+  fern_light = #5eead4
+  fern_glow  = #ccfbf1
+}
+
+part fern material energy {
+  glow radius 1
+  
+  # main stem
+  line 32 60 32 20 stem
+  
+  # left fronds
+  line 32 50 16 44 fern_mid
+  line 32 40 20 34 fern_light
+  line 32 30 24 24 fern_glow
+  
+  # right fronds
+  line 32 50 48 44 fern_mid
+  line 32 40 44 34 fern_light
+  line 32 30 40 24 fern_glow
+  
+  # scanline noise effect
+  line 24 20 40 20 fern_glow
+  line 16 34 48 34 fern_light
+  line 20 44 44 44 fern_mid
+}
+
+export png

@@ -1,0 +1,677 @@
+{
+  "contract": "ITEM-SPEC-v1",
+  "id": "ice.slime.staff.hd.v1",
+  "class": "weapon",
+  "archetype": "staff",
+  "canvas": {
+    "width": 48,
+    "height": 128,
+    "gridSize": 1
+  },
+  "seed": 888,
+  "bytecode": "VW-NATURE-INEXPLICABLE-HARMONIC",
+  "bands": 6,
+  "parts": [
+    {
+      "id": "shaft",
+      "profile": "staff.shaft",
+      "params": {
+        "cx": 24,
+        "span": [
+          30,
+          90
+        ],
+        "half": 2
+      },
+      "attach": null,
+      "fill": {
+        "material": "darksteel"
+      },
+      "outline": {
+        "material": "silver"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "shaft_shadow",
+      "profile": "cylinder.shadow",
+      "params": {
+        "cx": 24,
+        "length": 60,
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "darksteel",
+        "anchor": "shadow"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "shaft_highlight",
+      "profile": "cylinder.highlight",
+      "params": {
+        "cx": 24,
+        "length": 60,
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "darksteel",
+        "anchor": "frost"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "shaft_glint",
+      "profile": "cylinder.highlight",
+      "params": {
+        "cx": 24,
+        "length": 6,
+        "half": 1
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "cyan_glow",
+        "anchor": "body"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "shaft_rune_lattice",
+      "profile": "shaft.rune_lattice",
+      "params": {
+        "cx": 24,
+        "span": [
+          30,
+          90
+        ],
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "shaft_lattice_glow",
+      "profile": "shaft.rune_lattice",
+      "params": {
+        "cx": 24,
+        "span": [
+          30,
+          90
+        ],
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "cyan_glow",
+        "anchor": "body"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb",
+      "profile": "orb.perfect",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice"
+      },
+      "outline": {
+        "material": "void_ice",
+        "anchor": "spectral"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_shadow",
+      "profile": "orb.perfect_shadow",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "shadow"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_deep_shadow",
+      "profile": "orb.perfect_deep_shadow",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_frost",
+      "profile": "orb.perfect_frost",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "frost"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_highlight",
+      "profile": "highlight.blob",
+      "params": {},
+      "attach": {
+        "parent": "orb",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice"
+      },
+      "outline": {
+        "material": "sapphire_enamel",
+        "anchor": "spectral"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_bubble",
+      "profile": "bubble.tiny",
+      "params": {},
+      "attach": {
+        "parent": "orb",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice"
+      },
+      "outline": {
+        "material": "sapphire_enamel",
+        "anchor": "whiteCore"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_ring",
+      "profile": "orb.ring.symmetric",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "orb",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": {
+        "material": "void_ice",
+        "anchor": "spectral"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "orb_ring_glow",
+      "profile": "orb.ring_glow",
+      "params": {
+        "r": 9
+      },
+      "attach": {
+        "parent": "orb",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "frost"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "cradle",
+      "profile": "setting.cradle",
+      "params": {
+        "r": 10
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "silver"
+      },
+      "outline": {
+        "material": "silver"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "cradle_highlight",
+      "profile": "setting.cradle_highlight",
+      "params": {
+        "r": 10
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "silver",
+        "anchor": "spectral"
+      },
+      "outline": {
+        "material": "silver",
+        "anchor": "spectral"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "ribbon",
+      "profile": "slime.ribbon",
+      "params": {
+        "cx": 0,
+        "length": 40,
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice"
+      },
+      "outline": {
+        "material": "sapphire_enamel"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "ribbon_highlight",
+      "profile": "ribbon.highlight",
+      "params": {
+        "cx": 0,
+        "length": 40,
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "spectral"
+      },
+      "outline": {
+        "material": "sapphire_enamel",
+        "anchor": "whiteCore"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "ribbon_shadow",
+      "profile": "ribbon.shadow",
+      "params": {
+        "cx": 0,
+        "length": 40,
+        "half": 2
+      },
+      "attach": {
+        "parent": "shaft",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_mount",
+      "profile": "core.mount",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "silver"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_mount_shadow",
+      "profile": "core.mount_shadow",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "silver",
+        "anchor": "shadow"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_mount_highlight",
+      "profile": "core.mount_highlight",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "silver",
+        "anchor": "frost"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_gem",
+      "profile": "core.gem",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice"
+      },
+      "outline": {
+        "material": "sapphire_enamel"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_gem_shadow",
+      "profile": "core.gem_shadow",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "shadow"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "core_gem_highlight",
+      "profile": "core.gem_highlight",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "center"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "spectral"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "bezel",
+      "profile": "guard.void_wings",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "silver"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "bezel_highlight",
+      "profile": "guard.highlight",
+      "params": {},
+      "attach": {
+        "parent": "bezel",
+        "at": "center"
+      },
+      "fill": {
+        "material": "silver",
+        "anchor": "spectral"
+      },
+      "outline": {
+        "material": "silver",
+        "anchor": "spectral"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "bezel_void_trim",
+      "profile": "guard.void_wings",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "bezel_void_glow",
+      "profile": "guard.void_wings",
+      "params": {},
+      "attach": {
+        "parent": "shaft",
+        "at": "base"
+      },
+      "fill": {
+        "material": "cyan_glow",
+        "anchor": "body"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "grip",
+      "profile": "staff.handle",
+      "params": {
+        "length": 22,
+        "half": 3
+      },
+      "attach": {
+        "parent": "bezel",
+        "at": "base"
+      },
+      "fill": {
+        "material": "darksteel"
+      },
+      "outline": {
+        "material": "silver"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "grip_shadow",
+      "profile": "cylinder.shadow",
+      "params": {
+        "length": 22,
+        "half": 3
+      },
+      "attach": {
+        "parent": "bezel",
+        "at": "base"
+      },
+      "fill": {
+        "material": "darksteel",
+        "anchor": "shadow"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "grip_highlight",
+      "profile": "cylinder.highlight",
+      "params": {
+        "length": 22,
+        "half": 3
+      },
+      "attach": {
+        "parent": "bezel",
+        "at": "base"
+      },
+      "fill": {
+        "material": "darksteel",
+        "anchor": "frost"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "grip_trim",
+      "profile": "staff.handle_trim",
+      "params": {
+        "length": 22,
+        "half": 3
+      },
+      "attach": {
+        "parent": "bezel",
+        "at": "base"
+      },
+      "fill": {
+        "material": "silver"
+      },
+      "outline": {
+        "material": "silver",
+        "anchor": "shadow"
+      },
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "pommel",
+      "profile": "pommel.void_orb",
+      "params": {
+        "r": 3
+      },
+      "attach": {
+        "parent": "grip",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "void_ice",
+        "anchor": "deep"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    },
+    {
+      "id": "pommel_glow",
+      "profile": "pommel.void_orb_glow",
+      "params": {
+        "r": 3
+      },
+      "attach": {
+        "parent": "grip",
+        "at": "tip"
+      },
+      "fill": {
+        "material": "cyan_glow",
+        "anchor": "body"
+      },
+      "outline": null,
+      "motif": null,
+      "wrap": null
+    }
+  ],
+  "shader": null
+}

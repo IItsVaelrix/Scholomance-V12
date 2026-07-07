@@ -1,0 +1,378 @@
+{
+  "kind": "pixelbrain.asset.v1",
+  "id": "pbasset_ec3a195e",
+  "schemaVersion": 1,
+  "source": {
+    "kind": "scdl",
+    "id": "forest_map",
+    "label": "SCDL:forest_map",
+    "importedAt": null
+  },
+  "canvas": {
+    "width": 160,
+    "height": 90,
+    "cellSize": 1,
+    "gridSize": 1,
+    "transparent": true,
+    "background": "#00000000"
+  },
+  "geometry": {
+    "mode": "scene-graph",
+    "bounds": {},
+    "coordinates": [],
+    "cells": [],
+    "sceneGraph": {
+      "contract": "PB-SCENE-GRAPH-v1",
+      "version": "1.0.0",
+      "depthCap": 8,
+      "canvas": {
+        "width": 160,
+        "height": 90
+      },
+      "defs": {
+        "tree": {
+          "nodes": [
+            {
+              "kind": "part",
+              "id": "trunk",
+              "material": "bark",
+              "ops": [
+                {
+                  "op": "rect",
+                  "x": -1,
+                  "y": 0,
+                  "w": 3,
+                  "h": 10,
+                  "color": "#26180E"
+                }
+              ]
+            },
+            {
+              "kind": "part",
+              "id": "canopy",
+              "material": "pine_needle",
+              "ops": [
+                {
+                  "op": "circle",
+                  "cx": 0,
+                  "cy": -4,
+                  "radius": 6,
+                  "color": "#14301E"
+                },
+                {
+                  "op": "circle",
+                  "cx": -2,
+                  "cy": -6,
+                  "radius": 3,
+                  "color": "#23532F"
+                }
+              ]
+            }
+          ]
+        },
+        "shrub": {
+          "nodes": [
+            {
+              "kind": "part",
+              "id": "blob",
+              "material": "pine_needle",
+              "ops": [
+                {
+                  "op": "symmetry",
+                  "axis": "x",
+                  "count": 4
+                },
+                {
+                  "op": "circle",
+                  "cx": 2,
+                  "cy": 0,
+                  "radius": 2,
+                  "color": "#14301E"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "roots": [
+        {
+          "kind": "part",
+          "id": "sky",
+          "material": "void_cloth",
+          "ops": [
+            {
+              "op": "rect",
+              "x": 0,
+              "y": 0,
+              "w": 160,
+              "h": 50,
+              "color": "#1B2A4A"
+            }
+          ]
+        },
+        {
+          "kind": "part",
+          "id": "ridge",
+          "material": "darksteel",
+          "ops": [
+            {
+              "op": "polygon",
+              "points": [
+                [
+                  0,
+                  50
+                ],
+                [
+                  40,
+                  30
+                ],
+                [
+                  90,
+                  44
+                ],
+                [
+                  130,
+                  26
+                ],
+                [
+                  160,
+                  38
+                ],
+                [
+                  160,
+                  50
+                ]
+              ],
+              "color": "#16223C"
+            }
+          ]
+        },
+        {
+          "kind": "part",
+          "id": "ground",
+          "material": "bark",
+          "ops": [
+            {
+              "op": "rect",
+              "x": 0,
+              "y": 50,
+              "w": 160,
+              "h": 40,
+              "color": "#101C2E"
+            }
+          ]
+        },
+        {
+          "kind": "group",
+          "id": "forest",
+          "transform": {
+            "tx": 0,
+            "ty": 62,
+            "theta": 0,
+            "sx": 1,
+            "sy": 1,
+            "mirror": null
+          },
+          "children": [
+            {
+              "kind": "instance",
+              "ref": "tree",
+              "name": null,
+              "transform": {
+                "tx": 22,
+                "ty": 0,
+                "theta": 0,
+                "sx": 1,
+                "sy": 1,
+                "mirror": null
+              },
+              "materialOverride": null
+            },
+            {
+              "kind": "instance",
+              "ref": "tree",
+              "name": "leaning",
+              "transform": {
+                "tx": 52,
+                "ty": 2,
+                "theta": 8,
+                "sx": 1.2,
+                "sy": 1.2,
+                "mirror": null
+              },
+              "materialOverride": null
+            },
+            {
+              "kind": "instance",
+              "ref": "tree",
+              "name": null,
+              "transform": {
+                "tx": 84,
+                "ty": -2,
+                "theta": 0,
+                "sx": 1,
+                "sy": 1,
+                "mirror": "x"
+              },
+              "materialOverride": null
+            },
+            {
+              "kind": "group",
+              "id": "knoll",
+              "transform": {
+                "tx": 116,
+                "ty": 4,
+                "theta": 3,
+                "sx": 1,
+                "sy": 1,
+                "mirror": null
+              },
+              "children": [
+                {
+                  "kind": "instance",
+                  "ref": "tree",
+                  "name": null,
+                  "transform": {
+                    "tx": 0,
+                    "ty": 0,
+                    "theta": 0,
+                    "sx": 0.8,
+                    "sy": 0.8,
+                    "mirror": null
+                  },
+                  "materialOverride": null
+                },
+                {
+                  "kind": "instance",
+                  "ref": "shrub",
+                  "name": null,
+                  "transform": {
+                    "tx": 14,
+                    "ty": 6,
+                    "theta": 0,
+                    "sx": 1,
+                    "sy": 1,
+                    "mirror": null
+                  },
+                  "materialOverride": null
+                }
+              ]
+            },
+            {
+              "kind": "instance",
+              "ref": "shrub",
+              "name": null,
+              "transform": {
+                "tx": 8,
+                "ty": 8,
+                "theta": 0,
+                "sx": 1.5,
+                "sy": 1.5,
+                "mirror": null
+              },
+              "materialOverride": null
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "palette": {
+    "sourcePalette": [
+      {
+        "key": "scdl-source",
+        "colors": [
+          "#1B2A4A",
+          "#16223C",
+          "#101C2E",
+          "#26180E",
+          "#14301E",
+          "#23532F"
+        ],
+        "source": "scdl",
+        "weights": [],
+        "byteMap": {
+          "0": "#1B2A4A",
+          "1": "#16223C",
+          "2": "#101C2E",
+          "3": "#26180E",
+          "4": "#14301E",
+          "5": "#23532F"
+        }
+      }
+    ],
+    "semanticPalette": [],
+    "materialPalette": [],
+    "byteMap": {
+      "0": "#1B2A4A",
+      "1": "#16223C",
+      "2": "#101C2E",
+      "3": "#26180E",
+      "4": "#14301E",
+      "5": "#23532F"
+    },
+    "authority": "scdl.emit-packet.v1"
+  },
+  "formula": null,
+  "bytecode": {
+    "raw": "",
+    "components": {},
+    "authority": "none",
+    "materialStage": "source"
+  },
+  "template": {
+    "id": null,
+    "gridType": null,
+    "symmetryAxes": [],
+    "slots": [],
+    "fillState": {}
+  },
+  "material": {
+    "id": "source",
+    "variant": null,
+    "registryVersion": "0.2.0",
+    "parameters": {}
+  },
+  "chromatic": {
+    "transformId": "source",
+    "diagnostics": []
+  },
+  "photonic": {
+    "routeId": null,
+    "packetId": null,
+    "status": "idle"
+  },
+  "provenance": {
+    "createdBy": "scdl-compiler.v1",
+    "operations": [
+      {
+        "op": "parse",
+        "checksum": "00000000e35c6289"
+      },
+      {
+        "op": "semantic-unifier",
+        "schemaVersion": "PB-SEM-v1"
+      },
+      {
+        "op": "scene-graph",
+        "defCount": 2,
+        "rootNodeCount": 11
+      }
+    ]
+  },
+  "metadata": {
+    "tags": [
+      "scdl",
+      "scene-graph",
+      "forest_map"
+    ],
+    "notes": [
+      "SCDL scene-graph asset: forest_map",
+      "Canvas: 160x90",
+      "Defs: tree, shrub"
+    ],
+    "compatibility": {}
+  },
+  "sdfDescriptors": [],
+  "noiseDescriptors": []
+}

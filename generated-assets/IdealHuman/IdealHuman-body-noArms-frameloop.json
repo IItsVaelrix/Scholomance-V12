@@ -1,0 +1,67 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "IdealHuman",
+  "loop": "walk",
+  "canvas": {
+    "width": 64,
+    "height": 128
+  },
+  "defaultDurationMs": 800,
+  "sourceChecksum": "00000000fbf657ff",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 800,
+      "packet": "pbasset_3e147fe7"
+    },
+    {
+      "index": 1,
+      "label": "contactL",
+      "durationMs": 800,
+      "packet": "pbasset_ba440920"
+    },
+    {
+      "index": 2,
+      "label": "riseL",
+      "durationMs": 800,
+      "packet": "pbasset_a34f1f97"
+    },
+    {
+      "index": 3,
+      "label": "passL",
+      "durationMs": 800,
+      "packet": "pbasset_a34f1f97"
+    },
+    {
+      "index": 4,
+      "label": "fallL",
+      "durationMs": 800,
+      "packet": "pbasset_ba440920"
+    },
+    {
+      "index": 5,
+      "label": "contactR",
+      "durationMs": 800,
+      "packet": "pbasset_f8ab3b77"
+    },
+    {
+      "index": 6,
+      "label": "riseR",
+      "durationMs": 800,
+      "packet": "pbasset_daf29f15"
+    },
+    {
+      "index": 7,
+      "label": "passR",
+      "durationMs": 800,
+      "packet": "pbasset_daf29f15"
+    },
+    {
+      "index": 8,
+      "label": "fallR",
+      "durationMs": 800,
+      "packet": "pbasset_f8ab3b77"
+    }
+  ]
+}

@@ -10,11 +10,6 @@ from tui.services.env_config import get_config, get_model, get_openai_client
 from tui.services.tool_service import ToolService, get_pending_diff, _side_by_side_pairs
 from tui.utils.throttle import llm_throttle
 from tui.services.token_meter import meter
-
-# Compiled once: pulls the write_id out of a replace_file_content result so we
-# can fetch the side-by-side blob from the tool service and render it inline.
-_WID_RX = re.compile(r"\[write_id=(w\d+)\]")
-
 # Compiled once: pulls the write_id out of a replace_file_content result so we
 # can fetch the side-by-side blob from the tool service and render it inline.
 _WID_RX = re.compile(r"\[write_id=(w\d+)\]")

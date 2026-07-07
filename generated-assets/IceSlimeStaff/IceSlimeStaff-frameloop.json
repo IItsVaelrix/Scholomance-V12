@@ -1,0 +1,67 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "IceSlimeStaff",
+  "loop": "ether",
+  "canvas": {
+    "width": 64,
+    "height": 128
+  },
+  "defaultDurationMs": 220,
+  "sourceChecksum": "00000000a90103da",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 220,
+      "packet": "pbasset_d3d727fc"
+    },
+    {
+      "index": 1,
+      "label": "sparkle-peak",
+      "durationMs": 220,
+      "packet": "pbasset_2e3a2785"
+    },
+    {
+      "index": 2,
+      "label": "ether-mid",
+      "durationMs": 220,
+      "packet": "pbasset_177aa544"
+    },
+    {
+      "index": 3,
+      "label": "ether-base",
+      "durationMs": 220,
+      "packet": "pbasset_a5784926"
+    },
+    {
+      "index": 4,
+      "label": "contactL",
+      "durationMs": 220,
+      "packet": "pbasset_933ef199"
+    },
+    {
+      "index": 5,
+      "label": "riseL",
+      "durationMs": 220,
+      "packet": "pbasset_b1563822"
+    },
+    {
+      "index": 6,
+      "label": "passL",
+      "durationMs": 220,
+      "packet": "pbasset_a5784926"
+    },
+    {
+      "index": 7,
+      "label": "fallL",
+      "durationMs": 220,
+      "packet": "pbasset_933ef199"
+    },
+    {
+      "index": 8,
+      "label": "contactR",
+      "durationMs": 220,
+      "packet": "pbasset_b1563822"
+    }
+  ]
+}

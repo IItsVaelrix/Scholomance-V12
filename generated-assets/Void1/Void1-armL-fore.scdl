@@ -1,0 +1,19 @@
+# Void1-armL-fore.scdl — left elbow → wrist joint segment
+
+asset Void1ArmLFore canvas 32x48
+
+palette {
+  robehi    = #4E3880
+  robeshade = #1B1230
+  joint     = #0A0712
+  cyandim   = #0077A8
+}
+
+part armL_fore material void_cloth {
+  polygon 6 26 9 26 8 34 5 34 robehi
+  line 6 27 6 33 robeshade
+  cell 7 26 joint
+  cell 7 34 joint
+  cell 6 35 cyandim
+}
+export json png
