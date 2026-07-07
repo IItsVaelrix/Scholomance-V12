@@ -69,11 +69,9 @@ import {
 import { engraveMotifs, hashMotifs } from './motif-engraver.js';
 import { buildItemEffectShader } from './item-effect-shader.js';
 import { forgePacket } from './semantic-bridge.js';
-import { createShaderPacket, hashShaderPacket } from './shader-packet.js';
 import { MATERIAL_PALETTES, resolveMaterialId, SOURCE_MATERIAL } from './material-registry.js';
 import { exportToPhaserPipeline } from '../../../src/lib/exporters/pixelbrainPhaserShaderExport.js';
 import { normalizeItemSpec, hashItemSpec, validateItemSpec } from './item-spec.js';
-import { hashString } from './shared.js';
 import { SDFShapeAMP } from './sdf-shape-amp.js';
 import { NoiseFillAMP } from './noise-fill-amp.js';
 
@@ -83,7 +81,7 @@ function err(reason, context) {
   return e;
 }
 
-function defaultMaterialResolver(materialRegistry) {
+function defaultMaterialResolver() {
   return (target) => {
     if (!target || !target.material) return null;
     const id = resolveMaterialId(target.material);
@@ -123,7 +121,6 @@ function applyPartRules(fills, spec) {
       const wrapColor = resolveWrapColor(part);
       if (!wrapColor) return cell.color;
       const wrapPeriod = Math.max(1, Math.round(part.wrap?.period || 3));
-      const spanStart = Math.round(part.attach ? 0 : 0);
       const relativeY = cell.y - ctx.partYStart[part.id];
       if (relativeY >= 0 && relativeY % wrapPeriod === 0) return wrapColor;
       return cell.color;
@@ -322,7 +319,6 @@ export function forgeItemAsset(rawSpec, opts = {}) {
   }
 
   const constructionHints = constructionResult ? constructionResult.constructionHints : null;
-  const referenceCells = constructionResult ? constructionResult.referenceCells : null;
   const constructionSkeleton = constructionResult ? constructionResult.constructionSkeleton || constructionResult.skeleton : null;
 
   // SDF and Coherent Noise integration (full per 2026-06-12-pixelbrain-sdf-and-coherent-noise-integration-pdr.md)
@@ -508,6 +504,12 @@ export function forgeItemAsset(rawSpec, opts = {}) {
       construction: constructionResult,
     };
 
+    // Dual-track route execution: validate the seam contract against the
+    // geometry we've already produced, and (only when a real executor is in
+    // the route, currently `createVolumeLiftStep` for the pickaxe) let it
+    // mutate `results`. `executeRoute` is the right call here because we
+    // need `results.voxel.volume` below; for contract-only checks elsewhere
+    // prefer `validateRoute`.
     const results = executeRoute(routeBundle.routeDefinition, context);
     routeDiagnostics = results.diagnostics;
     routeVolume = results?.voxel?.volume || null;

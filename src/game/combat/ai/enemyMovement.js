@@ -39,8 +39,17 @@ export function planHold(ctx) {
 
 export function planAdvance(ctx) {
   if (movementBudget(ctx) === 0) return null;
-  const path = findPath(ctx.self.position, ctx.target.position, ctx.blocked);
-  if (!path.length) return null;
+  let path = findPath(ctx.self.position, ctx.target.position, ctx.blocked);
+
+  // If pathfinding directly to the target fails (e.g., target is blocked),
+  // fallback to the reachable tile closest to the target via Manhattan ballistics.
+  if (!path.length) {
+    const best = bestReachable(ctx, (t) => -manhattan(t, ctx.target.position));
+    if (!best) return null;
+    path = stepsTo(ctx, best);
+    if (!path.length) return null;
+  }
+
   const range = ctx.abilityKit?.preferredRange ?? ctx.self.attackRange ?? 1;
   const cap = Math.min(path.length, movementBudget(ctx));
   let k = cap;

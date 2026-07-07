@@ -370,7 +370,12 @@ export function extractParsedClauses(parsed) {
 export function resolveWeaveTargets(clauses, sceneContext) {
   const modeHint = deriveCastModeHint(clauses);
 
-  if (!sceneContext || !Array.isArray(clauses) || clauses.length === 0) {
+  if (
+    !sceneContext
+    || !Array.isArray(sceneContext.targets)
+    || !Array.isArray(clauses)
+    || clauses.length === 0
+  ) {
     return {
       clauses: [],
       primaryTargetId: null,
@@ -491,6 +496,6 @@ export function resolveWeaveTargetsFromParsed(parsed, sceneContext, weaveText = 
  * @param {string} targetId
  */
 export function findSceneTargetLabel(sceneContext, targetId) {
-  if (!sceneContext || !targetId) return null;
+  if (!sceneContext || !targetId || !Array.isArray(sceneContext.targets)) return targetId || null;
   return sceneContext.targets.find((target) => target.id === targetId)?.label ?? targetId;
 }

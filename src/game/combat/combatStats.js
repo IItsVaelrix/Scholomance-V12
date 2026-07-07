@@ -43,7 +43,7 @@ export const COMBAT_STATS = [
     base: 100,
     min: 0,
     max: 999,
-    description: 'Mana spent to Invoke spellweave; refills each turn via sonic resonance.',
+    description: 'Arcane reservoir (siphon rewards, future systems). Invoke spellweave spends 3 AP instead.',
   },
   {
     key: 'intelligence',

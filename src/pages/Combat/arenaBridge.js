@@ -27,6 +27,8 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.off('tile-error');
     scene.events.off('obelisk-discovery');
     scene.events.off('obelisk-loot');
+    scene.events.off('combat-loot');
+    scene.events.off('combat-chest-spawn');
     scene.events.off('obelisk-reject');
     scene.events.off('sentinel-defeated');
     scene.events.off('sentinel-aggro');
@@ -34,6 +36,9 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.off('portal-unsealed');
     scene.events.off('portal-warden-spawn');
     scene.events.off('sentinel-ability');
+    scene.events.off('battle-board-compiled');
+    scene.events.off('polaris-teleport-start');
+    scene.events.off('polaris-forest-ready');
     scene.events.off('tile-gather');
     scene.events.on('tile-inspect', handler);
     scene.events.on('tile-interact', handler);
@@ -41,6 +46,8 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.on('tile-gather', handler);
     scene.events.on('obelisk-discovery', handler);
     scene.events.on('obelisk-loot', handler);
+    scene.events.on('combat-loot', handler);
+    scene.events.on('combat-chest-spawn', handler);
     scene.events.on('obelisk-reject', handler);
     scene.events.on('sentinel-defeated', handler);
     scene.events.on('sentinel-aggro', handler);
@@ -48,13 +55,21 @@ export function bridgeArenaScene(game, sceneKey, handler) {
     scene.events.on('portal-unsealed', handler);
     scene.events.on('portal-warden-spawn', handler);
     scene.events.on('sentinel-ability', handler);
+    scene.events.on('battle-board-compiled', handler);
+    scene.events.on('polaris-teleport-start', handler);
+    scene.events.on('polaris-forest-ready', handler);
     return true;
+  };
+
+  const scheduleWire = () => {
+    if (wire()) return;
+    game?.events?.once?.('step', scheduleWire);
   };
 
   if (game?.isRunning) {
     // Already past boot (fast remount) — the scene is in the registry now.
-    wire();
+    scheduleWire();
   } else {
-    game?.events?.once?.('ready', wire);
+    game?.events?.once?.('ready', scheduleWire);
   }
 }

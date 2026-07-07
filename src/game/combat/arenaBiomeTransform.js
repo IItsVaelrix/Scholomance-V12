@@ -21,13 +21,25 @@ export const VOID_BIOME_PALETTE_KEYS = Object.freeze({
   trench: 'voidsteel',
 });
 
+/** Sonic thaumaturgist forest — mossy teal earth with resonant crystal peaks. */
+export const POLARIS_SONIC_PALETTE_KEYS = Object.freeze({
+  deep: 'sonic_moss',
+  mid: 'sonic_moss',
+  slope: 'sonic_bark',
+  peak: 'cyan_glow',
+  edge: 'sonic_bark',
+  trench: 'sonic_moss',
+});
+
 /**
  * @param {'void'|'frozen'} biome
  * @param {{ z: number, isEdge: boolean }} voxel
  * @returns {keyof typeof ICE_BIOME_PALETTE_KEYS}
  */
 export function resolveVoxelPaletteBand(biome, { z, isEdge }) {
-  const table = biome === 'frozen' ? ICE_BIOME_PALETTE_KEYS : VOID_BIOME_PALETTE_KEYS;
+  const table = biome === 'polaris_sonic'
+    ? POLARIS_SONIC_PALETTE_KEYS
+    : (biome === 'frozen' ? ICE_BIOME_PALETTE_KEYS : VOID_BIOME_PALETTE_KEYS);
   if (isEdge) return table.edge;
   if (z > 22) return table.peak;
   if (z > 14) return table.slope;
@@ -46,6 +58,21 @@ export function applyIceBiome(scene) {
   }
   if (scene.iceSmokeEmitter) {
     scene.iceSmokeEmitter.setFrequency(28);
+  }
+  return true;
+}
+
+/**
+ * @param {object} scene - CombatArenaScene with arenaBiome + redrawVoxelTerrain
+ */
+export function applyPolarisSonicBiome(scene) {
+  if (!scene) return false;
+  scene.arenaBiome = 'polaris_sonic';
+  if (typeof scene.redrawVoxelTerrain === 'function') {
+    scene.redrawVoxelTerrain();
+  }
+  if (scene.iceSmokeEmitter) {
+    scene.iceSmokeEmitter.setFrequency(12);
   }
   return true;
 }

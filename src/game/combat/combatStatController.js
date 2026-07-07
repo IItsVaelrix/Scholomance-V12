@@ -8,8 +8,12 @@
 import { BASE_MP_REGEN, MIN_COMBAT_DAMAGE, computeCombatManaRegen } from '../../../codex/core/combat.balance.js';
 import { buildDefaultStatBlock, BASIC_ATTACK_AP_COST, GUARD_DAMAGE_MULTIPLIER } from './combatStats.js';
 import { isWalkable } from './combatPathfinding.js';
-import { SPELL_CAST_MANA_COST } from './combatMana.js';
-import { buildDefaultScholomanceStatBlock, computeBasicAttackDamage } from './scholomanceStats.js';
+import { SPELL_CAST_AP_COST, SPELL_CAST_MANA_COST } from './combatMana.js';
+import {
+  buildDefaultScholomanceStatBlock,
+  computeBasicAttackDamage,
+  getEffectiveScholomance,
+} from './scholomanceStats.js';
 
 const CARDINAL_DELTAS = Object.freeze([
   { tx: 0, ty: 1 },
@@ -40,11 +44,15 @@ export class CombatStatController {
       maxHp,
       position: { tx, ty },
       attackUsed: false,
+      spellweaveUsed: false,
       manaUsed: false,
       lastScoreData: null,
       statuses: [],
       guarding: false,
       voidLockedTurnsRemaining: 0,
+      equipmentScholomanceBonus: {},
+      grantedAbilities: [],
+      icicleSlamCooldown: 0,
     };
     this.entities.set(id, record);
     return record;
@@ -110,6 +118,12 @@ export class CombatStatController {
     e.attackRange = base.attackRange + bonusRng;
     e.movementPointsRemaining = Math.max(0, prevRemaining + (e.movementPoints - prevMax));
     e.attackPointsRemaining = Math.max(0, prevAtkRemaining + (e.attackPoints - prevAtkMax));
+    e.equipmentScholomanceBonus = modifiers.scholomance && typeof modifiers.scholomance === 'object'
+      ? { ...modifiers.scholomance }
+      : {};
+    e.grantedAbilities = Array.isArray(modifiers.grantedAbilities)
+      ? [...modifiers.grantedAbilities]
+      : [];
     return e;
   }
 
@@ -141,7 +155,8 @@ export class CombatStatController {
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
     if (!attacker || !target) return false;
-    if (attacker.manaPointsRemaining < SPELL_CAST_MANA_COST) return false;
+    if (attacker.spellweaveUsed) return false;
+    if (attacker.attackPointsRemaining < SPELL_CAST_AP_COST) return false;
     if (target.hp !== null && target.hp <= 0) return false;
     return this.manhattan(attackerId, targetId) <= attacker.attackRange;
   }
@@ -154,7 +169,7 @@ export class CombatStatController {
     if (!this.canAttack(attackerId, targetId)) return null;
     const attacker = this.entities.get(attackerId);
     const target = this.entities.get(targetId);
-    const rawDamage = computeBasicAttackDamage(attacker.scholomance);
+    const rawDamage = computeBasicAttackDamage(getEffectiveScholomance(attacker));
     const damage = target.guarding
       ? Math.max(1, Math.round(rawDamage * GUARD_DAMAGE_MULTIPLIER))
       : rawDamage;
@@ -181,13 +196,14 @@ export class CombatStatController {
       : rawSpellDamage;
     const targetHp = Math.max(0, (target.hp ?? 0) - spellDamage);
     target.hp = targetHp;
-    attacker.manaPointsRemaining -= SPELL_CAST_MANA_COST;
-    attacker.manaUsed = attacker.manaPointsRemaining < SPELL_CAST_MANA_COST;
+    attacker.attackPointsRemaining -= SPELL_CAST_AP_COST;
+    attacker.spellweaveUsed = true;
+    attacker.attackUsed = attacker.attackPointsRemaining < BASIC_ATTACK_AP_COST;
     if (scoreData) attacker.lastScoreData = scoreData;
     return {
       damage: spellDamage,
-      manaSpent: SPELL_CAST_MANA_COST,
-      manaPointsRemaining: attacker.manaPointsRemaining,
+      apSpent: SPELL_CAST_AP_COST,
+      attackPointsRemaining: attacker.attackPointsRemaining,
       targetHp,
       targetDefeated: targetHp <= 0,
     };
@@ -280,7 +296,11 @@ export class CombatStatController {
     }
     e.attackPointsRemaining = e.attackPoints;
     e.attackUsed = false;
+    e.spellweaveUsed = false;
     e.guarding = false;
+    if ((e.icicleSlamCooldown ?? 0) > 0) {
+      e.icicleSlamCooldown -= 1;
+    }
     const manaRegen = computeCombatManaRegen(e.lastScoreData, { baseRegen: BASE_MP_REGEN });
     e.manaPointsRemaining = Math.min(e.manaPoints, e.manaPointsRemaining + manaRegen);
     e.manaUsed = e.manaPointsRemaining < SPELL_CAST_MANA_COST;

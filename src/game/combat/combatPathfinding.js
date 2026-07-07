@@ -24,8 +24,10 @@ export function buildBlockedSet(blockedTiles = DEFAULT_BLOCKED_TILES) {
   return new Set(blockedTiles.map(({ tx, ty }) => tileKey(tx, ty)));
 }
 
-export function isWalkable(tx, ty, blocked) {
-  return isInBounds(tx, ty) && !blocked.has(tileKey(tx, ty));
+export function isWalkable(tx, ty, blocked, validTiles = null) {
+  const key = tileKey(tx, ty);
+  if (validTiles) return validTiles.has(key) && !blocked.has(key);
+  return isInBounds(tx, ty) && !blocked.has(key);
 }
 
 export function manhattan(a, b) {
@@ -33,8 +35,8 @@ export function manhattan(a, b) {
 }
 
 /** 4-connected A*. Returns steps from the first tile after start through goal. */
-export function findPath(start, goal, blocked = buildBlockedSet()) {
-  if (!isWalkable(goal.tx, goal.ty, blocked)) return [];
+export function findPath(start, goal, blocked = buildBlockedSet(), validTiles = null) {
+  if (!isWalkable(goal.tx, goal.ty, blocked, validTiles)) return [];
   if (start.tx === goal.tx && start.ty === goal.ty) return [];
 
   const open = [{ tx: start.tx, ty: start.ty, g: 0, f: manhattan(start, goal) }];
@@ -59,7 +61,7 @@ export function findPath(start, goal, blocked = buildBlockedSet()) {
     for (const d of DIRS) {
       const nx = cur.tx + d.tx;
       const ny = cur.ty + d.ty;
-      if (!isWalkable(nx, ny, blocked)) continue;
+      if (!isWalkable(nx, ny, blocked, validTiles)) continue;
 
       const nk = tileKey(nx, ny);
       const tentative = cur.g + 1;
@@ -80,7 +82,7 @@ export function findPath(start, goal, blocked = buildBlockedSet()) {
 }
 
 /** BFS flood-fill of tiles reachable within `maxSteps` movement points. */
-export function getReachableTiles(start, maxSteps, blocked = buildBlockedSet()) {
+export function getReachableTiles(start, maxSteps, blocked = buildBlockedSet(), validTiles = null) {
   const steps = Math.max(0, Math.floor(Number(maxSteps) || 0));
   const reachable = new Set([tileKey(start.tx, start.ty)]);
   if (steps === 0) return reachable;
@@ -96,7 +98,7 @@ export function getReachableTiles(start, maxSteps, blocked = buildBlockedSet()) 
       const nx = cur.tx + d.tx;
       const ny = cur.ty + d.ty;
       const nk = tileKey(nx, ny);
-      if (!isWalkable(nx, ny, blocked) || visited.has(nk)) continue;
+      if (!isWalkable(nx, ny, blocked, validTiles) || visited.has(nk)) continue;
       visited.add(nk);
       reachable.add(nk);
       queue.push({ tx: nx, ty: ny, cost: cur.cost + 1 });
@@ -106,7 +108,7 @@ export function getReachableTiles(start, maxSteps, blocked = buildBlockedSet()) 
   return reachable;
 }
 
-export function canReachWithinSteps(start, goal, maxSteps, blocked = buildBlockedSet()) {
-  const path = findPath(start, goal, blocked);
+export function canReachWithinSteps(start, goal, maxSteps, blocked = buildBlockedSet(), validTiles = null) {
+  const path = findPath(start, goal, blocked, validTiles);
   return path.length > 0 && path.length <= maxSteps;
 }

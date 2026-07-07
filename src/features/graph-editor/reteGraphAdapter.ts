@@ -32,13 +32,14 @@ export async function exportReteToGraphPacket(
   const reteConnections = editor.getConnections();
 
   const nodes: ScholomanceGraphNodeV1[] = reteNodes.map((reteNode: any) => {
-    const def = getNodeDefinition(reteNode.label || reteNode.name);
+    const kind = reteNode.name || reteNode.label || 'unknown';
+    const def = getNodeDefinition(kind);
     return {
       id: reteNode.id,
-      kind: reteNode.label || reteNode.name || 'unknown',
-      label: reteNode.label || reteNode.name || 'Unnamed Node',
-      inputs: {}, // populated from sockets in real impl
-      outputs: {},
+      kind: def ? def.kind : kind,
+      label: reteNode.label || def?.label || 'Unnamed Node',
+      inputs: def ? { ...def.inputs } : {},
+      outputs: def ? { ...def.outputs } : {},
       params: reteNode.data || {},
       compiler: {
         resolverId: def?.resolverId || 'unknown',
@@ -53,18 +54,25 @@ export async function exportReteToGraphPacket(
     } as ScholomanceGraphNodeV1;
   });
 
-  const connections: ScholomanceGraphConnectionV1[] = reteConnections.map((conn: any) => ({
-    id: conn.id,
-    source: {
-      nodeId: conn.source,
-      socket: conn.sourceOutput,
-    },
-    target: {
-      nodeId: conn.target,
-      socket: conn.targetInput,
-    },
-    type: 'pixelbrain.packet' as any, // resolve properly in full impl
-  }));
+  const connections: ScholomanceGraphConnectionV1[] = reteConnections.map((conn: any) => {
+    const sourceNode = reteNodes.find((n: any) => n.id === conn.source);
+    const kind = sourceNode?.name || sourceNode?.label || 'unknown';
+    const def = getNodeDefinition(kind);
+    const socketType = def?.outputs?.[conn.sourceOutput]?.type || 'pixelbrain.packet';
+
+    return {
+      id: conn.id,
+      source: {
+        nodeId: conn.source,
+        socket: conn.sourceOutput,
+      },
+      target: {
+        nodeId: conn.target,
+        socket: conn.targetInput,
+      },
+      type: socketType as any,
+    };
+  });
 
   const packet: ScholomanceGraphPacketV1 = {
     schemaVersion: 'scholomance.graph.v1',
@@ -96,28 +104,41 @@ export async function exportReteToGraphPacket(
   return packet;
 }
 
-export function importGraphPacketToRete(
+import { createReteNodeFromDefinition } from './reteNodeFactory';
+import { ClassicPreset } from 'rete';
+
+export async function importGraphPacketToRete(
   packet: ScholomanceGraphPacketV1,
   editor: NodeEditor<any>
 ) {
-  // Clear existing
-  editor.clear();
+  await editor.clear();
+  const nodeMap = new Map<string, any>();
 
-  // Re-create nodes (simplified - real version uses node factory)
-  packet.nodes.forEach(node => {
-    // In real code: const reteNode = createReteNodeFromPacket(node);
-    // editor.addNode(reteNode);
-    console.log('[adapter] Would add node', node.kind, node.id);
-  });
+  for (const node of packet.nodes) {
+    const def = getNodeDefinition(node.kind);
+    if (!def) continue;
+    const reteNode = createReteNodeFromDefinition(def);
+    reteNode.id = node.id;
+    (reteNode as any).data = { ...node.params };
+    await editor.addNode(reteNode);
+    nodeMap.set(node.id, reteNode);
+    
+    if (packet.uiLayout?.positions?.[node.id]) {
+      const pos = packet.uiLayout.positions[node.id];
+      const area = (editor as any).__area;
+      if (area) {
+        area.translate(node.id, pos);
+      }
+    }
+  }
 
-  // Re-create connections
-  packet.connections.forEach(conn => {
-    // editor.addConnection(...)
-    console.log('[adapter] Would connect', conn.source, '->', conn.target);
-  });
-
-  // Apply layout from uiLayout
-  if (packet.uiLayout?.positions) {
-    // apply positions to nodes
+  for (const conn of packet.connections) {
+    const source = nodeMap.get(conn.source.nodeId);
+    const target = nodeMap.get(conn.target.nodeId);
+    if (source && target) {
+      const reteConn = new ClassicPreset.Connection(source, conn.source.socket, target, conn.target.socket);
+      reteConn.id = conn.id;
+      await editor.addConnection(reteConn);
+    }
   }
 }

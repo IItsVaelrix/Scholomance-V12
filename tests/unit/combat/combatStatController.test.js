@@ -67,6 +67,13 @@ describe('CombatStatController — movement', () => {
     expect(c.getEntity('player').movementPointsRemaining).toBe(4);
     expect(c.getEntity('player').attackPoints).toBe(11);
   });
+
+  it('basic attack damage uses equipment scholomance bonuses', () => {
+    const c = makeController();
+    c.applyEquipmentModifiers('player', { scholomance: { BAPO: 2 } });
+    const result = c.resolveAttack('player', 'dummy');
+    expect(result?.damage).toBe(6);
+  });
 });
 
 describe('CombatStatController — attack', () => {
@@ -116,35 +123,45 @@ describe('CombatStatController — attack', () => {
   });
 });
 
-describe('CombatStatController — spell mana', () => {
-  it('resolveSpellCast spends 10 mana and applies scored spell damage', () => {
+describe('CombatStatController — spellweave invoke', () => {
+  it('resolveSpellCast spends 3 AP and applies scored spell damage', () => {
     const c = makeController();
     const result = c.resolveSpellCast('player', 'dummy', { damage: 24, scoreData: { school: 'SONIC' } });
     expect(result).toEqual({
       damage: 24,
-      manaSpent: 10,
-      manaPointsRemaining: 90,
+      apSpent: 3,
+      attackPointsRemaining: 3,
       targetHp: 76,
       targetDefeated: false,
     });
-    expect(c.getEntity('player').manaUsed).toBe(false);
+    expect(c.getEntity('player').spellweaveUsed).toBe(true);
     expect(c.getEntity('player').lastScoreData).toEqual({ school: 'SONIC' });
   });
 
-  it('refuses spell casts without enough mana', () => {
+  it('refuses spell casts without enough AP', () => {
     const c = makeController();
     const player = c.getEntity('player');
-    player.manaPointsRemaining = 5;
+    player.attackPointsRemaining = 2;
     expect(c.resolveSpellCast('player', 'dummy', { damage: 20 })).toBe(null);
   });
 
-  it('endTurn regens mana from the last cast profile', () => {
+  it('allows only one spellweave invoke per turn', () => {
     const c = makeController();
+    expect(c.resolveSpellCast('player', 'dummy', { damage: 12 })).not.toBe(null);
+    expect(c.resolveSpellCast('player', 'dummy', { damage: 12 })).toBe(null);
+    c.endTurn('player');
+    expect(c.getEntity('player').spellweaveUsed).toBe(false);
+    expect(c.resolveSpellCast('player', 'dummy', { damage: 12 })).not.toBe(null);
+  });
+
+  it('endTurn regens mana from the last invoke profile when below cap', () => {
+    const c = makeController();
+    c.getEntity('player').manaPointsRemaining = 80;
     c.resolveSpellCast('player', 'dummy', {
       damage: 20,
       scoreData: { school: 'SONIC', schoolDensity: { SONIC: 0.8 }, rarity: { ordinal: 2 } },
     });
     c.endTurn('player');
-    expect(c.getEntity('player').manaPointsRemaining).toBeGreaterThan(90);
+    expect(c.getEntity('player').manaPointsRemaining).toBeGreaterThan(80);
   });
 });

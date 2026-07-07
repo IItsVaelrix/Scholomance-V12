@@ -18,3 +18,14 @@ export function canConnect(sourceType: string, targetType: string): boolean {
   const allowed = SOCKET_COMPATIBILITY[sourceType] || [];
   return allowed.includes(targetType);
 }
+
+import { ClassicPreset } from 'rete';
+
+const socketCache = new Map<string, ClassicPreset.Socket>();
+
+export function getReteSocket(type: string): ClassicPreset.Socket {
+  if (!socketCache.has(type)) {
+    socketCache.set(type, new ClassicPreset.Socket(type));
+  }
+  return socketCache.get(type)!;
+}

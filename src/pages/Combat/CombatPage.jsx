@@ -19,7 +19,8 @@ import { parseWeave, resolveWeaveLexeme } from '../../../codex/core/spellweave.e
 import { shouldEngageCombatBattle } from '../../game/combat/sentinelRobots.js';
 import { lookupWeaveToken } from '../../../codex/core/semantics.registry.js';
 import { tokenize } from '../../../codex/core/tokenizer.js';
-import { Sparkles, Zap, Trash2 } from 'lucide-react';
+import { Sparkles, Zap, Trash2, Terminal } from 'lucide-react';
+import CombatCommandsConsole from '../../ui/combat/CombatCommandsConsole.jsx';
 import '../DivWand/DivWandPage.css'; // Reuse the sleek DivWand CSS
 import './CombatPage.css';
 import { getScholomanceCombatBlock, grantScholomanceXpForAction } from '../../game/character/scholomanceXpService.js';
@@ -36,6 +37,12 @@ import CombatBeastiaryOverlay from '../../ui/combat/CombatBeastiaryOverlay.jsx';
 import SpellweaveCompendiumOverlay from '../../ui/combat/SpellweaveCompendiumOverlay.jsx';
 import CombatResourceBars from '../../ui/combat/CombatResourceBars.jsx';
 import CombatMatrixIntro from '../../ui/combat/CombatMatrixIntro.jsx';
+import PolarisMatrixIntro from '../../ui/world/PolarisMatrixIntro.jsx';
+import TacticalTileTooltip from './TacticalTileTooltip.jsx';
+import TacticalOverlayControls from './TacticalOverlayControls.jsx';
+import { computeThreatMap } from '../../../codex/core/combat/tactical-board.threat-map.js';
+import { resolveTransitionMode } from '../../phaser/battle-transition.fx.js';
+import './TacticalBattleBoard.css';
 import {
   buildBestiaryContextFromScene,
   buildBestiaryRuntimeContext,
@@ -52,6 +59,7 @@ import { getGameVictoryService } from '../../lib/audio/gameVictory.service.js';
 import { hasApForSpellweaveInvoke, SPELL_CAST_AP_COST } from '../../game/combat/combatMana.js';
 import { ICICLE_SLAM_AP_COST } from '../../game/combat/iceSlimeStaffAbilities.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
+import { tryExecuteCombatCommandInput } from '../../game/combat/combatCommands.js';
 
 const WEAVE_FILLER_TOKENS = new Set([
   'THE', 'A', 'AN', 'MY', 'YOUR', 'HIS', 'HER', 'THEIR', 'OUR', 'ITS',
@@ -223,9 +231,13 @@ export default function CombatPage() {
   const [verse, setVerse] = useState('');
   const [weave, setWeave] = useState('');
   const [terminalLogs, setTerminalLogs] = useState([]);
+  const [commandLogs, setCommandLogs] = useState([]);
+  const [commandInput, setCommandInput] = useState('');
+  const [commandsOpen, setCommandsOpen] = useState(() => import.meta.env.DEV);
   const terminalRef = useRef(null);
   const verseEditorRef = useRef(null);
   const weaveInputRef = useRef(null);
+  const handleArenaCastRef = useRef(() => {});
   
   const [tooltip, setTooltip] = useState(null);
   const [combatStats, setCombatStats] = useState(null);
@@ -234,10 +246,22 @@ export default function CombatPage() {
   const [combatResults, setCombatResults] = useState(null);
   const [battleStarted, setBattleStarted] = useState(false);
   const [battleIntroActive, setBattleIntroActive] = useState(false);
+  const [polarisIntroActive, setPolarisIntroActive] = useState(false);
   const [selectedCombatTarget, setSelectedCombatTarget] = useState(null);
   const [beastiaryDossier, setBeastiaryDossier] = useState(null);
   const [compendiumOpen, setCompendiumOpen] = useState(false);
   const [compendiumLedger, setCompendiumLedger] = useState(() => getSpellweaveCompendiumLedger());
+  const [battleBoard, setBattleBoard] = useState(null);
+  const [threatMap, setThreatMap] = useState(null);
+  const [transitionMode, setTransitionMode] = useState('full');
+  const [activeOverlays, setActiveOverlays] = useState({
+    movement: false,
+    threat: false,
+    spell: false,
+    premium: true,
+    school: true,
+    lineOfSight: false,
+  });
   const battleStartedRef = useRef(false);
   const battleIntroActiveRef = useRef(false);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -251,21 +275,68 @@ export default function CombatPage() {
   }, [battleIntroActive]);
 
   useEffect(() => {
+    const onEscape = (e) => {
+      if (e.key === 'Escape') {
+        if (beastiaryDossier) setBeastiaryDossier(null);
+        else if (compendiumOpen) setCompendiumOpen(false);
+        else if (commandsOpen) setCommandsOpen(false);
+        else if (tooltip) {
+          setTooltip(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', onEscape);
+    return () => window.removeEventListener('keydown', onEscape);
+  }, [beastiaryDossier, compendiumOpen, commandsOpen, tooltip]);
+
+  useEffect(() => {
     const onKeyDown = (event) => {
       if (event.target?.isContentEditable) return;
+      const tag = event.target?.tagName?.toLowerCase();
+      if (tag === 'input' || tag === 'textarea') return;
       if (event.key === 'k' || event.key === 'K') {
         setCompendiumOpen((open) => !open);
+      }
+      if (event.key === '`') {
+        event.preventDefault();
+        setCommandsOpen((open) => !open);
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const handlePolarisIntroComplete = () => {
+    setPolarisIntroActive(false);
+  };
+
   const handleBattleIntroComplete = () => {
     setBattleIntroActive(false);
     setBattleStarted(true);
     markCombatBattleStarted();
+    try {
+      const countKey = 'tactical-battle-count:combat-arena';
+      const battleCount = Number(sessionStorage.getItem(countKey) || 0) + 1;
+      sessionStorage.setItem(countKey, String(battleCount));
+    } catch {
+      // ignore storage failures
+    }
+    // Auto-enable school and premium terrain overlays so tile types are
+    // immediately visible when the battle board appears.
+    setActiveOverlays((prev) => {
+      const next = { ...prev, school: true, premium: true };
+      window.dispatchEvent(new CustomEvent('tactical-overlay-change', { detail: next }));
+      return next;
+    });
     window.dispatchEvent(new CustomEvent(COMBAT_BATTLE_STARTED_EVENT));
+  };
+
+  const handleToggleOverlay = (key) => {
+    setActiveOverlays((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      window.dispatchEvent(new CustomEvent('tactical-overlay-change', { detail: next }));
+      return next;
+    });
   };
 
   const handleCombatResultsDismiss = () => {
@@ -318,6 +389,37 @@ export default function CombatPage() {
     if (active === verseEditorRef.current || active === weaveInputRef.current) {
       active.blur();
     }
+  };
+
+  const runCombatCommand = (rawInput) => {
+    const trimmed = String(rawInput ?? '').trim();
+    if (!trimmed) return false;
+
+    const result = tryExecuteCombatCommandInput(trimmed, {
+      onArenaAction: (action) => handleArenaCastRef.current(action),
+    });
+    if (!result) return false;
+
+    const ts = new Date().toISOString().split('T')[1].slice(0, 8);
+    setCommandLogs((prev) => [
+      ...prev,
+      { type: 'info', text: `> ${trimmed}`, ts },
+      {
+        type: result.ok ? 'success' : 'error',
+        text: result.message,
+        ts,
+      },
+    ]);
+
+    if (result.sideEffects?.includes('skip-polaris-intro')) {
+      setPolarisIntroActive(false);
+      setBattleIntroActive(false);
+      setBattleStarted(false);
+      resetCombatBattleEngagement();
+    }
+
+    setCommandInput('');
+    return true;
   };
 
   const handleSpellweaveKeyDown = (event) => {
@@ -605,12 +707,55 @@ export default function CombatPage() {
       return;
     }
 
+    if (action.type === 'polaris-teleport-start') {
+      setPolarisIntroActive(true);
+      setTerminalLogs((prev) => [
+        ...prev,
+        { type: 'info', text: '[PORTAL] Dimensional transit to Polaris initiated...', ts },
+      ]);
+      return;
+    }
+
+    if (action.type === 'polaris-forest-ready') {
+      setTerminalLogs((prev) => [
+        ...prev,
+        { type: 'success', text: `[POLARIS] ${action.text || 'Welcome to Polaris.'}`, ts },
+      ]);
+      return;
+    }
+
+    if (action.type === 'battle-board-compiled') {
+      const boardState = action.boardState;
+      setBattleBoard(boardState || null);
+      if (boardState) {
+        const entities = (boardState.units || []).map((unit) => ({
+          id: unit.entityId,
+          x: unit.x,
+          y: unit.y,
+          side: unit.side,
+          meleeRange: 1,
+          spellRange: unit.side === 'enemy' ? 3 : 1,
+          attack: 10,
+          spellPower: 10,
+        }));
+        setThreatMap(computeThreatMap(boardState, entities));
+      }
+      return;
+    }
+
     if (action.type === 'sentinel-aggro') {
       setTerminalLogs(prev => [
         ...prev,
         { type: 'error', text: `[SENTINEL] ${action.text}`, ts },
       ]);
       if (!battleStartedRef.current && !battleIntroActiveRef.current) {
+        try {
+          const countKey = 'tactical-battle-count:combat-arena';
+          const battleCount = Number(sessionStorage.getItem(countKey) || 0);
+          setTransitionMode(resolveTransitionMode({ battleCount, isBoss: false, isDiscovery: battleCount === 0 }));
+        } catch {
+          setTransitionMode('full');
+        }
         setBattleIntroActive(true);
       }
       return;
@@ -793,6 +938,7 @@ export default function CombatPage() {
       ...(characterLine ? [{ type: 'info', text: `"${characterLine}"`, ts }] : []),
     ]);
 
+
     if (action.screenX && action.screenY) {
       setTooltip({
         x: action.screenX,
@@ -802,9 +948,11 @@ export default function CombatPage() {
         enemyId: action.enemyId || action.sentinelId || null,
         bestiaryAvailable: !!action.bestiaryAvailable,
         entitySnapshot: action.bestiarySnapshot || null,
+        battleTile: action.isGrid ? action.battleTile : null,
       });
     }
   };
+  handleArenaCastRef.current = handleArenaCast;
 
   return (
     <div className="combat-page-shell">
@@ -813,7 +961,23 @@ export default function CombatPage() {
       {battleIntroActive && (
         <CombatMatrixIntro
           reducedMotion={prefersReducedMotion}
+          mode={transitionMode}
           onComplete={handleBattleIntroComplete}
+        />
+      )}
+
+      {polarisIntroActive && (
+        <PolarisMatrixIntro
+          reducedMotion={prefersReducedMotion}
+          onComplete={handlePolarisIntroComplete}
+        />
+      )}
+
+      {battleStarted && !battleIntroActive && (
+        <TacticalOverlayControls
+          activeOverlays={activeOverlays}
+          onToggleOverlay={handleToggleOverlay}
+          compact
         />
       )}
 
@@ -859,6 +1023,17 @@ export default function CombatPage() {
           }}
           onMouseDown={(e) => e.stopPropagation()}
         >
+          <button
+            type="button"
+            className="combat-tooltip__close-btn"
+            aria-label="Close tooltip"
+            onClick={(e) => {
+              e.stopPropagation();
+              setTooltip(null);
+            }}
+          >
+            ×
+          </button>
           <h4 className="combat-tooltip__title">
             {tooltip.title}
           </h4>
@@ -867,7 +1042,17 @@ export default function CombatPage() {
               <li key={i}>{d}</li>
             ))}
           </ul>
-          {tooltip.bestiaryAvailable && tooltip.enemyId && (
+
+          {tooltip.battleTile && (
+            <TacticalTileTooltip
+              tile={tooltip.battleTile}
+              threatMap={threatMap}
+              visible={true}
+              inline={true}
+            />
+          )}
+
+          {tooltip.enemyId && tooltip.entitySnapshot && (
             <button
               type="button"
               className="combat-tooltip__beastiary-btn"
@@ -953,6 +1138,16 @@ export default function CombatPage() {
               Compendium
             </button>
             <button
+              type="button"
+              className={`dw-btn combat-commands-console-toggle${commandsOpen ? ' dw-btn--active' : ''}`}
+              onClick={() => setCommandsOpen((open) => !open)}
+              title="Directive console (`)"
+              aria-pressed={commandsOpen}
+            >
+              <Terminal size={13} aria-hidden="true" />
+              CMD
+            </button>
+            <button
               className="dw-btn dw-btn--primary"
               onClick={handleCast}
               disabled={!canInvoke}
@@ -1002,7 +1197,7 @@ export default function CombatPage() {
                 className="combat-hud__weave-input"
                 value={weave}
                 onChange={e => setWeave(e.target.value)}
-                placeholder="e.g. REND FLESH THEN SHATTER STONE"
+                placeholder="e.g. REND FLESH"
                 aria-label="Weave input"
                 aria-describedby="combat-syntactic-integrity"
                 onKeyDown={handleSpellweaveKeyDown}
@@ -1070,6 +1265,7 @@ export default function CombatPage() {
                       <span className="combat-terminal__prompt">scholo://combat/syntax</span>
                       <span className="combat-terminal__empty-line">parser armed; awaiting verse payload</span>
                       <span className="combat-terminal__empty-line">bridge state: lexical channel open</span>
+                      <span className="combat-terminal__empty-line">dev console: ` or Console — /warp polaris</span>
                       <span className="combat-terminal__cursor" aria-hidden="true" />
                     </div>
                   )}
@@ -1084,6 +1280,18 @@ export default function CombatPage() {
             </div>
           </div>
         </div>
+        </div>
+
+        <div className="combat-commands-anchor" aria-hidden={!commandsOpen}>
+          <CombatCommandsConsole
+            open={commandsOpen}
+            onOpenChange={setCommandsOpen}
+            commandInput={commandInput}
+            onCommandInputChange={setCommandInput}
+            onSubmit={runCombatCommand}
+            logs={commandLogs}
+            onClearLogs={() => setCommandLogs([])}
+          />
         </div>
       </div>
     </div>

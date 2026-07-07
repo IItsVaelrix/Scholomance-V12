@@ -173,3 +173,35 @@ export type ScholomanceGraphDiagnosticV1 = {
   message: string;
   suggestedFix?: string;
 };
+
+export type ScholomanceGraphNodeDefinition = {
+  kind: ScholomanceGraphNodeV1["kind"];
+  label: string;
+  category:
+    | "Source"
+    | "Wand"
+    | "DivWand"
+    | "PixelBrain"
+    | "SCDL"
+    | "Diagnostics"
+    | "Export"
+    | "Combat"
+    | "VideoForge";
+
+  inputs: Record<string, ScholomanceSocketDefV1>;
+  outputs: Record<string, ScholomanceSocketDefV1>;
+
+  paramsSchema: unknown;
+
+  resolverId: string;
+
+  deterministic: boolean;
+  pure: boolean;
+
+  ui: {
+    defaultWidth: number;
+    defaultHeight: number;
+    icon?: string;
+    colorToken?: string;
+  };
+};

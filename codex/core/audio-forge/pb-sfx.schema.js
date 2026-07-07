@@ -48,6 +48,8 @@ export const SFX_EVENT_TYPES = Object.freeze({
   UI_CANCEL:                   'UI_CANCEL',
   OBELISK_CHARGE:              'OBELISK_CHARGE',
   OBELISK_DISCHARGE:           'OBELISK_DISCHARGE',
+  VOID_SPELL_CAST:             'VOID_SPELL_CAST',
+  VOID_SPELL_HIT:              'VOID_SPELL_HIT',
 });
 
 // ─── Voice Types ──────────────────────────────────────────────────────────────

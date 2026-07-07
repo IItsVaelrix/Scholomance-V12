@@ -95,7 +95,39 @@ export const ITEM_DATABASE = {
     combatModifiers: {
       movementPoints: 1,
     },
-  }
+  },
+  'item_ice_slime_staff': {
+    id: 'item_ice_slime_staff',
+    assetId: 'IceSlimeStaff',
+    name: 'Ice Slime Staff',
+    type: 'weapon',
+    slot: 'mainHand',
+    idleAnim: true,
+    walkFrames: [4, 5, 6, 7, 8, 7, 6, 5],
+    rarity: 'rare',
+    school: 'VOID',
+    source: 'void-acolyte',
+    description: 'A void-charged staff crowned with a caged ice orb. Grants +1 VALCH, +2 BAPO, and Icicle Slam.',
+    icon: '/assets/items/IceSlimeStaff-icon.png',
+    sprite: '/assets/items/IceSlimeStaff-f0-png.png',
+    combatModifiers: {
+      scholomance: { VALCH: 1, BAPO: 2 },
+    },
+    grantedAbilities: ['icicle_slam'],
+  },
+  'item_chest_sentinel': {
+    id: 'item_chest_sentinel',
+    assetId: 'VoidmetalFireChestplate',
+    name: 'Voidmetal Fire Chestplate',
+    type: 'chest',
+    rarity: 'epic',
+    description: 'Forged from the core of a fallen Sentinel. Pulsing with doom-fire. Grants +2 BAPO, +2 VALCH, +2 INT.',
+    icon: '/assets/items/VoidmetalFireChestplate-icon.png',
+    sprite: '/assets/items/voidmetal_fire_chestplate_iter2-png.png',
+    combatModifiers: {
+      scholomance: { BAPO: 2, VALCH: 2, INT: 2 },
+    },
+  },
 };
 
 /**

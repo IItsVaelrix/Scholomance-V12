@@ -9,8 +9,11 @@ import { buildContextActivation } from './token-graph/activation.js';
 import { traverseTokenGraph } from './token-graph/traverse.js';
 import { scoreGraphCandidates } from './token-graph/score.js';
 import { lookupSemanticToken, lookupWeaveToken, INTENTS } from './semantics.registry.js';
+import { normalizeWeaveTokens } from './spellweave-nlp.resolver.js';
 import { phoneticMatcher } from './phonetic_matcher.js';
 import { tokenize } from './tokenizer.js';
+
+export { resolveWeaveLexeme, normalizeWeaveTokens, canonicalizeWeaveText } from './spellweave-nlp.resolver.js';
 
 /**
  * @typedef {Object} BridgeResult
@@ -295,7 +298,7 @@ function resolveChainType(connectors) {
  * }}
  */
 export function parseWeave(weave) {
-  const orderedTokens = tokenize(weave).map((token) => token.toUpperCase());
+  const { tokens: orderedTokens, resolutions: nlpResolutions } = normalizeWeaveTokens(tokenize(weave));
   const clauses = [];
   const connectors = [];
   let current = createClause();
@@ -346,6 +349,7 @@ export function parseWeave(weave) {
     objects: [...new Set(activeClauses.flatMap((clause) => clause.objects))],
     predicates: [],
     tokens: [...new Set(orderedTokens)],
+    nlpResolutions,
     clauses,
     chainType: resolveChainType(connectors),
     strikes: Math.max(1, activeClauses.filter((clause) => clause.intents.length > 0).length),

@@ -15,6 +15,22 @@ export const GAME_BATTLE_MUSIC_TRACK = Object.freeze({
   sourcePath: 'docs/scholomance-encyclopedia/scholosound/songs/Battle On!.mp3',
 });
 
+/** Polaris Sonic Thaumaturgist Forest — Arboreal Nexus (both variants). */
+export const GAME_FOREST_MUSIC_TRACKS = Object.freeze([
+  Object.freeze({
+    id: 'the-arboreal-nexus',
+    title: 'The Arboreal Nexus',
+    url: '/audio/scholosound/the-arboreal-nexus.mp3',
+    sourcePath: 'docs/scholomance-encyclopedia/scholosound/songs/The Arboreal Nexus.mp3',
+  }),
+  Object.freeze({
+    id: 'the-arboreal-nexus-2',
+    title: 'The Arboreal Nexus 2',
+    url: '/audio/scholosound/the-arboreal-nexus-2.mp3',
+    sourcePath: 'docs/scholomance-encyclopedia/scholosound/songs/The Arboreal Nexus 2.mp3',
+  }),
+]);
+
 /** Each cycle replays the loop after a fresh random interval in this band. */
 export const GAME_BACKGROUND_MUSIC_CYCLE_MS = Object.freeze({
   min: 5 * 60 * 1000,
@@ -47,6 +63,44 @@ export const GAME_BATTLE_MUSIC_PACING = Object.freeze({
   offsetMs: 0,
   timeSignature: Object.freeze([4, 4]),
 });
+
+/**
+ * Forest ambient pacing — tuned for Arboreal Nexus exploration loops.
+ */
+export const GAME_FOREST_MUSIC_PACING = Object.freeze({
+  bpm: 92,
+  offsetMs: 0,
+  timeSignature: Object.freeze([4, 4]),
+});
+
+let forestTrackCursor = 0;
+
+/**
+ * Rotates through both Arboreal Nexus tracks on each forest entry.
+ *
+ * @param {typeof GAME_FOREST_MUSIC_TRACKS} [tracks]
+ * @returns {typeof GAME_FOREST_MUSIC_TRACKS[number]}
+ */
+export function pickForestMusicTrack(tracks = GAME_FOREST_MUSIC_TRACKS) {
+  if (!tracks?.length) return GAME_FOREST_MUSIC_TRACKS[0];
+  const track = tracks[forestTrackCursor % tracks.length];
+  forestTrackCursor = (forestTrackCursor + 1) % tracks.length;
+  return track;
+}
+
+/** @param {typeof GAME_FOREST_MUSIC_TRACKS[number]} [track] */
+export function resolveForestMusicProfile(track = pickForestMusicTrack()) {
+  return {
+    track,
+    pacing: GAME_FOREST_MUSIC_PACING,
+    loopOnly: true,
+  };
+}
+
+/** Test helper — reset alternating forest track index. */
+export function resetForestMusicTrackCursor() {
+  forestTrackCursor = 0;
+}
 
 export function isCombatMusicRoute(pathname = '') {
   return pathname === '/combat' || pathname.startsWith('/combat/');

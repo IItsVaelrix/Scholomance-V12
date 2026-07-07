@@ -85,6 +85,17 @@ export function buildInspectPresentation(action = {}) {
   }
 
   if (action.isPortal) {
+    if (action.portalPhase === 'cleared') {
+      return {
+        title: 'Polaris Gate',
+        details: [
+          `Coordinate: (${action.tx}, ${action.ty})`,
+          'The warden is gone — the aperture hums with sonic thaumaturgy.',
+          'Stand on an adjacent tile, then click the gate to enter Polaris.',
+        ],
+        characterLine: 'The seal is broken. Polaris waits on the other side.',
+      };
+    }
     return {
       title: 'Dimensional Portal',
       details: [
@@ -93,7 +104,7 @@ export function buildInspectPresentation(action = {}) {
           ? 'The ward is unsealed — the seal flickers cyan over ice.'
           : 'A dimensional aperture bound to the northeast lattice.',
         ...(action.portalPhase === 'beckoning'
-          ? ['Stand on an adjacent tile, then click the portal to step through.']
+          ? ['Stand on an adjacent tile, then click the portal to challenge the warden.']
           : []),
       ],
       characterLine: action.portalPhase === 'beckoning'
@@ -114,13 +125,35 @@ export function buildInspectPresentation(action = {}) {
   }
 
   if (action.isGrid) {
+    const battleTile = action.battleTile;
+    const premiumTerrains = new Set(['rune', 'anchor', 'null']);
+    const details = [`Coordinate: (${action.tx}, ${action.ty})`];
+    let characterLine = 'An empty lattice square. Good footing for the next step.';
+
+    if (battleTile?.modifier?.label) {
+      details.push(`${battleTile.modifier.label}: ${battleTile.modifier.description || ''}`);
+      characterLine = `The lattice declares itself — ${battleTile.modifier.label}.`;
+    } else if (battleTile?.terrain && battleTile.terrain !== 'normal') {
+      details.push(`Terrain: ${battleTile.terrain.replace(/_/g, ' ')}`);
+    }
+
+    if (battleTile && premiumTerrains.has(battleTile.terrain)) {
+      const hintSeen = typeof localStorage !== 'undefined'
+        && localStorage.getItem('tactical-premium-hint-seen');
+      if (!hintSeen) {
+        details.push('Premium tiles score your spells. Standing on them before you cast can change the outcome.');
+        try {
+          localStorage.setItem('tactical-premium-hint-seen', '1');
+        } catch {
+          // ignore storage failures
+        }
+      }
+    }
+
     return {
-      title: 'Combat Tile',
-      details: [
-        `Coordinate: (${action.tx}, ${action.ty})`,
-        'Open combat grid.',
-      ],
-      characterLine: 'An empty lattice square. Good footing for the next step.',
+      title: battleTile?.modifier?.label || 'Combat Tile',
+      details,
+      characterLine,
     };
   }
 

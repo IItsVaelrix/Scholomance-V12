@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 /**
  * SCHOLOMANCE FAIRLY ODD WAND - INTERACTIVE UX TEST-DRIVE
  * 
@@ -2108,23 +2109,7 @@ export default function WandPage({ onSendToVideoForge } = {}) {
                         <div style={{ fontSize: 11, opacity: 0.8, marginTop: 8 }}>
                           Vectorized art ready for Aseprite 00_Reference / SVG export. Use in CHARACTER-SPEC-v1 as vectorWand.
 
-                    {/* Rete.js Graph Editor (PDR) — makes authoring the new math_expression + Wand formulas visual for character assets */}
-                    <div style={{ marginTop: 16, padding: 8, background: '#111', border: '1px solid #333' }}>
-                      <button onClick={() => setShowGraphEditor(!showGraphEditor)} style={{ fontSize: 12 }}>
-                        {showGraphEditor ? 'Hide' : 'Show'} Visual Graph Editor (Rete — Wand/Math for characters)
-                      </button>
-                      {showGraphEditor && (
-                        <div style={{ marginTop: 8 }}>
-                          <Suspense fallback={<div>Loading graph editor...</div>}>
-                            <ScholomanceGraphEditor
-                              initialPacket={createExampleWandMathPacket()}
-                              onPacketChange={setGraphPacket}
-                              seed="424242"
-                            />
-                          </Suspense>
-                        </div>
-                      )}
-                    </div>
+
                         </div>
                       </div>
                     )}
@@ -2166,6 +2151,26 @@ export default function WandPage({ onSendToVideoForge } = {}) {
                 </motion.div>
               )}
             </AnimatePresence>
+          </div>
+
+          {/* Rete.js Graph Editor Dedicated Link */}
+          <div style={{ marginTop: 16, padding: 16, background: 'linear-gradient(90deg, #111, #1a1a24)', border: '1px solid rgba(0, 242, 254, 0.3)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <h3 style={{ margin: 0, color: '#4facfe', fontSize: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={16} /> Scholomance Graph Studio
+              </h3>
+              <p style={{ margin: '4px 0 0 0', color: '#888', fontSize: '12px' }}>
+                Launch the dedicated, full-screen procedural graph architecture environment.
+              </p>
+            </div>
+            <Link to="/wand/graph" style={{
+              padding: '8px 24px', backgroundColor: '#4facfe', color: '#fff', 
+              textDecoration: 'none', borderRadius: '8px', fontSize: '13px', 
+              fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px',
+              boxShadow: '0 4px 12px rgba(79, 172, 254, 0.3)'
+            }}>
+              Launch Studio 🚀
+            </Link>
           </div>
 
           {/* REAL-TIME DIAGNOSTICS & TERMINAL */}

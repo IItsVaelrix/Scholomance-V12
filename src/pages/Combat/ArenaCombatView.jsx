@@ -2,19 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter';
 import { getGameBrazierFireService } from '../../lib/audio/gameBrazierFire.service.js';
 import { getGameFireballImpactService } from '../../lib/audio/gameFireballImpact.service.js';
+import { getGameIceSpellImpactService } from '../../lib/audio/gameIceSpellImpact.service.js';
 import { getGameSwordSliceService } from '../../lib/audio/gameSwordSlice.service.js';
+import { getGameChestUnlockService } from '../../lib/audio/gameChestUnlock.service.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { bridgeArenaScene } from './arenaBridge.js';
+import { installWorldTransitionListener } from '../../game/world/worldSceneTransition.js';
+import { registerCombatGame, unregisterCombatGame } from '../../game/combat/combatGameBridge.js';
 
-// Import FACTORIES (not classes). They receive Phaser at runtime.
 import createCombatArenaScene from '../../phaser/CombatArenaScene';
+import createPolarisForestScene from '../../phaser/PolarisForestScene';
 
 export default function ArenaCombatView({ onCast }) {
   const containerRef = useRef(null);
   const gameRef = useRef(null);
   const prefersReducedMotion = usePrefersReducedMotion();
-  
-  // Store the latest callback to avoid re-mounting Phaser on every render/keystroke
+
   const onCastRef = useRef(onCast);
   useEffect(() => {
     onCastRef.current = onCast;
@@ -24,6 +27,8 @@ export default function ArenaCombatView({ onCast }) {
     const fire = getGameBrazierFireService();
     const sword = getGameSwordSliceService();
     const fireball = getGameFireballImpactService();
+    const iceImpact = getGameIceSpellImpactService();
+    const chestUnlock = getGameChestUnlockService();
     if (!prefersReducedMotion) {
       fire.prime();
       fire.setEnabled(true);
@@ -34,11 +39,19 @@ export default function ArenaCombatView({ onCast }) {
 
       fireball.prime();
       fireball.setEnabled(true);
+
+      iceImpact.prime();
+      iceImpact.setEnabled(true);
+
+      chestUnlock.prime();
+      chestUnlock.setEnabled(true);
     } else {
       fire.setEnabled(false);
       void fire.stop();
       sword.setEnabled(false);
       fireball.setEnabled(false);
+      iceImpact.setEnabled(false);
+      chestUnlock.setEnabled(false);
     }
 
     return () => {
@@ -47,30 +60,23 @@ export default function ArenaCombatView({ onCast }) {
   }, [prefersReducedMotion]);
 
   useEffect(() => {
-    // StrictMode double-invokes this effect (mount → cleanup → mount). The
-    // cleanup fires while mountPhaserGame is still awaiting, so a plain
-    // `destroyed` boolean can't tear down a game that hasn't resolved yet —
-    // it leaks as an orphaned second canvas that swallows every right-click
-    // while the React bridge listens to the other game. Pass the adapter its
-    // abort signal (it's built to destroy the game if aborted mid-construction)
-    // so exactly one game survives and it's the one we wire.
     const controller = new AbortController();
+    let removeWorldTransition = () => {};
 
     async function start() {
       if (!containerRef.current) return;
 
       const result = await mountPhaserGame({
         parent: containerRef.current,
-        // Correct: array of factories (Phaser) => SceneClass
-        buildScenes: [createCombatArenaScene],
+        buildScenes: [createCombatArenaScene, createPolarisForestScene],
         signal: controller.signal,
         config: {
-          type: 2,                    // Phaser.WEBGL (force GPU)
+          type: 2,
           width: '100%',
           height: '100%',
           transparent: false,
           scale: {
-            mode: 3,                  // Phaser.Scale.RESIZE
+            mode: 3,
             autoCenter: 1,
           },
           physics: { default: 'arcade' },
@@ -83,32 +89,35 @@ export default function ArenaCombatView({ onCast }) {
       if (controller.signal.aborted || !result) return;
 
       gameRef.current = result;
+      registerCombatGame(result.game);
 
-      // Bridge events from the arena scene. The scene isn't in the game's
-      // registry until its `ready` event fires (Phaser boots config scenes
-      // asynchronously), so bridgeArenaScene defers listener attachment until
-      // getScene() can actually resolve. Wiring synchronously here would
-      // attach nothing and silently break right-click tile inspection.
-      bridgeArenaScene(result.game, 'CombatArenaScene', (action) => {
+      const dispatchAction = (action) => {
         if (onCastRef.current) {
           onCastRef.current(action);
         }
-      });
+      };
+
+      bridgeArenaScene(result.game, 'CombatArenaScene', dispatchAction);
+      removeWorldTransition = installWorldTransitionListener(
+        () => gameRef.current?.game,
+        dispatchAction,
+      );
     }
 
     start();
 
     return () => {
+      removeWorldTransition();
+      unregisterCombatGame();
       controller.abort();
       if (gameRef.current?.destroy) {
         gameRef.current.destroy(true);
       }
       gameRef.current = null;
     };
-  }, []); // <-- Empty dependency array ensures Phaser only mounts once!
+  }, []);
 
   return (
-    // Pure container for the Phaser arena. All visual UI elements removed.
     <div
       ref={containerRef}
       className="combat-arena-mount"

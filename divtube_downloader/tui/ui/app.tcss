@@ -129,15 +129,14 @@ FooterKey:hover {
 
 /* ── command input: rests muted, glows accent on focus (state-driven) ───── */
 #command-input {
-    dock: bottom;
     width: 100%;
-    height: 3;
+    height: 1fr;
     margin: 1;
     background: $surface;
     border: round $panel-border;
 }
 #command-input.expanded {
-    height: 15;
+    /* No-op now since we use 1fr always, but keep class in case we want styling */
 }
 #command-input:focus {
     border: round $accent-primary;
@@ -191,4 +190,8 @@ OptionList > .option-list--option-highlighted {
     background: $panel-border;
     color: $text-bright;
     text-style: bold;
+}
+
+#agent-tabs {
+    height: 1fr;
 }

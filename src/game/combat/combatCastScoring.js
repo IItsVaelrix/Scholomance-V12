@@ -10,6 +10,12 @@ import { normalizeCombatScore } from '../../../codex/core/combat.scoring.js';
 import { evaluateSyntacticalChess } from '../../../codex/core/combat.syntax-chess.js';
 import { createCombatScoringEngine } from '../../../codex/core/scoring.defaults.js';
 import { scoreCombatScroll } from '../../lib/combatApi.js';
+import { enrichScoreDataWithCompendium } from './spellweaveCompendium.scoring.js';
+import { getActiveBattleBoard } from './tacticalBoardSession.js';
+import {
+  buildTacticalCastContext,
+  resolveTacticalCast,
+} from '../../../codex/core/combat/tactical-board.resolver.js';
 
 let sharedScoringEngine = null;
 
@@ -18,6 +24,40 @@ function getCombatScoringEngine() {
     sharedScoringEngine = createCombatScoringEngine();
   }
   return sharedScoringEngine;
+}
+
+export function enrichScoreWithTacticalBoard(scoreData, {
+  casterId = 'player',
+  targetId = null,
+  weave = '',
+  movementUsed = 0,
+  maxMovement = 3,
+} = {}) {
+  const boardState = getActiveBattleBoard();
+  if (!boardState) return scoreData;
+
+  const ctx = buildTacticalCastContext(
+    casterId,
+    targetId,
+    boardState,
+    { school: scoreData?.school, intent: scoreData?.intent, raw: weave },
+    { school: scoreData?.school, intent: scoreData?.intent },
+    scoreData?.sceneContext || {},
+  );
+
+  const baseScore = Number(scoreData?.totalScore ?? scoreData?.score ?? 0);
+  const tactical = resolveTacticalCast(ctx, baseScore, { movementUsed, maxMovement });
+  const priorDamage = Number(scoreData?.damage) || 0;
+  const damageRatio = baseScore > 0 ? priorDamage / baseScore : 1;
+
+  return {
+    ...scoreData,
+    totalScore: tactical.adjustedScore,
+    score: tactical.adjustedScore,
+    damage: Math.max(1, Math.round(tactical.adjustedScore * damageRatio)),
+    tacticalCast: tactical,
+    commentary: [scoreData?.commentary, ...tactical.traces].filter(Boolean).join(' '),
+  };
 }
 
 /**
@@ -61,6 +101,8 @@ async function scoreCombatCastLocally({
   weave = '',
   defender = null,
   defenderSchool = null,
+  scholomance = null,
+  compendiumContext = null,
   scoringEngine = getCombatScoringEngine(),
 } = {}) {
   const analyzedDoc = analyzeText(verse);
@@ -73,6 +115,8 @@ async function scoreCombatCastLocally({
     defenderSchool: defender?.school ?? defenderSchool ?? null,
     speakerId: 'combat:player',
     speakerType: 'PLAYER',
+    scholomance,
+    compendiumContext,
   });
 
   const tokenWeights = analyzedDoc.parsed?.tokenWeights ?? null;
@@ -100,7 +144,13 @@ export async function resolveCombatCastScore({
   weave = '',
   defender = null,
   defenderSchool = null,
+  scholomance = null,
+  compendiumContext = null,
   scoringEngine = null,
+  casterId = 'player',
+  targetId = null,
+  movementUsed = 0,
+  maxMovement = 3,
 } = {}) {
   const engine = scoringEngine || getCombatScoringEngine();
 
@@ -109,29 +159,57 @@ export async function resolveCombatCastScore({
       scrollText: verse,
       weave,
       opponentSchool: defender?.school ?? defenderSchool ?? undefined,
+      scholomance,
+      compendiumContext,
     });
 
     const verseIR = apiScoreData?.verseIR
       || (apiScoreData?.verseIRAmplifier ? { verseIRAmplifier: apiScoreData.verseIRAmplifier } : null);
 
+    const enriched = enrichDefenderSyntacticalChess(apiScoreData, {
+      verse,
+      defender,
+      verseIR,
+    });
+    const compendiumEnriched = enrichScoreDataWithCompendium(enriched, {
+      verse,
+      weave,
+      scholomance,
+      compendiumContext,
+      defender,
+    });
     return {
       analyzedDoc: null,
       verseIR,
-      scoreData: enrichDefenderSyntacticalChess(apiScoreData, {
-        verse,
-        defender,
-        verseIR,
+      scoreData: enrichScoreWithTacticalBoard(compendiumEnriched, {
+        casterId,
+        targetId: targetId || defender?.id || null,
+        weave,
+        movementUsed,
+        maxMovement,
       }),
     };
   } catch (error) {
     console.warn('[combatCastScoring] Combat score API failed; using browser-safe local scoring.', error);
   }
 
-  return scoreCombatCastLocally({
+  const local = await scoreCombatCastLocally({
     verse,
     weave,
     defender,
     defenderSchool,
+    scholomance,
+    compendiumContext,
     scoringEngine: engine,
   });
+  return {
+    ...local,
+    scoreData: enrichScoreWithTacticalBoard(local.scoreData, {
+      casterId,
+      targetId: targetId || defender?.id || null,
+      weave,
+      movementUsed,
+      maxMovement,
+    }),
+  };
 }

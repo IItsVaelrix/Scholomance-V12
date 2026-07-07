@@ -27,6 +27,7 @@ export const SCHOLOMANCE_XP_ACTIONS = Object.freeze({
   OBELISK_DISCOVERY_SIPHON: 'obelisk_discovery_siphon',
   OBELISK_DISCOVERY_OVERLOAD: 'obelisk_discovery_overload',
   OBELISK_LOOT: 'obelisk_loot',
+  COMPENDIUM_DISCOVERY: 'compendium_discovery',
 });
 
 /**
@@ -69,6 +70,10 @@ export const SCHOLOMANCE_XP_GRANT_TABLE = Object.freeze({
   [SCHOLOMANCE_XP_ACTIONS.OBELISK_LOOT]: Object.freeze([
     { stat: 'DISCOVERY', amount: 32, source: 'obelisk_loot', uniqueId: 'xp:stormheart-orb' },
     { stat: 'MYTH', amount: 24, source: 'obelisk_loot', uniqueId: 'xp:stormheart-orb' },
+  ]),
+  [SCHOLOMANCE_XP_ACTIONS.COMPENDIUM_DISCOVERY]: Object.freeze([
+    { stat: 'DISCOVERY', amount: 14, source: 'compendium_discovery' },
+    { stat: 'CODEX', amount: 10, source: 'compendium_discovery' },
   ]),
 });
 

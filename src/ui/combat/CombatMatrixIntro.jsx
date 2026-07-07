@@ -3,39 +3,55 @@ import {
   COMBAT_MATRIX_INTRO_DURATION_MS,
   COMBAT_MATRIX_INTRO_EXIT_MS,
   COMBAT_MATRIX_INTRO_REDUCED_MS,
+  COMBAT_MATRIX_INTRO_COMPRESSED_MS,
 } from '../../game/combat/combatBattleIntro.js';
+import { getActivePhase } from '../../phaser/battle-transition.fx.js';
 import styles from './CombatMatrixIntro.module.css';
 
-const STATUS_LINES = [
-  'SENTINEL LOCK DETECTED...',
-  'BATTLE MATRIX FLOOD...',
-  'LEYLINE GRID ENGAGING...',
-  'COMBAT LATTICE LIVE...',
-];
+const PHASE_STATUS = {
+  encounter_detected: 'ENCOUNTER LOCK DETECTED...',
+  code_flood: 'BATTLE MATRIX FLOOD...',
+  wireframe_flicker: 'WORLD DECOMPILE...',
+  silhouette_dissolve: 'CLUTTER DISSOLVING...',
+  clutter_dissolve: 'NONCOMBAT GEOMETRY PURGED...',
+  grid_reveal: 'TACTICAL GRID ENGAGING...',
+  tile_reveal: 'PREMIUM TILES IGNITING...',
+  combat_ready: 'COMBAT LATTICE LIVE...',
+};
 
 /**
  * Full-screen matrix binary flood shown when combat boots.
  */
 export default function CombatMatrixIntro({
   reducedMotion = false,
+  mode = 'full',
   onComplete,
 }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
+  const startRef = useRef(Date.now());
   const [phase, setPhase] = useState(reducedMotion ? 'visible' : 'enter');
-  const [statusIndex, setStatusIndex] = useState(0);
+  const [statusLine, setStatusLine] = useState(PHASE_STATUS.encounter_detected);
 
   const durationMs = reducedMotion
     ? COMBAT_MATRIX_INTRO_REDUCED_MS
-    : COMBAT_MATRIX_INTRO_DURATION_MS;
+    : (mode === 'compressed' ? COMBAT_MATRIX_INTRO_COMPRESSED_MS : COMBAT_MATRIX_INTRO_DURATION_MS);
   const exitMs = reducedMotion ? 220 : COMBAT_MATRIX_INTRO_EXIT_MS;
 
   useEffect(() => {
+    startRef.current = Date.now();
     const statusTimer = window.setInterval(() => {
-      setStatusIndex((prev) => (prev + 1) % STATUS_LINES.length);
-    }, 780);
+      const elapsed = Date.now() - startRef.current;
+      const active = getActivePhase(elapsed, mode);
+      if (active?.id && PHASE_STATUS[active.id]) {
+        setStatusLine(PHASE_STATUS[active.id]);
+        if (active.eventName) {
+          window.dispatchEvent(new CustomEvent(active.eventName, { detail: { phase: active.id, elapsed } }));
+        }
+      }
+    }, 120);
     return () => window.clearInterval(statusTimer);
-  }, []);
+  }, [mode]);
 
   useEffect(() => {
     if (reducedMotion) return undefined;
@@ -101,16 +117,22 @@ export default function CombatMatrixIntro({
   }, [reducedMotion]);
 
   useEffect(() => {
+    window.dispatchEvent(new CustomEvent('battle.transition.start', { detail: { mode } }));
+
     const exitTimer = window.setTimeout(() => {
       if (!reducedMotion) setPhase('exit');
     }, durationMs - exitMs);
 
-    const doneTimer = window.setTimeout(() => onComplete?.(), durationMs);
+    const doneTimer = window.setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('battle.transition.ready', { detail: { mode } }));
+      onComplete?.();
+    }, durationMs);
+
     return () => {
       window.clearTimeout(exitTimer);
       window.clearTimeout(doneTimer);
     };
-  }, [durationMs, exitMs, onComplete, reducedMotion]);
+  }, [durationMs, exitMs, mode, onComplete, reducedMotion]);
 
   return (
     <div
@@ -130,7 +152,7 @@ export default function CombatMatrixIntro({
       <div className={styles.hud}>
         <p className={styles.eyebrow}>scholo://combat/engage</p>
         <h2 className={styles.title}>Battle Engaged</h2>
-        <p className={styles.status}>{STATUS_LINES[statusIndex]}</p>
+        <p className={styles.status}>{statusLine}</p>
         <div className={styles.progressTrack} aria-hidden="true">
           <div className={styles.progressBar} />
         </div>

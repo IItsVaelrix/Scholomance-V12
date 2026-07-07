@@ -1,6 +1,7 @@
 import { SYNTACTIC_ARCHETYPE_PROFILES } from '../../../../../codex/core/combat.syntax-chess.js';
 import { getIntelligenceTier } from '../../combatIntelligence.js';
 import { computeBasicAttackDamage } from '../../scholomanceStats.js';
+import { ICICLE_BLAST_RANGE } from '../../voidAcolyteCombatAbilities.js';
 import { isPortalWardenId, VOID_ACOLYTE_STAT_DEFAULTS } from '../../voidAcolyteRobots.js';
 
 export const VOID_ACOLYTE_BESTIARY_ID = 'void-acolyte';
@@ -46,7 +47,7 @@ export const voidAcolyteBestiaryEntry = {
       title: VOID_ACOLYTE_STAT_DEFAULTS.shortLabel,
       subtitle: VOID_ACOLYTE_STAT_DEFAULTS.label,
       school: VOID_ACOLYTE_STAT_DEFAULTS.school,
-      epithet: 'Portal Seal Warden',
+      epithet: 'Void1 — Portal Seal Warden',
       sections: [
         {
           id: 'vitals',
@@ -62,7 +63,8 @@ export const voidAcolyteBestiaryEntry = {
           id: 'behavior',
           label: 'Combat Behavior',
           lines: [
-            'VOID Gravity — pulls you adjacent and locks movement for 2 turns.',
+            `Icicle Blast — three sky-born rime spikes slam you from up to ${ICICLE_BLAST_RANGE} tiles away.`,
+            'VOID Gravity — pulls you adjacent and locks movement for 3 turns.',
             'Void Execution — ~40 burst damage when you are anchored.',
             'Kill window: 2–3 turns if Gravity catches you.',
           ],
@@ -81,9 +83,9 @@ export const voidAcolyteBestiaryEntry = {
   combatAI: {
     buildProfile() {
       return {
-        isRanged: false,
-        preferredRange: 1,
-        minRange: 0,
+        isRanged: true,
+        preferredRange: ICICLE_BLAST_RANGE,
+        minRange: 2,
         role: 'bruiser',
         aggression: 0.95,
         weightOverrides: { SURVIVAL_BRAIN: 0.3 },
@@ -92,13 +94,13 @@ export const voidAcolyteBestiaryEntry = {
     buildAbilityKit(context) {
       const entity = context?.entity || {};
       const damage = computeBasicAttackDamage(entity.scholomance);
-      const attackRange = Number.isFinite(entity.attackRange) ? entity.attackRange : 1;
+      const attackRange = Number.isFinite(entity.attackRange) ? entity.attackRange : ICICLE_BLAST_RANGE;
       return {
-        isRanged: false,
-        preferredRange: 1,
-        minRange: 0,
+        isRanged: true,
+        preferredRange: ICICLE_BLAST_RANGE,
+        minRange: 2,
         estimateAttackDamage: () => damage,
-        canActFromRange: (dist) => dist <= attackRange,
+        canActFromRange: (dist) => dist >= 2 && dist <= attackRange,
       };
     },
   },

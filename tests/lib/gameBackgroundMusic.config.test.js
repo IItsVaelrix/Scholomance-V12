@@ -4,8 +4,13 @@ import {
   GAME_BACKGROUND_MUSIC_TRACK,
   GAME_BATTLE_MUSIC_PACING,
   GAME_BACKGROUND_MUSIC_PACING,
+  GAME_FOREST_MUSIC_PACING,
+  GAME_FOREST_MUSIC_TRACKS,
   isCombatMusicRoute,
+  pickForestMusicTrack,
+  resetForestMusicTrackCursor,
   resolveBattleMusicProfile,
+  resolveForestMusicProfile,
   resolveMusicProfileForPath,
 } from '../../src/lib/audio/gameBackgroundMusic.config.js';
 
@@ -35,5 +40,27 @@ describe('gameBackgroundMusic.config', () => {
     expect(isCombatMusicRoute('/combat')).toBe(true);
     expect(isCombatMusicRoute('/combat/arena')).toBe(true);
     expect(isCombatMusicRoute('/read')).toBe(false);
+  });
+
+  it('exposes both Arboreal Nexus forest tracks', () => {
+    expect(GAME_FOREST_MUSIC_TRACKS).toHaveLength(2);
+    expect(GAME_FOREST_MUSIC_TRACKS[0].url).toContain('the-arboreal-nexus.mp3');
+    expect(GAME_FOREST_MUSIC_TRACKS[1].url).toContain('the-arboreal-nexus-2.mp3');
+  });
+
+  it('alternates forest tracks across entries', () => {
+    resetForestMusicTrackCursor();
+    const first = pickForestMusicTrack();
+    const second = pickForestMusicTrack();
+    expect(first.id).toBe('the-arboreal-nexus');
+    expect(second.id).toBe('the-arboreal-nexus-2');
+  });
+
+  it('resolves forest profile with looping Arboreal Nexus', () => {
+    resetForestMusicTrackCursor();
+    const profile = resolveForestMusicProfile();
+    expect(GAME_FOREST_MUSIC_TRACKS).toContainEqual(profile.track);
+    expect(profile.pacing).toEqual(GAME_FOREST_MUSIC_PACING);
+    expect(profile.loopOnly).toBe(true);
   });
 });

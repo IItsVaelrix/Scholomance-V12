@@ -3,9 +3,10 @@ import { SurvivalBrain } from './survivalBrain.js';
 import { PositionBrain } from './positionBrain.js';
 import { ResourceBrain } from './resourceBrain.js';
 import { CoordinationBrain } from './coordinationBrain.js';
+import { ArbitrationBrain } from './arbitrationBrain.js';
 
 export const DEFAULT_COUNCIL = Object.freeze([
-  AggroBrain, SurvivalBrain, PositionBrain, ResourceBrain, CoordinationBrain,
+  AggroBrain, SurvivalBrain, PositionBrain, ResourceBrain, CoordinationBrain, ArbitrationBrain
 ]);
 
 /**

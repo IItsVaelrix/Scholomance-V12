@@ -398,6 +398,111 @@ function buildSpellHitPacket(eventData = {}) {
   };
 }
 
+function voidSpellVariantGain(eventData = {}, fallback = 1) {
+  const variant = String(eventData.variant ?? 'default');
+  if (variant === 'execution') return fallback * 1.15;
+  if (variant === 'gravity') return fallback * 1.05;
+  if (variant === 'lash') return fallback * 0.92;
+  return fallback;
+}
+
+/** Dark sub-bass swell for Void1 VOID spell windups. */
+function buildVoidSpellCastPacket(eventData = {}) {
+  const gain = voidSpellVariantGain(eventData, eventData.reducedIntensity ? 0.72 : 1);
+  return {
+    ...base(SFX_EVENT_TYPES.VOID_SPELL_CAST),
+    durationMs: Math.round(520 * gain),
+    synthesis: {
+      voices: [
+        {
+          type: VOICE_TYPES.WAVETABLE,
+          harmonics: [
+            { partial: 0.5, amplitude: 1.0, phase: 0 },
+            { partial: 1, amplitude: 0.62, phase: 0 },
+            { partial: 1.5, amplitude: 0.22, phase: Math.PI / 4 },
+          ],
+          phaseWarp: 0.42,
+          envelopeRole: ENVELOPE_ROLES.ADSR,
+          gain: 0.92 * gain,
+        },
+        {
+          type: VOICE_TYPES.NOISE,
+          noiseType: NOISE_TYPES.BROWN,
+          envelopeRole: ENVELOPE_ROLES.ADSR,
+          gain: 0.48 * gain,
+        },
+        {
+          type: VOICE_TYPES.NOISE,
+          noiseType: NOISE_TYPES.VOID_STATIC,
+          envelopeRole: ENVELOPE_ROLES.ADSR,
+          gain: 0.28 * gain,
+        },
+      ],
+    },
+    envelopes: {
+      adsr: { attackMs: 55, decayMs: 320, sustain: 0.12, releaseMs: 420 },
+    },
+    effects: [
+      { type: 'parametricEQ', bands: [
+        { type: 'lowshelf', frequencyHz: 110, q: 0.7, gainDb: 10 },
+        { type: 'lowpass', frequencyHz: 380, q: 0.85 },
+      ]},
+      { type: 'softClip', drive: 0.5 },
+    ],
+    routing: { bus: ROUTING_BUSES.MAGIC, pan: eventData.pan ?? 0 },
+  };
+}
+
+/** Low hollow bass thump when a VOID spell connects. */
+function buildVoidSpellHitPacket(eventData = {}) {
+  const gain = voidSpellVariantGain(eventData, eventData.reducedIntensity ? 0.68 : 1);
+  const execution = String(eventData.variant ?? '') === 'execution';
+  return {
+    ...base(SFX_EVENT_TYPES.VOID_SPELL_HIT),
+    durationMs: Math.round((execution ? 360 : 240) * gain),
+    synthesis: {
+      voices: [
+        {
+          type: VOICE_TYPES.FM,
+          carrierFreq: execution ? 58 : 72,
+          modFreq: execution ? 29 : 36,
+          modIndex: execution ? 6.5 : 4.8,
+          envelopeRole: ENVELOPE_ROLES.BURST,
+          gain: (execution ? 0.95 : 0.82) * gain,
+        },
+        {
+          type: VOICE_TYPES.NOISE,
+          noiseType: NOISE_TYPES.BROWN,
+          envelopeRole: ENVELOPE_ROLES.BURST,
+          gain: 0.55 * gain,
+        },
+        {
+          type: VOICE_TYPES.NOISE,
+          noiseType: NOISE_TYPES.VOID_STATIC,
+          envelopeRole: ENVELOPE_ROLES.BURST,
+          gain: 0.22 * gain,
+        },
+      ],
+    },
+    envelopes: {
+      adsr: {
+        attackMs: 2,
+        decayMs: execution ? 220 : 150,
+        sustain: 0,
+        releaseMs: execution ? 120 : 78,
+      },
+    },
+    effects: [
+      { type: 'parametricEQ', bands: [
+        { type: 'lowshelf', frequencyHz: 90, q: 0.8, gainDb: 12 },
+        { type: 'lowpass', frequencyHz: execution ? 520 : 340, q: 0.9 },
+      ]},
+      { type: 'softClip', drive: execution ? 0.58 : 0.46 },
+    ],
+    routing: { bus: ROUTING_BUSES.MAGIC, pan: eventData.pan ?? 0 },
+  };
+}
+
 function buildSpellFailPacket(_eventData = {}) {
   return {
     ...base(SFX_EVENT_TYPES.SPELL_FAIL),
@@ -599,4 +704,6 @@ export const SFX_EVENT_MAPPINGS = Object.freeze({
   [SFX_EVENT_TYPES.UI_CANCEL]:                   buildUiCancelPacket,
   [SFX_EVENT_TYPES.OBELISK_CHARGE]:              buildObeliskChargePacket,
   [SFX_EVENT_TYPES.OBELISK_DISCHARGE]:           buildObeliskDischargePacket,
+  [SFX_EVENT_TYPES.VOID_SPELL_CAST]:             buildVoidSpellCastPacket,
+  [SFX_EVENT_TYPES.VOID_SPELL_HIT]:              buildVoidSpellHitPacket,
 });
