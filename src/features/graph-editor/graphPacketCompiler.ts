@@ -1,75 +1,166 @@
-/**
- * graphPacketCompiler.ts
- *
- * Canonical compiler for ScholomanceGraphPacket-v1.
- *
- * This is the authority. Rete is only the UI.
- * In shadow mode this still produces diagnostics and a preview projection.
- */
+import { ScholomanceGraphPacketV1, ScholomanceGraphNodeV1, ScholomanceGraphDiagnosticV1 } from './graphPacketSchema';
+import { validateGraphPacket, hasFatal } from './graphDiagnostics';
 
-import { ScholomanceGraphPacketV1 } from './graphPacketSchema';
-import { evaluateFormula } from '../../../codex/core/pixelbrain/formula-to-coordinates.js'; // tie-in to existing Wand math
-import { forgeCharacterFromWandVector } from '../../../codex/core/pixelbrain/character-foundry.js';
+export interface GraphCompileContext {
+  resolvers: Map<string, GraphNodeResolver>;
+}
 
-export type GraphCompileResult = {
+export interface GraphCompileResult {
   ok: boolean;
-  diagnostics: any[];
+  diagnostics: ScholomanceGraphDiagnosticV1[];
   artifacts: any[];
-  checksum: string;
-};
+}
+
+export interface GraphNodeResolver {
+  resolve(args: {
+    node: ScholomanceGraphNodeV1;
+    inputs: Record<string, any>;
+    seed: string;
+    context: GraphCompileContext;
+  }): { outputs: Record<string, any>; diagnostics: ScholomanceGraphDiagnosticV1[] };
+}
+
+export interface GraphCompileState {
+  seed: string;
+  nodeOutputs: Map<string, Record<string, any>>;
+  diagnostics: ScholomanceGraphDiagnosticV1[];
+  addDiagnostic(d: ScholomanceGraphDiagnosticV1): void;
+  addDiagnostics(ds: ScholomanceGraphDiagnosticV1[]): void;
+}
+
+function createGraphCompileState(options: { seed: string; nodeOutputs: Map<string, Record<string, any>> }): GraphCompileState {
+  return {
+    seed: options.seed,
+    nodeOutputs: options.nodeOutputs,
+    diagnostics: [],
+    addDiagnostic(d: ScholomanceGraphDiagnosticV1) {
+      this.diagnostics.push(d);
+    },
+    addDiagnostics(ds: ScholomanceGraphDiagnosticV1[]) {
+      this.diagnostics.push(...ds);
+    }
+  };
+}
+
+function buildDeterministicExecutionPlan(packet: ScholomanceGraphPacketV1) {
+  const adj = new Map<string, string[]>();
+  const inDegree = new Map<string, number>();
+
+  for (const node of packet.nodes) {
+    adj.set(node.id, []);
+    inDegree.set(node.id, 0);
+  }
+
+  for (const conn of packet.connections) {
+    if (adj.has(conn.source.nodeId) && inDegree.has(conn.target.nodeId)) {
+      adj.get(conn.source.nodeId)!.push(conn.target.nodeId);
+      inDegree.set(conn.target.nodeId, inDegree.get(conn.target.nodeId)! + 1);
+    }
+  }
+
+  const steps: { nodeId: string }[] = [];
+  const available = Array.from(inDegree.entries())
+    .filter(([_, degree]) => degree === 0)
+    .map(([nodeId]) => nodeId);
+
+  available.sort(); // Deterministic tie-breaking
+
+  while (available.length > 0) {
+    const u = available.shift()!;
+    steps.push({ nodeId: u });
+    const neighbors = adj.get(u) || [];
+    for (const v of neighbors) {
+      const newDegree = inDegree.get(v)! - 1;
+      inDegree.set(v, newDegree);
+      if (newDegree === 0) {
+        available.push(v);
+      }
+    }
+    available.sort(); // Maintain deterministic order
+  }
+
+  return { steps };
+}
+
+function collectNodeInputs(packet: ScholomanceGraphPacketV1, state: GraphCompileState, node: ScholomanceGraphNodeV1): Record<string, any> {
+  const inputs: Record<string, any> = {};
+  const incomingConns = packet.connections.filter(c => c.target.nodeId === node.id);
+
+  for (const conn of incomingConns) {
+    const sourceOutputs = state.nodeOutputs.get(conn.source.nodeId);
+    if (sourceOutputs) {
+      inputs[conn.target.socket] = sourceOutputs[conn.source.socket];
+    }
+  }
+  return inputs;
+}
+
+function finalizeGraphCompileResult(packet: ScholomanceGraphPacketV1, state: GraphCompileState): GraphCompileResult {
+  return {
+    ok: !hasFatal(state.diagnostics),
+    diagnostics: state.diagnostics,
+    artifacts: Array.from(state.nodeOutputs.entries()).map(([nodeId, outputs]) => ({ nodeId, outputs }))
+  };
+}
 
 export function compileScholomanceGraphPacket(
   packet: ScholomanceGraphPacketV1,
-  context: { seed?: string } = {}
+  context: GraphCompileContext
 ): GraphCompileResult {
-  const diagnostics: any[] = [];
+  const diagnostics = validateGraphPacket(packet, context);
 
-  // Basic packet validation
-  if (!packet.nodes || packet.nodes.length === 0) {
-    diagnostics.push({ code: 'GRAPH-000 EMPTY_GRAPH', severity: 'warn', message: 'Graph has no nodes' });
+  if (hasFatal(diagnostics)) {
+    return {
+      ok: false,
+      diagnostics,
+      artifacts: []
+    };
   }
 
-  // Example: find Wand / math nodes and run existing evaluators (shadow / preview only)
-  const artifacts: any[] = [];
+  const executionPlan = buildDeterministicExecutionPlan(packet);
 
-  for (const node of packet.nodes) {
-    if (node.kind === 'wand.formula' || node.kind === 'math.expression') {
-      try {
-        // Reuse existing evaluate path for determinism
-        const coords = evaluateFormula(
-          { coordinateFormula: node.params?.formula || node.params?.expression },
-          { width: 128, height: 128 },
-          0
-        );
+  const state = createGraphCompileState({
+    seed: packet.determinism.seed,
+    nodeOutputs: new Map()
+  });
 
-        artifacts.push({
-          nodeId: node.id,
-          type: node.kind,
-          vectorPaths: coords.length,
-          sample: coords.slice(0, 3),
-        });
-      } catch (e: any) {
-        diagnostics.push({
-          code: 'GRAPH-013 MATH_EVAL_FAILED',
-          severity: 'error',
-          nodeId: node.id,
-          message: e.message,
-        });
-      }
+  for (const step of executionPlan.steps) {
+    const node = packet.nodes.find(n => n.id === step.nodeId);
+
+    if (!node) {
+      state.addDiagnostic({
+        code: "GRAPH-003 MISSING_NODE",
+        severity: "fatal",
+        nodeId: step.nodeId,
+        message: `Execution plan referenced missing node ${step.nodeId}`
+      });
+      break;
     }
 
-    if (node.kind === 'pixelbrain.compile') {
-      // Could call forgeCharacterFromWandVector in future when full vectorWand support lands
-      artifacts.push({ nodeId: node.id, type: 'pixelbrain', note: 'shadow preview only' });
+    const resolver = context.resolvers.get(node.compiler.resolverId);
+
+    if (!resolver) {
+      state.addDiagnostic({
+        code: "GRAPH-008 MISSING_RESOLVER",
+        severity: "fatal",
+        nodeId: node.id,
+        message: `Missing resolver ${node.compiler.resolverId}`
+      });
+      break;
     }
+
+    const inputValues = collectNodeInputs(packet, state, node);
+
+    const result = resolver.resolve({
+      node,
+      inputs: inputValues,
+      seed: packet.determinism.seed,
+      context
+    });
+
+    state.nodeOutputs.set(node.id, result.outputs);
+    state.addDiagnostics(result.diagnostics);
   }
 
-  const checksum = JSON.stringify({ nodes: packet.nodes.length, seed: packet.determinism.seed }).length.toString(16);
-
-  return {
-    ok: diagnostics.filter(d => d.severity === 'fatal' || d.severity === 'error').length === 0,
-    diagnostics,
-    artifacts,
-    checksum,
-  };
+  return finalizeGraphCompileResult(packet, state);
 }

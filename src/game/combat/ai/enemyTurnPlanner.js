@@ -4,6 +4,7 @@ import { planHold, planAdvance, planKite, planRetreat, planFlank } from './enemy
 import { scoreCandidate } from './council/index.js';
 import { manhattan } from '../combatPathfinding.js';
 import { BASIC_ATTACK_AP_COST } from '../combatStats.js';
+import { getTacticalTileMoveGoal } from '../tacticalBoardAiBridge.js';
 
 function actionsFor(movement, ctx, stance) {
   const dist = manhattan(movement.destination, ctx.target.position);
@@ -20,10 +21,22 @@ function actionsFor(movement, ctx, stance) {
   return out;
 }
 
+function planContestTile(ctx) {
+  const goal = getTacticalTileMoveGoal({ ...ctx, stats: ctx.stats });
+  if (!goal?.steps?.length) return null;
+  return {
+    kind: 'contest_tile',
+    steps: goal.steps,
+    destination: goal.destination,
+    reason: goal.reason,
+  };
+}
+
 function enumerateCandidates(ctx, stance) {
+  const contest = planContestTile(ctx);
   const goals = stance.tier === 'brute'
-    ? [planHold(ctx), planAdvance(ctx)]
-    : [planHold(ctx), planAdvance(ctx), planKite(ctx), planRetreat(ctx), planFlank(ctx)];
+    ? [contest, planHold(ctx), planAdvance(ctx)]
+    : [contest, planHold(ctx), planAdvance(ctx), planKite(ctx), planRetreat(ctx), planFlank(ctx)];
   const candidates = [];
   for (const movement of goals.filter(Boolean)) {
     for (const action of actionsFor(movement, ctx, stance)) {

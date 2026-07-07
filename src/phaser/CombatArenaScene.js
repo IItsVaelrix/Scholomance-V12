@@ -15,10 +15,7 @@ import {
 } from '../../codex/core/obelisk-puzzle.signals.js';
 import { grantItem, hasItem } from '../game/inventory/inventoryService.js';
 import { resolveCombatLootGrant } from '../game/combat/combatLootDrops.js';
-import {
-  LOOT_CHEST_PNG_SCALE,
-  planCombatChestDrop,
-} from '../game/combat/combatLootChest.js';
+import { planCombatChestDrop } from '../game/combat/combatLootChest.js';
 import {
   getLootChestOpenAnimKey,
   preloadLootChestTextures,
@@ -40,6 +37,7 @@ import {
   tileKey,
 } from '../game/combat/combatPathfinding.js';
 import { ARENA_SORT_LAYER, getGridSortDepth } from '../game/combat/arenaDepthSorting.js';
+import { queueIsoTileTextures } from './isoTileTextures.js';
 import {
   areAllSentinelsDefeated,
   buildSentinelBlockedTiles,
@@ -59,6 +57,7 @@ import {
   PORTAL_TILE,
   PORTAL_WARDEN_ID,
 } from '../game/combat/portalPhase.js';
+import { POLARIS_FOREST_MAP_ID } from '../game/world/worldMapRegistry.js';
 import {
   applyVoidAcolyteHitDamage,
   createVoidAcolyteAbilityState,
@@ -105,13 +104,35 @@ import {
 } from '../game/combat/combatBattleIntro.js';
 import { getGameVictoryService } from '../lib/audio/gameVictory.service.js';
 import { buildInspectPresentation } from '../game/combat/combatInspectCopy.js';
+import {
+  DEFEATED_ENEMY_DISAPPEAR_MS,
+  destroyPortalWardenEffect,
+  destroySentinelTorchEffect,
+} from '../game/combat/defeatedEnemyCleanup.js';
+import { COMBAT_MUSIC_REGION, setCombatMusicRegion } from '../game/combat/combatMusicRegion.js';
 import { parseWeave } from '../../codex/core/spellweave.engine.js';
 import {
   cycleCombatTargetId,
   listTargetableCombatants,
   mergeSelectedCombatTarget,
 } from '../game/combat/combatTargetSelection.js';
-import { resolveCombatCastScore } from '../game/combat/combatCastScoring.js';
+import { enrichScoreWithTacticalBoard, resolveCombatCastScore } from '../game/combat/combatCastScoring.js';
+import { compileArenaBattleBoard } from '../game/combat/tacticalBoardMapAdapter.js';
+import {
+  clearActiveBattleBoard,
+  getActiveBattleBoard,
+  setActiveBattleBoard,
+} from '../game/combat/tacticalBoardSession.js';
+import {
+  computeThreatMap,
+  getMovementRange,
+  getSpellRange,
+  getVisibleTiles,
+} from '../../codex/core/combat/tactical-board.threat-map.js';
+import { syncBattleBoardFromLiveStats, resolveThreatEntityLabels } from '../game/combat/tacticalBoardLiveSync.js';
+import { getReverseTransitionTimeline } from './battle-transition.fx.js';
+import { bindActiveSceneContextRequest } from './combatSceneShared.js';
+import { BATTLE_TERRAIN_TYPES } from '../../codex/core/combat/tactical-board.tiles.js';
 import { SPELL_CAST_AP_COST } from '../game/combat/combatMana.js';
 import { driveEnemyTurn } from '../game/combat/ai/enemyCombatDriver.js';
 import {
@@ -154,6 +175,7 @@ import { getGameBrazierFireService } from '../lib/audio/gameBrazierFire.service.
 import { getGameFireballImpactService } from '../lib/audio/gameFireballImpact.service.js';
 import { getGameIceSpellImpactService } from '../lib/audio/gameIceSpellImpact.service.js';
 import { getGameSwordSliceService } from '../lib/audio/gameSwordSlice.service.js';
+import { getGameChestUnlockService } from '../lib/audio/gameChestUnlock.service.js';
 import {
   GAME_BACKGROUND_MUSIC_PACING,
   GAME_OBELISK_MUSIC_SYNC,
@@ -174,6 +196,8 @@ const PALETTES = {
   obsidian: { shine: 0x332244, lit: 0x221133, core: 0x110022, rim: 0x0a0011, shadow: 0x05000a },
   amethyst: { shine: 0xffaaff, lit: 0xcc55ff, core: 0x8800bb, rim: 0x440077, shadow: 0x220044 },
   cyan_glow: { shine: 0x00ffff, lit: 0x0088cc, core: 0x004488, rim: 0x002244, shadow: 0x001122 },
+  sonic_moss: { shine: 0x55ccaa, lit: 0x338866, core: 0x1a4a44, rim: 0x0f2a28, shadow: 0x081816 },
+  sonic_bark: { shine: 0xc8b888, lit: 0x9a8055, core: 0x6a5030, rim: 0x3a2818, shadow: 0x1a1008 },
   royal_purple: { shine: 0xd8b2ff, lit: 0x9b66ff, core: 0x6600cc, rim: 0x330066, shadow: 0x1a0033 },
   // Light checker cell — a subtly-lit arcane slate that reads against obsidian without going muddy.
   arcane_slate: { shine: 0x453a5e, lit: 0x2e2440, core: 0x1e1730, rim: 0x120c20, shadow: 0x080512 }
@@ -251,6 +275,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       });
 
       preloadLootChestTextures(this.load);
+      queueIsoTileTextures(this.load);
 
       preloadVoid1Textures(this.load);
       this.load.on('loaderror', (file) => {
@@ -287,7 +312,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       // Zoom out to give the island breathing room and reveal the space around it.
       // Universe bg is now massively oversized + resize handler to ensure it always fills the full viewport (no side black bars).
-      this.cameras.main.setZoom(1.1);
+      this.baseCameraZoom = 1.1;
+      this.maxCameraZoom = 2.25;
+      this.cameraZoomStep = 0.1;
+      this.cameras.main.setZoom(this.baseCameraZoom);
 
       // Subtle camera idle drift to sell "alive" parallax-on-stars
       // Note: galaxy redraw on resize ensures full viewport fill even after drift/zoom
@@ -351,12 +379,15 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.islandTerrainRadius = 14;
       this.boundCanvasPointerDown = (e) => this.handleCanvasPointerDown(e);
       this.boundCanvasContextMenu = (e) => this.handleCanvasContextMenu(e);
+      this.boundCanvasWheel = (e) => this.handleCanvasWheel(e);
       if (this.game.canvas) {
         this.game.canvas.addEventListener('pointerdown', this.boundCanvasPointerDown);
         this.game.canvas.addEventListener('contextmenu', this.boundCanvasContextMenu);
+        this.game.canvas.addEventListener('wheel', this.boundCanvasWheel, { passive: false });
         this.events.once('destroy', () => {
           this.game.canvas?.removeEventListener('pointerdown', this.boundCanvasPointerDown);
           this.game.canvas?.removeEventListener('contextmenu', this.boundCanvasContextMenu);
+          this.game.canvas?.removeEventListener('wheel', this.boundCanvasWheel);
         });
       }
 
@@ -366,6 +397,15 @@ export default function createCombatArenaScene(phaserRuntime) {
       const heightmap = this.runGeologicVM(terrainSize, terrainRadius);
 
       this.arenaBiome = 'void';
+      this.worldRegion = 'void_courtyard';
+      this.polarisTransitActive = false;
+      this.defeatedEnemyRemovalTimers = new Map();
+      this.events.once('destroy', () => {
+        for (const timer of this.defeatedEnemyRemovalTimers?.values() || []) {
+          timer?.remove?.(false);
+        }
+        this.defeatedEnemyRemovalTimers?.clear();
+      });
       this.portalPhase = PORTAL_PHASE.DORMANT;
       this.portalWarden = null;
       this.portalWardenEffect = null;
@@ -538,14 +578,19 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       // Register animations for armor pieces
       Object.values(ITEM_DATABASE).forEach(item => {
-        if (item.sprite) {
-          this.anims.create({
-            key: `${item.assetId}-walk`,
-            frames: Array.from({ length: WALK_FRAME_COUNT }, (_, k) => ({ key: `${item.assetId}-f${k + 1}` })),
-            frameRate: 18,
-            repeat: -1
-          });
-        }
+        if (!item.sprite) return;
+        const walkIndices = Array.isArray(item.walkFrames) && item.walkFrames.length
+          ? item.walkFrames
+          : Array.from({ length: WALK_FRAME_COUNT }, (_, k) => k + 1);
+        this.anims.create({
+          key: `${item.assetId}-walk`,
+          frames: walkIndices
+            .filter((index) => this.textures.exists(`${item.assetId}-f${index}`))
+            .map((index) => ({ key: `${item.assetId}-f${index}` })),
+          frameRate: 18,
+          repeat: -1,
+        });
+        if (item.idleAnim) this.ensureHandItemIdleAnimation(item.assetId);
       });
 
       playerImg.play('player-idle');
@@ -704,7 +749,10 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.events.once('destroy', () => window.removeEventListener('incantation-state', this.boundHandleIncantation));
       window.dispatchEvent(new CustomEvent('request-incantation-state'));
 
-      this.boundHandleSceneContextRequest = () => this.emitSceneContextState();
+      this.boundHandleSceneContextRequest = bindActiveSceneContextRequest(
+        this,
+        () => this.emitSceneContextState(),
+      );
       window.addEventListener('request-scene-context', this.boundHandleSceneContextRequest);
       this.events.once('destroy', () => {
         window.removeEventListener('request-scene-context', this.boundHandleSceneContextRequest);
@@ -732,6 +780,8 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.events.once('destroy', () => {
         window.removeEventListener('keydown', this.boundHandleTargetCycleKey);
       });
+
+      this.setupTacticalOverlayListener();
 
       this.boundHandleBattleStarted = () => {
         if (this.canEngageCombatBattle()) this.engageCombatBattle();
@@ -865,6 +915,49 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.refreshSortableEntityDepths();
     }
 
+    respawnSentinel(sentinelId) {
+      const record = this.getSentinelRecords().find((entry) => entry.id === sentinelId);
+      if (!record || !record.defeated) return;
+
+      record.defeated = false;
+      const tile = this.getIsoTarget(record.tx, record.ty);
+      this.drawTorch(tile.x, tile.y, { sentinelId: record.id });
+      
+      this.stats.registerEntity(record.id, {
+        hp: SENTINEL_STAT_DEFAULTS.hp,
+        maxHp: SENTINEL_STAT_DEFAULTS.maxHp,
+        tx: record.tx,
+        ty: record.ty,
+        overrides: getSentinelCombatOverrides(record.id),
+        scholomanceOverrides: SENTINEL_STAT_DEFAULTS.scholomanceOverrides,
+      });
+
+      this.refreshSortableEntityDepths();
+      this.rebuildBlockedTiles();
+      this.refreshMovementHighlights();
+      this.emitSceneContextState();
+
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (effect?.bobContainer) {
+        effect.bobContainer.setAlpha(0);
+        this.tweens.add({
+          targets: effect.bobContainer,
+          alpha: 1,
+          duration: 1500,
+          ease: 'Sine.easeInOut',
+        });
+      }
+      if (effect?.shadow) {
+        effect.shadow.setAlpha(0);
+        this.tweens.add({
+          targets: effect.shadow,
+          alpha: effect.shadow.bobAlpha ?? 0.8,
+          duration: 1500,
+          ease: 'Sine.easeInOut',
+        });
+      }
+    }
+
     refreshSortableEntityDepths() {
       const playerPos = this.playerGridPos;
       if (this.playerContainer && playerPos) {
@@ -883,7 +976,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       for (const chest of this.combatLootChests || []) {
-        chest.sprite?.setDepth(getGridSortDepth(chest.tx, chest.ty, ARENA_SORT_LAYER.LOOT_CHEST));
+        const d = getGridSortDepth(chest.tx, chest.ty, ARENA_SORT_LAYER.LOOT_CHEST);
+        chest.sprite?.setDepth(d);
+        chest.idleEmitter?.setDepth(d + 1);
       }
 
       const warden = this.portalWardenEffect;
@@ -904,6 +999,36 @@ export default function createCombatArenaScene(phaserRuntime) {
     getSentinelTorchEffect(sentinelId) {
       if (!sentinelId || !this.torchEffects?.length) return null;
       return this.torchEffects.find((entry) => entry.sentinelId === sentinelId) || null;
+    }
+
+    scheduleDefeatedEnemyRemoval(entityId, onRemove) {
+      if (!entityId || typeof onRemove !== 'function') return;
+      if (!this.defeatedEnemyRemovalTimers) {
+        this.defeatedEnemyRemovalTimers = new Map();
+      }
+      const prior = this.defeatedEnemyRemovalTimers.get(entityId);
+      prior?.remove?.(false);
+
+      const timer = this.time.delayedCall(DEFEATED_ENEMY_DISAPPEAR_MS, () => {
+        this.defeatedEnemyRemovalTimers?.delete(entityId);
+        onRemove();
+      });
+      this.defeatedEnemyRemovalTimers.set(entityId, timer);
+    }
+
+    removeSentinelTorchVisual(sentinelId) {
+      const effect = this.getSentinelTorchEffect(sentinelId);
+      if (!effect) return;
+      destroySentinelTorchEffect(effect);
+      this.torchEffects = (this.torchEffects || []).filter((entry) => entry.sentinelId !== sentinelId);
+      this.refreshSortableEntityDepths();
+    }
+
+    removePortalWardenVisual() {
+      if (!this.portalWardenEffect) return;
+      destroyPortalWardenEffect(this.portalWardenEffect);
+      this.portalWardenEffect = null;
+      this.refreshSortableEntityDepths();
     }
 
     applySentinelAggroVisual(sentinelId) {
@@ -1089,18 +1214,26 @@ export default function createCombatArenaScene(phaserRuntime) {
       const effect = this.getSentinelTorchEffect(sentinelId);
       if (effect?.bobContainer) {
         const tile = this.getIsoTarget(finalStep.tx, finalStep.ty);
+        effect.gridTx = finalStep.tx;
+        effect.gridTy = finalStep.ty;
+        effect.bobContainer.setDepth(getGridSortDepth(finalStep.tx, finalStep.ty, ARENA_SORT_LAYER.TORCH_BODY));
+        if (effect.shadow) effect.shadow.setDepth(getGridSortDepth(finalStep.tx, finalStep.ty, ARENA_SORT_LAYER.TORCH_SHADOW));
+        if (effect.ambient) effect.ambient.setDepth(getGridSortDepth(finalStep.tx, finalStep.ty, ARENA_SORT_LAYER.TORCH_AMBIENT));
+
         this.tweens.add({
-          targets: effect.bobContainer,
-          x: tile.x,
-          y: tile.y,
+          targets: effect,
+          anchorX: tile.x,
+          anchorY: tile.y - 10,
+          shadowBaseX: tile.x,
+          shadowBaseY: tile.y + 10,
           duration: 180 + steps.length * 40,
           ease: 'Sine.easeInOut',
         });
-        if (effect.shadow) {
+        if (effect.ambient) {
           this.tweens.add({
-            targets: effect.shadow,
+            targets: effect.ambient,
             x: tile.x,
-            y: tile.y + 8,
+            y: tile.y + 10,
             duration: 180 + steps.length * 40,
             ease: 'Sine.easeInOut',
           });
@@ -1108,6 +1241,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       this.rebuildBlockedTiles();
+      if (this.combatBattleEngaged) this.syncLiveBattleBoard();
       this.emitSceneContextState();
     }
 
@@ -1548,6 +1682,13 @@ export default function createCombatArenaScene(phaserRuntime) {
         ty: record.ty,
       });
       this.spawnCombatLootChest(sentinelId, record.tx, record.ty);
+      this.scheduleDefeatedEnemyRemoval(sentinelId, () => {
+        this.removeSentinelTorchVisual(sentinelId);
+      });
+
+      this.time.delayedCall(15000, () => {
+        this.respawnSentinel(sentinelId);
+      });
 
       if (areAllSentinelsDefeated(this.getSentinelRecords())) {
         this.triggerPortalUnseal();
@@ -1758,7 +1899,22 @@ export default function createCombatArenaScene(phaserRuntime) {
       return this.isPlayerAdjacentToTile(PORTAL_TILE.tx, PORTAL_TILE.ty);
     }
 
+    isPortalCleared() {
+      return this.portalPhase === PORTAL_PHASE.CLEARED;
+    }
+
+    isPortalTeleported() {
+      return this.portalPhase === PORTAL_PHASE.TELEPORTED;
+    }
+
     tryEnterPortal() {
+      if (this.isPortalCleared()) {
+        return this.beginPolarisTeleport();
+      }
+      if (this.isPortalTeleported()) {
+        this.showPlayerCastHint('the gate stands open — you have already crossed');
+        return false;
+      }
       if (!this.isPortalBeckoning()) {
         this.showPlayerCastHint('portal sealed');
         return false;
@@ -1770,10 +1926,30 @@ export default function createCombatArenaScene(phaserRuntime) {
       return this.spawnPortalWarden();
     }
 
+    beginPolarisTeleport() {
+      if (this.polarisTransitActive) return false;
+      if (!this.isPlayerAdjacentToPortal()) {
+        this.showPlayerCastHint('cross to the threshold');
+        return false;
+      }
+      this.polarisTransitActive = true;
+      this.cutsceneInputLock = true;
+      this.portalPhase = PORTAL_PHASE.TELEPORTED;
+      this.refreshPortalInteractionState();
+      this.events.emit('polaris-teleport-start', { type: 'polaris-teleport-start' });
+      this.events.emit('world-transition-request', {
+        type: 'world-transition-request',
+        targetMapId: POLARIS_FOREST_MAP_ID,
+        sourceMapId: 'tutorial-island',
+      });
+      return true;
+    }
+
     refreshPortalInteractionState() {
       if (!this.portalVisual) return;
       const beckoning = this.isPortalBeckoning();
-      if (beckoning) {
+      const cleared = this.isPortalCleared();
+      if (beckoning || cleared) {
         this.portalVisual.setInteractive(
           this.portalHitArea,
           phaserRuntime.Geom.Rectangle.Contains,
@@ -1809,6 +1985,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           if (this.anims.exists(walkKey)) layer.play(walkKey, true);
         }
       });
+      this.syncHandWeaponPresentation();
 
       if (this.idleTween) this.idleTween.pause();
       bobTargets.forEach((sprite) => { sprite.y = 0; sprite.scaleY = 1; });
@@ -1841,6 +2018,7 @@ export default function createCombatArenaScene(phaserRuntime) {
           if (this.textures.exists(idleKey)) layer.setTexture(idleKey);
         }
       });
+      this.syncHandWeaponPresentation();
     }
 
     snapPlayerToGridTile(tx, ty, { animate = false, duration = 380 } = {}) {
@@ -2009,11 +2187,15 @@ export default function createCombatArenaScene(phaserRuntime) {
         });
       }
       this.portalPhase = PORTAL_PHASE.CLEARED;
+      this.refreshPortalInteractionState();
       this.rebuildBlockedTiles();
       this.emitSceneContextState();
       this.spawnCombatLootChest(record.id, record.tx, record.ty);
       this.triggerCombatVictory({
         text: `${VOID_ACOLYTE_STAT_DEFAULTS.label} falls. The dimensional seal collapses.`,
+      });
+      this.scheduleDefeatedEnemyRemoval(PORTAL_WARDEN_ID, () => {
+        this.removePortalWardenVisual();
       });
       return true;
     }
@@ -2047,11 +2229,11 @@ export default function createCombatArenaScene(phaserRuntime) {
         portalPhase: this.portalPhase || PORTAL_PHASE.DORMANT,
         targets: [
           ...this.buildSentinelTargets(),
-          ...(this.isPortalBeckoning() ? [{
+          ...((this.isPortalBeckoning() || this.isPortalCleared()) ? [{
             id: 'combat-portal',
-            label: 'Dimensional Portal',
+            label: this.isPortalCleared() ? 'Polaris Gate' : 'Dimensional Portal',
             kind: 'structure',
-            weaveObjects: ['PORTAL', 'VOID', 'SPIRIT'],
+            weaveObjects: ['PORTAL', 'VOID', 'SPIRIT', 'SONIC'],
             tx: PORTAL_TILE.tx,
             ty: PORTAL_TILE.ty,
             inRange: this.isPlayerAdjacentToPortal(),
@@ -2541,11 +2723,11 @@ export default function createCombatArenaScene(phaserRuntime) {
       const chestId = `chest-${enemyId}-${tx}-${ty}-${this.combatLootChests?.length || 0}`;
       const floorY = tile.y;
       const sprite = this.add.sprite(tile.x, floorY, plan.textureKey);
-      sprite.setOrigin(0.5, 1);
-      sprite.setScale(1.8 / LOOT_CHEST_PNG_SCALE);
+      sprite.setOrigin(0.5, 55 / 80); // Chest bottom is at Y=55 in the 80x80 canvas
+      sprite.setScale(1); // Make the chest proportionately realistic (body size is too big)
       sprite.setAlpha(0.35);
 
-      sprite.setInteractive(new phaserRuntime.Geom.Rectangle(-14, -18, 28, 24), phaserRuntime.Geom.Rectangle.Contains);
+      sprite.setInteractive(new phaserRuntime.Geom.Rectangle(-20, -28, 40, 28), phaserRuntime.Geom.Rectangle.Contains);
       sprite.interactData = {
         tx,
         ty,
@@ -2568,7 +2750,11 @@ export default function createCombatArenaScene(phaserRuntime) {
         loot: plan.loot,
         opened: false,
         sprite,
+        idleEmitter: null,
       };
+
+      // Ensure idleEmitter gets linked properly right after record creation
+      // We will assign it below when particles are created.
 
       if (!Array.isArray(this.combatLootChests)) this.combatLootChests = [];
       this.combatLootChests.push(record);
@@ -2583,19 +2769,25 @@ export default function createCombatArenaScene(phaserRuntime) {
       this.tweens.add({
         targets: sprite,
         alpha: 1,
-        scaleX: 2.4 / LOOT_CHEST_PNG_SCALE,
-        scaleY: 2.4 / LOOT_CHEST_PNG_SCALE,
+        scaleX: 0.525,
+        scaleY: 0.525,
         duration: 420,
         ease: 'Back.easeOut',
       });
-      this.tweens.add({
-        targets: sprite,
-        y: baseY - 4,
-        duration: 1200,
-        yoyo: true,
-        repeat: -1,
-        ease: 'Sine.easeInOut',
-      });
+
+      let idleEmitter = null;
+      if (this.add.particles && this.textures.exists('twinkle-star')) {
+        idleEmitter = this.add.particles(tile.x, floorY - 10, 'twinkle-star', {
+          scale: { start: 0.3, end: 0 },
+          alpha: { start: 0.7, end: 0 },
+          tint: 0xffd700,
+          speed: { min: 2, max: 8 },
+          lifespan: 1400,
+          frequency: 300,
+          gravityY: -8,
+          blendMode: 'ADD',
+        });
+      }
 
       this.events.emit('combat-chest-spawn', {
         type: 'combat-chest-spawn',
@@ -2607,6 +2799,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         label: plan.label,
         hasLoot: Boolean(plan.loot),
       });
+      if (idleEmitter) {
+        record.idleEmitter = idleEmitter;
+      }
       this.refreshSortableEntityDepths();
       return record;
     }
@@ -2616,7 +2811,37 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (!chest) return null;
 
       chest.opened = true;
+      if (chest.idleEmitter) {
+        chest.idleEmitter.stop();
+        chest.idleEmitter.destroy();
+        chest.idleEmitter = null;
+      }
+
+      if (this.add.particles && chest.sprite && this.textures.exists('twinkle-star')) {
+        const x = chest.sprite.x;
+        const y = chest.sprite.y - 15;
+        const d = chest.sprite.depth + 1;
+        const burst = this.add.particles(x, y, 'twinkle-star', {
+          scale: { start: 0.5, end: 0 },
+          alpha: { start: 1, end: 0 },
+          tint: [0xffd700, 0xffaa00, 0xffffff, 0xffff00],
+          speed: { min: 40, max: 120 },
+          lifespan: { min: 400, max: 900 },
+          gravityY: 150,
+          emitting: false,
+          blendMode: 'ADD',
+        });
+        burst.setDepth(d);
+        burst.explode(60); // actual wealth explosion
+        this.time.delayedCall(1200, () => burst.destroy());
+      }
+
       const finalizeOpen = () => this.finalizeCombatLootChestOpen(chest);
+
+      const unlockService = getGameChestUnlockService();
+      if (unlockService) {
+        unlockService.playUnlock();
+      }
 
       if (chest.sprite) {
         const animKey = getLootChestOpenAnimKey(chest.tier);
@@ -2640,8 +2865,8 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.tweens.add({
           targets: chest.sprite,
           alpha: 0,
-          scaleX: (2.4 / LOOT_CHEST_PNG_SCALE) * 1.08,
-          scaleY: (2.4 / LOOT_CHEST_PNG_SCALE) * 1.08,
+          scaleX: 0.525 * 1.2,
+          scaleY: 0.525 * 1.2,
           y: chest.sprite.y - 8,
           duration: 220,
           onComplete: () => {
@@ -2769,6 +2994,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       }
 
       this.applyArmPose('carry', { equipment });
+      this.syncHandWeaponPresentation(equipment);
 
         this.syncEquippedGatherTools(equipment);
 
@@ -2785,14 +3011,46 @@ export default function createCombatArenaScene(phaserRuntime) {
     };
 
     ensureOrbIdleAnimation = (assetId) => {
+      return this.ensureHandItemIdleAnimation(assetId, [0, 1, 2, 3, 2, 1], 5);
+    };
+
+    ensureHandItemIdleAnimation = (assetId, sequence = [0, 1, 2, 3, 2, 1], frameRate = 6) => {
       const key = `${assetId}-idle`;
       if (this.anims.exists(key)) return key;
-      const frames = [0, 1, 2, 3, 2, 1]
+      const frames = sequence
         .filter((index) => this.textures.exists(`${assetId}-f${index}`))
         .map((index) => ({ key: `${assetId}-f${index}` }));
       if (!frames.length) return null;
-      this.anims.create({ key, frames, frameRate: 5, repeat: -1 });
+      this.anims.create({ key, frames, frameRate, repeat: -1 });
       return key;
+    };
+
+    syncHandWeaponPresentation = (equipment = this._lastEquipment) => {
+      const weapon = equipment?.weapon;
+      const payload = this.handPayloads?.mainHand;
+      if (!payload || !weapon?.assetId || !payload.visible) return;
+
+      if (this.isWalking) {
+        const walkKey = `${weapon.assetId}-walk`;
+        if (this.anims.exists(walkKey)) {
+          payload.play(walkKey, true);
+        } else if (payload.anims?.isPlaying) {
+          payload.stop();
+        }
+        return;
+      }
+
+      if (weapon.idleAnim) {
+        const idleKey = this.ensureHandItemIdleAnimation(weapon.assetId);
+        if (idleKey && this.anims.exists(idleKey)) {
+          payload.play(idleKey, true);
+          return;
+        }
+      }
+
+      if (payload.anims?.isPlaying) payload.stop();
+      const restKey = `${weapon.assetId}-f0`;
+      if (this.textures.exists(restKey)) payload.setTexture(restKey);
     };
 
     stopOrbHoldFloat = () => {
@@ -2860,10 +3118,28 @@ export default function createCombatArenaScene(phaserRuntime) {
         }
 
         const grip = gripWorld(arm, pose[side]);
-        payload.setOrigin(handSeg.gripPoint.x / CANVAS_W, handSeg.gripPoint.y / CANVAS_H);
+        const handItem = side === 'right' ? equipment?.weapon : equipment?.offhand;
+        const origin = this.resolveHandItemOrigin(payload, handItem, handSeg, CANVAS_W, CANVAS_H);
+        payload.setOrigin(origin.x, origin.y);
         payload.setPosition(grip.x - OX, grip.y - OY);
         payload.setRotation(grip.angleRad);
       }
+    };
+
+    resolveHandItemOrigin = (payload, item, handSeg, canvasW, canvasH) => {
+      if (item?.holdAnchor) {
+        const tex = payload?.texture?.get?.() || payload?.texture?.source?.[0];
+        const texW = tex?.width || canvasW;
+        const texH = tex?.height || canvasH;
+        return {
+          x: item.holdAnchor.x / texW,
+          y: item.holdAnchor.y / texH,
+        };
+      }
+      return {
+        x: handSeg.gripPoint.x / canvasW,
+        y: handSeg.gripPoint.y / canvasH,
+      };
     };
 
     createSwingTextures = () => {
@@ -2902,7 +3178,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       const grip = gripWorld(arm, use);
       const payload = this.handPayloads && this.handPayloads.mainHand;
       if (payload && handSeg) {
-        payload.setOrigin(handSeg.gripPoint.x / CANVAS_W, handSeg.gripPoint.y / CANVAS_H);
+        const equipment = this._lastEquipment || {};
+        const origin = this.resolveHandItemOrigin(payload, equipment.weapon, handSeg, CANVAS_W, CANVAS_H);
+        payload.setOrigin(origin.x, origin.y);
         payload.setPosition(grip.x - OX, grip.y - OY);
         payload.setRotation(swordRotRad != null ? swordRotRad : grip.angleRad);
       }
@@ -3512,6 +3790,17 @@ export default function createCombatArenaScene(phaserRuntime) {
         compendiumContext: buildCompendiumRuntimeContext(),
       }) || scoreData;
 
+      this.syncLiveBattleBoard();
+
+      const playerEntity = this.stats.getEntity('player');
+      scoreData = enrichScoreWithTacticalBoard(scoreData, {
+        casterId: 'player',
+        targetId,
+        weave: this._incantation.weave,
+        movementUsed: Math.max(0, (playerEntity?.movementPoints || 0) - (playerEntity?.movementPointsRemaining || 0)),
+        maxMovement: playerEntity?.movementPoints || 3,
+      });
+
       const spellDamage = Number(scoreData.damage ?? cast.damage) || 0;
       const result = this.stats.resolveSpellCast('player', targetId, {
         damage: spellDamage,
@@ -3702,6 +3991,36 @@ export default function createCombatArenaScene(phaserRuntime) {
       void sword.playSlice();
     }
 
+    handleCanvasWheel(event) {
+      event.preventDefault();
+      this.applyCameraWheelZoom(event.deltaY);
+    }
+
+    applyCameraWheelZoom(deltaY) {
+      if (this.cutsceneInputLock || !Number.isFinite(deltaY) || deltaY === 0) return;
+
+      const cam = this.cameras.main;
+      const baseZoom = this.baseCameraZoom ?? 1.1;
+      const maxZoom = this.maxCameraZoom ?? 2.25;
+      const step = this.cameraZoomStep ?? 0.1;
+      const prevZoom = cam.zoom;
+
+      let nextZoom = prevZoom;
+      if (deltaY < 0) {
+        nextZoom = Math.min(maxZoom, prevZoom + step);
+      } else {
+        nextZoom = Math.max(baseZoom, prevZoom - step);
+      }
+
+      if (nextZoom === prevZoom) return;
+
+      cam.setZoom(nextZoom);
+      if (this.galaxyBg) {
+        this.galaxyBg.destroy();
+        this.drawGalaxyBackground();
+      }
+    }
+
     handleCanvasPointerDown(event) {
       this.ensureCombatArenaAmbience();
       if (event.button !== 0 || this.isWalking) return;
@@ -3720,7 +4039,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         if (
           cell.combatTx === PORTAL_TILE.tx
           && cell.combatTy === PORTAL_TILE.ty
-          && this.isPortalBeckoning()
+          && (this.isPortalBeckoning() || this.isPortalCleared())
         ) {
           this.tryEnterPortal();
           return;
@@ -3763,7 +4082,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         if (
           enriched.tx === PORTAL_TILE.tx
           && enriched.ty === PORTAL_TILE.ty
-          && this.isPortalBeckoning()
+          && (this.isPortalBeckoning() || this.isPortalCleared())
         ) {
           enriched.isPortal = true;
           enriched.portalPhase = this.portalPhase;
@@ -3835,6 +4154,11 @@ export default function createCombatArenaScene(phaserRuntime) {
 
         if (pick.cell.combatTx != null && pick.cell.combatTy != null) {
           this.setInspectHighlight(pick.cell.combatTx, pick.cell.combatTy);
+        }
+
+        const gridTile = this.gridTiles?.get(`${enriched.tx},${enriched.ty}`);
+        if (gridTile?.inspectData?.battleTile) {
+          enriched.battleTile = gridTile.inspectData.battleTile;
         }
 
         const presentation = buildInspectPresentation(enriched);
@@ -4029,6 +4353,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       return new Promise((resolve) => {
         this.playerGridPos.tx = tx;
         this.playerGridPos.ty = ty;
+        this.playerContainer.setDepth(getGridSortDepth(tx, ty, ARENA_SORT_LAYER.PLAYER));
         this.refreshSortableEntityDepths();
 
         const firstStep = this.footstepIndex;
@@ -4100,6 +4425,7 @@ export default function createCombatArenaScene(phaserRuntime) {
               });
             }
             this.checkSentinelObeliskAggro(tx, ty);
+            if (this.combatBattleEngaged) this.syncLiveBattleBoard();
             resolve();
           },
         });
@@ -4871,6 +5197,233 @@ export default function createCombatArenaScene(phaserRuntime) {
       return color;
     }
 
+    getActiveEnemyIds() {
+      return this.getTargetableCombatantsOrdered().map((entry) => entry.id);
+    }
+
+    buildArenaBattleSnapshot() {
+      return {
+        sceneId: 'combat-arena',
+        gridSize: this.combatGridSize || 9,
+        playerGridPos: this.playerGridPos,
+        leylines: this.leylines || [],
+        enemies: this.getActiveEnemyIds(),
+        encounterId: this.currentEncounterId || 'arena-default',
+        mapHash: `arena-${this.combatGridSize || 9}`,
+      };
+    }
+
+    syncLiveBattleBoard() {
+      if (!this.battleBoardState) return null;
+      const synced = syncBattleBoardFromLiveStats(this.battleBoardState, this.stats);
+      this.battleBoardState = synced;
+      this.applyBattleBoardToGrid(synced);
+      this.updateBattleBoardThreatMap();
+      return synced;
+    }
+
+    compileAndApplyBattleBoard() {
+      const boardState = compileArenaBattleBoard(this.buildArenaBattleSnapshot());
+      this.battleBoardState = syncBattleBoardFromLiveStats(boardState, this.stats) || boardState;
+      setActiveBattleBoard(this.battleBoardState);
+      this.applyBattleBoardToGrid(this.battleBoardState);
+      this.updateBattleBoardThreatMap();
+      this.events.emit('battle-board-compiled', { type: 'battle-board-compiled', boardState: this.battleBoardState });
+      return this.battleBoardState;
+    }
+
+    applyBattleBoardToGrid(boardState) {
+      if (!boardState || !this.gridTiles) return;
+
+      for (const battleTile of boardState.tiles) {
+        const key = `${battleTile.x},${battleTile.y}`;
+        const gridTile = this.gridTiles.get(key);
+        if (!gridTile) continue;
+
+        const terrainDef = BATTLE_TERRAIN_TYPES[battleTile.terrain] || BATTLE_TERRAIN_TYPES.normal;
+        if (gridTile.inspectData) {
+          gridTile.inspectData.battleTile = battleTile;
+        }
+        if (gridTile.interactData) {
+          gridTile.interactData.battleTile = battleTile;
+        }
+
+        if (battleTile.modifier && terrainDef.colorHint) {
+          const color = Number.parseInt(String(terrainDef.colorHint).replace('#', ''), 16);
+          if (Number.isFinite(color)) {
+            gridTile.setFillStyle(color, 0.3);
+          }
+        }
+      }
+
+      this.renderTacticalOverlays();
+    }
+
+    clearBattleBoardVisuals() {
+      if (this.gridTiles) {
+        for (const gridTile of this.gridTiles.values()) {
+          gridTile.setFillStyle(0xffffff, 0);
+          if (gridTile.inspectData) delete gridTile.inspectData.battleTile;
+          if (gridTile.interactData) delete gridTile.interactData.battleTile;
+        }
+      }
+      this.tacticalOverlayGraphics?.clear?.();
+      this.battleBoardState = null;
+      clearActiveBattleBoard();
+    }
+
+    updateBattleBoardThreatMap() {
+      const boardState = this.battleBoardState || getActiveBattleBoard();
+      if (!boardState) return;
+
+      const entities = [];
+      const player = this.stats?.getEntity('player');
+      if (player?.position) {
+        entities.push({
+          id: 'player',
+          x: player.position.tx,
+          y: player.position.ty,
+          side: 'player',
+          meleeRange: player.attackRange || 1,
+          spellRange: player.attackRange || 1,
+          attack: player.attackPoints || 5,
+        });
+      }
+
+      for (const combatant of this.getTargetableCombatantsOrdered()) {
+        const entity = this.stats?.getEntity(combatant.id);
+        if (!entity?.position) continue;
+        entities.push({
+          id: combatant.id,
+          x: entity.position.tx,
+          y: entity.position.ty,
+          side: 'enemy',
+          meleeRange: entity.attackRange || 1,
+          spellRange: entity.attackRange || 3,
+          attack: entity.attackPoints || 5,
+          spellPower: entity.attackPoints || 5,
+        });
+      }
+
+      this.tacticalThreatMap = computeThreatMap(boardState, entities);
+
+      for (const tile of boardState.tiles) {
+        const threats = this.tacticalThreatMap.controlledTiles.find(
+          (entry) => entry.x === tile.x && entry.y === tile.y,
+        );
+        tile.control.threatenedBy = resolveThreatEntityLabels(threats?.controlledBy || []);
+      }
+    }
+
+    renderTacticalOverlays() {
+      if (!this.tacticalOverlayGraphics) {
+        this.tacticalOverlayGraphics = this.add.graphics();
+        this.tacticalOverlayGraphics.setDepth(14);
+      }
+      this.tacticalOverlayGraphics.clear();
+
+      const boardState = this.battleBoardState || getActiveBattleBoard();
+      const overlays = this.activeTacticalOverlays || {};
+      if (!boardState || !this.combatGridMetrics) return;
+
+      const { toIso, tw, th, plateauZ } = this.combatGridMetrics;
+      const zOffset = plateauZ || 0;
+
+      const paintTile = (tx, ty, color, alpha = 0.35) => {
+        const pt = toIso(tx, ty);
+        const py = pt.y - zOffset;
+        const halfW = tw / 2;
+        const halfH = th / 2;
+        this.tacticalOverlayGraphics.fillStyle(color, alpha);
+        this.tacticalOverlayGraphics.beginPath();
+        this.tacticalOverlayGraphics.moveTo(pt.x, py - halfH);
+        this.tacticalOverlayGraphics.lineTo(pt.x + halfW, py);
+        this.tacticalOverlayGraphics.lineTo(pt.x, py + halfH);
+        this.tacticalOverlayGraphics.lineTo(pt.x - halfW, py);
+        this.tacticalOverlayGraphics.closePath();
+        this.tacticalOverlayGraphics.fillPath();
+      };
+
+      if (overlays.premium) {
+        for (const tile of boardState.tiles) {
+          if (['rune', 'anchor', 'null'].includes(tile.terrain)) {
+            paintTile(tile.x, tile.y, 0xa855f4, 0.28);
+          }
+        }
+      }
+
+      if (overlays.school) {
+        for (const tile of boardState.tiles) {
+          if (['fire', 'void', 'sonic', 'holy', 'ice'].includes(tile.terrain)) {
+            paintTile(tile.x, tile.y, 0x44e8c0, 0.22);
+          }
+        }
+      }
+
+      if (overlays.threat && this.tacticalThreatMap) {
+        for (const entry of this.tacticalThreatMap.controlledTiles) {
+          const isEnemyThreat = entry.controlledBy.some((id) => id !== 'player');
+          if (isEnemyThreat) paintTile(entry.x, entry.y, 0xea4335, 0.3);
+        }
+      }
+
+      if (overlays.movement) {
+        const player = this.stats?.getEntity('player');
+        if (player?.position) {
+          const reachable = getMovementRange({
+            id: 'player',
+            x: player.position.tx,
+            y: player.position.ty,
+            movementRange: player.movementPointsRemaining ?? 3,
+          }, boardState);
+          for (const tile of reachable) {
+            paintTile(tile.x, tile.y, 0x4285f4, 0.25);
+          }
+        }
+      }
+
+      if (overlays.spell) {
+        const player = this.stats?.getEntity('player');
+        if (player?.position) {
+          const spellTiles = getSpellRange({
+            id: 'player',
+            x: player.position.tx,
+            y: player.position.ty,
+            spellRange: player.attackRange || 3,
+          }, player.attackRange || 3, boardState);
+          for (const tile of spellTiles) {
+            paintTile(tile.x, tile.y, 0xfbbc04, 0.22);
+          }
+        }
+      }
+
+      if (overlays.lineOfSight) {
+        const player = this.stats?.getEntity('player');
+        if (player?.position) {
+          const visible = getVisibleTiles({
+            id: 'player',
+            x: player.position.tx,
+            y: player.position.ty,
+            spellRange: Math.max(boardState.width, boardState.height),
+          }, Math.max(boardState.width, boardState.height), boardState);
+          for (const tile of visible) {
+            paintTile(tile.x, tile.y, 0x34a853, 0.18);
+          }
+        }
+      }
+    }
+
+    setupTacticalOverlayListener() {
+      this.boundHandleTacticalOverlay = (event) => {
+        this.activeTacticalOverlays = { ...(event.detail || {}) };
+        this.renderTacticalOverlays();
+      };
+      window.addEventListener('tactical-overlay-change', this.boundHandleTacticalOverlay);
+      this.events.once('destroy', () => {
+        window.removeEventListener('tactical-overlay-change', this.boundHandleTacticalOverlay);
+      });
+    }
+
     engageCombatBattle() {
       if (this.combatBattleEngaged) return false;
       this.combatBattleEngaged = true;
@@ -4884,6 +5437,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         if (nearest) this.selectCombatTarget(nearest.id);
       }
       this.activateBattleLeylines();
+      this.compileAndApplyBattleBoard();
+      window.dispatchEvent(new CustomEvent('battle.transition.gridReveal'));
+      window.dispatchEvent(new CustomEvent('battle.transition.tileReveal'));
       this.runSentinelRetaliation({ onlyNewlyAggroed: true });
       this.emitCombatStats();
       return true;
@@ -4893,7 +5449,12 @@ export default function createCombatArenaScene(phaserRuntime) {
       if (!this.combatBattleEngaged) return false;
       this.combatBattleEngaged = false;
       this.deactivateBattleLeylines();
+      this.clearBattleBoardVisuals();
       this.disarmMovement();
+      const reverseTimeline = getReverseTransitionTimeline();
+      for (const phase of reverseTimeline.phases) {
+        window.dispatchEvent(new CustomEvent(phase.eventName, { detail: { phase: phase.id } }));
+      }
       this.emitCombatStats();
       return true;
     }
@@ -4971,6 +5532,7 @@ export default function createCombatArenaScene(phaserRuntime) {
             ease: 'Sine.easeOut',
             yoyo: true,
             hold: 120,
+            repeat: -1,
           });
         }
       }
@@ -5942,7 +6504,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.tryEnterPortal();
       });
       portalGroup.on('pointerover', () => {
-        if (this.isPortalBeckoning()) this.input.setDefaultCursor('pointer');
+        if (this.isPortalBeckoning() || this.isPortalCleared()) this.input.setDefaultCursor('pointer');
       });
       portalGroup.on('pointerout', () => {
         this.input.setDefaultCursor('default');

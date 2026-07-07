@@ -102,6 +102,17 @@ def handle_tools_list() -> dict:
                 "name": "list_available_brains",
                 "description": "List specialized brains available in the network (pixel_brain, architecture_brain, etc.).",
                 "inputSchema": {"type": "object", "properties": {}}
+            },
+            {
+                "name": "fetch_scdna_gene_packet",
+                "description": "Fetch a large SCDNA Gene Packet containing coordinate cell grids, retrieved via its payloadRef from a PB-OK-v1-SCDNA-GENE-READY health event.",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": {
+                        "payloadRef": {"type": "string", "description": "The path to the gene packet (e.g. pixelbrain/imports/asset_id/gene_id.json)"}
+                    },
+                    "required": ["payloadRef"]
+                }
             }
         ]
     }
@@ -166,6 +177,20 @@ def handle_tools_call(name: str, arguments: dict) -> dict:
                 "vaelrix_forcefield - Full amplifier network + SCDNA"
             ]
             return {"content": [{"type": "text", "text": "\n".join(brains)}]}
+
+    elif name == "fetch_scdna_gene_packet":
+        payload_ref = arguments.get("payloadRef", "")
+        # Validate safety (must be within codex/core/pixelbrain/imports)
+        if ".." in payload_ref or not payload_ref.startswith("pixelbrain/imports/"):
+            return {"content": [{"type": "text", "text": "Error: payloadRef must be a valid path inside pixelbrain/imports/"}]}
+        
+        full_path = os.path.join("codex/core", payload_ref)
+        try:
+            with open(full_path, "r", encoding="utf-8") as f:
+                data = f.read()
+            return {"content": [{"type": "text", "text": data}]}
+        except Exception as e:
+            return {"content": [{"type": "text", "text": f"Error reading packet at {full_path}: {e}"}]}
 
     return {"content": [{"type": "text", "text": f"Unknown tool: {name}"}]}
 

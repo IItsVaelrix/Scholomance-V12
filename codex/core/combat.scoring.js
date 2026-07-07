@@ -9,6 +9,7 @@ import {
 } from './combat.balance.js';
 import { buildCombatProfile } from './combat.profile.js';
 import { buildSpeakingTraces } from './speaking/index.js';
+import { calculateCompendiumAmplification } from './spellweave-compendium/compendium.engine.js';
 import { calculateSyntacticBridge } from './spellweave.engine.js';
 import { evaluateSyntacticalChess } from './combat.syntax-chess.js';
 import { INEXPLICABLE_ELEMENT_DOMAINS } from './verseir-amplifier/plugins/inexplicableElements.js';
@@ -225,6 +226,8 @@ export function calculateCombatScore({
   speakerType = 'PLAYER',
   speakerProfile = null,
   defender = null,
+  scholomance = null,
+  compendiumContext = null,
 } = {}) {
   const totalScore = getCombatTotalScore(scoreData);
   const traces = getCombatTraces(scoreData);
@@ -283,6 +286,19 @@ export function calculateCombatScore({
     profile,
   });
 
+  const compendium = calculateCompendiumAmplification({
+    verse: text,
+    weave,
+    bridge,
+    scholomance: scholomance || compendiumContext?.scholomance || null,
+    syntacticalChess,
+    encounter: compendiumContext?.encounter || defender || null,
+    verseIRAmplifier: scoreData?.verseIRAmplifier || profile.verseIRAmplifier || null,
+    usedEntryIds: compendiumContext?.usedEntryIds || [],
+    unlockedEntryIds: compendiumContext?.unlockedEntryIds || [],
+    discoveredEntryIds: compendiumContext?.discoveredEntryIds || [],
+  });
+
   const rawDamage = baseDamage
     * arenaResonanceMultiplier
     * schoolAffinityMultiplier
@@ -299,7 +315,8 @@ export function calculateCombatScore({
     * syntacticalChess.multiplier
     * (profile.rarity?.totalMultiplier ?? 1)
     * (profile.abyssalResonanceMultiplier ?? 1)
-    * supportPenalty;
+    * supportPenalty
+    * compendium.compendiumMultiplier;
 
   const damage = Math.max(computeDamageFloor(profile), Math.round(rawDamage));
   const baseHealing = computeHealingAmount(profile, damage);
@@ -323,9 +340,14 @@ export function calculateCombatScore({
     CODEX: { rating: getRatingForValue(codexVal), value: codexVal, justification: 'Lore density and continuity weight.' },
   };
 
+  const compendiumCommentary = compendium.counselLines.join(' ');
   const commentary = bridge.collapsed
     ? "Syntactic Collapse: The Weave has frayed."
-    : [profile.commentary || profile.rarity?.praise || '', ...syntacticalChess.diagnostics].filter(Boolean).join(' ');
+    : [
+      profile.commentary || profile.rarity?.praise || '',
+      compendiumCommentary,
+      ...syntacticalChess.diagnostics,
+    ].filter(Boolean).join(' ');
 
   const events = buildCastEvents({
     verse: text,
@@ -380,6 +402,10 @@ export function calculateCombatScore({
     syntacticalChess,
     rhymeQuality: profile.rhymeQuality ?? null,
     verseIRImpactMultiplier: profile.verseIRAmplifier?.impactMultiplier ?? null,
+    compendiumMultiplier: compendium.compendiumMultiplier,
+    tierBreakdown: compendium.tierBreakdown,
+    compendiumCounselLines: compendium.counselLines,
+    newlyDiscoveredEntryIds: compendium.newlyDiscoveredEntryIds,
   };
 }
 
@@ -397,6 +423,8 @@ export function normalizeCombatScore(scoreData, options = {}) {
     speakerType: options.speakerType,
     speakerProfile: options.speakerProfile,
     defender: options.defender,
+    scholomance: options.scholomance,
+    compendiumContext: options.compendiumContext,
   });
 }
 

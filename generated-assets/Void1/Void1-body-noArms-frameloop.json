@@ -1,0 +1,37 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "Void1BodyNoArms",
+  "loop": "idle",
+  "canvas": {
+    "width": 32,
+    "height": 48
+  },
+  "defaultDurationMs": 400,
+  "sourceChecksum": "000000003e06aada",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 400,
+      "packet": "pbasset_5a773319"
+    },
+    {
+      "index": 1,
+      "label": "hood-dip",
+      "durationMs": 400,
+      "packet": "pbasset_ed52d7af"
+    },
+    {
+      "index": 2,
+      "label": "void-surge",
+      "durationMs": 400,
+      "packet": "pbasset_e5a5afc3"
+    },
+    {
+      "index": 3,
+      "label": "halo-flicker",
+      "durationMs": 400,
+      "packet": "pbasset_fc364ab0"
+    }
+  ]
+}

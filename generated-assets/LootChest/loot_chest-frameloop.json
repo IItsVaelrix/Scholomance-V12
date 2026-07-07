@@ -1,0 +1,43 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "loot_chest",
+  "loop": "open",
+  "canvas": {
+    "width": 40,
+    "height": 28
+  },
+  "defaultDurationMs": 120,
+  "sourceChecksum": "00000000a717931d",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 120,
+      "packet": "pbasset_d0ee199d"
+    },
+    {
+      "index": 1,
+      "label": "latch-pop",
+      "durationMs": 120,
+      "packet": "pbasset_bcdef3b9"
+    },
+    {
+      "index": 2,
+      "label": "lid-crack",
+      "durationMs": 120,
+      "packet": "pbasset_f302e983"
+    },
+    {
+      "index": 3,
+      "label": "lid-open",
+      "durationMs": 120,
+      "packet": "pbasset_86fb1c7d"
+    },
+    {
+      "index": 4,
+      "label": "loot-burst",
+      "durationMs": 120,
+      "packet": "pbasset_a75e2244"
+    }
+  ]
+}

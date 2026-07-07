@@ -294,4 +294,16 @@ describe('resolveWeaveTargets', () => {
     const result = resolveWeaveTargetsFromParsed(parseWeave(weave), context, weave);
     expect(result.primaryTargetId).toBe('sentinel-west');
   });
+
+  it('resolveWeaveTargets tolerates scene context without targets (Polaris forest entry)', () => {
+    const parsed = parseWeave('rend flesh');
+    const polarisContext = {
+      sceneId: 'polaris-sonic-forest',
+      casterId: 'player',
+      tick: 0,
+    };
+    expect(() => resolveWeaveTargetsFromParsed(parsed, polarisContext, 'rend flesh')).not.toThrow();
+    const result = resolveWeaveTargets(extractParsedClauses(parsed), polarisContext);
+    expect(result.clauses).toEqual([]);
+  });
 });

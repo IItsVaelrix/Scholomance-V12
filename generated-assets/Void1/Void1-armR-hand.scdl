@@ -1,0 +1,14 @@
+# Void1-armR-hand.scdl — right hand segment
+
+asset Void1ArmRHand canvas 32x48
+
+palette {
+  void0 = #08060F
+  joint = #0A0712
+}
+
+part armR_hand material void_cloth {
+  rect 23 34 4 3 void0
+  cell 24 34 joint
+}
+export json png

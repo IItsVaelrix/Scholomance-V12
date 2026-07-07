@@ -1,0 +1,43 @@
+{
+  "contract": "SCDL-FRAME-LOOP-v1",
+  "asset": "Void1Walk",
+  "loop": "walk",
+  "canvas": {
+    "width": 32,
+    "height": 48
+  },
+  "defaultDurationMs": 200,
+  "sourceChecksum": "000000009516fa90",
+  "frames": [
+    {
+      "index": 0,
+      "label": "rest",
+      "durationMs": 200,
+      "packet": "pbasset_4f864800"
+    },
+    {
+      "index": 1,
+      "label": "stride-L",
+      "durationMs": 200,
+      "packet": "pbasset_3b518ab1"
+    },
+    {
+      "index": 2,
+      "label": "pass-mid",
+      "durationMs": 200,
+      "packet": "pbasset_918fc875"
+    },
+    {
+      "index": 3,
+      "label": "stride-R",
+      "durationMs": 200,
+      "packet": "pbasset_4bea4321"
+    },
+    {
+      "index": 4,
+      "label": "pass-mid2",
+      "durationMs": 200,
+      "packet": "pbasset_eb1e6ba4"
+    }
+  ]
+}

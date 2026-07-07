@@ -1,0 +1,22 @@
+# Void1-armL-upper.scdl — left shoulder → elbow joint segment
+
+asset Void1ArmLUpper canvas 32x48
+
+palette {
+  robehi    = #4E3880
+  robemid   = #352560
+  robeshade = #1B1230
+  golddark  = #A8862F
+  joint     = #0A0712
+  cyandim   = #0077A8
+}
+
+part armL_upper material void_cloth {
+  polygon 6 18 10 18 9 26 5 26 robehi
+  line 6 19 6 25 robeshade
+  line 9 19 9 25 robemid
+  rect 5 25 5 1 golddark
+  cell 7 26 joint
+  cell 8 26 cyandim
+}
+export json png

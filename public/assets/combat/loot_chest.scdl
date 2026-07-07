@@ -1,0 +1,54 @@
+# loot_chest.scdl
+# Scholomance combat loot chest — canonical source-authored SCDL asset.
+# Tier colors are derived downstream via transmuteLootChestPacket() (PixelBrain chromatic transmutation).
+# Value ramp maps to material anchors: shine > frost > body > deep > shadow > void.
+
+asset loot_chest canvas 40x28
+
+palette {
+  shine  = #ECECEC
+  frost  = #B5B5B5
+  body   = #6A6A6A
+  deep   = #383838
+  shadow = #121212
+  void   = #060606
+  lockhi = #D4D4D4
+  lockmd = #8A8A8A
+  locklo = #404040
+}
+
+part glow material source {
+  ring 20 12 radius 14 width 2 frost
+  ring 20 12 radius 13 width 1 void
+}
+
+part body material source {
+  polygon 9 14 31 14 29 23 11 23 deep
+  polygon 10 15 30 15 28 22 12 22 body
+  polygon 11 16 29 16 27 21 13 21 frost
+  rect 10 23 20 2 shadow
+  rect 11 22 18 1 deep
+}
+
+part lid material source {
+  polygon 8 13 32 13 30 5 10 5 body
+  polygon 9 12 31 12 29 6 11 6 frost
+  polygon 10 11 30 11 28 7 12 7 shine
+  line 8 13 32 13 deep
+  line 9 12 31 12 body
+}
+
+part band material source {
+  rect 9 15 22 2 deep
+  rect 10 15 20 1 body
+  line 10 15 30 15 frost
+}
+
+part lock material silver {
+  rect 17 10 6 6 lockhi
+  rect 18 11 4 4 lockmd
+  rect 19 12 2 2 locklo
+  cell 20 9 lockhi
+}
+
+export json png

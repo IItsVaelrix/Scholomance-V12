@@ -9,7 +9,8 @@ const oracleQuerySchema = z.object({
     hhm: z.any().nullish(),
     tokenWeights: z.record(z.any()).nullish(),
     verseIR: z.any().nullish(),
-    emotion: z.any().nullish()
+    emotion: z.any().nullish(),
+    speculativeEnvelope: z.any().nullish()
   }).nullish()
 });
 

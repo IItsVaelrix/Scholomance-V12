@@ -811,8 +811,453 @@
   }
 }
 
+/* Floating slash-command console — industrial control panel chrome */
+.combat-commands-console {
+  --cmd-steel-0: #1a1f26;
+  --cmd-steel-1: #12161c;
+  --cmd-steel-2: #0b0e12;
+  --cmd-steel-edge: #3a4554;
+  --cmd-steel-highlight: #5c6b7d;
+  --cmd-amber: #d4a017;
+  --cmd-amber-dim: rgba(212, 160, 23, 0.42);
+  --cmd-amber-glow: rgba(255, 196, 64, 0.28);
+  --cmd-ink: #c8d0db;
+  --cmd-ink-dim: rgba(200, 208, 219, 0.52);
+  --combat-commands-width: min(380px, calc(100vw - 24px));
+
+  position: absolute;
+  right: 12px;
+  bottom: calc(100% + 10px);
+  z-index: calc(var(--z-overlay) + 2);
+  display: flex;
+  flex-direction: column;
+  width: var(--combat-commands-width);
+  max-height: min(42vh, 340px);
+  pointer-events: auto;
+  border-radius: 2px;
+  border: 1px solid var(--cmd-steel-edge);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.018) 0,
+      rgba(255, 255, 255, 0.018) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    linear-gradient(180deg, var(--cmd-steel-0) 0%, var(--cmd-steel-1) 48%, var(--cmd-steel-2) 100%);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 var(--cmd-steel-highlight),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.65);
+  overflow: hidden;
+}
+
+.combat-commands-console__corner {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-color: var(--cmd-amber-dim);
+  border-style: solid;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.combat-commands-console__corner--tl {
+  top: 4px;
+  left: 4px;
+  border-width: 2px 0 0 2px;
+}
+
+.combat-commands-console__corner--tr {
+  top: 4px;
+  right: 4px;
+  border-width: 2px 2px 0 0;
+}
+
+.combat-commands-console__corner--bl {
+  bottom: 4px;
+  left: 4px;
+  border-width: 0 0 2px 2px;
+}
+
+.combat-commands-console__corner--br {
+  bottom: 4px;
+  right: 4px;
+  border-width: 0 2px 2px 0;
+}
+
+.combat-commands-console__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 7px 10px 6px;
+  background:
+    linear-gradient(180deg, rgba(58, 69, 84, 0.34) 0%, rgba(18, 22, 28, 0.2) 100%),
+    linear-gradient(90deg, rgba(212, 160, 23, 0.08), transparent 42%);
+  border-bottom: 1px solid rgba(58, 69, 84, 0.88);
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.45);
+}
+
+.combat-commands-console__plate {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.combat-commands-console__icon-housing {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 1px;
+  border: 1px solid var(--cmd-steel-edge);
+  background:
+    linear-gradient(180deg, #2a313b 0%, #171c23 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.45);
+}
+
+.combat-commands-console__icon-glyph {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--cmd-amber);
+  text-shadow: 0 0 8px var(--cmd-amber-glow);
+}
+
+.combat-commands-console__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.combat-commands-console__eyebrow {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--cmd-ink-dim);
+}
+
+.combat-commands-console__label {
+  color: var(--cmd-ink);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.combat-commands-console__serial {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.56rem;
+  letter-spacing: 0.12em;
+  color: rgba(212, 160, 23, 0.58);
+}
+
+.combat-commands-console__status-rail {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgba(58, 69, 84, 0.95);
+  border-radius: 1px;
+  background: rgba(0, 0, 0, 0.34);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
+.combat-commands-console__status-lamp {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: #ffb020;
+  box-shadow:
+    0 0 6px rgba(255, 176, 32, 0.9),
+    0 0 14px rgba(255, 176, 32, 0.45);
+  animation: combatCommandsLamp 2.4s ease-in-out infinite;
+}
+
+.combat-commands-console__status-copy {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 196, 96, 0.88);
+}
+
+.combat-commands-console__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.combat-commands-console__action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 7px;
+  border: 1px solid var(--cmd-steel-edge);
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, #2b323d 0%, #171b22 100%);
+  color: var(--cmd-ink-dim);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 1px 2px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+
+.combat-commands-console__action-btn:hover {
+  border-color: var(--cmd-amber-dim);
+  color: var(--cmd-ink);
+  background:
+    linear-gradient(180deg, #343c49 0%, #1d232c 100%);
+}
+
+.combat-commands-console__action-btn--close:hover {
+  border-color: rgba(255, 120, 120, 0.45);
+  color: #ffc4c4;
+}
+
+.combat-commands-console__viewport {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 8px 10px 6px;
+  gap: 5px;
+}
+
+.combat-commands-console__viewport-label,
+.combat-commands-console__input-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--cmd-ink-dim);
+}
+
+.combat-commands-console__viewport-id,
+.combat-commands-console__input-id {
+  color: rgba(212, 160, 23, 0.62);
+  letter-spacing: 0.12em;
+}
+
+.combat-commands-console__log {
+  position: relative;
+  flex: 1;
+  min-height: 96px;
+  max-height: 188px;
+  overflow-y: auto;
+  padding: 10px 11px;
+  border: 1px solid rgba(35, 42, 52, 0.95);
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.52) 0%, rgba(4, 6, 9, 0.68) 100%);
+  box-shadow:
+    inset 0 2px 8px rgba(0, 0, 0, 0.72),
+    inset 0 0 0 1px rgba(92, 107, 125, 0.12);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(92, 107, 125, 0.55) transparent;
+}
+
+.combat-commands-console__grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.16;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 100% 14px, 18px 100%;
+}
+
+.combat-commands-console__empty {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.combat-commands-console__prompt {
+  color: rgba(212, 160, 23, 0.82);
+  margin-bottom: 2px;
+  letter-spacing: 0.04em;
+}
+
+.combat-commands-console__hint {
+  color: var(--cmd-ink-dim);
+  letter-spacing: 0.02em;
+}
+
+.combat-commands-console__line {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: 8px;
+  line-height: 1.5;
+}
+
+.combat-commands-console__ts {
+  flex-shrink: 0;
+  color: rgba(92, 107, 125, 0.88);
+}
+
+.combat-commands-console__text {
+  color: var(--cmd-ink);
+  word-break: break-word;
+}
+
+.combat-commands-console__line--success .combat-commands-console__text {
+  color: #9fd48a;
+}
+
+.combat-commands-console__line--error .combat-commands-console__text {
+  color: #ff8f9d;
+}
+
+.combat-commands-console__line--info .combat-commands-console__text {
+  color: rgba(200, 208, 219, 0.76);
+}
+
+.combat-commands-console__form {
+  flex-shrink: 0;
+  padding: 0 10px 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.combat-commands-console__input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid rgba(58, 69, 84, 0.95);
+  border-radius: 1px;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0%, rgba(10, 13, 18, 0.72) 100%);
+  box-shadow:
+    inset 0 2px 5px rgba(0, 0, 0, 0.62),
+    inset 0 0 0 1px rgba(92, 107, 125, 0.1);
+}
+
+.combat-commands-console__chevron {
+  color: var(--cmd-amber);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.combat-commands-console__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #e8edf3;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  letter-spacing: 0.04em;
+}
+
+.combat-commands-console__input::placeholder {
+  color: rgba(200, 208, 219, 0.28);
+}
+
+.combat-commands-console__input-ready {
+  flex-shrink: 0;
+  padding: 2px 5px;
+  border: 1px solid rgba(92, 107, 125, 0.55);
+  border-radius: 1px;
+  color: rgba(159, 212, 138, 0.82);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.combat-commands-console-toggle {
+  pointer-events: auto;
+  border-radius: 2px !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+
+.combat-commands-console-toggle.dw-btn--active {
+  background:
+    linear-gradient(180deg, #3a4554 0%, #232a34 100%) !important;
+  color: #f0c45a !important;
+  border-color: rgba(212, 160, 23, 0.62) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 0 10px rgba(212, 160, 23, 0.22) !important;
+}
+
+.combat-commands-anchor {
+  position: relative;
+  align-self: flex-end;
+  margin-right: 0;
+  pointer-events: none;
+}
+
+@keyframes combatCommandsLamp {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@media (max-width: 760px) {
+  .combat-commands-console {
+    right: 8px;
+    bottom: calc(100% + 8px);
+    max-height: min(36vh, 260px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .combat-terminal__cursor {
+  .combat-terminal__cursor,
+  .combat-commands-console__status-lamp {
     animation: none;
   }
+}
+
+.combat-tooltip__close-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+.combat-tooltip__close-btn:hover {
+  color: #fff;
 }

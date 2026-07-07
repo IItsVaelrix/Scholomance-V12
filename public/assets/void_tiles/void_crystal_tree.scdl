@@ -1,0 +1,49 @@
+asset void_crystal_tree canvas 128x128
+
+palette {
+  crystal_core  = #f3e8ff
+  crystal_glow  = #c084fc
+  crystal_deep  = #7e22ce
+  trunk_base    = #1e1b4b
+  trunk_mid     = #312e81
+  leaves_dark   = #4c1d95
+  leaves_mid    = #7c3aed
+  leaves_bright = #a78bfa
+}
+
+part trunk material organic {
+  # glowing root base
+  polygon 56 120 72 120 68 80 60 80 trunk_base
+  polygon 60 80 68 80 66 40 62 40 trunk_mid
+  
+  # root prongs
+  line 56 120 40 124 crystal_glow
+  line 72 120 88 124 crystal_glow
+  line 64 120 64 126 crystal_core
+}
+
+part canopy material energy {
+  glow radius 3
+  # large jagged crystal shards acting as leaves
+  polygon 64 10 80 40 64 50 48 40 crystal_core
+  polygon 48 40 64 50 50 70 30 50 crystal_glow
+  polygon 80 40 98 50 78 70 64 50 crystal_glow
+  
+  polygon 64 30 76 60 64 80 52 60 crystal_deep
+  
+  polygon 40 60 56 80 44 100 24 80 leaves_dark
+  polygon 88 60 104 80 84 100 72 80 leaves_dark
+  
+  # glowing highlights
+  line 64 10 64 50 crystal_core
+  line 48 40 64 50 crystal_core
+  line 80 40 64 50 crystal_core
+  
+  # scattered smaller floating crystals
+  cell 40 20 crystal_glow
+  cell 88 20 crystal_glow
+  cell 20 40 crystal_glow
+  cell 108 40 crystal_glow
+}
+
+export png

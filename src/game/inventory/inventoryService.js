@@ -1,13 +1,17 @@
 import { Storage } from '../../lib/platform/storage.js';
 import { ITEM_DATABASE } from '../../data/itemDatabase.js';
 import { STORMHEART_ORB_ITEM_ID } from '../../../codex/core/obelisk-puzzle.signals.js';
+import { ICE_SLIME_STAFF_ITEM_ID } from '../combat/combatLootDrops.js';
 
 const STORAGE_KEY = 'scholomance.inventory.v1';
 const LEGACY_STORMHEART_KEY = 'scholomance.tutorial.stormheart-orb';
 const STORMHEART_EARNED_KEY = 'scholomance.tutorial.stormheart-orb-earned';
 const SLOT_COUNT = 24;
 
-const QUEST_EXCLUDED_IDS = new Set([STORMHEART_ORB_ITEM_ID]);
+const QUEST_EXCLUDED_IDS = new Set([
+  STORMHEART_ORB_ITEM_ID,
+  ICE_SLIME_STAFF_ITEM_ID,
+]);
 
 const DEFAULT_EQUIPPED = Object.freeze({
   head: null,

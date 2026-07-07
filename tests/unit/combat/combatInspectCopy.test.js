@@ -38,6 +38,18 @@ describe('buildInspectPresentation', () => {
     expect(copy.details.join(' ')).toContain('click the portal');
   });
 
+  it('describes a cleared portal as the Polaris gate', () => {
+    const copy = buildInspectPresentation({
+      isPortal: true,
+      tx: 8,
+      ty: 0,
+      portalPhase: 'cleared',
+    });
+    expect(copy.title).toBe('Polaris Gate');
+    expect(copy.characterLine).toContain('Polaris');
+    expect(copy.details.join(' ')).toContain('enter Polaris');
+  });
+
   it('describes a leyline node with affinity dialogue', () => {
     const copy = buildInspectPresentation({
       isGrid: true,

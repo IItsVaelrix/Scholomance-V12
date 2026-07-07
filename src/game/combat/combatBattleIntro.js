@@ -1,5 +1,8 @@
-/** Matrix flood duration when sentinels aggro and battle engages. */
-export const COMBAT_MATRIX_INTRO_DURATION_MS = 3600;
+/** Matrix flood duration — aligned to PDR §6.1 full transition. */
+export const COMBAT_MATRIX_INTRO_DURATION_MS = 3000;
+
+/** Compressed repeat-battle transition (PDR §6.3). */
+export const COMBAT_MATRIX_INTRO_COMPRESSED_MS = 800;
 
 /** Fade-out window at the end of the intro sequence. */
 export const COMBAT_MATRIX_INTRO_EXIT_MS = 520;

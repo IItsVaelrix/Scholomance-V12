@@ -126,6 +126,7 @@ export function createGameBackgroundMusicService(options = {}) {
   let fadeGeneration = 0;
   let unlocked = false;
   let active = false;
+  let intentToPlay = false;
   let unlockListenersAttached = false;
   let unlockHandler = null;
   let lifecycle = Promise.resolve();
@@ -357,7 +358,7 @@ export function createGameBackgroundMusicService(options = {}) {
     if (!canUseBrowser() || unlockListenersAttached || unlocked) return;
     unlockHandler = () => {
       void unlock().then((didUnlock) => {
-        if (!didUnlock || !settings.enabled || active) return;
+        if (!didUnlock || !settings.enabled || active || !intentToPlay) return;
         void runExclusive(() => startInternal());
       });
     };
@@ -448,10 +449,12 @@ export function createGameBackgroundMusicService(options = {}) {
   }
 
   function start() {
+    intentToPlay = true;
     return runExclusive(() => startInternal());
   }
 
   function stop() {
+    intentToPlay = false;
     return runExclusive(() => stopInternal());
   }
 

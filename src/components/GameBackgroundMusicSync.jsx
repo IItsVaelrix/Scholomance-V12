@@ -5,8 +5,13 @@ import {
   COMBAT_BATTLE_STARTED_EVENT,
 } from '../game/combat/combatBattleIntro.js';
 import {
+  COMBAT_FOREST_MUSIC_EVENT,
+  isPolarisForestRegion,
+} from '../game/combat/combatMusicRegion.js';
+import {
   isCombatMusicRoute,
   resolveBattleMusicProfile,
+  resolveForestMusicProfile,
   resolveMusicProfileForPath,
 } from '../lib/audio/gameBackgroundMusic.config.js';
 import { getGameBackgroundMusicService } from '../lib/audio/gameBackgroundMusic.service.js';
@@ -27,7 +32,7 @@ function isSuppressedRoute(pathname = '') {
 export default function GameBackgroundMusicSync() {
   const location = useLocation();
   const prefersReducedMotion = usePrefersReducedMotion();
-  const shouldPlay = !prefersReducedMotion && !isSuppressedRoute(location.pathname);
+  const shouldPlay = !prefersReducedMotion && isCombatMusicRoute(location.pathname);
 
   useEffect(() => {
     const service = getGameBackgroundMusicService();
@@ -53,19 +58,33 @@ export default function GameBackgroundMusicSync() {
       void applyProfile(resolveBattleMusicProfile());
     };
 
+    const syncCombatAmbient = () => {
+      if (isPolarisForestRegion()) {
+        return applyProfile(resolveForestMusicProfile());
+      }
+      return syncAmbient();
+    };
+
     const onBattleEnded = () => {
       if (!isCombatMusicRoute(location.pathname)) return;
-      void syncAmbient();
+      void syncCombatAmbient();
+    };
+
+    const onForestMusic = () => {
+      if (!isCombatMusicRoute(location.pathname)) return;
+      void applyProfile(resolveForestMusicProfile());
     };
 
     void syncAmbient();
     window.addEventListener(COMBAT_BATTLE_STARTED_EVENT, onBattleStarted);
     window.addEventListener(COMBAT_BATTLE_ENDED_EVENT, onBattleEnded);
+    window.addEventListener(COMBAT_FOREST_MUSIC_EVENT, onForestMusic);
 
     return () => {
       cancelled = true;
       window.removeEventListener(COMBAT_BATTLE_STARTED_EVENT, onBattleStarted);
       window.removeEventListener(COMBAT_BATTLE_ENDED_EVENT, onBattleEnded);
+      window.removeEventListener(COMBAT_FOREST_MUSIC_EVENT, onForestMusic);
       void service.stop();
     };
   }, [shouldPlay, location.pathname]);

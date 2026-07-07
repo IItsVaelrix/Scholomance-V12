@@ -29,7 +29,7 @@ describe('parseWeave clause grammar', () => {
   });
 
   it('marks a modifier with nothing to bind to as dangling', () => {
-    const parsed = parseWeave('swift the wind');
+    const parsed = parseWeave('swift the zephyr');
     expect(parsed.clauses[0].legality).toBe('dangling');
     expect(parsed.syntax.danglingModifiers).toBe(1);
   });

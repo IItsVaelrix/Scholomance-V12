@@ -27,6 +27,7 @@ export function driveEnemyTurn({
   const abilityKit = ai.buildAbilityKit ? ai.buildAbilityKit(buildCtx) : {};
 
   const ctx = {
+    stats,
     selfId: entityId,
     targetId,
     self: {
@@ -50,7 +51,19 @@ export function driveEnemyTurn({
       .map((id) => stats.getEntity(id))
       .filter(Boolean)
       .map((e) => ({ id: e.id, tx: e.position.tx, ty: e.position.ty })),
-    blocked: toBlockedSet(blocked),
+    blocked: (() => {
+      const bSet = toBlockedSet(blocked);
+      if (target?.position) {
+        bSet.add(`${target.position.tx},${target.position.ty}`);
+      }
+      allies.forEach((id) => {
+        const ally = stats?.getEntity(id);
+        if (ally?.position) {
+          bSet.add(`${ally.position.tx},${ally.position.ty}`);
+        }
+      });
+      return bSet;
+    })(),
     abilityKit,
     profile,
     rng,

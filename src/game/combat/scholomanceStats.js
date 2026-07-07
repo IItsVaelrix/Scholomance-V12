@@ -93,3 +93,18 @@ export function computeBasicAttackDamage(scholomanceBlock) {
   const bapo = readScholomanceStat(scholomanceBlock, 'BAPO');
   return Math.max(1, Math.round(bapo / BASIC_ATTACK_BAPO_DIVISOR));
 }
+
+/**
+ * Base scholomance block plus equipment bonuses on a combat entity.
+ * @param {{ scholomance?: Record<string, number>, equipmentScholomanceBonus?: Record<string, number> } | null} entity
+ */
+export function getEffectiveScholomance(entity) {
+  const base = entity?.scholomance || {};
+  const bonus = entity?.equipmentScholomanceBonus || {};
+  const merged = { ...base };
+  for (const [key, value] of Object.entries(bonus)) {
+    const statKey = String(key).toUpperCase();
+    merged[statKey] = readScholomanceStat(base, statKey) + (Number(value) || 0);
+  }
+  return merged;
+}

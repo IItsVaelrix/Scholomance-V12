@@ -14,7 +14,7 @@ describe('CombatMatrixIntro', () => {
     );
 
     expect(screen.getByText('Battle Engaged')).toBeTruthy();
-    expect(screen.getByText(/SENTINEL LOCK DETECTED/i)).toBeTruthy();
+    expect(screen.getByText(/ENCOUNTER LOCK DETECTED/i)).toBeTruthy();
 
     act(() => {
       vi.advanceTimersByTime(COMBAT_MATRIX_INTRO_REDUCED_MS);

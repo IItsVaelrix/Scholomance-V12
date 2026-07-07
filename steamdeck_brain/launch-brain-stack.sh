@@ -71,7 +71,7 @@ fi
 
 echo "🧠 Starting Brain daemon..."
 cd "$SCRIPT_DIR"
-nohup python3 brain_daemon.py "${DAEMON_ARGS[@]}" > /tmp/brain_daemon.log 2>&1 &
+nohup ../.venv-align/bin/python3 brain_daemon.py "${DAEMON_ARGS[@]}" > /tmp/brain_daemon.log 2>&1 &
 wait_for_port "$BRAIN_PORT" "Brain daemon" 30
 
 echo ""
