@@ -56,7 +56,9 @@ function main() {
   const bundle = forgeItemAsset(spec);
   writeFileSync(resolve(OUT_DIR, 'amulet-declarative.png'), renderBundlePng(bundle, 8));
   writeFileSync(resolve(OUT_DIR, 'amulet-declarative@2x.png'), renderBundlePng(bundle, 4));
-  writeFileSync(resolve(OUT_DIR, 'amulet-declarative.pbrain'), bundle.godotArtifact, 'utf8');
+  if (bundle.godotArtifact) {
+    writeFileSync(resolve(OUT_DIR, 'amulet-declarative.pbrain'), bundle.godotArtifact, 'utf8');
+  }
   writeFileSync(resolve(OUT_DIR, 'amulet-declarative.json'), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
   console.log('Declarative amulet generated successfully.');
 }

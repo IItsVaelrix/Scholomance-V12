@@ -314,7 +314,9 @@ for (const variant of VARIANTS) {
   mkdirSync(outDir, { recursive: true });
 
   writeFileSync(resolve(outDir, `${variant.name}.json`), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
-  writeFileSync(resolve(outDir, `${variant.name}.pbrain`), bundle.godotArtifact, 'utf8');
+  if (bundle.godotArtifact) {
+    writeFileSync(resolve(outDir, `${variant.name}.pbrain`), bundle.godotArtifact, 'utf8');
+  }
   writeFileSync(resolve(outDir, `${variant.name}.png`), renderBundlePng(bundle, 6));
   writeFileSync(resolve(outDir, `${variant.name}.1x.png`), renderBundlePng(bundle, 1));
   writeFileSync(

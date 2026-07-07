@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-07-07T15:35:46.235Z
+Generated at: 2026-07-07T18:13:14.863Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.

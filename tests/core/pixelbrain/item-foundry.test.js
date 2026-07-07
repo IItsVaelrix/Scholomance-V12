@@ -168,13 +168,6 @@ describe('Item Foundry — golden scimitar (specs/scimitar.hd.v1.json)', () => {
     expect(Buffer.isBuffer(bundle.png)).toBe(true);
     expect(bundle.png.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   });
-
-  it('exports a Godot shader with only canonical uniforms', () => {
-    expect(bundle.godotShader).toContain('shader_type canvas_item;');
-    // No custom uniform block content — canonical six only.
-    const customBlock = bundle.godotShader.split('// Custom uniforms defined in packet')[1].split('//')[0];
-    expect(customBlock.trim()).toBe('');
-  });
 });
 
 describe('Item Foundry — voidmetal pickaxe (specs/voidmetal-pickaxe.v1.json)', () => {

@@ -1012,6 +1012,14 @@ export const MATERIAL_SHADER_INDEX = Object.freeze({
   neon_mint_signal: 58,
   slime_gel: 59,
   snow: 60,
+  voidsoil: 61,
+  voidbark: 62,
+  voidpine: 63,
+  astralmoss: 64,
+  corrupted_snow: 65,
+  rune_glow: 66,
+  abyss: 67,
+  voidcrystal: 68,
 });
 
 export const MATERIAL_OPTIONS = Object.freeze(

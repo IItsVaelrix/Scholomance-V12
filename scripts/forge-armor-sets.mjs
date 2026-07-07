@@ -279,7 +279,9 @@ for (const set of SETS) {
     mkdirSync(outDir, { recursive: true });
 
     writeFileSync(resolve(outDir, `${pieceName}.json`), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
-    writeFileSync(resolve(outDir, `${pieceName}.pbrain`), bundle.godotArtifact, 'utf8');
+    if (bundle.godotArtifact) {
+      writeFileSync(resolve(outDir, `${pieceName}.pbrain`), bundle.godotArtifact, 'utf8');
+    }
     writeFileSync(resolve(outDir, `${pieceName}.png`), renderBundlePng(bundle, 6));
     writeFileSync(resolve(outDir, `${pieceName}.1x.png`), renderBundlePng(bundle, 1));
     writeFileSync(

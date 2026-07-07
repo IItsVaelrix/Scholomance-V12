@@ -130,7 +130,9 @@ const bundle = forgeItemAsset(spec, {
 });
 
 writeFileSync(resolve(OUT_DIR, 'redwood.json'), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
-writeFileSync(resolve(OUT_DIR, 'redwood.pbrain'), bundle.godotArtifact, 'utf8');
+if (bundle.godotArtifact) {
+  writeFileSync(resolve(OUT_DIR, 'redwood.pbrain'), bundle.godotArtifact, 'utf8');
+}
 writeFileSync(resolve(OUT_DIR, 'redwood.png'), bundle.png);
 writeFileSync(resolve(OUT_DIR, 'redwood.1x.png'), renderBundlePng(bundle, 1));
 

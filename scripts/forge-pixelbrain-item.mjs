@@ -49,7 +49,9 @@ const bundle = forgeItemAsset(rawSpec, { pngScale: Number.isFinite(args.scale) ?
 const specHash = hashItemSpec(bundle.spec);
 
 writeFileSync(resolve(outDir, `${name}.json`), JSON.stringify(bundle.assetPacket, null, 2), 'utf8');
-writeFileSync(resolve(outDir, `${name}.pbrain`), bundle.godotArtifact, 'utf8');
+if (bundle.godotArtifact) {
+  writeFileSync(resolve(outDir, `${name}.pbrain`), bundle.godotArtifact, 'utf8');
+}
 if (bundle.godotShader) writeFileSync(resolve(outDir, `${name}.gdshader`), bundle.godotShader, 'utf8');
 if (bundle.phaserPipeline) writeFileSync(resolve(outDir, `${name}.phaser.js`), bundle.phaserPipeline, 'utf8');
 if (bundle.png) writeFileSync(resolve(outDir, `${name}.png`), bundle.png);

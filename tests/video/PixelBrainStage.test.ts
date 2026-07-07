@@ -1,4 +1,4 @@
-import { getDominantSchoolFromWindow } from "../../src/video/PixelBrainStage";
+import { getDominantSchoolFromWindow } from "../../src/video/logic/resolveDominantSchool";
 import type { WordTiming } from "../../src/video/types";
 
 const makeWord = (school: string, startMs: number): WordTiming => ({

@@ -356,7 +356,7 @@ export function forgeVoidChestplate(theme = 'void') {
 
     // Force 100% color accuracy to exact palette (fixes "ColorAMP 90%" off-by-palette)
     // and ensure full gold trim on all silhouette edges using actual computed min/max per y (robust, not brittle x-bounds).
-    const palette = REMAP_PALETTE;
+    const palette = REMAP_PALETTE_LOCAL;
     const closestColor = (hex) => {
       if (palette.includes(hex)) return hex;
       let best = palette[0];
@@ -374,7 +374,7 @@ export function forgeVoidChestplate(theme = 'void') {
       ...c,
       color: closestColor(c.color)
     }));
-    const GOLD = GOLD;  // already set above based on theme (sanctified for icy-holy)
+    const GOLD = isIcyHolyVariantLocal ? '#D4B860' : '#A58A2D';
     // Compute true silhouette edges for 100% trim guarantee
     const byYRemap = new Map();
     remappedCoords.forEach(c => { if (!byYRemap.has(c.y)) byYRemap.set(c.y, []); byYRemap.get(c.y).push(c); });
@@ -711,7 +711,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(resolve(OUT_DIR, `${variant}.json`), JSON.stringify(editorAssetPacket, null, 2), 'utf8');
-  writeFileSync(resolve(OUT_DIR, `${variant}.pbrain`), bundle.godotArtifact, 'utf8');
+  if (bundle.godotArtifact) {
+    writeFileSync(resolve(OUT_DIR, `${variant}.pbrain`), bundle.godotArtifact, 'utf8');
+  }
   writeFileSync(resolve(OUT_DIR, `${variant}.aseprite`), exportFoundryToAsepriteBinary(bundle));
   writeFileSync(resolve(OUT_DIR, `${variant}.png`), bundle.png);
   writeFileSync(resolve(OUT_DIR, `${variant}.1x.png`), renderBundlePng(bundle, 1));

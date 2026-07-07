@@ -389,7 +389,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const { bundle, editorAssetPacket, diagnostics } = forgeVoidChestplate();
   mkdirSync(OUT_DIR, { recursive: true });
   writeFileSync(resolve(OUT_DIR, 'void-chestplate.json'), JSON.stringify(editorAssetPacket, null, 2), 'utf8');
-  writeFileSync(resolve(OUT_DIR, 'void-chestplate.pbrain'), bundle.godotArtifact, 'utf8');
+  if (bundle.godotArtifact) {
+    writeFileSync(resolve(OUT_DIR, 'void-chestplate.pbrain'), bundle.godotArtifact, 'utf8');
+  }
   writeFileSync(resolve(OUT_DIR, 'void-chestplate.aseprite'), exportFoundryToAsepriteBinary(bundle));
   writeFileSync(resolve(OUT_DIR, 'void-chestplate.png'), bundle.png);
   writeFileSync(resolve(OUT_DIR, 'void-chestplate.1x.png'), renderBundlePng(bundle, 1));

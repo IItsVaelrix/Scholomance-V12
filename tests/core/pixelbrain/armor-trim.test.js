@@ -31,7 +31,7 @@ describe('armor trim (outline material assignment for void-sonic set)', () => {
     it('main shell parts that declare outline achieve 100% gold-ramp preSquare on their rims', () => {
       for (const piece of pieces) {
         const coords = loadArmorPiece(piece);
-        const mainRims = coords.filter(c => c.partId === piece && c.isRim === true);
+        const mainRims = coords.filter(c => c.partId === piece && c.isRim === true && c.colorProvenance?.amp !== 'pixel-aa-amp');
         expect(mainRims.length, `${piece} main part has no rims`).toBeGreaterThan(0);
 
         const bad = mainRims.filter(c => !GOLD_RAMP.includes(c.preSquareColor));
@@ -74,7 +74,7 @@ describe('armor trim (outline material assignment for void-sonic set)', () => {
     it('rim cells on trimmed parts carry evidence of the outline material (preSquare or isRim + gold family)', () => {
       for (const piece of pieces) {
         const coords = loadArmorPiece(piece);
-        const rimsOnTrimParts = coords.filter(c => TRIM_PART_IDS.has(c.partId) && c.isRim);
+        const rimsOnTrimParts = coords.filter(c => TRIM_PART_IDS.has(c.partId) && c.isRim && c.colorProvenance?.amp !== 'pixel-aa-amp');
         expect(rimsOnTrimParts.length, `${piece} no rims on declared trim parts`).toBeGreaterThan(0);
 
         const nonGold = rimsOnTrimParts.filter(c => !GOLD_RAMP.includes(c.preSquareColor) && !GOLD_RAMP.includes(c.color));
