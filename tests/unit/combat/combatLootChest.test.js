@@ -5,10 +5,10 @@ import { describe, expect, it } from 'vitest';
 import {
   LOOT_CHEST_TIER_MATERIALS,
   LOOT_CHEST_TIERS,
-  compileLootChestSource,
   remapLootChestSpec,
   transmuteLootChestPacket,
 } from '../../../codex/core/pixelbrain/loot-chest-composition.js';
+import { compileLootChestSource } from '../../../codex/core/pixelbrain/loot-chest-forge.js';
 import {
   chestTierFromItemRarity,
   planCombatChestDrop,

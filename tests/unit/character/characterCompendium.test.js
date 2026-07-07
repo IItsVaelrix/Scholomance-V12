@@ -19,7 +19,7 @@ describe('characterCompendium', () => {
     });
 
     expect(snapshot.name).toBe(CHARACTER_NAME);
-    expect(snapshot.tactical.rows).toHaveLength(3);
+    expect(snapshot.tactical.rows).toHaveLength(5);
     expect(snapshot.scholomance.categories.length).toBeGreaterThanOrEqual(4);
     expect(snapshot.scholomance.block.BAPO).toBe(16);
     expect(snapshot.spellProfile.quality.total).toBeGreaterThan(0);

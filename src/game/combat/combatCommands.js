@@ -113,7 +113,7 @@ export function executeWarpCommand(targetAlias, context = {}) {
   return {
     ok: true,
     message: `Warped to ${targetMap.label}.`,
-    sideEffects: [],
+    sideEffects: targetMapId === POLARIS_FOREST_MAP_ID ? ['skip-polaris-intro'] : [],
   };
 }
 

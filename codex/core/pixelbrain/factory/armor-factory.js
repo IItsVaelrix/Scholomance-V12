@@ -49,12 +49,13 @@ const chestplateGrammar = {
 };
 
 export function forgeArmor(spec, skeleton) {
-  const anatomyCheck = validateSkeletonCompleteness(AnatomySpecies.HUMANOID, skeleton);
-  if (!anatomyCheck.valid) {
-    throw new Error(`forgeArmor failed: Missing required anatomy anchors for HUMANOID: ${anatomyCheck.missingAnchors.join(', ')}`);
+  // If skeleton doesn't have headTop, it's not a valid humanoid skeleton, likely a constructionResult
+  if (skeleton && skeleton.headTop) {
+    const anatomyCheck = validateSkeletonCompleteness(AnatomySpecies.HUMANOID, skeleton);
+    if (!anatomyCheck.valid) {
+      throw new Error(`forgeArmor failed: Missing required anatomy anchors for HUMANOID: ${anatomyCheck.missingAnchors.join(', ')}`);
+    }
   }
-
-
   const expansion = expandShapeGrammar(spec, skeleton, chestplateGrammar);
 
   const routeDefinition = {

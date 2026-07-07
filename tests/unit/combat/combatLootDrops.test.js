@@ -29,7 +29,7 @@ describe('combatLootDrops', () => {
   });
 
   it('does not roll loot for enemies without a drop table', () => {
-    expect(rollCombatLoot('sentinel-west', () => 0)).toBeNull();
+    expect(rollCombatLoot('unknown-enemy', () => 0)).toBeNull();
   });
 
   it('marks duplicate grants without calling grantItem', () => {
