@@ -1,16 +1,11 @@
 # Dead Code Report
 
-Generated at: 2026-07-04T18:03:25.443Z
+Generated at: 2026-07-07T15:35:46.235Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
-- [ ] src/audio/audio-forge.scheduler.js
-- [ ] src/audio/audio-forge.worker.js
 - [ ] src/audio/audio-forge.worklet.js
-- [ ] src/audio/audio-mixer.js
-- [ ] src/audio/pixelbrain-audio-forge.js
-- [ ] src/audio/sfx-intent-resolver.js
 - [ ] src/combat/combat-sfx.events.js
 - [ ] src/combat/combat-sfx.mapping.js
 - [ ] src/components/GodotExportButton/downloadTextFile.js
@@ -34,12 +29,15 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/diagnostics/scd64/SCD64HoverTooltip.tsx
 - [ ] src/diagnostics/scd64/SCD64LogRenderer.tsx
 - [ ] src/domain/index.ts
+- [ ] src/game/combat/ai/enemyBrainContract.js
 - [ ] src/game/combat/scdlArmSplitter.js
+- [ ] src/game/combat/weaponRigFit.js
 - [ ] src/game/iso/contracts/index.ts
 - [ ] src/game/iso/contracts/isoActor.schema.ts
 - [ ] src/game/iso/contracts/isoTile.schema.ts
 - [ ] src/game/iso/math/isoDepthSort.ts
 - [ ] src/game/iso/math/isoHitTest.ts
+- [ ] src/game/world/isoTileLandscape.js
 - [ ] src/hooks/useAudioForge.js
 - [ ] src/hooks/useBattleSession.js
 - [ ] src/hooks/useColorCodex.js
@@ -49,7 +47,6 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/kits/channel-zero-ui-kit/examples/ArticlePage.tsx
 - [ ] src/kits/channel-zero-ui-kit/examples/BlogIndexPage.tsx
 - [ ] src/lib/animation-types.js
-- [ ] src/lib/combatApi.js
 - [ ] src/lib/config/flags.js
 - [ ] src/lib/css/schoolStyles.js
 - [ ] src/lib/literaryClassifier.js
@@ -90,6 +87,9 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/pages/Visualiser/tracks/loadTrackWithAlignment.ts
 - [ ] src/pages/Visualiser/tracks/maze-screensaver.ts
 - [ ] src/pages/Visualiser/tracks/polarity-remix.ts
+- [ ] src/phaser/polarisForestGround.js
+- [ ] src/phaser/polarisTuningForkTrees.js
+- [ ] src/phaser/waterSpriteReflection.js
 - [ ] src/pixel-lotus/PixelBrainFoundry.ts
 - [ ] src/pixel-lotus/actor-forge/index.ts
 - [ ] src/pixel-lotus/actor-forge/pixelLotusActorLayer.schema.ts
@@ -167,31 +167,7 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] src/vite-env.d.ts
 - [ ] codex/cli/scholo-immune.js
 - [ ] codex/core/animation/amp/amp.worker.ts
-- [ ] codex/core/animation/amp/fuseMotionOutput.ts
-- [ ] codex/core/animation/amp/normalizeAnimationIntent.ts
-- [ ] codex/core/animation/bytecode/encodeMotionBytecode.ts
-- [ ] codex/core/animation/contracts/animation.schemas.ts
-- [ ] codex/core/animation/presets/presetRegistry.ts
-- [ ] codex/core/animation/processors/constraints/constraintProcessors.ts
-- [ ] codex/core/animation/processors/dimension-processor.ts
-- [ ] codex/core/animation/processors/finalize/manualOverrideProcessor.ts
-- [ ] codex/core/animation/processors/input/interactionProcessors.ts
-- [ ] codex/core/animation/processors/reactive/atmosphereProcessor.ts
-- [ ] codex/core/animation/processors/registerAllProcessors.ts
-- [ ] codex/core/animation/processors/symmetry/symmetryMotionProcessor.ts
-- [ ] codex/core/animation/processors/time/timeVisualProcessors.ts
-- [ ] codex/core/animation/processors/transform/transformProcessors.ts
-- [ ] codex/core/animation/processors/vector/TurboQuantMotionProcessor.ts
 - [ ] codex/core/archive/truesight/color/visemeMapping.ARCHIVED.js
-- [ ] codex/core/audio-forge/affinity-audio-profiles.js
-- [ ] codex/core/audio-forge/audio-bytecode-error.js
-- [ ] codex/core/audio-forge/dsp/buffer-renderer.js
-- [ ] codex/core/audio-forge/dsp/envelopes.js
-- [ ] codex/core/audio-forge/dsp/noise.js
-- [ ] codex/core/audio-forge/dsp/oscillators.js
-- [ ] codex/core/audio-forge/dsp/seeded-rng-bridge.js
-- [ ] codex/core/audio-forge/pb-sfx.checksum.js
-- [ ] codex/core/audio-forge/sfx-event-mappings.js
 - [ ] codex/core/combat.exegesis.js
 - [ ] codex/core/combat.session.js
 - [ ] codex/core/diagnostic/QbitProbeEnrichment.js
@@ -209,6 +185,8 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/immunity/protein-probe.engine.js
 - [ ] codex/core/immunity/semantic-editor.js
 - [ ] codex/core/immunity/spatial-immune-orchestrator.js
+- [ ] codex/core/immunity/speculative-context-buffer.js
+- [ ] codex/core/immunity/speculative-context-packet.js
 - [ ] codex/core/immunity/syntax-tokenizer.js
 - [ ] codex/core/jit/acquisition-matrix.js
 - [ ] codex/core/jit/g2p.js
@@ -222,17 +200,46 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/phonology/dictionary.worker.js
 - [ ] codex/core/phonology/g2p/jurors/index.js
 - [ ] codex/core/phonology/prosodic-metronome.js
-- [ ] codex/core/pixelbrain/anatomy-registry.js
-- [ ] codex/core/pixelbrain/canonical-json.js
+- [ ] codex/core/pixelbrain/amps/noise/deterministic-noise.js
+- [ ] codex/core/pixelbrain/amps/qbit/qbit-snap-profile.js
+- [ ] codex/core/pixelbrain/amps/turboquant/turboquant-layer-snapshot.js
+- [ ] codex/core/pixelbrain/bytecode-to-scdl-bridge.js
 - [ ] codex/core/pixelbrain/character-face-composer.js
 - [ ] codex/core/pixelbrain/color-codec.js
-- [ ] codex/core/pixelbrain/dimension-formula-compiler.ts
+- [ ] codex/core/pixelbrain/geometry/bounds.js
+- [ ] codex/core/pixelbrain/geometry/cell-key.js
+- [ ] codex/core/pixelbrain/geometry/cell-set.js
+- [ ] codex/core/pixelbrain/geometry/fill.js
+- [ ] codex/core/pixelbrain/geometry/index.js
+- [ ] codex/core/pixelbrain/geometry/lattice-booleans.js
+- [ ] codex/core/pixelbrain/geometry/lattice-queries.js
+- [ ] codex/core/pixelbrain/geometry/raster-fill.js
+- [ ] codex/core/pixelbrain/geometry/spatial-hash.js
+- [ ] codex/core/pixelbrain/graphic-forge/graphic-forge.microprocessor.js
+- [ ] codex/core/pixelbrain/graphic-forge/graphic-forge.pipeline.js
+- [ ] codex/core/pixelbrain/graphic-forge/graphic-forge.presets.js
+- [ ] codex/core/pixelbrain/graphic-forge/microprocessors/image-receiver.microprocessor.js
+- [ ] codex/core/pixelbrain/graphic-forge/microprocessors/material-quantize.microprocessor.js
+- [ ] codex/core/pixelbrain/graphic-forge/microprocessors/qbit-propagate.microprocessor.js
+- [ ] codex/core/pixelbrain/graphic-forge/microprocessors/qbit-seed.microprocessor.js
+- [ ] codex/core/pixelbrain/graphic-forge/microprocessors/scdl-exporter.microprocessor.js
+- [ ] codex/core/pixelbrain/hair-flow-amp.js
+- [ ] codex/core/pixelbrain/image-lattice-compiler.js
+- [ ] codex/core/pixelbrain/image-segmentation-amp.js
+- [ ] codex/core/pixelbrain/image-to-cell-grid.js
 - [ ] codex/core/pixelbrain/image-to-construction-skeleton.js
+- [ ] codex/core/pixelbrain/inject-hair.js
+- [ ] codex/core/pixelbrain/loot-chest-composition.js
+- [ ] codex/core/pixelbrain/loot-chest-forge.js
 - [ ] codex/core/pixelbrain/mining-patch.js
+- [ ] codex/core/pixelbrain/neighbor-extrapolation-amp.js
+- [ ] codex/core/pixelbrain/palette-role-quantizer.js
 - [ ] codex/core/pixelbrain/pbrain-checksum.js
 - [ ] codex/core/pixelbrain/pipeline-golden-corpus.js
+- [ ] codex/core/pixelbrain/pixelit-adapter.js
 - [ ] codex/core/pixelbrain/qbit-bridge.js
 - [ ] codex/core/pixelbrain/qbit-field-rle.js
+- [ ] codex/core/pixelbrain/reverse-scdl-compiler.js
 - [ ] codex/core/pixelbrain/scdl/graph-walk.js
 - [ ] codex/core/pixelbrain/scdl/index.js
 - [ ] codex/core/pixelbrain/scdl/passes/build-scene-graph.pass.js
@@ -255,8 +262,16 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/pixelbrain/scdl/scdl.exporters.js
 - [ ] codex/core/pixelbrain/scdl/scdl.grammar.js
 - [ ] codex/core/pixelbrain/scdl/scdl.lattice-emitter.js
+- [ ] codex/core/pixelbrain/scdl-raster-emitter.js
+- [ ] codex/core/pixelbrain/scdna-gene-packet.js
 - [ ] codex/core/pixelbrain/scene-graph-renderer.js
 - [ ] codex/core/pixelbrain/silhouette-scan.js
+- [ ] codex/core/pixelbrain/synthesize-crisp-tile.js
+- [ ] codex/core/pixelbrain/tile-forge/tile-forge.exporter.js
+- [ ] codex/core/pixelbrain/tile-forge/tile-forge.schema.js
+- [ ] codex/core/pixelbrain/tile-forge/tile-forge.scorer.js
+- [ ] codex/core/pixelbrain/tile-forge/tile-forge.snap-validator.js
+- [ ] codex/core/pixelbrain/tile-forge/tile-forge.validator.js
 - [ ] codex/core/pixelbrain/voxel-axes.js
 - [ ] codex/core/pixelbrain/voxel-block.js
 - [ ] codex/core/pixelbrain/voxel-keyframe.js
@@ -266,13 +281,8 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/scholotime/scholotime.export-plan.js
 - [ ] codex/core/scholotime/scholotime.phaser-adapter.js
 - [ ] codex/core/scholotime/scholotime.pixelbrain-adapter.js
-- [ ] codex/core/shared/ambient/ambientPlayer.service.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
-- [ ] codex/core/shared/ambient/schoolAudio.config.js
-- [ ] codex/core/shared/atmosphere/aurora.ts
-- [ ] codex/core/shared/truesight/compiler/viewportBytecode.ts
 - [ ] codex/core/shared/workers/microprocessor.worker.js
-- [ ] codex/core/tactical.engine.js
 - [ ] codex/server/collab/mcp-bridge-entry.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
@@ -288,6 +298,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `onSyntaxChessAdvantage` in `src/combat/combat-sfx.events.js`
 - [ ] `onOracleMarginalia` in `src/combat/combat-sfx.events.js`
 - [ ] `onNexusUnlock` in `src/combat/combat-sfx.events.js`
+- [ ] `onFootstep` in `src/combat/combat-sfx.events.js`
+- [ ] `onObeliskCharge` in `src/combat/combat-sfx.events.js`
+- [ ] `onObeliskDischarge` in `src/combat/combat-sfx.events.js`
 - [ ] `COMBAT_SFX_DEFAULTS` in `src/combat/combat-sfx.mapping.js`
 - [ ] `downloadTextFile` in `src/components/GodotExportButton/downloadTextFile.js`
 - [ ] `BookIcon` in `src/components/Icons.jsx`
@@ -337,37 +350,165 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `Z_ABOVE` in `src/data/stacking_tiers.js`
 - [ ] `Z_OVERLAY` in `src/data/stacking_tiers.js`
 - [ ] `STACKING_TIERS` in `src/data/stacking_tiers.js`
+- [ ] `VOID1_BOSS_ID` in `src/data/void1Animations.js`
+- [ ] `VOID1_JOINTS` in `src/data/void1RigConfig.js`
+- [ ] `VOID1_ARM_POSES` in `src/data/void1RigConfig.js`
+- [ ] `VOID1_ANIMATIONS` in `src/data/void1RigConfig.js`
+- [ ] `getVoid1Animation` in `src/data/void1RigConfig.js`
 - [ ] `getStore` in `src/db/adapter.ts`
 - [ ] `closeAll` in `src/db/adapter.ts`
 - [ ] `SCD64LogRenderer` in `src/diagnostics/scd64/SCD64LogRenderer.tsx`
 - [ ] `CombatEncounter` in `src/domain/index.ts`
 - [ ] `AudioTrack` in `src/domain/index.ts`
+- [ ] `GraphCompileContext` in `src/features/graph-editor/graphPacketCompiler.ts`
 - [ ] `GraphCompileResult` in `src/features/graph-editor/graphPacketCompiler.ts`
+- [ ] `GraphNodeResolver` in `src/features/graph-editor/graphPacketCompiler.ts`
+- [ ] `GraphCompileState` in `src/features/graph-editor/graphPacketCompiler.ts`
 - [ ] `compileScholomanceGraphPacket` in `src/features/graph-editor/graphPacketCompiler.ts`
 - [ ] `ScholomanceSocketDefV1` in `src/features/graph-editor/graphPacketSchema.ts`
 - [ ] `ScholomanceSocketTypeV1` in `src/features/graph-editor/graphPacketSchema.ts`
-- [ ] `ScholomanceGraphDiagnosticV1` in `src/features/graph-editor/graphPacketSchema.ts`
 - [ ] `NODE_REGISTRY` in `src/features/graph-editor/nodeRegistry.ts`
 - [ ] `ReteLayoutSnapshot` in `src/features/graph-editor/reteGraphAdapter.ts`
-- [ ] `SOCKET_COMPATIBILITY` in `src/features/graph-editor/reteSocketRegistry.ts`
-- [ ] `canConnect` in `src/features/graph-editor/reteSocketRegistry.ts`
+- [ ] `ScholomanceReteNode` in `src/features/graph-editor/reteNodeFactory.ts`
+- [ ] `CHARACTER_NAME` in `src/game/character/characterCompendium.js`
+- [ ] `CATEGORY_LABELS` in `src/game/character/characterCompendium.js`
+- [ ] `statBarPercent` in `src/game/character/characterCompendium.js`
+- [ ] `resetScholomanceXpForTests` in `src/game/character/scholomanceXpService.js`
+- [ ] `DEFAULT_COUNCIL` in `src/game/combat/ai/council/index.js`
+- [ ] `AI_DIAGNOSTIC_CODES` in `src/game/combat/ai/enemyBrainContract.js`
+- [ ] `validateBrainContext` in `src/game/combat/ai/enemyBrainContract.js`
+- [ ] `BASE_WEIGHTS` in `src/game/combat/ai/enemyPersonality.js`
+- [ ] `INT_TIER_WEIGHTS` in `src/game/combat/ai/enemyPersonality.js`
+- [ ] `ROLE_WEIGHTS` in `src/game/combat/ai/enemyPersonality.js`
+- [ ] `ICE_BIOME_PALETTE_KEYS` in `src/game/combat/arenaBiomeTransform.js`
+- [ ] `VOID_BIOME_PALETTE_KEYS` in `src/game/combat/arenaBiomeTransform.js`
+- [ ] `POLARIS_SONIC_PALETTE_KEYS` in `src/game/combat/arenaBiomeTransform.js`
+- [ ] `applyPolarisSonicBiome` in `src/game/combat/arenaBiomeTransform.js`
+- [ ] `ARENA_DEPTH_SORT_BASE` in `src/game/combat/arenaDepthSorting.js`
+- [ ] `ARENA_DEPTH_SORT_STEP` in `src/game/combat/arenaDepthSorting.js`
+- [ ] `isCombatBestiaryGlossaryToken` in `src/game/combat/bestiary/combatBestiary.glossary.js`
+- [ ] `VOID_ACOLYTE_BESTIARY_ID` in `src/game/combat/bestiary/entries/voidAcolyte.entry.js`
+- [ ] `bootstrapCombatBestiary` in `src/game/combat/bestiary/index.js`
+- [ ] `resetCombatBattleIntroForTests` in `src/game/combat/combatBattleIntro.js`
+- [ ] `enrichDefenderSyntacticalChess` in `src/game/combat/combatCastScoring.js`
+- [ ] `WARP_ALIASES` in `src/game/combat/combatCommands.js`
+- [ ] `parseCombatCommand` in `src/game/combat/combatCommands.js`
+- [ ] `resolveWarpTarget` in `src/game/combat/combatCommands.js`
+- [ ] `resolveActiveWorldMapId` in `src/game/combat/combatCommands.js`
+- [ ] `executeWarpCommand` in `src/game/combat/combatCommands.js`
+- [ ] `executeHelpCommand` in `src/game/combat/combatCommands.js`
+- [ ] `executeCombatCommand` in `src/game/combat/combatCommands.js`
+- [ ] `INTELLIGENCE_STAT_KEY` in `src/game/combat/combatIntelligence.js`
+- [ ] `BASE_ML_SURVIVAL_TURNS` in `src/game/combat/combatIntelligence.js`
+- [ ] `clampIntelligence` in `src/game/combat/combatIntelligence.js`
+- [ ] `pickBestObservedCounter` in `src/game/combat/combatIntelligence.js`
+- [ ] `planSentinelReposition` in `src/game/combat/combatIntelligence.js`
 - [ ] `COMBAT_GATHER_REACH` in `src/game/combat/combatLatticeAuthority.js`
 - [ ] `COMBAT_PLATEAU_HEIGHT` in `src/game/combat/combatLatticeAuthority.js`
-- [ ] `combatGridToLattice` in `src/game/combat/combatLatticeAuthority.js`
-- [ ] `COMBAT_GRID_SIZE` in `src/game/combat/combatPathfinding.js`
-- [ ] `DEFAULT_BLOCKED_TILES` in `src/game/combat/combatPathfinding.js`
-- [ ] `isWalkable` in `src/game/combat/combatPathfinding.js`
+- [ ] `chestTierFromItemRarity` in `src/game/combat/combatLootChest.js`
+- [ ] `getLootChestLabel` in `src/game/combat/combatLootChest.js`
+- [ ] `PORTAL_WARDEN_LOOT_CHANCE` in `src/game/combat/combatLootDrops.js`
+- [ ] `DEFAULT_MANA_POINTS` in `src/game/combat/combatMana.js`
+- [ ] `hasManaForSpell` in `src/game/combat/combatMana.js`
+- [ ] `getCombatMusicRegion` in `src/game/combat/combatMusicRegion.js`
 - [ ] `canReachWithinSteps` in `src/game/combat/combatPathfinding.js`
-- [ ] `COMBAT_STATS` in `src/game/combat/combatStats.js`
+- [ ] `COMBAT_GRADE_THRESHOLDS` in `src/game/combat/combatSessionTelemetry.js`
+- [ ] `manhattanTargetDistance` in `src/game/combat/combatTargetSelection.js`
 - [ ] `ENCHANT_FLOOR` in `src/game/combat/enchantResolver.js`
 - [ ] `ENCHANT_CEIL` in `src/game/combat/enchantResolver.js`
 - [ ] `QUALITY_LO` in `src/game/combat/enchantResolver.js`
 - [ ] `QUALITY_HI` in `src/game/combat/enchantResolver.js`
 - [ ] `qualityFromScore` in `src/game/combat/enchantResolver.js`
 - [ ] `computeEnchantSuccess` in `src/game/combat/enchantResolver.js`
+- [ ] `HOLD_STYLES` in `src/game/combat/heldItemPresentation.js`
+- [ ] `ICICLE_SLAM_ABILITY_ID` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `ICICLE_SLAM_RANGE` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `ICICLE_SLAM_MIN_RANGE` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `ICICLE_SLAM_COOLDOWN_TURNS` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `ICICLE_SLAM_HIT_COUNT` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `ICICLE_SLAM_BASE_DAMAGE_PER_HIT` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `computeIcicleSlamDamagePerHit` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `playerHasIcicleSlam` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `canPlayerCastIcicleSlam` in `src/game/combat/iceSlimeStaffAbilities.js`
+- [ ] `PLAYER_SPAWN_TILE` in `src/game/combat/portalPhase.js`
+- [ ] `combatIsoScreenX` in `src/game/combat/portalPhase.js`
 - [ ] `splitArms` in `src/game/combat/scdlArmSplitter.js`
+- [ ] `setLatestSceneContext` in `src/game/combat/sceneContextBridge.js`
+- [ ] `peekSceneContext` in `src/game/combat/sceneContextBridge.js`
+- [ ] `STAT_TREE_VERSION` in `src/game/combat/scholomanceStats.js`
+- [ ] `getFullStatRegistry` in `src/game/combat/scholomanceStats.js`
+- [ ] `listScholomanceStatKeys` in `src/game/combat/scholomanceStats.js`
+- [ ] `BASIC_ATTACK_BAPO_DIVISOR` in `src/game/combat/scholomanceStats.js`
+- [ ] `SCHOLOMANCE_XP_VERSION` in `src/game/combat/scholomanceXp.js`
+- [ ] `SENTINEL_BURN_DEBUFF` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `SENTINEL_ALERT_DURATION_TURNS` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `SENTINEL_ML_SURVIVAL_TURNS` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `SENTINEL_MENTAL_LINK_MULTIPLIER` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `SENTINEL_ALERT_DAMAGE_MULTIPLIER` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `SENTINEL_ALERT_PROC_CHANCE` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `countSentinelWifiLinks` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `extractPlayerCastSignatures` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `pickMachineLearningCounter` in `src/game/combat/sentinelCombatAbilities.js`
+- [ ] `OBELISK_TILE` in `src/game/combat/sentinelRobots.js`
+- [ ] `OBELISK_AGGRO_RADIUS` in `src/game/combat/sentinelRobots.js`
+- [ ] `SENTINEL_INTELLIGENCE_PROFILES` in `src/game/combat/sentinelRobots.js`
+- [ ] `manhattanTileDistance` in `src/game/combat/sentinelRobots.js`
+- [ ] `isPlayerNearObelisk` in `src/game/combat/sentinelRobots.js`
+- [ ] `statModifierForSpell` in `src/game/combat/spellQuality.js`
+- [ ] `discoveryBonusFromStat` in `src/game/combat/spellQuality.js`
+- [ ] `presentationModifierFromStat` in `src/game/combat/spellQuality.js`
+- [ ] `mythicResonanceFromStat` in `src/game/combat/spellQuality.js`
+- [ ] `applyScholomanceStatDelta` in `src/game/combat/spellQuality.js`
+- [ ] `resetCompendiumSessionUsage` in `src/game/combat/spellweaveCompendium.persistence.js`
+- [ ] `resolveEntityLabel` in `src/game/combat/tacticalBoardLiveSync.js`
+- [ ] `buildMapStateFromArena` in `src/game/combat/tacticalBoardMapAdapter.js`
+- [ ] `buildBattleBoardSeed` in `src/game/combat/tacticalBoardMapAdapter.js`
+- [ ] `playVoidGravityVfx` in `src/game/combat/void1BossSpellVfx.js`
+- [ ] `playVoidLashVfx` in `src/game/combat/void1BossSpellVfx.js`
+- [ ] `playVoidExecutionVfx` in `src/game/combat/void1BossSpellVfx.js`
+- [ ] `VOID1_ASSET_BASE` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_ASSET_FALLBACK_BASE` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_IDLE_TEXTURE` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_BODY_IDLE_TEXTURE` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_FEET_ORIGIN_Y` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_DISPLAY_SCALE` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_BOSS_DEPTH` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_CANVAS_W` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_CANVAS_H` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID1_RIG_ORIGIN` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `hasVoid1RigTextures` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `hasVoid1CompositeTextures` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `hasVoid1Textures` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `applyVoid1ArmPose` in `src/game/combat/void1CombatVisuals.js`
+- [ ] `VOID_GRAVITY_RANGE` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_GRAVITY_COOLDOWN_TURNS` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_GRAVITY_LOCK_TURNS` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_LASH_DAMAGE` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_EXECUTION_DAMAGE` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_EXECUTION_AP_COST` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `ICICLE_BLAST_MIN_RANGE` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `ICICLE_BLAST_COOLDOWN_TURNS` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `ICICLE_BLAST_HIT_COUNT` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `ICICLE_BLAST_DAMAGE_PER_HIT` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `ICICLE_BLAST_AP_COST` in `src/game/combat/voidAcolyteCombatAbilities.js`
+- [ ] `VOID_ACOLYTE_VOID_SPELL_IDS` in `src/game/combat/voidAcolyteSpellAudio.js`
+- [ ] `VOID_ACOLYTE_ICE_SPELL_IDS` in `src/game/combat/voidAcolyteSpellAudio.js`
+- [ ] `getVoidAcolyteSpellVariant` in `src/game/combat/voidAcolyteSpellAudio.js`
+- [ ] `CHARACTER_WEAPON_CANVAS` in `src/game/combat/weaponRigFit.js`
+- [ ] `CHARACTER_WEAPON_GRIP` in `src/game/combat/weaponRigFit.js`
+- [ ] `CHARACTER_WEAPON_REFERENCE_ART_HEIGHT` in `src/game/combat/weaponRigFit.js`
+- [ ] `ICE_SLIME_STAFF_SOURCE_GRIP` in `src/game/combat/weaponRigFit.js`
+- [ ] `isHeroWeaponPart` in `src/game/combat/weaponRigFit.js`
+- [ ] `fitWeaponPartMapToCharacterRig` in `src/game/combat/weaponRigFit.js`
+- [ ] `scaleWalkOffsets` in `src/game/combat/weaponRigFit.js`
+- [ ] `fitPoint` in `src/game/combat/weaponRigFit.js`
+- [ ] `WEAVE_OBJECT_TOKENS` in `src/game/combat/weave-scene-targets.js`
+- [ ] `collectTargetAliases` in `src/game/combat/weave-scene-targets.js`
+- [ ] `findNamedEnemyMatches` in `src/game/combat/weave-scene-targets.js`
+- [ ] `resolveNamedEnemyTargets` in `src/game/combat/weave-scene-targets.js`
 - [ ] `clearInventoryCache` in `src/game/inventory/inventoryService.js`
 - [ ] `resetInventoryForTests` in `src/game/inventory/inventoryService.js`
+- [ ] `hasEarnedStormheartOrb` in `src/game/inventory/inventoryService.js`
 - [ ] `createIsoActorState` in `src/game/iso/contracts/isoActor.schema.ts`
 - [ ] `TERRAIN_TYPES` in `src/game/iso/contracts/isoTile.schema.ts`
 - [ ] `createIsoTile` in `src/game/iso/contracts/isoTile.schema.ts`
@@ -385,6 +526,27 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `translateAabb` in `src/game/iso/math/sweptAabb.ts`
 - [ ] `intersectsAabb` in `src/game/iso/math/sweptAabb.ts`
 - [ ] `sweepAabb` in `src/game/iso/math/sweptAabb.ts`
+- [ ] `GRASS_VARIANT_IDS` in `src/game/world/isoTileLandscape.js`
+- [ ] `WATER_VARIANT_IDS` in `src/game/world/isoTileLandscape.js`
+- [ ] `hashSeedString` in `src/game/world/isoTileLandscape.js`
+- [ ] `sampleLandscapeField` in `src/game/world/isoTileLandscape.js`
+- [ ] `resolveTerrainType` in `src/game/world/isoTileLandscape.js`
+- [ ] `variantIdToFrameIndex` in `src/game/world/isoTileLandscape.js`
+- [ ] `getDefaultTreePlacements` in `src/game/world/polarisForestConfig.js`
+- [ ] `resolveTreeWorldPositions` in `src/game/world/polarisForestConfig.js`
+- [ ] `applyHydraulicErosion` in `src/game/world/polarisForestPipeline.js`
+- [ ] `applyThermalErosion` in `src/game/world/polarisForestPipeline.js`
+- [ ] `buildPolarisTerrainHeightmap` in `src/game/world/polarisForestPipeline.js`
+- [ ] `computeSlopeAt` in `src/game/world/polarisForestPipeline.js`
+- [ ] `computeMoistureField` in `src/game/world/polarisForestPipeline.js`
+- [ ] `poissonDiskSample` in `src/game/world/polarisForestPipeline.js`
+- [ ] `computeMinTreeDistance` in `src/game/world/polarisForestPipeline.js`
+- [ ] `generateTreePlacements` in `src/game/world/polarisForestPipeline.js`
+- [ ] `generatePolarisForestState` in `src/game/world/polarisForestPipeline.js`
+- [ ] `buildFlatForestHeightmap` in `src/game/world/polarisForestPipeline.js`
+- [ ] `generateFlatForestTreePlacements` in `src/game/world/polarisForestPipeline.js`
+- [ ] `POLARIS_TELEPORT_START_EVENT` in `src/game/world/polarisTransition.js`
+- [ ] `TUTORIAL_TO_POLARIS_CONNECTION` in `src/game/world/worldMapRegistry.js`
 - [ ] `useBattleSession` in `src/hooks/useBattleSession.js`
 - [ ] `useColorCodex` in `src/hooks/useColorCodex.js`
 - [ ] `useGodotExportFlag` in `src/hooks/useGodotExportFlag.js`
@@ -408,6 +570,34 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createAmbienceMixerService` in `src/lib/ambient/ambienceMixer.service.js`
 - [ ] `createWebAudioEngine` in `src/lib/ambient/ambienceMixer.service.js`
 - [ ] `RESONANCE_DURATION_TOLERANCE_MS` in `src/lib/ambient/resonance/resonanceSchema.js`
+- [ ] `createGameAudioForgeService` in `src/lib/audio/gameAudioForge.service.js`
+- [ ] `resetGameAudioForgeServiceForTests` in `src/lib/audio/gameAudioForge.service.js`
+- [ ] `GAME_BATTLE_MUSIC_TRACK` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `GAME_FOREST_MUSIC_TRACKS` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `GAME_BATTLE_MUSIC_PACING` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `GAME_FOREST_MUSIC_PACING` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `pickForestMusicTrack` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `resetForestMusicTrackCursor` in `src/lib/audio/gameBackgroundMusic.config.js`
+- [ ] `pickCycleDurationMs` in `src/lib/audio/gameBackgroundMusic.service.js`
+- [ ] `createGameBackgroundMusicService` in `src/lib/audio/gameBackgroundMusic.service.js`
+- [ ] `createGameBrazierFireService` in `src/lib/audio/gameBrazierFire.service.js`
+- [ ] `resetGameBrazierFireServiceForTests` in `src/lib/audio/gameBrazierFire.service.js`
+- [ ] `createGameChestUnlockService` in `src/lib/audio/gameChestUnlock.service.js`
+- [ ] `resetGameChestUnlockServiceForTests` in `src/lib/audio/gameChestUnlock.service.js`
+- [ ] `createGameFireballImpactService` in `src/lib/audio/gameFireballImpact.service.js`
+- [ ] `resetGameFireballImpactServiceForTests` in `src/lib/audio/gameFireballImpact.service.js`
+- [ ] `createGameIceSpellImpactService` in `src/lib/audio/gameIceSpellImpact.service.js`
+- [ ] `resetGameIceSpellImpactServiceForTests` in `src/lib/audio/gameIceSpellImpact.service.js`
+- [ ] `isSnareBeatIndex` in `src/lib/audio/gameMusicBeatClock.js`
+- [ ] `snareCountFromBeatIndex` in `src/lib/audio/gameMusicBeatClock.js`
+- [ ] `isFourthSnareHit` in `src/lib/audio/gameMusicBeatClock.js`
+- [ ] `didAdvanceBeat` in `src/lib/audio/gameMusicBeatClock.js`
+- [ ] `createGameObeliskElectricService` in `src/lib/audio/gameObeliskElectric.service.js`
+- [ ] `resetGameObeliskElectricServiceForTests` in `src/lib/audio/gameObeliskElectric.service.js`
+- [ ] `createGameSwordSliceService` in `src/lib/audio/gameSwordSlice.service.js`
+- [ ] `resetGameSwordSliceServiceForTests` in `src/lib/audio/gameSwordSlice.service.js`
+- [ ] `createGameVictoryService` in `src/lib/audio/gameVictory.service.js`
+- [ ] `resetGameVictoryServiceForTests` in `src/lib/audio/gameVictory.service.js`
 - [ ] `emitBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `emitStasisBytecodeError` in `src/lib/bytecode-error.adapter.js`
 - [ ] `ACRONYM_MAP` in `src/lib/career/acronyms.js`
@@ -466,6 +656,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getSeedPost` in `src/pages/Blog/seedPosts.js`
 - [ ] `RESOLVED_BUG_STATUSES` in `src/pages/Collab/bug-status.js`
 - [ ] `isBugResolved` in `src/pages/Collab/bug-status.js`
+- [ ] `useTacticalOverlays` in `src/pages/Combat/TacticalOverlayControls.jsx`
 - [ ] `combat_tileUri` in `src/pages/Combat/assets/generated/combat-tile.js`
 - [ ] `combat_torchUri` in `src/pages/Combat/assets/generated/combat-torch.js`
 - [ ] `GrimoireView` in `src/pages/Grimoire/GrimoireSpread.tsx`
@@ -506,6 +697,40 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `ClipTransform` in `src/pages/VideoForge/lib/timelineMutator.ts`
 - [ ] `TrackSeed` in `src/pages/Visualiser/bytecodeFingerprint.ts`
 - [ ] `VISUALISER_FUNCTION_WORDS` in `src/pages/Visualiser/truesightColor.ts`
+- [ ] `createTransitionEvent` in `src/phaser/battle-transition.fx.js`
+- [ ] `getTransitionTimeline` in `src/phaser/battle-transition.fx.js`
+- [ ] `getPhaseProgress` in `src/phaser/battle-transition.fx.js`
+- [ ] `generateCodeFloodChars` in `src/phaser/battle-transition.fx.js`
+- [ ] `classifyForDissolve` in `src/phaser/battle-transition.fx.js`
+- [ ] `buildDissolvePlan` in `src/phaser/battle-transition.fx.js`
+- [ ] `preloadPlayerRigAssets` in `src/phaser/combatSceneShared.js`
+- [ ] `ensureIceSmokeTexture` in `src/phaser/combatSceneShared.js`
+- [ ] `pointerToWorld` in `src/phaser/combatSceneShared.js`
+- [ ] `isWorldSceneActive` in `src/phaser/combatSceneShared.js`
+- [ ] `ISO_GRASS_SHEET_KEY` in `src/phaser/isoTileTextures.js`
+- [ ] `ISO_WATER_SHEET_KEY` in `src/phaser/isoTileTextures.js`
+- [ ] `ISO_TILE_SHEET_PATHS` in `src/phaser/isoTileTextures.js`
+- [ ] `ISO_TILE_SHEET_FRAMES` in `src/phaser/isoTileTextures.js`
+- [ ] `ensureIsoTileTextures` in `src/phaser/isoTileTextures.js`
+- [ ] `hideVoidSky` in `src/phaser/polarisForestGround.js`
+- [ ] `destroyPolarisForestGround` in `src/phaser/polarisForestGround.js`
+- [ ] `drawForestCanopySky` in `src/phaser/polarisForestGround.js`
+- [ ] `drawIsoTileLandscapeFloor` in `src/phaser/polarisForestGround.js`
+- [ ] `drawFlatForestFloor` in `src/phaser/polarisForestGround.js`
+- [ ] `reskinCombatGridForForest` in `src/phaser/polarisForestGround.js`
+- [ ] `spawnForestMist` in `src/phaser/polarisForestGround.js`
+- [ ] `generateTuningForkLSystem` in `src/phaser/polarisTuningForkTrees.js`
+- [ ] `drawTuningForkTreeGraphics` in `src/phaser/polarisTuningForkTrees.js`
+- [ ] `createTuningForkTree` in `src/phaser/polarisTuningForkTrees.js`
+- [ ] `destroyTuningForkTrees` in `src/phaser/polarisTuningForkTrees.js`
+- [ ] `DEFAULT_WATER_REFLECTION` in `src/phaser/waterSpriteReflection.js`
+- [ ] `computeWaveOffset` in `src/phaser/waterSpriteReflection.js`
+- [ ] `applyPixelWaveDistortion` in `src/phaser/waterSpriteReflection.js`
+- [ ] `attachWaterSpriteReflection` in `src/phaser/waterSpriteReflection.js`
+- [ ] `setWaterReflectionActive` in `src/phaser/waterSpriteReflection.js`
+- [ ] `updateWaterSpriteReflection` in `src/phaser/waterSpriteReflection.js`
+- [ ] `destroyWaterSpriteReflection` in `src/phaser/waterSpriteReflection.js`
+- [ ] `isWaterLandscapeTile` in `src/phaser/waterSpriteReflection.js`
 - [ ] `PixelBrainFoundry` in `src/pixel-lotus/PixelBrainFoundry.ts`
 - [ ] `pixelBrainFoundry` in `src/pixel-lotus/PixelBrainFoundry.ts`
 - [ ] `pixelBrainPacketToPixelLotusLayer` in `src/pixel-lotus/actor-forge/pixelbrainLayerBridge.ts`
@@ -535,7 +760,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `ScoringEngine` in `src/types/core/scoring.ts`
 - [ ] `LiteraryDeviceId` in `src/types/lib/literary.ts`
 - [ ] `LiteraryDevice` in `src/types/lib/literary.ts`
-- [ ] `Emotion` in `src/types/lib/literary.ts`
 - [ ] `MultiSyllableMatch` in `src/types/lib/phoneme.ts`
 - [ ] `PhonologicalProcessResult` in `src/types/lib/phonological.ts`
 - [ ] `CandidateArbiter` in `src/types/lib/pls.ts`
@@ -545,6 +769,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `SyntaxGatingStats` in `src/types/lib/rhyme.ts`
 - [ ] `CacheEntry` in `src/types/runtime/runtime.ts`
 - [ ] `EventCallback` in `src/types/runtime/runtime.ts`
+- [ ] `COMBAT_RESULTS_REVEAL_DELAY_MS` in `src/ui/combat/CombatResultsOverlay.jsx`
+- [ ] `DISCOVERY_FLASH_DURATION_MS` in `src/ui/combat/DiscoveryFlash.jsx`
 - [ ] `RoleBinding` in `src/ui/features/mysticHolistics/hero/roleDispatcher.ts`
 - [ ] `DarkStarMirrorVisualizerProps` in `src/video/DarkStarMirrorVisualizer.tsx`
 - [ ] `KineticLyricsVideoProps` in `src/video/KineticLyricsVideo.tsx`
@@ -585,7 +811,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `AppliedTemplateRecord` in `src/video/editor/core/video-project-packet.ts`
 - [ ] `RenderSettings` in `src/video/editor/core/video-project-packet.ts`
 - [ ] `VideoDiagnostic` in `src/video/editor/core/video-project-packet.ts`
-- [ ] `addDiagnostic` in `src/video/editor/core/video-project-packet.ts`
 - [ ] `DarkStarRenderParams` in `src/video/geometry/darkStarRenderer.ts`
 - [ ] `MandalaRenderParams` in `src/video/geometry/mandalaRenderer.ts`
 - [ ] `SchoolColors` in `src/video/geometry/schoolPalette.ts`
@@ -614,6 +839,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `TypographyProgram` in `src/video/schemas/videoScene.ts`
 - [ ] `validateVideoSidecar` in `src/video/schemas/videoScene.ts`
 - [ ] `getEasingProgress` in `codex/core/animation/amp/motionVectorizer.ts`
+- [ ] `initPipeline` in `codex/core/animation/amp/pipeline.ts`
 - [ ] `initAnimationAmp` in `codex/core/animation/amp/runAnimationAmp.ts`
 - [ ] `RitualPredictionCandidate` in `codex/core/animation/arbiter/ArbiterAMP.ts`
 - [ ] `PredictionPixelBrainProjection` in `codex/core/animation/arbiter/ArbiterAMP.ts`
@@ -690,10 +916,11 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `AUDIO_FORGE_MODULE_ID` in `codex/core/audio-forge/audio-bytecode-error.js`
 - [ ] `AUDIO_ERROR_CODES` in `codex/core/audio-forge/audio-bytecode-error.js`
 - [ ] `createNanSampleError` in `codex/core/audio-forge/audio-bytecode-error.js`
+- [ ] `buildSampleHoldModulation` in `codex/core/audio-forge/dsp/electric-shock.js`
+- [ ] `buildArcSnapBursts` in `codex/core/audio-forge/dsp/electric-shock.js`
 - [ ] `buildAdsrCurve` in `codex/core/audio-forge/dsp/envelopes.js`
 - [ ] `buildPluckCurve` in `codex/core/audio-forge/dsp/envelopes.js`
 - [ ] `buildBurstCurve` in `codex/core/audio-forge/dsp/envelopes.js`
-- [ ] `buildWhiteNoise` in `codex/core/audio-forge/dsp/noise.js`
 - [ ] `buildPinkNoise` in `codex/core/audio-forge/dsp/noise.js`
 - [ ] `buildBrownNoise` in `codex/core/audio-forge/dsp/noise.js`
 - [ ] `buildCrackleNoise` in `codex/core/audio-forge/dsp/noise.js`
@@ -701,11 +928,31 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildSparkNoise` in `codex/core/audio-forge/dsp/noise.js`
 - [ ] `buildVoidStatic` in `codex/core/audio-forge/dsp/noise.js`
 - [ ] `sampleWavetable` in `codex/core/audio-forge/dsp/oscillators.js`
-- [ ] `computeBiquadCoefficients` in `codex/core/audio-forge/dsp/parametric-eq.js`
-- [ ] `applyBiquadFilter` in `codex/core/audio-forge/dsp/parametric-eq.js`
+- [ ] `ELECTRIC_SH_MODES` in `codex/core/audio-forge/pb-sfx.schema.js`
 - [ ] `EFFECT_TYPES` in `codex/core/audio-forge/pb-sfx.schema.js`
 - [ ] `TACTICAL_GRID_DEFAULT_SIZE` in `codex/core/battle.schemas.js`
 - [ ] `runAtsHmmPass` in `codex/core/career/ats-hmm/index.js`
+- [ ] `scoreTileForAI` in `codex/core/combat/tactical-board.ai.js`
+- [ ] `selectBestTile` in `codex/core/combat/tactical-board.ai.js`
+- [ ] `shouldContestTile` in `codex/core/combat/tactical-board.ai.js`
+- [ ] `evaluateEnemyThreat` in `codex/core/combat/tactical-board.ai.js`
+- [ ] `computeFlankingValue` in `codex/core/combat/tactical-board.ai.js`
+- [ ] `getBoardDimensions` in `codex/core/combat/tactical-board.compiler.js`
+- [ ] `computeBoardHash` in `codex/core/combat/tactical-board.compiler.js`
+- [ ] `applyModifierChain` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `isModifierActive` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `consumeOneUseModifier` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `decayTurnModifier` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `computeNullTileEffect` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `createModifier` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `TILE_MODIFIER_PRESETS` in `codex/core/combat/tactical-board.modifiers.js`
+- [ ] `resolvePathTiles` in `codex/core/combat/tactical-board.resolver.js`
+- [ ] `applyTileModifiersToContext` in `codex/core/combat/tactical-board.resolver.js`
+- [ ] `getMovementCastingPenalty` in `codex/core/combat/tactical-board.resolver.js`
+- [ ] `computeEntityThreatZone` in `codex/core/combat/tactical-board.threat-map.js`
+- [ ] `computeControlMap` in `codex/core/combat/tactical-board.threat-map.js`
+- [ ] `computeDangerScore` in `codex/core/combat/tactical-board.threat-map.js`
+- [ ] `getTileModifierForTerrain` in `codex/core/combat/tactical-board.tiles.js`
 - [ ] `COMBAT_RARITY_TIERS` in `codex/core/combat.balance.js`
 - [ ] `getFailureCastModifier` in `codex/core/combat.balance.js`
 - [ ] `computeVerseEfficiency` in `codex/core/combat.balance.js`
@@ -714,7 +961,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getCombatTraces` in `codex/core/combat.scoring.js`
 - [ ] `buildCastEvents` in `codex/core/combat.scoring.js`
 - [ ] `PLAYER_MAX_MP` in `codex/core/combat.session.js`
-- [ ] `SYNTACTIC_ARCHETYPE_PROFILES` in `codex/core/combat.syntax-chess.js`
 - [ ] `analyzeVerseForm` in `codex/core/combat.syntax-chess.js`
 - [ ] `createNeutralSyntacticalChessResult` in `codex/core/combat.syntax-chess.js`
 - [ ] `buildHeuristicCommentary` in `codex/core/commentary/commentary.builder.js`
@@ -767,11 +1013,10 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildInnateError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `buildAdaptiveError` in `codex/core/immunity/inflammatoryResponse.js`
 - [ ] `emitViolationError` in `codex/core/immunity/inflammatoryResponse.js`
+- [ ] `defaultSpeculativeBuffer` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `MEMORY_CELL_CONTRACT` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `MEMORY_CELL_OSMOSIS_CONTRACT` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `MEMORY_CELL_SCHEMA_VERSION` in `codex/core/immunity/memory-cell-osmosis.js`
-- [ ] `MEMORY_CELL_VECTOR_DIMENSIONS` in `codex/core/immunity/memory-cell-osmosis.js`
-- [ ] `MEMORY_CELL_VECTOR_ALGORITHM` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `MEMORY_CELL_FAMILIES` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `MEMORY_CELL_MODES` in `codex/core/immunity/memory-cell-osmosis.js`
 - [ ] `DEFAULT_MEMORY_CELL_MEMBRANE` in `codex/core/immunity/memory-cell-osmosis.js`
@@ -811,6 +1056,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `collectRealTruesightEvidence` in `codex/core/immunity/spatial-immune-orchestrator.js`
 - [ ] `runTrueSightSCD64Sweep` in `codex/core/immunity/spatial-immune-orchestrator.js`
 - [ ] `SCD64_COLOR_DRAGON_GLOSSARY` in `codex/core/immunity/spatial-immune-orchestrator.js`
+- [ ] `SPECULATIVE_CONTEXT_CONTRACT` in `codex/core/immunity/speculative-context-packet.js`
+- [ ] `SPECULATIVE_CONTEXT_SCHEMA_VERSION` in `codex/core/immunity/speculative-context-packet.js`
+- [ ] `checksumSpeculativeContextPacket` in `codex/core/immunity/speculative-context-packet.js`
 - [ ] `tokenizeToStates` in `codex/core/immunity/syntax-tokenizer.js`
 - [ ] `createAcquisitionMatrix` in `codex/core/jit/acquisition-matrix.js`
 - [ ] `createG2PCompatibilityChecker` in `codex/core/jit/g2p.js`
@@ -845,6 +1093,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getUnlockedSynergies` in `codex/core/nexus.registry.js`
 - [ ] `OVERLOAD_THRESHOLD` in `codex/core/obelisk-puzzle.resolver.js`
 - [ ] `SIPHON_THRESHOLD` in `codex/core/obelisk-puzzle.resolver.js`
+- [ ] `OBELISK_REJECT_REASONS` in `codex/core/obelisk-puzzle.resolver.js`
 - [ ] `DOCTRINES` in `codex/core/opponent.engine.js`
 - [ ] `PhoneticMatcher` in `codex/core/phonetic_matcher.js`
 - [ ] `createVectorNNPhonemeSignature` in `codex/core/phonology/g2p/candidates/vector-nn.candidate.generator.js`
@@ -864,10 +1113,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
 - [ ] `getAmp` in `codex/core/pixelbrain/amp-registry.js`
 - [ ] `listAmps` in `codex/core/pixelbrain/amp-registry.js`
-- [ ] `AnatomySpecies` in `codex/core/pixelbrain/anatomy-registry.js`
+- [ ] `createSeededRng` in `codex/core/pixelbrain/amps/noise/deterministic-noise.js`
+- [ ] `QbitTileCellSchema` in `codex/core/pixelbrain/amps/qbit/qbit-snap-profile.js`
+- [ ] `TileSnapProfileSchema` in `codex/core/pixelbrain/amps/qbit/qbit-snap-profile.js`
+- [ ] `TurboQuantCandidateMemorySchema` in `codex/core/pixelbrain/amps/turboquant/turboquant-layer-snapshot.js`
 - [ ] `AnatomySchemas` in `codex/core/pixelbrain/anatomy-registry.js`
 - [ ] `getAnatomySchema` in `codex/core/pixelbrain/anatomy-registry.js`
-- [ ] `validateSkeletonCompleteness` in `codex/core/pixelbrain/anatomy-registry.js`
 - [ ] `ASEPRITE_BINARY_CODEC_VERSION` in `codex/core/pixelbrain/aseprite-binary-codec.js`
 - [ ] `NEGOTIATION_THRESHOLD` in `codex/core/pixelbrain/biome-coherence-amp.js`
 - [ ] `MAX_NEGOTIATION_PASSES` in `codex/core/pixelbrain/biome-coherence-amp.js`
@@ -886,6 +1137,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `createOutOfBoundsError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createCoordinateError` in `codex/core/pixelbrain/bytecode-error.js`
 - [ ] `createColorError` in `codex/core/pixelbrain/bytecode-error.js`
+- [ ] `compileBytecodeToSCDL` in `codex/core/pixelbrain/bytecode-to-scdl-bridge.js`
 - [ ] `pyFloat` in `codex/core/pixelbrain/canonical-json.js`
 - [ ] `JsonNumber` in `codex/core/pixelbrain/canonical-json.js`
 - [ ] `pythonFloatRepr` in `codex/core/pixelbrain/canonical-json.js`
@@ -947,6 +1199,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `style8Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `style16Bit` in `codex/core/pixelbrain/extensions/style-extensions.js`
 - [ ] `styleCRT` in `codex/core/pixelbrain/extensions/style-extensions.js`
+- [ ] `AMULET_GEM_RADIUS` in `codex/core/pixelbrain/factory/jewelry-factory.js`
+- [ ] `AMULET_BEZEL_OUTER` in `codex/core/pixelbrain/factory/jewelry-factory.js`
+- [ ] `AMULET_CHAIN_OUTER` in `codex/core/pixelbrain/factory/jewelry-factory.js`
+- [ ] `BUCKLER_BOSS_RADIUS` in `codex/core/pixelbrain/factory/shield-factory.js`
+- [ ] `BUCKLER_FACE_OUTER` in `codex/core/pixelbrain/factory/shield-factory.js`
+- [ ] `BUCKLER_RIM_OUTER` in `codex/core/pixelbrain/factory/shield-factory.js`
 - [ ] `forgeHolyFirePaladinSword` in `codex/core/pixelbrain/factory/weapon-factory.js`
 - [ ] `FLAME_TIP_AMP_ID` in `codex/core/pixelbrain/flame-tip-amp.js`
 - [ ] `FLAME_TIP_AMP_VERSION` in `codex/core/pixelbrain/flame-tip-amp.js`
@@ -978,6 +1236,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `syncMultipleElements` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `generateRotationKeyframes` in `codex/core/pixelbrain/gear-glide-amp.js`
 - [ ] `RASTER_CANVAS_SIZE` in `codex/core/pixelbrain/glyph-rasterizer.js`
+- [ ] `createSinisterVoidGraphicForge` in `codex/core/pixelbrain/graphic-forge/graphic-forge.presets.js`
+- [ ] `createImageReceiverGraphicForge` in `codex/core/pixelbrain/graphic-forge/graphic-forge.presets.js`
 - [ ] `HERALDRY_MICROPROCESSOR_ID` in `codex/core/pixelbrain/heraldry-amp.js`
 - [ ] `HERALDRY_MICROPROCESSOR_VERSION` in `codex/core/pixelbrain/heraldry-amp.js`
 - [ ] `HOLLOW_THRESHOLD` in `codex/core/pixelbrain/hollowness-amp.js`
@@ -986,6 +1246,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `buildSurfaceLockSet` in `codex/core/pixelbrain/hollowness-amp.js`
 - [ ] `HOLYFIRE_MOTIF_AMP_ID` in `codex/core/pixelbrain/holyfire-motif-amp.js`
 - [ ] `HOLYFIRE_MOTIF_AMP_VERSION` in `codex/core/pixelbrain/holyfire-motif-amp.js`
+- [ ] `ImageLatticeCompiler` in `codex/core/pixelbrain/image-lattice-compiler.js`
 - [ ] `extractEdgePoints` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `fitParametricCurve` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
 - [ ] `detectGridPattern` in `codex/core/pixelbrain/image-to-bytecode-formula.js`
@@ -1006,6 +1267,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `ITEM_SPEC_VERSION` in `codex/core/pixelbrain/item-spec.js`
 - [ ] `categoryOf` in `codex/core/pixelbrain/item-spec.js`
 - [ ] `ITEM_VOXEL_SCHEMA_VERSION` in `codex/core/pixelbrain/item-voxel-packet.js`
+- [ ] `LOOT_CHEST_SCDL_FIXTURE` in `codex/core/pixelbrain/loot-chest-forge.js`
+- [ ] `compileLootChestSource` in `codex/core/pixelbrain/loot-chest-forge.js`
+- [ ] `renderLootChestSourcePng` in `codex/core/pixelbrain/loot-chest-forge.js`
+- [ ] `renderLootChestTierPng` in `codex/core/pixelbrain/loot-chest-forge.js`
+- [ ] `getLootChestFramePackets` in `codex/core/pixelbrain/loot-chest-forge.js`
+- [ ] `renderLootChestTierFramePng` in `codex/core/pixelbrain/loot-chest-forge.js`
 - [ ] `DEFAULT_EMISSION_FACTOR` in `codex/core/pixelbrain/material-registry.js`
 - [ ] `applyMiningPatch` in `codex/core/pixelbrain/mining-patch.js`
 - [ ] `MIRRORED_TRIM_VALIDATOR_ID` in `codex/core/pixelbrain/mirrored-trim-validator.js`
@@ -1045,9 +1312,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `normalizePB_POLISH_PROFILE_v1` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
 - [ ] `createPBEditSession` in `codex/core/pixelbrain/pixelbrain-asset-packet.js`
 - [ ] `PIXELBRAIN_SHADER_UNIFORM_PROVIDER_ID` in `codex/core/pixelbrain/pixelbrain-shader-uniform-providers.js`
+- [ ] `PixelItAdapter` in `codex/core/pixelbrain/pixelit-adapter.js`
 - [ ] `normalizeNoiseSeed` in `codex/core/pixelbrain/procedural-noise.js`
-- [ ] `generatePermutationTable` in `codex/core/pixelbrain/procedural-noise.js`
-- [ ] `perlin2D` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `getTexturePalette` in `codex/core/pixelbrain/procedural-noise.js`
 - [ ] `buildQbitFieldRetinaInput` in `codex/core/pixelbrain/qbit-bridge.js`
 - [ ] `routeQbitFieldToPhotonicBridge` in `codex/core/pixelbrain/qbit-bridge.js`
@@ -1062,10 +1328,16 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `ENERGY_TYPE_NAMES` in `codex/core/pixelbrain/qbit-world-game-loop.js`
 - [ ] `snapValueToPixelGrid` in `codex/core/pixelbrain/raster-jitter-filter.js`
 - [ ] `drawHandDrawnLine` in `codex/core/pixelbrain/raster-jitter-filter.js`
+- [ ] `rasterEllipse` in `codex/core/pixelbrain/raster-math.js`
+- [ ] `rasterEllipseFilled` in `codex/core/pixelbrain/raster-math.js`
+- [ ] `rasterBezierCurve` in `codex/core/pixelbrain/raster-math.js`
 - [ ] `assertDeterministic` in `codex/core/pixelbrain/region-fill-amp.js`
 - [ ] `RENDERERS` in `codex/core/pixelbrain/renderer-registry.js`
 - [ ] `canonicalOp` in `codex/core/pixelbrain/scdl/passes/build-scene-graph.pass.js`
 - [ ] `SPHERE_THRESHOLDS` in `codex/core/pixelbrain/scdl/render/raster-core.js`
+- [ ] `emitScdlRaster` in `codex/core/pixelbrain/scdl-raster-emitter.js`
+- [ ] `createSCDNAGenePacket` in `codex/core/pixelbrain/scdna-gene-packet.js`
+- [ ] `createSCDNAGeneReadyHealthEvent` in `codex/core/pixelbrain/scdna-gene-packet.js`
 - [ ] `SCHOLO_CHIBI_FACE_PROFILES` in `codex/core/pixelbrain/scholo-chibi-face-profiles.js`
 - [ ] `applyScholomanceMotifs` in `codex/core/pixelbrain/scholomance-character-motif-amp.js`
 - [ ] `collectSchoolTagDeltas` in `codex/core/pixelbrain/school-tag-amp.js`
@@ -1121,6 +1393,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `removeAnchorPoint` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `createFrame` in `codex/core/pixelbrain/template-grid-engine.js`
 - [ ] `getOnionSkins` in `codex/core/pixelbrain/template-grid-engine.js`
+- [ ] `TileForgeExporter` in `codex/core/pixelbrain/tile-forge/tile-forge.exporter.js`
+- [ ] `TileForgeCandidateSchema` in `codex/core/pixelbrain/tile-forge/tile-forge.schema.js`
+- [ ] `TileAuthoringStateSchema` in `codex/core/pixelbrain/tile-forge/tile-forge.schema.js`
+- [ ] `TileForgeScorer` in `codex/core/pixelbrain/tile-forge/tile-forge.scorer.js`
+- [ ] `TileForgeSnapValidator` in `codex/core/pixelbrain/tile-forge/tile-forge.snap-validator.js`
+- [ ] `validateTileForgeCandidate` in `codex/core/pixelbrain/tile-forge/tile-forge.validator.js`
+- [ ] `TileForgeValidator` in `codex/core/pixelbrain/tile-forge/tile-forge.validator.js`
 - [ ] `mapVowelFamilyToSchoolId` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `calculateRarityFromPhonemes` in `codex/core/pixelbrain/token-to-bytecode.js`
 - [ ] `determineEffectFromToken` in `codex/core/pixelbrain/token-to-bytecode.js`
@@ -1224,12 +1503,19 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `encodeViewportBytecode` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
 - [ ] `createViewportChannel` in `codex/core/shared/truesight/compiler/viewportBytecode.ts`
 - [ ] `cadenceClosureWeight` in `codex/core/speaking/prosody.js`
+- [ ] `CHEMICAL_REACTIONS` in `codex/core/spellweave-compendium/chemical-reactions.registry.js`
+- [ ] `getCompendiumEntry` in `codex/core/spellweave-compendium/compendium.registry.js`
+- [ ] `listCompendiumEntriesByTier` in `codex/core/spellweave-compendium/compendium.registry.js`
+- [ ] `getCompendiumRegistryMeta` in `codex/core/spellweave-compendium/compendium.registry.js`
+- [ ] `TIER_WEIGHTS` in `codex/core/spellweave-compendium/compendium.schema.js`
+- [ ] `COMPENDIUM_MULTIPLIER_MIN` in `codex/core/spellweave-compendium/compendium.schema.js`
+- [ ] `COMPENDIUM_MULTIPLIER_MAX` in `codex/core/spellweave-compendium/compendium.schema.js`
+- [ ] `statGateFactor` in `codex/core/spellweave-compendium/compendium.stat-gate.js`
 - [ ] `getScholomanceSymbolBuff` in `codex/core/tactical.engine.js`
 - [ ] `createTutorialIslandGrid` in `codex/core/tactical.engine.js`
 - [ ] `canPlaceCard` in `codex/core/tactical.engine.js`
 - [ ] `convertCardToEntity` in `codex/core/tactical.engine.js`
 - [ ] `calculateAccuracy` in `codex/core/tactical.engine.js`
-- [ ] `hasLineOfSight` in `codex/core/tactical.engine.js`
 - [ ] `TUTORIAL_CARDS` in `codex/core/tactical.engine.js`
 - [ ] `getTutorialStepGuidance` in `codex/core/tactical.engine.js`
 - [ ] `generateBattleTooltip` in `codex/core/tactical.engine.js`
@@ -1294,7 +1580,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `BugSeverity` in `codex/server/collab/collab.schemas.js`
 - [ ] `BugSourceType` in `codex/server/collab/collab.schemas.js`
 - [ ] `IdentityPacketSchema` in `codex/server/collab/collab.schemas.js`
-- [ ] `connectToMCPViaCollabPanel` in `codex/server/collab/diagnostic.mcp.js`
 - [ ] `registerCollabMcpBridge` in `codex/server/collab/mcp-bridge.js`
 - [ ] `getCanonicalBridgeLaunchSpec` in `codex/server/collab/mcp-probe.js`
 - [ ] `classifyProbeFailure` in `codex/server/collab/mcp-probe.js`
