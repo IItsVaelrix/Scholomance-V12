@@ -339,7 +339,8 @@ describe('DIV Wand & Layout System — Core & Visual Validation Laws', () => {
 
       const previewRoot = container.querySelector('.dw-preview-root');
       expect(previewRoot).toBeInTheDocument();
-      previewRoot.getBoundingClientRect = vi.fn().mockReturnValue({
+      const previewRootInner = previewRoot.firstChild;
+      previewRootInner.getBoundingClientRect = vi.fn().mockReturnValue({
         left: 100,
         top: 100,
         width: 800,

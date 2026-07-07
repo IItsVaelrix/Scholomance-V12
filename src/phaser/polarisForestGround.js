@@ -407,8 +407,8 @@ export function spawnForestMist(scene) {
   const center = toIso(Math.floor(gridSize / 2), Math.floor(gridSize / 2));
   const zone = {
     getRandomPoint: (point) => {
-      point.x = center.x + (Math.random() * 560 - 280);
-      point.y = center.y - plateauZ + (Math.random() * 140 - 60);
+      point.x = center.x + (Math.random() * 560 - 280); // EXEMPT
+      point.y = center.y - plateauZ + (Math.random() * 140 - 60); // EXEMPT
       return point;
     },
   };

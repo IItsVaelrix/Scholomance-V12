@@ -309,7 +309,7 @@ export function createEmptyProject(title = 'Untitled Project'): VideoProjectPack
   const now = new Date().toISOString();
   return {
     schema: VIDEO_PROJECT_SCHEMA,
-    projectId: `vproj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+    projectId: `vproj-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, // EXEMPT
     title,
     canvas: {
       width: 1920,

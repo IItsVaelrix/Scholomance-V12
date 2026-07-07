@@ -590,17 +590,6 @@ const RitualPredictionTooltip = ({
         && !antonyms.some((r) => normalizeWord(r) === n);
     }).slice(0, 8);
 
-  const { rhymes, slantRhymes, synonyms, antonyms } = cleanWordLists(activeWord, lex);
-  const similes = corpusData.semantic
-    .map((r) => (typeof r === 'string' ? r : r?.word))
-    .filter((w) => {
-      const n = normalizeWord(w);
-      return n && n !== normalizeWord(activeWord)
-        && !rhymes.some((r) => normalizeWord(r) === n)
-        && !slantRhymes.some((r) => normalizeWord(r) === n)
-        && !synonyms.some((r) => normalizeWord(r) === n)
-        && !antonyms.some((r) => normalizeWord(r) === n);
-    }).slice(0, 8);
 
   const canTransmute = typeof onTransmute === 'function' && rootWord && normalizeWord(activeWord) !== normalizeWord(rootWord);
 

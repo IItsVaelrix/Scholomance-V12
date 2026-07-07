@@ -303,7 +303,7 @@ export function canPlaceCard(cardDef, tile, context = {}) {
  * @returns {{ entity: BattlefieldEntity, tileUpdate: Partial<TacticalGridTile> }}
  */
 export function convertCardToEntity(cardDef, ownerId, tile) {
-  const id = `${cardDef.id}-${ownerId}-${tile.x}-${tile.y}-${Date.now() % 100000}`;
+  const id = `${cardDef.id}-${ownerId}-${tile.x}-${tile.y}`;
 
   const baseStats = { ...(cardDef.stats || {}) };
 

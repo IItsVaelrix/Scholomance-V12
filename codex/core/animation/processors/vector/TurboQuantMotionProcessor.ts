@@ -74,6 +74,7 @@ export const turboQuantMotionProcessor: MotionProcessor = {
     }
 
     try {
+      (state as any).ampConfig = activeAmpConfig;
       // Direct call to TurboQuant similarity function since we are already in the worker
       return (await runTurboQuantAmp(state)) as MotionWorkingState;
     } catch (err: any) {

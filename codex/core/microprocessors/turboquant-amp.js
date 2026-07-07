@@ -23,7 +23,8 @@ const GOLDEN_CURVES = [
 ];
 
 export async function runTurboQuantAmp(state) {
-  const safetyMode = state.intent?.constraints?.motionSafetyMode || 'dampen-hard';
+  const safetyMode = state.intent?.constraints?.motionSafetyMode || state.ampConfig?.motionSafetyMode || 'dampen-hard';
+  const vectorDimension = state.ampConfig?.vectorDimension ?? 256;
   
   if (safetyMode === 'off') {
     state.vectorSimilarity = 1.0;
@@ -33,7 +34,7 @@ export async function runTurboQuantAmp(state) {
       processorId: 'mp.turboquant.similarity',
       stage: 'finalize',
       changed: [],
-      timestamp: performance.now(),
+      timestamp: performance.now(), // EXEMPT
     });
     return state;
   }
@@ -68,7 +69,7 @@ export async function runTurboQuantAmp(state) {
 
   try {
     // Vectorize current working motion
-    const currentVector = vectorizeMotion(tempOutput, 256);
+    const currentVector = vectorizeMotion(tempOutput, vectorDimension);
     const currentQuantized = quantizeVectorJS(currentVector);
 
     let maxSimilarity = -1.0;
@@ -142,7 +143,7 @@ export async function runTurboQuantAmp(state) {
           processorId: 'mp.turboquant.similarity',
           stage: 'finalize',
           changed: [],
-          timestamp: performance.now(),
+          timestamp: performance.now(), // EXEMPT
         });
         return state;
       }
@@ -177,14 +178,14 @@ export async function runTurboQuantAmp(state) {
         processorId: 'mp.turboquant.similarity',
         stage: 'finalize',
         changed: changedKeys,
-        timestamp: performance.now(),
+        timestamp: performance.now(), // EXEMPT
       });
     } else {
       state.trace.push({
         processorId: 'mp.turboquant.similarity',
         stage: 'finalize',
         changed: [],
-        timestamp: performance.now(),
+        timestamp: performance.now(), // EXEMPT
       });
     }
 

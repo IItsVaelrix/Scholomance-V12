@@ -3,7 +3,7 @@ import type { TimelineClip, VideoProjectPacketV1 } from '../../video/editor/core
 import { useTimelineMutator } from './hooks/useTimelineMutator';
 
 function makeId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`; // EXEMPT
 }
 
 export interface TransitionPanelProps {

@@ -17,7 +17,7 @@ export class GraphicForgePipeline {
       pixels: null
     };
 
-    const context = { startTime: Date.now() };
+    const context = { startTime: intent.timestamp || 0 };
 
     for (const processor of this.microprocessors) {
       state = processor.run({ intent, input: state, context });

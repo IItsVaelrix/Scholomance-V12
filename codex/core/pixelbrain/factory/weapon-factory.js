@@ -17,6 +17,7 @@
 import { expandShapeGrammar } from '../shape-grammar-engine.js';
 import { HOLYFIRE_MOTIF_AMP_SEAM } from '../holyfire-motif-amp.js';
 import { createVolumeLiftStep } from '../volume-lift-amp.js';
+import { AnatomySpecies, validateSkeletonCompleteness } from '../anatomy-registry.js';
 
 const holyPaladinGrammar = {
   id: 'weapon.sword.holy-paladin-v1',
@@ -98,9 +99,15 @@ function requiredSeamForPickaxe(req, spec) {
 
 export function forgeWeapon(spec, skeleton) {
   if (spec.archetype === 'pickaxe') {
+    const anatomyCheck = validateSkeletonCompleteness(AnatomySpecies.AMORPHOUS, skeleton);
+    if (!anatomyCheck.valid) {
+      throw new Error(`forgeWeapon failed: Missing required anatomy anchors: ${anatomyCheck.missingAnchors.join(', ')}`);
+    }
+
     const expansion = expandShapeGrammar(spec, skeleton, pickaxeGrammar);
     const routeDefinition = {
       name: 'weapon.tool.pickaxe-v1',
+      expectedAnatomy: AnatomySpecies.AMORPHOUS,
       requiredOutputs: expansion.requiredOutputs,
       requiredOutputSteps: Object.fromEntries(expansion.requiredOutputs.map((req) => [req.id, requiredStepForPickaxe(req, spec)])),
       requiredOutputSeams: Object.fromEntries(expansion.requiredOutputs.map((req) => [req.id, requiredSeamForPickaxe(req, spec)])),
@@ -169,12 +176,17 @@ export function forgeWeapon(spec, skeleton) {
   }
 
   if (spec.archetype === 'sword' && spec.parts.some((p) => p.profile === 'weapon.sword.holyfire_paladin_blade')) {
+    const anatomyCheck = validateSkeletonCompleteness(AnatomySpecies.AMORPHOUS, skeleton);
+    if (!anatomyCheck.valid) {
+      throw new Error(`forgeWeapon failed: Missing required anatomy anchors: ${anatomyCheck.missingAnchors.join(', ')}`);
+    }
     // 1. Shape Grammar Expansion
     const expansion = expandShapeGrammar(spec, skeleton, holyPaladinGrammar);
 
   // 2. Define the route (seam-checked steps)
   const routeDefinition = {
     name: 'weapon.sword.holy-paladin-v1',
+    expectedAnatomy: AnatomySpecies.AMORPHOUS,
     requiredOutputs: expansion.requiredOutputs,
     requiredOutputSteps: Object.fromEntries(expansion.requiredOutputs.map((req) => {
       if (req.kind === 'heraldryCells') return [req.id, 'HeraldryAMP'];
@@ -286,6 +298,7 @@ export function forgeWeapon(spec, skeleton) {
   return {
     routeDefinition: {
       name: `weapon.${spec.archetype || 'generic'}`,
+      expectedAnatomy: AnatomySpecies.AMORPHOUS,
       requiredOutputs: [],
       steps: []
     },

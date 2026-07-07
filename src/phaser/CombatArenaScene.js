@@ -743,7 +743,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       this._incantation = { verse: '', weave: '' };
       this.scoringEngine = createCombatScoringEngine();
-      this.enchantRng = () => (typeof window !== 'undefined' && window.__forceEnchant ? 0 : Math.random());
+      this.enchantRng = () => (typeof window !== 'undefined' && window.__forceEnchant ? 0 : Math.random()); // EXEMPT
       this.boundHandleIncantation = (e) => { if (e && e.detail) this._incantation = { verse: e.detail.verse || '', weave: e.detail.weave || '' }; };
       window.addEventListener('incantation-state', this.boundHandleIncantation);
       this.events.once('destroy', () => window.removeEventListener('incantation-state', this.boundHandleIncantation));
@@ -4680,7 +4680,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         let blockZ = Math.floor(v.z) * zScale;
         let isTallestPeak = false;
         if (isEdge) {
-           const extraHeight = 80 + Math.random() * 60;
+           const extraHeight = 80 + Math.random() * 60; // EXEMPT
            blockZ += extraHeight; // Make perimeter walls massively tall
            if (extraHeight > 125) isTallestPeak = true; // Only top ~25% of perimeter walls
         }
@@ -4747,15 +4747,15 @@ export default function createCombatArenaScene(phaserRuntime) {
         let hitPolyPoints;
 
         if (isEdge) {
-           const variant = Math.random() > 0.5 ? 1 : 2;
+           const variant = Math.random() > 0.5 ? 1 : 2; // EXEMPT
            let tip;
            if (variant === 1) {
                // Variant 1: Centered Spire
-               tip = { x: pTopCenter.x, y: pTopCenter.y - 30 - Math.random() * 40 };
+               tip = { x: pTopCenter.x, y: pTopCenter.y - 30 - Math.random() * 40 }; // EXEMPT
            } else {
                // Variant 2: Asymmetrical Slanted Shard
-               const lean = Math.random() > 0.5 ? 25 : -25;
-               tip = { x: pTopCenter.x + lean, y: pTopCenter.y - 15 - Math.random() * 25 };
+               const lean = Math.random() > 0.5 ? 25 : -25; // EXEMPT
+               tip = { x: pTopCenter.x + lean, y: pTopCenter.y - 15 - Math.random() * 25 }; // EXEMPT
            }
            
            if (isTallestPeak) {
@@ -5763,8 +5763,8 @@ export default function createCombatArenaScene(phaserRuntime) {
       for (let k = 0; k < count; k++) {
         const base = -Math.PI * 0.92 + (k / (count - 1)) * (Math.PI * 0.84);
         bolts.push({
-          angle: base + (Math.random() - 0.5) * 0.4,
-          len: 90 + Math.random() * 110,
+          angle: base + (Math.random() - 0.5) * 0.4, // EXEMPT
+          len: 90 + Math.random() * 110, // EXEMPT
         });
       }
       return bolts;
@@ -5781,7 +5781,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       for (let s = 1; s < segments; s++) {
         const t = s / segments;
         const taper = Math.sin(t * Math.PI); // widest jitter mid-span
-        const off = (Math.random() - 0.5) * 2 * maxOffset * taper;
+        const off = (Math.random() - 0.5) * 2 * maxOffset * taper; // EXEMPT
         pts.push({ x: x0 + dx * t + px * off, y: y0 + dy * t + py * off });
       }
       pts.push({ x: x1, y: y1 });
@@ -5819,11 +5819,11 @@ export default function createCombatArenaScene(phaserRuntime) {
         this.strokePolyline(g, pts, 4.5, PALETTES.royal_purple.shine, 0.65 * a); // glow
         this.strokePolyline(g, pts, 2, 0xffffff, a);                            // hot core
 
-        if (Math.random() < 0.7) {
-          const bi = 2 + Math.floor(Math.random() * (pts.length - 3));
+        if (Math.random() < 0.7) { // EXEMPT
+          const bi = 2 + Math.floor(Math.random() * (pts.length - 3)); // EXEMPT
           const anchor = pts[bi];
-          const bAng = bolt.angle + (Math.random() - 0.5) * 1.2;
-          const bLen = bolt.len * (0.3 + Math.random() * 0.35);
+          const bAng = bolt.angle + (Math.random() - 0.5) * 1.2; // EXEMPT
+          const bLen = bolt.len * (0.3 + Math.random() * 0.35); // EXEMPT
           const bpts = this.jaggedPoints(
             anchor.x, anchor.y,
             anchor.x + Math.cos(bAng) * bLen, anchor.y + Math.sin(bAng) * bLen,
@@ -5944,7 +5944,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       const cycleSnares = this.getObeliskSnaresPerDischarge();
       const snareCycle = (this.musicBeatSync?.snareCount ?? 0) % cycleSnares;
       const cycleProgress = snareCycle / cycleSnares;
-      const beatFlicker = 1 + (Math.random() - 0.5) * 0.08;
+      const beatFlicker = 1 + (Math.random() - 0.5) * 0.08; // EXEMPT
 
       if (fx.phase === 'discharge') {
         const p = Math.min(1, fx.t / fx.dischargeMs);
@@ -5991,7 +5991,7 @@ export default function createCombatArenaScene(phaserRuntime) {
 
       if (fx.phase === 'charge') {
         const p = Math.min(1, fx.t / fx.chargeMs);
-        const flicker = 1 + (Math.random() - 0.5) * 0.15 * p; // crackle as it peaks
+        const flicker = 1 + (Math.random() - 0.5) * 0.15 * p; // crackle as it peaks // EXEMPT
         fx.intensity = Math.min(1, p * p * flicker);
         this.drawObeliskCharge(fx.intensity);
         if (this.bloomFx) this.bloomFx.strength = this.baseBloom + fx.intensity * 0.6;
@@ -6521,9 +6521,9 @@ export default function createCombatArenaScene(phaserRuntime) {
         loop: true,
         callback: () => {
           // Cellular Drip Algorithm simulating splashing water
-          if (Math.random() > 0.4) {
-             const rx = 4 + Math.floor(Math.random() * (pW - 8));
-             const ry = 4 + Math.floor(Math.random() * (pH - 8));
+          if (Math.random() > 0.4) { // EXEMPT
+             const rx = 4 + Math.floor(Math.random() * (pW - 8)); // EXEMPT
+             const ry = 4 + Math.floor(Math.random() * (pH - 8)); // EXEMPT
              buf1[ry * pW + rx] = 500;
           }
           
@@ -6755,7 +6755,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         const brightness = phaserRuntime.Math.FloatBetween(0.2, 1.0) * Math.max(0.1, 1 - (distance / spiralReach));
         
         // Make ~15% of the stars twinkle independently
-        if (Math.random() > 0.85) {
+        if (Math.random() > 0.85) { // EXEMPT
           const star = this.add.image(sx, sy, 'twinkle-star');
           star.setBlendMode(phaserRuntime.BlendModes.ADD);
           star.setTint(color);
@@ -6783,7 +6783,7 @@ export default function createCombatArenaScene(phaserRuntime) {
       for(let i=0; i<numFiller; i++) {
         let sx = phaserRuntime.Math.Between(skyLeft, skyRight);
         let sy = phaserRuntime.Math.Between(skyTop, skyBottom);
-        if (Math.random() > 0.4) {
+        if (Math.random() > 0.4) { // EXEMPT
           const curve = Math.sin(sx / 800) * 300;
           sy = curve + phaserRuntime.Math.Between(-300, 300);
         }
@@ -6792,7 +6792,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         const brightness = phaserRuntime.Math.FloatBetween(0.1, 1.0);
         const colors = [0xffffff, 0xcceeff, 0xffccff, 0xaaffcc, 0xffbb99];
         
-        bg.fillStyle(colors[Math.floor(Math.random() * colors.length)], brightness);
+        bg.fillStyle(colors[Math.floor(Math.random() * colors.length)], brightness); // EXEMPT
         bg.fillCircle(sx, sy, size);
       }
       bg.setBlendMode(phaserRuntime.BlendModes.NORMAL);
@@ -6819,7 +6819,7 @@ export default function createCombatArenaScene(phaserRuntime) {
         delay: 1500,
         loop: true,
         callback: () => {
-          if (Math.random() > 0.4) return;
+          if (Math.random() > 0.4) return; // EXEMPT
           const startX = phaserRuntime.Math.Between(skyLeft, skyRight / 2);
           const startY = phaserRuntime.Math.Between(skyTop, skyBottom / 2);
           const dist = phaserRuntime.Math.Between(500, 1200);

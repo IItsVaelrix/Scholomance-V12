@@ -15,6 +15,7 @@
  * through `executeRoute` because it must mutate `results.voxel.volume`.
  */
 import { expandShapeGrammar } from '../shape-grammar-engine.js';
+import { AnatomySpecies, validateSkeletonCompleteness } from '../anatomy-registry.js';
 
 const chestplateGrammar = {
   id: 'armor.chestplate.sovereign-v1',
@@ -48,10 +49,16 @@ const chestplateGrammar = {
 };
 
 export function forgeArmor(spec, skeleton) {
+  const anatomyCheck = validateSkeletonCompleteness(AnatomySpecies.HUMANOID, skeleton);
+  if (!anatomyCheck.valid) {
+    throw new Error(`forgeArmor failed: Missing required anatomy anchors for HUMANOID: ${anatomyCheck.missingAnchors.join(', ')}`);
+  }
+
   const expansion = expandShapeGrammar(spec, skeleton, chestplateGrammar);
 
   const routeDefinition = {
     name: 'armor.chestplate.sovereign-v1',
+    expectedAnatomy: AnatomySpecies.HUMANOID,
     requiredOutputs: expansion.requiredOutputs,
     requiredOutputSteps: Object.fromEntries(expansion.requiredOutputs.map((req) => {
       if (req.kind === 'heraldryCells') return [req.id, 'HeraldryAMP'];

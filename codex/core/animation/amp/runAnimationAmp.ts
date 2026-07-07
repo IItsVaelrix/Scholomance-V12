@@ -28,8 +28,10 @@ const ampState: AmpState = {
 let workerInstance: Worker | null = null;
 let msgIdCounter = 0;
 const callbacks = new Map<number, { resolve: (res: ResolvedMotionOutput) => void, reject: (err: any) => void }>();
+const isWorkerAvailable = typeof Worker !== 'undefined' && typeof window !== 'undefined';
 
-function getWorker(): Worker {
+function getWorker(): Worker | null {
+  if (!isWorkerAvailable) return null;
   if (!workerInstance) {
     workerInstance = new AmpWorker();
     workerInstance.onmessage = (e) => {
@@ -62,10 +64,14 @@ export function initAnimationAmp(config: Partial<AnimationAmpConfig> = {}): void
   setActiveAmpConfig(ampState.config);
   
   const worker = getWorker();
-  worker.postMessage({ id: msgIdCounter++, type: 'INIT', payload: ampState.config });
+  if (worker) {
+    worker.postMessage({ id: msgIdCounter++, type: 'INIT', payload: ampState.config });
+    console.log('[AnimationAMP] Initialized with config via WebWorker:', ampState.config);
+  } else {
+    console.log('[AnimationAMP] Initialized with config via Local Pipeline:', ampState.config);
+  }
   
   ampState.isRunning = true;
-  console.log('[AnimationAMP] Initialized with config via WebWorker:', ampState.config);
 }
 
 export async function runAnimationAmp(intent: AnimationIntent): Promise<ResolvedMotionOutput> {
@@ -74,15 +80,32 @@ export async function runAnimationAmp(intent: AnimationIntent): Promise<Resolved
     initAnimationAmp();
   }
   
-  return new Promise((resolve, reject) => {
-    const id = msgIdCounter++;
-    callbacks.set(id, { resolve: (output) => {
+  const worker = getWorker();
+  
+  if (worker) {
+    return new Promise((resolve, reject) => {
+      const id = msgIdCounter++;
+      callbacks.set(id, { resolve: (output) => {
+        ampState.activeAnimations.set(intent.targetId, output);
+        resolve(output);
+      }, reject });
+      
+      worker.postMessage({ id, type: 'RUN_INTENT', payload: intent });
+    });
+  } else {
+    // Fallback to local synchronous processing for tests
+    const { processIntentCore } = await import('./pipeline.ts');
+    try {
+      const { output, trace } = await processIntentCore(intent, ampState.config);
+      if (ampState.config.debug && trace) {
+        console.log('[AnimationAMP] Motion trace:', trace);
+      }
       ampState.activeAnimations.set(intent.targetId, output);
-      resolve(output);
-    }, reject });
-    
-    getWorker().postMessage({ id, type: 'RUN_INTENT', payload: intent });
-  });
+      return output;
+    } catch (e: any) {
+      throw new Error(e.message || 'Unknown AMP error');
+    }
+  }
 }
 
 export function getActiveAnimation(targetId: string): ResolvedMotionOutput | undefined {

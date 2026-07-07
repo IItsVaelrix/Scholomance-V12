@@ -25,8 +25,9 @@ export function quantizeToRoles(coordinates, spec = {}) {
   
   // Initialize k-means centroids (randomly pick maxColors from unique colors)
   let centroids = [];
-  const shuffled = [...uniqueRgbList].sort(() => 0.5 - Math.random());
-  centroids = shuffled.slice(0, Math.min(maxColors, shuffled.length));
+  const sorted = [...uniqueRgbList].sort((a, b) => a[0] - b[0] || a[1] - b[1] || a[2] - b[2]);
+  const step = Math.max(1, Math.floor(sorted.length / maxColors));
+  centroids = Array.from({ length: Math.min(maxColors, sorted.length) }, (_, i) => sorted[i * step]);
 
   // K-means iterations
   const iterations = 10;

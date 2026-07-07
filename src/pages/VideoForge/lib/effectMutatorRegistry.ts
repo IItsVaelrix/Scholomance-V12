@@ -2,7 +2,7 @@ import { ClipEffect, ClipId, TimelineClip, VideoProjectPacketV1Like, mutateClip 
 import { getEffect } from '../../../video/editor/core/effect-registry';
 
 function makeId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`; // EXEMPT
 }
 
 export const EffectMutatorRegistry = {

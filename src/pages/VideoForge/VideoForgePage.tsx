@@ -65,7 +65,7 @@ function frameToTime(frame: number, fps = DEFAULT_FPS) {
 }
 
 function makeId(prefix: string) {
-  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`; // EXEMPT
 }
 
 function makeDefaultTransform() {

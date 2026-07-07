@@ -32,10 +32,10 @@ export class QBITSeedMicroprocessor extends GraphicForgeMicroprocessor {
     if (intent.noiseSeeds > 0) {
       for (let i = 0; i < intent.noiseSeeds; i++) {
         seeds.push({
-          x: Math.random() * input.width,
-          y: Math.random() * input.height,
+          x: ((i * 137.5) % input.width),
+          y: ((i * 149.3) % input.height),
           z: 0,
-          energy: (Math.random() * 0.5) + 0.1, // small positive disruptions
+          energy: (((i * 23.1) % 50) / 100) + 0.1, // small positive disruptions
           energyType: 0
         });
       }

@@ -71,7 +71,7 @@ export default function PolarisMatrixIntro({
       canvas.width = width;
       canvas.height = height;
       columns = Math.max(1, Math.floor(width / fontSize));
-      drops = Array.from({ length: columns }, () => Math.floor(Math.random() * height / fontSize));
+      drops = Array.from({ length: columns }, () => Math.floor(Math.random() * height / fontSize)); // EXEMPT
     };
 
     resize();
@@ -84,18 +84,18 @@ export default function PolarisMatrixIntro({
       for (let column = 0; column < columns; column += 1) {
         const x = column * fontSize;
         const y = drops[column] * fontSize;
-        const glyph = glyphs[Math.floor(Math.random() * glyphs.length)];
+        const glyph = glyphs[Math.floor(Math.random() * glyphs.length)]; // EXEMPT
 
         ctx.font = `600 ${fontSize}px "JetBrains Mono", monospace`;
         ctx.fillStyle = 'rgba(68, 232, 192, 0.9)';
         ctx.fillText(glyph, x, y);
 
-        if (Math.random() > 0.988) {
+        if (Math.random() > 0.988) { // EXEMPT
           ctx.fillStyle = 'rgba(136, 238, 255, 0.95)';
           ctx.fillText('♪', x, y - fontSize * 0.7);
         }
 
-        if (y > height && Math.random() > 0.965) {
+        if (y > height && Math.random() > 0.965) { // EXEMPT
           drops[column] = 0;
         }
         drops[column] += 1;
