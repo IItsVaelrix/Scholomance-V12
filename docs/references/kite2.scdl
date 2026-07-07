@@ -1,0 +1,76 @@
+asset kite_shield canvas 32x32
+
+palette {
+  steel_light = #D0D4D9
+  steel_base  = #8A9199
+  steel_dark  = #4A4E54
+  
+  blue_light  = #2C4B73
+  blue_base   = #1B3152
+  blue_dark   = #0F1C33
+  
+  gold_light  = #F2D272
+  gold_base   = #CFA336
+  gold_dark   = #8C6A1B
+}
+
+part rim material voidsteel {
+  symmetry x
+  # Outer rim
+  polygon 16 1   2 4   2 18   16 31   16 1 steel_dark
+  polygon 16 2   3 5   3 17   16 30   16 2 steel_base
+  polygon 16 2   4 6   4 16   16 29   16 2 steel_light
+}
+
+part face material sapphire {
+  symmetry x
+  # Inner blue face
+  polygon 16 3   5 7   5 15   16 28   16 3 blue_dark
+  polygon 16 4   6 8   6 14   16 27   16 4 blue_base
+  
+  # Wood grain lines
+  line 13 5 13 25 blue_light
+  line 10 7 10 20 blue_light
+  line 8 8 8 16 blue_light
+  
+  line 14 5 14 26 blue_dark
+  line 11 6 11 21 blue_dark
+  line 7 9 7 15 blue_dark
+}
+
+part cross material gold {
+  symmetry x
+  
+  # Base cross structure (vertical width 4, horizontal width 2)
+  rect 14 6 2 20 gold_base
+  rect 4 14 12 2 gold_base
+  
+  # Diamond tips
+  polygon 16 3   11 7   16 7   16 3 gold_base
+  polygon 16 29  11 25  16 25  16 29 gold_base
+  polygon 2 15   6 12   6 18   2 15 gold_base
+  
+  # Highlights
+  rect 14 6 1 20 gold_light
+  rect 4 14 12 1 gold_light
+  
+  polygon 16 3   12 7   16 7   16 3 gold_light
+  polygon 16 29  12 25  16 25  16 29 gold_light
+  polygon 2 15   6 13   6 17   2 15 gold_light
+  
+  # Core dark bevel lines
+  rect 15 7 1 18 gold_dark
+  rect 6 15 10 1 gold_dark
+}
+
+part rivets material silver {
+  symmetry x
+  # Rivets along the rim
+  cell 4 5 steel_light
+  cell 15 3 steel_light
+  cell 3 12 steel_light
+  cell 7 22 steel_light
+  cell 12 28 steel_light
+}
+
+export json png
