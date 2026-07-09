@@ -11,7 +11,10 @@ use nih_plug::prelude::*;
 #[cfg(feature = "gui")]
 mod editor;
 
+mod meter;
 mod presets;
+
+use meter::MeterSnapshot;
 
 #[cfg(feature = "gui")]
 use nih_plug_vizia::ViziaState;
@@ -25,6 +28,7 @@ struct ManifoldPlugin {
     core: ManifoldCore,
     scratch_l: Vec<f32>,
     scratch_r: Vec<f32>,
+    meter: std::sync::Arc<MeterSnapshot>,
 }
 
 #[derive(Params)]
@@ -74,6 +78,7 @@ impl Default for ManifoldPlugin {
             core: ManifoldCore::new(),
             scratch_l: Vec::new(),
             scratch_r: Vec::new(),
+            meter: MeterSnapshot::new(),
         }
     }
 }
@@ -174,6 +179,10 @@ impl Plugin for ManifoldPlugin {
             &mut out_r[..n],
             ctx,
         );
+
+        let peak_l = out_l[..n].iter().fold(0.0_f32, |a, s| a.max(s.abs()));
+        let peak_r = out_r[..n].iter().fold(0.0_f32, |a, s| a.max(s.abs()));
+        self.meter.publish(peak_l, peak_r, (peak_l + peak_r) * 0.5);
 
         ProcessStatus::Normal
     }
