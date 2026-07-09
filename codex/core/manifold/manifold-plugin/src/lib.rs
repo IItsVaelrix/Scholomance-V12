@@ -8,6 +8,12 @@ use std::sync::Arc;
 use manifold_core::{BytecodeProgram, ManifoldCore, PrepareConfig, ProcessContext as MfCtx};
 use nih_plug::prelude::*;
 
+#[cfg(feature = "gui")]
+mod editor;
+
+#[cfg(feature = "gui")]
+use nih_plug_vizia::ViziaState;
+
 /// One factory preset is embedded so the plugin makes sound out of the box.
 const FACTORY_BYTECODE: &str =
     include_str!("../../manifold-core/tests/fixtures/void-glass.bytecode.json");
@@ -33,6 +39,10 @@ struct ManifoldPluginParams {
     freeze: BoolParam,
     #[id = "panic"]
     panic: BoolParam,
+
+    #[cfg(feature = "gui")]
+    #[persist = "editor-state"]
+    editor_state: std::sync::Arc<ViziaState>,
 }
 
 impl Default for ManifoldPluginParams {
@@ -48,6 +58,9 @@ impl Default for ManifoldPluginParams {
             stability: FloatParam::new("Stability", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
             freeze: BoolParam::new("Freeze", false),
             panic: BoolParam::new("Panic", false),
+
+            #[cfg(feature = "gui")]
+            editor_state: editor::default_state(),
         }
     }
 }
@@ -85,6 +98,11 @@ impl Plugin for ManifoldPlugin {
 
     fn params(&self) -> Arc<dyn Params> {
         self.params.clone()
+    }
+
+    #[cfg(feature = "gui")]
+    fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
+        editor::create_editor(self.params.editor_state.clone(), self.params.clone())
     }
 
     fn initialize(
