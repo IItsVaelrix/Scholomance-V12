@@ -154,3 +154,7 @@ generated-assets/
 public/generated-assets/
 public/assets/
 *-aseprite.aseprite
+
+# Purged oversized artifacts — never commit DB backups or downloaded media (GitHub 100MB limit)
+*.sqlite.bak.*
+divtube_downloader/downloads/
