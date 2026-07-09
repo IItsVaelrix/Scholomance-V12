@@ -158,9 +158,10 @@ impl Plugin for ManifoldPlugin {
             return ProcessStatus::Normal;
         }
 
-        // Preset hot-swap: consume the editor's request exactly once. The clone
-        // allocates on the audio thread — accepted tradeoff for a user-initiated
-        // preset change (brief click-time glitch beats cross-thread program plumbing).
+        // Preset hot-swap: consume the editor's request exactly once. load_program()
+        // re-compiles the program and re-prepares the full DSP graph, all allocating
+        // synchronously on the audio thread — an accepted, user-initiated tradeoff
+        // (brief click-time glitch on preset change beats cross-thread program plumbing).
         if let Some(i) = presets::take_pending(&self.pending_preset) {
             if let Some(program) = self.programs.get(i) {
                 let _ = self.core.load_program(program.clone());
