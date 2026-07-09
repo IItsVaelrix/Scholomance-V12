@@ -1,0 +1,84 @@
+/* Cochlear Manifold — GrimDesign token stylesheet.
+   Colors/glow/timing are DERIVED (spec §2), never chosen. vizia CSS subset. */
+:root {
+    --grim-shell:  #e11d74;  /* hsl(340 85% 51%) WILL */
+    --grim-freeze: #2b31e0;  /* hsl(239 82% 53%) ALCHEMY */
+    --grim-panic:  #ef4a1f;  /* hsl(12 85% 51%) WILL */
+    --grim-react:  #17d97a;  /* hsl(145 80% 47%) NECROMANCY */
+    --preset-void-glass:  #e30b0b;
+    --preset-ice-circuit: #86e02a;
+    --preset-ash-lung:    #e30b0b;
+    --preset-cathedral-of-teeth: #c026e6;
+    --preset-substrate-maw:      #e6801a;
+
+    --surface-0: #0b0e10;
+    --surface-1: #12171a;
+    --ink-hi:  #f4efe1;
+    --ink-lo:  #a9a599;
+    --focus:   #6fd9f2;
+}
+
+window { background-color: var(--surface-0); }
+
+.panel-card {
+    background-color: var(--surface-1);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #23282c;
+    child-space: 10px;
+}
+.panel-card-title {
+    color: var(--ink-lo);
+    font-size: 12px;
+}
+
+.knob { width: 74px; height: 92px; }
+.knob-label { color: var(--ink-lo); font-size: 11px; }
+.knob-readout { color: var(--ink-hi); font-family: monospace; font-size: 12px; }
+
+.toggle-tile {
+    background-color: var(--surface-1);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: var(--grim-freeze);
+    transition: border-color 300ms;
+}
+.toggle-tile:checked { background-color: var(--grim-freeze); }
+
+.action-button {
+    background-color: var(--surface-1);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: var(--grim-panic);
+    color: var(--grim-panic);
+    transition: background-color 360ms;
+}
+.action-button:active { background-color: var(--grim-panic); color: var(--ink-hi); }
+
+.preset-chip {
+    background-color: var(--surface-1);
+    border-radius: 6px;
+    border-width: 1px;
+    color: var(--ink-hi);
+    transition: border-color 360ms;
+}
+.preset-chip:checked { border-width: 2px; }
+
+.meter { background-color: #05070a; border-radius: 3px; }
+.meter-fill { background-color: var(--grim-react); }
+
+.manifold-map {
+    background-color: #05070a;
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: #1c2226;
+}
+.manifold-zone { border-radius: 5px; background-color: #0a1a14; }
+
+*:focus-visible { border-color: var(--focus); border-width: 2px; }
+
+/* Accessibility roots (applied to the editor root by UiState::root_classes). */
+.contrast-high .panel-card-title,
+.contrast-high .knob-label { color: var(--ink-hi); }
+.contrast-high .panel-card { border-width: 2px; }
+.motion-off * { transition-duration: 0ms; }

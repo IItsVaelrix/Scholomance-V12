@@ -19,12 +19,33 @@ pub fn default_state() -> Arc<ViziaState> {
     ViziaState::new(|| (WINDOW_W, WINDOW_H))
 }
 
+pub const THEME_CSS: &str = include_str!("theme.css");
+
 pub fn create_editor(
     editor_state: Arc<ViziaState>,
     params: Arc<ManifoldPluginParams>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _gui_cx| {
         let _ = &params;
+        cx.add_stylesheet(THEME_CSS).ok();
         Label::new(cx, "COCHLEAR MANIFOLD");
     })
+}
+
+#[cfg(test)]
+mod theme_tests {
+    use super::THEME_CSS;
+
+    #[test]
+    fn stylesheet_declares_required_tokens() {
+        for token in [
+            "--grim-shell", "--grim-freeze", "--grim-panic", "--grim-react",
+            "--surface-0", "--ink-hi", "--focus",
+            ".panel-card", ".knob", ".toggle-tile", ".action-button",
+            ".preset-chip", ".meter", ".manifold-map",
+            ".contrast-high", ".motion-off",
+        ] {
+            assert!(THEME_CSS.contains(token), "theme.css missing `{token}`");
+        }
+    }
 }
