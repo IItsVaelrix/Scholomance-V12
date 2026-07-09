@@ -1,13 +1,13 @@
 //! vizia editor for the Cochlear Manifold plugin. All GUI code is gated behind
 //! the `gui` feature so the lean VST3/CLAP validator build pulls no X11/GL deps.
 
+pub mod kit;
 pub mod state;
 pub mod tokens;
 
 use std::sync::Arc;
 
 use nih_plug::prelude::Editor;
-use nih_plug_vizia::vizia::prelude::*;
 use nih_plug_vizia::{create_vizia_editor, ViziaState, ViziaTheming};
 
 use crate::ManifoldPluginParams;
@@ -28,7 +28,7 @@ pub fn create_editor(
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _gui_cx| {
         let _ = &params;
         cx.add_stylesheet(THEME_CSS).ok();
-        Label::new(cx, "COCHLEAR MANIFOLD");
+        kit::panel_card::PanelCard::new(cx, "TEST", |_| {});
     })
 }
 
