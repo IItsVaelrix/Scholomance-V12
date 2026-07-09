@@ -28,6 +28,15 @@ pub fn by_name(name: &str) -> Option<&'static Preset> {
     PRESETS.iter().find(|p| p.name == name)
 }
 
+use std::sync::atomic::{AtomicI32, Ordering};
+
+/// Audio↔GUI preset-swap handshake: the editor stores a PRESETS index, the
+/// audio thread consumes it exactly once per buffer. -1 means "nothing pending".
+pub fn take_pending(cell: &AtomicI32) -> Option<usize> {
+    let v = cell.swap(-1, Ordering::AcqRel);
+    if v >= 0 { Some(v as usize) } else { None }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -63,5 +72,24 @@ mod tests {
     fn lookup_by_name() {
         assert!(by_name("substrate-maw").is_some());
         assert!(by_name("nope").is_none());
+    }
+
+    #[test]
+    fn take_pending_consumes_once() {
+        use std::sync::atomic::AtomicI32;
+        let cell = AtomicI32::new(-1);
+        assert_eq!(take_pending(&cell), None);
+        cell.store(3, std::sync::atomic::Ordering::Release);
+        assert_eq!(take_pending(&cell), Some(3));
+        assert_eq!(take_pending(&cell), None); // consumed — resets to -1
+    }
+
+    #[test]
+    fn take_pending_ignores_negative_garbage() {
+        use std::sync::atomic::AtomicI32;
+        let cell = AtomicI32::new(-7);
+        assert_eq!(take_pending(&cell), None);
+        // and it still resets the cell to -1 so garbage doesn't persist
+        assert_eq!(cell.load(std::sync::atomic::Ordering::Acquire), -1);
     }
 }

@@ -19,16 +19,16 @@ use meter::MeterSnapshot;
 #[cfg(feature = "gui")]
 use nih_plug_vizia::ViziaState;
 
-/// One factory preset is embedded so the plugin makes sound out of the box.
-const FACTORY_BYTECODE: &str =
-    include_str!("../../manifold-core/tests/fixtures/void-glass.bytecode.json");
-
 struct ManifoldPlugin {
     params: Arc<ManifoldPluginParams>,
     core: ManifoldCore,
     scratch_l: Vec<f32>,
     scratch_r: Vec<f32>,
     meter: std::sync::Arc<MeterSnapshot>,
+    /// Factory programs pre-parsed off the audio thread (initialize()).
+    programs: Vec<BytecodeProgram>,
+    /// PRESETS index the editor wants loaded; -1 = none. Shared with the editor (Task 13).
+    pending_preset: Arc<std::sync::atomic::AtomicI32>,
 }
 
 #[derive(Params)]
@@ -79,6 +79,8 @@ impl Default for ManifoldPlugin {
             scratch_l: Vec::new(),
             scratch_r: Vec::new(),
             meter: MeterSnapshot::new(),
+            programs: Vec::new(),
+            pending_preset: Arc::new(std::sync::atomic::AtomicI32::new(-1)),
         }
     }
 }
@@ -132,10 +134,17 @@ impl Plugin for ManifoldPlugin {
         }
         self.scratch_l = vec![0.0; max];
         self.scratch_r = vec![0.0; max];
-        match serde_json::from_str::<BytecodeProgram>(FACTORY_BYTECODE) {
-            Ok(program) => self.core.load_program(program).is_ok(),
-            Err(_) => false,
+
+        let mut programs = Vec::with_capacity(presets::PRESETS.len());
+        for preset in presets::PRESETS.iter() {
+            match serde_json::from_str::<BytecodeProgram>(preset.bytecode) {
+                Ok(program) => programs.push(program),
+                Err(_) => return false,
+            }
         }
+        self.programs = programs;
+
+        self.core.load_program(self.programs[0].clone()).is_ok()
     }
 
     fn process(
@@ -148,6 +157,16 @@ impl Plugin for ManifoldPlugin {
         if n == 0 {
             return ProcessStatus::Normal;
         }
+
+        // Preset hot-swap: consume the editor's request exactly once. The clone
+        // allocates on the audio thread — accepted tradeoff for a user-initiated
+        // preset change (brief click-time glitch beats cross-thread program plumbing).
+        if let Some(i) = presets::take_pending(&self.pending_preset) {
+            if let Some(program) = self.programs.get(i) {
+                let _ = self.core.load_program(program.clone());
+            }
+        }
+
         // Grow scratch if the host ever exceeds the reported max block.
         if self.scratch_l.len() < n {
             self.scratch_l.resize(n, 0.0);
