@@ -1,0 +1,11 @@
+# Cochlear Manifold Rust workspace (sub-project 2).
+# `manifold-core` is the pure DSP engine; `manifold-wasm` is its thin browser
+# wrapper. The pre-existing `rust-kernel/` skeleton is intentionally excluded.
+[workspace]
+resolver = "2"
+members = ["manifold-core", "manifold-wasm"]
+exclude = ["rust-kernel"]
+
+[profile.release]
+opt-level = "s"
+lto = true

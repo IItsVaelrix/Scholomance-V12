@@ -4,6 +4,8 @@ use crate::error::ProgramError;
 
 pub const BYTECODE_SCHEMA: &str = "manifold.bytecode.v1";
 pub const ABI_MAJOR: u64 = 0;
+/// Semver of this engine's runtime ABI. Wrappers surface this to hosts.
+pub const KERNEL_SEMVER: &str = "0.1.0";
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]

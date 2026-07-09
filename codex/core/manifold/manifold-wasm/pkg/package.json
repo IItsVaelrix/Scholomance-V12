@@ -1,0 +1,16 @@
+{
+  "name": "manifold-wasm",
+  "type": "module",
+  "description": "Thin wasm-bindgen browser wrapper over manifold-core.",
+  "version": "0.1.0",
+  "files": [
+    "manifold_wasm_bg.wasm",
+    "manifold_wasm.js",
+    "manifold_wasm.d.ts"
+  ],
+  "main": "manifold_wasm.js",
+  "types": "manifold_wasm.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}
