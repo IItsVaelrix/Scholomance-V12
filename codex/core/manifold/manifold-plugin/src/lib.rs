@@ -11,6 +11,8 @@ use nih_plug::prelude::*;
 #[cfg(feature = "gui")]
 mod editor;
 
+mod presets;
+
 #[cfg(feature = "gui")]
 use nih_plug_vizia::ViziaState;
 
