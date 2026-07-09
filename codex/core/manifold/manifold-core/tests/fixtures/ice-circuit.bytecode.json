@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "manifold.bytecode.v1",
+  "kernelSemver": "0.1.0",
+  "contentHash": 1355917232,
+  "id": "MANIFOLD-50D1A7B0",
+  "name": "IceCircuit",
+  "sampleRatePolicy": "adaptive",
+  "instructions": [
+    {
+      "op": "MATCH_EVENT",
+      "event": "high_crunch",
+      "threshold": 0.57
+    },
+    {
+      "op": "TRIGGER_SPRAY",
+      "division": "1/64",
+      "density": 0.62,
+      "durationMs": 140
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "ceiling.scatter",
+      "value": 0.88,
+      "durationMs": 30
+    },
+    {
+      "op": "CLAMP_FEEDBACK",
+      "node": "ceiling.feedback",
+      "max": 0.56
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "sub_transient",
+      "threshold": 0.6
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "left_wall.absorption.low",
+      "value": 0.72,
+      "durationMs": 80
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "harmonic_sustain",
+      "threshold": 0.56
+    },
+    {
+      "op": "BLOOM_HARMONIC",
+      "amount": 0.42,
+      "durationMs": 480
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "right_wall.tail.width",
+      "value": 0.68,
+      "durationMs": 260
+    }
+  ],
+  "safety": {
+    "maxFeedback": 0.58,
+    "maxFilterQ": 12,
+    "maxSprayDensity": 0.62,
+    "maxDelayMs": 750,
+    "minRampMs": 20,
+    "cpuBudgetClass": "medium",
+    "requiresLimiter": true,
+    "hasUnsafeCycles": false
+  },
+  "graph": {
+    "zones": [
+      {
+        "id": "ceiling",
+        "material": "ice",
+        "listensTo": "high_crunch",
+        "routes": [
+          "ceiling.wall_filter_bank",
+          "ceiling.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "left_wall",
+        "material": "copper",
+        "listensTo": "sub_transient",
+        "routes": [
+          "left_wall.wall_filter_bank",
+          "left_wall.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "right_wall",
+        "material": "ice",
+        "listensTo": "harmonic_sustain",
+        "routes": [
+          "right_wall.wall_filter_bank",
+          "right_wall.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      }
+    ],
+    "nodes": [
+      "input_splitter",
+      "early_reflection",
+      "fdn_core",
+      "wall_filter_bank",
+      "micro_delay_spray",
+      "resonator_bloom",
+      "modulation",
+      "safety_limiter",
+      "output_renderer"
+    ]
+  }
+}

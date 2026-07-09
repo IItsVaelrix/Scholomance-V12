@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "manifold.bytecode.v1",
+  "kernelSemver": "0.1.0",
+  "contentHash": 3425010933,
+  "id": "MANIFOLD-CC2584F5",
+  "name": "VoidGlass",
+  "sampleRatePolicy": "adaptive",
+  "instructions": [
+    {
+      "op": "MATCH_EVENT",
+      "event": "sub_transient",
+      "threshold": 0.65
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "floor.absorption.low",
+      "value": 0.95,
+      "durationMs": 60
+    },
+    {
+      "op": "SCALE_PARAM",
+      "target": "floor.decay.low",
+      "factor": 0.4,
+      "durationMs": 100
+    },
+    {
+      "op": "CLAMP_FEEDBACK",
+      "node": "floor.feedback",
+      "max": 0.58
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "high_crunch",
+      "threshold": 0.55
+    },
+    {
+      "op": "TRIGGER_SPRAY",
+      "division": "1/64",
+      "density": 0.7,
+      "durationMs": 180
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "ceiling.scatter",
+      "value": 0.92,
+      "durationMs": 30
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "harmonic_sustain",
+      "threshold": 0.5
+    },
+    {
+      "op": "BLOOM_HARMONIC",
+      "amount": 0.45,
+      "durationMs": 600
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "rear_wall.tail.width",
+      "value": 0.65,
+      "durationMs": 300
+    }
+  ],
+  "safety": {
+    "maxFeedback": 0.58,
+    "maxFilterQ": 12,
+    "maxSprayDensity": 0.7,
+    "maxDelayMs": 750,
+    "minRampMs": 20,
+    "cpuBudgetClass": "medium",
+    "requiresLimiter": true,
+    "hasUnsafeCycles": false
+  },
+  "graph": {
+    "zones": [
+      {
+        "id": "floor",
+        "material": "ash",
+        "listensTo": "sub_transient",
+        "routes": [
+          "floor.wall_filter_bank",
+          "floor.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "ceiling",
+        "material": "crystal",
+        "listensTo": "high_crunch",
+        "routes": [
+          "ceiling.wall_filter_bank",
+          "ceiling.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "rear_wall",
+        "material": "crystal",
+        "listensTo": "harmonic_sustain",
+        "routes": [
+          "rear_wall.wall_filter_bank",
+          "rear_wall.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      }
+    ],
+    "nodes": [
+      "input_splitter",
+      "early_reflection",
+      "fdn_core",
+      "wall_filter_bank",
+      "micro_delay_spray",
+      "resonator_bloom",
+      "modulation",
+      "safety_limiter",
+      "output_renderer"
+    ]
+  }
+}

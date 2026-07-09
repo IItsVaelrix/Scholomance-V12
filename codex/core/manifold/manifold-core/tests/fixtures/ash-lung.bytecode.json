@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "manifold.bytecode.v1",
+  "kernelSemver": "0.1.0",
+  "contentHash": 3500602270,
+  "id": "MANIFOLD-D0A6F39E",
+  "name": "AshLung",
+  "sampleRatePolicy": "adaptive",
+  "instructions": [
+    {
+      "op": "MATCH_EVENT",
+      "event": "silence_gap",
+      "threshold": 0.7
+    },
+    {
+      "op": "SCALE_PARAM",
+      "target": "void_layer.decay.low",
+      "factor": 1.28,
+      "durationMs": 420
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "void_layer.tail.width",
+      "value": 0.72,
+      "durationMs": 500
+    },
+    {
+      "op": "CLAMP_FEEDBACK",
+      "node": "void_layer.feedback",
+      "max": 0.6
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "full_spectrum_impact",
+      "threshold": 0.62
+    },
+    {
+      "op": "SCALE_PARAM",
+      "target": "floor.decay.low",
+      "factor": 0.46,
+      "durationMs": 120
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "floor.absorption.low",
+      "value": 0.86,
+      "durationMs": 90
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "harmonic_sustain",
+      "threshold": 0.52
+    },
+    {
+      "op": "BLOOM_HARMONIC",
+      "amount": 0.34,
+      "durationMs": 700
+    }
+  ],
+  "safety": {
+    "maxFeedback": 0.6,
+    "maxFilterQ": 12,
+    "maxSprayDensity": 0,
+    "maxDelayMs": 750,
+    "minRampMs": 20,
+    "cpuBudgetClass": "medium",
+    "requiresLimiter": true,
+    "hasUnsafeCycles": false
+  },
+  "graph": {
+    "zones": [
+      {
+        "id": "void_layer",
+        "material": "smoke",
+        "listensTo": "silence_gap",
+        "routes": [
+          "void_layer.wall_filter_bank",
+          "void_layer.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "floor",
+        "material": "ash",
+        "listensTo": "full_spectrum_impact",
+        "routes": [
+          "floor.wall_filter_bank",
+          "floor.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "core",
+        "material": "smoke",
+        "listensTo": "harmonic_sustain",
+        "routes": [
+          "core.wall_filter_bank",
+          "core.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      }
+    ],
+    "nodes": [
+      "input_splitter",
+      "early_reflection",
+      "fdn_core",
+      "wall_filter_bank",
+      "micro_delay_spray",
+      "resonator_bloom",
+      "modulation",
+      "safety_limiter",
+      "output_renderer"
+    ]
+  }
+}

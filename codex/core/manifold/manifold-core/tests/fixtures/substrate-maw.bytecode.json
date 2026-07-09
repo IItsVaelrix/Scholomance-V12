@@ -1,0 +1,126 @@
+{
+  "schemaVersion": "manifold.bytecode.v1",
+  "kernelSemver": "0.1.0",
+  "contentHash": 40942810,
+  "id": "MANIFOLD-0270BCDA",
+  "name": "SubstrateMaw",
+  "sampleRatePolicy": "adaptive",
+  "instructions": [
+    {
+      "op": "MATCH_EVENT",
+      "event": "sub_transient",
+      "threshold": 0.58
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "floor.absorption.low",
+      "value": 0.94,
+      "durationMs": 70
+    },
+    {
+      "op": "SCALE_PARAM",
+      "target": "floor.decay.low",
+      "factor": 0.36,
+      "durationMs": 100
+    },
+    {
+      "op": "CLAMP_FEEDBACK",
+      "node": "floor.feedback",
+      "max": 0.55
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "dense_spectral_cloud",
+      "threshold": 0.62
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "core.scatter",
+      "value": 0.58,
+      "durationMs": 140
+    },
+    {
+      "op": "TRIGGER_SPRAY",
+      "division": "1/32",
+      "density": 0.36,
+      "durationMs": 220
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "silence_gap",
+      "threshold": 0.76
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "void_layer.tail.width",
+      "value": 0.54,
+      "durationMs": 360
+    },
+    {
+      "op": "BLOOM_HARMONIC",
+      "amount": 0.24,
+      "durationMs": 640
+    }
+  ],
+  "safety": {
+    "maxFeedback": 0.58,
+    "maxFilterQ": 12,
+    "maxSprayDensity": 0.36,
+    "maxDelayMs": 750,
+    "minRampMs": 20,
+    "cpuBudgetClass": "medium",
+    "requiresLimiter": true,
+    "hasUnsafeCycles": false
+  },
+  "graph": {
+    "zones": [
+      {
+        "id": "floor",
+        "material": "basalt",
+        "listensTo": "sub_transient",
+        "routes": [
+          "floor.wall_filter_bank",
+          "floor.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "core",
+        "material": "throat",
+        "listensTo": "dense_spectral_cloud",
+        "routes": [
+          "core.wall_filter_bank",
+          "core.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "void_layer",
+        "material": "throat",
+        "listensTo": "silence_gap",
+        "routes": [
+          "void_layer.wall_filter_bank",
+          "void_layer.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      }
+    ],
+    "nodes": [
+      "input_splitter",
+      "early_reflection",
+      "fdn_core",
+      "wall_filter_bank",
+      "micro_delay_spray",
+      "resonator_bloom",
+      "modulation",
+      "safety_limiter",
+      "output_renderer"
+    ]
+  }
+}

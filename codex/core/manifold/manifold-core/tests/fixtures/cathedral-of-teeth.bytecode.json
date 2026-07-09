@@ -1,0 +1,120 @@
+{
+  "schemaVersion": "manifold.bytecode.v1",
+  "kernelSemver": "0.1.0",
+  "contentHash": 3250905319,
+  "id": "MANIFOLD-C1C4E0E7",
+  "name": "CathedralOfTeeth",
+  "sampleRatePolicy": "adaptive",
+  "instructions": [
+    {
+      "op": "MATCH_EVENT",
+      "event": "vocal_presence",
+      "threshold": 0.58
+    },
+    {
+      "op": "BLOOM_HARMONIC",
+      "amount": 0.38,
+      "durationMs": 520
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "front_wall.scatter",
+      "value": 0.64,
+      "durationMs": 80
+    },
+    {
+      "op": "CLAMP_FEEDBACK",
+      "node": "front_wall.feedback",
+      "max": 0.61
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "high_crunch",
+      "threshold": 0.6
+    },
+    {
+      "op": "TRIGGER_SPRAY",
+      "division": "1/32",
+      "density": 0.52,
+      "durationMs": 160
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "ceiling.brightness",
+      "value": 0.74,
+      "durationMs": 40
+    },
+    {
+      "op": "MATCH_EVENT",
+      "event": "harmonic_sustain",
+      "threshold": 0.54
+    },
+    {
+      "op": "RAMP_PARAM",
+      "target": "rear_wall.tail.width",
+      "value": 0.7,
+      "durationMs": 320
+    }
+  ],
+  "safety": {
+    "maxFeedback": 0.61,
+    "maxFilterQ": 12,
+    "maxSprayDensity": 0.52,
+    "maxDelayMs": 750,
+    "minRampMs": 20,
+    "cpuBudgetClass": "medium",
+    "requiresLimiter": true,
+    "hasUnsafeCycles": false
+  },
+  "graph": {
+    "zones": [
+      {
+        "id": "front_wall",
+        "material": "marrow",
+        "listensTo": "vocal_presence",
+        "routes": [
+          "front_wall.wall_filter_bank",
+          "front_wall.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "ceiling",
+        "material": "enamel",
+        "listensTo": "high_crunch",
+        "routes": [
+          "ceiling.wall_filter_bank",
+          "ceiling.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      },
+      {
+        "id": "rear_wall",
+        "material": "enamel",
+        "listensTo": "harmonic_sustain",
+        "routes": [
+          "rear_wall.wall_filter_bank",
+          "rear_wall.diffusion_bus",
+          "fdn_core",
+          "safety_limiter",
+          "output_renderer"
+        ]
+      }
+    ],
+    "nodes": [
+      "input_splitter",
+      "early_reflection",
+      "fdn_core",
+      "wall_filter_bank",
+      "micro_delay_spray",
+      "resonator_bloom",
+      "modulation",
+      "safety_limiter",
+      "output_renderer"
+    ]
+  }
+}
