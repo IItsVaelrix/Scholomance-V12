@@ -75,6 +75,20 @@ window { background-color: var(--surface-0); }
 }
 .manifold-zone { border-radius: 5px; background-color: #0a1a14; }
 
+.manifold-core {
+    width: 64px;
+    height: 64px;
+    border-radius: 32px;
+    background-color: var(--grim-shell);
+}
+
+.manifold-zone.floor   { left: 50%; top: 82%; }
+.manifold-zone.ceiling { left: 50%; top: 18%; }
+.manifold-zone.left    { left: 18%; top: 50%; }
+.manifold-zone.right   { left: 82%; top: 50%; }
+.manifold-zone.front   { left: 50%; top: 36%; }
+.manifold-zone.core    { left: 50%; top: 50%; }
+
 *:focus-visible { border-color: var(--focus); border-width: 2px; }
 
 /* Accessibility roots (applied to the editor root by UiState::root_classes). */
