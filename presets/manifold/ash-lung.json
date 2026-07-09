@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "manifold.preset.v1",
+  "name": "Ash Lung",
+  "author": "Scholomance Factory",
+  "dslSource": "manifold AshLung {\n  clock internal 72\n\n  material ash {\n    absorption low 0.64\n    absorption high 0.52\n    diffusion 0.44\n  }\n\n  material smoke {\n    scatter 0.48\n    brightness 0.28\n    diffusion 0.78\n  }\n\n  zone void_layer uses smoke {\n    listen silence_gap threshold 0.7\n\n    on trigger {\n      morph decay.low scale 1.28 in 420ms\n      widen tail to 0.72 in 500ms\n      clamp feedback max 0.6\n    }\n  }\n\n  zone floor uses ash {\n    listen full_spectrum_impact threshold 0.62\n\n    on trigger {\n      morph decay.low scale 0.46 in 120ms\n      morph absorption.low to 0.86 in 90ms\n    }\n  }\n\n  zone core uses smoke {\n    listen harmonic_sustain threshold 0.52\n\n    on trigger {\n      bloom harmonic amount 0.34 duration 700ms\n    }\n  }\n}",
+  "bytecode": {
+    "schemaVersion": "manifold.bytecode.v1",
+    "kernelSemver": "0.1.0",
+    "contentHash": 3500602270,
+    "id": "MANIFOLD-D0A6F39E",
+    "name": "AshLung",
+    "sampleRatePolicy": "adaptive",
+    "instructions": [
+      {
+        "op": "MATCH_EVENT",
+        "event": "silence_gap",
+        "threshold": 0.7
+      },
+      {
+        "op": "SCALE_PARAM",
+        "target": "void_layer.decay.low",
+        "factor": 1.28,
+        "durationMs": 420
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "void_layer.tail.width",
+        "value": 0.72,
+        "durationMs": 500
+      },
+      {
+        "op": "CLAMP_FEEDBACK",
+        "node": "void_layer.feedback",
+        "max": 0.6
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "full_spectrum_impact",
+        "threshold": 0.62
+      },
+      {
+        "op": "SCALE_PARAM",
+        "target": "floor.decay.low",
+        "factor": 0.46,
+        "durationMs": 120
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "floor.absorption.low",
+        "value": 0.86,
+        "durationMs": 90
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "harmonic_sustain",
+        "threshold": 0.52
+      },
+      {
+        "op": "BLOOM_HARMONIC",
+        "amount": 0.34,
+        "durationMs": 700
+      }
+    ],
+    "safety": {
+      "maxFeedback": 0.6,
+      "maxFilterQ": 12,
+      "maxSprayDensity": 0,
+      "maxDelayMs": 750,
+      "minRampMs": 20,
+      "cpuBudgetClass": "medium",
+      "requiresLimiter": true,
+      "hasUnsafeCycles": false
+    },
+    "graph": {
+      "zones": [
+        {
+          "id": "void_layer",
+          "material": "smoke",
+          "listensTo": "silence_gap",
+          "routes": [
+            "void_layer.wall_filter_bank",
+            "void_layer.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "floor",
+          "material": "ash",
+          "listensTo": "full_spectrum_impact",
+          "routes": [
+            "floor.wall_filter_bank",
+            "floor.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "core",
+          "material": "smoke",
+          "listensTo": "harmonic_sustain",
+          "routes": [
+            "core.wall_filter_bank",
+            "core.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        }
+      ],
+      "nodes": [
+        "input_splitter",
+        "early_reflection",
+        "fdn_core",
+        "wall_filter_bank",
+        "micro_delay_spray",
+        "resonator_bloom",
+        "modulation",
+        "safety_limiter",
+        "output_renderer"
+      ]
+    }
+  },
+  "macros": {
+    "size": 0.8,
+    "reactivity": 0.5,
+    "stability": 0.82,
+    "material": 0.46,
+    "scatter": 0.55,
+    "fracture": 0.35,
+    "gravity": 0.68,
+    "bloom": 0.64,
+    "wetDry": 0.47
+  },
+  "visualLayout": {
+    "kind": "manifold.visual-layout.v1",
+    "zones": [
+      {
+        "id": "void_layer",
+        "x": 0.5,
+        "y": 0.94
+      },
+      {
+        "id": "floor",
+        "x": 0.5,
+        "y": 0.82
+      },
+      {
+        "id": "core",
+        "x": 0.5,
+        "y": 0.5
+      }
+    ]
+  }
+}

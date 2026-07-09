@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "manifold.preset.v1",
+  "name": "Cathedral of Teeth",
+  "author": "Scholomance Factory",
+  "dslSource": "manifold CathedralOfTeeth {\n  clock internal 96\n\n  material enamel {\n    scatter 0.55\n    brightness 0.62\n    diffusion 0.74\n  }\n\n  material marrow {\n    absorption low 0.42\n    absorption high 0.18\n    diffusion 0.68\n  }\n\n  zone front_wall uses marrow {\n    listen vocal_presence threshold 0.58\n\n    on trigger {\n      bloom harmonic amount 0.38 duration 520ms\n      morph scatter to 0.64 in 80ms\n      clamp feedback max 0.61\n    }\n  }\n\n  zone ceiling uses enamel {\n    listen high_crunch threshold 0.6\n\n    on trigger {\n      spray micro_delay division 1/32 density 0.52 duration 160ms\n      morph brightness to 0.74 in 40ms\n    }\n  }\n\n  zone rear_wall uses enamel {\n    listen harmonic_sustain threshold 0.54\n\n    on trigger {\n      widen tail to 0.7 in 320ms\n    }\n  }\n}",
+  "bytecode": {
+    "schemaVersion": "manifold.bytecode.v1",
+    "kernelSemver": "0.1.0",
+    "contentHash": 3250905319,
+    "id": "MANIFOLD-C1C4E0E7",
+    "name": "CathedralOfTeeth",
+    "sampleRatePolicy": "adaptive",
+    "instructions": [
+      {
+        "op": "MATCH_EVENT",
+        "event": "vocal_presence",
+        "threshold": 0.58
+      },
+      {
+        "op": "BLOOM_HARMONIC",
+        "amount": 0.38,
+        "durationMs": 520
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "front_wall.scatter",
+        "value": 0.64,
+        "durationMs": 80
+      },
+      {
+        "op": "CLAMP_FEEDBACK",
+        "node": "front_wall.feedback",
+        "max": 0.61
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "high_crunch",
+        "threshold": 0.6
+      },
+      {
+        "op": "TRIGGER_SPRAY",
+        "division": "1/32",
+        "density": 0.52,
+        "durationMs": 160
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "ceiling.brightness",
+        "value": 0.74,
+        "durationMs": 40
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "harmonic_sustain",
+        "threshold": 0.54
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "rear_wall.tail.width",
+        "value": 0.7,
+        "durationMs": 320
+      }
+    ],
+    "safety": {
+      "maxFeedback": 0.61,
+      "maxFilterQ": 12,
+      "maxSprayDensity": 0.52,
+      "maxDelayMs": 750,
+      "minRampMs": 20,
+      "cpuBudgetClass": "medium",
+      "requiresLimiter": true,
+      "hasUnsafeCycles": false
+    },
+    "graph": {
+      "zones": [
+        {
+          "id": "front_wall",
+          "material": "marrow",
+          "listensTo": "vocal_presence",
+          "routes": [
+            "front_wall.wall_filter_bank",
+            "front_wall.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "ceiling",
+          "material": "enamel",
+          "listensTo": "high_crunch",
+          "routes": [
+            "ceiling.wall_filter_bank",
+            "ceiling.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "rear_wall",
+          "material": "enamel",
+          "listensTo": "harmonic_sustain",
+          "routes": [
+            "rear_wall.wall_filter_bank",
+            "rear_wall.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        }
+      ],
+      "nodes": [
+        "input_splitter",
+        "early_reflection",
+        "fdn_core",
+        "wall_filter_bank",
+        "micro_delay_spray",
+        "resonator_bloom",
+        "modulation",
+        "safety_limiter",
+        "output_renderer"
+      ]
+    }
+  },
+  "macros": {
+    "size": 0.7,
+    "reactivity": 0.62,
+    "stability": 0.72,
+    "material": 0.5,
+    "scatter": 0.58,
+    "fracture": 0.35,
+    "gravity": 0.42,
+    "bloom": 0.72,
+    "wetDry": 0.38
+  },
+  "visualLayout": {
+    "kind": "manifold.visual-layout.v1",
+    "zones": [
+      {
+        "id": "front_wall",
+        "x": 0.5,
+        "y": 0.36
+      },
+      {
+        "id": "ceiling",
+        "x": 0.5,
+        "y": 0.18
+      },
+      {
+        "id": "rear_wall",
+        "x": 0.5,
+        "y": 0.64
+      }
+    ]
+  }
+}

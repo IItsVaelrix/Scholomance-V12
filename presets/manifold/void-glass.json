@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "manifold.preset.v1",
+  "name": "VoidGlass",
+  "author": "Scholomance Factory",
+  "dslSource": "manifold VoidGlass {\n  clock internal 120\n\n  material crystal {\n    scatter 0.8\n    brightness 0.7\n    diffusion 0.6\n  }\n\n  material ash {\n    absorption low 0.8\n    absorption high 0.3\n    diffusion 0.2\n  }\n\n  zone floor uses ash {\n    listen sub_transient threshold 0.65\n\n    on trigger {\n      morph absorption.low to 0.95 in 60ms\n      morph decay.low scale 0.40 in 100ms\n      clamp feedback max 0.58\n    }\n  }\n\n  zone ceiling uses crystal {\n    listen high_crunch threshold 0.55\n\n    on trigger {\n      spray micro_delay division 1/64 density 0.7 duration 180ms\n      morph scatter to 0.92 in 30ms\n    }\n  }\n\n  zone rear_wall uses crystal {\n    listen harmonic_sustain threshold 0.5\n\n    on trigger {\n      bloom harmonic amount 0.45 duration 600ms\n      widen tail to 0.65 in 300ms\n    }\n  }\n}",
+  "bytecode": {
+    "schemaVersion": "manifold.bytecode.v1",
+    "kernelSemver": "0.1.0",
+    "contentHash": 3425010933,
+    "id": "MANIFOLD-CC2584F5",
+    "name": "VoidGlass",
+    "sampleRatePolicy": "adaptive",
+    "instructions": [
+      {
+        "op": "MATCH_EVENT",
+        "event": "sub_transient",
+        "threshold": 0.65
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "floor.absorption.low",
+        "value": 0.95,
+        "durationMs": 60
+      },
+      {
+        "op": "SCALE_PARAM",
+        "target": "floor.decay.low",
+        "factor": 0.4,
+        "durationMs": 100
+      },
+      {
+        "op": "CLAMP_FEEDBACK",
+        "node": "floor.feedback",
+        "max": 0.58
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "high_crunch",
+        "threshold": 0.55
+      },
+      {
+        "op": "TRIGGER_SPRAY",
+        "division": "1/64",
+        "density": 0.7,
+        "durationMs": 180
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "ceiling.scatter",
+        "value": 0.92,
+        "durationMs": 30
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "harmonic_sustain",
+        "threshold": 0.5
+      },
+      {
+        "op": "BLOOM_HARMONIC",
+        "amount": 0.45,
+        "durationMs": 600
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "rear_wall.tail.width",
+        "value": 0.65,
+        "durationMs": 300
+      }
+    ],
+    "safety": {
+      "maxFeedback": 0.58,
+      "maxFilterQ": 12,
+      "maxSprayDensity": 0.7,
+      "maxDelayMs": 750,
+      "minRampMs": 20,
+      "cpuBudgetClass": "medium",
+      "requiresLimiter": true,
+      "hasUnsafeCycles": false
+    },
+    "graph": {
+      "zones": [
+        {
+          "id": "floor",
+          "material": "ash",
+          "listensTo": "sub_transient",
+          "routes": [
+            "floor.wall_filter_bank",
+            "floor.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "ceiling",
+          "material": "crystal",
+          "listensTo": "high_crunch",
+          "routes": [
+            "ceiling.wall_filter_bank",
+            "ceiling.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "rear_wall",
+          "material": "crystal",
+          "listensTo": "harmonic_sustain",
+          "routes": [
+            "rear_wall.wall_filter_bank",
+            "rear_wall.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        }
+      ],
+      "nodes": [
+        "input_splitter",
+        "early_reflection",
+        "fdn_core",
+        "wall_filter_bank",
+        "micro_delay_spray",
+        "resonator_bloom",
+        "modulation",
+        "safety_limiter",
+        "output_renderer"
+      ]
+    }
+  },
+  "macros": {
+    "size": 0.55,
+    "reactivity": 0.65,
+    "stability": 0.72,
+    "material": 0.5,
+    "scatter": 0.82,
+    "fracture": 0.72,
+    "gravity": 0.44,
+    "bloom": 0.5,
+    "wetDry": 0.42
+  },
+  "visualLayout": {
+    "kind": "manifold.visual-layout.v1",
+    "zones": [
+      {
+        "id": "floor",
+        "x": 0.5,
+        "y": 0.82
+      },
+      {
+        "id": "ceiling",
+        "x": 0.5,
+        "y": 0.18
+      },
+      {
+        "id": "rear_wall",
+        "x": 0.5,
+        "y": 0.64
+      }
+    ]
+  }
+}

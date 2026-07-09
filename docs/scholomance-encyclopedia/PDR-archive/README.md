@@ -72,6 +72,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`void-chestplate-pdr.md`](./void-chestplate-pdr.md) | Implemented | Item Foundry + Armor Archetype + Material/Shader Integration + PixelBrain | High |
 | [`diagnostic_cell_infrastructure_pdr.md`](./diagnostic_cell_infrastructure_pdr.md) | Draft | Architectural \| QA Infrastructure \| AI Observability | High |
 | [`cognitive_bus_pdr.md`](./cognitive_bus_pdr.md) | Unclassified | Unclassified | Unclassified |
+| [`cochlear-manifold-pdr.md`](./cochlear-manifold-pdr.md) | Implemented — V1 foundation shipped 2026-07-09 (see `PIR-20260709-COCHLEAR-MANIFOLD`) | Architectural \| Behavioral \| DSP Product Foundation | High |
 | [`collab_control_plane_mcp_convergence_pdr.md`](./collab_control_plane_mcp_convergence_pdr.md) | Draft | Unclassified | High |
 | [`collab_ui_polish_v2_pdr.md`](./collab_ui_polish_v2_pdr.md) | Draft | UI + Collaboration + Operational Trust | High |
 | [`collab_vscode_experience_pdr.md`](./collab_vscode_experience_pdr.md) | Draft | UI + Collaboration + VS Code Integration | High |

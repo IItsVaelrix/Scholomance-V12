@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "manifold.preset.v1",
+  "name": "Substrate Maw",
+  "author": "Scholomance Factory",
+  "dslSource": "manifold SubstrateMaw {\n  clock internal 84\n\n  material basalt {\n    absorption low 0.58\n    absorption high 0.48\n    diffusion 0.36\n  }\n\n  material throat {\n    scatter 0.34\n    brightness 0.22\n    diffusion 0.62\n  }\n\n  zone floor uses basalt {\n    listen sub_transient threshold 0.58\n\n    on trigger {\n      morph absorption.low to 0.94 in 70ms\n      morph decay.low scale 0.36 in 100ms\n      clamp feedback max 0.55\n    }\n  }\n\n  zone core uses throat {\n    listen dense_spectral_cloud threshold 0.62\n\n    on trigger {\n      morph scatter to 0.58 in 140ms\n      spray micro_delay division 1/32 density 0.36 duration 220ms\n    }\n  }\n\n  zone void_layer uses throat {\n    listen silence_gap threshold 0.76\n\n    on trigger {\n      widen tail to 0.54 in 360ms\n      bloom harmonic amount 0.24 duration 640ms\n    }\n  }\n}",
+  "bytecode": {
+    "schemaVersion": "manifold.bytecode.v1",
+    "kernelSemver": "0.1.0",
+    "contentHash": 40942810,
+    "id": "MANIFOLD-0270BCDA",
+    "name": "SubstrateMaw",
+    "sampleRatePolicy": "adaptive",
+    "instructions": [
+      {
+        "op": "MATCH_EVENT",
+        "event": "sub_transient",
+        "threshold": 0.58
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "floor.absorption.low",
+        "value": 0.94,
+        "durationMs": 70
+      },
+      {
+        "op": "SCALE_PARAM",
+        "target": "floor.decay.low",
+        "factor": 0.36,
+        "durationMs": 100
+      },
+      {
+        "op": "CLAMP_FEEDBACK",
+        "node": "floor.feedback",
+        "max": 0.55
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "dense_spectral_cloud",
+        "threshold": 0.62
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "core.scatter",
+        "value": 0.58,
+        "durationMs": 140
+      },
+      {
+        "op": "TRIGGER_SPRAY",
+        "division": "1/32",
+        "density": 0.36,
+        "durationMs": 220
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "silence_gap",
+        "threshold": 0.76
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "void_layer.tail.width",
+        "value": 0.54,
+        "durationMs": 360
+      },
+      {
+        "op": "BLOOM_HARMONIC",
+        "amount": 0.24,
+        "durationMs": 640
+      }
+    ],
+    "safety": {
+      "maxFeedback": 0.58,
+      "maxFilterQ": 12,
+      "maxSprayDensity": 0.36,
+      "maxDelayMs": 750,
+      "minRampMs": 20,
+      "cpuBudgetClass": "medium",
+      "requiresLimiter": true,
+      "hasUnsafeCycles": false
+    },
+    "graph": {
+      "zones": [
+        {
+          "id": "floor",
+          "material": "basalt",
+          "listensTo": "sub_transient",
+          "routes": [
+            "floor.wall_filter_bank",
+            "floor.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "core",
+          "material": "throat",
+          "listensTo": "dense_spectral_cloud",
+          "routes": [
+            "core.wall_filter_bank",
+            "core.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "void_layer",
+          "material": "throat",
+          "listensTo": "silence_gap",
+          "routes": [
+            "void_layer.wall_filter_bank",
+            "void_layer.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        }
+      ],
+      "nodes": [
+        "input_splitter",
+        "early_reflection",
+        "fdn_core",
+        "wall_filter_bank",
+        "micro_delay_spray",
+        "resonator_bloom",
+        "modulation",
+        "safety_limiter",
+        "output_renderer"
+      ]
+    }
+  },
+  "macros": {
+    "size": 0.66,
+    "reactivity": 0.78,
+    "stability": 0.6,
+    "material": 0.35,
+    "scatter": 0.4,
+    "fracture": 0.48,
+    "gravity": 0.9,
+    "bloom": 0.36,
+    "wetDry": 0.44
+  },
+  "visualLayout": {
+    "kind": "manifold.visual-layout.v1",
+    "zones": [
+      {
+        "id": "floor",
+        "x": 0.5,
+        "y": 0.82
+      },
+      {
+        "id": "core",
+        "x": 0.5,
+        "y": 0.5
+      },
+      {
+        "id": "void_layer",
+        "x": 0.5,
+        "y": 0.94
+      }
+    ]
+  }
+}

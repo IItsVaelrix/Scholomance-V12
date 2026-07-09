@@ -1,0 +1,157 @@
+{
+  "schemaVersion": "manifold.preset.v1",
+  "name": "Ice Circuit",
+  "author": "Scholomance Factory",
+  "dslSource": "manifold IceCircuit {\n  clock internal 132\n\n  material ice {\n    scatter 0.74\n    brightness 0.82\n    diffusion 0.5\n  }\n\n  material copper {\n    absorption low 0.32\n    absorption high 0.22\n    diffusion 0.58\n  }\n\n  zone ceiling uses ice {\n    listen high_crunch threshold 0.57\n\n    on trigger {\n      spray micro_delay division 1/64 density 0.62 duration 140ms\n      morph scatter to 0.88 in 30ms\n      clamp feedback max 0.56\n    }\n  }\n\n  zone left_wall uses copper {\n    listen sub_transient threshold 0.6\n\n    on trigger {\n      morph absorption.low to 0.72 in 80ms\n    }\n  }\n\n  zone right_wall uses ice {\n    listen harmonic_sustain threshold 0.56\n\n    on trigger {\n      bloom harmonic amount 0.42 duration 480ms\n      widen tail to 0.68 in 260ms\n    }\n  }\n}",
+  "bytecode": {
+    "schemaVersion": "manifold.bytecode.v1",
+    "kernelSemver": "0.1.0",
+    "contentHash": 1355917232,
+    "id": "MANIFOLD-50D1A7B0",
+    "name": "IceCircuit",
+    "sampleRatePolicy": "adaptive",
+    "instructions": [
+      {
+        "op": "MATCH_EVENT",
+        "event": "high_crunch",
+        "threshold": 0.57
+      },
+      {
+        "op": "TRIGGER_SPRAY",
+        "division": "1/64",
+        "density": 0.62,
+        "durationMs": 140
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "ceiling.scatter",
+        "value": 0.88,
+        "durationMs": 30
+      },
+      {
+        "op": "CLAMP_FEEDBACK",
+        "node": "ceiling.feedback",
+        "max": 0.56
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "sub_transient",
+        "threshold": 0.6
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "left_wall.absorption.low",
+        "value": 0.72,
+        "durationMs": 80
+      },
+      {
+        "op": "MATCH_EVENT",
+        "event": "harmonic_sustain",
+        "threshold": 0.56
+      },
+      {
+        "op": "BLOOM_HARMONIC",
+        "amount": 0.42,
+        "durationMs": 480
+      },
+      {
+        "op": "RAMP_PARAM",
+        "target": "right_wall.tail.width",
+        "value": 0.68,
+        "durationMs": 260
+      }
+    ],
+    "safety": {
+      "maxFeedback": 0.58,
+      "maxFilterQ": 12,
+      "maxSprayDensity": 0.62,
+      "maxDelayMs": 750,
+      "minRampMs": 20,
+      "cpuBudgetClass": "medium",
+      "requiresLimiter": true,
+      "hasUnsafeCycles": false
+    },
+    "graph": {
+      "zones": [
+        {
+          "id": "ceiling",
+          "material": "ice",
+          "listensTo": "high_crunch",
+          "routes": [
+            "ceiling.wall_filter_bank",
+            "ceiling.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "left_wall",
+          "material": "copper",
+          "listensTo": "sub_transient",
+          "routes": [
+            "left_wall.wall_filter_bank",
+            "left_wall.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        },
+        {
+          "id": "right_wall",
+          "material": "ice",
+          "listensTo": "harmonic_sustain",
+          "routes": [
+            "right_wall.wall_filter_bank",
+            "right_wall.diffusion_bus",
+            "fdn_core",
+            "safety_limiter",
+            "output_renderer"
+          ]
+        }
+      ],
+      "nodes": [
+        "input_splitter",
+        "early_reflection",
+        "fdn_core",
+        "wall_filter_bank",
+        "micro_delay_spray",
+        "resonator_bloom",
+        "modulation",
+        "safety_limiter",
+        "output_renderer"
+      ]
+    }
+  },
+  "macros": {
+    "size": 0.52,
+    "reactivity": 0.74,
+    "stability": 0.7,
+    "material": 0.5,
+    "scatter": 0.76,
+    "fracture": 0.68,
+    "gravity": 0.42,
+    "bloom": 0.58,
+    "wetDry": 0.4
+  },
+  "visualLayout": {
+    "kind": "manifold.visual-layout.v1",
+    "zones": [
+      {
+        "id": "ceiling",
+        "x": 0.5,
+        "y": 0.18
+      },
+      {
+        "id": "left_wall",
+        "x": 0.18,
+        "y": 0.5
+      },
+      {
+        "id": "right_wall",
+        "x": 0.82,
+        "y": 0.5
+      }
+    ]
+  }
+}

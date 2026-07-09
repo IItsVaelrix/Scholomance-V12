@@ -1,0 +1,19 @@
+{
+  "name": "manifold-kernel",
+  "type": "module",
+  "collaborators": [
+    "Scholomance Codex"
+  ],
+  "description": "Cochlear Manifold compiled adaptive DSP kernel for WASM.",
+  "version": "0.1.0",
+  "files": [
+    "manifold_kernel_bg.wasm",
+    "manifold_kernel.js",
+    "manifold_kernel.d.ts"
+  ],
+  "main": "manifold_kernel.js",
+  "types": "manifold_kernel.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

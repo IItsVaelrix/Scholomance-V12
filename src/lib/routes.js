@@ -16,6 +16,7 @@ export const WandPage = lazyWithRetry(() => import("../pages/Wand/WandPage.jsx")
 export const WandGraphPage = lazyWithRetry(() => import("../pages/Wand/WandGraphPage.jsx"), "wand-graph-page");
 export const DivWandPage = lazyWithRetry(() => import("../pages/DivWand/DivWandPage.jsx"), "div-wand-page");
 export const QbitWorldPage = lazyWithRetry(() => import("../pages/QbitWorld/QbitWorldPage.jsx"), "qbit-world-page");
+export const ManifoldPage = lazyWithRetry(() => import("../pages/Manifold/ManifoldPage.jsx"), "manifold-page");
 
 export const PhotonicBridgeLab = lazyWithRetry(() => import("../pages/internal/photonic-bridge/PhotonicBridgeLab.jsx"), "photonic-bridge");
 export const StudioUpload = lazyWithRetry(() => import("../pages/internal/Studio/StudioUpload.jsx"), "studio-upload");
@@ -30,7 +31,7 @@ export const VisualizerReleasePage = lazyWithRetry(() => import("../pages/Visual
 export const OraclePage = lazyWithRetry(() => import("../pages/Oracle/OraclePage.jsx"), "oracle-page");
 
 const IS_PROD = typeof import.meta !== "undefined" && import.meta.env.PROD;
-const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/wand/graph", "/div-wand", "/qbit-world", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox", "/internal/pixel-lotus/tile-forge", "/internal/time-lab"];
+const INTERNAL_MODULES = ["/collab", "/pixelbrain", "/career", "/wand", "/wand/graph", "/div-wand", "/qbit-world", "/manifold", "/internal/photonic-bridge", "/internal/studio", "/internal/pixel-lotus/actor-forge", "/internal/pixel-lotus/iso-map-sandbox", "/internal/pixel-lotus/tile-forge", "/internal/time-lab"];
 
 export const ALL_COMPONENTS = {
   "/watch": WatchPage,
@@ -47,6 +48,7 @@ export const ALL_COMPONENTS = {
   "/wand/graph": WandGraphPage,
   "/div-wand": DivWandPage,
   "/qbit-world": QbitWorldPage,
+  "/manifold": ManifoldPage,
   "/internal/photonic-bridge": PhotonicBridgeLab,
   "/internal/studio": StudioUpload,
   "/internal/pixel-lotus/actor-forge": ActorForgeLab,
