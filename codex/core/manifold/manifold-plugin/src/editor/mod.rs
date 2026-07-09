@@ -1,6 +1,7 @@
 //! vizia editor for the Cochlear Manifold plugin. All GUI code is gated behind
 //! the `gui` feature so the lean VST3/CLAP validator build pulls no X11/GL deps.
 
+pub mod state;
 pub mod tokens;
 
 use std::sync::Arc;
