@@ -100,15 +100,19 @@ pub struct BytecodeHeader {
 
 `BytecodeProgram` mirrors `CompiledManifoldProgram` (PDR §15) via serde: `{ schemaVersion, kernelSemver, contentHash, id, name, sampleRatePolicy, instructions, safety, graph? }`.
 
-`load_program` MUST:
+**Gate is structural, not FNV-recompute.** The stored program is *not* self-verifying: the JS compiler hashes `{name, clock, bpm, instructions, safety, graph}` but drops `clock`/`bpm` from the saved bytecode, so the FNV-1a-32 cannot be reproduced from the stored program alone. Rather than change the JS compiler/presets (keeping sub-project 1 100% pure Rust), the core validates **structurally** and treats `content_hash` as an **opaque integrity label** — recomputed only in tests against known-good fixture constants, never at runtime.
+
+`load_program` MUST, **before any audio is processed**:
 
 1. Reject `schema_version != "manifold.bytecode.v1"` → `ProgramError::SchemaMismatch`.
-2. Recompute `content_hash` over the canonical bytes and reject a mismatch → `ProgramError::HashMismatch` (stale/corrupt bytecode).
-3. Reject `safety.has_unsafe_cycles == true` → `ProgramError::UnsafeCycles` (must not load for realtime use — PDR §17). **Before any audio is processed.**
-4. Reject any unknown opcode → `ProgramError::UnsupportedOpcode`. **Silent ignore is forbidden.**
+2. Reject an incompatible `kernel_semver` (major mismatch vs. the core's supported ABI major) → `ProgramError::KernelSemverMismatch`.
+3. Reject any unknown opcode → `ProgramError::UnsupportedOpcode`, and any instruction missing required fields → `ProgramError::MalformedInstruction`. **Silent ignore is forbidden.**
+4. Reject `safety.has_unsafe_cycles == true` → `ProgramError::UnsafeCycles` (must not load for realtime use — PDR §17).
 5. Group the flat instruction stream into `MATCH_EVENT → [actions]` blocks.
 
-Factory presets ship as **bytecode fixtures**; tests assert their `content_hash` against expected values (see §9).
+`content_hash` is **not** recomputed at runtime (no `HashMismatch` in the runtime path). Factory presets ship as **bytecode fixtures**; tests assert each fixture's stored `content_hash` equals an expected constant, guarding ABI drift (see §9).
+
+**BPM source.** Because the stored program carries no `bpm`, tempo-divided timing (e.g. `TRIGGER_SPRAY 1/64`) resolves against `ProcessContext.bpm` (the runtime internal-clock control), never a program field.
 
 ## 6. DSP Node Graph (§16 — "minimal-but-real", not boutique)
 
