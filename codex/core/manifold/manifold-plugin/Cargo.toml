@@ -1,0 +1,22 @@
+[package]
+name = "manifold-plugin"
+version = "0.1.0"
+edition = "2021"
+description = "Cochlear Manifold native VST3/CLAP plugin (nih-plug wrapper, no GUI)."
+
+[lib]
+# `cdylib` for the VST3/CLAP exports; `lib` so the nih-plug xtask bundler can
+# link the crate.
+crate-type = ["cdylib", "lib"]
+
+[dependencies]
+manifold-core = { path = "../manifold-core" }
+serde_json = "1.0"
+# nih-plug has no crates.io releases; track upstream. `vst3` enables the VST3
+# exporter (CLAP is always available). No standalone/GUI features => no
+# X11/GL/JACK C dependencies.
+nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", default-features = false, features = ["vst3"] }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"

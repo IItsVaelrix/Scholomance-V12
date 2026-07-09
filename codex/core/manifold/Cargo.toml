@@ -4,7 +4,10 @@
 [workspace]
 resolver = "2"
 members = ["manifold-core", "manifold-wasm"]
-exclude = ["rust-kernel"]
+# `manifold-plugin` (nih-plug VST3/CLAP) and the old `rust-kernel` build
+# standalone, outside this workspace, so their heavy/optional toolchains never
+# gate `cargo test` on the core + wasm crates.
+exclude = ["rust-kernel", "manifold-plugin"]
 
 [profile.release]
 opt-level = "s"
