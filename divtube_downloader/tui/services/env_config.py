@@ -12,6 +12,7 @@ PROVIDERS = {
     "groq":     ("https://api.groq.com/openai/v1", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile"),
     "gemini":   ("https://generativelanguage.googleapis.com/v1beta/openai",
                  "https://generativelanguage.googleapis.com/v1beta/openai", "gemini-2.5-flash"),
+    "jules":    ("https://api.jules.ai/v1", "https://api.jules.ai/v1", "jules"),
 }
 # Friendly/brand names users actually type → canonical provider key above.
 PROVIDER_ALIASES = {
