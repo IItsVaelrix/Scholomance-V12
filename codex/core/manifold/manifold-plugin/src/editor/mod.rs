@@ -180,6 +180,11 @@ pub fn create_editor(
         .toggle_class("mode-advanced", Data::ui.map(|u| root_class_active(u, "mode-advanced")))
         .toggle_class("contrast-high", Data::ui.map(|u| root_class_active(u, "contrast-high")))
         .toggle_class("motion-off", Data::ui.map(|u| root_class_active(u, "motion-off")));
+
+        // Spec §4: resizable window, size persisted via the ViziaState in the
+        // params (#[persist = "editor-state"]). The whole layout is
+        // stretch-based (1s units), so it reflows at any size the host allows.
+        nih_plug_vizia::widgets::ResizeHandle::new(cx);
     })
 }
 
