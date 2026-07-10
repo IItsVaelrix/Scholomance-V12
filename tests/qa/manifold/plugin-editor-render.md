@@ -4,7 +4,8 @@ This file documents manual GUI render verification for the Cochlear Manifold plu
 
 ## Setup
 
-1. Build with GUI: `cargo build -p manifold-plugin --features gui --release`
+1. Build with GUI: `cargo build --features gui --release`
+   > Note: run from inside `codex/core/manifold/manifold-plugin/` — the crate is workspace-excluded, so `-p manifold-plugin` will not resolve from the repo root.
 2. Bundle into `bundle/CochlearManifold.clap` per README instructions
 3. Open a CLAP host with a display, load the bundle
 4. Open the editor UI
@@ -23,35 +24,35 @@ This file documents manual GUI render verification for the Cochlear Manifold plu
 ### Preset: void-glass
 - **Scenario:** Select void-glass preset from chip selector
 - **Color Checks:**
-  - Preset chip border: red (hsl(12, 85%, 51%)) ✓
+  - Preset chip border: red (hsl(0, 85%, 48%)) ✓
   - Shell magenta maintained ✓
 - **Result:** `PENDING` (needs GUI CLAP host)
 
 ### Preset: ice-circuit
 - **Scenario:** Select ice-circuit preset from chip selector
 - **Color Checks:**
-  - Preset chip border: chartreuse (hsl(103, 78%, 59%)) ✓
+  - Preset chip border: chartreuse (hsl(90, 83%, 58%)) ✓
   - Shell magenta maintained ✓
 - **Result:** `PENDING` (needs GUI CLAP host)
 
-### Preset: cathedral
-- **Scenario:** Select cathedral preset from chip selector
+### Preset: cathedral-of-teeth
+- **Scenario:** Select cathedral-of-teeth preset from chip selector
 - **Color Checks:**
-  - Preset chip border: violet (hsl(278, 76%, 63%)) ✓
+  - Preset chip border: violet (hsl(290, 88%, 54%)) ✓
   - Shell magenta maintained ✓
 - **Result:** `PENDING` (needs GUI CLAP host)
 
-### Preset: substrate
-- **Scenario:** Select substrate preset from chip selector
+### Preset: substrate-maw
+- **Scenario:** Select substrate-maw preset from chip selector
 - **Color Checks:**
-  - Preset chip border: amber (hsl(37, 87%, 56%)) ✓
+  - Preset chip border: amber (hsl(23, 88%, 58%)) ✓
   - Shell magenta maintained ✓
 - **Result:** `PENDING` (needs GUI CLAP host)
 
 ### Preset: ash-lung
 - **Scenario:** Select ash-lung preset from chip selector
 - **Color Checks:**
-  - Preset chip border: red (hsl(12, 85%, 51%)) ✓
+  - Preset chip border: red (hsl(0, 85%, 48%)) ✓
   - Shell magenta maintained ✓
 - **Result:** `PENDING` (needs GUI CLAP host)
 

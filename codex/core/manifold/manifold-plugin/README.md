@@ -66,7 +66,7 @@ The plugin includes a full vizia editor accessible when compiled with `--feature
 
 3. **Test cases to capture:**
    - Default state (Simple mode)
-   - Each of the 5 presets selected (void-glass, ice-circuit, cathedral, substrate, ash-lung)
+   - Each of the 5 presets selected (void-glass, ice-circuit, cathedral-of-teeth, substrate-maw, ash-lung)
    - Advanced mode
    - High-contrast toggle ON
    - Motion-off toggle ON
@@ -75,11 +75,11 @@ The plugin includes a full vizia editor accessible when compiled with `--feature
    - Shell/brand magenta: `hsl(340, 85%, 51%)`
    - Freeze tile indigo: `hsl(239, 82%, 53%)`
    - Panic button red-orange: `hsl(12, 85%, 51%)`
-   - Preset chip borders:
-     - void-glass/ash-lung: red (Hsl { h: 12.0, s: 85.0, l: 51.0 })
-     - ice-circuit: chartreuse (Hsl { h: 103.0, s: 78.0, l: 59.0 })
-     - cathedral: violet (Hsl { h: 278.0, s: 76.0, l: 63.0 })
-     - substrate: amber (Hsl { h: 37.0, s: 87.0, l: 56.0 })
+   - Preset chip borders (source of truth: `src/editor/tokens.rs::preset_hue`):
+     - void-glass/ash-lung: red (Hsl { h: 0.0, s: 85.0, l: 48.0 })
+     - ice-circuit: chartreuse (Hsl { h: 90.0, s: 83.0, l: 58.0 })
+     - cathedral-of-teeth: violet (Hsl { h: 290.0, s: 88.0, l: 54.0 })
+     - substrate-maw: amber (Hsl { h: 23.0, s: 88.0, l: 58.0 })
    - Reactivity meter/knob: green (Hsl { h: 145.0, s: 80.0, l: 47.0 })
 
 ## Test Suite
