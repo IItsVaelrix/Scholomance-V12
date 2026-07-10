@@ -333,10 +333,11 @@ disconnect the plugin had before the macro law landed. Scheduled follow-up.
 
 ## 8. Verification
 
-- **manifold-core:** 52 unit tests + torture/integration suites — filter boundedness at maximum
+- **manifold-core:** 63 unit tests + torture/integration suites — filter boundedness at maximum
   feedback, NaN/DC-bomb torture, silence safety, classifier hysteresis/cooldown, macro-law
   neutrality/monotonicity (size extends the measured late tail; stability tightens it; wet = 0
-  leaves none), click-free panic (bounded inter-sample steps), smoothing-not-snapping.
+  leaves none), click-free panic (bounded inter-sample steps), smoothing-not-snapping, the
+  five-test exciter characterization (§4.6), and the research-hardening battery below.
   Methodological note baked into the harness: tail measurements must fade their drive signal out
   and skip ~40 blocks, or the ER drain and DC-blocker ring-down (R = 0.995) mask feedback
   differences entirely.
@@ -344,9 +345,50 @@ disconnect the plugin had before the macro law landed. Scheduled follow-up.
   UI reducers, preset-index protocol) + `clap-validator` 16/16.
 - **Render verification** is display-gated by design (headless renders lie); the manual parity
   checklist lives at `tests/qa/manifold/plugin-editor-render.md`.
-- **Roadmap:** a golden render test (fixed input × fixed macros × void-glass, stored reference,
-  tolerance compare) so any silent change to the sound fails CI, plus a CI job running both
-  feature paths of the workspace-excluded plugin crate.
+
+### 8.1 Declared measurement battery (skill laws 15–18)
+
+| Protocol | Test | Measured result |
+|---|---|---|
+| Aliasing report (997 Hz-class ladder at max intended level) | `aliasing_report_folded_h3_is_the_documented_color` | folded H3 of 10 kHz (→18 kHz) and 15 kHz (→3 kHz) inputs sits in the −38…−18 dB window — same order as the direct H3, i.e. the coloration *is* the alias floor |
+| Sample-rate sweep | `sample_rate_sweep_stays_finite` | 44.1/48/96/192 kHz: bounded, finite |
+| Host block-size sweep | `block_size_sweep_stays_finite` | 1/32/128/2048-sample blocks: bounded, finite (control tick is sample-count based) |
+| Automation slam | `automation_slam_survives` | all four macros slammed rail-to-rail every block + freeze toggling: finite, bounded, applied macros never leave [0,1] |
+| Denormal / long decay | `sixty_second_decay_converges_to_silence` | impulse + 60 s simulated silence: finite throughout, final block RMS < 1e−5 |
+| Preset-load transition | `preset_swap_is_click_free` | hot-swap mid-signal: first post-swap sample < 0.05, max inter-sample step < 0.25, full recovery within 10 blocks |
+| Bypass/panic transition | `panic_fades_then_silences_click_free`, `panic_recovers_after_loud_input` | fade both directions, single-block tap kills energy |
+| Two-tone IMD | `two_tone_intermodulation_is_controlled_and_odd_only` | IMD3 ≤ −20 dB rel, even-order absent |
+| Null / baseline | `wet_zero_null_residue_is_the_tanh_color`, `neutral_macros_match_legacy_defaults` | wet-zero output ≡ tanh(input) within DC-blocker shear; neutral macros ≡ pre-macro engine |
+
+### 8.2 Baseline & ablation record (laws 16–17)
+
+- **Baseline for the macro law:** the pre-macro engine itself — `neutral_macros_match_legacy_defaults`
+  proves the change is a strict superset (identity at neutral). The wet-zero null test doubles as a
+  bypass-baseline comparison for the output stage.
+- **Ablation, panic fade:** the fade replaced an instant mute; `panic_fades_then_silences_click_free`
+  fails against the ablated (hard-mute) behavior — that failing assertion is the recorded evidence
+  the fade earns its ~150 samples of latency-to-silence.
+- **Ablation, preset-load fade:** `preset_swap_is_click_free` fails without `panic_gain = 0` on
+  `load_program` (the un-faded swap steps by the full tail amplitude).
+- **Ablation, macro smoothing:** `macro_targets_are_smoothed_not_snapped` fails if the chase is
+  removed (targets would apply instantly).
+- **Denormal guard (`flush_denormal`):** kept by analysis — cost is one branch per FDN line per
+  sample; the 60 s decay stress passes with it in place. CPU-spike ablation is not CI-measurable
+  reliably and is documented rather than asserted.
+
+### 8.3 Release gate status (law 21)
+
+**Current gate: Engineering Gate — PASSED.** Builds both feature paths; deterministic tests
+(`tests/determinism.rs`) pass; realtime-safety, coefficient/stability, sample-rate and block-size
+sweeps, automation-slam, bypass/panic and preset-transition tests pass; golden-adjacent
+self-deriving references (pure-tanh sweep, neutral-macro identity) pass.
+
+**Remaining for Release Gate:** a second host smoke test (only REAPER is installed here), a stored
+golden render (fixed input × fixed macros × void-glass, tolerance compare), CI running both
+feature paths of the workspace-excluded crates, a CPU benchmark matrix across rates/blocks, and a
+reproducibility bundle (rendered WAV artifacts + scripts). Perceptual claims in this document are
+limited to mechanisms with objective measurements; no MUSHRA/ABX protocol has been run, and no
+"better-sounding" claim is made that would require one.
 
 ---
 

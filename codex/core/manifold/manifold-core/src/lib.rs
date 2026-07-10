@@ -173,6 +173,10 @@ impl ManifoldCore {
         self.classifier = Classifier::new();
         self.features = FeatureExtractor::new();
         self.loaded = true;
+        // Program swap replaces the DSP graph, which hard-cuts the running
+        // tail — mask the discontinuity with the panic fade-in ramp (15 ms)
+        // so preset changes are click-safe (law: preset load must not click).
+        self.panic_gain = 0.0;
         Ok(())
     }
 
@@ -804,5 +808,177 @@ mod core_tests {
             (r - e).abs() <= e * 0.25,
             "null residue does not match tanh color: got {r}, expected {e}"
         );
+    }
+
+    // ------------------------------------------------------------------
+    // Research-hardening battery (skill laws 15-18): declared protocols,
+    // measured aliasing, rate/block robustness, stress, transition safety.
+    // ------------------------------------------------------------------
+
+    /// Law 18 aliasing report: the un-oversampled tanh folds harmonics that
+    /// land above Nyquist. Protocol: 48 kHz, wet=0 (isolates the output
+    /// stage), 0.8-peak sines, Goertzel at the folded H3 positions
+    /// (3x10 kHz = 30 kHz -> 18 kHz; 3x15 kHz = 45 kHz -> 3 kHz). Expected:
+    /// same order as the direct H3 (~-27 dB rel) — this IS the documented
+    /// intentional coloration; the test pins it so "intentional" stays a
+    /// number, not an excuse.
+    #[test]
+    fn aliasing_report_folded_h3_is_the_documented_color() {
+        for (f0, folded) in [(10_000.0, 18_000.0), (15_000.0, 3_000.0)] {
+            let (_, out) = capture_wet_zero(&[(f0, 0.8)], 4800);
+            let fund = goertzel(&out, f0, EXCITER_SR);
+            let alias = goertzel(&out, folded, EXCITER_SR);
+            let rel_db = 20.0 * (alias / fund).log10();
+            assert!(
+                (-38.0..=-18.0).contains(&rel_db),
+                "folded H3 of {f0} Hz at {folded} Hz out of the documented window: {rel_db} dB"
+            );
+        }
+    }
+
+    /// Law 18: sample-rate sweep. Every time-based coefficient derives from
+    /// the prepare-time sample rate; the engine must stay finite and bounded
+    /// at all supported rates, not just 48 kHz.
+    #[test]
+    fn sample_rate_sweep_stays_finite() {
+        for sr in [44_100.0, 48_000.0, 96_000.0, 192_000.0] {
+            let mut c = ManifoldCore::new();
+            c.prepare(PrepareConfig { sample_rate: sr, max_block_size: 256, channels: 2 })
+                .unwrap();
+            let p: BytecodeProgram = serde_json::from_str(VOID_GLASS).unwrap();
+            c.load_program(p).unwrap();
+            let sine: Vec<f32> = (0..256)
+                .map(|i| (2.0 * std::f32::consts::PI * 440.0 * i as f32 / sr).sin() * 0.7)
+                .collect();
+            let mut ol = [0.0f32; 256];
+            let mut or = [0.0f32; 256];
+            for _ in 0..400 {
+                c.process(&sine, &sine, &mut ol, &mut or, ctx(false, false));
+                for &s in ol.iter() {
+                    assert!(s.is_finite() && s.abs() < 4.0, "unbounded at sr={sr}: {s}");
+                }
+            }
+        }
+    }
+
+    /// Law 18: host block-size sweep (1..2048). The control tick is
+    /// sample-count based, so behavior must remain safe at every block size
+    /// a host might use — including single-sample processing.
+    #[test]
+    fn block_size_sweep_stays_finite() {
+        for bs in [1usize, 32, 128, 2048] {
+            let mut c = ManifoldCore::new();
+            c.prepare(PrepareConfig {
+                sample_rate: 48_000.0,
+                max_block_size: bs,
+                channels: 2,
+            })
+            .unwrap();
+            let p: BytecodeProgram = serde_json::from_str(VOID_GLASS).unwrap();
+            c.load_program(p).unwrap();
+            let mut ol = vec![0.0f32; bs];
+            let mut or = vec![0.0f32; bs];
+            let total = 9_600; // 0.2 s
+            let mut phase = 0usize;
+            while phase < total {
+                let b = tone_block(&[(330.0, 0.6)], phase, bs);
+                c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+                for &s in ol.iter() {
+                    assert!(s.is_finite() && s.abs() < 4.0, "unbounded at block={bs}: {s}");
+                }
+                phase += bs;
+            }
+        }
+    }
+
+    /// Law 18 automation slam: hammer every macro between extremes each
+    /// block while audio runs. The chase smoothing must keep the engine
+    /// finite, bounded, and the applied macro state inside [0,1].
+    #[test]
+    fn automation_slam_survives() {
+        let mut c = loaded_core();
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        let mut phase = 0usize;
+        for k in 0..400 {
+            let hi = k % 2 == 0;
+            c.set_macros(Macros {
+                size: if hi { 1.0 } else { 0.0 },
+                reactivity: if hi { 0.0 } else { 1.0 },
+                stability: if hi { 1.0 } else { 0.0 },
+                wet: if hi { 1.0 } else { 0.0 },
+            });
+            let b = tone_block(&[(220.0, 0.5), (997.0, 0.2)], phase, 128);
+            c.process(&b, &b, &mut ol, &mut or, ctx(false, k % 7 == 0));
+            phase += 128;
+            for &s in ol.iter() {
+                assert!(s.is_finite() && s.abs() < 4.0, "slam broke bounds: {s}");
+            }
+            for m in [c.macro_cur.size, c.macro_cur.reactivity, c.macro_cur.stability, c.macro_cur.wet]
+            {
+                assert!((0.0..=1.0).contains(&m), "macro escaped unit range: {m}");
+            }
+        }
+    }
+
+    /// Law 18 denormal / long-decay stress: one impulse, then 60 seconds of
+    /// simulated silence. Output must remain finite and converge to silence;
+    /// the FDN's flush_denormal keeps states from hovering in denormal range.
+    #[test]
+    fn sixty_second_decay_converges_to_silence() {
+        let mut c = loaded_core();
+        let mut impulse = [0.0f32; 128];
+        impulse[0] = 1.0;
+        let silence = [0.0f32; 128];
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        c.process(&impulse, &impulse, &mut ol, &mut or, ctx(false, false));
+        let blocks = (60.0f32 * 48_000.0 / 128.0) as usize;
+        let mut last_rms = f32::MAX;
+        for k in 0..blocks {
+            c.process(&silence, &silence, &mut ol, &mut or, ctx(false, false));
+            for &s in ol.iter() {
+                assert!(s.is_finite(), "non-finite during long decay at block {k}");
+            }
+            if k == blocks - 1 {
+                last_rms = rms_of(&ol);
+            }
+        }
+        assert!(last_rms < 1e-5, "tail did not converge to silence: {last_rms}");
+    }
+
+    /// Law 13 (preset load must not click): hot-swapping a program replaces
+    /// the DSP graph and cuts the tail — the load fade (panic_gain = 0 on
+    /// load_program) must mask that as a 15 ms dip, never a step.
+    #[test]
+    fn preset_swap_is_click_free() {
+        let mut c = loaded_core();
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        let mut phase = 0usize;
+        for _ in 0..100 {
+            let b = tone_block(&[(220.0, 0.7)], phase, 128);
+            c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+            phase += 128;
+        }
+        // Hot-swap mid-stream.
+        let p: BytecodeProgram = serde_json::from_str(VOID_GLASS).unwrap();
+        c.load_program(p).unwrap();
+        let b = tone_block(&[(220.0, 0.7)], phase, 128);
+        c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+        assert!(
+            ol[0].abs() < 0.05,
+            "first sample after swap must start from the fade, got {}",
+            ol[0]
+        );
+        let max_step = ol.windows(2).map(|w| (w[1] - w[0]).abs()).fold(0.0f32, f32::max);
+        assert!(max_step < 0.25, "preset swap stepped too hard: {max_step}");
+        // And the engine comes back: a few blocks later signal flows again.
+        for _ in 0..10 {
+            phase += 128;
+            let b = tone_block(&[(220.0, 0.7)], phase, 128);
+            c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+        }
+        assert!(rms_of(&ol) > 0.1, "engine did not recover after swap: {}", rms_of(&ol));
     }
 }
