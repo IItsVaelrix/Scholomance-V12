@@ -1,6 +1,7 @@
 //! Cochlear Manifold native plugin: a thin nih-plug wrapper over
-//! `manifold-core`, exporting VST3 + CLAP. No editor GUI this pass (host params
-//! only). The DSP engine, VM, and safety governor all live in `manifold-core`.
+//! `manifold-core`, exporting VST3 + CLAP, with an optional vizia editor
+//! behind the `gui` feature. The DSP engine, VM, and safety governor all live
+//! in `manifold-core`.
 
 use std::num::NonZeroU32;
 use std::sync::Arc;
@@ -111,7 +112,12 @@ impl Plugin for ManifoldPlugin {
 
     #[cfg(feature = "gui")]
     fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
-        editor::create_editor(self.params.editor_state.clone(), self.params.clone())
+        editor::create_editor(
+            self.params.editor_state.clone(),
+            self.params.clone(),
+            self.meter.clone(),
+            self.pending_preset.clone(),
+        )
     }
 
     fn initialize(

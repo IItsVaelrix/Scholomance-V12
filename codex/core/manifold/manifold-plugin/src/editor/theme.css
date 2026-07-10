@@ -89,6 +89,22 @@ window { background-color: var(--surface-0); }
 .manifold-zone.front   { left: 50%; top: 36%; }
 .manifold-zone.core    { left: 50%; top: 50%; }
 
+/* Editor composition layout (Task 13). */
+.editor-root { child-space: 8px; row-between: 8px; }
+.editor-header { col-between: 8px; }
+.editor-body { col-between: 8px; height: 1s; }
+.macro-deck { col-between: 12px; child-space: 8px; }
+.brand { color: var(--ink-hi); font-size: 18px; }
+.segmented {
+    background-color: var(--surface-1);
+    border-radius: 6px;
+    border-width: 1px;
+    border-color: #23282c;
+    col-between: 2px;
+}
+.segmented button { background-color: transparent; color: var(--ink-lo); border-radius: 5px; }
+.segmented button:checked { background-color: var(--grim-shell); color: var(--ink-hi); }
+
 *:focus-visible { border-color: var(--focus); border-width: 2px; }
 
 /* Accessibility roots (applied to the editor root by UiState::root_classes). */

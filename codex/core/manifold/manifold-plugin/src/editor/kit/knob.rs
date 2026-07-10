@@ -7,7 +7,8 @@ use nih_plug_vizia::widgets::ParamSlider;
 use crate::ManifoldPluginParams;
 
 /// Rotary macro (spec §3.2 #2). Label above, ParamSlider (keyboard + scroll +
-/// double-click reset come free from nih_plug_vizia), mono readout below.
+/// double-click reset come free from nih_plug_vizia; the slider renders the
+/// value text itself).
 pub struct Knob;
 
 impl Knob {
