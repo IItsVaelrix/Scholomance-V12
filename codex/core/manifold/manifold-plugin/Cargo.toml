@@ -16,6 +16,14 @@ gui = ["dep:nih_plug_vizia"]
 # unconditionally below. This just gives the lean validator build path
 # (`--no-default-features --features vst3`) a real feature name to select.
 vst3 = []
+# Dev-only windowed runner for render verification (screenshot harness) —
+# headless/compile gates cannot catch layout or style regressions.
+standalone = ["gui", "nih_plug/standalone"]
+
+[[bin]]
+name = "manifold_standalone"
+path = "src/bin/standalone.rs"
+required-features = ["standalone"]
 
 [dependencies]
 manifold-core = { path = "../manifold-core" }

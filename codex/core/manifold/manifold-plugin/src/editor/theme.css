@@ -1,32 +1,31 @@
-/* Cochlear Manifold — GrimDesign token stylesheet.
-   Colors/glow/timing are DERIVED (spec §2), never chosen. vizia CSS subset. */
-:root {
-    --grim-shell:  #ec185f;  /* hsl(340 85% 51%) WILL */
-    --grim-freeze: #2528e9;  /* hsl(239 82% 53%) ALCHEMY */
-    --grim-panic:  #ec4218;  /* hsl(12 85% 51%) WILL */
-    --grim-react:  #18d868;  /* hsl(145 80% 47%) NECROMANCY */
-    /* Documentation/spec tokens only — nothing in this stylesheet consumes
-       them. The chips' rendered border color comes from
-       src/editor/kit/preset_chip.rs (hsl_to_color(tokens::preset_hue(name))),
-       the single source of truth. Keep these in sync with spec §2 by
-       re-deriving from that Rust code, not by hand-tuning hex here. */
-    --preset-void-glass:  #e21212;
-    --preset-ice-circuit: #94ed3b;
-    --preset-ash-lung:    #e21212;
-    --preset-cathedral-of-teeth: #cf22f1;
-    --preset-substrate-maw:      #f27e36;
+/* Cochlear Manifold — GrimDesign token stylesheet (vizia CSS subset).
+   Colors/glow/timing are DERIVED (spec §2), never chosen.
 
-    --surface-0: #0b0e10;
-    --surface-1: #12171a;
-    --ink-hi:  #f4efe1;
-    --ink-lo:  #a9a599;
-    --focus:   #6fd9f2;
+   IMPORTANT: the pinned vizia rev does NOT support CSS custom properties —
+   token declarations are skipped with a "Custom Property" warning and
+   custom-property references never resolve (verified against the vizia
+   sources and REAPER's journal). All colors below are therefore literal hex,
+   locked to the world-law derivations in `tokens.rs` by the drift-guard test
+   in `editor::theme_tests`. Derivation table:
+
+     shell   #ec185f  hsl(340 85% 51%) WILL          brand/core/selection
+     freeze  #2528e9  hsl(239 82% 53%) ALCHEMY       Freeze tile
+     panic   #ec4218  hsl(12 85% 51%)  WILL          Panic button
+     react   #18d868  hsl(145 80% 47%) NECROMANCY    meters/reactivity
+     surface-0 #0b0e10   surface-1 #12171a
+     ink-hi  #f4efe1     ink-lo  #a9a599     focus #6fd9f2
+
+   Preset chip colors are applied in Rust (kit/preset_chip.rs via
+   tokens::preset_hue -> hsl_to_rgb), not here. */
+
+/* Override nih_plug_vizia's base theme (:root { background: #fafafa }). */
+:root {
+    background-color: #0b0e10;
+    color: #f4efe1;
 }
 
-window { background-color: var(--surface-0); }
-
 .panel-card {
-    background-color: var(--surface-1);
+    background-color: #12171a;
     border-radius: 8px;
     border-width: 1px;
     border-color: #23282c;
@@ -36,7 +35,7 @@ window { background-color: var(--surface-0); }
     height: 1s;
 }
 .panel-card-title {
-    color: var(--ink-lo);
+    color: #a9a599;
     font-size: 12px;
 }
 .panel-card-body { row-between: 8px; width: 1s; height: 1s; }
@@ -45,33 +44,40 @@ window { background-color: var(--surface-0); }
    theme); stretch the slider to the knob's width instead of clipping it. */
 .knob { width: 150px; row-between: 4px; }
 .knob param-slider { width: 1s; }
-.knob-label { color: var(--ink-lo); font-size: 11px; }
-.knob-readout { color: var(--ink-hi); font-family: monospace; font-size: 12px; }
+.knob-label { color: #a9a599; font-size: 11px; }
+.knob-readout { color: #f4efe1; font-family: monospace; font-size: 12px; }
 
 .toggle-tile {
-    background-color: var(--surface-1);
+    background-color: #12171a;
     border-radius: 6px;
     border-width: 1px;
-    border-color: var(--grim-freeze);
+    border-color: #2528e9;
+    width: 90px;
+    height: 30px;
+    child-space: 1s;
     transition: border-color 300ms;
 }
-.toggle-tile:checked { background-color: var(--grim-freeze); }
+.toggle-tile:checked { background-color: #2528e9; }
+.toggle-tile param-button { width: 1s; height: 1s; }
 
 .action-button {
-    background-color: var(--surface-1);
+    background-color: #12171a;
     border-radius: 6px;
     border-width: 1px;
-    border-color: var(--grim-panic);
-    color: var(--grim-panic);
+    border-color: #ec4218;
+    color: #ec4218;
+    width: 90px;
+    height: 30px;
+    child-space: 1s;
     transition: background-color 360ms;
 }
-.action-button:active { background-color: var(--grim-panic); color: var(--ink-hi); }
+.action-button:active { background-color: #ec4218; color: #f4efe1; }
 
 .preset-chip {
-    background-color: var(--surface-1);
+    background-color: #12171a;
     border-radius: 6px;
     border-width: 1px;
-    color: var(--ink-hi);
+    color: #f4efe1;
     transition: border-color 360ms;
     width: 1s;
     height: 28px;
@@ -82,10 +88,10 @@ window { background-color: var(--surface-0); }
 /* Horizontal level bar: the track stretches across its rail, the fill's
    width is driven by the 0..1 lens (kit/meter.rs). vizia sizes views to
    Auto unless told otherwise — without these dimensions the meter
-   collapses to zero pixels (the original "meters don't work" bug). */
+   collapses to zero pixels. */
 .meter { background-color: #05070a; border-radius: 3px; width: 1s; height: 12px; }
-.meter-fill { background-color: var(--grim-react); border-radius: 3px; }
-.meter-label { color: var(--ink-lo); font-size: 11px; }
+.meter-fill { background-color: #18d868; border-radius: 3px; }
+.meter-label { color: #a9a599; font-size: 11px; }
 
 .manifold-map {
     background-color: #05070a;
@@ -113,7 +119,7 @@ window { background-color: var(--surface-0); }
     width: 64px;
     height: 64px;
     border-radius: 32px;
-    background-color: var(--grim-shell);
+    background-color: #ec185f;
 }
 
 .manifold-zone.floor   { left: 50%; top: 82%; }
@@ -125,13 +131,13 @@ window { background-color: var(--surface-0); }
 
 /* Editor composition layout (Task 13). */
 .editor-root { child-space: 10px; row-between: 10px; }
-.editor-header { col-between: 8px; child-top: 1s; child-bottom: 1s; }
+.editor-header { height: 36px; col-between: 8px; child-top: 1s; child-bottom: 1s; }
 .header-spacer { width: 1s; }
 .editor-body { col-between: 10px; height: 1s; }
 .macro-deck { col-between: 16px; child-space: 8px; child-left: 1s; child-right: 1s; }
-.brand { color: var(--ink-hi); font-size: 18px; }
+.brand { color: #f4efe1; font-size: 18px; }
 .segmented {
-    background-color: var(--surface-1);
+    background-color: #12171a;
     border-radius: 6px;
     border-width: 1px;
     border-color: #23282c;
@@ -141,20 +147,20 @@ window { background-color: var(--surface-0); }
 }
 .segmented button {
     background-color: transparent;
-    color: var(--ink-lo);
+    color: #a9a599;
     border-radius: 5px;
+    border-width: 0px;
     height: 1s;
-    child-left: 10px;
-    child-right: 10px;
-    child-top: 1s;
-    child-bottom: 1s;
+    min-width: 80px;
+    child-space: 1s;
 }
-.segmented button:checked { background-color: var(--grim-shell); color: var(--ink-hi); }
+.segmented button:checked { background-color: #ec185f; color: #f4efe1; }
 
-*:focus-visible { border-color: var(--focus); border-width: 2px; }
+*:focus-visible { border-color: #6fd9f2; border-width: 2px; }
 
 /* Accessibility roots (applied to the editor root by UiState::root_classes). */
 .contrast-high .panel-card-title,
-.contrast-high .knob-label { color: var(--ink-hi); }
+.contrast-high .knob-label,
+.contrast-high .meter-label { color: #f4efe1; }
 .contrast-high .panel-card { border-width: 2px; }
 .motion-off * { transition-duration: 0ms; }

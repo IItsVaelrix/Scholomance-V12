@@ -20,7 +20,7 @@ use meter::MeterSnapshot;
 #[cfg(feature = "gui")]
 use nih_plug_vizia::ViziaState;
 
-struct ManifoldPlugin {
+pub struct ManifoldPlugin {
     params: Arc<ManifoldPluginParams>,
     core: ManifoldCore,
     scratch_l: Vec<f32>,

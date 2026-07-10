@@ -301,10 +301,10 @@ mod theme_tests {
     #[test]
     fn stylesheet_declares_required_tokens() {
         for token in [
-            "--grim-shell", "--grim-freeze", "--grim-panic", "--grim-react",
-            "--surface-0", "--ink-hi", "--focus",
+            ":root",
             ".panel-card", ".knob", ".toggle-tile", ".action-button",
-            ".preset-chip", ".meter", ".manifold-map",
+            ".preset-chip", ".meter", ".meter-fill", ".manifold-map",
+            ".manifold-zone", ".manifold-core",
             ".contrast-high", ".motion-off",
             ".editor-root", ".editor-header", ".editor-body",
             ".macro-deck", ".brand", ".segmented",
@@ -313,40 +313,32 @@ mod theme_tests {
         }
     }
 
-    /// The stylesheet's static school/preset hex declarations must equal the
-    /// world-law derivations in `tokens` — colors are computed, never chosen,
-    /// and this is what keeps the CSS from silently drifting (it already had,
-    /// once, before this guard existed).
+    /// vizia at the pinned rev does NOT support CSS custom properties: every
+    /// `--token` declaration is skipped ("Custom Property" warning) and
+    /// `var()` never resolves — which shipped an all-defaults white editor
+    /// once. Guard both halves: no custom-property syntax may reappear, and
+    /// the literal school hexes must equal the world-law derivations in
+    /// `tokens` (colors are computed, never chosen — and they HAD silently
+    /// drifted before this guard existed).
     #[test]
     fn stylesheet_hex_matches_world_law_derivation() {
-        use crate::editor::tokens::{css_hex, preset_hue, FREEZE, PANIC, REACT, SHELL};
+        use crate::editor::tokens::{css_hex, FREEZE, PANIC, REACT, SHELL};
 
-        fn declared(var: &str) -> &'static str {
-            let start = THEME_CSS
-                .find(var)
-                .unwrap_or_else(|| panic!("theme.css missing `{var}`"))
-                + var.len();
-            let rest = &THEME_CSS[start..];
-            let end = rest.find(';').expect("declaration not terminated");
-            rest[..end].trim_start_matches([':', ' ']).trim()
-        }
+        assert!(
+            !THEME_CSS.contains("var(") && !THEME_CSS.contains("\n    --"),
+            "theme.css uses custom properties, which the pinned vizia rev silently ignores"
+        );
 
-        for (var, hsl) in [
-            ("--grim-shell", SHELL),
-            ("--grim-freeze", FREEZE),
-            ("--grim-panic", PANIC),
-            ("--grim-react", REACT),
-            ("--preset-void-glass", preset_hue("void-glass")),
-            ("--preset-ice-circuit", preset_hue("ice-circuit")),
-            ("--preset-ash-lung", preset_hue("ash-lung")),
-            ("--preset-cathedral-of-teeth", preset_hue("cathedral-of-teeth")),
-            ("--preset-substrate-maw", preset_hue("substrate-maw")),
+        for (name, hsl) in [
+            ("shell", SHELL),
+            ("freeze", FREEZE),
+            ("panic", PANIC),
+            ("react", REACT),
         ] {
             let expected = css_hex(hsl);
-            let actual = declared(var);
             assert!(
-                actual.starts_with(&expected),
-                "theme.css `{var}` is `{actual}` but the world-law derivation is `{expected}`"
+                THEME_CSS.contains(&format!(": {expected};")),
+                "theme.css never declares the derived {name} color `{expected}`"
             );
         }
     }
