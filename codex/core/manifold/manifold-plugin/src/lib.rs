@@ -6,7 +6,9 @@
 use std::num::NonZeroU32;
 use std::sync::Arc;
 
-use manifold_core::{BytecodeProgram, ManifoldCore, PrepareConfig, ProcessContext as MfCtx};
+use manifold_core::{
+    BytecodeProgram, Macros, ManifoldCore, PrepareConfig, ProcessContext as MfCtx,
+};
 use nih_plug::prelude::*;
 
 #[cfg(feature = "gui")]
@@ -28,6 +30,8 @@ pub struct ManifoldPlugin {
     meter: std::sync::Arc<MeterSnapshot>,
     /// Spectral split + envelopes feeding the visualizer (audio-thread state).
     bands: meter::BandSplit,
+    /// Host sample rate (initialize()); used for the CPU-budget measurement.
+    sample_rate: f32,
     /// Factory programs pre-parsed off the audio thread (initialize()).
     programs: Vec<BytecodeProgram>,
     /// PRESETS index the editor wants loaded; -1 = none. Shared with the editor (Task 13).
@@ -83,6 +87,7 @@ impl Default for ManifoldPlugin {
             scratch_r: Vec::new(),
             meter: MeterSnapshot::new(),
             bands: meter::BandSplit::new(48_000.0),
+            sample_rate: 48_000.0,
             programs: Vec::new(),
             pending_preset: Arc::new(std::sync::atomic::AtomicI32::new(-1)),
         }
@@ -144,6 +149,7 @@ impl Plugin for ManifoldPlugin {
         self.scratch_l = vec![0.0; max];
         self.scratch_r = vec![0.0; max];
         self.bands = meter::BandSplit::new(buffer_config.sample_rate);
+        self.sample_rate = buffer_config.sample_rate;
 
         let mut programs = Vec::with_capacity(presets::PRESETS.len());
         for preset in presets::PRESETS.iter() {
@@ -190,6 +196,15 @@ impl Plugin for ManifoldPlugin {
             panic: self.params.panic.value(),
             freeze: self.params.freeze.value(),
         };
+        // Host macro knobs -> engine, block rate. The core smooths these
+        // (MACRO_TAU one-pole) before applying its mapping law, so raw values
+        // are automation-safe here.
+        self.core.set_macros(Macros {
+            size: self.params.size.value(),
+            reactivity: self.params.reactivity.value(),
+            stability: self.params.stability.value(),
+            wet: self.params.wet.value(),
+        });
 
         let slices = buffer.as_slice();
         if slices.len() < 2 {
@@ -202,6 +217,11 @@ impl Plugin for ManifoldPlugin {
         // Copy the in-place buffers to scratch inputs, then render into outputs.
         self.scratch_l[..n].copy_from_slice(&out_l[..n]);
         self.scratch_r[..n].copy_from_slice(&out_r[..n]);
+        // Time the engine against its block budget so the Advanced CPU
+        // readout shows a MEASURED value (the core's own cpu_class_ok field
+        // is not yet instrumented). Meter-only: never feeds back into audio
+        // behavior, so determinism of the signal path is preserved.
+        let t0 = std::time::Instant::now();
         let report = self.core.process(
             &self.scratch_l[..n],
             &self.scratch_r[..n],
@@ -209,6 +229,8 @@ impl Plugin for ManifoldPlugin {
             &mut out_r[..n],
             ctx,
         );
+        let block_budget_s = n as f32 / self.sample_rate.max(1.0);
+        let cpu_ok = t0.elapsed().as_secs_f32() < 0.7 * block_budget_s;
 
         // Publish the visualization snapshot (all lock-free, no allocation):
         // peaks + RMS for the meter rail and core orb, spectral bands for the
@@ -226,7 +248,7 @@ impl Plugin for ManifoldPlugin {
         self.meter.publish_levels(peak_l, peak_r, rms);
         let (low, mid, high) = self.bands.process_block(&out_l[..n], &out_r[..n]);
         self.meter.publish_bands(low, mid, high);
-        self.meter.publish_report(report.clipped, report.cpu_class_ok);
+        self.meter.publish_report(report.clipped, cpu_ok);
 
         ProcessStatus::Normal
     }

@@ -33,10 +33,66 @@ pub struct ManifoldCore {
     graph: Option<ManifoldGraph>,
     features: FeatureExtractor,
     classifier: Classifier,
+    /// Host macro state: `macro_targets` is set by the wrapper (block rate),
+    /// `macro_cur` chases it with a one-pole (MACRO_TAU) so knob/automation
+    /// moves are zipper-safe.
+    macro_targets: Macros,
+    macro_cur: Macros,
+    /// Panic gain envelope: 1.0 = passing audio, ramps toward 0 while panic
+    /// is held (PANIC_FADE_OUT_S) and back to 1 on release (PANIC_FADE_IN_S)
+    /// so the mute is click-free in both directions.
+    panic_gain: f32,
+    panic_resetted: bool,
     #[allow(dead_code)]
     scratch_l: Vec<f32>,
     #[allow(dead_code)]
     scratch_r: Vec<f32>,
+}
+
+/// Macro smoothing time constant (seconds). Applied at block rate:
+/// `a = exp(-n / (tau * fs))`, `cur = target + a * (cur - target)`.
+const MACRO_TAU: f32 = 0.020;
+/// Panic fade-out time constant (seconds) — fast enough to feel immediate,
+/// slow enough (~150 samples at 48k) to be click-free.
+const PANIC_FADE_OUT_S: f32 = 0.003;
+/// Panic release fade-in time constant (seconds).
+const PANIC_FADE_IN_S: f32 = 0.015;
+
+/// Classifier-confidence gain from the Reactivity macro (neutral 1.0 at 0.5):
+/// `conf_eff = conf * (0.4 + 1.2 * reactivity)` before the block threshold.
+#[inline]
+pub(crate) fn reactivity_confidence_gain(reactivity: f32) -> f32 {
+    0.4 + 1.2 * reactivity.clamp(0.0, 1.0)
+}
+
+/// Macro -> low-level parameter mapping law, applied to the bytecode-driven
+/// snapshot every block (the event system keeps modulating around the
+/// macro-set operating point; macros never fight the ramps directly):
+///
+///   m_size = 0.5 + size                       (0.5..1.5, neutral 1.0)
+///   feedback'   = min(feedback * m_size, ceiling_eff)
+///   decay_low'  = clamp(decay_low * m_size, 0, 1)
+///   absorption' = clamp(absorption * (1.5 - size), 0, 1)   (big rooms absorb less)
+///   ceiling_eff = clamp(0.15 + 1.7 * stability, 0, 1)      (neutral: no cap at 0.5;
+///       the low end must reach below the FDN's governor range — the graph maps
+///       param feedback as fdn_fb = clamp(0.4 + 0.55*fb, <= program maxFeedback),
+///       so only caps under ~0.33 tighten a program that already rides its ceiling)
+///   scatter'    = clamp(scatter * (1.4 - 0.8 * stability), 0, 1)
+pub(crate) fn shape_snapshot(p: params::ManifoldParams, m: &Macros) -> params::ManifoldParams {
+    let size = m.size.clamp(0.0, 1.0);
+    let stability = m.stability.clamp(0.0, 1.0);
+    let m_size = 0.5 + size;
+    let ceiling_eff = (0.15 + 1.7 * stability).clamp(0.0, 1.0);
+    params::ManifoldParams {
+        feedback: (p.feedback * m_size).min(ceiling_eff).clamp(0.0, 1.0),
+        decay_low: (p.decay_low * m_size).clamp(0.0, 1.0),
+        absorption_low: (p.absorption_low * (1.5 - size)).clamp(0.0, 1.0),
+        absorption_high: (p.absorption_high * (1.5 - size)).clamp(0.0, 1.0),
+        scatter: (p.scatter * (1.4 - 0.8 * stability)).clamp(0.0, 1.0),
+        diffusion: p.diffusion,
+        brightness: p.brightness,
+        width: p.width,
+    }
 }
 
 impl ManifoldCore {
@@ -53,9 +109,26 @@ impl ManifoldCore {
             graph: None,
             features: FeatureExtractor::new(),
             classifier: Classifier::new(),
+            macro_targets: Macros::default(),
+            macro_cur: Macros::default(),
+            panic_gain: 1.0,
+            panic_resetted: false,
             scratch_l: Vec::new(),
             scratch_r: Vec::new(),
         }
+    }
+
+    /// Set the host macro targets (block rate; smoothed internally with
+    /// MACRO_TAU before application, so callers may pass raw knob values).
+    /// See `shape_snapshot` / `reactivity_confidence_gain` / `Macros` for the
+    /// exact mapping law.
+    pub fn set_macros(&mut self, m: Macros) {
+        self.macro_targets = Macros {
+            size: m.size.clamp(0.0, 1.0),
+            reactivity: m.reactivity.clamp(0.0, 1.0),
+            stability: m.stability.clamp(0.0, 1.0),
+            wet: m.wet.clamp(0.0, 1.0),
+        };
     }
 
     pub fn prepare(&mut self, cfg: PrepareConfig) -> Result<(), PrepareError> {
@@ -112,10 +185,14 @@ impl ManifoldCore {
         ctx: ProcessContext,
     ) -> ProcessReport {
         let n = out_l.len();
-        // Panic path: kill energy and reset.
-        if ctx.panic {
-            if let Some(g) = self.graph.as_mut() {
-                g.reset();
+        // Panic path, fully faded: energy is dead and the gate is closed —
+        // reset once, then output cheap silence until release.
+        if ctx.panic && self.panic_gain <= 1.0e-4 {
+            if !self.panic_resetted {
+                if let Some(g) = self.graph.as_mut() {
+                    g.reset();
+                }
+                self.panic_resetted = true;
             }
             for i in 0..n {
                 out_l[i] = 0.0;
@@ -128,6 +205,9 @@ impl ManifoldCore {
                 clipped: false,
                 cpu_class_ok: true,
             };
+        }
+        if !ctx.panic {
+            self.panic_resetted = false;
         }
         // Passthrough when unprepared/unloaded.
         if !self.prepared || !self.loaded {
@@ -154,15 +234,61 @@ impl ManifoldCore {
             p.tick(n);
         }
 
-        let snap = self
-            .params
-            .as_ref()
-            .map(|p| p.snapshot())
-            .unwrap_or_default();
+        // Chase the host macro targets (zipper-safe: a = exp(-n/(tau*fs))).
+        let a_macro = (-(n as f32) / (MACRO_TAU * self.sample_rate)).exp();
+        let chase = |cur: f32, target: f32| target + a_macro * (cur - target);
+        self.macro_cur = Macros {
+            size: chase(self.macro_cur.size, self.macro_targets.size),
+            reactivity: chase(self.macro_cur.reactivity, self.macro_targets.reactivity),
+            stability: chase(self.macro_cur.stability, self.macro_targets.stability),
+            wet: chase(self.macro_cur.wet, self.macro_targets.wet),
+        };
+
+        // Macro law: shape the bytecode-driven snapshot around the host
+        // operating point (see shape_snapshot for the equations).
+        let snap = shape_snapshot(
+            self.params
+                .as_ref()
+                .map(|p| p.snapshot())
+                .unwrap_or_default(),
+            &self.macro_cur,
+        );
         let gov = self.governor.as_ref().unwrap();
         if let Some(g) = self.graph.as_mut() {
-            g.process_block(in_l, in_r, out_l, out_r, &snap, gov, 0.7, ctx.freeze);
+            g.process_block(in_l, in_r, out_l, out_r, &snap, gov, self.macro_cur.wet, ctx.freeze);
         }
+
+        // Panic gain envelope (per sample, both directions click-free):
+        //   a = exp(-1/(tau*fs)); g[n] = target + a*(g[n-1] - target)
+        if ctx.panic || self.panic_gain < 0.9999 {
+            let (target, tau) = if ctx.panic {
+                (0.0, PANIC_FADE_OUT_S)
+            } else {
+                (1.0, PANIC_FADE_IN_S)
+            };
+            let a = (-1.0 / (tau * self.sample_rate)).exp();
+            let mut g = self.panic_gain;
+            for i in 0..n {
+                g = target + a * (g - target);
+                out_l[i] *= g;
+                if i < out_r.len() {
+                    out_r[i] *= g;
+                }
+            }
+            self.panic_gain = g;
+            // Kill the stored energy at the end of the FIRST panic block:
+            // the block above was rendered from the still-energized graph so
+            // the fade stays continuous, but even a single-block panic tap
+            // must leave the network silent (panic is the runaway-feedback
+            // escape hatch, not a volume dip).
+            if ctx.panic && !self.panic_resetted {
+                if let Some(gr) = self.graph.as_mut() {
+                    gr.reset();
+                }
+                self.panic_resetted = true;
+            }
+        }
+
         let clipped = out_l.iter().any(|s| s.abs() >= 0.999);
         ProcessReport {
             events: report_events,
@@ -172,6 +298,9 @@ impl ManifoldCore {
     }
 
     fn dispatch(&mut self, events: &[ClassifiedEvent], bpm: f32) {
+        // Reactivity macro gates how eagerly classified events reach the
+        // bytecode rules: conf_eff = conf * (0.4 + 1.2 * reactivity).
+        let conf_gain = reactivity_confidence_gain(self.macro_cur.reactivity);
         // Split borrows: params + graph are distinct fields.
         let params = match self.params.as_mut() {
             Some(p) => p,
@@ -179,7 +308,7 @@ impl ManifoldCore {
         };
         for ev in events {
             for block in &self.blocks {
-                if block.event != ev.event || ev.confidence < block.threshold {
+                if block.event != ev.event || ev.confidence * conf_gain < block.threshold {
                     continue;
                 }
                 for action in &block.actions {
@@ -295,20 +424,188 @@ mod core_tests {
         }
     }
 
-    #[test]
-    fn panic_silences_output() {
+    fn loaded_core() -> ManifoldCore {
         let mut c = prepared_core();
         let p: BytecodeProgram = serde_json::from_str(VOID_GLASS).unwrap();
         c.load_program(p).unwrap();
+        c
+    }
+
+    fn ctx(panic: bool, freeze: bool) -> ProcessContext {
+        ProcessContext { bpm: 120.0, panic, freeze }
+    }
+
+    /// Drive the core with a sine for `blocks` blocks, fade the drive out
+    /// (an abrupt cut makes the output DC blockers ring down for ~10 blocks,
+    /// which would swamp the reverb tail being measured), skip `skip` blocks
+    /// of settling, then return per-block output RMS for `tail_blocks`
+    /// blocks of silence input.
+    fn tail_rms(c: &mut ManifoldCore, blocks: usize, skip: usize, tail_blocks: usize) -> Vec<f32> {
+        let sine = |amp_scale: f32| -> Vec<f32> {
+            (0..128)
+                .map(|i| {
+                    (2.0 * std::f32::consts::PI * 220.0 * i as f32 / 48_000.0).sin()
+                        * 0.5
+                        * amp_scale
+                })
+                .collect()
+        };
+        let drive = sine(1.0);
+        let silence = [0.0f32; 128];
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        for _ in 0..blocks {
+            c.process(&drive, &drive, &mut ol, &mut or, ctx(false, false));
+        }
+        // Fade the drive out over a few blocks to avoid the step transient.
+        for k in (0..4).rev() {
+            let faded = sine(k as f32 / 4.0);
+            c.process(&faded, &faded, &mut ol, &mut or, ctx(false, false));
+        }
+        for _ in 0..skip {
+            c.process(&silence, &silence, &mut ol, &mut or, ctx(false, false));
+        }
+        (0..tail_blocks)
+            .map(|_| {
+                c.process(&silence, &silence, &mut ol, &mut or, ctx(false, false));
+                (ol.iter().map(|s| s * s).sum::<f32>() / 128.0).sqrt()
+            })
+            .collect()
+    }
+
+    #[test]
+    fn panic_fades_then_silences_click_free() {
+        let mut c = loaded_core();
         let il = [0.9f32; 128];
         let mut ol = [0.0f32; 128];
         let mut or = [0.0f32; 128];
-        let ctx = ProcessContext {
-            bpm: 120.0,
-            panic: true,
-            freeze: false,
+        // Establish signal first.
+        for _ in 0..20 {
+            c.process(&il, &il, &mut ol, &mut or, ctx(false, false));
+        }
+        let last_running = ol[127];
+        // First panic block: must FADE, not slam to zero (click-safety), and
+        // must be continuous with the previous block's last sample.
+        c.process(&il, &il, &mut ol, &mut or, ctx(true, false));
+        assert!(
+            ol[0].abs() > 1e-4 || last_running.abs() < 1e-3,
+            "panic must not hard-mute instantly (got first sample {} after {last_running})",
+            ol[0]
+        );
+        let max_step = ol.windows(2).map(|w| (w[1] - w[0]).abs()).fold(0.0f32, f32::max);
+        assert!(max_step < 0.25, "panic fade steps too hard: {max_step}");
+        // A few blocks later (~27ms: fade + the DC-blocker transient from
+        // the energy reset re-charging on this test's DC input) the output
+        // must be fully silent.
+        for _ in 0..10 {
+            c.process(&il, &il, &mut ol, &mut or, ctx(true, false));
+        }
+        assert!(ol.iter().all(|&s| s.abs() < 1e-4), "panic must reach silence");
+        // Release: fade back in, no instant jump on the first sample.
+        c.process(&il, &il, &mut ol, &mut or, ctx(false, false));
+        assert!(ol[0].abs() < 0.2, "release must fade in, got {}", ol[0]);
+    }
+
+    #[test]
+    fn wet_zero_leaves_no_tail_wet_default_does() {
+        let mut dry_core = loaded_core();
+        dry_core.set_macros(Macros { wet: 0.0, ..Macros::default() });
+        let dry_tail = tail_rms(&mut dry_core, 100, 6, 8);
+        // With the wet path silenced, stopping the input stops the output.
+        assert!(
+            dry_tail.iter().all(|&r| r < 2e-3),
+            "wet=0 must have no reverb tail: {dry_tail:?}"
+        );
+
+        let mut wet_core = loaded_core();
+        let wet_tail = tail_rms(&mut wet_core, 100, 0, 8);
+        assert!(
+            wet_tail.iter().take(4).any(|&r| r > 1e-3),
+            "default wet must leave an audible tail: {wet_tail:?}"
+        );
+    }
+
+    #[test]
+    fn size_extends_the_tail() {
+        let mut small = loaded_core();
+        small.set_macros(Macros { size: 0.0, ..Macros::default() });
+        let small_tail: f32 = tail_rms(&mut small, 100, 40, 20).iter().sum();
+
+        let mut big = loaded_core();
+        big.set_macros(Macros { size: 1.0, ..Macros::default() });
+        let big_tail: f32 = tail_rms(&mut big, 100, 40, 20).iter().sum();
+
+        assert!(
+            big_tail > small_tail * 1.2,
+            "size=1 tail ({big_tail}) must exceed size=0 tail ({small_tail})"
+        );
+    }
+
+    #[test]
+    fn stability_tightens_the_tail() {
+        let mut loose = loaded_core();
+        loose.set_macros(Macros { stability: 0.0, size: 1.0, ..Macros::default() });
+        let loose_tail: f32 = tail_rms(&mut loose, 100, 40, 20).iter().sum();
+
+        let mut tight = loaded_core();
+        tight.set_macros(Macros { stability: 1.0, size: 1.0, ..Macros::default() });
+        // stability=0 caps param feedback at 0.15 (fdn fb ~0.48, under the
+        // program's 0.58 governor ceiling); at 1.0 the cap is released, so
+        // with size=1 pushing feedback up the loose cap must shorten the tail.
+        assert!(
+            loose_tail < tail_rms(&mut tight, 100, 40, 20).iter().sum::<f32>(),
+            "stability=0 must cap the tail below stability=1"
+        );
+    }
+
+    #[test]
+    fn neutral_macros_match_legacy_defaults() {
+        // Macros::default() must reproduce the pre-macro engine exactly:
+        // wet = the old hardwired 0.7, and shape_snapshot must be identity
+        // (modulo the stability ceiling, which is 1.0 -> no cap at neutral).
+        let m = Macros::default();
+        assert_eq!(m.wet, 0.7);
+        let p = params::ManifoldParams {
+            feedback: 0.5,
+            decay_low: 0.5,
+            absorption_low: 0.3,
+            absorption_high: 0.4,
+            scatter: 0.6,
+            diffusion: 0.5,
+            brightness: 0.5,
+            width: 0.5,
         };
-        c.process(&il, &il, &mut ol, &mut or, ctx);
-        assert!(ol.iter().all(|&s| s.abs() < 1e-4));
+        let shaped = shape_snapshot(p, &m);
+        for (a, b) in [
+            (shaped.feedback, p.feedback),
+            (shaped.decay_low, p.decay_low),
+            (shaped.absorption_low, p.absorption_low),
+            (shaped.absorption_high, p.absorption_high),
+            (shaped.scatter, p.scatter),
+        ] {
+            assert!((a - b).abs() < 1e-6, "neutral macros must be identity: {a} vs {b}");
+        }
+        assert!((reactivity_confidence_gain(0.5) - 1.0).abs() < 1e-6);
+    }
+
+    #[test]
+    fn macro_targets_are_smoothed_not_snapped() {
+        let mut c = loaded_core();
+        // Drive with signal at wet=0.7, then slam wet to 0.
+        let _ = tail_rms(&mut c, 50, 0, 0);
+        c.set_macros(Macros { wet: 0.0, ..Macros::default() });
+        let sine: Vec<f32> = (0..128)
+            .map(|i| (2.0 * std::f32::consts::PI * 220.0 * i as f32 / 48_000.0).sin() * 0.5)
+            .collect();
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        c.process(&sine, &sine, &mut ol, &mut or, ctx(false, false));
+        // One block (~2.7ms) is well under MACRO_TAU: the wet level must not
+        // have collapsed to zero yet.
+        assert!(
+            c.macro_cur.wet > 0.3,
+            "macro must chase, not snap: wet_cur = {}",
+            c.macro_cur.wet
+        );
     }
 }
