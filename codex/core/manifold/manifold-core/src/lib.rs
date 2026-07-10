@@ -608,4 +608,70 @@ mod core_tests {
             c.macro_cur.wet
         );
     }
+
+    /// Goertzel magnitude of `signal` at `freq` (exact-bin lengths only).
+    fn goertzel(signal: &[f32], freq: f32, sr: f32) -> f32 {
+        let w = 2.0 * std::f32::consts::PI * freq / sr;
+        let coeff = 2.0 * w.cos();
+        let (mut s1, mut s2) = (0.0f32, 0.0f32);
+        for &x in signal {
+            let s0 = x + coeff * s1 - s2;
+            s2 = s1;
+            s1 = s0;
+        }
+        ((s1 * s1 + s2 * s2 - coeff * s1 * s2).max(0.0)).sqrt() * 2.0 / signal.len() as f32
+    }
+
+    /// The always-on output `tanh` limiter is a documented gentle harmonic
+    /// exciter on EVERYTHING it passes — including the dry path. For a pure
+    /// sine of amplitude a, tanh(x) ~ x - x^3/3 puts a third harmonic at
+    /// roughly a^3/12 (about -25 dB relative at a = 0.8). Measure it so the
+    /// coloration is a pinned, intentional number instead of folklore.
+    #[test]
+    fn output_stage_adds_bounded_odd_harmonics() {
+        let mut c = loaded_core();
+        c.set_macros(Macros { wet: 0.0, ..Macros::default() });
+        let sr = 48_000.0;
+        let f0 = 1_000.0;
+        let sine: Vec<f32> = (0..128)
+            .map(|i| (2.0 * std::f32::consts::PI * f0 * i as f32 / sr).sin() * 0.8)
+            .collect();
+        let mut ol = [0.0f32; 128];
+        let mut or = [0.0f32; 128];
+        // Settle macros/filters, then capture 4800 samples (100 exact cycles).
+        let mut phase = 0usize;
+        let block = |phase: usize| -> Vec<f32> {
+            (0..128)
+                .map(|i| {
+                    (2.0 * std::f32::consts::PI * f0 * (phase + i) as f32 / sr).sin() * 0.8
+                })
+                .collect()
+        };
+        for _ in 0..200 {
+            let b = block(phase);
+            c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+            phase += 128;
+        }
+        let mut captured = Vec::with_capacity(4864);
+        while captured.len() < 4800 {
+            let b = block(phase);
+            c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
+            captured.extend_from_slice(&ol);
+            phase += 128;
+        }
+        captured.truncate(4800);
+        let fund = goertzel(&captured, f0, sr);
+        let h2 = goertzel(&captured, 2.0 * f0, sr);
+        let h3 = goertzel(&captured, 3.0 * f0, sr);
+        let _ = sine;
+        assert!(fund > 0.5, "fundamental should pass (~0.74 after tanh): {fund}");
+        // Third harmonic: present (the exciter is real) but bounded (gentle).
+        let rel3 = h3 / fund;
+        assert!(
+            (0.01..0.12).contains(&rel3),
+            "third harmonic out of the documented window: {rel3} ({h3} vs {fund})"
+        );
+        // tanh is odd-symmetric: even harmonics stay far below the odd ones.
+        assert!(h2 < h3 * 0.5, "unexpected even-harmonic content: h2={h2} h3={h3}");
+    }
 }

@@ -198,9 +198,31 @@ L = dryL + wet·w·(1 + 0.5·width)
 R = dryR + wet·w·(1 − 0.5·width)
 ```
 
-— an **additive wet blend** (documented deliberately: `w = 0` is bit-exact dry; `w = 0.7` is the
-engine's historical voicing), decorrelated by the width split, then DC-blocked per channel
-(`y = x − x₁ + 0.995·y₁`) behind a final soft clip.
+— an **additive wet blend** (`w = 0` silences the wet path entirely; `w = 0.7` is the engine's
+historical voicing), decorrelated by the width split, then passed — dry component included —
+through a final `tanh` soft clip and per-channel DC blocker (`y = x − x₁ + 0.995·y₁`).
+
+### 4.6 The output stage is a harmonic exciter (by design, measured)
+
+Because the final `tanh` limiter sits on the **summed** output, everything the plugin passes —
+including the dry signal at `w = 0` — receives gentle odd-order saturation. For a sine of
+amplitude `a`, `tanh(x) ≈ x − x³/3` puts the third harmonic at roughly `a³/12` relative:
+
+| peak level | H3 relative | audibility |
+|---|---|---|
+| 0.4 | −37.8 dB | subliminal glue |
+| 0.6 | −31.2 dB | gentle warmth |
+| 0.8 | −26.7 dB | clear excitement (H5 at −51.7 dB) |
+| 0.9 | −25.0 dB | forward presence |
+
+Purely odd-symmetric (even harmonics vanish), level-dependent, zero attack/release artifacts —
+i.e., a program-dependent harmonic exciter fused with the limiter. This is pinned by the
+`output_stage_adds_bounded_odd_harmonics` test (Goertzel measurement: H3/H1 must sit inside
+0.01–0.12 at 0.8 peak and even harmonics must stay well below odd). Combined with the
+event-triggered ResonatorBloom (220/440 Hz rings on sustained harmonic material) and the
+LFO-modulated early reflections, this is why the plugin audibly "excites" an instrumental even
+with all knobs untouched. Aliasing from the un-oversampled `tanh` is accepted as intentional
+coloration (H5 already at −52 dB at typical levels; see §6).
 
 ### 4.5 Freeze
 `ctx.freeze` zeroes the FDN excitation and holds the network output at its last value
