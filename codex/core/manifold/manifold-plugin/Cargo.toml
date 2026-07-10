@@ -2,7 +2,7 @@
 name = "manifold-plugin"
 version = "0.1.0"
 edition = "2021"
-description = "Cochlear Manifold native VST3/CLAP plugin (nih-plug wrapper, no GUI)."
+description = "Cochlear Manifold native VST3/CLAP plugin (nih-plug wrapper with a vizia editor behind the default `gui` feature)."
 
 [lib]
 # `cdylib` for the VST3/CLAP exports; `lib` so the nih-plug xtask bundler can

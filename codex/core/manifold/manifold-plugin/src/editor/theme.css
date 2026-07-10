@@ -5,11 +5,16 @@
     --grim-freeze: #2b31e0;  /* hsl(239 82% 53%) ALCHEMY */
     --grim-panic:  #ef4a1f;  /* hsl(12 85% 51%) WILL */
     --grim-react:  #17d97a;  /* hsl(145 80% 47%) NECROMANCY */
-    --preset-void-glass:  #e30b0b;
-    --preset-ice-circuit: #86e02a;
-    --preset-ash-lung:    #e30b0b;
-    --preset-cathedral-of-teeth: #c026e6;
-    --preset-substrate-maw:      #e6801a;
+    /* Documentation/spec tokens only — nothing in this stylesheet consumes
+       them. The chips' rendered border color comes from
+       src/editor/kit/preset_chip.rs (hsl_to_color(tokens::preset_hue(name))),
+       the single source of truth. Keep these in sync with spec §2 by
+       re-deriving from that Rust code, not by hand-tuning hex here. */
+    --preset-void-glass:  #e21212;
+    --preset-ice-circuit: #94ed3b;
+    --preset-ash-lung:    #e21212;
+    --preset-cathedral-of-teeth: #cf22f1;
+    --preset-substrate-maw:      #f27e36;
 
     --surface-0: #0b0e10;
     --surface-1: #12171a;

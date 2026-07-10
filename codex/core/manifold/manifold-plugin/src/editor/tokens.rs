@@ -24,7 +24,11 @@ pub fn preset_hue(name: &str) -> Hsl {
     }
 }
 
-/// In high-contrast mode push lightness up (toward 72) for AA legibility.
+/// In high-contrast mode push lightness up to at least 72 (on the 0-100 `l`
+/// scale used throughout this module — not a 0.0-1.0 fraction) for AA
+/// legibility. Not yet wired into the render path: today `.contrast-high` in
+/// `theme.css` handles high-contrast styling (label color + border width)
+/// directly, independent of this function.
 pub fn contrast_lift(base: Hsl, high_contrast: bool) -> Hsl {
     if !high_contrast {
         return base;

@@ -2,18 +2,23 @@
 
 Native **VST3 + CLAP** plugin for Cochlear Manifold — a thin
 [nih-plug](https://github.com/robbert-vdh/nih-plug) wrapper over
-`manifold-core`. No editor GUI this pass (host-automatable params only). All
-DSP, the bytecode VM, and the safety governor live in `manifold-core`; this
-crate only bridges the host audio/params to the engine.
+`manifold-core`. The crate ships a full [vizia](https://github.com/vizia/vizia)
+editor behind a default-on `gui` cargo feature: Simple and Advanced modes,
+preset chips with full bytecode hot-swap, a momentary Panic control, and
+accessibility toggles (high-contrast, motion-off). The lean
+`--no-default-features --features vst3` build path stays GUI/X11-free for
+headless validation. All DSP, the bytecode VM, and the safety governor live in
+`manifold-core`; this crate bridges the host audio/params/UI to the engine.
 
 Standalone crate (excluded from the `manifold-core`/`manifold-wasm` workspace)
 so nih-plug's heavier dependency tree never gates the core/wasm builds. Depends
 on `manifold-core` by path.
 
 ## Parameters (host-automatable)
-Wet/Dry, Manifold Size, Reactivity, Stability, Freeze, Panic. One factory
-preset (`void-glass`) is embedded and loaded in `initialize()`, so the plugin
-produces sound immediately.
+Wet/Dry, Manifold Size, Reactivity, Stability, Freeze, Panic. All 5 factory
+presets (`void-glass`, `ice-circuit`, `cathedral-of-teeth`, `substrate-maw`,
+`ash-lung`) are embedded; `void-glass` loads by default in `initialize()`, so
+the plugin produces sound immediately.
 
 ## Build
 

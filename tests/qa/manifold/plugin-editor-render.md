@@ -67,9 +67,14 @@ This file documents manual GUI render verification for the Cochlear Manifold plu
 ### High-Contrast Toggle ON
 - **Scenario:** Enable high-contrast accessibility toggle
 - **Color Checks:**
-  - Shell magenta lightness increased (contrast-lift function applied) ✓
-  - Freeze, Panic, Reactivity meter colors lifted for contrast ✓
-  - Text/widget contrast meets WCAG AA standards ✓
+  - Panel-card titles and knob labels switch from `--ink-lo` to `--ink-hi`
+    (per `.contrast-high .panel-card-title, .contrast-high .knob-label` in
+    theme.css)
+  - Panel-card borders thicken from 1px to 2px (`.contrast-high .panel-card`)
+  - Shell/Freeze/Panic/Reactivity school colors are **not** altered by this
+    toggle today — `tokens::contrast_lift` exists but is not yet wired into
+    the render path; theme.css is the only thing `.contrast-high` currently
+    drives
 - **Result:** `PENDING` (needs GUI CLAP host)
 
 ### Motion-Off Toggle ON
