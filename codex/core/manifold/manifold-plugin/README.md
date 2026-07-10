@@ -51,3 +51,40 @@ shared workspace).
 
 Not verifiable here: loading in an actual DAW (none installed). The
 clap-validator host pass is the closest available evidence.
+
+## GUI Verification (requires a display — headless renders are unreliable)
+
+The plugin includes a full vizia editor accessible when compiled with `--features gui`. To verify visual appearance and color spec parity:
+
+1. **Build & bundle:**
+   ```bash
+   cargo build --release --features gui
+   ```
+   then bundle per the "Bundle (Linux)" section above into `bundle/CochlearManifold.clap`.
+
+2. **Load in a CLAP host with a screen** (e.g. Bitwig Studio, clap-host, REAPER, or Carla with a display) and open the editor.
+
+3. **Test cases to capture:**
+   - Default state (Simple mode)
+   - Each of the 5 presets selected (void-glass, ice-circuit, cathedral, substrate, ash-lung)
+   - Advanced mode
+   - High-contrast toggle ON
+   - Motion-off toggle ON
+
+4. **Verify color spec §2 parity:**
+   - Shell/brand magenta: `hsl(340, 85%, 51%)`
+   - Freeze tile indigo: `hsl(239, 82%, 53%)`
+   - Panic button red-orange: `hsl(12, 85%, 51%)`
+   - Preset chip borders:
+     - void-glass/ash-lung: red (Hsl { h: 12.0, s: 85.0, l: 51.0 })
+     - ice-circuit: chartreuse (Hsl { h: 103.0, s: 78.0, l: 59.0 })
+     - cathedral: violet (Hsl { h: 278.0, s: 76.0, l: 63.0 })
+     - substrate: amber (Hsl { h: 37.0, s: 87.0, l: 56.0 })
+   - Reactivity meter/knob: green (Hsl { h: 145.0, s: 80.0, l: 47.0 })
+
+## Test Suite
+
+- **With GUI** (`cargo test --features gui`): 22 tests pass
+  - Tokens (3), Presets (6), Meter (4), State (3), Theme (1), Preset Chip (3), Editor Helpers (2)
+- **Non-GUI** (`cargo test --no-default-features --features vst3`): 10 tests pass
+  - Meter (4), Presets (6)
