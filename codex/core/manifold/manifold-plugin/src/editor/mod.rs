@@ -155,6 +155,15 @@ pub fn create_editor(
     pending_preset: Arc<AtomicI32>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, _gui_cx| {
+        // MUST come first: with `ViziaTheming::Custom`, nih_plug_vizia sets the
+        // default font family to "Noto Sans" (editor.rs at the pinned rev) but
+        // registering the font DATA is the plugin's job. Without these the
+        // window thread panics during first-frame text layout and the editor
+        // never appears (observed in REAPER's journal). Same two registrations
+        // as every upstream vizia example (Diopser, gain_gui_vizia, ...).
+        nih_plug_vizia::assets::register_noto_sans_light(cx);
+        nih_plug_vizia::assets::register_noto_sans_thin(cx);
+
         cx.add_stylesheet(THEME_CSS).ok();
 
         Data {
