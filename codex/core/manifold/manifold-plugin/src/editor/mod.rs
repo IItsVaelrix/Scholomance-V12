@@ -204,6 +204,7 @@ pub fn create_editor(
 fn header(cx: &mut Context) {
     HStack::new(cx, |cx| {
         Label::new(cx, "COCHLEAR MANIFOLD").class("brand");
+        Element::new(cx).class("header-spacer");
 
         // Mode segmented control.
         HStack::new(cx, |cx| {
@@ -269,7 +270,9 @@ fn body(cx: &mut Context) {
         ManifoldMap::new(cx, Data::energy);
         // Meter rail.
         PanelCard::new(cx, "METERS", |cx| {
+            Label::new(cx, "OUT L").class("meter-label");
             Meter::new(cx, Data::meter_l);
+            Label::new(cx, "OUT R").class("meter-label");
             Meter::new(cx, Data::meter_r);
             // Advanced-only readouts.
             VStack::new(cx, |cx| {

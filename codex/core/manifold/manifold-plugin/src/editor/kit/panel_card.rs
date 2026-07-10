@@ -11,7 +11,7 @@ impl PanelCard {
     ) -> Handle<'a, impl View> {
         VStack::new(cx, move |cx| {
             Label::new(cx, title).class("panel-card-title");
-            VStack::new(cx, |cx| content(cx));
+            VStack::new(cx, |cx| content(cx)).class("panel-card-body");
         })
         .class("panel-card")
     }

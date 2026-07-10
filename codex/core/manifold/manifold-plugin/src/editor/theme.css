@@ -31,13 +31,20 @@ window { background-color: var(--surface-0); }
     border-width: 1px;
     border-color: #23282c;
     child-space: 10px;
+    row-between: 8px;
+    width: 170px;
+    height: 1s;
 }
 .panel-card-title {
     color: var(--ink-lo);
     font-size: 12px;
 }
+.panel-card-body { row-between: 8px; width: 1s; height: 1s; }
 
-.knob { width: 74px; height: 92px; }
+/* Knob = label above a ParamSlider (natural size 180x30 in the widget
+   theme); stretch the slider to the knob's width instead of clipping it. */
+.knob { width: 150px; row-between: 4px; }
+.knob param-slider { width: 1s; }
 .knob-label { color: var(--ink-lo); font-size: 11px; }
 .knob-readout { color: var(--ink-hi); font-family: monospace; font-size: 12px; }
 
@@ -66,21 +73,43 @@ window { background-color: var(--surface-0); }
     border-width: 1px;
     color: var(--ink-hi);
     transition: border-color 360ms;
+    width: 1s;
+    height: 28px;
+    child-space: 1s;
 }
 .preset-chip:checked { border-width: 2px; }
 
-.meter { background-color: #05070a; border-radius: 3px; }
-.meter-fill { background-color: var(--grim-react); }
+/* Horizontal level bar: the track stretches across its rail, the fill's
+   width is driven by the 0..1 lens (kit/meter.rs). vizia sizes views to
+   Auto unless told otherwise — without these dimensions the meter
+   collapses to zero pixels (the original "meters don't work" bug). */
+.meter { background-color: #05070a; border-radius: 3px; width: 1s; height: 12px; }
+.meter-fill { background-color: var(--grim-react); border-radius: 3px; }
+.meter-label { color: var(--ink-lo); font-size: 11px; }
 
 .manifold-map {
     background-color: #05070a;
     border-radius: 8px;
     border-width: 1px;
     border-color: #1c2226;
+    width: 1s;
+    height: 1s;
 }
-.manifold-zone { border-radius: 5px; background-color: #0a1a14; }
+/* ZStack does NOT self-direct its children at the pinned rev — without
+   position-type the zones/core flow as a column. left/top place the
+   zone's top-left corner at the spec percentages. */
+.manifold-zone {
+    position-type: self-directed;
+    width: 34px;
+    height: 34px;
+    border-radius: 17px;
+    background-color: #0a1a14;
+}
 
 .manifold-core {
+    position-type: self-directed;
+    /* Stretch spacing on all four sides centers a self-directed child. */
+    left: 1s; right: 1s; top: 1s; bottom: 1s;
     width: 64px;
     height: 64px;
     border-radius: 32px;
@@ -95,10 +124,11 @@ window { background-color: var(--surface-0); }
 .manifold-zone.core    { left: 50%; top: 50%; }
 
 /* Editor composition layout (Task 13). */
-.editor-root { child-space: 8px; row-between: 8px; }
-.editor-header { col-between: 8px; }
-.editor-body { col-between: 8px; height: 1s; }
-.macro-deck { col-between: 12px; child-space: 8px; }
+.editor-root { child-space: 10px; row-between: 10px; }
+.editor-header { col-between: 8px; child-top: 1s; child-bottom: 1s; }
+.header-spacer { width: 1s; }
+.editor-body { col-between: 10px; height: 1s; }
+.macro-deck { col-between: 16px; child-space: 8px; child-left: 1s; child-right: 1s; }
 .brand { color: var(--ink-hi); font-size: 18px; }
 .segmented {
     background-color: var(--surface-1);
@@ -106,8 +136,19 @@ window { background-color: var(--surface-0); }
     border-width: 1px;
     border-color: #23282c;
     col-between: 2px;
+    child-space: 2px;
+    height: 30px;
 }
-.segmented button { background-color: transparent; color: var(--ink-lo); border-radius: 5px; }
+.segmented button {
+    background-color: transparent;
+    color: var(--ink-lo);
+    border-radius: 5px;
+    height: 1s;
+    child-left: 10px;
+    child-right: 10px;
+    child-top: 1s;
+    child-bottom: 1s;
+}
 .segmented button:checked { background-color: var(--grim-shell); color: var(--ink-hi); }
 
 *:focus-visible { border-color: var(--focus); border-width: 2px; }
