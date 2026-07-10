@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scholomance Game Development"
+  short_description: "Build deterministic Scholomance game assets and systems"
+  default_prompt: "Use $scholomance-game-development to design, implement, diagnose, or validate this Scholomance game-development task through its canonical SCDL and PixelBrain authority."
