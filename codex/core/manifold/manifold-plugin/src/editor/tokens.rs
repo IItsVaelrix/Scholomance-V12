@@ -8,15 +8,12 @@ pub struct Hsl {
     pub l: f32,
 }
 
+// Consumed both by theme.css (literal declarations locked to these values by
+// the drift-guard test in `editor::theme_tests`) and at runtime by the
+// canvas-drawn kit views (ManifoldMap, Meter, StatusDot).
 pub const SHELL: Hsl = Hsl { h: 340.0, s: 85.0, l: 51.0 };
-// FREEZE/PANIC/REACT have no runtime consumer yet: views take these colors
-// from theme.css classes, whose static hex declarations are locked to these
-// derivations by the drift-guard test in `editor::theme_tests`.
-#[allow(dead_code)]
 pub const FREEZE: Hsl = Hsl { h: 239.0, s: 82.0, l: 53.0 };
-#[allow(dead_code)]
 pub const PANIC: Hsl = Hsl { h: 12.0, s: 85.0, l: 51.0 };
-#[allow(dead_code)]
 pub const REACT: Hsl = Hsl { h: 145.0, s: 80.0, l: 47.0 };
 
 /// GrimDesign preset hues (spec §2). Unknown names inherit the instrument shell.

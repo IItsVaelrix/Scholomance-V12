@@ -15,14 +15,15 @@ use nih_plug_vizia::{create_vizia_editor, ViziaState, ViziaTheming};
 
 use crate::editor::kit::knob::Knob;
 use crate::editor::kit::manifold_map::ManifoldMap;
-use crate::editor::kit::meter::Meter;
+use crate::editor::kit::meter::{Meter, MeterChannel};
 use crate::editor::kit::panel_card::PanelCard;
 use crate::editor::kit::preset_chip::PresetChip;
+use crate::editor::kit::status_dot::{StatusDot, StatusKind};
 use crate::editor::kit::toggle_tile::{ActionButton, ToggleTile};
 use crate::editor::state::{
     root_classes, select_preset, set_mode, toggle_contrast, toggle_motion, Mode, UiState,
 };
-use crate::meter::{peak_to_meter, MeterSnapshot};
+use crate::meter::MeterSnapshot;
 use crate::presets::PRESETS;
 use crate::ManifoldPluginParams;
 
@@ -54,13 +55,13 @@ struct Data {
     // visibility onto the generated lens module, and a `pub Data` lens would
     // leak the crate-private `ManifoldPluginParams` type through a public
     // interface (E0446). Everything that needs these lenses lives in this file.
+    //
+    // Live meter/visualizer values are NOT mirrored here: the canvas views
+    // (Meter, ManifoldMap, StatusDot) read the lock-free snapshot directly in
+    // draw() — baseview renders every frame, so no polling thread or event
+    // traffic is needed (same pattern as nih_plug_vizia's PeakMeter).
     params: Arc<ManifoldPluginParams>,
     ui: UiState,
-    meter_l: f32,
-    meter_r: f32,
-    energy: f32,
-    #[lens(ignore)]
-    meter_src: Arc<MeterSnapshot>,
     #[lens(ignore)]
     pending_preset: Arc<AtomicI32>,
     /// Guards the momentary Panic automation gesture: begin/end must pair
@@ -79,7 +80,6 @@ enum AppEvent {
     PanicPressed,
     /// Momentary Panic: release (panic -> 0.0 + end gesture).
     PanicReleased,
-    Poll,
 }
 
 impl Data {
@@ -138,12 +138,6 @@ impl Model for Data {
             AppEvent::SelectPreset(name) => self.apply_preset(cx, name),
             AppEvent::PanicPressed => self.panic_pressed(cx),
             AppEvent::PanicReleased => self.panic_released(cx),
-            AppEvent::Poll => {
-                let (l, r, e) = self.meter_src.read();
-                self.meter_l = peak_to_meter(l);
-                self.meter_r = peak_to_meter(r);
-                self.energy = e;
-            }
         });
     }
 }
@@ -169,28 +163,16 @@ pub fn create_editor(
         Data {
             params: params.clone(),
             ui: UiState::default(),
-            meter_l: 0.0,
-            meter_r: 0.0,
-            energy: 0.0,
-            meter_src: meter_src.clone(),
             pending_preset: pending_preset.clone(),
             panic_held: false,
         }
         .build(cx);
 
-        // Poll meters ~30fps. ContextProxy::emit returns Err once the editor's
-        // event loop is gone (reconciled: Result<(), ProxyEmitError>), which
-        // is this thread's exit signal.
-        cx.spawn(|cx| loop {
-            std::thread::sleep(std::time::Duration::from_millis(33));
-            if cx.emit(AppEvent::Poll).is_err() {
-                break;
-            }
-        });
-
-        VStack::new(cx, |cx| {
+        let viz = meter_src.clone();
+        let params_for_views = params.clone();
+        VStack::new(cx, move |cx| {
             header(cx);
-            body(cx);
+            body(cx, viz.clone(), params_for_views.clone());
             macro_deck(cx);
         })
         .class("editor-root")
@@ -252,8 +234,8 @@ fn header(cx: &mut Context) {
     .class("editor-header");
 }
 
-fn body(cx: &mut Context) {
-    HStack::new(cx, |cx| {
+fn body(cx: &mut Context, viz: Arc<MeterSnapshot>, params: Arc<ManifoldPluginParams>) {
+    HStack::new(cx, move |cx| {
         // Preset rail.
         PanelCard::new(cx, "PRESETS", |cx| {
             for p in PRESETS.iter() {
@@ -266,18 +248,30 @@ fn body(cx: &mut Context) {
                 );
             }
         });
-        // Hero map.
-        ManifoldMap::new(cx, Data::energy);
+        // Hero map: the perspective room, lit by the live spectral snapshot.
+        ManifoldMap::new(cx, viz.clone(), params.clone());
         // Meter rail.
-        PanelCard::new(cx, "METERS", |cx| {
+        let viz_meters = viz.clone();
+        PanelCard::new(cx, "METERS", move |cx| {
             Label::new(cx, "OUT L").class("meter-label");
-            Meter::new(cx, Data::meter_l);
+            Meter::new(cx, viz_meters.clone(), MeterChannel::Left);
             Label::new(cx, "OUT R").class("meter-label");
-            Meter::new(cx, Data::meter_r);
-            // Advanced-only readouts.
-            VStack::new(cx, |cx| {
-                Label::new(cx, "cpu / feedback / spray").class("knob-label");
+            Meter::new(cx, viz_meters.clone(), MeterChannel::Right);
+            // Advanced-only safety-governor readouts (live ProcessReport).
+            let viz_status = viz_meters.clone();
+            VStack::new(cx, move |cx| {
+                HStack::new(cx, |cx| {
+                    StatusDot::new(cx, viz_status.clone(), StatusKind::Cpu);
+                    Label::new(cx, "CPU").class("meter-label");
+                })
+                .class("status-row");
+                HStack::new(cx, |cx| {
+                    StatusDot::new(cx, viz_status.clone(), StatusKind::Clip);
+                    Label::new(cx, "CLIP").class("meter-label");
+                })
+                .class("status-row");
             })
+            .class("status-rows")
             .display(Data::ui.map(|u| matches!(u.mode, Mode::Advanced)));
         });
     })
@@ -303,8 +297,8 @@ mod theme_tests {
         for token in [
             ":root",
             ".panel-card", ".knob", ".toggle-tile", ".action-button",
-            ".preset-chip", ".meter", ".meter-fill", ".manifold-map",
-            ".manifold-zone", ".manifold-core",
+            ".preset-chip", ".meter", ".meter-label", ".manifold-map",
+            ".status-dot", ".status-row",
             ".contrast-high", ".motion-off",
             ".editor-root", ".editor-header", ".editor-body",
             ".macro-deck", ".brand", ".segmented",
@@ -329,18 +323,21 @@ mod theme_tests {
             "theme.css uses custom properties, which the pinned vizia rev silently ignores"
         );
 
-        for (name, hsl) in [
-            ("shell", SHELL),
-            ("freeze", FREEZE),
-            ("panic", PANIC),
-            ("react", REACT),
-        ] {
+        // Colors the stylesheet declares directly. REACT is not in this list:
+        // since the canvas rewrite it is consumed only at runtime (Meter /
+        // ManifoldMap / StatusDot draw from tokens.rs), which the compiler
+        // enforces — CSS never mentions it.
+        for (name, hsl) in [("shell", SHELL), ("freeze", FREEZE), ("panic", PANIC)] {
             let expected = css_hex(hsl);
             assert!(
                 THEME_CSS.contains(&format!(": {expected};")),
                 "theme.css never declares the derived {name} color `{expected}`"
             );
         }
+        // REACT still participates in the derivation law even though it is
+        // painted in Rust; keep its derivation pinned so a retune shows up
+        // in review.
+        assert_eq!(css_hex(REACT), "#18d868");
     }
 }
 

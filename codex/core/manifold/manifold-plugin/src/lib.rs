@@ -26,6 +26,8 @@ pub struct ManifoldPlugin {
     scratch_l: Vec<f32>,
     scratch_r: Vec<f32>,
     meter: std::sync::Arc<MeterSnapshot>,
+    /// Spectral split + envelopes feeding the visualizer (audio-thread state).
+    bands: meter::BandSplit,
     /// Factory programs pre-parsed off the audio thread (initialize()).
     programs: Vec<BytecodeProgram>,
     /// PRESETS index the editor wants loaded; -1 = none. Shared with the editor (Task 13).
@@ -80,6 +82,7 @@ impl Default for ManifoldPlugin {
             scratch_l: Vec::new(),
             scratch_r: Vec::new(),
             meter: MeterSnapshot::new(),
+            bands: meter::BandSplit::new(48_000.0),
             programs: Vec::new(),
             pending_preset: Arc::new(std::sync::atomic::AtomicI32::new(-1)),
         }
@@ -140,6 +143,7 @@ impl Plugin for ManifoldPlugin {
         }
         self.scratch_l = vec![0.0; max];
         self.scratch_r = vec![0.0; max];
+        self.bands = meter::BandSplit::new(buffer_config.sample_rate);
 
         let mut programs = Vec::with_capacity(presets::PRESETS.len());
         for preset in presets::PRESETS.iter() {
@@ -198,7 +202,7 @@ impl Plugin for ManifoldPlugin {
         // Copy the in-place buffers to scratch inputs, then render into outputs.
         self.scratch_l[..n].copy_from_slice(&out_l[..n]);
         self.scratch_r[..n].copy_from_slice(&out_r[..n]);
-        self.core.process(
+        let report = self.core.process(
             &self.scratch_l[..n],
             &self.scratch_r[..n],
             &mut out_l[..n],
@@ -206,9 +210,23 @@ impl Plugin for ManifoldPlugin {
             ctx,
         );
 
-        let peak_l = out_l[..n].iter().fold(0.0_f32, |a, s| a.max(s.abs()));
-        let peak_r = out_r[..n].iter().fold(0.0_f32, |a, s| a.max(s.abs()));
-        self.meter.publish(peak_l, peak_r, (peak_l + peak_r) * 0.5);
+        // Publish the visualization snapshot (all lock-free, no allocation):
+        // peaks + RMS for the meter rail and core orb, spectral bands for the
+        // room glow, and the safety-governor report for the Advanced readouts.
+        let mut peak_l = 0.0_f32;
+        let mut peak_r = 0.0_f32;
+        let mut sq = 0.0_f32;
+        for i in 0..n {
+            let (l, r) = (out_l[i], out_r[i]);
+            peak_l = peak_l.max(l.abs());
+            peak_r = peak_r.max(r.abs());
+            sq += l * l + r * r;
+        }
+        let rms = (sq / (2.0 * n as f32)).sqrt();
+        self.meter.publish_levels(peak_l, peak_r, rms);
+        let (low, mid, high) = self.bands.process_block(&out_l[..n], &out_r[..n]);
+        self.meter.publish_bands(low, mid, high);
+        self.meter.publish_report(report.clipped, report.cpu_class_ok);
 
         ProcessStatus::Normal
     }
