@@ -622,56 +622,187 @@ mod core_tests {
         ((s1 * s1 + s2 * s2 - coeff * s1 * s2).max(0.0)).sqrt() * 2.0 / signal.len() as f32
     }
 
-    /// The always-on output `tanh` limiter is a documented gentle harmonic
-    /// exciter on EVERYTHING it passes — including the dry path. For a pure
-    /// sine of amplitude a, tanh(x) ~ x - x^3/3 puts a third harmonic at
-    /// roughly a^3/12 (about -25 dB relative at a = 0.8). Measure it so the
-    /// coloration is a pinned, intentional number instead of folklore.
-    #[test]
-    fn output_stage_adds_bounded_odd_harmonics() {
+    const EXCITER_SR: f32 = 48_000.0;
+
+    /// Multi-tone generator: sum of (freq, amp) sines at absolute sample
+    /// `phase` — keeps tones phase-continuous across process blocks.
+    fn tone_block(tones: &[(f32, f32)], phase: usize, n: usize) -> Vec<f32> {
+        (0..n)
+            .map(|i| {
+                tones
+                    .iter()
+                    .map(|&(f, a)| {
+                        (2.0 * std::f32::consts::PI * f * (phase + i) as f32 / EXCITER_SR).sin()
+                            * a
+                    })
+                    .sum()
+            })
+            .collect()
+    }
+
+    /// Run the engine at wet=0 (the only nonlinearity left is the output
+    /// stage), settle macros/filters, then capture `n` output samples along
+    /// with the exact input that produced them.
+    fn capture_wet_zero(tones: &[(f32, f32)], n: usize) -> (Vec<f32>, Vec<f32>) {
         let mut c = loaded_core();
         c.set_macros(Macros { wet: 0.0, ..Macros::default() });
-        let sr = 48_000.0;
-        let f0 = 1_000.0;
-        let sine: Vec<f32> = (0..128)
-            .map(|i| (2.0 * std::f32::consts::PI * f0 * i as f32 / sr).sin() * 0.8)
-            .collect();
         let mut ol = [0.0f32; 128];
         let mut or = [0.0f32; 128];
-        // Settle macros/filters, then capture 4800 samples (100 exact cycles).
         let mut phase = 0usize;
-        let block = |phase: usize| -> Vec<f32> {
-            (0..128)
-                .map(|i| {
-                    (2.0 * std::f32::consts::PI * f0 * (phase + i) as f32 / sr).sin() * 0.8
-                })
-                .collect()
-        };
         for _ in 0..200 {
-            let b = block(phase);
+            let b = tone_block(tones, phase, 128);
             c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
             phase += 128;
         }
-        let mut captured = Vec::with_capacity(4864);
-        while captured.len() < 4800 {
-            let b = block(phase);
+        let mut input = Vec::with_capacity(n + 128);
+        let mut output = Vec::with_capacity(n + 128);
+        while output.len() < n {
+            let b = tone_block(tones, phase, 128);
             c.process(&b, &b, &mut ol, &mut or, ctx(false, false));
-            captured.extend_from_slice(&ol);
+            input.extend_from_slice(&b);
+            output.extend_from_slice(&ol);
             phase += 128;
         }
-        captured.truncate(4800);
-        let fund = goertzel(&captured, f0, sr);
-        let h2 = goertzel(&captured, 2.0 * f0, sr);
-        let h3 = goertzel(&captured, 3.0 * f0, sr);
-        let _ = sine;
-        assert!(fund > 0.5, "fundamental should pass (~0.74 after tanh): {fund}");
-        // Third harmonic: present (the exciter is real) but bounded (gentle).
+        input.truncate(n);
+        output.truncate(n);
+        (input, output)
+    }
+
+    fn rms_of(x: &[f32]) -> f32 {
+        (x.iter().map(|s| s * s).sum::<f32>() / x.len() as f32).sqrt()
+    }
+
+    /// The always-on output `tanh` limiter is a documented gentle harmonic
+    /// exciter on EVERYTHING it passes — including the dry path. For a pure
+    /// sine of amplitude a, tanh(x) ~ x - x^3/3 puts a third harmonic near
+    /// a^2/12 relative (-26.7 dB at a = 0.8, measured). Pin the coloration
+    /// as an intentional number instead of folklore.
+    #[test]
+    fn output_stage_adds_bounded_odd_harmonics() {
+        let (_, out) = capture_wet_zero(&[(1_000.0, 0.8)], 4800);
+        let fund = goertzel(&out, 1_000.0, EXCITER_SR);
+        let h3 = goertzel(&out, 3_000.0, EXCITER_SR);
+        assert!(fund > 0.5, "fundamental should pass (~0.69 after tanh): {fund}");
         let rel3 = h3 / fund;
         assert!(
             (0.01..0.12).contains(&rel3),
             "third harmonic out of the documented window: {rel3} ({h3} vs {fund})"
         );
-        // tanh is odd-symmetric: even harmonics stay far below the odd ones.
-        assert!(h2 < h3 * 0.5, "unexpected even-harmonic content: h2={h2} h3={h3}");
+    }
+
+    /// Hardening #1: tanh is odd-symmetric — even harmonics must sit at
+    /// least 20 dB below H3, not merely "lower".
+    #[test]
+    fn even_harmonics_stay_20db_below_h3() {
+        let (_, out) = capture_wet_zero(&[(1_000.0, 0.8)], 4800);
+        let h2 = goertzel(&out, 2_000.0, EXCITER_SR);
+        let h3 = goertzel(&out, 3_000.0, EXCITER_SR);
+        let h4 = goertzel(&out, 4_000.0, EXCITER_SR);
+        let margin = 10.0f32.powf(-20.0 / 20.0); // -20 dB
+        assert!(h2 < h3 * margin, "H2 too hot: h2={h2} h3={h3}");
+        assert!(h4 < h3 * margin, "H4 too hot: h4={h4} h3={h3}");
+    }
+
+    /// Hardening #2: peak sweep 0.05..0.95. The H3 curve must (a) grow
+    /// monotonically with level and (b) track a pure-tanh reference computed
+    /// on the same signal in-test (self-deriving golden — if the output
+    /// stage ever changes character, this snapshot breaks loudly).
+    #[test]
+    fn h3_level_sweep_matches_pure_tanh_reference() {
+        let mut prev_rel = 0.0f32;
+        for step in 0..10 {
+            let a = 0.05 + step as f32 * 0.1;
+            let (input, out) = capture_wet_zero(&[(1_000.0, a)], 4800);
+            let rel_engine =
+                goertzel(&out, 3_000.0, EXCITER_SR) / goertzel(&out, 1_000.0, EXCITER_SR);
+            let reference: Vec<f32> = input.iter().map(|&x| x.tanh()).collect();
+            let rel_ref = goertzel(&reference, 3_000.0, EXCITER_SR)
+                / goertzel(&reference, 1_000.0, EXCITER_SR);
+            assert!(
+                rel_engine >= prev_rel * 0.98,
+                "H3 curve must be monotonic: {rel_engine} < {prev_rel} at a={a}"
+            );
+            // 20% relative tolerance + small absolute floor for the tiny end
+            // (DC blocker phase shear and float noise dominate below -60 dB).
+            assert!(
+                (rel_engine - rel_ref).abs() <= rel_ref * 0.2 + 2e-4,
+                "engine H3 diverges from pure tanh at a={a}: engine {rel_engine} vs ref {rel_ref}"
+            );
+            prev_rel = rel_engine;
+        }
+    }
+
+    /// Hardening #3: two-tone intermodulation (440 + 997 Hz, 0.4 each).
+    /// Exciters flatter single tones and fall apart on dense material; the
+    /// governor earns its crown only if IMD stays controlled. For an odd
+    /// memoryless nonlinearity the 3rd-order products (2f1±f2, 2f2±f1) are
+    /// expected near a²b/4 (≈ -27 dB rel here) and 2nd-order products
+    /// (f2±f1) must be absent.
+    #[test]
+    fn two_tone_intermodulation_is_controlled_and_odd_only() {
+        let (f1, f2) = (440.0, 997.0);
+        let (_, out) = capture_wet_zero(&[(f1, 0.4), (f2, 0.4)], 48_000);
+        let fund = goertzel(&out, f1, EXCITER_SR).max(goertzel(&out, f2, EXCITER_SR));
+        let imd3: Vec<f32> = [2.0 * f1 - f2, 2.0 * f1 + f2, 2.0 * f2 - f1, 2.0 * f2 + f1]
+            .iter()
+            .map(|&f| goertzel(&out, f.abs(), EXCITER_SR))
+            .collect();
+        let imd2: Vec<f32> = [f2 - f1, f2 + f1]
+            .iter()
+            .map(|&f| goertzel(&out, f, EXCITER_SR))
+            .collect();
+        let ceiling = 10.0f32.powf(-20.0 / 20.0); // every product <= -20 dB rel
+        let floor = 10.0f32.powf(-45.0 / 20.0); // measurement sanity: exciter is real
+        for (k, p) in imd3.iter().enumerate() {
+            assert!(
+                p / fund <= ceiling,
+                "IMD3 product {k} too hot: {} dB",
+                20.0 * (p / fund).log10()
+            );
+        }
+        assert!(
+            imd3.iter().any(|p| p / fund >= floor),
+            "no measurable IMD3 — measurement broken? {imd3:?}"
+        );
+        let max_imd3 = imd3.iter().fold(0.0f32, |a, &b| a.max(b));
+        for p in &imd2 {
+            assert!(
+                *p < max_imd3 * 0.1,
+                "even-order IMD present (should vanish for odd symmetry): {p} vs {max_imd3}"
+            );
+        }
+    }
+
+    /// Hardening #4: WET=0 against bypass must null to a NONZERO residue that
+    /// is exactly the documented tanh color — the output equals tanh(input)
+    /// (within DC-blocker shear), and the (output - input) residue carries
+    /// the same energy as the analytic (tanh(x) - x).
+    #[test]
+    fn wet_zero_null_residue_is_the_tanh_color() {
+        let (input, out) = capture_wet_zero(&[(1_000.0, 0.8)], 4800);
+        let reference: Vec<f32> = input.iter().map(|&x| x.tanh()).collect();
+        let in_rms = rms_of(&input);
+
+        // The engine's wet-zero path IS tanh followed by the 38 Hz-corner DC
+        // blocker. The blocker's gain at 1 kHz is ~unity but its ~2 degree
+        // phase lead alone produces ~3% sample-aligned rms error against a
+        // pure tanh reference — so gate at 5%: tight enough to catch any real
+        // change of nonlinearity, loose enough for the documented shear.
+        let err: Vec<f32> = out.iter().zip(&reference).map(|(o, r)| o - r).collect();
+        assert!(
+            rms_of(&err) < 0.05 * in_rms,
+            "wet-zero output is not tanh(input): err rms {} vs input rms {in_rms}",
+            rms_of(&err)
+        );
+
+        // The bypass-null residue is nonzero and matches the analytic color.
+        let residue: Vec<f32> = out.iter().zip(&input).map(|(o, i)| o - i).collect();
+        let expected: Vec<f32> = input.iter().map(|&x| x.tanh() - x).collect();
+        let (r, e) = (rms_of(&residue), rms_of(&expected));
+        assert!(r > 0.01 * in_rms, "null residue vanished — exciter gone? {r}");
+        assert!(
+            (r - e).abs() <= e * 0.25,
+            "null residue does not match tanh color: got {r}, expected {e}"
+        );
     }
 }

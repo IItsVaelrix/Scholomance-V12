@@ -216,13 +216,23 @@ amplitude `a`, `tanh(x) ≈ x − x³/3` puts the third harmonic at roughly `a³
 | 0.9 | −25.0 dB | forward presence |
 
 Purely odd-symmetric (even harmonics vanish), level-dependent, zero attack/release artifacts —
-i.e., a program-dependent harmonic exciter fused with the limiter. This is pinned by the
-`output_stage_adds_bounded_odd_harmonics` test (Goertzel measurement: H3/H1 must sit inside
-0.01–0.12 at 0.8 peak and even harmonics must stay well below odd). Combined with the
-event-triggered ResonatorBloom (220/440 Hz rings on sustained harmonic material) and the
-LFO-modulated early reflections, this is why the plugin audibly "excites" an instrumental even
-with all knobs untouched. Aliasing from the un-oversampled `tanh` is accepted as intentional
-coloration (H5 already at −52 dB at typical levels; see §6).
+i.e., a program-dependent harmonic exciter fused with the limiter. On dense material the same
+odd nonlinearity produces third-order intermodulation (2f₁±f₂, 2f₂±f₁) near `a²b/4` — ≈ −27 dB
+relative for a 0.4+0.4 two-tone — while second-order sum/difference products vanish by symmetry,
+which is why it stays "gorgeous" rather than "crunchy" on mixes at sane levels.
+
+The character is pinned by five Goertzel-based tests in `core_tests`:
+`output_stage_adds_bounded_odd_harmonics` (H3/H1 inside 0.01–0.12 at 0.8 peak),
+`even_harmonics_stay_20db_below_h3` (H2/H4 ≥ 20 dB under H3),
+`h3_level_sweep_matches_pure_tanh_reference` (0.05→0.95 peak sweep: monotonic and within 20% of a
+pure-tanh reference computed on the same signal — a self-deriving golden snapshot),
+`two_tone_intermodulation_is_controlled_and_odd_only` (440+997 Hz: every IMD3 product ≤ −20 dB,
+even-order IMD absent), and `wet_zero_null_residue_is_the_tanh_color` (bypass-null residue is
+nonzero and equals the analytic `tanh(x) − x` energy; output tracks `tanh(input)` within the DC
+blocker's ~2° phase shear). Combined with the event-triggered ResonatorBloom (220/440 Hz rings on
+sustained harmonic material) and the LFO-modulated early reflections, this is why the plugin
+audibly "excites" an instrumental even with all knobs untouched. Aliasing from the un-oversampled
+`tanh` is accepted as intentional coloration (H5 already at −52 dB at typical levels; see §6).
 
 ### 4.5 Freeze
 `ctx.freeze` zeroes the FDN excitation and holds the network output at its last value
