@@ -60,15 +60,22 @@ struct ManifoldPluginParams {
 
 impl Default for ManifoldPluginParams {
     fn default() -> Self {
+        // Two-decimal readouts everywhere: raw f32 display (`0.4864865`)
+        // fails the "values display correct units" UI law and looks broken.
+        let pct = || formatters::v2s_f32_rounded(2);
         Self {
-            wet: FloatParam::new("Wet/Dry", 0.7, FloatRange::Linear { min: 0.0, max: 1.0 }),
-            size: FloatParam::new("Manifold Size", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            wet: FloatParam::new("Wet/Dry", 0.7, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_value_to_string(pct()),
+            size: FloatParam::new("Manifold Size", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_value_to_string(pct()),
             reactivity: FloatParam::new(
                 "Reactivity",
                 0.5,
                 FloatRange::Linear { min: 0.0, max: 1.0 },
-            ),
-            stability: FloatParam::new("Stability", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 }),
+            )
+            .with_value_to_string(pct()),
+            stability: FloatParam::new("Stability", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_value_to_string(pct()),
             freeze: BoolParam::new("Freeze", false),
             panic: BoolParam::new("Panic", false),
 

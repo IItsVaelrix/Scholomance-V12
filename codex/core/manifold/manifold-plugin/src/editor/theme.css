@@ -52,13 +52,25 @@
     border-radius: 6px;
     border-width: 1px;
     border-color: #2528e9;
-    width: 90px;
-    height: 30px;
-    child-space: 1s;
+    width: 76px;
+    height: 28px;
+    child-space: 0px;
     transition: border-color 300ms;
 }
-.toggle-tile:checked { background-color: #2528e9; }
-.toggle-tile param-button { width: 1s; height: 1s; }
+/* The tile carries ALL the chrome; the ParamButton inside it must be bare
+   (its widget-theme border made Freeze a double box) — and since vizia's
+   :checked lands on the ParamButton, the active state is styled there. */
+.toggle-tile param-button {
+    width: 1s;
+    height: 1s;
+    border-width: 0px;
+    background-color: transparent;
+    color: #a9a599;
+    font-size: 13px;
+    border-radius: 5px;
+    child-space: 1s;
+}
+.toggle-tile param-button:checked { background-color: #2528e9; color: #f4efe1; }
 
 .action-button {
     background-color: #12171a;
@@ -66,8 +78,9 @@
     border-width: 1px;
     border-color: #ec4218;
     color: #ec4218;
-    width: 90px;
-    height: 30px;
+    width: 76px;
+    height: 28px;
+    font-size: 13px;
     child-space: 1s;
     transition: background-color 360ms;
 }
@@ -113,15 +126,18 @@
    window: vizia defaults every view to Auto sizing, so without 1s here the
    tree hugs its content and leaves dead window space below. */
 .editor-root { width: 1s; height: 1s; child-space: 10px; row-between: 10px; }
-.editor-header { height: 36px; col-between: 8px; child-top: 1s; child-bottom: 1s; }
+.editor-header { height: 32px; col-between: 8px; child-top: 1s; child-bottom: 1s; }
 .header-spacer { width: 1s; }
 .editor-body { col-between: 10px; height: 1s; }
 .macro-deck { col-between: 16px; child-space: 8px; child-left: 1s; child-right: 1s; }
-.brand { color: #f4efe1; font-size: 18px; }
+.brand { color: #f4efe1; font-size: 14px; }
 /* Explicit widths throughout the header: morphorm's Auto width mis-measures
    nested text-sized children (buttons rendered wider than they were laid
    out, overlapping their neighbors), so every header control gets a fixed
-   footprint and containers are sized to their contents' sum. */
+   footprint and containers are sized to their contents' sum.
+   Width budget at the 720-logical minimum window: 2x10 root padding +
+   brand ~150 + 2x156 segmented + 2x76 tiles + 5x8 gaps = 674 <= 700 —
+   PANIC must never clip at default size. */
 .segmented {
     background-color: #12171a;
     border-radius: 6px;
@@ -129,8 +145,8 @@
     border-color: #23282c;
     col-between: 2px;
     child-space: 2px;
-    width: 178px;
-    height: 30px;
+    width: 156px;
+    height: 28px;
 }
 .segmented button {
     background-color: transparent;
@@ -138,7 +154,8 @@
     border-radius: 5px;
     border-width: 0px;
     height: 1s;
-    width: 84px;
+    width: 72px;
+    font-size: 13px;
     child-space: 1s;
 }
 .segmented button:checked { background-color: #ec185f; color: #f4efe1; }
