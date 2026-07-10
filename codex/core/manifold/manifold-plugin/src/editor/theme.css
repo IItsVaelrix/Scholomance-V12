@@ -1,10 +1,10 @@
 /* Cochlear Manifold — GrimDesign token stylesheet.
    Colors/glow/timing are DERIVED (spec §2), never chosen. vizia CSS subset. */
 :root {
-    --grim-shell:  #e11d74;  /* hsl(340 85% 51%) WILL */
-    --grim-freeze: #2b31e0;  /* hsl(239 82% 53%) ALCHEMY */
-    --grim-panic:  #ef4a1f;  /* hsl(12 85% 51%) WILL */
-    --grim-react:  #17d97a;  /* hsl(145 80% 47%) NECROMANCY */
+    --grim-shell:  #ec185f;  /* hsl(340 85% 51%) WILL */
+    --grim-freeze: #2528e9;  /* hsl(239 82% 53%) ALCHEMY */
+    --grim-panic:  #ec4218;  /* hsl(12 85% 51%) WILL */
+    --grim-react:  #18d868;  /* hsl(145 80% 47%) NECROMANCY */
     /* Documentation/spec tokens only — nothing in this stylesheet consumes
        them. The chips' rendered border color comes from
        src/editor/kit/preset_chip.rs (hsl_to_color(tokens::preset_hue(name))),

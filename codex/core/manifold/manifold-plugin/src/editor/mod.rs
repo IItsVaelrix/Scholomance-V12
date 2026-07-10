@@ -300,6 +300,44 @@ mod theme_tests {
             assert!(THEME_CSS.contains(token), "theme.css missing `{token}`");
         }
     }
+
+    /// The stylesheet's static school/preset hex declarations must equal the
+    /// world-law derivations in `tokens` — colors are computed, never chosen,
+    /// and this is what keeps the CSS from silently drifting (it already had,
+    /// once, before this guard existed).
+    #[test]
+    fn stylesheet_hex_matches_world_law_derivation() {
+        use crate::editor::tokens::{css_hex, preset_hue, FREEZE, PANIC, REACT, SHELL};
+
+        fn declared(var: &str) -> &'static str {
+            let start = THEME_CSS
+                .find(var)
+                .unwrap_or_else(|| panic!("theme.css missing `{var}`"))
+                + var.len();
+            let rest = &THEME_CSS[start..];
+            let end = rest.find(';').expect("declaration not terminated");
+            rest[..end].trim_start_matches([':', ' ']).trim()
+        }
+
+        for (var, hsl) in [
+            ("--grim-shell", SHELL),
+            ("--grim-freeze", FREEZE),
+            ("--grim-panic", PANIC),
+            ("--grim-react", REACT),
+            ("--preset-void-glass", preset_hue("void-glass")),
+            ("--preset-ice-circuit", preset_hue("ice-circuit")),
+            ("--preset-ash-lung", preset_hue("ash-lung")),
+            ("--preset-cathedral-of-teeth", preset_hue("cathedral-of-teeth")),
+            ("--preset-substrate-maw", preset_hue("substrate-maw")),
+        ] {
+            let expected = css_hex(hsl);
+            let actual = declared(var);
+            assert!(
+                actual.starts_with(&expected),
+                "theme.css `{var}` is `{actual}` but the world-law derivation is `{expected}`"
+            );
+        }
+    }
 }
 
 #[cfg(test)]
