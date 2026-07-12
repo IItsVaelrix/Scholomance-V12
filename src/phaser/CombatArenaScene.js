@@ -4757,8 +4757,7 @@ export default function createCombatArenaScene(phaserRuntime) {
                const lean = Math.random() > 0.5 ? 25 : -25; // EXEMPT
                tip = { x: pTopCenter.x + lean, y: pTopCenter.y - 15 - Math.random() * 25 }; // EXEMPT
            }
-           }
-           
+
            if (isTallestPeak) {
                // Obsidian Crystal Wall Tip transitions to Shining Ice Peak
                const icyLeft = this.getLambertColor(-1, 1, 0, PALETTES.cyan_glow);
