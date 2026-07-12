@@ -1,32 +1,16 @@
 /**
- * Articulatory embedding of a rhyme tail.
+ * Stress-anchored rhyme-tail extraction.
  *
  * Two words rhyme because of a property each holds independently — its tail.
- * Embedding that tail over articulatory features makes slant rhyme a distance:
- * N and M differ only in `place`; T and D differ only in `voicing`.
- *
- * This replaces the pairwise scan as a CANDIDATE GENERATOR only. Scores are
- * still produced by scoreMultiSyllableMatch, so quantization can never change
- * a colour — it can only change which pairs get looked at.
+ * This module extracts that tail; the Resonance Fingerprint (rhyme-astrology/
+ * resonanceFingerprint.js) turns it into per-token SCD64-discipline blocks,
+ * and bucketing is block-exact from there. Scores are still produced by
+ * scoreMultiSyllableMatch downstream — extraction here can only change which
+ * pairs become candidates, never a colour.
  */
-import { PHONOLOGICAL_FEATURES_V1, ARPABET_VOWELS } from './phoneme.constants.js';
-import { fastHadamardTransform } from '../quantization/turboquant.js';
-
-// Vowel rows carry `cPlace`, consonant rows carry `vPlace`. Use the union and
-// read a missing key as 0 so both row shapes embed into the same space.
-export const FEATURE_KEYS = Object.freeze([
-  'height', 'contour', 'place', 'length', 'voicing',
-  'nasality', 'manner', 'affrication', 'sibilance', 'cPlace', 'vPlace',
-]);
+import { ARPABET_VOWELS } from './phoneme.constants.js';
 
 export const TAIL_MAX_PHONEMES = 4;
-// 4 phonemes x 11 features = 44, padded to the next power of two because
-// fastHadamardTransform requires one.
-export const TAIL_VECTOR_DIM = 64;
-
-// The nucleus carries the rhyme. Weight it above the coda so `AY-T` and `AY-D`
-// stay near each other while `AY-T` and `OW-T` do not.
-const NUCLEUS_WEIGHT = 2;
 
 export function stripStress(phoneme) {
   return String(phoneme || '').replace(/[0-9]/g, '').toUpperCase();
@@ -70,72 +54,4 @@ export function extractRhymeTail(phonemes) {
   // Fall back to the final phonemes when there is no vowel at all.
   const tail = anchor < 0 ? arr.slice(-TAIL_MAX_PHONEMES) : arr.slice(anchor);
   return tail.slice(0, TAIL_MAX_PHONEMES);
-}
-
-export function buildTailFeatureVector(phonemes) {
-  const tail = extractRhymeTail(phonemes);
-  const vec = new Float32Array(TAIL_VECTOR_DIM);
-  for (let i = 0; i < tail.length; i += 1) {
-    const features = PHONOLOGICAL_FEATURES_V1[tail[i]];
-    if (!features) continue;
-    const weight = i === 0 ? NUCLEUS_WEIGHT : 1;
-    const base = i * FEATURE_KEYS.length;
-    for (let k = 0; k < FEATURE_KEYS.length; k += 1) {
-      vec[base + k] = Number(features[FEATURE_KEYS[k]] ?? 0) * weight;
-    }
-  }
-  return vec;
-}
-
-export function tailCosine(a, b) {
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  for (let i = 0; i < TAIL_VECTOR_DIM; i += 1) {
-    dot += a[i] * b[i];
-    na += a[i] * a[i];
-    nb += b[i] * b[i];
-  }
-  if (na === 0 || nb === 0) return 0;
-  return dot / (Math.sqrt(na) * Math.sqrt(nb));
-}
-
-// 4 bands x 8 bits. A pair is a candidate if it shares ANY band, so more bands
-// buys recall and costs candidate volume. Tuned against the dense fixture.
-export const SIGN_BANDS = 4;
-export const SIGN_BITS_PER_BAND = 8;
-
-/**
- * SimHash over the Hadamard-rotated tail vector. Similar tails keep the same
- * sign pattern in most coordinates, so they land in the same band.
- */
-export function buildTailSignBands(phonemes) {
-  const vec = buildTailFeatureVector(phonemes);
-
-  let energy = 0;
-  for (let i = 0; i < TAIL_VECTOR_DIM; i += 1) energy += vec[i] * vec[i];
-  // A zero vector has no direction. Bucketing it would collide every unknown
-  // tail into one bucket — the exact "ghost signature" failure turboquant.js
-  // guards against. Emit no bands instead.
-  if (energy === 0) return [];
-
-  // fastHadamardTransform mutates in place.
-  const rotated = Float32Array.from(vec);
-  fastHadamardTransform(rotated);
-
-  const bands = [];
-  for (let b = 0; b < SIGN_BANDS; b += 1) {
-    let bits = '';
-    for (let i = 0; i < SIGN_BITS_PER_BAND; i += 1) {
-      bits += rotated[b * SIGN_BITS_PER_BAND + i] >= 0 ? '1' : '0';
-    }
-    bands.push(`${b}:${bits}`);
-  }
-  return bands;
-}
-
-export function sharesSignBand(bandsA, bandsB) {
-  if (!bandsA?.length || !bandsB?.length) return false;
-  const set = new Set(bandsA);
-  return bandsB.some((band) => set.has(band));
 }
