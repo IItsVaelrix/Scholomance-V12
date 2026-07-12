@@ -10,7 +10,17 @@
 
 ## Global Constraints
 
-- **Coloring must not regress.** On the 1,500-char fixture the connection counts `perfect=125`, `near=40`, `assonance=46` must hold. Any delta is a review gate, not a pass.
+- **Coloring must not regress.** The committed deterministic fixture is `tests/fixtures/rhyme/dense-verse.txt` (75 words, 370 chars). Measured on the code as it stands *before* this plan:
+
+  | type | count |
+  |---|---|
+  | perfect | 34 |
+  | assonance | 44 |
+  | near | 29 |
+  | slant | 6 |
+  | phrase_compound | **1335** |
+
+  The four **coloured** types (`perfect`, `assonance`, `near`, `slant`) must still be **34 / 44 / 29 / 6** after every task. Any delta is a review gate, not a pass. `phrase_compound` is expected to collapse — that is the point. Never use a randomly generated verse as a baseline.
 - **The gate stays backend-authoritative.** The backend assigns the sign; the frontend groups by it. The browser never recomputes a vowel family and never compares phonetics (`BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK`).
 - **Never widen scope into the palette.** Do not touch colour values. This is a data-contract change.
 - `fastHadamardTransform(vec)` **mutates its argument in place** and requires a power-of-two length. Always pass a copy.
@@ -347,44 +357,50 @@ never bucketed together."
 
 ```js
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { DeepRhymeEngine } from '../../codex/core/rhyme-astrology/deepRhyme.engine.js';
 
-const VERSE = [
-  'the ember flame will climb up higher',
-  'and every word i wrote is fire',
-  'a bright and burning heart of sight',
-  'the smoke of night ignites the light',
-].join('\n');
+const VERSE = readFileSync('tests/fixtures/rhyme/dense-verse.txt', 'utf8');
+
+// Measured on the pre-change code. phrase_compound was 1335 — 92% of all
+// connections, from only 75 words.
+const BASELINE_COLOURED = { perfect: 34, assonance: 44, near: 29, slant: 6 };
+
+async function analyse() {
+  const engine = new DeepRhymeEngine();
+  const analysis = await engine.analyzeDocument(VERSE, { mode: 'balanced' });
+  const counts = {};
+  for (const c of analysis.allConnections) counts[c.type] = (counts[c.type] ?? 0) + 1;
+  const words = analysis.lines.reduce((n, line) => n + line.words.length, 0);
+  return { analysis, counts, words };
+}
 
 describe('findPhraseConnections — bucketed', () => {
+  it('THE LOAD-BEARING INVARIANT: the coloured types are untouched', async () => {
+    const { counts } = await analyse();
+    // perfect/assonance/near/slant come from findEndRhymeConnections,
+    // findInternalRhymes and the assonance scan — none of which this task touches.
+    // If any of these move, the change is wrong. Do not update these numbers.
+    expect({
+      perfect: counts.perfect ?? 0,
+      assonance: counts.assonance ?? 0,
+      near: counts.near ?? 0,
+      slant: counts.slant ?? 0,
+    }).toEqual(BASELINE_COLOURED);
+  });
+
   it('does not explode: phrase connections stay a small multiple of the words', async () => {
-    const engine = new DeepRhymeEngine();
-    const analysis = await engine.analyzeDocument(VERSE, { mode: 'balanced' });
-    const phrase = analysis.allConnections.filter((c) => c.type === 'phrase_compound');
-    const words = analysis.lines.reduce((n, line) => n + line.words.length, 0);
-    // The old pairwise scan emitted ~O(words^2). Bucketed must stay linear-ish.
-    expect(phrase.length).toBeLessThan(words * 8);
+    const { counts, words } = await analyse();
+    // The old pairwise scan emitted 1335 from 75 words. Bucketed must stay linear-ish.
+    expect(counts.phrase_compound ?? 0).toBeLessThan(words * 8);
   });
 
   it('still scores every emitted connection with the real scorer', async () => {
-    const engine = new DeepRhymeEngine();
-    const analysis = await engine.analyzeDocument(VERSE, { mode: 'balanced' });
-    const phrase = analysis.allConnections.filter((c) => c.type === 'phrase_compound');
-    for (const c of phrase) {
+    const { analysis } = await analyse();
+    for (const c of analysis.allConnections.filter((x) => x.type === 'phrase_compound')) {
       expect(c.syllablesMatched).toBeGreaterThanOrEqual(2);
       expect(c.score).toBeGreaterThanOrEqual(0.6);
     }
-  });
-
-  it('LEAVES THE COLOURED TYPES UNTOUCHED (the load-bearing invariant)', async () => {
-    const engine = new DeepRhymeEngine();
-    const analysis = await engine.analyzeDocument(VERSE, { mode: 'balanced' });
-    const counts = {};
-    for (const c of analysis.allConnections) counts[c.type] = (counts[c.type] ?? 0) + 1;
-    // Perfect/near/assonance come from findEndRhymeConnections / findInternalRhymes /
-    // the assonance scan — none of which this task touches.
-    expect(counts.perfect ?? 0).toBeGreaterThan(0);
-    expect(counts.phrase_compound ?? 0).toBeLessThan((counts.perfect ?? 0) * 200);
   });
 });
 ```
