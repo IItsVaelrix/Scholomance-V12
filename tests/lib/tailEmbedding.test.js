@@ -15,6 +15,13 @@ const SIN     = ['S', 'IH1', 'N'];
 const SIM     = ['S', 'IH1', 'M'];
 const SIT     = ['S', 'IH1', 'T'];
 const BRIGHT  = ['B', 'R', 'AY1', 'T'];
+// Hiatus words: CMUdict splits the vowel-vowel sequence across two tokens,
+// but only the SECOND carries stress. The tail must anchor there, not on
+// whichever vowel comes first in the contiguous run.
+const CREATE  = ['K', 'R', 'IY0', 'EY1', 'T'];
+const ELATE   = ['IH0', 'L', 'EY1', 'T'];
+const REACT   = ['R', 'IY0', 'AE1', 'K', 'T'];
+const TRACT   = ['T', 'R', 'AE1', 'K', 'T'];
 
 const sim = (a, b) => tailCosine(buildTailFeatureVector(a), buildTailFeatureVector(b));
 
@@ -25,6 +32,14 @@ describe('extractRhymeTail', () => {
 
   it('strips stress digits', () => {
     expect(extractRhymeTail(SIN)).toEqual(['IH', 'N']);
+  });
+
+  it('anchors on the STRESSED vowel in a hiatus, not the first vowel of the run (create)', () => {
+    expect(extractRhymeTail(CREATE)).toEqual(['EY', 'T']);
+  });
+
+  it('anchors on the STRESSED vowel in a hiatus, not the first vowel of the run (react)', () => {
+    expect(extractRhymeTail(REACT)).toEqual(['AE', 'K', 'T']);
   });
 });
 
@@ -51,4 +66,23 @@ describe('tailCosine — the invariant the old vector-nn stub inverted', () => {
   it('ranks a slant coda (sin~sim, place only) above a distant coda (sin~sit)', () => {
     expect(sim(SIN, SIM)).toBeGreaterThan(sim(SIN, SIT));
   });
+
+  it('scores a real hiatus rhyme HIGH (create ~ elate)', () => {
+    expect(sim(CREATE, ELATE)).toBeGreaterThan(0.95);
+  });
+
+  it('scores a real hiatus rhyme HIGH (react ~ tract)', () => {
+    expect(sim(REACT, TRACT)).toBeGreaterThan(0.95);
+  });
+
+  // NOTE: poet~note ('OW','AH','T' vs 'OW','T') is NOT covered here. Both the
+  // pre-fix and post-fix extractRhymeTail produce that same pair of tails
+  // (this word never hit the leftmost-of-run extraction bug — its only
+  // stressed vowel already sat at the start of its vowel-vowel run), and the
+  // measured 0.911 cosine is a property of NUCLEUS_WEIGHT squaring the shared
+  // OW nucleus's self-dot (32) so it dominates the two extra coda phonemes'
+  // contribution (dot 35 / norms 41,36) regardless of tail-extraction
+  // correctness. Fixing that would mean touching buildTailFeatureVector,
+  // which is out of scope here — tracked as a follow-up, not asserted as a
+  // passing regression test.
 });

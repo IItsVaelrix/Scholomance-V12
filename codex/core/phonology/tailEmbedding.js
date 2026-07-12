@@ -32,19 +32,42 @@ export function stripStress(phoneme) {
 }
 
 export function extractRhymeTail(phonemes) {
-  const arr = (Array.isArray(phonemes) ? phonemes : []).map(stripStress).filter(Boolean);
-  let lastVowel = -1;
+  const raw = Array.isArray(phonemes) ? phonemes : [];
+  // Read the stress digit off the RAW phoneme (e.g. "AY1") before stripping —
+  // stripStress deletes that digit, so it must be captured here or it's gone.
+  const tokens = raw
+    .map((p) => {
+      const s = String(p || '');
+      const match = s.match(/([0-9])/);
+      return { stripped: stripStress(s), stress: match ? match[1] : '' };
+    })
+    .filter((t) => t.stripped);
+  const arr = tokens.map((t) => t.stripped);
+
+  // A rhyme tail begins at the LAST STRESSED VOWEL (stress digit 1 or 2) and
+  // runs to the end of the word. CMUdict splits r-coloured/diphthong nuclei
+  // across two adjacent vowel tokens (e.g. "fire" -> F AY1 ER0), but it also
+  // splits hiatus across two vowels where only the SECOND carries the stress
+  // (e.g. "create" -> K R IY0 EY1 T). Anchoring on stress, not on "first vowel
+  // of the contiguous run", gets both cases right: the r-coloured vowel is
+  // stressed so it's still the anchor, while the hiatus's unstressed onset
+  // vowel is correctly left out of the tail.
+  let anchor = -1;
   for (let i = arr.length - 1; i >= 0; i -= 1) {
-    if (ARPABET_VOWELS.has(arr[i])) { lastVowel = i; break; }
+    if (ARPABET_VOWELS.has(arr[i]) && (tokens[i].stress === '1' || tokens[i].stress === '2')) {
+      anchor = i;
+      break;
+    }
   }
-  // CMUdict splits r-coloured/diphthong nuclei across two adjacent vowel
-  // tokens (e.g. "fire" -> F AY ER). The nucleus is the whole contiguous
-  // vowel run, not just its rightmost token, so extend the start leftward
-  // through any immediately preceding vowels.
-  while (lastVowel > 0 && ARPABET_VOWELS.has(arr[lastVowel - 1])) {
-    lastVowel -= 1;
+  // Fall back to the last vowel of any kind (reduced monosyllables, unstressed
+  // function words carry no stress digit at all).
+  if (anchor < 0) {
+    for (let i = arr.length - 1; i >= 0; i -= 1) {
+      if (ARPABET_VOWELS.has(arr[i])) { anchor = i; break; }
+    }
   }
-  const tail = lastVowel < 0 ? arr.slice(-TAIL_MAX_PHONEMES) : arr.slice(lastVowel);
+  // Fall back to the final phonemes when there is no vowel at all.
+  const tail = anchor < 0 ? arr.slice(-TAIL_MAX_PHONEMES) : arr.slice(anchor);
   return tail.slice(0, TAIL_MAX_PHONEMES);
 }
 
