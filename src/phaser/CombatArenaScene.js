@@ -619,6 +619,9 @@ export default function createCombatArenaScene(phaserRuntime) {
       
       // Listen for React equipment changes
       window.addEventListener('equipment-changed', this.handleEquipmentChange);
+      this.events.once('destroy', () => {
+        window.removeEventListener('equipment-changed', this.handleEquipmentChange);
+      });
       // Ask for initial equipment state
       window.dispatchEvent(new CustomEvent('request-equipment-state'));
       this.isWalking = false;

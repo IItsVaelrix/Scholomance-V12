@@ -48,6 +48,20 @@ export async function mountPhaserGame({
     if (destroyed) return;
     destroyed = true;
     signal?.removeEventListener?.('abort', destroy);
+
+    // Phaser's Config keeps a strong reference to the parent DOM element, and destroy()
+    // never clears it. Canvases left behind in Phaser's module-global CanvasPool keep the
+    // game — and therefore its Config — reachable, so that stale `config.parent` pins the
+    // mount div, its whole React subtree (the combat HUD), and the WebGL canvas for the
+    // life of the page. Phaser's destroy is deferred to the next game step, so we cut the
+    // reference on the DESTROY event rather than immediately.
+    game.events?.once?.('destroy', () => {
+      if (game.config) {
+        game.config.parent = null;
+        game.config.canvas = null;
+      }
+    });
+
     game.destroy(true);
   };
 

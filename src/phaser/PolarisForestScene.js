@@ -345,6 +345,9 @@ export default function createPolarisForestScene(phaserRuntime) {
       playerContainer.setDepth(playerPos.y + 1);
 
       window.addEventListener('equipment-changed', this.handleEquipmentChange);
+      this.events.once('destroy', () => {
+        window.removeEventListener('equipment-changed', this.handleEquipmentChange);
+      });
       window.dispatchEvent(new CustomEvent('request-equipment-state'));
     }
 
