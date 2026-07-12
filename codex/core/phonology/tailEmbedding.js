@@ -10,6 +10,7 @@
  * a colour — it can only change which pairs get looked at.
  */
 import { PHONOLOGICAL_FEATURES_V1, ARPABET_VOWELS } from './phoneme.constants.js';
+import { fastHadamardTransform } from '../quantization/turboquant.js';
 
 // Vowel rows carry `cPlace`, consonant rows carry `vPlace`. Use the union and
 // read a missing key as 0 so both row shapes embed into the same space.
@@ -97,4 +98,44 @@ export function tailCosine(a, b) {
   }
   if (na === 0 || nb === 0) return 0;
   return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+// 4 bands x 8 bits. A pair is a candidate if it shares ANY band, so more bands
+// buys recall and costs candidate volume. Tuned against the dense fixture.
+export const SIGN_BANDS = 4;
+export const SIGN_BITS_PER_BAND = 8;
+
+/**
+ * SimHash over the Hadamard-rotated tail vector. Similar tails keep the same
+ * sign pattern in most coordinates, so they land in the same band.
+ */
+export function buildTailSignBands(phonemes) {
+  const vec = buildTailFeatureVector(phonemes);
+
+  let energy = 0;
+  for (let i = 0; i < TAIL_VECTOR_DIM; i += 1) energy += vec[i] * vec[i];
+  // A zero vector has no direction. Bucketing it would collide every unknown
+  // tail into one bucket — the exact "ghost signature" failure turboquant.js
+  // guards against. Emit no bands instead.
+  if (energy === 0) return [];
+
+  // fastHadamardTransform mutates in place.
+  const rotated = Float32Array.from(vec);
+  fastHadamardTransform(rotated);
+
+  const bands = [];
+  for (let b = 0; b < SIGN_BANDS; b += 1) {
+    let bits = '';
+    for (let i = 0; i < SIGN_BITS_PER_BAND; i += 1) {
+      bits += rotated[b * SIGN_BITS_PER_BAND + i] >= 0 ? '1' : '0';
+    }
+    bands.push(`${b}:${bits}`);
+  }
+  return bands;
+}
+
+export function sharesSignBand(bandsA, bandsB) {
+  if (!bandsA?.length || !bandsB?.length) return false;
+  const set = new Set(bandsA);
+  return bandsB.some((band) => set.has(band));
 }
