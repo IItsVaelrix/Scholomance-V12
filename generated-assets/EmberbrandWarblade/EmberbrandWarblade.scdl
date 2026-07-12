@@ -1,0 +1,324 @@
+# EmberbrandWarblade.scdl
+# SCDL v1.1 mainHand weapon — WILL-school one-handed flame warblade.
+# Canvas and grip anchor (x45-46, y60-69) frame-locked to IdealHuman's right
+# hand; frames 5-8 carry the same -3/-8/-8/-3 walk bob as VoidIceGreatsword.
+# Frames 1-4 hold the base carry pose (armR does not move on left steps) and
+# animate only the ember part so no frame is a dead frame.
+asset EmberbrandWarblade canvas 64x128
+
+palette {
+  steelhi   = #8A8F98
+  steel     = #565B66
+  steeldark = #2E323B
+  fuller    = #23262E
+  goldhi    = #FFE08A
+  gold      = #D4A017
+  golddark  = #8A6A10
+  gripbrown = #6B4A2B
+  gripdark  = #4A3018
+  embercore = #FFF3C4
+  emberhot  = #FFB347
+  emberglow = #F97316
+  emberdeep = #B45309
+}
+
+# blade first: ember licks and guard paint over its edges
+part blade material darksteel {
+  polygon 44 58 48 58 48 24 46 16 44 24 steel
+  line 44 25 44 57 steelhi
+  line 48 26 48 57 steeldark
+  line 46 26 46 54 fuller
+  cell 45 20 steelhi
+}
+
+part ember material divine_flame_core {
+  cell 46 13 emberglow
+  cell 46 14 emberhot
+  cell 46 15 embercore
+  cell 49 30 emberglow
+  cell 49 31 emberdeep
+  cell 49 40 emberhot
+  cell 49 41 emberglow
+  cell 43 35 emberdeep
+  cell 49 50 emberglow
+  cell 43 48 emberdeep
+  glow radius 2
+}
+
+part guard material gold {
+  polygon 41 58 51 58 50 61 42 61 gold
+  line 42 58 50 58 goldhi
+  line 42 61 50 61 golddark
+  cell 40 57 goldhi
+  cell 51 57 golddark
+}
+
+part grip material leather_brown {
+  rect 45 62 2 7 gripbrown
+  line 45 63 46 63 gripdark
+  line 45 65 46 65 gripdark
+  line 45 67 46 67 gripdark
+}
+
+part pommel material ruby {
+  cell 45 69 embercore
+  cell 46 69 emberglow
+  cell 45 70 emberglow
+  cell 46 70 emberdeep
+}
+
+loop walk duration 800
+
+frame 1 "contactL" {
+  part ember material divine_flame_core {
+    cell 46 12 emberhot
+    cell 46 13 embercore
+    cell 46 14 emberglow
+    cell 46 15 embercore
+    cell 49 24 emberdeep
+    cell 49 29 emberglow
+    cell 49 30 emberhot
+    cell 49 39 emberglow
+    cell 43 34 emberdeep
+    cell 49 49 emberdeep
+    cell 43 47 emberdeep
+    glow radius 2
+  }
+}
+
+frame 2 "riseL" {
+  part ember material divine_flame_core {
+    cell 46 13 embercore
+    cell 46 14 emberglow
+    cell 46 15 emberhot
+    cell 49 26 emberglow
+    cell 43 27 emberdeep
+    cell 49 31 emberhot
+    cell 49 32 emberdeep
+    cell 49 41 emberglow
+    cell 49 42 emberdeep
+    cell 43 36 emberdeep
+    cell 49 51 emberglow
+    cell 43 49 emberdeep
+    glow radius 2
+  }
+}
+
+frame 3 "passL" {
+  part ember material divine_flame_core {
+    cell 46 13 embercore
+    cell 46 14 emberglow
+    cell 46 15 emberhot
+    cell 49 26 emberglow
+    cell 43 27 emberdeep
+    cell 49 31 emberhot
+    cell 49 32 emberdeep
+    cell 49 41 emberglow
+    cell 49 42 emberdeep
+    cell 43 36 emberdeep
+    cell 49 51 emberglow
+    cell 43 49 emberdeep
+    glow radius 2
+  }
+}
+
+frame 4 "fallL" {
+  part ember material divine_flame_core {
+    cell 46 12 emberhot
+    cell 46 13 embercore
+    cell 46 14 emberglow
+    cell 46 15 embercore
+    cell 49 24 emberdeep
+    cell 49 29 emberglow
+    cell 49 30 emberhot
+    cell 49 39 emberglow
+    cell 43 34 emberdeep
+    cell 49 49 emberdeep
+    cell 43 47 emberdeep
+    glow radius 2
+  }
+}
+
+frame 5 "contactR" {
+  part blade material darksteel {
+    polygon 44 55 48 55 48 21 46 13 44 21 steel
+    line 44 22 44 54 steelhi
+    line 48 23 48 54 steeldark
+    line 46 23 46 51 fuller
+    cell 45 17 steelhi
+  }
+  part ember material divine_flame_core {
+    cell 46 8 emberhot
+    cell 46 9 emberhot
+    cell 46 10 embercore
+    cell 46 11 emberglow
+    cell 46 12 embercore
+    cell 49 24 emberglow
+    cell 43 26 emberdeep
+    cell 49 26 emberglow
+    cell 49 27 emberhot
+    cell 49 36 emberglow
+    cell 43 31 emberdeep
+    cell 49 46 emberdeep
+    cell 43 44 emberdeep
+    glow radius 2
+  }
+  part guard material gold {
+    polygon 41 55 51 55 50 58 42 58 gold
+    line 42 55 50 55 goldhi
+    line 42 58 50 58 golddark
+    cell 40 54 goldhi
+    cell 51 54 golddark
+  }
+  part grip material leather_brown {
+    rect 45 59 2 7 gripbrown
+    line 45 60 46 60 gripdark
+    line 45 62 46 62 gripdark
+    line 45 64 46 64 gripdark
+  }
+  part pommel material ruby {
+    cell 45 66 embercore
+    cell 46 66 emberglow
+    cell 45 67 emberglow
+    cell 46 67 emberdeep
+  }
+}
+
+frame 6 "riseR" {
+  part blade material darksteel {
+    polygon 44 50 48 50 48 16 46 8 44 16 steel
+    line 44 17 44 49 steelhi
+    line 48 18 48 49 steeldark
+    line 46 18 46 46 fuller
+    cell 45 12 steelhi
+  }
+  part ember material divine_flame_core {
+    cell 46 4 emberhot
+    cell 46 5 embercore
+    cell 46 6 emberglow
+    cell 46 7 emberhot
+    cell 49 21 emberhot
+    cell 49 22 emberdeep
+    cell 43 21 emberdeep
+    cell 49 23 emberhot
+    cell 49 24 emberdeep
+    cell 49 33 emberglow
+    cell 49 34 emberdeep
+    cell 43 28 emberdeep
+    cell 49 43 emberglow
+    cell 43 41 emberdeep
+    glow radius 2
+  }
+  part guard material gold {
+    polygon 41 50 51 50 50 53 42 53 gold
+    line 42 50 50 50 goldhi
+    line 42 53 50 53 golddark
+    cell 40 49 goldhi
+    cell 51 49 golddark
+  }
+  part grip material leather_brown {
+    rect 45 54 2 7 gripbrown
+    line 45 55 46 55 gripdark
+    line 45 57 46 57 gripdark
+    line 45 59 46 59 gripdark
+  }
+  part pommel material ruby {
+    cell 45 61 embercore
+    cell 46 61 emberglow
+    cell 45 62 emberglow
+    cell 46 62 emberdeep
+  }
+}
+
+frame 7 "passR" {
+  part blade material darksteel {
+    polygon 44 50 48 50 48 16 46 8 44 16 steel
+    line 44 17 44 49 steelhi
+    line 48 18 48 49 steeldark
+    line 46 18 46 46 fuller
+    cell 45 12 steelhi
+  }
+  part ember material divine_flame_core {
+    cell 46 4 emberhot
+    cell 46 5 embercore
+    cell 46 6 emberglow
+    cell 46 7 emberhot
+    cell 49 21 emberhot
+    cell 49 22 emberdeep
+    cell 43 21 emberdeep
+    cell 49 23 emberhot
+    cell 49 24 emberdeep
+    cell 49 33 emberglow
+    cell 49 34 emberdeep
+    cell 43 28 emberdeep
+    cell 49 43 emberglow
+    cell 43 41 emberdeep
+    glow radius 2
+  }
+  part guard material gold {
+    polygon 41 50 51 50 50 53 42 53 gold
+    line 42 50 50 50 goldhi
+    line 42 53 50 53 golddark
+    cell 40 49 goldhi
+    cell 51 49 golddark
+  }
+  part grip material leather_brown {
+    rect 45 54 2 7 gripbrown
+    line 45 55 46 55 gripdark
+    line 45 57 46 57 gripdark
+    line 45 59 46 59 gripdark
+  }
+  part pommel material ruby {
+    cell 45 61 embercore
+    cell 46 61 emberglow
+    cell 45 62 emberglow
+    cell 46 62 emberdeep
+  }
+}
+
+frame 8 "fallR" {
+  part blade material darksteel {
+    polygon 44 55 48 55 48 21 46 13 44 21 steel
+    line 44 22 44 54 steelhi
+    line 48 23 48 54 steeldark
+    line 46 23 46 51 fuller
+    cell 45 17 steelhi
+  }
+  part ember material divine_flame_core {
+    cell 46 8 emberhot
+    cell 46 9 emberhot
+    cell 46 10 embercore
+    cell 46 11 emberglow
+    cell 46 12 embercore
+    cell 49 24 emberglow
+    cell 43 26 emberdeep
+    cell 49 26 emberglow
+    cell 49 27 emberhot
+    cell 49 36 emberglow
+    cell 43 31 emberdeep
+    cell 49 46 emberdeep
+    cell 43 44 emberdeep
+    glow radius 2
+  }
+  part guard material gold {
+    polygon 41 55 51 55 50 58 42 58 gold
+    line 42 55 50 55 goldhi
+    line 42 58 50 58 golddark
+    cell 40 54 goldhi
+    cell 51 54 golddark
+  }
+  part grip material leather_brown {
+    rect 45 59 2 7 gripbrown
+    line 45 60 46 60 gripdark
+    line 45 62 46 62 gripdark
+    line 45 64 46 64 gripdark
+  }
+  part pommel material ruby {
+    cell 45 66 embercore
+    cell 46 66 emberglow
+    cell 45 67 emberglow
+    cell 46 67 emberdeep
+  }
+}
+
+export json svg phaser png
