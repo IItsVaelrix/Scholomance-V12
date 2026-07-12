@@ -4,9 +4,11 @@
 
 **Goal:** Replace pairwise `phrase_compound` rhyme connections with per-token quantized phonetic signatures, so `/api/analysis/panels` is O(n) instead of O(n²) and stops OOM-killing the backend — while gaining slant-rhyme detection.
 
-**Architecture:** Every token and multi-token window gets a `sign`: its rhyme tail embedded over articulatory features, rotated by TurboQuant's Hadamard transform, and reduced to SimHash band codes. Tails that share a band are *candidates*; the existing `scoreMultiSyllableMatch` **verifies** them. LSH therefore affects only recall, never a score — no colour can change because of quantization. The wire carries per-window signs (O(n)); pairs are implied by shared sign and never enumerated.
+**Architecture:** Every token and multi-token window gets a `sign`: a **Resonance Fingerprint** — 64 hex chars in 8 blocks, SCD64 discipline, each block `sha256(canonical)`. Two tokens share a block IFF that canonical is identical, so sharing a rhyme-bearing block **is** the bucket: deterministic, guaranteed recall. Bucket-mates are *candidates*; the existing `scoreMultiSyllableMatch` **verifies** them, so bucketing changes only which pairs are examined, never a score, and therefore never a colour. The wire carries per-window fingerprints (O(n)); pairs are implied by shared blocks and never enumerated.
 
-**Tech Stack:** Node 20, Fastify, better-sqlite3, Vitest (`npm test`), existing `PHONOLOGICAL_FEATURES_V1` articulatory table, existing `codex/core/quantization/turboquant.js`.
+**Rejected (measured, do not revisit):** a SimHash/TurboQuant design. Band collision is probabilistic (~`1 - theta/pi` per bit; an 8-bit band matches only ~22% of the time at cosine 0.85), so real rhymes were missed at random — and a missed candidate can never be emitted. It failed in both directions at once: SIN~SIM stopped colliding while DESIRE~BANANA started.
+
+**Tech Stack:** Node 20, Fastify, better-sqlite3, Vitest (`npm test`), existing `PHONOLOGICAL_FEATURES_V1` articulatory table, SCD64 fingerprint discipline (mirrored from `src/core/scd64/`, not imported — see Task 2).
 
 ## Global Constraints
 
@@ -23,7 +25,8 @@
   The four **coloured** types (`perfect`, `assonance`, `near`, `slant`) must still be **34 / 44 / 29 / 6** after every task. Any delta is a review gate, not a pass. `phrase_compound` is expected to collapse — that is the point. Never use a randomly generated verse as a baseline.
 - **The gate stays backend-authoritative.** The backend assigns the sign; the frontend groups by it. The browser never recomputes a vowel family and never compares phonetics (`BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK`).
 - **Never widen scope into the palette.** Do not touch colour values. This is a data-contract change.
-- `fastHadamardTransform(vec)` **mutates its argument in place** and requires a power-of-two length. Always pass a copy.
+- **A missed candidate is invisible forever.** Recall failures are far more serious than precision failures: a false candidate is merely rejected later by `scoreMultiSyllableMatch`, but a rhyme that never becomes a candidate can never be emitted. Never trade recall for precision.
+- **`codex/` must not import `src/core/scd64/*.ts`.** The server runs `node codex/server/index.js` with no TypeScript loader; such an import breaks it at runtime. Mirror the discipline in plain JS, keeping the relationship thresholds identical so the taxonomy does not fork.
 - Vowel entries in `PHONOLOGICAL_FEATURES_V1` carry `cPlace`; consonant entries carry `vPlace`. The feature key list must be the **union** of both (11 keys), with missing keys read as `0`.
 - Tests live in `tests/lib/`, run with `npx vitest run <path>`.
 
@@ -205,136 +208,329 @@ contract."
 
 ---
 
-### Task 2: Quantized sign (SimHash bands over TurboQuant's Hadamard rotation)
+### Task 2: The Resonance Fingerprint (SCD64 discipline)
 
-Turns the embedding into bucket keys. Tails sharing any band are candidates.
+Turns each token into ONE fixed-width code. Two tokens are rhyme candidates when they share a rhyme-bearing block. This replaces the SimHash/TurboQuant approach, which was measured and **failed**: SimHash collision is probabilistic (~`1 - theta/pi` per bit, so an 8-bit band matches only ~22% of the time at cosine 0.85), and a missed candidate is invisible forever. Deterministic block equality gives guaranteed recall.
 
 **Files:**
-- Modify: `codex/core/phonology/tailEmbedding.js`
-- Test: `tests/lib/tailSign.test.js`
+- Create: `codex/core/rhyme-astrology/resonanceFingerprint.js`
+- Test: `tests/lib/resonanceFingerprint.test.js`
 
 **Interfaces:**
-- Consumes: `buildTailFeatureVector` (Task 1); `fastHadamardTransform` from `codex/core/quantization/turboquant.js`
-- Produces: `SIGN_BANDS` (4), `SIGN_BITS_PER_BAND` (8), `buildTailSignBands(phonemes: string[]) -> string[]` (empty array for a featureless tail), `sharesSignBand(a: string[], b: string[]) -> boolean`
+- Consumes: `extractRhymeTail` from `codex/core/phonology/tailEmbedding.js` (Task 1 — anchored at the LAST STRESSED VOWEL); `PHONOLOGICAL_FEATURES_V1` from `codex/core/phonology/phoneme.constants.js`
+- Produces: `RESONANCE_SLOTS` (8 names), `RESONANCE_VERSION_BYTE` (`'R1'`), `buildResonanceFingerprint(phonemes: string[]) -> string | null` (64 uppercase hex chars, or `null` for a tailless token), `parseResonanceBlocks(fp: string) -> string[]` (8 blocks of 8), `compareResonanceByBlocks(a: string, b: string) -> { matchingBlocks: number, similarity: number, relationship: string }`, `areRhymeCandidates(a: string, b: string) -> boolean`, `rhymeBucketKeys(fp: string) -> string[]` (the rhyme-bearing blocks, each prefixed with its slot index so blocks from different slots can never collide)
+
+**WHY SCD64 AND NOT AN IMPORT:** `src/core/scd64/` is UI-layer TypeScript. `codex/` runs under plain Node ESM with **no TypeScript loader** (the server is started with `node codex/server/index.js`), so importing those `.ts` files would break the server at runtime. Reimplement the *discipline* — 64 hex, 8 blocks, `sha256(canonical).slice(0,8)`, block-exact comparison — in plain JS. Keep the same relationship thresholds as `src/core/scd64/compareSCD64.ts` so the taxonomy stays consistent across the codebase.
+
+**THE KEY PROPERTY:** each block is `sha256(canonical_string)`, so two fingerprints share a block **if and only if** their canonical string for that slot is identical. Sharing a block *is* the bucket. There is no probability involved.
 
 - [ ] **Step 1: Write the failing test**
 
-`tests/lib/tailSign.test.js`:
+`tests/lib/resonanceFingerprint.test.js`:
 
 ```js
 import { describe, expect, it } from 'vitest';
-import { buildTailSignBands, sharesSignBand } from '../../codex/core/phonology/tailEmbedding.js';
+import {
+  buildResonanceFingerprint,
+  parseResonanceBlocks,
+  compareResonanceByBlocks,
+  areRhymeCandidates,
+} from '../../codex/core/rhyme-astrology/resonanceFingerprint.js';
 
-const FIRE   = ['F', 'AY1', 'ER0'];
-const DESIRE = ['D', 'IH0', 'Z', 'AY1', 'ER0'];
-const HIGHER = ['HH', 'AY1', 'ER0'];
-const BANANA = ['B', 'AH0', 'N', 'AE1', 'N', 'AH0'];
-const SIN    = ['S', 'IH1', 'N'];
-const SIM    = ['S', 'IH1', 'M'];
+const W = {
+  FIRE:   ['F', 'AY1', 'ER0'],
+  DESIRE: ['D', 'IH0', 'Z', 'AY1', 'ER0'],
+  HIGHER: ['HH', 'AY1', 'ER0'],
+  SIN:    ['S', 'IH1', 'N'],
+  SIM:    ['S', 'IH1', 'M'],
+  OLD:    ['OW1', 'L', 'D'],
+  OWED:   ['OW1', 'D'],
+  WORLD:  ['W', 'ER1', 'L', 'D'],
+  HERD:   ['HH', 'ER1', 'D'],
+  BRIGHT: ['B', 'R', 'AY1', 'T'],
+  LIGHT:  ['L', 'AY1', 'T'],
+  NIGHT:  ['N', 'AY1', 'T'],
+  STONE:  ['S', 'T', 'OW1', 'N'],
+  BONE:   ['B', 'OW1', 'N'],
+  THRONE: ['TH', 'R', 'OW1', 'N'],
+  CREATE: ['K', 'R', 'IY0', 'EY1', 'T'],
+  ELATE:  ['IH0', 'L', 'EY1', 'T'],
+  BANANA: ['B', 'AH0', 'N', 'AE1', 'N', 'AH0'],
+  GLOW:   ['G', 'L', 'OW1'],
+};
+const fp = (w) => buildResonanceFingerprint(W[w]);
 
-describe('buildTailSignBands', () => {
+describe('fingerprint shape', () => {
+  it('is 64 uppercase hex characters', () => {
+    expect(fp('FIRE')).toMatch(/^[0-9A-F]{64}$/);
+  });
+
+  it('splits into 8 blocks of 8', () => {
+    const blocks = parseResonanceBlocks(fp('FIRE'));
+    expect(blocks).toHaveLength(8);
+    expect(blocks.every((b) => b.length === 8)).toBe(true);
+  });
+
+  it('carries the R1 version byte', () => {
+    expect(fp('FIRE').slice(0, 2)).toBe('R1');
+  });
+
   it('is deterministic', () => {
-    expect(buildTailSignBands(FIRE)).toEqual(buildTailSignBands(FIRE));
+    expect(fp('DESIRE')).toBe(fp('DESIRE'));
   });
 
-  it('returns no bands for a featureless tail (never bucket silence together)', () => {
-    expect(buildTailSignBands([])).toEqual([]);
-  });
-
-  it('gives identical tails identical bands (fire / desire / higher all end AY-ER)', () => {
-    expect(buildTailSignBands(FIRE)).toEqual(buildTailSignBands(DESIRE));
-    expect(buildTailSignBands(HIGHER)).toEqual(buildTailSignBands(DESIRE));
+  it('returns null for a token with no rhyme tail', () => {
+    expect(buildResonanceFingerprint([])).toBeNull();
   });
 });
 
-describe('sharesSignBand — candidate generation', () => {
-  it('collides real rhymes', () => {
-    expect(sharesSignBand(buildTailSignBands(FIRE), buildTailSignBands(DESIRE))).toBe(true);
+// A MISSED candidate is invisible forever and can never be emitted.
+// A FALSE candidate merely gets rejected later by scoreMultiSyllableMatch.
+// Recall failures are therefore far more serious than precision failures.
+describe('areRhymeCandidates — recall (must never miss)', () => {
+  const MUST = [
+    ['FIRE', 'DESIRE'], ['FIRE', 'HIGHER'],   // r-coloured tails
+    ['SIN', 'SIM'],                            // slant coda: differ only in `place`
+    ['OLD', 'OWED'], ['WORLD', 'HERD'],        // coda-length shear
+    ['BRIGHT', 'LIGHT'], ['LIGHT', 'NIGHT'],
+    ['STONE', 'BONE'], ['BONE', 'THRONE'],
+    ['CREATE', 'ELATE'],                       // hiatus
+  ];
+  it.each(MUST)('%s ~ %s are candidates', (a, b) => {
+    expect(areRhymeCandidates(fp(a), fp(b))).toBe(true);
+  });
+});
+
+describe('areRhymeCandidates — precision', () => {
+  const MUST_NOT = [
+    ['DESIRE', 'BANANA'], ['FIRE', 'GLOW'],
+    ['SIN', 'BANANA'], ['BRIGHT', 'BANANA'],
+  ];
+  it.each(MUST_NOT)('%s ~ %s are NOT candidates', (a, b) => {
+    expect(areRhymeCandidates(fp(a), fp(b))).toBe(false);
+  });
+});
+
+describe('compareResonanceByBlocks — the block count grades the rhyme', () => {
+  it('rates a perfect rhyme above a slant rhyme, and both above a non-rhyme', () => {
+    const perfect = compareResonanceByBlocks(fp('LIGHT'), fp('NIGHT')).matchingBlocks;
+    const slant   = compareResonanceByBlocks(fp('SIN'), fp('SIM')).matchingBlocks;
+    const none    = compareResonanceByBlocks(fp('DESIRE'), fp('BANANA')).matchingBlocks;
+    expect(perfect).toBeGreaterThan(slant);
+    expect(slant).toBeGreaterThan(none);
   });
 
-  it('collides slant codas (sin ~ sim)', () => {
-    expect(sharesSignBand(buildTailSignBands(SIN), buildTailSignBands(SIM))).toBe(true);
+  it('uses the same relationship tiers as src/core/scd64/compareSCD64.ts', () => {
+    expect(compareResonanceByBlocks(fp('LIGHT'), fp('NIGHT')).relationship).toBe('MUTATION');
+    expect(compareResonanceByBlocks(fp('DESIRE'), fp('BANANA')).relationship).toBe('WEAK_NEIGHBOR');
   });
 
-  it('does not collide unrelated tails (desire ~ banana)', () => {
-    expect(sharesSignBand(buildTailSignBands(DESIRE), buildTailSignBands(BANANA))).toBe(false);
-  });
-
-  it('never collides on empty bands', () => {
-    expect(sharesSignBand([], [])).toBe(false);
+  it('a fingerprint is IDENTICAL to itself', () => {
+    expect(compareResonanceByBlocks(fp('FIRE'), fp('FIRE')).relationship).toBe('IDENTICAL');
   });
 });
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run tests/lib/tailSign.test.js`
-Expected: FAIL — `buildTailSignBands is not a function`
+Run: `npx vitest run tests/lib/resonanceFingerprint.test.js`
+Expected: FAIL — `Failed to resolve import ... resonanceFingerprint.js`
 
 - [ ] **Step 3: Write the implementation**
 
-Append to `codex/core/phonology/tailEmbedding.js`:
+`codex/core/rhyme-astrology/resonanceFingerprint.js`:
 
 ```js
-import { fastHadamardTransform } from '../quantization/turboquant.js';
+/**
+ * The Resonance Fingerprint — one fixed-width code per token.
+ *
+ * A rhyme is a property each token holds INDEPENDENTLY (its tail), so the pair
+ * is derivable and never needs storing. This is that property, in the SCD64
+ * discipline already used across the codebase: 64 uppercase hex characters,
+ * 8 blocks of 8, each block sha256(canonical).slice(0,8).
+ *
+ * Because a block is a hash of its canonical string, two fingerprints share a
+ * block IF AND ONLY IF that canonical is identical. Sharing a block IS the
+ * bucket — deterministic, with no probability involved. (An earlier SimHash /
+ * TurboQuant design was measured and rejected: band collision is ~22% likely at
+ * cosine 0.85, so real rhymes were missed at random, and a missed candidate can
+ * never be emitted.)
+ *
+ * Block-match count grades the rhyme for free, on the SAME tiers as
+ * src/core/scd64/compareSCD64.ts:
+ *   7-8/8 MUTATION/IDENTICAL  perfect rhyme
+ *   6/8   MUTATION            slant (SIN/SIM — differ only in `place`)
+ *   4-5/8 RELATED_FAMILY      coda-length shear (OLD/OWED, WORLD/HERD)
+ *   2-3/8 WEAK_NEIGHBOR       unrelated
+ *
+ * NOT imported from src/core/scd64: that is UI-layer TypeScript, and codex runs
+ * under plain Node ESM with no TS loader. The discipline is reimplemented; the
+ * thresholds are kept identical so the taxonomy does not fork.
+ */
+import crypto from 'node:crypto';
+import { extractRhymeTail } from '../phonology/tailEmbedding.js';
+import { PHONOLOGICAL_FEATURES_V1 } from '../phonology/phoneme.constants.js';
 
-// 4 bands x 8 bits. A pair is a candidate if it shares ANY band, so more bands
-// buys recall and costs candidate volume. Tuned against the dense fixture.
-export const SIGN_BANDS = 4;
-export const SIGN_BITS_PER_BAND = 8;
+export const RESONANCE_SLOTS = Object.freeze([
+  'TAIL',       // the exact rhyme tail            -> perfect rhyme
+  'NUCLEUS',    // the stressed nucleus            -> assonance
+  'CODALAST',   // nucleus + FINAL phoneme         -> coda-length shear (OLD/OWED)
+  'CODACLASS',  // nucleus + coda manner/nasality  -> slant (SIN/SIM)
+  'SYLLABLES',
+  'STRESS',
+  'ONSET',
+  'VERSION',
+]);
+
+export const RESONANCE_VERSION_BYTE = 'R1';
+
+// Blocks that carry rhyme identity. Sharing ANY of these makes two tokens
+// candidates. NUCLEUS is deliberately NOT included: sharing only a vowel is
+// assonance, not a rhyme, and it would bucket a third of the document together.
+const RHYME_BEARING_BLOCKS = Object.freeze([0, 2, 3]);
+
+function hashBlock(canonical) {
+  return crypto.createHash('sha256').update(canonical).digest('hex').toUpperCase().slice(0, 8);
+}
+
+function buildCanonicals(phonemes) {
+  const tail = extractRhymeTail(phonemes);
+  if (!tail.length) return null;
+
+  const nucleus = tail[0];
+  const coda = tail.slice(1);
+  const last = coda.length ? coda[coda.length - 1] : null;
+  const features = last ? PHONOLOGICAL_FEATURES_V1[last] : null;
+
+  // Coda class drops `place` ON PURPOSE: place is exactly what separates slant
+  // partners (N/M, T/P). Keeping it would make SIN and SIM look unrelated.
+  const codaClass = features
+    ? `m${features.manner}n${features.nasality}`
+    : 'open';
+
+  return {
+    TAIL: `TAIL:${tail.join('-')}`,
+    NUCLEUS: `NUC:${nucleus}`,
+    CODALAST: `CL:${nucleus}:${last ?? 'open'}`,
+    CODACLASS: `CC:${nucleus}:${codaClass}`,
+    SYLLABLES: `SYL:${tail.length}`,
+    STRESS: `STR:${phonemes.filter((p) => /[12]/.test(String(p))).length}`,
+    ONSET: `ONS:${phonemes[0] ?? 'none'}`,
+    VERSION: `V:${RESONANCE_VERSION_BYTE}`,
+  };
+}
+
+export function buildResonanceFingerprint(phonemes) {
+  const canonicals = buildCanonicals(phonemes);
+  if (!canonicals) return null;
+
+  return RESONANCE_SLOTS
+    .map((slot, index) => {
+      const block = hashBlock(canonicals[slot]);
+      // Slot 0 carries the version byte, matching SCD64's BUGCLASS convention.
+      return index === 0 ? RESONANCE_VERSION_BYTE + block.slice(0, 6) : block;
+    })
+    .join('');
+}
+
+export function parseResonanceBlocks(fingerprint) {
+  if (typeof fingerprint !== 'string' || !/^[0-9A-F]{64}$/.test(fingerprint)) {
+    throw new Error('[Resonance] fingerprints must be exactly 64 uppercase hex characters.');
+  }
+  return fingerprint.match(/.{8}/g) ?? [];
+}
+
+export function compareResonanceByBlocks(a, b) {
+  const blocksA = parseResonanceBlocks(a);
+  const blocksB = parseResonanceBlocks(b);
+
+  let matchingBlocks = 0;
+  const differentBlocks = [];
+  for (let i = 0; i < 8; i += 1) {
+    if (blocksA[i] === blocksB[i]) matchingBlocks += 1;
+    else differentBlocks.push(RESONANCE_SLOTS[i]);
+  }
+
+  // Same thresholds as src/core/scd64/compareSCD64.ts — do not fork the taxonomy.
+  let relationship;
+  if (matchingBlocks === 8) relationship = 'IDENTICAL';
+  else if (matchingBlocks >= 6) relationship = 'MUTATION';
+  else if (matchingBlocks >= 4) relationship = 'RELATED_FAMILY';
+  else if (matchingBlocks >= 2) relationship = 'WEAK_NEIGHBOR';
+  else relationship = 'UNRELATED';
+
+  return { matchingBlocks, differentBlocks, similarity: matchingBlocks / 8, relationship };
+}
+
+export function areRhymeCandidates(a, b) {
+  if (!a || !b) return false;
+  const blocksA = parseResonanceBlocks(a);
+  const blocksB = parseResonanceBlocks(b);
+  return RHYME_BEARING_BLOCKS.some((i) => blocksA[i] === blocksB[i]);
+}
 
 /**
- * SimHash over the Hadamard-rotated tail vector. Similar tails keep the same
- * sign pattern in most coordinates, so they land in the same band.
+ * The bucket keys for a fingerprint. Two tokens sharing ANY of these are
+ * candidates. The slot index is prefixed so that an identical hex value landing
+ * in two different slots can never collide by accident.
  */
-export function buildTailSignBands(phonemes) {
-  const vec = buildTailFeatureVector(phonemes);
-
-  let energy = 0;
-  for (let i = 0; i < TAIL_VECTOR_DIM; i += 1) energy += vec[i] * vec[i];
-  // A zero vector has no direction. Bucketing it would collide every unknown
-  // tail into one bucket — the exact "ghost signature" failure turboquant.js
-  // guards against. Emit no bands instead.
-  if (energy === 0) return [];
-
-  // fastHadamardTransform mutates in place.
-  const rotated = Float32Array.from(vec);
-  fastHadamardTransform(rotated);
-
-  const bands = [];
-  for (let b = 0; b < SIGN_BANDS; b += 1) {
-    let bits = '';
-    for (let i = 0; i < SIGN_BITS_PER_BAND; i += 1) {
-      bits += rotated[b * SIGN_BITS_PER_BAND + i] >= 0 ? '1' : '0';
-    }
-    bands.push(`${b}:${bits}`);
-  }
-  return bands;
+export function rhymeBucketKeys(fingerprint) {
+  if (!fingerprint) return [];
+  const blocks = parseResonanceBlocks(fingerprint);
+  return RHYME_BEARING_BLOCKS.map((i) => `${i}:${blocks[i]}`);
 }
+```
 
-export function sharesSignBand(bandsA, bandsB) {
-  if (!bandsA?.length || !bandsB?.length) return false;
-  const set = new Set(bandsA);
-  return bandsB.some((band) => set.has(band));
-}
+- [ ] **Step 6: Remove the code Task 1 wrote that this task makes dead**
+
+Task 2 supersedes the vector path: bucketing is now block-exact, so the SimHash/cosine machinery has no consumer. Leaving it is a YAGNI violation.
+
+In `codex/core/phonology/tailEmbedding.js`, DELETE: `FEATURE_KEYS`, `TAIL_VECTOR_DIM`, `NUCLEUS_WEIGHT`, `buildTailFeatureVector`, `tailCosine`, and the `PHONOLOGICAL_FEATURES_V1` import if it becomes unused. KEEP: `stripStress`, `extractRhymeTail`, `TAIL_MAX_PHONEMES`, and the `ARPABET_VOWELS` import — the fingerprint depends on them.
+
+In `tests/lib/tailEmbedding.test.js`, DELETE the `buildTailFeatureVector` and `tailCosine` describe blocks. KEEP every `extractRhymeTail` test, including the hiatus cases (CREATE -> EY,T and REACT -> AE,K,T) — that logic is still live and was hard-won.
+
+DELETE `tests/lib/tailSign.test.js` entirely (it tests the rejected SimHash design).
+
+Update the file's doc comment: it no longer describes an embedding, it describes stress-anchored rhyme-tail extraction.
+
+Run: `npx vitest run tests/lib/tailEmbedding.test.js tests/lib/resonanceFingerprint.test.js`
+Expected: PASS, with no reference to the deleted symbols anywhere (`grep -rn "buildTailFeatureVector\|tailCosine\|buildTailSignBands" codex/ src/ tests/` must return nothing).
+
+- [ ] **Step 7: Commit the cleanup**
+
+```bash
+git add codex/core/phonology/tailEmbedding.js tests/lib/tailEmbedding.test.js
+git rm tests/lib/tailSign.test.js
+git commit -m "refactor(phonology): drop the vector path superseded by the fingerprint
+
+Bucketing is block-exact now, so the SimHash bands and the cosine embedding have
+no consumer. Stress-anchored tail extraction stays — the fingerprint is built
+from it."
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run tests/lib/tailSign.test.js`
-Expected: PASS, 7 tests.
+Run: `npx vitest run tests/lib/resonanceFingerprint.test.js tests/lib/tailEmbedding.test.js`
+Expected: PASS. Task 1's tests must stay green — this task does not modify `tailEmbedding.js`.
 
-If `desire ~ banana` collides, reduce `SIGN_BANDS` to 2 (fewer bands = stricter) and re-run. Do not weaken the assertion.
+Every recall case MUST pass. If any `MUST` pair misses, do **not** weaken the test: the canonical for one of the rhyme-bearing slots is wrong, and a missed candidate can never be emitted downstream.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add codex/core/phonology/tailEmbedding.js tests/lib/tailSign.test.js
-git commit -m "feat(phonology): SimHash sign bands over the tail embedding
+git add codex/core/rhyme-astrology/resonanceFingerprint.js tests/lib/resonanceFingerprint.test.js
+git commit -m "feat(rhyme): the Resonance Fingerprint — one SCD64-discipline code per token
 
-Hadamard-rotate the articulatory tail vector and take sign bits per band.
-Similar tails collide; a featureless tail emits no bands so unknown words are
-never bucketed together."
+A rhyme is a property each token holds independently, so the pair is derivable
+and never needs storing. Each token gets 64 hex chars in 8 blocks; a block is
+sha256(canonical), so two tokens share a block IFF that canonical is identical.
+Sharing a block IS the bucket — deterministic, guaranteed recall.
+
+Replaces a SimHash/TurboQuant design that was measured and failed: band collision
+is ~22% likely at cosine 0.85, so real rhymes were missed at random, and a missed
+candidate can never be emitted. Block-match count also grades the rhyme for free,
+on the same tiers as src/core/scd64: perfect 7-8/8, slant 6/8, coda-shear 4-5/8,
+unrelated 2-3/8."
 ```
 
 ---
@@ -348,7 +544,7 @@ never bucketed together."
 - Test: `tests/lib/deepRhyme.phrase-buckets.test.js`
 
 **Interfaces:**
-- Consumes: `buildTailSignBands` (Task 2); existing `this.engine.scoreMultiSyllableMatch(analysisA, analysisB)`
+- Consumes: `buildResonanceFingerprint`, `rhymeBucketKeys` (Task 2); existing `this.engine.scoreMultiSyllableMatch(analysisA, analysisB)`
 - Produces: no API change — `findPhraseConnections(verseIR)` still returns `Array<{type:'phrase_compound', score, syllablesMatched, wordA, wordB, ...}>`, just far fewer and far faster.
 
 - [ ] **Step 1: Write the failing test**
@@ -415,26 +611,29 @@ Expected: FAIL on the first test — phrase count far exceeds `words * 8` (the c
 In `codex/core/rhyme-astrology/deepRhyme.engine.js`, add to the imports at the top:
 
 ```js
-import { buildTailSignBands } from '../phonology/tailEmbedding.js';
+import { buildResonanceFingerprint, rhymeBucketKeys } from './resonanceFingerprint.js';
 ```
 
 Replace the nested pairwise loop (currently `const connections = []; for (let i = 0; ...)` through the closing of the double loop, i.e. lines 386–423) with:
 
 ```js
-    // Candidates come from SimHash bands over the articulatory tail embedding.
-    // The old scan compared every window with every other window — 18,032 of the
-    // 18,243 connections on a 1,500-char verse, growing quadratically and
-    // OOM-killing the server past ~12,000 chars. Bucketing only changes which
-    // pairs we LOOK at; every emitted connection is still scored by
-    // scoreMultiSyllableMatch, so no score and no colour can move.
+    // Candidates come from the Resonance Fingerprint's rhyme-bearing blocks.
+    // The old scan compared every window with every other — 1,335 of the 1,448
+    // connections on the 75-word fixture, growing quadratically and OOM-killing
+    // the server past ~12,000 chars. Bucketing only changes which pairs we LOOK
+    // at; every emitted connection is still scored by scoreMultiSyllableMatch,
+    // so no score and no colour can move.
     const connections = [];
     const buckets = new Map();
 
     for (const node of phraseNodes) {
-      node.signBands = buildTailSignBands(node.analysis?.phonemes || []);
-      for (const band of node.signBands) {
-        if (!buckets.has(band)) buckets.set(band, []);
-        buckets.get(band).push(node);
+      node.fingerprint = buildResonanceFingerprint(node.analysis?.phonemes || []);
+      // A tailless token gets no fingerprint and therefore no bucket. Do NOT
+      // bucket them together — that would collide every unknown token at once.
+      if (!node.fingerprint) continue;
+      for (const key of rhymeBucketKeys(node.fingerprint)) {
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(node);
       }
     }
 
@@ -524,9 +723,9 @@ git add codex/core/rhyme-astrology/deepRhyme.engine.js tests/lib/deepRhyme.phras
 git commit -m "perf(rhyme): bucket the phrase scan by sign band, killing the O(n^2)
 
 findPhraseConnections paired every multi-token window with every other. Now
-candidates come from SimHash bands over the articulatory tail embedding, and
-every surviving candidate is still scored by scoreMultiSyllableMatch — so
-quantization changes only which pairs are examined, never a score."
+candidates come from the Resonance Fingerprint's rhyme-bearing blocks, and every
+surviving candidate is still scored by scoreMultiSyllableMatch — so bucketing
+changes only which pairs are examined, never a score, and never a colour."
 ```
 
 ---
@@ -541,8 +740,8 @@ Stop shipping pairs; ship one sign per window. Commit `4fd7e5ba` already filters
 - Test: `tests/lib/panelAnalysis.phraseWindows.test.js`
 
 **Interfaces:**
-- Consumes: `node.signBands` set in Task 3
-- Produces: analysis result gains `phraseWindows: Array<{charStart:number, charEnd:number, sign:string, syllableCount:number}>`; the wire payload gains the same array. `sign` is `signBands[0]` (the primary band) or `''` when the tail is featureless.
+- Consumes: `node.fingerprint` set in Task 3
+- Produces: analysis result gains `phraseWindows: Array<{charStart:number, charEnd:number, sign:string, syllableCount:number}>`; the wire payload gains the same array. `sign` is the 64-hex Resonance Fingerprint itself, or `''` when the token has no rhyme tail. Windows sharing a sign rhyme; the client groups by it and never recomputes phonetics.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -603,7 +802,7 @@ In `deepRhyme.engine.js`, change `findPhraseConnections` to also record the wind
     this.lastPhraseWindows = phraseNodes.map((node) => ({
       charStart: node.charStart,
       charEnd: node.charEnd,
-      sign: node.signBands?.[0] ?? '',
+      sign: node.fingerprint ?? '',
       syllableCount: node.syllableLength ?? 0,
     }));
 
