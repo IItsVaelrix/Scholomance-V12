@@ -12,8 +12,6 @@ import { createEvidence, createSourceSpan } from '../contracts.js';
 
 // ─── Result constructors ─────────────────────────────────────────────────────
 
-export const NO_FINDING = Object.freeze({ verdict: 'NO_FINDING', evidence: [] });
-
 /**
  * Builds a NO_FINDING result that still explains what was checked.
  * Evidence on a negative result is the difference between "we found nothing"

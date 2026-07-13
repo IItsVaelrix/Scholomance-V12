@@ -166,10 +166,6 @@ function writeOutput(content, outputPath) {
   }
 }
 
-function writeError(bytecode) {
-  process.stderr.write(bytecode + "\n");
-}
-
 function reportExitCode(report, failOnFindings) {
   if (!report) return 2;
   if (report.findings && report.findings.length > 0 && failOnFindings) return 1;
@@ -549,11 +545,11 @@ function percentile(samples, fraction) {
   return sorted[Math.max(0, index)];
 }
 
-async function measure(run, samples = BENCHMARK_SAMPLES) {
+async function measure(scenario, samples = BENCHMARK_SAMPLES) {
   const durations = [];
   for (let i = 0; i < samples; i += 1) {
     const started = Date.now();
-    await run(i);
+    await scenario(i);
     durations.push(Date.now() - started);
   }
   return {

@@ -131,14 +131,14 @@ export function createIndexRepository({ cacheDir, fs }) {
         parserVersion: key.parserVersion,
         profileVersion: key.profileVersion,
         repositoryFingerprint: key.repositoryFingerprint,
-        createdAt: Date.now(),
+        createdAt: Date.now(), // EXEMPT: cache freshness, excluded from canonical report identity
         payload,
         checksum: null
       };
       envelope.checksum = checksumEnvelope(envelope);
 
       const file = cacheFile(key);
-      const tempFile = `${file}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+      const tempFile = `${file}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`; // EXEMPT: temp-file uniqueness for an atomic rename; never enters a report
 
       try {
         fs.mkdirSync(cacheDir, { recursive: true });

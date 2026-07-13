@@ -10,7 +10,6 @@
 
 import { deepFreeze } from './contracts.js';
 
-export const PROFILE_ID = 'scholomance/default';
 export const PROFILE_VERSION = '1.0.0';
 
 // ─── Path classification ─────────────────────────────────────────────────────
@@ -96,13 +95,6 @@ const RECOVERY_ADAPTER_RE = /(retry|backoff|fallback|recover|reconnect|requeue|r
 /** A call that actually performs recovery rather than discarding the error. */
 export function isRecoveryAdapterCallee(callee) {
   return RECOVERY_ADAPTER_RE.test(String(callee ?? ''));
-}
-
-const BYTECODE_ERROR_RE = /(BytecodeError|PbError|ScholomanceError|DomainError|AppError)$/;
-
-/** An error constructor that translates rather than swallows. */
-export function isBytecodeErrorConstructor(name) {
-  return BYTECODE_ERROR_RE.test(String(name ?? ''));
 }
 
 /**

@@ -136,7 +136,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`2026-07-02-pixelbrain-mmorpg-ui-system-pdr.md`](./2026-07-02-pixelbrain-mmorpg-ui-system-pdr.md) | Draft | PixelBrain \| MMORPG UI \| Runtime Panels \| Lattice Assets | Critical |
 | [`QBIT-Immune-Checkpoint-PDR.md`](./QBIT-Immune-Checkpoint-PDR.md) | Implemented — v1 shipped 2026-07-03 (see `PIR-20260703-QBIT-IMMUNE-CHECKPOINT`) | Architectural \| Immune System \| Diagnostic Memory \| QBIT Substrate | High |
 | [`2026-07-03-qbit-immune-self-audit-pdr.md`](./2026-07-03-qbit-immune-self-audit-pdr.md) | Draft | Architectural \| Immune System \| Diagnostic Memory \| QBIT Substrate \| Meta-Checkpoint | High |
-| [`2026-07-13-cleri-probe-evidence-microscope-overhaul-pdr.md`](./2026-07-13-cleri-probe-evidence-microscope-overhaul-pdr.md) | Approved | Architectural \| Developer Tooling \| Immune System \| Diagnostic Evidence \| CLI | High |
+| [`2026-07-13-cleri-probe-evidence-microscope-overhaul-pdr.md`](./2026-07-13-cleri-probe-evidence-microscope-overhaul-pdr.md) | Implemented | Architectural \| Developer Tooling \| Immune System \| Diagnostic Evidence \| CLI | High |
 | [`SCD64-robust-pass.md`](./SCD64-robust-pass.md) | Draft | SCD64 + Robust Pass | High |
 | [`Polarity PDR.md`](./Polarity%20PDR.md) | Draft | Polarity Music Video + PixelBrain Cinematic Lyric Video | High |
 | [`Polarity Spec PDR.md`](./Polarity%20Spec%20PDR.md) | Draft | Polarity Music Video + Technical Implementation Spec | High |

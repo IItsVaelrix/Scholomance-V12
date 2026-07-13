@@ -78,6 +78,20 @@ describe("Cleri Probe substrate service", () => {
     }
   });
 
+  it("walks a directory once even when a symlink loops back to an ancestor", async () => {
+    write(tmpDir, "src/game/damage.js", "export const damage = 1;");
+    // src/game/loop -> src. Keying the re-entry guard on the link path instead of
+    // the real directory lets this produce an endlessly new alias
+    // (src/game/loop/game/loop/...) and analyze the same file at every depth.
+    symlink(tmpDir, "src", "src/game/loop");
+
+    const service = createSubstrateService({ fs, root: tmpDir });
+    const result = await service.resolveScope({ paths: ["src"] });
+
+    expect(result.files.map(file => file.path)).toEqual(["src/game/damage.js"]);
+    expect(result.skipped).toContainEqual({ path: "src/game/loop", reasonCode: "SYMLINK_LOOP" });
+  });
+
   it("skips symlinks that escape the root with SYMLINK_OUTSIDE_ROOT", async () => {
     const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "cleri-outside-"));
     try {

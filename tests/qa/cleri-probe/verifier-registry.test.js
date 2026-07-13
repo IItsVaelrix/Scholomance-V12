@@ -15,7 +15,7 @@ function makeVerifier(overrides = {}) {
     retrieveHints(plan) {
       return [`hint:${plan.profileId}`];
     },
-    verify(candidate, context) {
+    verify(_candidate, _context) {
       return {
         verdict: "NO_FINDING",
         evidence: []

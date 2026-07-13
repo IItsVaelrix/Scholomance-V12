@@ -143,7 +143,8 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
         'dist',
         '.codex',
         'scripts',
-        'immunity'
+        'immunity',
+        'target'
       ];
 
       // Use grep to find occurrences
@@ -185,7 +186,7 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
 
         // immunity is excluded for the same reason as in the randomness scan:
         // its prion fixtures model forbidden patterns on purpose
-        const grepCommand = `grep -F -r "${pattern}" ${activeDirs.join(' ')} --exclude-dir={tests,immunity} || true`;
+        const grepCommand = `grep -F -r "${pattern}" ${activeDirs.join(' ')} --exclude-dir={tests,immunity,target} || true`;
         const output = execSync(grepCommand).toString().trim();
         
         if (output) {

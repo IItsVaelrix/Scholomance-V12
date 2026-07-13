@@ -310,8 +310,9 @@ function collectDottedReads(node, out = []) {
   return out;
 }
 
-export function parseSourceFacts({ path, content }) {
-  const normalizedPath = normalizeRepositoryPath(path);
+export function parseSourceFacts({ path: filePath, content }) {
+  // Named filePath so it does not shadow Babel's visitor `path` in every visitor below.
+  const normalizedPath = normalizeRepositoryPath(filePath);
   const source = String(content ?? "");
   const contentHash = sha256Hex(source);
   const parseContent = source.replace(/\r\n/g, "\n");

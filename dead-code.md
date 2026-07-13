@@ -1,11 +1,12 @@
 # Dead Code Report
 
-Generated at: 2026-07-07T18:13:14.863Z
+Generated at: 2026-07-13T05:42:36.414Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
 
 - [ ] src/audio/audio-forge.worklet.js
+- [ ] src/audio/manifold/manifold.worklet.js
 - [ ] src/combat/combat-sfx.events.js
 - [ ] src/combat/combat-sfx.mapping.js
 - [ ] src/components/GodotExportButton/downloadTextFile.js
@@ -193,6 +194,12 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/jit/index.js
 - [ ] codex/core/jit/pipeline.js
 - [ ] codex/core/jit/router.js
+- [ ] codex/core/manifold/manifold-wasm/pkg/manifold_wasm.d.ts
+- [ ] codex/core/manifold/manifold-wasm/pkg/manifold_wasm.js
+- [ ] codex/core/manifold/manifold-wasm/pkg/manifold_wasm_bg.wasm.d.ts
+- [ ] codex/core/manifold/rust-kernel/pkg/manifold_kernel.d.ts
+- [ ] codex/core/manifold/rust-kernel/pkg/manifold_kernel.js
+- [ ] codex/core/manifold/rust-kernel/pkg/manifold_kernel_bg.wasm.d.ts
 - [ ] codex/core/modulation/planner/div-layout-registrar.js
 - [ ] codex/core/modulation/planner/formula-registrar.js
 - [ ] codex/core/opponent.engine.js
@@ -818,6 +825,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `useActiveWords` in `src/video/hooks/useActiveWords.ts`
 - [ ] `ResolveActiveLinesOptions` in `src/video/logic/resolveActiveLines.ts`
 - [ ] `ResolveDominantSchoolOptions` in `src/video/logic/resolveDominantSchool.ts`
+- [ ] `getDominantSchoolFromWindow` in `src/video/logic/resolveDominantSchool.ts`
 - [ ] `EffectiveAtmosphere` in `src/video/logic/resolveSceneAtmosphere.ts`
 - [ ] `resolveSceneAtmosphere` in `src/video/logic/resolveSceneAtmosphere.ts`
 - [ ] `resolveTypographyAlignItems` in `src/video/logic/resolveTypographyProgram.ts`
@@ -1072,6 +1080,11 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `diagnoseLinguisticCoherence` in `codex/core/leyline.engine.js`
 - [ ] `scoreLiteraryConstraints` in `codex/core/leyline.engine.js`
 - [ ] `LEYLINE_PUZZLE_CODEX` in `codex/core/leyline.engine.js`
+- [ ] `MANIFOLD_FACTORY_PRESET_SOURCES` in `codex/core/manifold/factory-presets.js`
+- [ ] `buildManifoldFactoryPreset` in `codex/core/manifold/factory-presets.js`
+- [ ] `MANIFOLD_BYTECODE_SCHEMA` in `codex/core/manifold/index.js`
+- [ ] `MANIFOLD_KERNEL_SEMVER` in `codex/core/manifold/index.js`
+- [ ] `MANIFOLD_EVENTS` in `codex/core/manifold/index.js`
 - [ ] `CSS_NAMED_COLORS` in `codex/core/microprocessors/color/named-color-registry.js`
 - [ ] `SCHOOL_NAMED_COLORS` in `codex/core/microprocessors/color/named-color-registry.js`
 - [ ] `COLOR_ALIASES` in `codex/core/microprocessors/color/named-color-registry.js`
@@ -1110,6 +1123,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `isStressShiftHomograph` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `readMeter` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `pronounceWithMeter` in `codex/core/phonology/prosodic-metronome.js`
+- [ ] `TAIL_MAX_PHONEMES` in `codex/core/phonology/tailEmbedding.js`
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
 - [ ] `getAmp` in `codex/core/pixelbrain/amp-registry.js`
 - [ ] `listAmps` in `codex/core/pixelbrain/amp-registry.js`
@@ -1452,6 +1466,12 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `rhymeAstrologyConstellationSchema` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `rhymeAstrologyDiagnosticsSchema` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `rhymeAstrologyResultSchema` in `codex/core/rhyme-astrology/contracts.js`
+- [ ] `PHRASE_BUCKET_CANDIDATE_CAP` in `codex/core/rhyme-astrology/deepRhyme.engine.js`
+- [ ] `RESONANCE_SLOTS` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
+- [ ] `RESONANCE_VERSION_BYTE` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
+- [ ] `parseResonanceBlocks` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
+- [ ] `compareResonanceByBlocks` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
+- [ ] `areRhymeCandidates` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
 - [ ] `connectLines` in `codex/core/rhyme-astrology/rhymeConnection.js`
 - [ ] `connectDocument` in `codex/core/rhyme-astrology/rhymeConnection.js`
 - [ ] `connectDocumentMatrix` in `codex/core/rhyme-astrology/rhymeConnection.js`

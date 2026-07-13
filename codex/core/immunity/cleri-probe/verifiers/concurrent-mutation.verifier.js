@@ -174,5 +174,3 @@ export const concurrentMutationVerifier = deepFreeze({
     return verified(findings.sort(bySpan));
   }
 });
-
-export default concurrentMutationVerifier;

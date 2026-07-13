@@ -154,5 +154,3 @@ export const unseededRandomnessVerifier = deepFreeze({
     return verified(findings.sort(bySpan));
   }
 });
-
-export default unseededRandomnessVerifier;

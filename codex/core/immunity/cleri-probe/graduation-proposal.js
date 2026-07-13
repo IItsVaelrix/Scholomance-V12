@@ -289,18 +289,3 @@ export function buildGraduationProposal({ report, feedback, benchmark }) {
 
   return deepFreeze(proposal);
 }
-
-/** Recomputes a proposal's checksum, for a reviewer who received one out of band. */
-export function verifyGraduationProposal(proposal) {
-  if (!proposal || typeof proposal !== 'object' || proposal.contract !== GRADUATION_PROPOSAL_CONTRACT) {
-    return { valid: false, reason: 'not a SCHOL-CLERI-GRADUATION-PROPOSAL-v1 proposal' };
-  }
-  const { checksum, ...identity } = proposal;
-  if (sha256Hex(stableStringify(identity)) !== checksum) {
-    return { valid: false, reason: 'checksum mismatch' };
-  }
-  if (proposal.approved !== false) {
-    return { valid: false, reason: 'a proposal may not approve itself' };
-  }
-  return { valid: true };
-}

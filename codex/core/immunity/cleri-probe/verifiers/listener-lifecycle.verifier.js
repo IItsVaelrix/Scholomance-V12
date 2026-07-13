@@ -230,5 +230,3 @@ export const listenerLifecycleVerifier = deepFreeze({
     return verified(findings.sort(bySpan));
   }
 });
-
-export default listenerLifecycleVerifier;

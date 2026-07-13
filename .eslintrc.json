@@ -17,7 +17,17 @@
     "react-hooks",
     "jsx-a11y"
   ],
-  "ignorePatterns": ["dist", "build", "out", "output", "divtube_downloader", "nlp_chatbot", "tools/**/out", ".eslintrc.json", "vst/scholo-candy/target/doc"],
+  "ignorePatterns": [
+    "dist",
+    "build",
+    "out",
+    "output",
+    "divtube_downloader",
+    "nlp_chatbot",
+    "tools/**/out",
+    ".eslintrc.json",
+    "vst/scholo-candy/target/doc"
+  ],
   "parserOptions": {
     "ecmaVersion": "latest",
     "sourceType": "module"
@@ -110,12 +120,16 @@
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unused-vars": [
           "warn",
-          { "argsIgnorePattern": "^_" }
+          {
+            "argsIgnorePattern": "^_"
+          }
         ]
       }
     },
     {
-      "files": ["codex/**/*.js"],
+      "files": [
+        "codex/**/*.js"
+      ],
       "excludedFiles": [
         "codex/server/db/persistence.wrapper.js",
         "codex/server/db/sqlite.migrations.js",
@@ -139,8 +153,15 @@
       }
     },
     {
-      "files": ["src/**/*.js", "src/**/*.jsx", "src/**/*.ts", "src/**/*.tsx"],
-      "excludedFiles": ["src/lib/phaser/phaser-runtime.adapter.js"],
+      "files": [
+        "src/**/*.js",
+        "src/**/*.jsx",
+        "src/**/*.ts",
+        "src/**/*.tsx"
+      ],
+      "excludedFiles": [
+        "src/lib/phaser/phaser-runtime.adapter.js"
+      ],
       "rules": {
         "no-restricted-imports": [
           "error",
@@ -154,11 +175,28 @@
           }
         ]
       }
+    },
+    {
+      "files": [
+        "tests/qa/fixtures/cleri-probe/**/*.js",
+        "tests/qa/fixtures/cleri-probe/**/*.jsx"
+      ],
+      "rules": {
+        "no-undef": "off",
+        "no-unused-vars": "off",
+        "no-empty": "off"
+      }
     }
   ],
   "rules": {
     "no-undef": "error",
-    "no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_"
+      }
+    ],
     "react/prop-types": "off",
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "error",
@@ -169,7 +207,10 @@
     "jsx-a11y/aria-props": "error",
     "jsx-a11y/label-has-associated-control": [
       "error",
-      { "assert": "htmlFor", "depth": 3 }
+      {
+        "assert": "htmlFor",
+        "depth": 3
+      }
     ],
     "no-restricted-globals": [
       "error",
@@ -186,6 +227,14 @@
         "message": "Use a controlled React input instead of prompt()."
       }
     ],
-    "no-shadow": ["warn", { "hoist": "all", "allow": ["_"] }]
+    "no-shadow": [
+      "warn",
+      {
+        "hoist": "all",
+        "allow": [
+          "_"
+        ]
+      }
+    ]
   }
 }

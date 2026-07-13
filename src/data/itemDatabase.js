@@ -56,6 +56,18 @@ export const ITEM_DATABASE = {
     icon: '/assets/items/VoidIceGreatsword-icon.png',
     sprite: '/assets/items/VoidIceGreatsword-f0-png.png',
   },
+  'item_sword_emberbrand': {
+    id: 'item_sword_emberbrand',
+    assetId: 'EmberbrandWarblade',
+    name: 'Emberbrand Warblade',
+    type: 'weapon',
+    slot: 'mainHand',
+    rarity: 'epic',
+    school: 'WILL',
+    description: 'A darksteel warblade whose edge never stops burning. The flame builds with each stride.',
+    icon: '/assets/items/EmberbrandWarblade-icon.png',
+    sprite: '/assets/items/EmberbrandWarblade-f0-png.png',
+  },
   'item_shield_void': {
     id: 'item_shield_void',
     assetId: 'VoidIceShield',

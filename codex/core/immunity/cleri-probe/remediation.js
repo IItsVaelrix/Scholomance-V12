@@ -113,8 +113,3 @@ export function getRemediation(pathologyClass) {
     autoFixAvailable: false
   });
 }
-
-/** The pathology classes with a canonical remediation. */
-export function remediablePathologyClasses() {
-  return deepFreeze(Object.keys(GUIDES).sort());
-}

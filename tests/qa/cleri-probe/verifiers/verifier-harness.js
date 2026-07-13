@@ -126,9 +126,9 @@ export function assertFamilyGate(verifier) {
   return score;
 }
 
-/** Builds the candidate the runtime would hand a verifier for `path`. */
-export function makeCandidate(verifier, { path, source }) {
-  const facts = parseSourceFacts({ path, content: source });
+/** Builds the candidate the runtime would hand a verifier for `sourcePath`. */
+export function makeCandidate(verifier, { path: sourcePath, source }) {
+  const facts = parseSourceFacts({ path: sourcePath, content: source });
   return {
     path: facts.path,
     factId: null,
@@ -154,8 +154,8 @@ export function makeCandidate(verifier, { path, source }) {
  * `context.includeTests` defaults to true so fixtures under tests/ are analyzed
  * as product code, exactly as `--include-tests` does.
  */
-export function verify(verifier, { path, source, context = {} }) {
-  const candidate = makeCandidate(verifier, { path, source });
+export function verify(verifier, { path: sourcePath, source, context = {} }) {
+  const candidate = makeCandidate(verifier, { path: sourcePath, source });
   const result = verifier.verify(candidate, {
     pathologyClass: verifier.pathologyClass,
     repositoryRoot: ".",

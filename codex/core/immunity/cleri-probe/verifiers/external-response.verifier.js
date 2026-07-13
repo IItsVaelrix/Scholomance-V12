@@ -243,5 +243,3 @@ export const externalResponseVerifier = deepFreeze({
     return verified(findings.sort(bySpan));
   }
 });
-
-export default externalResponseVerifier;

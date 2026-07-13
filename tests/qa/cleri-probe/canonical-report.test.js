@@ -7,7 +7,6 @@ import {
   fingerprintConfiguration,
   buildFindingId,
   buildInvestigationReport,
-  checksumInvestigationReport,
   encodeCleriReportIdentity,
   verifyInvestigationReport
 } from "../../../codex/core/immunity/cleri-probe/canonical-report.js";
