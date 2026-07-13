@@ -21,6 +21,8 @@ import { BytecodeHealth } from './BytecodeHealth.js';
 import { HEALTH_CODES, HEALTH_SEVERITY, CELL_IDS } from './diagnostic-constants.js';
 import { propagate, ATTENUATION_MODELS } from '../pixelbrain/qbit-field.js';
 import { runChemotaxis } from './truesightImmuneProbe.js';
+import { decodeChromaBytecode } from '../shared/truesight/color/chroma.bytecode.js';
+import { UNTRUSTED_AUTHORITY_LETTERS } from '../shared/truesight/color/chroma.authority.js';
 
 // Spectral plane sits ABOVE the geometric invariant z-planes (I1..I4 = z0..z3).
 export const SPECTRAL_Z = 4;
@@ -251,4 +253,73 @@ export function summarizeChromaReport(report) {
   if (report.healthy) return `CHROMA: clean — ${report.sampleCount} samples, 0 bleeds`;
   const pz = report.patientZero;
   return `CHROMA: ${report.bleedCount}/${report.sampleCount} bleeds | patient-zero stage=${pz.suspectStage} (${pz.affectedSamples}) | leak=${pz.representative.leakSite} | cause=${pz.representative.rootCauseAnalysis}`;
+}
+
+/** A committed colour needs a real authority behind it. These letters have none. */
+const UNTRUSTED = new Set(UNTRUSTED_AUTHORITY_LETTERS);
+
+/**
+ * The macrophage's nose: reads PB-CHROMA v2 stamps off a view and reports what it
+ * smells. It reports only — it does not repair, and it never rewrites a colour to
+ * hide the evidence.
+ *
+ * @param {string[]} stamps
+ */
+export function scanChromaStamps(stamps) {
+  const decoded = (Array.isArray(stamps) ? stamps : [])
+    .map(decodeChromaBytecode)
+    .filter(Boolean);
+
+  const findings = [];
+  const authorityHistogram = {};
+  const chefs = new Set();
+
+  for (const stamp of decoded) {
+    authorityHistogram[stamp.authority] = (authorityHistogram[stamp.authority] || 0) + 1;
+    if (stamp.chef !== 'N') chefs.add(stamp.chef);
+
+    if (stamp.reason === 'I') {
+      findings.push({ code: 'CHROMA_BLEED', detail: 'A colour reaction produced a malformed value' });
+    }
+
+    // The invariant. A kinase can only commit above threshold, so a committed
+    // colour with an untrusted authority means a chef painted around the gate.
+    if (stamp.committed && UNTRUSTED.has(stamp.authority)) {
+      findings.push({
+        code: 'LIE_PAINTED',
+        detail: `A colour was painted on authority ${stamp.authority}, which cannot back it`,
+      });
+    }
+  }
+
+  const authorities = Object.keys(authorityHistogram);
+  const trusted = authorities.filter(letter => !UNTRUSTED.has(letter));
+  const untrusted = authorities.filter(letter => UNTRUSTED.has(letter));
+
+  if (decoded.length > 0 && trusted.length === 0) {
+    findings.push({
+      code: 'AUTHORITY_LOST',
+      detail: 'No token in this view has a dictionary-backed colour: the API is down or flooded',
+    });
+  } else if (trusted.length > 0 && untrusted.length > 0) {
+    findings.push({
+      code: 'TORN_FRAME',
+      detail: 'Some tokens kept dictionary authority while others fell back — the view is fragmented',
+    });
+  }
+
+  if (chefs.size > 1) {
+    findings.push({
+      code: 'TOO_MANY_CHEFS',
+      detail: `Colour in this view was cooked by ${[...chefs].sort().join(' and ')}`,
+    });
+  }
+
+  return {
+    total: Array.isArray(stamps) ? stamps.length : 0,
+    decoded: decoded.length,
+    findings,
+    authorityHistogram,
+    chefs: [...chefs],
+  };
 }
