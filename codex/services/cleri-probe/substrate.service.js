@@ -164,8 +164,24 @@ export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
     return SUPPORTED_EXTENSIONS.has(ext);
   }
 
-  function readDirectory(dirRelPath, files, skipped, seenSymlinks) {
+  function readDirectory(dirRelPath, files, skipped, seenSymlinks, visitedDirs) {
     const dirAbs = dirRelPath ? path.join(resolvedRoot, dirRelPath) : resolvedRoot;
+
+    // A directory is walked once, by its real identity. Keying the guard on the
+    // link path instead lets `src/game/loop -> src` re-enter through an endlessly
+    // new alias (src/game/loop/game/loop/...), analyzing the same physical file
+    // at every depth.
+    let realDir;
+    try {
+      realDir = fs.realpathSync(dirAbs);
+    } catch {
+      realDir = path.resolve(dirAbs);
+    }
+    if (visitedDirs.has(realDir)) {
+      skipped.push({ path: dirRelPath || ".", reasonCode: "SYMLINK_LOOP" });
+      return;
+    }
+    visitedDirs.add(realDir);
 
     let entries;
     try {
@@ -234,7 +250,7 @@ export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
         }
 
         if (stat.isDirectory()) {
-          readDirectory(entryRelPath, files, skipped, seenSymlinks);
+          readDirectory(entryRelPath, files, skipped, seenSymlinks, visitedDirs);
         } else if (stat.isFile() && hasSupportedExtension(entry.name)) {
           readFile(entryRelPath, files, skipped);
         }
@@ -242,7 +258,7 @@ export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
       }
 
       if (entry.isDirectory()) {
-        readDirectory(entryRelPath, files, skipped, seenSymlinks);
+        readDirectory(entryRelPath, files, skipped, seenSymlinks, visitedDirs);
       } else if (entry.isFile() && hasSupportedExtension(entry.name)) {
         readFile(entryRelPath, files, skipped);
       }
@@ -314,6 +330,7 @@ export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
 
       const files = [];
       const seenSymlinks = new Set();
+      const visitedDirs = new Set();
 
       for (const relPath of requestedPaths) {
         const absPath = path.join(resolvedRoot, relPath);
@@ -326,7 +343,7 @@ export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
         }
 
         if (stat.isDirectory()) {
-          readDirectory(relPath, files, skipped, seenSymlinks);
+          readDirectory(relPath, files, skipped, seenSymlinks, visitedDirs);
         } else if (stat.isFile() && hasSupportedExtension(path.basename(relPath))) {
           readFile(relPath, files, skipped);
         }

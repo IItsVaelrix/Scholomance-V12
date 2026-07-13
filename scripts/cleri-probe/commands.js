@@ -7,6 +7,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import os from "node:os";
 import { compileInvestigationPlan } from "../../codex/core/immunity/cleri-probe/planner.js";
 import {
   createSubstrateService,
@@ -30,7 +31,6 @@ import {
   stableStringify,
   verifyInvestigationReport
 } from "../../codex/core/immunity/cleri-probe/canonical-report.js";
-import { renderExplain, renderVerification } from "./render-human.js";
 import {
   BytecodeError,
   ERROR_CATEGORIES,
@@ -38,7 +38,7 @@ import {
   ERROR_CODES,
   MODULE_IDS
 } from "../../codex/core/pixelbrain/bytecode-error.js";
-import { renderHuman } from "./render-human.js";
+import { renderExplain, renderHuman, renderVerification } from "./render-human.js";
 
 // ─── CLI defaults ────────────────────────────────────────────────────────────
 
@@ -58,20 +58,6 @@ assertPositiveFinite(DEFAULT_MAX_RUNTIME_MS, "maxRuntimeMs");
 
 function createProductionRegistry() {
   return createDefaultRegistry();
-}
-
-function notAvailableError(command) {
-  return new BytecodeError(
-    ERROR_CATEGORIES.STATE,
-    ERROR_SEVERITY.INFO,
-    MODULE_IDS.IMMUNITY,
-    ERROR_CODES.INVALID_STATE,
-    {
-      message: `Command '${command}' is not available in this foundation phase`,
-      phase: "foundation",
-      reasonCode: "NOT_AVAILABLE_IN_PHASE"
-    }
-  );
 }
 
 // ─── Runtime composition ─────────────────────────────────────────────────────
@@ -538,41 +524,108 @@ async function runDetectors(args) {
   return 0;
 }
 
+// ─── Benchmark ───────────────────────────────────────────────────────────────
+
+/**
+ * Product latency thresholds, enforced on the documented reference machine.
+ *
+ * The suite in tests/qa/cleri-probe/performance.test.js measures the same
+ * scenarios with generous CI ceilings; these are the numbers the product must
+ * actually hold.
+ */
+export const BENCHMARK_THRESHOLDS = Object.freeze({
+  warm: 1000,
+  incremental: 500,
+  cold: 3000,
+  sweep: 5000
+});
+
+const BENCHMARK_SAMPLES = 5;
+
+function percentile(samples, fraction) {
+  if (samples.length === 0) return 0;
+  const sorted = [...samples].sort((a, b) => a - b);
+  const index = Math.min(sorted.length - 1, Math.ceil(fraction * sorted.length) - 1);
+  return sorted[Math.max(0, index)];
+}
+
+async function measure(run, samples = BENCHMARK_SAMPLES) {
+  const durations = [];
+  for (let i = 0; i < samples; i += 1) {
+    const started = Date.now();
+    await run(i);
+    durations.push(Date.now() - started);
+  }
+  return {
+    samples: durations,
+    p50: percentile(durations, 0.5),
+    p95: percentile(durations, 0.95)
+  };
+}
+
 async function runBenchmark(args) {
-  const runtime = createRuntime();
-  const detectorId = args.options.detectors[0] || null;
-  const result = await runtime.investigate({
-    hypothesis: "leaked event listener subscription missing cleanup",
-    scopes: ["tests/qa/fixtures/cleri-probe"],
+  const options = args.options;
+  const detectorIds = options.detectors.length ? options.detectors : [];
+  const listener = "leaked event listener subscription missing cleanup";
+
+  const investigateWith = (scopes, extra = {}) => createRuntime().investigate({
+    hypothesis: listener,
+    scopes,
     includeTests: true,
-    detectorIds: detectorId ? [detectorId] : [],
+    detectorIds,
     maxCandidates: DEFAULT_MAX_CANDIDATES,
-    maxRuntimeMs: DEFAULT_MAX_RUNTIME_MS
+    maxRuntimeMs: DEFAULT_MAX_RUNTIME_MS,
+    ...extra
   });
 
-  const summary = {
-    durationMs: result.durationMs,
-    status: result.status,
-    fileCount: result.report?.coverage?.analyzedPaths?.length || 0,
-    candidateCount: result.candidates?.length || 0,
-    findingCount: result.report?.findings?.length || 0
+  // Warm the fact index once so the warm and incremental scenarios measure what
+  // they claim to measure.
+  await investigateWith(["tests/qa/fixtures/cleri-probe"]);
+
+  const warm = await measure(() => investigateWith(["tests/qa/fixtures/cleri-probe"]));
+  const incremental = await measure(() =>
+    investigateWith(["tests/qa/fixtures/cleri-probe/listener-lifecycle/verified.jsx"]));
+  const cold = await measure(() =>
+    investigateWith(["tests/qa/fixtures/cleri-probe"], { noCache: true }));
+  const sweep = await measure(() => investigateWith(["codex/core/immunity/cleri-probe"]), 3);
+
+  const scenarios = { warm, incremental, cold, sweep };
+  const breaches = Object.entries(scenarios)
+    .filter(([name, scenario]) => scenario.p95 > BENCHMARK_THRESHOLDS[name])
+    .map(([name, scenario]) => `${name} p95 ${scenario.p95}ms exceeds ${BENCHMARK_THRESHOLDS[name]}ms`);
+
+  const result = {
+    contract: "SCHOL-CLERI-BENCHMARK-v1",
+    // Recorded outside any canonical report: machine state is not evidence.
+    environment: {
+      node: process.version,
+      platform: process.platform,
+      cpus: os.cpus().length,
+      cpuModel: os.cpus()[0]?.model ?? "unknown"
+    },
+    thresholds: BENCHMARK_THRESHOLDS,
+    scenarios,
+    breaches
   };
 
-  if (args.options.json) {
-    writeOutput(stableStringify(summary) + "\n", args.options.output);
+  if (options.json || options.format === "json") {
+    writeOutput(stableStringify(result) + "\n", options.output);
   } else {
-    const lines = [
-      "Cleri Probe Benchmark",
-      "=====================",
-      `Duration:     ${summary.durationMs}ms`,
-      `Status:       ${summary.status}`,
-      `Files parsed: ${summary.fileCount}`,
-      `Findings:     ${summary.findingCount}`
-    ];
-    writeOutput(lines.join("\n") + "\n", args.options.output);
+    const lines = ["Cleri Probe Benchmark", "====================="];
+    for (const [name, scenario] of Object.entries(scenarios)) {
+      lines.push(
+        `${name.padEnd(12)} p50 ${String(scenario.p50).padStart(5)}ms   ` +
+        `p95 ${String(scenario.p95).padStart(5)}ms   ` +
+        `(threshold ${BENCHMARK_THRESHOLDS[name]}ms)`
+      );
+    }
+    lines.push("");
+    lines.push(breaches.length ? `BREACHED: ${breaches.join("; ")}` : "All scenarios within threshold");
+    lines.push(`Node ${result.environment.node} on ${result.environment.cpuModel}`);
+    writeOutput(lines.join("\n") + "\n", options.output);
   }
 
-  return 0;
+  return breaches.length > 0 ? 1 : 0;
 }
 
 // ─── Help ────────────────────────────────────────────────────────────────────
