@@ -279,6 +279,7 @@ export class DeepRhymeEngine {
       endRhymeConnections,
       internalRhymeConnections,
       allConnections,
+      phraseWindows: this.lastPhraseWindows ?? [],
       rhymeGroups,
       schemePattern,
       syntaxSummary: syntaxLayer?.syntaxSummary || null,
@@ -517,6 +518,10 @@ export class DeepRhymeEngine {
       // bucket them together — that would collide every unknown token at once.
       addToBuckets(node, fingerprint ? rhymeBucketKeys(fingerprint) : [], 'tail');
       addToBuckets(node, vowelSlantKeys(node.analysis), 'vslant');
+      // `sign` IS the fingerprint (Task 4): windows sharing a sign rhyme, so
+      // the client groups by it and never recomputes phonetics. A tailless
+      // token carries '' — it has no rhyme tail and cannot rhyme with anything.
+      node.sign = fingerprint || '';
 
       const firstToken = verseIR.tokens[node.tokenSpan[0]];
       const headFingerprint = buildResonanceFingerprint(firstToken?.analysis?.phonemes || []);
@@ -587,6 +592,13 @@ export class DeepRhymeEngine {
         }
       }
     }
+    this.lastPhraseWindows = phraseNodes.map((node) => ({
+      charStart: node.charStart,
+      charEnd: node.charEnd,
+      sign: node.sign ?? '',
+      syllableCount: node.syllableLength ?? 0,
+    }));
+
     return connections;
   }
 
@@ -948,7 +960,7 @@ export class DeepRhymeEngine {
     return stats;
   }
 
-  emptyDocumentAnalysis() { return { lines: [], endRhymeConnections: [], internalRhymeConnections: [], allConnections: [], rhymeGroups: new Map(), schemePattern: '', syntaxSummary: null, compiler: null, statistics: { totalLines: 0, totalWords: 0, totalSyllables: 0, perfectCount: 0, nearCount: 0, slantCount: 0, internalCount: 0, multiSyllableCount: 0, endRhymeCount: 0, syntaxGating: { enabled: false, totalCandidates: 0, suppressedPairs: 0, weakenedPairs: 0, keptPairs: 0 } } }; }
+  emptyDocumentAnalysis() { return { lines: [], endRhymeConnections: [], internalRhymeConnections: [], allConnections: [], phraseWindows: [], rhymeGroups: new Map(), schemePattern: '', syntaxSummary: null, compiler: null, statistics: { totalLines: 0, totalWords: 0, totalSyllables: 0, perfectCount: 0, nearCount: 0, slantCount: 0, internalCount: 0, multiSyllableCount: 0, endRhymeCount: 0, syntaxGating: { enabled: false, totalCandidates: 0, suppressedPairs: 0, weakenedPairs: 0, keptPairs: 0 } } }; }
   clearCache() { this.analysisCache.clear(); }
 }
 

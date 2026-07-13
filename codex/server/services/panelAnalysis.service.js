@@ -217,6 +217,21 @@ function toTransmittableConnections(value) {
   ));
 }
 
+// The positive contract phrase_compound's wire exclusion (above) is standing
+// in for: one `sign` per phrase window instead of one object per pair.
+// `sign` is the full 64-hex Resonance Fingerprint (or '' when the token has
+// no rhyme tail) — windows sharing a sign rhyme, so the pair is derivable and
+// never needs transmitting. This turns the O(n^2) wire cost into O(n).
+function toTransmittablePhraseWindows(value) {
+  if (!Array.isArray(value)) return [];
+  return value.map((window) => ({
+    charStart: Number(window?.charStart) || 0,
+    charEnd: Number(window?.charEnd) || 0,
+    sign: typeof window?.sign === 'string' ? window.sign : '',
+    syllableCount: Number(window?.syllableCount) || 0,
+  }));
+}
+
 function toMinimalAnalysisPayload(
   analysis,
   wordAnalyses,
@@ -231,6 +246,7 @@ function toMinimalAnalysisPayload(
 
   return {
     allConnections: toTransmittableConnections(analysis.allConnections),
+    phraseWindows: toTransmittablePhraseWindows(analysis.phraseWindows),
     statistics: analysis.statistics || null,
     schemePattern: typeof analysis.schemePattern === 'string' ? analysis.schemePattern : '',
     rhymeGroups: toSerializableGroupEntries(analysis.rhymeGroups),
