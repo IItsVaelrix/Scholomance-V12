@@ -36,6 +36,11 @@ export const RHYME_TIER_TYPES = new Set(['identity', 'perfect', 'near', 'slant']
 export const DEFAULT_ASSONANCE_MIN_SCORE = 0.60;
 
 export function buildResonanceGate(connections, opts = {}) {
+  // No backend authority means the phonemes behind these connections are
+  // spelling-derived guesses. Rendering them is not a degraded mode, it is a
+  // lie: love/move and though/tough get opposite vowel families. Render nothing.
+  if (opts.authorityUnavailable) return new Map();
+
   const minResonanceScore = typeof opts.minResonanceScore === 'number'
     ? opts.minResonanceScore
     : DEFAULT_MIN_RESONANCE_SCORE;

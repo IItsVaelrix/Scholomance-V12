@@ -247,6 +247,7 @@ function toMinimalAnalysisPayload(
   return {
     allConnections: toTransmittableConnections(analysis.allConnections),
     phraseWindows: toTransmittablePhraseWindows(analysis.phraseWindows),
+    authorityUnavailable: Boolean(PhonemeEngine.authorityFailure),
     statistics: analysis.statistics || null,
     schemePattern: typeof analysis.schemePattern === 'string' ? analysis.schemePattern : '',
     rhymeGroups: toSerializableGroupEntries(analysis.rhymeGroups),
