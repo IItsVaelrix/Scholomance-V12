@@ -269,7 +269,7 @@ export class DeepRhymeEngine {
     const endRhymeConnections = this.findEndRhymeConnections(lines);
     const internalRhymeConnections = lines.flatMap(l => l.internalRhymes);
     const crossLineAssonanceConnections = this.findCrossLineAssonanceConnections(lines, endRhymeConnections);
-    const phraseConnections = await this.findPhraseConnections(verseIR);
+    const { connections: phraseConnections, windows: phraseWindows } = await this.findPhraseConnections(verseIR);
     const { rhymeGroups, schemePattern } = this.buildRhymeGroups(lines, endRhymeConnections);
     this.assignGroupLabels(endRhymeConnections, rhymeGroups);
 
@@ -279,7 +279,7 @@ export class DeepRhymeEngine {
       endRhymeConnections,
       internalRhymeConnections,
       allConnections,
-      phraseWindows: this.lastPhraseWindows ?? [],
+      phraseWindows,
       rhymeGroups,
       schemePattern,
       syntaxSummary: syntaxLayer?.syntaxSummary || null,
@@ -592,14 +592,18 @@ export class DeepRhymeEngine {
         }
       }
     }
-    this.lastPhraseWindows = phraseNodes.map((node) => ({
+    // Returned, not stashed on `this`. DeepRhymeEngine is instantiated as a
+    // module-level singleton in at least two places (multisyllabic_rhyme.js,
+    // rhyme_quality.js), and this method awaits — so instance state written here
+    // could be read by a different, concurrently-running document.
+    const windows = phraseNodes.map((node) => ({
       charStart: node.charStart,
       charEnd: node.charEnd,
       sign: node.sign ?? '',
       syllableCount: node.syllableLength ?? 0,
     }));
 
-    return connections;
+    return { connections, windows };
   }
 
   findInternalRhymes(words) {
