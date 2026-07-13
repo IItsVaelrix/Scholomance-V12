@@ -492,6 +492,7 @@ function buildTokenIR({
     }
   );
   const rarity = phonemeEngine?.calculateRarity ? phonemeEngine.calculateRarity(normalized, phonemes) : 'COMMON';
+  const rhymeKey = buildRhymeTailSignature(resolvedAnalysis, basicAnalysis);
 
   return Object.freeze({
     id: globalTokenIndex,
@@ -500,6 +501,7 @@ function buildTokenIR({
     normalizedUpper: normalized.toUpperCase(),
     lineIndex,
     tokenIndexInLine,
+    wordIndex: tokenIndexInLine,
     globalTokenIndex,
     charStart,
     charEnd,
@@ -522,7 +524,8 @@ function buildTokenIR({
     terminalVowelFamily: normalizeVowelFamily(
       terminalSyllable?.vowelFamily || extractTerminalVowelFamilyFromRhymeKey(resolvedAnalysis?.rhymeKey || basicAnalysis?.rhymeKey)
     ) || null,
-    rhymeTailSignature: buildRhymeTailSignature(resolvedAnalysis, basicAnalysis),
+    rhymeKey,
+    rhymeTailSignature: rhymeKey,
     consonantSkeleton: buildConsonantSkeleton(phonemes),
     extendedRhymeKeys: Object.freeze(
       Array.isArray(resolvedAnalysis?.extendedRhymeKeys) ? [...resolvedAnalysis.extendedRhymeKeys] : []
@@ -536,6 +539,61 @@ function buildTokenIR({
     phoneticDiagnostics,
     analysis: resolvedAnalysis,
     rarity,
+  });
+}
+
+function buildLineEndRhymeContract(lines, tokens) {
+  const keyToLines = new Map();
+  const lineEndRhymeKeys = [];
+
+  for (const line of lines) {
+    const tokenIds = Array.isArray(line.tokenIds) ? line.tokenIds : [];
+    const endToken = tokenIds.length > 0 ? tokens[tokenIds[tokenIds.length - 1]] : null;
+    const rhymeKey = endToken?.rhymeKey || null;
+    lineEndRhymeKeys[line.lineIndex] = rhymeKey;
+
+    if (!rhymeKey) continue;
+    if (!keyToLines.has(rhymeKey)) {
+      keyToLines.set(rhymeKey, []);
+    }
+    keyToLines.get(rhymeKey).push(line.lineIndex);
+  }
+
+  const rhymeGroups = new Map();
+  const lineToGroup = new Map();
+  let nextGroupIndex = 0;
+
+  const sortedEntries = [...keyToLines.entries()]
+    .sort(([, linesA], [, linesB]) => (linesA[0] ?? 0) - (linesB[0] ?? 0));
+
+  for (const [, lineIndices] of sortedEntries) {
+    if (lineIndices.length < 2) continue;
+    const label = String.fromCharCode(65 + nextGroupIndex);
+    const sorted = [...lineIndices].sort((a, b) => a - b);
+    rhymeGroups.set(label, Object.freeze(sorted));
+    for (const lineIndex of sorted) {
+      lineToGroup.set(lineIndex, label);
+    }
+    nextGroupIndex += 1;
+  }
+
+  for (const line of lines) {
+    if (line.tokenIds.length === 0) continue;
+    if (lineToGroup.has(line.lineIndex)) continue;
+    const label = String.fromCharCode(65 + nextGroupIndex);
+    lineToGroup.set(line.lineIndex, label);
+    rhymeGroups.set(label, Object.freeze([line.lineIndex]));
+    nextGroupIndex += 1;
+  }
+
+  const schemePattern = lines
+    .map(line => line.tokenIds.length > 0 ? (lineToGroup.get(line.lineIndex) || 'X') : 'X')
+    .join('');
+
+  return Object.freeze({
+    schemePattern,
+    rhymeGroups,
+    lineEndRhymeKeys: Object.freeze(lineEndRhymeKeys),
   });
 }
 
@@ -732,6 +790,11 @@ export function createEmptyVerseIR(options = {}) {
     tokens: Object.freeze([]),
     surfaceSpans: Object.freeze([]),
     syllableWindows: Object.freeze([]),
+    rhyme: Object.freeze({
+      schemePattern: '',
+      rhymeGroups: new Map(),
+      lineEndRhymeKeys: Object.freeze([]),
+    }),
     indexes: Object.freeze({
       tokenIdsByLineIndex: Object.freeze([]),
       lineEndTokenIds: Object.freeze([]),
@@ -810,6 +873,10 @@ export function compileVerseToIR(rawText, options = {}) {
       line.tokenIds.push(token.id);
     }
     line.tokenIds = Object.freeze([...line.tokenIds]);
+    const endToken = line.tokenIds.length > 0 ? tokens[line.tokenIds[line.tokenIds.length - 1]] : null;
+    line.endTokenId = endToken?.id ?? null;
+    line.rhymeKey = endToken?.rhymeKey || null;
+    line.endRhymeKey = line.rhymeKey;
     Object.freeze(line);
   }
 
@@ -824,6 +891,7 @@ export function compileVerseToIR(rawText, options = {}) {
   );
   const indexes = buildVerseIndexes(lines, frozenTokens, syllableWindows);
   const featureTables = buildFeatureTables(lines, frozenTokens, syllableWindows);
+  const rhyme = buildLineEndRhymeContract(lines, frozenTokens);
 
   return Object.freeze({
     version: VERSE_IR_VERSION,
@@ -833,6 +901,7 @@ export function compileVerseToIR(rawText, options = {}) {
     tokens: frozenTokens,
     surfaceSpans,
     syllableWindows,
+    rhyme,
     indexes,
     featureTables,
     metadata: Object.freeze({

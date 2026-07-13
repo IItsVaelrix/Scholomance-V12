@@ -52,7 +52,7 @@ export function synthesizeVerse(text, options = {}) {
   });
 
   // 4. Rhyme & Meter Detection (The Echo)
-  const scheme = detectScheme(syntaxLayer.schemePattern, syntaxLayer.rhymeGroups);
+  const scheme = detectScheme(verseIR.rhyme?.schemePattern, verseIR.rhyme?.rhymeGroups);
   const meter = analyzeMeter(analyzedDoc.lines);
 
   // 5. Stylistic Inference (The Soul)

@@ -73,7 +73,8 @@ export function buildResonancePalette(profiles, schoolId = 'DEFAULT') {
   const palette = new Map();
   profiles.forEach(p => {
     if (!p) return;
-    const identity = p.identity || `${p.lineIndex}:${p.wordIndex}:${p.charStart}`;
+    const wordIndex = p.wordIndex ?? p.tokenIndexInLine;
+    const identity = p.identity || `${p.lineIndex}:${wordIndex}:${p.charStart}`;
     palette.set(identity, resolveResonanceColor(p.rhymeKey, schoolId, p.visualBytecode?.color));
   });
   return palette;
