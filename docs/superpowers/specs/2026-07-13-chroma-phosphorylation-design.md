@@ -18,22 +18,25 @@ dom.style.color = this.__color;
 
 Three things follow from that, and they are the three failure modes we set out to detect.
 
-### 1.1 The engine knows it guessed, and throws that knowledge away
+### 1.1 The token knows it was guessed. The colour never asks.
 
-```js
-// codex/core/phonology/phoneme.engine.js
-analyzeDeep(word) {
-  return this.analyzeDeepWithDiagnostics(word).analysis;   // ← provenance discarded
-}
+**Corrected 2026-07-13 after measuring.** The provenance already reaches the token.
+`compileVerseToIR` calls `analyzeDeepWithDiagnostics` and keeps the result as
+`token.phoneticDiagnostics`. With the dictionary **down**, the token for "bold" carries:
+
+```json
+{ "source": "heuristic_fallback",
+  "notes": ["Heuristic grapheme-to-phoneme fallback generated the pronunciation."] }
 ```
 
-`analyzeDeepWithDiagnostics` already returns `{ analysis, diagnostics }`, where diagnostics
-carries `source` — `scholomance_dictionary`, `cmu_dictionary`, `heuristic_fallback`,
-`unresolved`, and friends. The colour path calls the lossy sibling. Measured with the
-dictionary **down**, `analyzeDeep('bold')` returns `phonemes: ["B","AA1","L","D"]` with no
-hint that every one of them is a guess.
+The truth is sitting on the token. The colour path simply never reads it:
 
-This is the root cause. We do not need to *build* provenance. We need to stop discarding it.
+```js
+resolveSonicChroma(phonemes)          // takes a bare string[] — no provenance
+resolveVerseIrColor(family, school)   // takes a bare family — no provenance
+```
+
+(`PhonemeEngine.analyzeDeep` *does* discard diagnostics — `return this.analyzeDeepWithDiagnostics(word).analysis` — so any direct caller is blind. But the IR path, which is the one that feeds colour, is not. We do not need to build provenance, and we do not need to re-plumb the compiler. We need the colour resolvers to accept the authority the token already carries.)
 
 ### 1.2 Nothing downstream can tell truth from guess
 
