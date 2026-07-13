@@ -64,6 +64,28 @@ scratch/
 steamdeck_brain/
 literary_gpt/
 
+# Cochlear Manifold — the Rust workspace (VST3 plugin, DSP kernel, wasm crate).
+# 3.8GB of Rust sources and build output that the web image never touches. The
+# ONLY manifold files the app imports are index.js and factory-presets.js (via
+# src/lib/manifold.adapter.js), and they are self-contained — index.js imports
+# nothing from these subtrees, only ../pixelbrain/shared.js. Keep those two.
+codex/core/manifold/manifold-core/
+codex/core/manifold/manifold-plugin/
+codex/core/manifold/manifold-wasm/
+codex/core/manifold/rust-kernel/
+codex/core/manifold/target/
+codex/core/manifold/UI/
+codex/core/manifold/Cargo.toml
+codex/core/manifold/Cargo.lock
+codex/core/manifold/MANIFOLD_WHITEPAPER.md
+
+# Nested Rust build dirs. The bare `target/` rule above is context-root-only
+# (Docker does not match it recursively), which is why the manifold target dirs
+# were still being shipped. Deliberately NOT `**/rust-kernel` — that would also
+# match src/lib/math/quantization/rust-kernel/pkg, which the TurboQuant wasm
+# bridge dynamically imports.
+**/target/
+
 # Large local SQLite dbs / artifacts not needed at image-build time
 oracle_memory.sqlite
 scholomance_collab.sqlite
