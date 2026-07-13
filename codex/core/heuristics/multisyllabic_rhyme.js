@@ -189,7 +189,10 @@ async function scoreMultisyllabicRhyme(doc) {
 
   const lineCount = analysis?.lines?.length || doc?.lines?.length || 1;
   const averageAuthority = clamp01(totalAuthority / eligibleConnections.length);
-  const density = clamp01(eligibleConnections.length / Math.max(1, allConnections.length));
+  // Denominator is the multisyllabic candidate pool, not every connection in the
+  // document. Dividing by allConnections made density a function of how much junk
+  // the phrase scan produced, which is not a property of the verse.
+  const density = clamp01(eligibleConnections.length / Math.max(1, multiConnections.length));
   const lineCoverage = lineCount > 0 ? clamp01(touchedLines.size / lineCount) : 0;
   const endRhymeShare = clamp01(endRhymeCount / eligibleConnections.length);
 
