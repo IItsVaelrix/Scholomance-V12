@@ -186,6 +186,72 @@ describe("parseSourceFacts", () => {
     expect(result.writes.every(w => w.bindingId === paramBinding.id)).toBe(true);
   });
 
+  it("registers a default parameter as a param binding and resolves writes to it", () => {
+    const result = parseSourceFacts({
+      path: "a.js",
+      content: "function f(x = 1) { x += 1; }"
+    });
+    expect(result.ok).toBe(true);
+    const fn = result.functions.find(f => f.name === "f");
+    const binding = result.bindings.find(b => b.name === "x" && b.kind === "param");
+    expect(binding).toBeDefined();
+    expect(binding.functionId).toBe(fn.id);
+    expect(result.writes).toHaveLength(1);
+    expect(result.writes[0].bindingId).toBe(binding.id);
+  });
+
+  it("registers a destructured default parameter as a param binding and resolves writes to it", () => {
+    const result = parseSourceFacts({
+      path: "a.js",
+      content: "function f({ x = 1 }) { x += 1; }"
+    });
+    expect(result.ok).toBe(true);
+    const fn = result.functions.find(f => f.name === "f");
+    const binding = result.bindings.find(b => b.name === "x" && b.kind === "param");
+    expect(binding).toBeDefined();
+    expect(binding.functionId).toBe(fn.id);
+    expect(result.writes).toHaveLength(1);
+    expect(result.writes[0].bindingId).toBe(binding.id);
+  });
+
+  it("registers arrow function parameters as bindings", () => {
+    const result = parseSourceFacts({
+      path: "a.js",
+      content: "const f = (x) => { x += 1; };"
+    });
+    expect(result.ok).toBe(true);
+    const binding = result.bindings.find(b => b.name === "x" && b.kind === "param");
+    expect(binding).toBeDefined();
+    expect(result.writes).toHaveLength(1);
+    expect(result.writes[0].bindingId).toBe(binding.id);
+  });
+
+  it("registers method parameters as bindings", () => {
+    const result = parseSourceFacts({
+      path: "a.js",
+      content: "const o = { m(x) { x += 1; } };"
+    });
+    expect(result.ok).toBe(true);
+    const fn = result.functions.find(f => f.name === "m");
+    const binding = result.bindings.find(b => b.name === "x" && b.kind === "param");
+    expect(binding).toBeDefined();
+    expect(binding.functionId).toBe(fn.id);
+    expect(result.writes).toHaveLength(1);
+    expect(result.writes[0].bindingId).toBe(binding.id);
+  });
+
+  it("registers catch clause parameters as bindings", () => {
+    const result = parseSourceFacts({
+      path: "a.js",
+      content: "try {} catch (e) { e.message; }"
+    });
+    expect(result.ok).toBe(true);
+    expect(result.catchClauses).toHaveLength(1);
+    const binding = result.bindings.find(b => b.name === "e" && b.kind === "catch");
+    expect(binding).toBeDefined();
+    expect(binding.functionId).toBe(result.catchClauses[0].functionId);
+  });
+
   it("ignores calls that only appear inside comments", () => {
     const result = parseSourceFacts({
       path: "a.js",
