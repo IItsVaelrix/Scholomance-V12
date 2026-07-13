@@ -1401,17 +1401,32 @@ function initializeSubsystems() {
     if (!IS_TEST_RUNTIME) {
         mailQueueWorker.start();
 
-        // Phase 3: Session cleanup for Turso
-        if (TURSO_USER_DB_URL) {
-            setInterval(async () => {
-                try {
-                    const db = userPersistence.db || userPersistence;
-                    await db.execute('DELETE FROM sessions WHERE expires < ?', [Date.now()]);
-                } catch (err) {
-                    fastify.log.error({ err }, '[SESSION] Cleanup failed');
-                }
-            }, 3600000); // Purge every hour
-        }
+        // Session cleanup. This was gated on `if (TURSO_USER_DB_URL)`, so on the LOCAL
+        // SQLite store — the default, and what a Fly deploy uses unless Turso is
+        // configured — the sweeper NEVER STARTED and expired sessions were never purged.
+        //
+        // `saveUninitialized: true` mints a session row for EVERY anonymous request,
+        // including the /auth/csrf-token fetch that fires on every page load. With no
+        // sweeper the table grows without bound. Measured on one developer laptop before
+        // this fix: 2,893 rows, 2,642 of them (91.3%) already expired, the oldest two
+        // months old.
+        //
+        // Both stores expose the same `execute(sql, params)` surface, so this is
+        // store-agnostic. Sweep once at boot to clear what has already piled up, then
+        // hourly.
+        const sweepExpiredSessions = async () => {
+            try {
+                const db = userPersistence.db || userPersistence;
+                if (typeof db?.execute !== 'function') return;
+                await db.execute('DELETE FROM sessions WHERE expires < ?', [Date.now()]); // EXEMPT
+            } catch (err) {
+                fastify.log.error({ err }, '[SESSION] Cleanup failed');
+            }
+        };
+        // Fire-and-forget: the enclosing scope is not async, and sweepExpiredSessions
+        // already handles its own errors.
+        void sweepExpiredSessions();
+        setInterval(sweepExpiredSessions, 3600000); // Purge every hour
     }
 }
 
