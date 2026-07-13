@@ -7,13 +7,13 @@ This document records what the tool does today, not what it should do tomorrow.
 
 | Metric | Value |
 |--------|-------|
-| Captured at | 2026-07-13T11:54:34.791Z |
+| Captured at | 2026-07-13T12:10:18.905Z |
 | Substrate files | 4677 |
-| Hypothesis scan duration (`currentProcessMs`) | 11050.95 ms |
-| Prion scan duration (`currentPrionMs`) | 1375.31 ms |
+| Hypothesis scan duration (`currentProcessMs`) | 9903.54 ms |
+| Prion scan duration (`currentPrionMs`) | 1305.97 ms |
 | Hypothesis | `leaked event listener subscription missing cleanup` |
-| Listener fixture ranking | `hard-negative.jsx` rank 10 (0.380), `verified.jsx` rank 16 (0.292) |
-| CLI self-contamination | `scripts/cleri-probe/benchmark-baseline.js` rank 7 (0.408) — the probe text is present in the scripts/cleri-probe directory and surfaces in its own heatmap |
+| Listener fixture ranking | `hard-negative.jsx` rank 5 (0.388), `verified.jsx` rank 10 (0.294) |
+| CLI self-contamination | Canonical source is `scripts/cleri-probe.js` (does not rank in the listener-hypothesis top 500). Visible artifact: `scripts/cleri-probe/benchmark-baseline.js` rank 4 (0.402). All paths are recorded repository-relative. |
 
 ## Component dispositions
 
@@ -41,7 +41,7 @@ With threshold lowered to `0` (all results surfaced):
 * **Precision@all**: 10/4673 ≈ 0.002 — essentially noise.
 * **False-positive distribution@all**: in four of five families the hard-negative fixture ranks *above* the verified fixture, confirming the vector lens is scoring lexical overlap rather than structural defect:
   * `UNSEEDED_RANDOMNESS`: hard-negative rank 7 (0.418) vs. verified rank 55 (0.284)
-  * `LEAKED_LISTENER_SUBSCRIPTION`: hard-negative rank 10 (0.380) vs. verified rank 16 (0.292)
+  * `LEAKED_LISTENER_SUBSCRIPTION`: hard-negative rank 5 (0.388) vs. verified rank 10 (0.294)
   * `SWALLOWED_ERROR`: hard-negative rank 55 (0.277) vs. verified rank 93 (0.237)
   * `UNSAFE_EXTERNAL_RESPONSE_ACCESS`: hard-negative rank 13 (0.290) vs. verified rank 17 (0.275)
   * `CONCURRENT_SHARED_STATE_MUTATION`: verified rank 341 (0.084) vs. hard-negative rank 423 (0.075) — the only family where the verified case ranks higher, though both are buried in noise.
@@ -50,7 +50,7 @@ With threshold lowered to `0` (all results surfaced):
 
 High cosine resonance is **not** evidence of a bug. The current engine rewards shared vocabulary (`addEventListener`, `Promise.all`, `catch`, `Math.random`) and penalizes fixtures that happen to use less common tokens. The 2026-07-13 failures are therefore expected:
 
-1. **Self-contamination**: the probe strings live inside `scripts/cleri-probe/`, so the harness files rank highly for their own hypotheses.
+1. **Self-contamination**: the probe strings live inside `scripts/cleri-probe.js`, so files in `scripts/cleri-probe/` that embed those strings rank highly for their own hypotheses. `scripts/cleri-probe.js` itself is the canonical self-contamination source; it does not appear in the listener-hypothesis top 500, while `scripts/cleri-probe/benchmark-baseline.js` surfaces at rank 4.
 2. **Safe cleanup ranks above leak**: a fixture that contains `removeEventListener` or `socket.off` shares the same keyword neighborhood as the leak fixture and scores higher because it has more matching tokens, not because it is more buggy.
 
 The replacement engine must treat these cosine scores as weak retrieval signals and rely on structured presence/absence rules for ranking and verdicts.

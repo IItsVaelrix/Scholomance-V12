@@ -1,5 +1,6 @@
 // SWALLOWED_ERROR — verified positive fixtures
 
+// subtype: CLEAR_POSITIVE
 function riskyOperation() {
   try {
     dangerousCall();
@@ -8,6 +9,7 @@ function riskyOperation() {
   }
 }
 
+// subtype: REAL_WORLD_POSITIVE
 async function fetchWithLogOnly() {
   try {
     return await fetch('/api/combat/resolve');

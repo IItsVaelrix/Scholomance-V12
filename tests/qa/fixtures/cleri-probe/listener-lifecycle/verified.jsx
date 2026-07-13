@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+// subtype: CLEAR_POSITIVE
 export function WindowResizeHook() {
   useEffect(() => {
     const handler = () => console.log('resized');
@@ -11,6 +12,7 @@ export function WindowResizeHook() {
   return <div />;
 }
 
+// subtype: REAL_WORLD_POSITIVE
 export function SocketRoomChannel({ socket, roomId }) {
   useEffect(() => {
     socket.on('room-update', (msg) => console.log(msg));

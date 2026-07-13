@@ -1,5 +1,6 @@
 // SWALLOWED_ERROR — hard-negative fixtures
 
+// subtype: DIRECT_HARD_NEGATIVE
 function riskyOperationWithRethrow() {
   try {
     dangerousCall();
@@ -9,6 +10,7 @@ function riskyOperationWithRethrow() {
   }
 }
 
+// subtype: ADVERSARIAL_HARD_NEGATIVE
 async function fetchWithRecovery() {
   try {
     return await fetch('/api/combat/resolve');

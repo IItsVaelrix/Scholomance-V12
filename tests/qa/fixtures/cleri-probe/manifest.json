@@ -8,7 +8,8 @@
       "path": "concurrent-mutation/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 19,
-      "notes": "Promise.all results gathered into entries, then Object.fromEntries — no shared mutable state"
+      "subtype": "ADVERSARIAL_HARD_NEGATIVE",
+      "notes": "Adversarial hard negative: Promise.all gathers entries, then Object.fromEntries — no shared mutable state, but the shape resembles the verified cache mutation."
     },
     {
       "id": "concurrent-mutation-cache-shared",
@@ -16,7 +17,8 @@
       "path": "concurrent-mutation/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 16,
-      "notes": "Promise.all mutates shared cache object from parallel workers"
+      "subtype": "REAL_WORLD_POSITIVE",
+      "notes": "Real-world positive: Promise.all mutates a shared cache object from parallel workers."
     },
     {
       "id": "concurrent-mutation-tally-immutable",
@@ -24,7 +26,8 @@
       "path": "concurrent-mutation/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 11,
-      "notes": "Promise.all produces immutable outcomes array; reduce builds the tally after join"
+      "subtype": "DIRECT_HARD_NEGATIVE",
+      "notes": "Direct hard negative: Promise.all produces an immutable outcomes array; reduce builds the tally after the join."
     },
     {
       "id": "concurrent-mutation-tally-shared",
@@ -32,7 +35,8 @@
       "path": "concurrent-mutation/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 7,
-      "notes": "Promise.all mutates shared results object from parallel workers"
+      "subtype": "CLEAR_POSITIVE",
+      "notes": "Clear positive: Promise.all mutates a shared results object from parallel workers."
     },
     {
       "id": "external-response-axios-guarded",
@@ -40,7 +44,8 @@
       "path": "external-response/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 12,
-      "notes": "axios response access uses optional chaining and fallback"
+      "subtype": "ADVERSARIAL_HARD_NEGATIVE",
+      "notes": "Adversarial hard negative: axios response access uses optional chaining and a fallback, closely resembling the unguarded access."
     },
     {
       "id": "external-response-axios-unguarded",
@@ -48,7 +53,8 @@
       "path": "external-response/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 11,
-      "notes": "axios res.data.settings.theme accessed without guard"
+      "subtype": "REAL_WORLD_POSITIVE",
+      "notes": "Real-world positive: axios res.data.settings.theme accessed without guard."
     },
     {
       "id": "external-response-fetch-guarded",
@@ -56,15 +62,17 @@
       "path": "external-response/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 7,
-      "notes": "fetch response checked with ok, json parsed, then optional-chained"
+      "subtype": "DIRECT_HARD_NEGATIVE",
+      "notes": "Direct hard negative: fetch response checked with ok, json parsed, then optional-chained."
     },
     {
       "id": "external-response-fetch-unguarded",
       "pathologyClass": "UNSAFE_EXTERNAL_RESPONSE_ACCESS",
       "path": "external-response/verified.js",
       "expected": "VERIFIED",
-      "expectedLine": 5,
-      "notes": "fetch response.json() and data.profile.name accessed without guard"
+      "expectedLine": 6,
+      "subtype": "CLEAR_POSITIVE",
+      "notes": "Clear positive: fetch response.json() and data.profile.name accessed without guard."
     },
     {
       "id": "listener-lifecycle-socket-off",
@@ -72,7 +80,8 @@
       "path": "listener-lifecycle/hard-negative.jsx",
       "expected": "NO_FINDING",
       "expectedLine": 16,
-      "notes": "socket.on paired with socket.off in useEffect cleanup"
+      "subtype": "ADVERSARIAL_HARD_NEGATIVE",
+      "notes": "Adversarial hard negative: socket.on paired with socket.off in useEffect cleanup, using the same API as the leak."
     },
     {
       "id": "listener-lifecycle-socket-on",
@@ -80,7 +89,8 @@
       "path": "listener-lifecycle/verified.jsx",
       "expected": "VERIFIED",
       "expectedLine": 16,
-      "notes": "socket.on registered in useEffect without matching off"
+      "subtype": "REAL_WORLD_POSITIVE",
+      "notes": "Real-world positive: socket.on registered in useEffect without matching off."
     },
     {
       "id": "listener-lifecycle-window-cleanup",
@@ -88,7 +98,8 @@
       "path": "listener-lifecycle/hard-negative.jsx",
       "expected": "NO_FINDING",
       "expectedLine": 8,
-      "notes": "window.addEventListener paired with removeEventListener in cleanup"
+      "subtype": "DIRECT_HARD_NEGATIVE",
+      "notes": "Direct hard negative: window.addEventListener paired with removeEventListener in cleanup."
     },
     {
       "id": "listener-lifecycle-window-leak",
@@ -96,7 +107,8 @@
       "path": "listener-lifecycle/verified.jsx",
       "expected": "VERIFIED",
       "expectedLine": 8,
-      "notes": "window.addEventListener registered in useEffect without cleanup"
+      "subtype": "CLEAR_POSITIVE",
+      "notes": "Clear positive: window.addEventListener registered in useEffect without cleanup."
     },
     {
       "id": "swallowed-error-fetch-recovery",
@@ -104,7 +116,8 @@
       "path": "swallowed-error/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 16,
-      "notes": "catch returns a structured error response instead of swallowing"
+      "subtype": "ADVERSARIAL_HARD_NEGATIVE",
+      "notes": "Adversarial hard negative: catch returns a structured error response instead of swallowing, in a fetch shape that resembles the verified swallow."
     },
     {
       "id": "swallowed-error-fetch-swallow-log",
@@ -112,7 +125,8 @@
       "path": "swallowed-error/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 15,
-      "notes": "catch block logs and swallows the fetch error"
+      "subtype": "REAL_WORLD_POSITIVE",
+      "notes": "Real-world positive: catch block logs and swallows the fetch error."
     },
     {
       "id": "swallowed-error-risky-rethrow",
@@ -120,7 +134,8 @@
       "path": "swallowed-error/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 8,
-      "notes": "catch reports then rethrows the error"
+      "subtype": "DIRECT_HARD_NEGATIVE",
+      "notes": "Direct hard negative: catch reports then rethrows the error."
     },
     {
       "id": "swallowed-error-risky-silent",
@@ -128,7 +143,8 @@
       "path": "swallowed-error/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 7,
-      "notes": "catch block is empty and silently swallows the error"
+      "subtype": "CLEAR_POSITIVE",
+      "notes": "Clear positive: catch block is empty and silently swallows the error."
     },
     {
       "id": "unseeded-randomness-combat-seeded",
@@ -136,7 +152,8 @@
       "path": "unseeded-randomness/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 6,
-      "notes": "combat damage uses seeded RNG keyed to encounter"
+      "subtype": "DIRECT_HARD_NEGATIVE",
+      "notes": "Direct hard negative: combat damage uses a seeded RNG keyed to the encounter."
     },
     {
       "id": "unseeded-randomness-combat-unseeded",
@@ -144,7 +161,8 @@
       "path": "unseeded-randomness/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 4,
-      "notes": "combat damage uses unseeded Math.random"
+      "subtype": "CLEAR_POSITIVE",
+      "notes": "Clear positive: combat damage uses unseeded Math.random."
     },
     {
       "id": "unseeded-randomness-dodge-unseeded",
@@ -152,7 +170,8 @@
       "path": "unseeded-randomness/verified.js",
       "expected": "VERIFIED",
       "expectedLine": 9,
-      "notes": "dodge resolution uses unseeded Math.random in combat logic"
+      "subtype": "REAL_WORLD_POSITIVE",
+      "notes": "Real-world positive: dodge resolution uses unseeded Math.random in combat logic."
     },
     {
       "id": "unseeded-randomness-visual-jitter",
@@ -160,7 +179,8 @@
       "path": "unseeded-randomness/hard-negative.js",
       "expected": "NO_FINDING",
       "expectedLine": 12,
-      "notes": "unseeded Math.random is acceptable for purely visual jitter"
+      "subtype": "ADVERSARIAL_HARD_NEGATIVE",
+      "notes": "Adversarial hard negative: unseeded Math.random is acceptable for purely visual jitter."
     }
   ]
 }

@@ -17,6 +17,15 @@ const CLI = path.resolve(__dirname, '../cleri-probe.js');
 const CLI_RELATIVE_PATH = 'scripts/cleri-probe.js';
 const LISTENER_FIXTURE_PREFIX = 'tests/qa/fixtures/cleri-probe/listener-lifecycle/';
 
+/**
+ * Normalize paths that come from a local git worktree back to repository-relative
+ * form. Keeps ordinary repo-relative paths unchanged.
+ */
+function toRepoRelativePath(rawPath) {
+  const worktreeMatch = rawPath.match(/^\.claude\/worktrees\/[^/]+\/(.*)$/);
+  return worktreeMatch ? worktreeMatch[1] : rawPath;
+}
+
 function runCli(args) {
   return new Promise((resolve, reject) => {
     const start = performance.now();
@@ -61,7 +70,7 @@ function parseHeatmap(output) {
       if (match) {
         heatmap.push({
           resonance: parseFloat(match[1]) / 100,
-          path: match[2].trim(),
+          path: toRepoRelativePath(match[2].trim()),
         });
       }
       if (line.includes('ritual complete') || line.includes('more modules')) {
@@ -70,7 +79,15 @@ function parseHeatmap(output) {
     }
   }
 
-  return heatmap;
+  // Worktree and non-worktree copies of the same file surface as duplicates;
+  // collapse them to a single repository-relative entry.
+  const seen = new Map();
+  for (const hit of heatmap) {
+    if (!seen.has(hit.path)) {
+      seen.set(hit.path, hit);
+    }
+  }
+  return [...seen.values()];
 }
 
 function rankListenerFixtures(heatmap) {
@@ -97,7 +114,7 @@ function parsePrionFindings(output) {
   let current = null;
 
   for (const line of lines) {
-    const header = line.match(/^\s+(\S+)\s+\((\d+) sites\)\s*(\[exact\]|\[heuristic)/);
+    const header = line.match(/^\s+(\S+)\s+\((\d+) sites\)\s*(\[exact\]|\[heuristic\])/);
     if (header) {
       current = {
         name: header[1],
@@ -111,9 +128,26 @@ function parsePrionFindings(output) {
     if (current && line.match(/^\s+\S/)) {
       const hit = line.match(/^\s+(\S.+?:\d+)(?:\s+key="([^"]+)")?/);
       if (hit) {
-        current.hits.push({ location: hit[1].trim(), key: hit[2] || null });
+        const rawLocation = hit[1].trim();
+        const colonIndex = rawLocation.lastIndexOf(':');
+        const rawPath = colonIndex === -1 ? rawLocation : rawLocation.slice(0, colonIndex);
+        const lineNo = colonIndex === -1 ? '' : rawLocation.slice(colonIndex);
+        current.hits.push({
+          location: toRepoRelativePath(rawPath) + lineNo,
+          key: hit[2] || null,
+        });
       }
     }
+  }
+
+  // Collapse worktree/non-worktree duplicates that normalize to the same path.
+  for (const finding of findings) {
+    const seen = new Set();
+    finding.hits = finding.hits.filter(hit => {
+      if (seen.has(hit.location)) return false;
+      seen.add(hit.location);
+      return true;
+    });
   }
 
   return findings;
@@ -127,12 +161,28 @@ async function main() {
   // heatmap and we can record their relative ranking. The engine itself is
   // unchanged; only this baseline harness asks it to surface more results.
   const processRun = await runCli([hypothesis, '--min-resonance=0.15', '--limit=500']);
+  if (processRun.code !== 0) {
+    throw new Error(
+      `cleri-probe hypothesis scan exited ${processRun.code}: ${processRun.stderr || processRun.stdout}`
+    );
+  }
   const scannedFiles = parseScannedFiles(processRun.stdout);
+  if (scannedFiles === null) {
+    throw new Error('Unable to parse scanned file count from cleri-probe output.');
+  }
   const heatmap = parseHeatmap(processRun.stdout);
+  if (heatmap.length === 0) {
+    throw new Error('Unable to parse genetic heatmap from cleri-probe output.');
+  }
   const listenerFixtureRanking = rankListenerFixtures(heatmap);
   const cliSelfRanking = rankCliSelf(heatmap);
 
   const prionRun = await runCli(['--mode=prion']);
+  if (prionRun.code !== 0) {
+    throw new Error(
+      `cleri-probe prion scan exited ${prionRun.code}: ${prionRun.stderr || prionRun.stdout}`
+    );
+  }
   const prionFindings = parsePrionFindings(prionRun.stdout);
 
   const report = {

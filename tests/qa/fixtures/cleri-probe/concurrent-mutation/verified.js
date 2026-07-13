@@ -1,5 +1,6 @@
 // CONCURRENT_SHARED_STATE_MUTATION — verified positive fixtures
 
+// subtype: CLEAR_POSITIVE
 async function tallyCombatOutcomes(rolls) {
   const results = { hits: 0, misses: 0 };
   await Promise.all(rolls.map(async roll => {
@@ -10,6 +11,7 @@ async function tallyCombatOutcomes(rolls) {
   return results;
 }
 
+// subtype: REAL_WORLD_POSITIVE
 async function buildCacheInParallel(keys) {
   const cache = {};
   await Promise.all(keys.map(async key => {

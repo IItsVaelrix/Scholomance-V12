@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 
+// subtype: DIRECT_HARD_NEGATIVE
 export function WindowResizeWithCleanup() {
   useEffect(() => {
     const handler = () => console.log('resized');
@@ -12,6 +13,7 @@ export function WindowResizeWithCleanup() {
   return <div />;
 }
 
+// subtype: ADVERSARIAL_HARD_NEGATIVE
 export function SocketRoomWithOff({ socket, roomId }) {
   useEffect(() => {
     const handler = (msg) => console.log(msg);

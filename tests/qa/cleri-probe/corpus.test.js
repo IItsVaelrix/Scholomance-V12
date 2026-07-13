@@ -23,4 +23,23 @@ describe("Cleri Probe accuracy corpus", () => {
       expect(cases.some(item => item.expected === "NO_FINDING")).toBe(true);
     }
   });
+
+  it("labels every case with exactly one of the four required subtypes", () => {
+    const validSubtypes = new Set([
+      "CLEAR_POSITIVE",
+      "REAL_WORLD_POSITIVE",
+      "DIRECT_HARD_NEGATIVE",
+      "ADVERSARIAL_HARD_NEGATIVE"
+    ]);
+    for (const item of manifest.cases) {
+      expect(validSubtypes.has(item.subtype)).toBe(true);
+    }
+    const families = new Set(manifest.cases.map(item => item.pathologyClass));
+    for (const family of families) {
+      const subtypes = manifest.cases
+        .filter(item => item.pathologyClass === family)
+        .map(item => item.subtype);
+      expect([...new Set(subtypes)].sort()).toEqual([...validSubtypes].sort());
+    }
+  });
 });
