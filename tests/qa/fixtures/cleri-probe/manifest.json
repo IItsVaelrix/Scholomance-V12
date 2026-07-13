@@ -1,0 +1,166 @@
+{
+  "version": "2026-07-13",
+  "description": "Labeled accuracy corpus for the Cleri Probe evidence microscope. Cases are sorted by id and are intentionally minimal.",
+  "cases": [
+    {
+      "id": "concurrent-mutation-cache-immutable",
+      "pathologyClass": "CONCURRENT_SHARED_STATE_MUTATION",
+      "path": "concurrent-mutation/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 19,
+      "notes": "Promise.all results gathered into entries, then Object.fromEntries — no shared mutable state"
+    },
+    {
+      "id": "concurrent-mutation-cache-shared",
+      "pathologyClass": "CONCURRENT_SHARED_STATE_MUTATION",
+      "path": "concurrent-mutation/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 16,
+      "notes": "Promise.all mutates shared cache object from parallel workers"
+    },
+    {
+      "id": "concurrent-mutation-tally-immutable",
+      "pathologyClass": "CONCURRENT_SHARED_STATE_MUTATION",
+      "path": "concurrent-mutation/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 11,
+      "notes": "Promise.all produces immutable outcomes array; reduce builds the tally after join"
+    },
+    {
+      "id": "concurrent-mutation-tally-shared",
+      "pathologyClass": "CONCURRENT_SHARED_STATE_MUTATION",
+      "path": "concurrent-mutation/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 7,
+      "notes": "Promise.all mutates shared results object from parallel workers"
+    },
+    {
+      "id": "external-response-axios-guarded",
+      "pathologyClass": "UNSAFE_EXTERNAL_RESPONSE_ACCESS",
+      "path": "external-response/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 12,
+      "notes": "axios response access uses optional chaining and fallback"
+    },
+    {
+      "id": "external-response-axios-unguarded",
+      "pathologyClass": "UNSAFE_EXTERNAL_RESPONSE_ACCESS",
+      "path": "external-response/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 11,
+      "notes": "axios res.data.settings.theme accessed without guard"
+    },
+    {
+      "id": "external-response-fetch-guarded",
+      "pathologyClass": "UNSAFE_EXTERNAL_RESPONSE_ACCESS",
+      "path": "external-response/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 7,
+      "notes": "fetch response checked with ok, json parsed, then optional-chained"
+    },
+    {
+      "id": "external-response-fetch-unguarded",
+      "pathologyClass": "UNSAFE_EXTERNAL_RESPONSE_ACCESS",
+      "path": "external-response/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 5,
+      "notes": "fetch response.json() and data.profile.name accessed without guard"
+    },
+    {
+      "id": "listener-lifecycle-socket-off",
+      "pathologyClass": "LEAKED_LISTENER_SUBSCRIPTION",
+      "path": "listener-lifecycle/hard-negative.jsx",
+      "expected": "NO_FINDING",
+      "expectedLine": 16,
+      "notes": "socket.on paired with socket.off in useEffect cleanup"
+    },
+    {
+      "id": "listener-lifecycle-socket-on",
+      "pathologyClass": "LEAKED_LISTENER_SUBSCRIPTION",
+      "path": "listener-lifecycle/verified.jsx",
+      "expected": "VERIFIED",
+      "expectedLine": 16,
+      "notes": "socket.on registered in useEffect without matching off"
+    },
+    {
+      "id": "listener-lifecycle-window-cleanup",
+      "pathologyClass": "LEAKED_LISTENER_SUBSCRIPTION",
+      "path": "listener-lifecycle/hard-negative.jsx",
+      "expected": "NO_FINDING",
+      "expectedLine": 8,
+      "notes": "window.addEventListener paired with removeEventListener in cleanup"
+    },
+    {
+      "id": "listener-lifecycle-window-leak",
+      "pathologyClass": "LEAKED_LISTENER_SUBSCRIPTION",
+      "path": "listener-lifecycle/verified.jsx",
+      "expected": "VERIFIED",
+      "expectedLine": 8,
+      "notes": "window.addEventListener registered in useEffect without cleanup"
+    },
+    {
+      "id": "swallowed-error-fetch-recovery",
+      "pathologyClass": "SWALLOWED_ERROR",
+      "path": "swallowed-error/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 16,
+      "notes": "catch returns a structured error response instead of swallowing"
+    },
+    {
+      "id": "swallowed-error-fetch-swallow-log",
+      "pathologyClass": "SWALLOWED_ERROR",
+      "path": "swallowed-error/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 15,
+      "notes": "catch block logs and swallows the fetch error"
+    },
+    {
+      "id": "swallowed-error-risky-rethrow",
+      "pathologyClass": "SWALLOWED_ERROR",
+      "path": "swallowed-error/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 8,
+      "notes": "catch reports then rethrows the error"
+    },
+    {
+      "id": "swallowed-error-risky-silent",
+      "pathologyClass": "SWALLOWED_ERROR",
+      "path": "swallowed-error/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 7,
+      "notes": "catch block is empty and silently swallows the error"
+    },
+    {
+      "id": "unseeded-randomness-combat-seeded",
+      "pathologyClass": "UNSEEDED_RANDOMNESS",
+      "path": "unseeded-randomness/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 6,
+      "notes": "combat damage uses seeded RNG keyed to encounter"
+    },
+    {
+      "id": "unseeded-randomness-combat-unseeded",
+      "pathologyClass": "UNSEEDED_RANDOMNESS",
+      "path": "unseeded-randomness/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 4,
+      "notes": "combat damage uses unseeded Math.random"
+    },
+    {
+      "id": "unseeded-randomness-dodge-unseeded",
+      "pathologyClass": "UNSEEDED_RANDOMNESS",
+      "path": "unseeded-randomness/verified.js",
+      "expected": "VERIFIED",
+      "expectedLine": 9,
+      "notes": "dodge resolution uses unseeded Math.random in combat logic"
+    },
+    {
+      "id": "unseeded-randomness-visual-jitter",
+      "pathologyClass": "UNSEEDED_RANDOMNESS",
+      "path": "unseeded-randomness/hard-negative.js",
+      "expected": "NO_FINDING",
+      "expectedLine": 12,
+      "notes": "unseeded Math.random is acceptable for purely visual jitter"
+    }
+  ]
+}

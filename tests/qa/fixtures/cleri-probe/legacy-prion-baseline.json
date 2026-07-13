@@ -1,0 +1,265 @@
+{
+  "version": "2026-07-13",
+  "capturedAt": "2026-07-13T11:41:00.000Z",
+  "description": "Truth baseline for the 15 phoneme-prion archetypes in codex/core/immunity/phoneme-prion.engine.js. This is a snapshot of current behavior, not an acceptance oracle for the replacement engine.",
+  "enginePath": "codex/core/immunity/phoneme-prion.engine.js",
+  "substrateFiles": 4677,
+  "minResonance": 0.7,
+  "archetypes": {
+    "unseeded-rng-deterministic": {
+      "description": "Unseeded Math.random in deterministic combat/procgen paths",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "missing-null-guard-external": {
+      "description": "External API response accessed without null/undefined guards",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "assumed-array-length": {
+      "description": "Direct array index access without preceding bounds check",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "async-without-await": {
+      "description": "Async function returns promise without awaiting fetch/axios call",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "mutation-during-iteration": {
+      "description": "Array mutated (push/splice/delete) during forEach/map iteration",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "race-condition-shared-state": {
+      "description": "Shared mutable state mutated concurrently in Promise.all",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "type-assertion-without-check": {
+      "description": "TypeScript assertion without runtime validation (zod, etc.)",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "resource-leak-no-cleanup": {
+      "description": "Event listener added without cleanup in useEffect/component unmount",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "silent-failure-swallowed-error": {
+      "description": "Catch block with empty body or only console logging",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "hardcoded-secret-config": {
+      "description": "Hardcoded secret values assigned to variables",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "infinite-loop-risk": {
+      "description": "Infinite loop with no reachable break/return condition",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "floating-point-equality": {
+      "description": "Direct floating-point equality without epsilon comparison",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "time-dependent-logic": {
+      "description": "Time-dependent logic in test or flaky contexts",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "prototype-pollution": {
+      "description": "Object merge with prototype pollution vectors",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    },
+    "cold-boot-daemon-fallback": {
+      "description": "Daemon HTTP client falls through to in-process model spawn instead of retry-with-backoff",
+      "hitCount": 4677,
+      "topK": [
+        { "path": ".claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.claude/skills/grimdesign/scripts/grimdesign.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/analyze_barrel.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/check-sunflower.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/extract-sunflower-only.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/phoneticColor.js", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/git-backup/spectral-hygiene.qa.test.jsx", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-and-export-aseprite.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/import-aseprite-morph.mjs", "resonance": 1 },
+        { "path": ".claude/worktrees/cleri-probe-evidence-microscope/.tmp/inspect-bezel.mjs", "resonance": 1 }
+      ]
+    }
+  },
+  "knownFailures": [
+    {
+      "id": "scripts-cleri-probe-self-contamination",
+      "description": "The scripts/cleri-probe directory contains the hypothesis strings used by the probe, so the harness/baseline file surfaces in the vector heatmap (rank 7 at 0.408) for the listener hypothesis.",
+      "affects": "protein-probe.vector",
+      "evidence": "scripts/cleri-probe/benchmark-baseline.js:7 at resonance 0.408 for hypothesis 'leaked event listener subscription missing cleanup'"
+    },
+    {
+      "id": "safe-listener-cleanup-ranks-above-leak",
+      "description": "For the listener-lifecycle accuracy fixtures, the hard-negative (cleanup present) scores higher than the verified leak under the current vector engine.",
+      "affects": "protein-probe.vector",
+      "evidence": "hard-negative.jsx ranks 10 (0.380) while verified.jsx ranks 16 (0.292) for hypothesis 'leaked event listener subscription missing cleanup'"
+    }
+  ],
+  "notes": "All 15 phoneme-prion archetypes currently report every source file at resonance 1.0, indicating the TurboQuant/inner-product stage is saturated and the engine is not discriminative. This baseline captures that degenerate state so the replacement engine can be compared against it."
+}
