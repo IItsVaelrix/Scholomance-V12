@@ -133,6 +133,8 @@ const SCHEMA_LIBRARY_RE = /(zod|yup|joi|ajv|superstruct|valibot|io-ts|schema)/i;
 export function isSchemaValidationCall(callee) {
   const value = String(callee ?? '');
   if (value === 'JSON.parse') return false;
+  // safeParse has no meaning outside schema validation, so it needs no receiver.
+  if (/(^|\.)safeParse$/.test(value)) return true;
   return SCHEMA_VALIDATOR_RE.test(value) && SCHEMA_LIBRARY_RE.test(value);
 }
 

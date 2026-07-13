@@ -13,6 +13,7 @@ import {
   MODULE_IDS
 } from '../../pixelbrain/bytecode-error.js';
 import { createEvidence, deepFreeze, EVIDENCE_KINDS } from './contracts.js';
+import { externalResponseVerifier } from './verifiers/external-response.verifier.js';
 import { listenerLifecycleVerifier } from './verifiers/listener-lifecycle.verifier.js';
 import { swallowedErrorVerifier } from './verifiers/swallowed-error.verifier.js';
 import { unseededRandomnessVerifier } from './verifiers/unseeded-randomness.verifier.js';
@@ -319,6 +320,7 @@ export function validateVerifierResult(result) {
  * than silently claiming the pathology is not present.
  */
 export const DEFAULT_VERIFIERS = deepFreeze([
+  externalResponseVerifier,
   listenerLifecycleVerifier,
   swallowedErrorVerifier,
   unseededRandomnessVerifier
