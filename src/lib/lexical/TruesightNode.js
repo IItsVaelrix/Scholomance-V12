@@ -94,6 +94,12 @@ export class TruesightWordNode extends TextNode {
 
     // Attach Lexical node key so the click listener can find it
     dom.dataset.lexicalKey = this.__key;
+    // The colour's provenance, readable from the DOM. A macrophage sweeping the
+    // live page decodes this to tell an honestly grey token from a sick one.
+    const chromaStamp = this.__tokenData?.precomputed?.chroma?.bytecode;
+    if (chromaStamp) {
+      dom.dataset.chroma = chromaStamp;
+    }
 
     return dom;
   }
@@ -127,6 +133,13 @@ export class TruesightWordNode extends TextNode {
     if (prevNode.__decodedStyle !== this.__decodedStyle) {
       removeDecoded(dom, prevNode.__decodedStyle);
       applyDecoded(dom, this.__decodedStyle);
+    }
+
+    const nextStamp = this.__tokenData?.precomputed?.chroma?.bytecode;
+    const prevStamp = prevNode.__tokenData?.precomputed?.chroma?.bytecode;
+    if (nextStamp !== prevStamp) {
+      if (nextStamp) dom.dataset.chroma = nextStamp;
+      else delete dom.dataset.chroma;
     }
 
     dom.dataset.lexicalKey = this.__key;
