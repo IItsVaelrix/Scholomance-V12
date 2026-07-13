@@ -396,6 +396,9 @@ export const PhonemeEngine = {
   WORD_DIAGNOSTICS_CACHE: new Map(),
   AUTHORITY_CACHE: new Map(),
   AUTHORITY_IN_FLIGHT: new Map(),
+  // null when the Oracle is healthy. Set when an authority lookup fails, so the
+  // renderer can tell "no resonance data" apart from "no resonance".
+  authorityFailure: null,
   _initPromise: null,
 
   clearCache() {
@@ -506,7 +509,19 @@ export const PhonemeEngine = {
             // data is { family: string, phonemes: string[] | null }
             this.AUTHORITY_CACHE.set(word.toUpperCase(), data);
         }
-    } catch (_e) { /* noop — authority lookup is best-effort */ }
+        this.authorityFailure = null;
+    } catch (error) {
+        // NEVER swallow this. Without authority data every word silently drops to
+        // spelling-based heuristic vowel families (heuristic_fallback below), and
+        // TrueSight does not stop colouring — it colours CONFIDENTLY WRONG
+        // (love/move, though/tough invert). Callers must be able to render
+        // "unavailable" rather than a lie.
+        this.authorityFailure = {
+            message: error instanceof Error ? error.message : String(error),
+            at: Date.now(), // EXEMPT
+        };
+        console.warn('[PhonemeEngine] Dictionary authority unavailable:', this.authorityFailure.message);
+    }
   },
 
   primeAuthorityBatch(words) {
