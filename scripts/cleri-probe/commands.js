@@ -9,14 +9,24 @@ import fs from "node:fs";
 import path from "node:path";
 import { compileInvestigationPlan } from "../../codex/core/immunity/cleri-probe/planner.js";
 import {
-  createSubstrateService
+  createSubstrateService,
+  readSpanExcerpt
 } from "../../codex/services/cleri-probe/substrate.service.js";
+import { createContextService } from "../../codex/services/cleri-probe/context.service.js";
 import { createIndexRepository } from "../../codex/services/cleri-probe/index.repository.js";
 import { parseSourceFacts, PARSER_VERSION } from "../../codex/services/cleri-probe/babel-facts.adapter.js";
 import * as retrieval from "../../codex/core/immunity/cleri-probe/retrieval.js";
 import { createDefaultRegistry } from "../../codex/core/immunity/cleri-probe/verifier-registry.js";
 import { createInvestigationRuntime } from "../../codex/runtime/cleri-probe/investigation.runtime.js";
-import { stableStringify } from "../../codex/core/immunity/cleri-probe/canonical-report.js";
+import {
+  buildFindingId,
+  checksumInvestigationReport,
+  encodeCleriReportIdentity,
+  sha256Hex,
+  stableStringify,
+  verifyInvestigationReport
+} from "../../codex/core/immunity/cleri-probe/canonical-report.js";
+import { renderExplain, renderVerification } from "./render-human.js";
 import {
   BytecodeError,
   ERROR_CATEGORIES,
@@ -80,8 +90,79 @@ function createRuntime() {
     parser: parseSourceFacts,
     parserVersion: PARSER_VERSION,
     verifierRegistry: createProductionRegistry(),
-    retrieval
+    retrieval,
+    // The CLI runs hermetically: law, ownership, and remediation come from the
+    // repository itself. Clerical RAID history is only consulted when a caller
+    // injects a read-only adapter.
+    contextService: createContextService({})
   });
+}
+
+// ─── Report loading ──────────────────────────────────────────────────────────
+
+function loadReport(reportPath) {
+  let raw;
+  try {
+    raw = fs.readFileSync(path.resolve(reportPath), "utf8");
+  } catch (error) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.STATE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_STATE,
+      { message: `Report is unreadable: ${reportPath}`, reason: error.message }
+    );
+  }
+
+  let report;
+  try {
+    report = JSON.parse(raw);
+  } catch (error) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_FORMAT,
+      { message: `Report is not valid JSON: ${reportPath}`, reason: error.message }
+    );
+  }
+
+  if (!report || report.contract !== "SCHOL-CLERI-PROBE-v2") {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_FORMAT,
+      { message: "Report does not carry the SCHOL-CLERI-PROBE-v2 contract", contract: report?.contract }
+    );
+  }
+
+  const validation = verifyInvestigationReport(report);
+  if (!validation.valid) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVARIANT_VIOLATION,
+      { message: `Report failed validation: ${validation.reason}` }
+    );
+  }
+
+  return report;
+}
+
+function findFinding(report, findingId) {
+  const finding = (report.findings || []).find(item => item.findingId === findingId);
+  if (!finding) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_VALUE,
+      { message: `Report contains no finding ${findingId}`, findingId }
+    );
+  }
+  return finding;
 }
 
 // ─── Output helpers ──────────────────────────────────────────────────────────
@@ -166,16 +247,99 @@ async function runInvestigate(args) {
   return reportExitCode(result.report, options.failOnFindings);
 }
 
-async function runExplain() {
-  const error = notAvailableError("explain");
-  writeError(error.bytecode);
-  return 3;
+async function runExplain(args) {
+  const options = args.options;
+  const report = loadReport(options.report);
+  const finding = findFinding(report, args.positional[0]);
+
+  if (options.format === "json") {
+    writeOutput(stableStringify({
+      reportId: report.reportId,
+      finding,
+      coverage: report.coverage,
+      diagnostics: report.diagnostics
+    }) + "\n", options.output);
+  } else if (options.format === "bytecode") {
+    writeOutput(report.bytecode + "\n", options.output);
+  } else {
+    writeOutput(renderExplain(report, finding, { noColor: options.noColor }), options.output);
+  }
+
+  return 0;
 }
 
-async function runVerify() {
-  const error = notAvailableError("verify");
-  writeError(error.bytecode);
-  return 3;
+/**
+ * Recomputes the report's identity and reloads the source the finding covers.
+ *
+ * A report can be intact and still no longer true: the checksum proves nobody
+ * edited the report, and the excerpt digest proves the code it points at has not
+ * moved underneath it. Evidence is only reproducible when both hold.
+ */
+function verifyFinding(report, finding) {
+  const recomputedChecksum = checksumInvestigationReport(report);
+  const recomputedBytecode = encodeCleriReportIdentity({ ...report, checksum: recomputedChecksum });
+  const recomputedFindingId = buildFindingId(finding);
+
+  const checksumValid = recomputedChecksum === report.checksum;
+  const bytecodeValid = recomputedBytecode === report.bytecode;
+  const findingIdValid = recomputedFindingId === finding.findingId;
+
+  const span = finding.span || {};
+  let substrateDrift = null;
+
+  if (span.excerptDigest) {
+    let content = null;
+    try {
+      content = fs.readFileSync(path.resolve(process.cwd(), span.path), "utf8");
+    } catch {
+      substrateDrift = "SOURCE_UNREADABLE";
+    }
+
+    if (content !== null) {
+      const excerpt = readSpanExcerpt(content, span);
+      if (excerpt === null) {
+        substrateDrift = "SPAN_OUT_OF_RANGE";
+      } else if (sha256Hex(excerpt) !== span.excerptDigest) {
+        substrateDrift = "EXCERPT_CHANGED";
+      }
+    }
+  } else {
+    substrateDrift = "NO_EXCERPT_DIGEST";
+  }
+
+  const reproducible = checksumValid && bytecodeValid && findingIdValid && substrateDrift === null;
+
+  return {
+    reportId: report.reportId,
+    findingId: finding.findingId,
+    checksumValid,
+    bytecodeValid,
+    findingIdValid,
+    substrateDrift,
+    reproducible
+  };
+}
+
+async function runVerify(args) {
+  const options = args.options;
+  const report = loadReport(options.report);
+  const finding = findFinding(report, args.positional[0]);
+  const verification = verifyFinding(report, finding);
+
+  if (options.format === "json") {
+    writeOutput(stableStringify(verification) + "\n", options.output);
+  } else if (options.format === "bytecode") {
+    // The bytecode identifies the report and carries the verification state; it
+    // never stands in for the evidence itself.
+    writeOutput(
+      `${report.bytecode} ${verification.reproducible ? "REPRODUCIBLE" : "NOT_REPRODUCIBLE"}\n`,
+      options.output
+    );
+  } else {
+    writeOutput(renderVerification(verification, { noColor: options.noColor }), options.output);
+  }
+
+  return verification.reproducible ? 0 : 3;
 }
 
 async function runGraduate() {

@@ -54,35 +54,17 @@ describe("Cleri Probe CLI", () => {
     expect(verifyInvestigationReport(report).valid).toBe(true);
   });
 
-  it("returns exit code 3 for explain, verify, and graduate", async () => {
-    const explain = await run([
-      "explain",
-      "finding-1",
-      "--report",
-      "tests/qa/fixtures/cleri-probe/manifest.json"
-    ]);
-    expect(explain.code).toBe(3);
-    expect(explain.stderr).toMatch(/^PB-ERR-v1-/);
-
-    const verify = await run([
-      "verify",
-      "finding-1",
-      "--report",
-      "tests/qa/fixtures/cleri-probe/manifest.json"
-    ]);
-    expect(verify.code).toBe(3);
-    expect(verify.stderr).toMatch(/^PB-ERR-v1-/);
-
-    const graduate = await run([
-      "graduate",
-      "finding-1",
-      "--report",
-      "tests/qa/fixtures/cleri-probe/manifest.json",
-      "--proposal",
-      "/tmp/proposal.md"
-    ]);
-    expect(graduate.code).toBe(3);
-    expect(graduate.stderr).toMatch(/^PB-ERR-v1-/);
+  it("refuses an artifact that does not carry the report contract", async () => {
+    // The corpus manifest is a real file, but it is not a report. Every report
+    // command must reject it as an operational failure, not read it hopefully.
+    for (const command of [
+      ["explain", "finding-1", "--report", "tests/qa/fixtures/cleri-probe/manifest.json"],
+      ["verify", "finding-1", "--report", "tests/qa/fixtures/cleri-probe/manifest.json"]
+    ]) {
+      const result = await run(command);
+      expect(result.code).toBe(2);
+      expect(result.stderr).toMatch(/^PB-ERR-v1-/);
+    }
   });
 
   it("returns exit code 2 for unknown options", async () => {

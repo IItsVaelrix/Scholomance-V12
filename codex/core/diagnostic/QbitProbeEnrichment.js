@@ -1,4 +1,12 @@
 import { vectorizeHypothesis, scanSubstrate } from '../immunity/protein-probe.engine.js';
+import { verifyInvestigationReport } from '../immunity/cleri-probe/canonical-report.js';
+import {
+  BytecodeError,
+  ERROR_CATEGORIES,
+  ERROR_SEVERITY,
+  ERROR_CODES,
+  MODULE_IDS,
+} from '../pixelbrain/bytecode-error.js';
 import { buildQbitPulseNode, normalizeHotspots } from './QbitPulse.js';
 
 export const DEFAULT_QBIT_PROBE_LIMITS = Object.freeze({
@@ -9,6 +17,76 @@ export const DEFAULT_QBIT_PROBE_LIMITS = Object.freeze({
   minResonance: 0.4,
 });
 
+/**
+ * Derives QBIT hotspots from a SCHOL-CLERI-PROBE-v2 report.
+ *
+ * This is the canonical adapter: a hotspot is a place a structural verifier
+ * proved something, not a place a vector happened to resonate. A verified
+ * finding carries no similarity score, so every hotspot has resonance 1 — it is
+ * certainty, not proximity.
+ *
+ * Duration and cache metadata live here, in the derived view, never in the
+ * canonical report.
+ */
+export function buildQbitHotspotsFromCleriReport(report, options = {}) {
+  if (!report || typeof report !== 'object' || report.contract !== 'SCHOL-CLERI-PROBE-v2') {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_FORMAT,
+      { message: 'QBIT enrichment requires a SCHOL-CLERI-PROBE-v2 report', contract: report?.contract },
+    );
+  }
+
+  const validation = verifyInvestigationReport(report);
+  if (!validation.valid) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.VALUE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVARIANT_VIOLATION,
+      { message: `QBIT enrichment refused a tampered report: ${validation.reason}` },
+    );
+  }
+
+  const limits = normalizeProbeLimits(options);
+
+  const hotspots = normalizeHotspots(
+    (report.findings || [])
+      .filter(finding => finding && finding.verdict === 'VERIFIED')
+      .map(finding => ({
+        path: finding.span?.path,
+        resonance: 1,
+        reason: `${finding.pathologyClass} verified by ${finding.verifier?.id}`,
+      })),
+    { maxHotspots: limits.maxHotspots },
+  );
+
+  return {
+    hypothesis: report.hypothesis,
+    hotspots,
+    metadata: stableClone({
+      probe: 'cleri-probe',
+      source: 'SCHOL-CLERI-PROBE-v2',
+      reportId: report.reportId,
+      reportBytecode: report.bytecode,
+      status: report.status,
+      verifiedFindings: (report.findings || []).length,
+      coverageComplete: Boolean(report.coverage?.complete),
+      maxHotspots: limits.maxHotspots,
+    }),
+  };
+}
+
+/**
+ * Legacy similarity path, kept for callers that still inject a probe runner.
+ *
+ * Its hotspots are nominations, not proof. New callers should derive hotspots
+ * from a verified report via buildQbitHotspotsFromCleriReport.
+ *
+ * @deprecated
+ */
 export async function buildCleriProbeHotspots(vaccineInput, files = [], options = {}) {
   const limits = normalizeProbeLimits(options);
   const vaccine = normalizeVaccine(vaccineInput);

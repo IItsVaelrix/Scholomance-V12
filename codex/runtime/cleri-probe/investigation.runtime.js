@@ -165,6 +165,7 @@ export function createInvestigationRuntime(dependencies) {
     parserVersion = "1.0.0",
     verifierRegistry,
     retrieval,
+    contextService = null,
     clock = () => Date.now(),
     telemetry = null
   } = dependencies;
@@ -574,9 +575,43 @@ export function createInvestigationRuntime(dependencies) {
     };
   }
 
-  function assembleReport(request, plan, substrate, index, candidates, findings, statusOverride, skipEnrichPhase = false, extraDiagnostics = []) {
+  /**
+   * Adds the Scholomance's existing knowledge to proven findings. Enrichment can
+   * only add references; a failed adapter leaves the canonical finding intact and
+   * surfaces itself as a diagnostic.
+   */
+  function enrich(findings) {
+    if (!contextService || typeof contextService.enrichFindings !== "function") {
+      return { findings, diagnostics: [] };
+    }
+    try {
+      const result = contextService.enrichFindings(findings);
+      return {
+        findings: result.findings || findings,
+        diagnostics: result.diagnostics || []
+      };
+    } catch (error) {
+      const diagnostic = error instanceof BytecodeError
+        ? error
+        : runtimeError(
+            ERROR_CATEGORIES.STATE,
+            ERROR_SEVERITY.WARN,
+            ERROR_CODES.INVARIANT_VIOLATION,
+            { message: `Context enrichment failed: ${error.message}` }
+          );
+      return { findings, diagnostics: [diagnostic.bytecode] };
+    }
+  }
+
+  function assembleReport(request, plan, substrate, index, candidates, rawFindings, statusOverride, skipEnrichPhase = false, extraDiagnostics = []) {
+    let findings = rawFindings;
+    const enrichDiagnostics = [];
+
     if (!skipEnrichPhase) {
       emitPhase("ENRICH");
+      const enriched = enrich(rawFindings);
+      findings = enriched.findings;
+      enrichDiagnostics.push(...enriched.diagnostics);
     }
 
     const complete =
@@ -606,7 +641,7 @@ export function createInvestigationRuntime(dependencies) {
       excludes: request.excludes || []
     };
 
-    const diagnostics = [...extraDiagnostics];
+    const diagnostics = [...extraDiagnostics, ...enrichDiagnostics];
     if (plan.reasonCode) {
       diagnostics.push(plan.reasonCode);
     }

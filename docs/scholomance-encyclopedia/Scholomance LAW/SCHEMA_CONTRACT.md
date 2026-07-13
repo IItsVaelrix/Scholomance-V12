@@ -7,11 +7,153 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.31** | Last updated: 2026-07-02
+**Version: 1.32** | Last updated: 2026-07-13
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: SCHOL-CLERI-PROBE-v2 investigation report
+- Version: 1.31 -> 1.32
+- Date: 2026-07-13
+- Changed fields: ratified the `SCHOL-CLERI-PROBE-v2` artifact family (`CleriInvestigationPlan`, `CleriCandidate`, `CleriSourceSpan`, `CleriEvidence`, `CleriRemediationGuide`, `CleriFinding`, `CleriCoverage`, `CleriInvestigationReport`) and the `PB-CLERI-v2-REPORT` identity encoding; `QbitProbeEnrichmentArtifact` is now a derived compatibility view of a verified report
+- Breaking: no — `QbitProbeEnrichmentArtifact` keeps its existing shape and its legacy similarity producer
+- Owner: Codex
+- Claude impact: Angel awareness only. No required UI change; a future web adapter must consume this contract unchanged and may not treat a browser-side score as a verdict
+- Gemini impact: fixtures and regression tests may assert canonical checksums, one-based inclusive spans, and the five report statuses
+- Error codes: no new PB-ERR codes. Operational failures reuse `INVALID_FORMAT`, `INVALID_VALUE`, `INVARIANT_VIOLATION`, and `HOOK_TIMEOUT`
+
+---
+
+## SCHOL-CLERI-PROBE-v2 Investigation Contract
+
+The Cleri Probe exports evidence, not similarity. A candidate score may nominate
+a region for inspection; only a registered structural verifier may emit a
+verdict, and the only verdict it may emit is `VERIFIED`.
+
+```ts
+export const CLERI_PROBE_CONTRACT = "SCHOL-CLERI-PROBE-v2";
+export const CLERI_PROBE_SCHEMA_VERSION = "2.0.0";
+
+// Line and column numbers are one-based and inclusive at both ends.
+type CleriSourceSpan = {
+  path: string;              // repository-relative, forward-slashed
+  startLine: number;         // >= 1
+  startColumn: number;       // >= 1
+  endLine: number;           // >= startLine
+  endColumn: number;         // >= startColumn when endLine === startLine
+  symbol: string | null;
+  excerptDigest: string | null;
+};
+
+type CleriEvidence = {
+  evidenceId: string | null;
+  kind: "SUPPORTING" | "COUNTERCHECK" | "LIMITATION" | "COVERAGE";
+  predicateId: string | null;
+  observed: boolean;
+  span: CleriSourceSpan | null;
+  explanation: string;
+};
+
+type CleriCandidate = {
+  path: string;
+  factId: string | null;
+  pathologyClass: string | null;
+  retrievalReason: string;
+  nominators: string[];      // LITERAL | STRUCTURAL | TOKEN | PRION | VECTOR
+  score: number;             // 0..1 — a nomination rank, never a verdict
+  span: CleriSourceSpan;
+};
+
+type CleriRemediationGuide = {
+  recommendationId: string | null;   // a repair.recommendations.js key when one exists
+  summary: string;
+  safePattern: string;
+  unsafePattern: string;
+  verificationSteps: string[];       // selected from an allow-listed command catalog
+  autoFixAvailable: false;           // this contract never auto-edits source
+};
+
+type CleriFinding = {
+  findingId: string;
+  pathologyClass: string;
+  verdict: "VERIFIED";               // the only verdict a finding may carry
+  span: CleriSourceSpan;
+  symbol: string | null;
+  summary: string;
+  supportingEvidence: CleriEvidence[];   // at least one, all observed
+  counterEvidenceChecked: CleriEvidence[]; // every countercheck the verifier ran
+  verifier: { id: string; version: string };
+  lawRefs: string[];                 // sorted
+  raidRefs: string[];                // sorted — contextual history, never proof
+  ownership: string | null;          // owning boundary for the finding path
+  verificationSteps: string[];       // sorted
+  remediation: CleriRemediationGuide;
+  limitations: string[];             // sorted
+};
+
+type CleriInvestigationPlan = {
+  profileId: string;
+  version: string;
+  supported: boolean;
+  reasonCode: string | null;
+  pathologyClasses: string[];
+  verifierIds: string[];
+  selectedVerifiers: { id: string; version: string; pathologyClass: string }[];
+  counterchecks: string[];
+  paths: string[];
+};
+
+type CleriCoverage = {
+  requestedPaths: string[];
+  analyzedPaths: string[];
+  skipped: { path: string; reasonCode: string }[];
+  parserFailures: { path: string; errorBytecode: string }[];
+  complete: boolean;
+};
+
+type CleriInvestigationReport = {
+  contract: "SCHOL-CLERI-PROBE-v2";
+  schemaVersion: "2.0.0";
+  reportId: string;                  // sha256 over canonical identity
+  bytecode: string;                  // PB-CLERI-v2-REPORT-<reportId>-<substrate>-<checksum>
+  hypothesis: string;
+  normalizedHypothesis: string;
+  plan: CleriInvestigationPlan;
+  substrateFingerprint: string;
+  configurationFingerprint: string;
+  status:
+    | "NO_VERIFIED_FINDINGS"
+    | "VERIFIED_FINDINGS"
+    | "INCONCLUSIVE"
+    | "PARTIAL"
+    | "FAILED";
+  findings: CleriFinding[];
+  coverage: CleriCoverage;
+  diagnostics: string[];
+  checksum: string;
+};
+```
+
+Identity rules:
+
+- Every array that participates in identity is sorted before hashing.
+- Absolute paths, timestamps, durations, terminal state, and cache state are
+  excluded from `checksum`, `reportId`, and `bytecode`.
+- JSON omits source text unless `--include-source` is supplied. The bytecode
+  identifies the report; it never replaces its evidence.
+- `NO_VERIFIED_FINDINGS` is not proof of absence beyond the reported coverage.
+  Unsupported languages and unavailable verifiers produce `PARTIAL` or
+  `INCONCLUSIVE`, never `NO_VERIFIED_FINDINGS`.
+
+`QbitProbeEnrichmentArtifact` is a **derived compatibility view**: hotspots may be
+built from the verified findings of a `SCHOL-CLERI-PROBE-v2` report via
+`buildQbitHotspotsFromCleriReport`. Duration and cache metadata live in that view,
+never in the canonical report.
 
 ---
 

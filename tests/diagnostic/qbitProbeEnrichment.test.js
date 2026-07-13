@@ -4,10 +4,13 @@ import { encodeBytecodeXPVaccineFromCccb, encodeBytecodeXPVaccineFromError } fro
 import {
   buildCleriProbeHotspots,
   buildProbeHypothesis,
+  buildQbitHotspotsFromCleriReport,
   buildQbitPulseNodeWithCleriProbe,
   runProteinProbe,
 } from '../../codex/core/diagnostic/QbitProbeEnrichment.js';
 import { checksumQbitPulse, verifyQbitPulseNode } from '../../codex/core/diagnostic/QbitPulse.js';
+import { buildInvestigationReport } from '../../codex/core/immunity/cleri-probe/canonical-report.js';
+import { createEvidence, createFinding } from '../../codex/core/immunity/cleri-probe/contracts.js';
 
 function createErrorVaccine() {
   return encodeBytecodeXPVaccineFromError(new BytecodeError('VALUE', 'WARN', 'IMMUNE', ERROR_CODES.TEST_MISSING, {
@@ -166,5 +169,100 @@ describe('QbitProbeEnrichment', () => {
 
     expect(() => { result.hotspots[0].path = 'mutated.js'; }).toThrow();
     expect(() => { result.metadata.scannedFiles = 9; }).toThrow();
+  });
+});
+
+describe('QBIT hotspots derived from a verified Cleri report', () => {
+  function buildReport(findings = []) {
+    return buildInvestigationReport({
+      hypothesis: 'leaked event listener subscription missing cleanup',
+      normalizedHypothesis: 'leaked event listener subscription missing cleanup',
+      scope: ['src'],
+      plan: { profileId: 'scholomance/default', version: '1.0.0' },
+      configuration: { includeTests: false },
+      substrateFiles: [{ path: 'src/RoomPanel.jsx', contentHash: 'abc' }],
+      findings,
+      coverage: { requestedPaths: ['src'], analyzedPaths: ['src/RoomPanel.jsx'], complete: true },
+      diagnostics: [],
+    });
+  }
+
+  function makeFinding(path = 'src/RoomPanel.jsx') {
+    const span = {
+      path,
+      startLine: 7,
+      startColumn: 5,
+      endLine: 7,
+      endColumn: 40,
+      symbol: 'RoomPanel',
+      excerptDigest: null,
+    };
+
+    return createFinding({
+      pathologyClass: 'LEAKED_LISTENER_SUBSCRIPTION',
+      verdict: 'VERIFIED',
+      span,
+      summary: 'useEffect registers a listener its cleanup does not remove',
+      supportingEvidence: [createEvidence({
+        kind: 'SUPPORTING',
+        predicateId: 'EFFECT_CALLBACK_REGISTERS_LISTENER_OR_SUBSCRIPTION',
+        observed: true,
+        span,
+        explanation: 'The effect callback registers a listener',
+      })],
+      counterEvidenceChecked: [createEvidence({
+        kind: 'COUNTERCHECK',
+        predicateId: 'MATCHING_REMOVE_IN_RETURNED_CLEANUP',
+        observed: false,
+        span,
+        explanation: 'No matching removal in the returned cleanup',
+      })],
+      verifier: { id: 'listener-lifecycle/v1', version: '1.0.0' },
+    });
+  }
+
+  it('derives hotspots only from verified findings', () => {
+    const report = buildReport([makeFinding(), makeFinding('src/Other.jsx')]);
+    const enrichment = buildQbitHotspotsFromCleriReport(report);
+
+    expect(enrichment.hotspots.map(hotspot => hotspot.path).sort()).toEqual([
+      'src/Other.jsx',
+      'src/RoomPanel.jsx',
+    ]);
+    expect(enrichment.hotspots.every(hotspot => hotspot.resonance === 1)).toBe(true);
+    expect(enrichment.hotspots[0].reason).toContain('listener-lifecycle/v1');
+  });
+
+  it('produces no hotspots when nothing was verified', () => {
+    const enrichment = buildQbitHotspotsFromCleriReport(buildReport([]));
+    expect(enrichment.hotspots).toEqual([]);
+    expect(enrichment.metadata.status).toBe('NO_VERIFIED_FINDINGS');
+  });
+
+  it('keeps duration and cache metadata outside the canonical report', () => {
+    const report = buildReport([makeFinding()]);
+    const enrichment = buildQbitHotspotsFromCleriReport(report);
+
+    expect(enrichment.metadata.reportId).toBe(report.reportId);
+    expect(enrichment.metadata.source).toBe('SCHOL-CLERI-PROBE-v2');
+    expect(report).not.toHaveProperty('durationMs');
+    expect(report).not.toHaveProperty('cache');
+  });
+
+  it('bounds the hotspot count', () => {
+    const findings = Array.from({ length: 30 }, (_, index) => makeFinding(`src/Panel${index}.jsx`));
+    const enrichment = buildQbitHotspotsFromCleriReport(buildReport(findings), { maxHotspots: 3 });
+    expect(enrichment.hotspots.length).toBe(3);
+  });
+
+  it('refuses a tampered report', () => {
+    const report = buildReport([makeFinding()]);
+    const tampered = { ...report, status: 'NO_VERIFIED_FINDINGS' };
+
+    expect(() => buildQbitHotspotsFromCleriReport(tampered)).toThrow(BytecodeError);
+  });
+
+  it('refuses an artifact that does not carry the contract', () => {
+    expect(() => buildQbitHotspotsFromCleriReport({ findings: [] })).toThrow(BytecodeError);
   });
 });

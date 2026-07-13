@@ -139,6 +139,77 @@ export function renderHuman(report, options = {}) {
   return lines.join("\n") + "\n";
 }
 
+// ─── explain ─────────────────────────────────────────────────────────────────
+
+/**
+ * Renders one finding as a complete evidence card: what was claimed, where, what
+ * proved it, what was checked against it, and what the investigation could not
+ * see. A reader must never have to infer why a finding was verified.
+ */
+export function renderExplain(report, finding, options = {}) {
+  const lines = [];
+
+  lines.push(header("Cleri Probe Evidence", options));
+  lines.push("");
+  lines.push(label("Report", report.reportId));
+  lines.push(label("Bytecode", report.bytecode));
+  lines.push(label("Hypothesis", report.hypothesis));
+  lines.push(label("Status", report.status));
+  lines.push("");
+
+  lines.push(renderFindingCard(finding, options));
+  lines.push("");
+
+  lines.push(header("Law and history", options));
+  lines.push(bullet(finding.lawRefs || []));
+  if (finding.ownership) {
+    lines.push(label("Owner", finding.ownership));
+  }
+  if ((finding.raidRefs || []).length) {
+    lines.push("  Clerical RAID history (context, never proof):");
+    lines.push(bullet(finding.raidRefs, "    "));
+  }
+  lines.push("");
+
+  const remediation = finding.remediation || {};
+  lines.push(header("Remediation", options));
+  lines.push(label("  Recommendation", remediation.recommendationId || "(none)"));
+  if (remediation.summary) lines.push(`  ${sanitize(remediation.summary)}`);
+  if (remediation.unsafePattern) lines.push(`  Unsafe: ${sanitize(remediation.unsafePattern)}`);
+  if (remediation.safePattern) lines.push(`  Safe:   ${sanitize(remediation.safePattern)}`);
+  lines.push("  Verification steps:");
+  lines.push(bullet(remediation.verificationSteps || [], "    "));
+  lines.push("");
+
+  lines.push(header("Coverage", options));
+  const coverage = report.coverage || {};
+  lines.push(label("  Complete", String(Boolean(coverage.complete))));
+  lines.push(label("  Analyzed paths", String((coverage.analyzedPaths || []).length)));
+  lines.push(label("  Skipped", String((coverage.skipped || []).length)));
+  lines.push(label("  Parser failures", String((coverage.parserFailures || []).length)));
+
+  return lines.join("\n") + "\n";
+}
+
+// ─── verify ──────────────────────────────────────────────────────────────────
+
+export function renderVerification(verification, options = {}) {
+  const lines = [];
+
+  lines.push(header("Cleri Probe Verification", options));
+  lines.push("");
+  lines.push(label("Report", verification.reportId));
+  lines.push(label("Finding", verification.findingId));
+  lines.push(label("Checksum", verification.checksumValid ? "valid" : "TAMPERED"));
+  lines.push(label("Bytecode", verification.bytecodeValid ? "valid" : "TAMPERED"));
+  lines.push(label("Finding id", verification.findingIdValid ? "valid" : "TAMPERED"));
+  lines.push(label("Substrate", verification.substrateDrift ? verification.substrateDrift : "unchanged"));
+  lines.push("");
+  lines.push(header(verification.reproducible ? "EVIDENCE REPRODUCIBLE" : "EVIDENCE NOT REPRODUCIBLE", options));
+
+  return lines.join("\n") + "\n";
+}
+
 function renderFindingCard(finding, options) {
   const lines = [];
   const span = finding.span || {};

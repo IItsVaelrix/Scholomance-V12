@@ -69,6 +69,46 @@ function contentHash(content) {
   return `sha256:${sha256Hex(content)}`;
 }
 
+/**
+ * Extracts the exact source text a span covers.
+ *
+ * Line and column numbers are one-based and inclusive at both ends, and CRLF is
+ * normalized exactly as the parser normalized it, so the digest of this excerpt
+ * is comparable to the span's recorded excerptDigest. That comparison is how
+ * `verify` detects substrate drift: the report is intact but the code moved.
+ *
+ * @returns {string|null} the excerpt, or null when the span falls outside the file.
+ */
+export function readSpanExcerpt(content, span) {
+  if (typeof content !== 'string' || !span) return null;
+
+  const text = content.replace(/\r\n/g, '\n');
+  const lines = text.split('\n');
+
+  const startLine = Number(span.startLine);
+  const endLine = Number(span.endLine);
+  const startColumn = Number(span.startColumn);
+  const endColumn = Number(span.endColumn);
+
+  if (!Number.isFinite(startLine) || !Number.isFinite(endLine)) return null;
+  if (startLine < 1 || endLine < startLine || endLine > lines.length) return null;
+
+  const offsetOf = (line, column) => {
+    let offset = 0;
+    for (let i = 0; i < line - 1; i += 1) {
+      offset += lines[i].length + 1;
+    }
+    return offset + (column - 1);
+  };
+
+  const start = offsetOf(startLine, startColumn);
+  // The end position is inclusive, so the excerpt reaches one character past it.
+  const end = offsetOf(endLine, endColumn) + 1;
+  if (start < 0 || end > text.length || end < start) return null;
+
+  return text.slice(start, end);
+}
+
 export function createSubstrateService({ fs, root, limits = {}, cacheDir }) {
   if (!fs || typeof fs !== "object") {
     throw validationError("fs must be provided", { fs });

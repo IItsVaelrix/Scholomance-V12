@@ -132,7 +132,7 @@ export function createSourceSpan(input) {
     endLine,
     endColumn,
     symbol: input.symbol === undefined ? null : input.symbol,
-    excerptDigest: input.excerptDigest === undefined ? null : String(input.excerptDigest)
+    excerptDigest: input.excerptDigest == null ? null : String(input.excerptDigest)
   });
 }
 
@@ -151,9 +151,9 @@ export function createEvidence(input) {
   }
 
   return deepFreeze({
-    evidenceId: input.evidenceId === undefined ? null : String(input.evidenceId),
+    evidenceId: input.evidenceId == null ? null : String(input.evidenceId),
     kind: input.kind,
-    predicateId: input.predicateId === undefined ? null : String(input.predicateId),
+    predicateId: input.predicateId == null ? null : String(input.predicateId),
     observed: Boolean(input.observed),
     span: input.span === undefined || input.span === null ? null : createSourceSpan(input.span),
     explanation: input.explanation === undefined ? '' : String(input.explanation)
@@ -275,8 +275,8 @@ export function createFinding(input) {
       });
 
   return deepFreeze({
-    findingId: input.findingId === undefined ? null : String(input.findingId),
-    pathologyClass: input.pathologyClass === undefined ? null : String(input.pathologyClass),
+    findingId: input.findingId == null ? null : String(input.findingId),
+    pathologyClass: input.pathologyClass == null ? null : String(input.pathologyClass),
     verdict: 'VERIFIED',
     span,
     symbol: input.symbol === undefined ? null : input.symbol,
@@ -289,6 +289,9 @@ export function createFinding(input) {
     ),
     lawRefs,
     raidRefs,
+    ownership: input.ownership === undefined || input.ownership === null
+      ? null
+      : String(input.ownership),
     verificationSteps,
     remediation,
     limitations

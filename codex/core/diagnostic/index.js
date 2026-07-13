@@ -95,6 +95,7 @@ export {
 export {
   DEFAULT_QBIT_PROBE_LIMITS,
   buildCleriProbeHotspots,
+  buildQbitHotspotsFromCleriReport,
   buildQbitPulseNodeWithCleriProbe,
   buildProbeHypothesis,
 } from './QbitProbeEnrichment.js';
