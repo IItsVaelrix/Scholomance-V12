@@ -14,7 +14,7 @@
  * Uses the exact same machinery as the live detector:
  *   initializePrionLibrary() + estimateInnerProduct()
  *
- * Usage: node scripts/cleri-probe-separation.js [--collision=0.90]
+ * Usage: node scripts/labs/cleri-probe/separation.js [--collision=0.90]
  */
 
 import { initializePrionLibrary } from '../codex/core/immunity/phoneme-prion.engine.js';

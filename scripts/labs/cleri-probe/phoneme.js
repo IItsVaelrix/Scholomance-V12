@@ -6,9 +6,9 @@
  * Scans for misfolded phoneme proteins (prions) in the codebase.
  * 
  * Usage:
- *   node scripts/cleri-probe-phoneme.js --mode=prion
- *   node scripts/cleri-probe-phoneme.js --mode=prion --min-resonance=0.75
- *   node scripts/cleri-probe-phoneme.js "your buggy code snippet"
+ *   node scripts/labs/cleri-probe/phoneme.js --mode=prion
+ *   node scripts/labs/cleri-probe/phoneme.js --mode=prion --min-resonance=0.75
+ *   node scripts/labs/cleri-probe/phoneme.js "your buggy code snippet"
  */
 
 import fs from 'node:fs';
