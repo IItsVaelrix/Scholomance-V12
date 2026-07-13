@@ -1,59 +1,43 @@
-import fs from 'node:fs';
-import path from 'node:path';
-
-import { encodeBytecodeHealth } from './codex/core/diagnostic/BytecodeHealth.js';
 import { propagate, ATTENUATION_MODELS } from './codex/core/pixelbrain/qbit-field.js';
-import { PhonemeEngine } from './codex/core/phonology/phoneme.engine.js';
-import { compileVerseToIR } from './codex/core/shared/truesight/compiler/compileVerseToIR.js';
+import { synthesizeVerse } from './codex/core/shared/truesight/compiler/VerseSynthesis.js';
+import { decodeChromaBytecode } from './codex/core/shared/truesight/color/chroma.bytecode.js';
+import { scanChromaStamps } from './codex/core/diagnostic/chromaticImmuneProbe.js';
 
 const VOLUME_SIZE = 32;
 
 // 1. Define the Chromatic Node representing a colored TrueSight Token
 class ChromaNode {
-  constructor(tokenId, word, lineIndex, tokenIndex, expectedColor, renderedColor) {
+  constructor(tokenId, token, stamp, distress) {
     this.id = `CHROMA_NODE_${tokenId}`;
-    this.word = word;
-    
-    this.expectedColor = expectedColor;
-    this.renderedColor = renderedColor; // Simulate what the DOM actually rendered
-    this.bytecodeContext = {
-      school: 'VOID',
-      glowIntensity: 0.85,
-      saturationBoost: 1.0,
-      syllableDepth: 3,
-      isAnchor: false,
-      effectClass: 'HARMONIC',
-      biophysical: {
-        f0: 120.5,
-        formants: [400, 1200, 2400],
-        spectralCentroid: NaN // Deliberate injection of NaN to trigger the failure
-      }
-    };
+    this.word = token.text || token.word || '';
+    this.stamp = token.precomputed?.chroma?.bytecode || null;
+    this.decodedStamp = stamp;
+    this.distress = distress;
     
     // Spatial mapping (Z=2 for Chromatic Layer)
-    this.x = Math.min(tokenIndex, VOLUME_SIZE - 1); 
-    this.y = Math.min(lineIndex, VOLUME_SIZE - 1);
+    this.x = Math.min(token.tokenIndexInLine ?? token.wordIndex ?? 0, VOLUME_SIZE - 1);
+    this.y = Math.min(token.lineIndex ?? token.lineNumber ?? 0, VOLUME_SIZE - 1);
     this.z = 2; 
     
     this.exosome = null;
     this.phagocytized = false;
   }
 
-  triggerDistress(reason, severity = 'COLOR_MISALIGNMENT') {
-    this.exosome = encodeBytecodeHealth(this.id, severity, {
-      word: this.word,
-      topology_coord: [this.x, this.y, this.z],
-      reason,
-      expected: this.expectedColor,
-      rendered: this.renderedColor
-    });
-    this.exosome.code = 'PB-ERR-v1-TRUESIGHT-CHROMA-BLEED';
-    
+  triggerDistress(reason) {
     console.log(`[CHROMA NODE ${this.id}] 🌈 Dropping Exosome: ${reason} at (${this.x}, ${this.y}, ${this.z})`);
-    
+
     // Emitting a spectral fault signal
     return { x: this.x, y: this.y, z: this.z, energy: 0.85, energyType: 'SPECTRAL_FAULT' };
   }
+}
+
+// A node is distressed when its OWN stamp says so. We do not invent faults.
+function distressOf(token) {
+  const stamp = decodeChromaBytecode(token.precomputed?.chroma?.bytecode);
+  if (!stamp) return null;
+  if (stamp.reason === 'I') return 'CHROMA_BLEED';
+  if (stamp.committed && ['G', 'U', 'X'].includes(stamp.authority)) return 'LIE_PAINTED';
+  return null;   // LOW_CONFIDENCE is a healthy REFUSAL, not a fault: the gate worked.
 }
 
 // 2. Define the Macrophage Agent
@@ -94,13 +78,20 @@ class SpectralMacrophage {
     return false;
   }
 
-  // Macrophages "eat" the corrupted code and generate deep diagnostics
+  // Macrophages report corrupted code and generate deep diagnostics.
   phagocytosis(node) {
-    console.log(`[MACROPHAGE ${this.id}] 🍽️ Executing Phagocytosis on "${node.word}" (${node.id})`);
-    
-    // Deep Diagnostic Report Generation
-    const diagnosticReport = {
-      version: 'v2',
+    // A cell that eats healthy tissue is a disease, not a cure. The previous
+    // version deployed at (0,0,2), moved zero steps, and devoured the healthy
+    // token "Colors" — expected === rendered — stamping it CRITICAL and
+    // fabricating a root cause for a fault that did not exist.
+    if (!node.distress) {
+      console.log(`[MACROPHAGE ${this.id}] Healthy cell "${node.word}" — standing down.`);
+      return false;
+    }
+
+    console.log(`[MACROPHAGE ${this.id}] Phagocytosis on "${node.word}" (${node.id})`);
+    console.log(JSON.stringify({
+      version: 'v3',
       category: 'SPECTRAL_PIPELINE',
       severity: 'CRITICAL',
       errorCode: 'PB-ERR-v1-TRUESIGHT-CHROMA-BLEED',
@@ -108,31 +99,18 @@ class SpectralMacrophage {
       checkId: 'VISUAL_BYTECODE_FIDELITY',
       context: {
         word: node.word,
-        expectedColor: node.expectedColor,
-        renderedColor: node.renderedColor,
-        bytecodeMetrics: node.bytecodeContext,
-        spatialTopology: {
-          x: node.x,
-          y: node.y,
-          z: node.z,
-          layer: 'CHROMATIC_DOM'
-        },
-        rootCauseAnalysis: node.renderedColor === 'undefined' || node.renderedColor === '#NaN' 
-          ? 'Failed to resolve Biophysical Metrics during VerseIR Amplification. Viseme Mapping returned NaN.'
-          : 'Spectral bleeding from adjacent anchor node overriding DOM span isolation.'
+        stamp: node.stamp,          // the PB-CHROMA v2 bytecode — the evidence
+        distress: node.distress,    // CHROMA_BLEED | LIE_PAINTED — never invented
+        spatialTopology: { x: node.x, y: node.y, z: node.z, layer: 'CHROMATIC_DOM' },
       },
-      timestamp: new Date().toISOString()
-    };
+    }, null, 2));
 
-    console.log(`\n=== 🔬 DEEP SPECTRAL DIAGNOSTIC REPORT ===`);
-    console.log(JSON.stringify(diagnosticReport, null, 2));
-    console.log(`==========================================\n`);
-    
+    // NO REPAIR. The old version set renderedColor = 'hsl(0, 0%, 50%)', which
+    // wiped the evidence to neutral grey and called that a cure. The macrophage
+    // reports; a human fixes.
     node.phagocytized = true;
-    node.renderedColor = 'hsl(0, 0%, 50%)'; // Neutral Gray Baseline
     this.engulfedToxins++;
-    
-    console.log(`[MACROPHAGE ${this.id}] 🧼 Color misalignment neutralized. Rendering payload wiped to neutral gray.`);
+    return true;
   }
 }
 
@@ -145,43 +123,36 @@ Colors map cleanly here
 Until a corrupted spectral token bleeds out of bounds
   `.trim();
 
-  console.log("1. Compiling verse to IR...");
-  const ir = compileVerseToIR(testText, { mode: 'deep', phonemeEngine: PhonemeEngine });
+  console.log("1. Synthesizing verse and reading chroma stamps...");
+  const artifact = synthesizeVerse(testText, { mode: 'deep' });
+  const tokens = artifact.verseIR?.tokens || [];
+  const stampReport = scanChromaStamps(tokens.map(token => token.precomputed?.chroma?.bytecode));
+  console.log(`[MACROPHAGE] Stamp report: ${JSON.stringify({
+    decoded: stampReport.decoded,
+    authorityHistogram: stampReport.authorityHistogram,
+    findings: stampReport.findings.map(finding => finding.code),
+  })}`);
   
   const distressSeeds = [];
   const nodes = {};
 
-  console.log("\n2. Aligning expected colors to Rendered DOM colors (Z=2)...");
+  console.log("\n2. Reading stamp-backed distress only (Z=2)...");
 
-  for (const token of ir.tokens) {
-    let expectedColor = token.visualBytecode?.color || 'hsl(120, 100%, 50%)';
-    let renderedColor = expectedColor;
-
-    // Simulate an aggressive Spectral Bleed Bug:
-    // If the word is "corrupted", we simulate a React rendering bug where the color string is malformed
-    if (token.text.toLowerCase() === 'corrupted') {
-      renderedColor = 'undefined';
-    }
-    
-    // Simulate a Bleed where the neighbor absorbed the corrupted color instead
-    if (token.text.toLowerCase() === 'spectral') {
-      expectedColor = 'hsl(240, 100%, 50%)';
-      renderedColor = '#NaN'; 
-    }
-
-    const node = new ChromaNode(token.id, token.text, token.lineIndex, token.tokenIndexInLine, expectedColor, renderedColor);
+  for (const [index, token] of tokens.entries()) {
+    const stamp = decodeChromaBytecode(token.precomputed?.chroma?.bytecode);
+    const distress = distressOf(token);
+    const node = new ChromaNode(token.id ?? index, token, stamp, distress);
     nodes[`${node.x},${node.y},${node.z}`] = node;
 
-    // Diagnostic Rules for Spectral Misalignment
-    if (renderedColor !== expectedColor) {
-      distressSeeds.push(node.triggerDistress('COLOR_MISMATCH_DETECTED'));
-    } else if (renderedColor === 'undefined' || renderedColor === 'null' || renderedColor.includes('NaN')) {
-      distressSeeds.push(node.triggerDistress('MALFORMED_HSL_STRING'));
+    if (distress) {
+      distressSeeds.push(node.triggerDistress(distress));
+    } else {
+      console.log(`[CHROMA NODE ${node.id}] Healthy stamp for "${node.word}" — no distress.`);
     }
   }
 
   if (distressSeeds.length === 0) {
-    console.log("Color alignment is perfect. No spectral leaks detected.");
+    console.log("No stamp-backed spectral faults detected. Macrophage stands down.");
     return;
   }
 
