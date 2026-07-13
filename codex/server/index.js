@@ -225,9 +225,11 @@ const corpusService = createCorpusService({ dbPath: SCHOLOMANCE_CORPUS_PATH, log
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HOST = process.env.HOST ?? '0.0.0.0';
+// PUBLIC_SERVER_URL only. VITE_API_BASE_URL was removed: it held a DEV origin
+// (localhost:5173) that also got baked into production bundles — see
+// codex/core/shared/apiUrl.js.
 const SERVER_BASE_URL = String(
     process.env.PUBLIC_SERVER_URL ||
-    process.env.VITE_API_BASE_URL ||
     `http://localhost:${PORT}`
 ).trim();
 

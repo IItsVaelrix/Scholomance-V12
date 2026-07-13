@@ -187,7 +187,9 @@ export class MailerService {
     const providerConfig = options.providerConfig || createProviderAdapter(this.logger);
     this.provider = providerConfig.provider;
     this.adapter = providerConfig.adapter;
-    this.appBaseUrl = String(options.appBaseUrl || process.env.APP_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8080').trim();
+    // PUBLIC_APP_URL, not VITE_API_BASE_URL: this is where the USER's browser goes
+    // (email links), which in dev is the Vite origin, not the API origin.
+    this.appBaseUrl = String(options.appBaseUrl || process.env.APP_BASE_URL || process.env.PUBLIC_APP_URL || 'http://localhost:8080').trim();
     this.appName = String(options.appName || process.env.APP_NAME || 'Scholomance').trim();
   }
 

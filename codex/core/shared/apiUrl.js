@@ -33,18 +33,30 @@ function joinRelativeBase(basePath, path) {
   return normalizedBase === "/" ? path : `${normalizedBase}${path}`;
 }
 
+/**
+ * Always same-origin. Deliberately mode-independent — there is no dev/prod branch.
+ *
+ * The API is ALWAYS on the same origin as the app:
+ *   dev  — Vite serves the app and proxies /api, /auth and /collab to the server
+ *          (see vite.config.js), so a relative path resolves correctly.
+ *   prod — Fastify serves both the bundle and the API from one origin.
+ *
+ * It cannot be otherwise: the CSP is `connect-src 'self'` (plus two public APIs),
+ * so a cross-origin API base would be blocked by our own policy.
+ *
+ * This used to honour VITE_API_BASE_URL, and that caused a full outage class.
+ * `.env` set it to http://localhost:5173 (a DEV value), so ANY local `npm run
+ * build` baked that absolute origin into the production bundle. Every call then
+ * went cross-origin, CSP blocked it — including GET /auth/csrf-token, which is
+ * what GRANTS the guest lexicon session — so /api/lexicon/lookup-batch returned
+ * 401, the phoneme engine reported "Dictionary authority unavailable", and
+ * TrueSight went blank. The symptom surfaced as "Dictionary Oracle timed out",
+ * naming the wrong subsystem entirely.
+ *
+ * Do not reintroduce an origin override here. If you ever genuinely need to point
+ * the client at another origin, that is a CSP change and a deployment-topology
+ * decision, not an env var.
+ */
 export function buildAuthorityUrl(path) {
-  const normalizedPath = normalizePath(path);
-  const configuredBase = String(readViteEnv("VITE_API_BASE_URL") || "")
-    .trim()
-    .replace(/\/+$/, "");
-
-  if (configuredBase) {
-    if (isAbsoluteUrl(configuredBase)) {
-      return new URL(normalizedPath, `${configuredBase}/`).toString();
-    }
-    return joinRelativeBase(configuredBase, normalizedPath);
-  }
-
-  return normalizedPath;
+  return normalizePath(path);
 }

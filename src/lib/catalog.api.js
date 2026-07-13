@@ -16,13 +16,12 @@ function readEnvVar(name) {
   return '';
 }
 
-function resolveBase() {
-  const raw = String(readEnvVar('VITE_API_BASE_URL') || '').trim().replace(/\/+$/, '');
-  return raw || '';
-}
-
+// Same-origin, always. See codex/core/shared/apiUrl.js for why there is no
+// VITE_API_BASE_URL override: a dev origin baked into a production build broke
+// the CSRF fetch that grants the lexicon session, which 401'd the dictionary and
+// blanked TrueSight.
 async function getJson(path) {
-  const res = await fetch(`${resolveBase()}${path}`, {
+  const res = await fetch(path, {
     credentials: 'include',
     headers: { Accept: 'application/json' },
   });

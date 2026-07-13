@@ -46,7 +46,7 @@ function trimTrailingSlash(value) {
 }
 
 function getRequestBaseUrl(request, configuredBaseUrl) {
-    const configured = trimTrailingSlash(configuredBaseUrl || process.env.PUBLIC_SERVER_URL || process.env.VITE_API_BASE_URL);
+    const configured = trimTrailingSlash(configuredBaseUrl || process.env.PUBLIC_SERVER_URL);
     if (configured) return configured;
 
     const proto = request.headers['x-forwarded-proto'] || request.protocol || 'http';

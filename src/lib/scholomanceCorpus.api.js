@@ -31,8 +31,11 @@ function readEnvVar(name) {
 }
 
 function resolveBaseUrl() {
+  // VITE_API_BASE_URL is deliberately NOT consulted: it carried an absolute dev
+  // origin (http://localhost:5173) that got baked into production builds and broke
+  // every same-origin call. See codex/core/shared/apiUrl.js. The overrides below
+  // are PATH overrides (e.g. /api/corpus), not origin overrides.
   const raw =
-    readEnvVar("VITE_API_BASE_URL") ||
     readEnvVar("VITE_SCHOLOMANCE_CORPUS_API_URL") ||
     readEnvVar("SCHOLOMANCE_CORPUS_API_URL") ||
     readEnvVar("VITE_SCHOLOMANCE_DICT_API_URL") ||
