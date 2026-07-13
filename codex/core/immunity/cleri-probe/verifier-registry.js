@@ -14,6 +14,7 @@ import {
 } from '../../pixelbrain/bytecode-error.js';
 import { createEvidence, deepFreeze, EVIDENCE_KINDS } from './contracts.js';
 import { listenerLifecycleVerifier } from './verifiers/listener-lifecycle.verifier.js';
+import { swallowedErrorVerifier } from './verifiers/swallowed-error.verifier.js';
 import { unseededRandomnessVerifier } from './verifiers/unseeded-randomness.verifier.js';
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
@@ -319,6 +320,7 @@ export function validateVerifierResult(result) {
  */
 export const DEFAULT_VERIFIERS = deepFreeze([
   listenerLifecycleVerifier,
+  swallowedErrorVerifier,
   unseededRandomnessVerifier
 ]);
 
