@@ -9,6 +9,7 @@ import { RHYME_TYPES, RHYME_SUBTYPES } from "../constants/data/rhymeScheme.patte
 import { normalizeVowelFamily } from "../phonology/vowelFamily.js";
 import { WORD_REGEX_GLOBAL } from "../constants/regex.js";
 import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.js";
+import { buildResonanceFingerprint, rhymeBucketKeys } from './resonanceFingerprint.js';
 
 /**
  * @typedef {object} WordPosition
@@ -383,43 +384,74 @@ export class DeepRhymeEngine {
         });
     }
 
+    // Candidates come from the Resonance Fingerprint's rhyme-bearing blocks.
+    // The old scan compared every window with every other — 1,335 of the 1,448
+    // connections on the 75-word fixture, growing quadratically and OOM-killing
+    // the server past ~12,000 chars. Bucketing only changes which pairs we LOOK
+    // at; every emitted connection is still scored by scoreMultiSyllableMatch,
+    // so no score and no colour can move.
     const connections = [];
-    for (let i = 0; i < phraseNodes.length; i++) {
-        for (let j = i + 1; j < phraseNodes.length; j++) {
-            const nodeA = phraseNodes[i];
-            const nodeB = phraseNodes[j];
+    const buckets = new Map();
 
-            if (nodeA.charEnd > nodeB.charStart && nodeA.charStart < nodeB.charEnd) continue;
-            
-            if (nodeA.word.toLowerCase() === nodeB.word.toLowerCase()) continue;
+    for (const node of phraseNodes) {
+      node.fingerprint = buildResonanceFingerprint(node.analysis?.phonemes || []);
+      // A tailless token gets no fingerprint and therefore no bucket. Do NOT
+      // bucket them together — that would collide every unknown token at once.
+      if (!node.fingerprint) continue;
+      for (const key of rhymeBucketKeys(node.fingerprint)) {
+        if (!buckets.has(key)) buckets.set(key, []);
+        buckets.get(key).push(node);
+      }
+    }
 
-            const match = this.engine.scoreMultiSyllableMatch(nodeA.analysis, nodeB.analysis);
-            if (match && match.syllablesMatched >= 2 && match.score >= 0.6) {
-                connections.push({
-                    type: 'phrase_compound',
-                    subtype: match.type || 'none',
-                    score: match.score,
-                    syllablesMatched: match.syllablesMatched,
-                    phoneticWeight: match.syllablesMatched * match.score,
-                    wordA: {
-                        lineIndex: nodeA.lineIndex,
-                        wordIndex: nodeA.wordIndex,
-                        charStart: nodeA.charStart,
-                        charEnd: nodeA.charEnd,
-                        word: nodeA.word
-                    },
-                    wordB: {
-                        lineIndex: nodeB.lineIndex,
-                        wordIndex: nodeB.wordIndex,
-                        charStart: nodeB.charStart,
-                        charEnd: nodeB.charEnd,
-                        word: nodeB.word
-                    },
-                    groupLabel: null,
-                    syntax: { gate: 'allow', multiplier: 1, reasons: ['phrase_connection'] }
-                });
-            }
+    const seenPairs = new Set();
+
+    for (const [, groupNodes] of buckets) {
+      if (groupNodes.length < 2) continue;
+
+      for (let i = 0; i < groupNodes.length; i += 1) {
+        for (let j = i + 1; j < groupNodes.length; j += 1) {
+          const nodeA = groupNodes[i];
+          const nodeB = groupNodes[j];
+
+          // A node sits in several bands, so the same pair can surface more than once.
+          const spanA = `${nodeA.charStart}:${nodeA.charEnd}`;
+          const spanB = `${nodeB.charStart}:${nodeB.charEnd}`;
+          const pairKey = spanA < spanB ? `${spanA}|${spanB}` : `${spanB}|${spanA}`;
+          if (seenPairs.has(pairKey)) continue;
+          seenPairs.add(pairKey);
+
+          if (nodeA.charEnd > nodeB.charStart && nodeA.charStart < nodeB.charEnd) continue;
+          if (nodeA.word.toLowerCase() === nodeB.word.toLowerCase()) continue;
+
+          const match = this.engine.scoreMultiSyllableMatch(nodeA.analysis, nodeB.analysis);
+          if (match && match.syllablesMatched >= 2 && match.score >= 0.6) {
+            connections.push({
+              type: 'phrase_compound',
+              subtype: match.type || 'none',
+              score: match.score,
+              syllablesMatched: match.syllablesMatched,
+              phoneticWeight: match.syllablesMatched * match.score,
+              wordA: {
+                lineIndex: nodeA.lineIndex,
+                wordIndex: nodeA.wordIndex,
+                charStart: nodeA.charStart,
+                charEnd: nodeA.charEnd,
+                word: nodeA.word
+              },
+              wordB: {
+                lineIndex: nodeB.lineIndex,
+                wordIndex: nodeB.wordIndex,
+                charStart: nodeB.charStart,
+                charEnd: nodeB.charEnd,
+                word: nodeB.word
+              },
+              groupLabel: null,
+              syntax: { gate: 'allow', multiplier: 1, reasons: ['phrase_connection'] }
+            });
+          }
         }
+      }
     }
     return connections;
   }
