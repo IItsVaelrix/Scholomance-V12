@@ -47,6 +47,24 @@ export const DEFAULT_PATHOLOGY_PROFILE = deepFreeze({
       counterchecks: ['NO_SEEDED_RNG_ADAPTER', 'SEED_INJECTED']
     },
     {
+      pathologyClass: 'SWALLOWED_ERROR',
+      verifierId: 'swallowed-error/v1',
+      terms: ['swallowed error', 'swallow error', 'silent failure', 'empty catch', 'catch block', 'error is ignored'],
+      counterchecks: ['APPROVED_RECOVERY_RETURN', 'ERROR_RETHROWN']
+    },
+    {
+      pathologyClass: 'UNSAFE_EXTERNAL_RESPONSE_ACCESS',
+      verifierId: 'external-response/v1',
+      terms: ['unsafe external response', 'unguarded response', 'api response', 'fetch response', 'response data', 'axios response'],
+      counterchecks: ['HTTP_STATUS_GUARDED', 'PAYLOAD_SCHEMA_PARSED']
+    },
+    {
+      pathologyClass: 'CONCURRENT_SHARED_STATE_MUTATION',
+      verifierId: 'concurrent-mutation/v1',
+      terms: ['race condition', 'concurrent mutation', 'promise all', 'parallel mutation', 'concurrent writes'],
+      counterchecks: ['APPROVED_SYNCHRONIZATION_ADAPTER', 'TARGET_IS_CALLBACK_LOCAL']
+    },
+    {
       pathologyClass: 'NON_DETERMINISTIC_DATETIME',
       verifierId: 'datetime-lifecycle/v1',
       terms: ['new date', 'date now', 'performance now', 'current time'],

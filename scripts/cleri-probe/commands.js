@@ -12,12 +12,9 @@ import {
   createSubstrateService
 } from "../../codex/services/cleri-probe/substrate.service.js";
 import { createIndexRepository } from "../../codex/services/cleri-probe/index.repository.js";
-import { parseSourceFacts } from "../../codex/services/cleri-probe/babel-facts.adapter.js";
+import { parseSourceFacts, PARSER_VERSION } from "../../codex/services/cleri-probe/babel-facts.adapter.js";
 import * as retrieval from "../../codex/core/immunity/cleri-probe/retrieval.js";
-import {
-  createVerifierRegistry,
-  registerVerifier
-} from "../../codex/core/immunity/cleri-probe/verifier-registry.js";
+import { createDefaultRegistry } from "../../codex/core/immunity/cleri-probe/verifier-registry.js";
 import { createInvestigationRuntime } from "../../codex/runtime/cleri-probe/investigation.runtime.js";
 import { stableStringify } from "../../codex/core/immunity/cleri-probe/canonical-report.js";
 import {
@@ -46,10 +43,7 @@ assertPositiveFinite(DEFAULT_MAX_RUNTIME_MS, "maxRuntimeMs");
 // ─── Production detector registry ────────────────────────────────────────────
 
 function createProductionRegistry() {
-  const registry = createVerifierRegistry();
-  // Foundation ships no production verifiers; they are added in Tasks 9+.
-  void registerVerifier;
-  return registry;
+  return createDefaultRegistry();
 }
 
 function notAvailableError(command) {
@@ -84,6 +78,7 @@ function createRuntime() {
     substrateService,
     indexRepository,
     parser: parseSourceFacts,
+    parserVersion: PARSER_VERSION,
     verifierRegistry: createProductionRegistry(),
     retrieval
   });

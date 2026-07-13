@@ -13,6 +13,7 @@ import {
   MODULE_IDS
 } from '../../pixelbrain/bytecode-error.js';
 import { createEvidence, deepFreeze, EVIDENCE_KINDS } from './contracts.js';
+import { unseededRandomnessVerifier } from './verifiers/unseeded-randomness.verifier.js';
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
 
@@ -303,4 +304,26 @@ export function selectVerifiers(registry, plan) {
 export function validateVerifierResult(result) {
   validateResultShape(result);
   return deepFreeze({ valid: true });
+}
+
+// ─── Default registry ────────────────────────────────────────────────────────
+
+/**
+ * The verifier families installed by default.
+ *
+ * A family only appears here once it has met its labeled precision gate. A
+ * verifier that regresses below the gate is removed from this list before
+ * release; the CLI then reports its absence as a coverage limitation rather
+ * than silently claiming the pathology is not present.
+ */
+export const DEFAULT_VERIFIERS = deepFreeze([
+  unseededRandomnessVerifier
+]);
+
+export function createDefaultRegistry(verifiers = DEFAULT_VERIFIERS) {
+  let registry = createVerifierRegistry();
+  for (const verifier of verifiers) {
+    registry = registerVerifier(registry, verifier);
+  }
+  return registry;
 }

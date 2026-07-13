@@ -162,6 +162,7 @@ export function createInvestigationRuntime(dependencies) {
     substrateService,
     indexRepository,
     parser,
+    parserVersion = "1.0.0",
     verifierRegistry,
     retrieval,
     clock = () => Date.now(),
@@ -307,7 +308,7 @@ export function createInvestigationRuntime(dependencies) {
     const profileVersion = `${state.plan.profileId}@${state.plan.version}`;
     const indexKey = {
       contract: "SCHOL-CLERI-FACTS-v1",
-      parserVersion: "1.0.0",
+      parserVersion,
       profileVersion,
       repositoryFingerprint: substrate.rootFingerprint
     };
@@ -417,7 +418,56 @@ export function createInvestigationRuntime(dependencies) {
     return candidates.slice(0, limit);
   }
 
-  function verifyCandidates(candidates, plan, request, state) {
+  /**
+   * Normalizes a verifier result into zero or more finding drafts.
+   *
+   * A verifier may prove several independent pathologies inside one candidate
+   * file (one per call span), so a single VERIFIED result may carry a `findings`
+   * array. A bare VERIFIED result is treated as one finding at the candidate span.
+   */
+  function draftsFromResult(result, candidate) {
+    if (!result || result.verdict !== "VERIFIED") return [];
+
+    const drafts = Array.isArray(result.findings) && result.findings.length > 0
+      ? result.findings
+      : [result];
+
+    return drafts.map(draft => {
+      const evidence = Array.isArray(draft.evidence) ? draft.evidence : [];
+      const supporting = [
+        ...(draft.supportingEvidence || []),
+        ...evidence.filter(e => e.kind === "SUPPORTING")
+      ];
+      const counter = [
+        ...(draft.counterEvidenceChecked || []),
+        ...evidence.filter(e => e.kind === "COUNTERCHECK")
+      ];
+      const span = draft.span || candidate.span;
+
+      if (supporting.length === 0) {
+        supporting.push(createEvidence({
+          kind: "SUPPORTING",
+          predicateId: "VERIFIER_REPORTED",
+          observed: true,
+          span,
+          explanation: "Verifier returned VERIFIED without supporting evidence"
+        }));
+      }
+      if (counter.length === 0) {
+        counter.push(createEvidence({
+          kind: "COUNTERCHECK",
+          predicateId: "NO_COUNTERCHECK",
+          observed: false,
+          span,
+          explanation: "No counterchecks were recorded"
+        }));
+      }
+
+      return { draft, span, supporting, counter };
+    });
+  }
+
+  function verifyCandidates(candidates, index, plan, request, state) {
     emitPhase("VERIFY");
     const selected = selectVerifiers(verifierRegistry, plan);
     const detectors = new Set(request.detectorIds || []);
@@ -443,61 +493,62 @@ export function createInvestigationRuntime(dependencies) {
     const context = {
       pathologyClass: null,
       repositoryRoot: request.root || ".",
-      counterchecks: plan.counterchecks
+      counterchecks: plan.counterchecks,
+      // An operator who passes --include-tests has asked for test paths to be
+      // analyzed as product code, which waives the test/documentation countercheck.
+      includeTests: Boolean(request.includeTests)
     };
+
+    const seenFindings = new Set();
 
     for (const candidate of candidates) {
       checkBudget(state, request);
       const classVerifiers = activeVerifiers.filter(v => v.pathologyClass === candidate.pathologyClass);
+      // A verifier proves structure, so it reads the file's normalized facts —
+      // never the raw source, and never the retrieval score.
+      const facts = index.factsByPath.get(candidate.path) || null;
+
       for (const verifier of classVerifiers) {
-        const result = verifier.verify(candidate, { ...context, pathologyClass: candidate.pathologyClass });
-        if (!result || result.verdict !== "VERIFIED") continue;
+        const result = verifier.verify(
+          { ...candidate, facts },
+          { ...context, pathologyClass: candidate.pathologyClass }
+        );
 
-        const evidence = Array.isArray(result.evidence) ? result.evidence : [];
-        const supporting = evidence.filter(e => e.kind === "SUPPORTING");
-        const counter = evidence.filter(e => e.kind === "COUNTERCHECK");
+        for (const { draft, span, supporting, counter } of draftsFromResult(result, candidate)) {
+          const finding = createFinding({
+            verdict: "VERIFIED",
+            pathologyClass: candidate.pathologyClass,
+            span,
+            symbol: draft.symbol ?? candidate.factId,
+            summary: draft.summary || result.summary || `${candidate.pathologyClass} at ${candidate.path}`,
+            supportingEvidence: supporting,
+            counterEvidenceChecked: counter,
+            verifier: { id: verifier.id, version: verifier.version },
+            lawRefs: draft.lawRefs || result.lawRefs || [],
+            raidRefs: draft.raidRefs || result.raidRefs || [],
+            verificationSteps: draft.verificationSteps || result.verificationSteps || [],
+            remediation: draft.remediation || result.remediation || {
+              recommendationId: null,
+              summary: "",
+              safePattern: "",
+              unsafePattern: "",
+              verificationSteps: [],
+              autoFixAvailable: false
+            },
+            limitations: draft.limitations || result.limitations || []
+          });
 
-        if (supporting.length === 0) {
-          supporting.push(createEvidence({
-            kind: "SUPPORTING",
-            predicateId: "VERIFIER_REPORTED",
-            observed: true,
-            span: candidate.span,
-            explanation: "Verifier returned VERIFIED without supporting evidence"
-          }));
+          // The same span may be nominated by several candidates; identity is the
+          // span, not the nomination that led to it.
+          const key = stableStringify({
+            pathologyClass: finding.pathologyClass,
+            span: finding.span,
+            verifier: finding.verifier
+          });
+          if (seenFindings.has(key)) continue;
+          seenFindings.add(key);
+          findings.push(finding);
         }
-        if (counter.length === 0) {
-          counter.push(createEvidence({
-            kind: "COUNTERCHECK",
-            predicateId: "NO_COUNTERCHECK",
-            observed: false,
-            span: candidate.span,
-            explanation: "No counterchecks were recorded"
-          }));
-        }
-
-        findings.push(createFinding({
-          verdict: "VERIFIED",
-          pathologyClass: candidate.pathologyClass,
-          span: candidate.span,
-          symbol: candidate.factId,
-          summary: result.summary || `${candidate.pathologyClass} at ${candidate.path}`,
-          supportingEvidence: supporting,
-          counterEvidenceChecked: counter,
-          verifier: { id: verifier.id, version: verifier.version },
-          lawRefs: result.lawRefs || [],
-          raidRefs: result.raidRefs || [],
-          verificationSteps: result.verificationSteps || [],
-          remediation: result.remediation || {
-            recommendationId: null,
-            summary: "",
-            safePattern: "",
-            unsafePattern: "",
-            verificationSteps: [],
-            autoFixAvailable: false
-          },
-          limitations: result.limitations || []
-        }));
       }
     }
 
@@ -691,7 +742,7 @@ export function createInvestigationRuntime(dependencies) {
       state.index = index;
       const candidates = retrieveCandidates(substrate.files, plan, normalizedRequest, state);
       state.candidates = candidates;
-      const findings = verifyCandidates(candidates, plan, normalizedRequest, state);
+      const findings = verifyCandidates(candidates, index, plan, normalizedRequest, state);
       const report = assembleReport(
         normalizedRequest,
         plan,

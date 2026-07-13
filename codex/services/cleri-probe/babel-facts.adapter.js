@@ -15,6 +15,13 @@ import {
 } from "../../core/immunity/cleri-probe/contracts.js";
 import { sha256Hex } from "../../core/immunity/cleri-probe/canonical-report.js";
 
+/**
+ * Fact-schema version. Bump whenever the emitted fact shape changes: the
+ * disposable index is keyed on it, so a stale cache can never feed an old fact
+ * shape to a new verifier.
+ */
+export const PARSER_VERSION = "1.1.0";
+
 const HOOKS = new Set([
   "useEffect",
   "useLayoutEffect",
@@ -178,6 +185,131 @@ function collectIdentifierRoots(node, roots = []) {
   return roots;
 }
 
+/**
+ * Describes a call argument well enough for a verifier to prove identity:
+ * the event name of a listener, the handler binding, or an options object.
+ */
+function describeArgument(node) {
+  if (!node) return { type: "Unknown", value: null, name: null, keys: [], truthyKeys: [] };
+
+  const described = {
+    type: node.type,
+    value: null,
+    name: null,
+    keys: [],
+    truthyKeys: []
+  };
+
+  switch (node.type) {
+    case "StringLiteral":
+    case "NumericLiteral":
+    case "BooleanLiteral":
+      described.value = node.value;
+      break;
+    case "NullLiteral":
+      described.value = null;
+      break;
+    case "Identifier":
+      described.name = node.name;
+      break;
+    case "MemberExpression":
+    case "OptionalMemberExpression":
+      described.name = canonicalDotted(node);
+      break;
+    case "ObjectExpression":
+      for (const prop of node.properties) {
+        if (prop.type !== "ObjectProperty" || prop.computed) continue;
+        const key = prop.key.type === "Identifier"
+          ? prop.key.name
+          : (prop.key.type === "StringLiteral" ? prop.key.value : null);
+        if (!key) continue;
+        described.keys.push(key);
+        if (prop.value.type === "BooleanLiteral" && prop.value.value === true) {
+          described.truthyKeys.push(key);
+        }
+      }
+      described.keys.sort();
+      described.truthyKeys.sort();
+      break;
+    default:
+      break;
+  }
+
+  return described;
+}
+
+/** True when `name` appears as an identifier anywhere inside the subtree. */
+function referencesIdentifier(node, name) {
+  if (!node || typeof node !== "object" || !name) return false;
+  if (node.type === "Identifier" && node.name === name) return true;
+
+  for (const key of Object.keys(node)) {
+    if (key === "loc" || key === "start" || key === "end" || key === "leadingComments" ||
+        key === "trailingComments" || key === "innerComments") {
+      continue;
+    }
+    const value = node[key];
+    if (Array.isArray(value)) {
+      if (value.some(item => referencesIdentifier(item, name))) return true;
+    } else if (value && typeof value === "object" && typeof value.type === "string") {
+      if (referencesIdentifier(value, name)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Flattens a member expression into its root binding and property path,
+ * recording whether any link in the chain is optional (`?.`).
+ */
+function memberChain(node) {
+  const path = [];
+  let optional = false;
+  let computed = false;
+  let current = node;
+
+  while (current && (current.type === "MemberExpression" || current.type === "OptionalMemberExpression")) {
+    if (current.optional) optional = true;
+    if (current.computed) {
+      computed = true;
+      if (current.property.type === "StringLiteral") {
+        path.unshift(current.property.value);
+      } else {
+        path.unshift("[?]");
+      }
+    } else if (current.property.type === "Identifier") {
+      path.unshift(current.property.name);
+    } else {
+      path.unshift("[?]");
+    }
+    current = current.object;
+  }
+
+  if (!current || current.type !== "Identifier") {
+    return null;
+  }
+  return { rootName: current.name, propertyPath: path, optional, computed };
+}
+
+/** Collects the dotted names read inside a guard test, e.g. `response.ok`. */
+function collectDottedReads(node, out = []) {
+  if (!node || typeof node !== "object" || typeof node.type !== "string") return out;
+  if (node.type === "MemberExpression" || node.type === "OptionalMemberExpression") {
+    out.push(canonicalDotted(node));
+    return out;
+  }
+  for (const key of Object.keys(node)) {
+    if (key === "loc" || key === "start" || key === "end") continue;
+    const value = node[key];
+    if (Array.isArray(value)) {
+      for (const item of value) collectDottedReads(item, out);
+    } else if (value && typeof value === "object" && typeof value.type === "string") {
+      collectDottedReads(value, out);
+    }
+  }
+  return out;
+}
+
 export function parseSourceFacts({ path, content }) {
   const normalizedPath = normalizeRepositoryPath(path);
   const source = String(content ?? "");
@@ -248,15 +380,18 @@ export function parseSourceFacts({ path, content }) {
       ok: false,
       path: normalizedPath,
       contentHash,
+      parserVersion: PARSER_VERSION,
       functions: [],
       calls: [],
       effects: [],
       catchClauses: [],
       bindings: [],
       writes: [],
+      memberReads: [],
       externalRequests: [],
       guards: [],
       concurrentCallbacks: [],
+      comments: [],
       diagnostics: [deepFreeze(diagnostic)]
     });
   }
@@ -267,9 +402,16 @@ export function parseSourceFacts({ path, content }) {
   const catchClauses = [];
   const bindings = [];
   const writes = [];
+  const memberReads = [];
   const externalRequests = [];
   const guards = [];
   const concurrentCallbacks = [];
+  const comments = (ast.comments || []).map(comment => deepFreeze({
+    type: comment.type,
+    value: String(comment.value),
+    startLine: comment.loc?.start?.line ?? 1,
+    endLine: comment.loc?.end?.line ?? comment.loc?.start?.line ?? 1
+  }));
 
   const functionNodeToId = new Map();
   const functionStack = [];
@@ -292,7 +434,7 @@ export function parseSourceFacts({ path, content }) {
     return null;
   };
 
-  const addBinding = (name, kind, functionId, idNode) => {
+  const addBinding = (name, kind, functionId, idNode, extra = {}) => {
     const id = makeId("binding", idNode);
     currentScope().set(name, id);
     bindings.push({
@@ -300,15 +442,18 @@ export function parseSourceFacts({ path, content }) {
       name,
       kind,
       functionId,
+      importSource: extra.importSource ?? null,
+      initKind: extra.initKind ?? null,
+      initCallee: extra.initCallee ?? null,
       declarationSpan: makeSpan(idNode, name)
     });
     return id;
   };
 
-  const extractPatternBindings = (pattern, kind, functionId) => {
+  const extractPatternBindings = (pattern, kind, functionId, extra = {}) => {
     if (!pattern) return;
     if (pattern.type === "Identifier") {
-      addBinding(pattern.name, kind, functionId, pattern);
+      addBinding(pattern.name, kind, functionId, pattern, extra);
       return;
     }
     if (pattern.type === "ArrayPattern") {
@@ -347,12 +492,12 @@ export function parseSourceFacts({ path, content }) {
     ) {
       const primitive = canonicalDotted(grand.callee);
       const parent = parentPath.node;
-      if (parent.type === "ArrayExpression") return primitive;
-      if (
-        (parent.type === "CallExpression" || parent.type === "OptionalCallExpression") &&
-        /\.(map|filter|flatMap|forEach|reduce)$/.test(canonicalDotted(parent.callee))
-      ) {
-        return primitive;
+      // Promise.all([...]) over an array literal: each callback runs once.
+      if (parent.type === "ArrayExpression") return { primitive, iterator: null };
+      // Promise.all(items.map(cb)): the callback runs once per item.
+      if (parent.type === "CallExpression" || parent.type === "OptionalCallExpression") {
+        const match = /\.(map|filter|flatMap|forEach|reduce)$/.exec(canonicalDotted(parent.callee));
+        if (match) return { primitive, iterator: match[1] };
       }
     }
     return null;
@@ -375,12 +520,13 @@ export function parseSourceFacts({ path, content }) {
       extractPatternBindings(param, "param", id);
     }
 
-    const primitive = detectConcurrentCallbackContext(path);
-    if (primitive) {
+    const concurrent = detectConcurrentCallbackContext(path);
+    if (concurrent) {
       const ccId = makeId("cc", path.node);
       concurrentCallbacks.push({
         id: ccId,
-        primitive,
+        primitive: concurrent.primitive,
+        iterator: concurrent.iterator,
         functionId: parentFunctionId,
         callbackFunctionId: id,
         span: makeSpan(path.node)
@@ -479,15 +625,16 @@ export function parseSourceFacts({ path, content }) {
     VariableDeclaration(path) {
       const kind = path.node.kind;
       for (const declarator of path.node.declarations) {
-        extractPatternBindings(declarator.id, kind, currentFunction().id);
+        extractPatternBindings(declarator.id, kind, currentFunction().id, describeInit(declarator.init));
       }
     },
     ImportDeclaration(path) {
+      const importSource = path.node.source?.value ?? null;
       for (const specifier of path.node.specifiers) {
         if (specifier.type === "ImportDefaultSpecifier" ||
             specifier.type === "ImportSpecifier" ||
             specifier.type === "ImportNamespaceSpecifier") {
-          addBinding(specifier.local.name, "import", currentFunction().id, specifier.local);
+          addBinding(specifier.local.name, "import", currentFunction().id, specifier.local, { importSource });
         }
       }
     },
@@ -499,10 +646,19 @@ export function parseSourceFacts({ path, content }) {
     CatchClause: {
       enter(path) {
         const id = makeId("catch", path.node);
+        const paramName = path.node.param?.type === "Identifier" ? path.node.param.name : null;
         catchStack.push(id);
         catchState.set(id, {
+          // The function that owns the catch. Throws and returns inside a nested
+          // function do not recover this catch, so they must not count as
+          // counterevidence.
+          ownerFunctionId: currentFunction().id,
+          paramName,
           bodyStatementKinds: [],
           calls: [],
+          localCalls: [],
+          throwKinds: [],
+          returnKinds: [],
           throws: false,
           returns: false
         });
@@ -515,9 +671,13 @@ export function parseSourceFacts({ path, content }) {
         state.bodyStatementKinds = path.node.body.body.map(stmt => stmt.type);
         catchClauses.push({
           id,
-          functionId: currentFunction().id,
+          functionId: state.ownerFunctionId,
+          paramName: state.paramName,
           bodyStatementKinds: state.bodyStatementKinds,
           calls: state.calls,
+          localCalls: state.localCalls,
+          throwKinds: state.throwKinds,
+          returnKinds: state.returnKinds,
           throws: state.throws,
           returns: state.returns,
           span: makeSpan(path.node)
@@ -532,19 +692,39 @@ export function parseSourceFacts({ path, content }) {
     OptionalCallExpression(path) {
       recordCall(path);
     },
+    MemberExpression(path) {
+      recordMemberRead(path);
+    },
+    OptionalMemberExpression(path) {
+      recordMemberRead(path);
+    },
     IfStatement(path) {
       recordGuards(path.node.test, path.node);
     },
     ConditionalExpression(path) {
       recordGuards(path.node.test, path.node);
     },
+    LogicalExpression(path) {
+      // `response.ok && use(response)` guards just as an if-statement does.
+      if (path.node.operator === "&&" || path.node.operator === "||") {
+        recordGuards(path.node.left, path.node);
+      }
+    },
     ThrowStatement(path) {
       const id = currentCatchId();
-      if (id) catchState.get(id).throws = true;
+      if (!id) return;
+      const state = catchState.get(id);
+      if (state.ownerFunctionId !== currentFunction().id) return;
+      state.throws = true;
+      state.throwKinds.push(describeThrow(path.node.argument, state.paramName));
     },
     ReturnStatement(path) {
       const id = currentCatchId();
-      if (id) catchState.get(id).returns = true;
+      if (!id) return;
+      const state = catchState.get(id);
+      if (state.ownerFunctionId !== currentFunction().id) return;
+      state.returns = true;
+      state.returnKinds.push(describeCatchReturn(path.node.argument, state.paramName));
     },
     AssignmentExpression(path) {
       recordWrite(path.node, path.node.operator, path.node.left);
@@ -559,12 +739,33 @@ export function parseSourceFacts({ path, content }) {
     const callee = canonicalDotted(node.callee);
     const receiver = receiverOf(node.callee);
     const argumentKinds = node.arguments.map(arg => arg.type);
+    const args = node.arguments.map(describeArgument);
+    const method = node.callee.type === "MemberExpression" || node.callee.type === "OptionalMemberExpression"
+      ? (node.callee.computed ? null : node.callee.property.name ?? null)
+      : (node.callee.type === "Identifier" ? node.callee.name : null);
+    const receiverBindingId = receiver ? resolveBinding(rootObjectName(node.callee)) : null;
     const id = makeId("call", node);
     const functionId = currentFunction().id;
-    calls.push({ id, callee, receiver, argumentKinds, functionId, span: makeSpan(node) });
+    calls.push({
+      id,
+      callee,
+      receiver,
+      receiverBindingId,
+      method,
+      argumentKinds,
+      args,
+      functionId,
+      span: makeSpan(node)
+    });
 
     const catchId = currentCatchId();
-    if (catchId) catchState.get(catchId).calls.push(id);
+    if (catchId) {
+      const state = catchState.get(catchId);
+      state.calls.push(id);
+      if (state.ownerFunctionId === functionId) {
+        state.localCalls.push(callee);
+      }
+    }
 
     const hook = hookName(node.callee);
     if (hook && node.arguments[0] && isFunctionNode(node.arguments[0])) {
@@ -629,17 +830,119 @@ export function parseSourceFacts({ path, content }) {
 
   function recordGuards(testNode, statementNode) {
     const roots = [...new Set(collectIdentifierRoots(testNode))];
+    const dotted = [...new Set(collectDottedReads(testNode))].sort();
     for (const name of roots) {
       const bindingId = resolveBinding(name);
       if (bindingId) {
         guards.push({
           bindingId,
           kind: "TRUTHY",
+          // Dotted reads let a verifier tell `if (response.ok)` (a status guard)
+          // apart from `if (response)` (a mere existence check).
+          properties: dotted.filter(entry => entry === name || entry.startsWith(`${name}.`)),
           functionId: currentFunction().id,
           span: makeSpan(statementNode)
         });
       }
     }
+  }
+
+  function recordMemberRead(path) {
+    const node = path.node;
+    const parent = path.parentPath?.node;
+
+    // Only the outermost link of a chain is a read: `a.b.c` is one read, not two.
+    if (parent && (parent.type === "MemberExpression" || parent.type === "OptionalMemberExpression") &&
+        parent.object === node) {
+      return;
+    }
+    // Callees are recorded as calls; assignment targets are recorded as writes.
+    if (parent && (parent.type === "CallExpression" || parent.type === "OptionalCallExpression") &&
+        parent.callee === node) {
+      return;
+    }
+    if (parent && parent.type === "AssignmentExpression" && parent.left === node) return;
+    if (parent && parent.type === "UpdateExpression" && parent.argument === node) return;
+
+    const chain = memberChain(node);
+    if (!chain || chain.propertyPath.length === 0) return;
+
+    const bindingId = resolveBinding(chain.rootName);
+    memberReads.push({
+      bindingId,
+      rootName: chain.rootName,
+      propertyPath: chain.propertyPath,
+      optional: chain.optional,
+      computed: chain.computed,
+      functionId: currentFunction().id,
+      span: makeSpan(node)
+    });
+  }
+
+  function describeInit(init) {
+    if (!init) return {};
+    let node = init;
+    if (node.type === "AwaitExpression") node = node.argument;
+
+    if (node.type === "CallExpression" || node.type === "OptionalCallExpression") {
+      return { initKind: "CALL", initCallee: canonicalDotted(node.callee) };
+    }
+    if (node.type === "MemberExpression" || node.type === "OptionalMemberExpression") {
+      return { initKind: "MEMBER", initCallee: canonicalDotted(node) };
+    }
+    if (isFunctionNode(node)) {
+      return { initKind: "FUNCTION", initCallee: null };
+    }
+    return { initKind: node.type, initCallee: null };
+  }
+
+  function describeThrow(argument, paramName) {
+    if (!argument) return "RETHROW_BARE";
+    if (argument.type === "Identifier") {
+      return argument.name === paramName ? "RETHROW" : `THROW:${argument.name}`;
+    }
+    if (argument.type === "NewExpression") {
+      return `NEW:${canonicalDotted(argument.callee)}`;
+    }
+    if (argument.type === "CallExpression" || argument.type === "OptionalCallExpression") {
+      return `CALL:${canonicalDotted(argument.callee)}`;
+    }
+    return `THROW:${argument.type}`;
+  }
+
+  function describeCatchReturn(argument, paramName) {
+    if (!argument) {
+      return { kind: "VOID", objectKeys: [], callee: null, usesCatchParam: false };
+    }
+
+    const usesCatchParam = referencesIdentifier(argument, paramName);
+    let node = argument;
+    if (node.type === "AwaitExpression") node = node.argument;
+
+    if (node.type === "ObjectExpression") {
+      const objectKeys = [];
+      for (const prop of node.properties) {
+        if (prop.type !== "ObjectProperty" || prop.computed) continue;
+        if (prop.key.type === "Identifier") objectKeys.push(prop.key.name);
+        else if (prop.key.type === "StringLiteral") objectKeys.push(prop.key.value);
+      }
+      return { kind: "OBJECT", objectKeys: objectKeys.sort(), callee: null, usesCatchParam };
+    }
+    if (node.type === "CallExpression" || node.type === "OptionalCallExpression") {
+      return {
+        kind: "CALL",
+        objectKeys: [],
+        callee: canonicalDotted(node.callee),
+        usesCatchParam
+      };
+    }
+    if (node.type === "NullLiteral") {
+      return { kind: "NULL", objectKeys: [], callee: null, usesCatchParam };
+    }
+    if (node.type === "Identifier" && node.name === "undefined") {
+      return { kind: "UNDEFINED", objectKeys: [], callee: null, usesCatchParam };
+    }
+    return { kind: node.type, objectKeys: [], callee: null, usesCatchParam };
   }
 
   // Resolve effect cleanup callbacks now that every function has an id.
@@ -676,15 +979,18 @@ export function parseSourceFacts({ path, content }) {
     ok: true,
     path: normalizedPath,
     contentHash,
+    parserVersion: PARSER_VERSION,
     functions,
     calls,
     effects,
     catchClauses,
     bindings,
     writes,
+    memberReads,
     externalRequests,
     guards,
     concurrentCallbacks,
+    comments,
     diagnostics: []
   });
 }
