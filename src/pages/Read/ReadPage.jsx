@@ -429,7 +429,17 @@ export default function ReadPage() {
   // .has/.size working for existing consumers while adding .get for the tier.
   const resonantCharStarts = useMemo(() => {
     const { connections } = resolveResonanceConnections(deepAnalysis);
-    return buildResonanceGate(connections);
+    // When the Dictionary Oracle is unavailable the backend has no authoritative
+    // phonemes, so every word's vowel family is a guess derived from SPELLING —
+    // which inverts love/move and though/tough. Colouring from that is worse than
+    // not colouring: it looks confident and it is wrong. The backend tells us, and
+    // the gate renders nothing. Read path-agnostically: useVerseSynthesis aliases
+    // `analysis` to `syntaxLayer`, so the flag can arrive under either key.
+    const authorityUnavailable = Boolean(
+      deepAnalysis?.syntaxLayer?.authorityUnavailable
+      ?? deepAnalysis?.analysis?.authorityUnavailable,
+    );
+    return buildResonanceGate(connections, { authorityUnavailable });
   }, [deepAnalysis]);
 
   // True when analysis has arrived but the live synthesis path carries no
