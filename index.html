@@ -11,18 +11,26 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Crimson Pro (reading/scroll serif) is self-hosted — see @font-face in src/index.css. -->
-    <!-- Non-blocking font load: browser paints immediately with fallbacks, swaps fonts when ready -->
+    <!--
+      Fonts load via preload + plain stylesheet. Do NOT reintroduce the
+      `media="print" onload="this.media='all'"` async-CSS trick: `onload=` is an
+      inline event handler, and our CSP sets script-src-attr 'none' (Helmet's
+      default, see codex/server/index.js). The browser BLOCKS the handler, the
+      media attribute never flips from "print" to "all", and the fonts then apply
+      only when printing the page — silently, with nothing but a console warning.
+
+      Non-blocking behaviour is preserved by `display=swap` on every URL below:
+      text paints immediately in the fallback face and swaps when the webfont
+      arrives. The preload warms the fetch; the stylesheet reuses that response.
+    -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cinzel:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
-    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cinzel:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cinzel:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" /></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Cinzel:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" />
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
-    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" /></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" />
 
     <!-- Grimoire Landing — blackletter + historical serif -->
     <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English+SC:ital@0;1&display=swap" />
-    <link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English+SC:ital@0;1&display=swap" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English+SC:ital@0;1&display=swap" /></noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=IM+Fell+English+SC:ital@0;1&display=swap" />
 
     <title>Scholomance — Sonic Thaumaturgy</title>
   </head>
