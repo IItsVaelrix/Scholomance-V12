@@ -19,6 +19,10 @@ import * as retrieval from "../../codex/core/immunity/cleri-probe/retrieval.js";
 import { createDefaultRegistry } from "../../codex/core/immunity/cleri-probe/verifier-registry.js";
 import { createInvestigationRuntime } from "../../codex/runtime/cleri-probe/investigation.runtime.js";
 import {
+  buildFindingFeedback,
+  buildGraduationProposal
+} from "../../codex/core/immunity/cleri-probe/graduation-proposal.js";
+import {
   buildFindingId,
   checksumInvestigationReport,
   encodeCleriReportIdentity,
@@ -342,11 +346,162 @@ async function runVerify(args) {
   return verification.reproducible ? 0 : 3;
 }
 
-async function runGraduate() {
-  const error = notAvailableError("graduate");
-  writeError(error.bytecode);
-  return 3;
+// ─── Graduation ──────────────────────────────────────────────────────────────
+
+const CORPUS_ROOT = "tests/qa/fixtures/cleri-probe";
+
+/**
+ * Scores a verifier family against the frozen corpus.
+ *
+ * `extraPositives` lets the caller ask "what would this family look like if this
+ * finding were a labeled positive too?" — which is exactly what graduating a
+ * pattern claims.
+ */
+function benchmarkFamily(pathologyClass, extraPositives = []) {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.resolve(CORPUS_ROOT, "manifest.json"), "utf8")
+  );
+  const registry = createProductionRegistry();
+  const verifier = [...registry.verifiers.values()]
+    .find(item => item.pathologyClass === pathologyClass);
+
+  if (!verifier) {
+    throw new BytecodeError(
+      ERROR_CATEGORIES.STATE,
+      ERROR_SEVERITY.CRIT,
+      MODULE_IDS.IMMUNITY,
+      ERROR_CODES.INVALID_STATE,
+      { message: `No verifier is installed for ${pathologyClass}`, pathologyClass }
+    );
+  }
+
+  const cases = [
+    ...manifest.cases.filter(item => item.pathologyClass === pathologyClass),
+    ...extraPositives
+  ];
+
+  let truePositives = 0;
+  let falsePositives = 0;
+  let falseNegatives = 0;
+
+  const byFile = new Map();
+  for (const item of cases) {
+    // Corpus cases are named relative to the corpus; a graduating finding is
+    // named relative to the repository.
+    const relative = item.repoRelative ? item.path : path.posix.join(CORPUS_ROOT, item.path);
+    if (!byFile.has(relative)) byFile.set(relative, []);
+    byFile.get(relative).push(item);
+  }
+
+  for (const [relative, fileCases] of byFile) {
+    const source = fs.readFileSync(path.resolve(relative), "utf8");
+    const facts = parseSourceFacts({ path: relative, content: source });
+
+    const result = verifier.verify(
+      { path: relative, pathologyClass, span: null, facts },
+      { pathologyClass, repositoryRoot: ".", includeTests: true }
+    );
+    const findings = result.verdict === "VERIFIED" ? (result.findings || []) : [];
+
+    const hits = new Map(fileCases.map(item => [item.id, 0]));
+    for (const finding of findings) {
+      const line = finding.span.startLine;
+      const nearest = fileCases.reduce((best, item) =>
+        !best || Math.abs(item.expectedLine - line) < Math.abs(best.expectedLine - line) ? item : best,
+      null);
+      if (nearest) hits.set(nearest.id, hits.get(nearest.id) + 1);
+    }
+
+    for (const item of fileCases) {
+      const found = hits.get(item.id) > 0;
+      if (item.expected === "VERIFIED") {
+        if (found) truePositives += 1;
+        else falseNegatives += 1;
+      } else if (found) {
+        falsePositives += 1;
+      }
+    }
+  }
+
+  const positives = truePositives + falsePositives;
+  const labeled = truePositives + falseNegatives;
+
+  return {
+    precision: positives === 0 ? 0 : truePositives / positives,
+    recall: labeled === 0 ? 0 : truePositives / labeled,
+    truePositives,
+    falsePositives
+  };
 }
+
+async function runGraduate(args) {
+  const options = args.options;
+  const report = loadReport(options.report);
+  const findingId = args.positional[0];
+  const finding = findFinding(report, findingId);
+
+  const feedback = buildFindingFeedback({
+    report,
+    findingId,
+    decision: options.decision,
+    rationale: options.rationale
+  });
+
+  if (feedback.decision === "REJECT") {
+    // A rejection is recorded for the human who wrote it. It cannot create a
+    // proposal, and it does not reach immune memory.
+    writeOutput(stableStringify(feedback) + "\n", options.output);
+    return 0;
+  }
+
+  const before = benchmarkFamily(finding.pathologyClass);
+  const candidate = benchmarkFamily(finding.pathologyClass, candidateCase(finding));
+
+  const proposal = buildGraduationProposal({ report, feedback, benchmark: { before, candidate } });
+
+  // The proposal is written only where the operator explicitly asked for it.
+  fs.mkdirSync(path.dirname(path.resolve(options.proposal)), { recursive: true });
+  fs.writeFileSync(path.resolve(options.proposal), stableStringify(proposal) + "\n", "utf8");
+
+  process.stdout.write(
+    `Proposal ${proposal.proposalId} written to ${options.proposal}\n` +
+    `It is a request for review: approved = false. Nothing was written to immune memory.\n`
+  );
+
+  return 0;
+}
+
+/**
+ * The finding, expressed as a labeled corpus case.
+ *
+ * A finding the corpus already labels adds nothing: graduating it leaves the
+ * family exactly where it was, so the candidate benchmark must measure the same
+ * corpus, not a corpus with the label counted twice.
+ */
+function candidateCase(finding) {
+  const manifest = JSON.parse(
+    fs.readFileSync(path.resolve(CORPUS_ROOT, "manifest.json"), "utf8")
+  );
+
+  const alreadyLabeled = manifest.cases.some(item =>
+    item.pathologyClass === finding.pathologyClass &&
+    path.posix.join(CORPUS_ROOT, item.path) === finding.span.path &&
+    item.expected === "VERIFIED" &&
+    Math.abs(item.expectedLine - finding.span.startLine) <= LABEL_PROXIMITY_LINES
+  );
+  if (alreadyLabeled) return [];
+
+  return [{
+    id: `graduation-${finding.findingId.slice(0, 12)}`,
+    pathologyClass: finding.pathologyClass,
+    path: finding.span.path,
+    expected: "VERIFIED",
+    expectedLine: finding.span.startLine,
+    repoRelative: true
+  }];
+}
+
+const LABEL_PROXIMITY_LINES = 3;
 
 async function runDetectors(args) {
   const registry = createProductionRegistry();
@@ -420,10 +575,68 @@ async function runBenchmark(args) {
   return 0;
 }
 
+// ─── Help ────────────────────────────────────────────────────────────────────
+
+const HELP = `cleri-probe — evidence-first investigation workbench
+
+USAGE
+  cleri-probe <command> [options]
+
+COMMANDS
+  investigate <hypothesis>   Plan, retrieve, verify, and report on a hypothesis
+  explain <findingId>        Render the full evidence card for one finding
+  verify <findingId>         Recheck a report's identity and detect substrate drift
+  detectors                  List installed verifiers, predicates, and limitations
+  benchmark                  Measure investigation latency against fixture scale
+  graduate <findingId>       Record human feedback and propose a pattern for review
+  help                       Show this text
+
+OPTIONS
+  --scope <path>             Repository-relative path to investigate (repeatable)
+  --exclude <glob>           Path or glob to exclude (repeatable)
+  --detector <id>            Restrict verification to one detector (repeatable)
+  --include-tests            Analyze test paths as product code
+  --include-generated        Analyze generated assets
+  --plan-only                Print the investigation plan and stop
+  --format human|json|bytecode   Output format (default: human)
+  --output <path>            Write output to a file instead of stdout
+  --include-source           Include source excerpts in JSON output
+  --no-cache                 Ignore and do not write the disposable fact index
+  --no-color                 Disable colour (also honours NO_COLOR)
+  --fail-on-findings         Exit 1 when the report carries verified findings
+  --report <path>            The report explain, verify, and graduate operate on
+  --proposal <path>          Where graduate writes its proposal
+  --decision confirm|reject  The human decision graduate records
+  --rationale <text>         Why the human made that decision
+  --help                     Show this text
+
+STATUS
+  VERIFIED_FINDINGS     At least one finding was structurally verified
+  NO_VERIFIED_FINDINGS  Nothing was verified within the reported coverage
+  PARTIAL               Coverage was incomplete (skips, parser failures, budget)
+  INCONCLUSIVE          The hypothesis reached no registered pathology class
+  FAILED                The investigation could not complete
+
+  NO VERIFIED FINDINGS is not proof of absence beyond the reported coverage.
+
+EXIT CODES
+  0  The command succeeded
+  1  Verified findings were reported and --fail-on-findings was given
+  2  An operational failure (usage, configuration, parser, schema, timeout)
+  3  The report is PARTIAL or INCONCLUSIVE, or evidence is not reproducible
+`;
+
+async function runHelp(args) {
+  writeOutput(HELP, args.options.output);
+  return 0;
+}
+
 // ─── Public router ───────────────────────────────────────────────────────────
 
 export async function run(args) {
   switch (args.command) {
+    case "help":
+      return runHelp(args);
     case "investigate":
       return runInvestigate(args);
     case "explain":

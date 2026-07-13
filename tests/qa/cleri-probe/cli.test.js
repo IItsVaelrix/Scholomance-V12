@@ -59,7 +59,14 @@ describe("Cleri Probe CLI", () => {
     // command must reject it as an operational failure, not read it hopefully.
     for (const command of [
       ["explain", "finding-1", "--report", "tests/qa/fixtures/cleri-probe/manifest.json"],
-      ["verify", "finding-1", "--report", "tests/qa/fixtures/cleri-probe/manifest.json"]
+      ["verify", "finding-1", "--report", "tests/qa/fixtures/cleri-probe/manifest.json"],
+      [
+        "graduate", "finding-1",
+        "--report", "tests/qa/fixtures/cleri-probe/manifest.json",
+        "--proposal", "/tmp/cleri-proposal-should-not-exist.json",
+        "--decision", "confirm",
+        "--rationale", "confirmed"
+      ]
     ]) {
       const result = await run(command);
       expect(result.code).toBe(2);

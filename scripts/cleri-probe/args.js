@@ -30,7 +30,10 @@ const OPTIONS = Object.freeze({
   "no-color": { type: "boolean" },
   "fail-on-findings": { type: "boolean" },
   report: { type: "string", hasValue: true },
-  proposal: { type: "string", hasValue: true }
+  proposal: { type: "string", hasValue: true },
+  decision: { type: "string", hasValue: true },
+  rationale: { type: "string", hasValue: true },
+  help: { type: "boolean" }
 });
 
 const COMMANDS = Object.freeze([
@@ -39,7 +42,8 @@ const COMMANDS = Object.freeze([
   "verify",
   "detectors",
   "benchmark",
-  "graduate"
+  "graduate",
+  "help"
 ]);
 
 const FORMATS = Object.freeze(["human", "json", "bytecode"]);
@@ -97,7 +101,10 @@ export function parseArgs(argv, env = process.env) {
     noColor: Boolean(env && env.NO_COLOR),
     failOnFindings: false,
     report: null,
-    proposal: null
+    proposal: null,
+    decision: null,
+    rationale: null,
+    help: false
   };
 
   for (let i = 0; i < args.length; i += 1) {
@@ -151,6 +158,11 @@ export function parseArgs(argv, env = process.env) {
     }
   }
 
+  // --help is answerable without a command, and outranks one.
+  if (options.help || command === "help") {
+    return { command: "help", positional, options };
+  }
+
   if (!command) {
     throw parseError("Missing command", { allowed: COMMANDS });
   }
@@ -193,6 +205,12 @@ export function parseArgs(argv, env = process.env) {
     }
     if (!options.proposal) {
       throw parseError("graduate requires --proposal", { command });
+    }
+    if (!options.decision) {
+      throw parseError("graduate requires --decision confirm|reject", { command });
+    }
+    if (!options.rationale) {
+      throw parseError("graduate requires --rationale", { command });
     }
   }
 
