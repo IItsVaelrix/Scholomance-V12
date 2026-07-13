@@ -6,7 +6,8 @@
  */
 
 import { parse } from "@babel/parser";
-import traverse from "@babel/traverse";
+import _traverse from "@babel/traverse";
+const traverse = typeof _traverse === "function" ? _traverse : _traverse.default;
 import {
   createSourceSpan,
   deepFreeze,
