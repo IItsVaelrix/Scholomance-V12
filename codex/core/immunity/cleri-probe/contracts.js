@@ -45,7 +45,7 @@ function validationError(message, context = {}) {
   return error;
 }
 
-function deepFreeze(value) {
+export function deepFreeze(value) {
   if (value === null || typeof value !== 'object') {
     return value;
   }
