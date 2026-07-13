@@ -17,7 +17,9 @@ import { analyzeLiteraryDevices, detectEmotionDetailed } from "../../literaryDev
 import { resolveSonicChroma } from "../../../phonology/chroma.resolver.js";
 import { decodeBytecode } from "../bytecodeRenderer.js";
 import { buildResonancePalette, resolveResonanceColor } from "../color/rhymeColorRegistry.js";
-import { resolveVerseIrColor } from "../color/pcaChroma.js";
+import { hslToHex, resolveVerseIrColor } from "../color/pcaChroma.js";
+import { buildChromaKinase, phosphorylateToken } from "../color/chroma.kinase.js";
+import { CHROMA_CHEFS } from "../color/chroma.bytecode.js";
 import { auditTokenWeights } from "../../../tokenization/tokenWeightError.js";
 import { combineTokenWeights } from "../../../tokenization/tokenWeightSchema.js";
 // The canonical position-bound text identity used by the Lexical editor's
@@ -68,6 +70,7 @@ export function synthesizeVerse(text, options = {}) {
   const currentSchool = options.school || 'DEFAULT';
 
   const tokensToIterate = verseIR?.tokens || [];
+  const unifiedTokens = [];
   tokensToIterate.forEach((token, index) => {
     const syntaxToken = syntaxLayer?.tokens?.[index] || {};
     const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
@@ -85,6 +88,40 @@ export function synthesizeVerse(text, options = {}) {
     const visualBytecode = token.visualBytecode || token.trueVisionBytecode || null;
     const decoded = visualBytecode ? decodeBytecode(visualBytecode) : null;
 
+    // Which chef actually cooked this token's colour? Pipeline B wins when it has
+    // a vowel family; otherwise Pipeline A's HSL is used. Two different colour
+    // spaces have always swapped into this one field — now we record which.
+    const chef = verseIrColor
+      ? CHROMA_CHEFS.PCA
+      : (sonicChroma ? CHROMA_CHEFS.SONIC : CHROMA_CHEFS.NONE);
+
+    const kinase = buildChromaKinase(token, {
+      chef,
+      resolve: () => {
+        if (verseIrColor) {
+          return {
+            hex: verseIrColor.hex,
+            h: verseIrColor.oklch?.h,
+            s: Math.round((verseIrColor.oklch?.c ?? 0) * 100),
+            l: Math.round((verseIrColor.oklch?.l ?? 0) * 100),
+            nucleus: token.terminalVowelFamily,
+          };
+        }
+        if (sonicChroma) {
+          return {
+            hex: hslToHex(sonicChroma.h, sonicChroma.s, sonicChroma.l),
+            h: sonicChroma.h,
+            s: sonicChroma.s,
+            l: sonicChroma.l,
+            nucleus: token.primaryStressedVowelFamily,
+          };
+        }
+        return { hex: null };
+      },
+    });
+
+    const chroma = phosphorylateToken(token, kinase);
+
     const unifiedToken = {
       ...token,
       ...syntaxToken,
@@ -94,9 +131,17 @@ export function synthesizeVerse(text, options = {}) {
       precomputed: {
         sonicChroma,
         decoded,
+        chroma,
+        // STAMP-ONLY (Task 4): the renderer still reads `hex`, and `hex` is still
+        // whatever it was before the kinase existed. Task 9 makes `hex` obey the
+        // kinase. Do not "fix" this line early — the stamp must be proven truthful
+        // on real text before the gate is trusted to act on it.
+        verseIrColorHex: verseIrColor?.hex || null,
         hex: verseIrColor?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
       }
     };
+
+    unifiedTokens[index] = unifiedToken;
 
     tokenByIdentity.set(identityKey, unifiedToken);
     // Also index by the position-bound text identity the Lexical resolver
@@ -156,9 +201,14 @@ export function synthesizeVerse(text, options = {}) {
     console.warn('[VerseSynthesis] tokenWeight audit failed silently:', auditError);
   }
 
+  const stampedVerseIR = Object.freeze({
+    ...verseIR,
+    tokens: Object.freeze(unifiedTokens),
+  });
+
   return Object.freeze({
     timestamp: Date.now(), // EXEMPT
-    verseIR,
+    verseIR: stampedVerseIR,
     syntaxLayer,
     hhm,
     scheme,
@@ -169,7 +219,7 @@ export function synthesizeVerse(text, options = {}) {
     tokenByCharStart,
     tokenByNormalizedWord,
     rhymeColorRegistry,
-    totalSyllables: verseIR.metadata?.syllableCount ?? verseIR.tokens.reduce((n, t) => n + (t.syllableCount || 0), 0),
+    totalSyllables: stampedVerseIR.metadata?.syllableCount ?? stampedVerseIR.tokens.reduce((n, t) => n + (t.syllableCount || 0), 0),
     tokenWeights: Object.keys(combinedTokenWeights).length > 0
       ? combinedTokenWeights
       : rawDocWeights,
