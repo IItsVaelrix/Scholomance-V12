@@ -16,8 +16,10 @@
  * Block-match count grades the rhyme for free, on the SAME tiers as
  * src/core/scd64/compareSCD64.ts:
  *   7-8/8 MUTATION/IDENTICAL  perfect rhyme
- *   6/8   MUTATION            slant (SIN/SIM — differ only in `place`)
- *   4-5/8 RELATED_FAMILY      coda-length shear (OLD/OWED, WORLD/HERD)
+ *   4-5/8 RELATED_FAMILY      coda-length shear (OLD/OWED, WORLD/HERD) and
+ *                             slant-by-place (SIN/SIM, measured 5/8 —
+ *                             dropping ONSET removed a block SIN/SIM used to
+ *                             share, so it moved down from 6/8 MUTATION)
  *   2-3/8 WEAK_NEIGHBOR       unrelated
  *
  * NOT imported from src/core/scd64: that is UI-layer TypeScript, and codex runs

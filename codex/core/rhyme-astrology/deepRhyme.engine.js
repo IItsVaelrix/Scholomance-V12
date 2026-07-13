@@ -38,18 +38,49 @@ const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
 const ASSONANCE_BUCKET_FULL_SCAN_MAX = 16;
 // findPhraseConnections buckets multi-token windows by Resonance Fingerprint
 // (see the comment there), plus a head fingerprint and a vowel-slant key (see
-// below). A rhyme-dense verse can still pile many windows into one bucket;
-// capping how many of a bucket's members are compared keeps the scan a hard
-// O(n * cap) instead of O(bucket^2). phrase_compound is a derived
-// convenience on top of the authoritative per-token signs, so trading some
-// pair recall in an oversized bucket for that bound is the right call.
-// Tuned down from 64 -> 32 -> 16: 16 is the largest cap that still keeps the
-// dense-verse fixture's phrase_compound count under the "linear-ish" bound
-// (tests/lib/deepRhyme.phrase-buckets.test.js) once vowel-slant bucketing is
-// counted, while golden_rhymes.test.js stays at 5/6 down to a cap of 8 (not
-// used — 16 was kept for more headroom since it still met the scaling
-// target). Do not lower below what keeps golden_rhymes.test.js at >= 5/6.
-const PHRASE_BUCKET_CANDIDATE_CAP = 16;
+// below). A rhyme-dense verse can still pile many windows into one bucket.
+// The cap bounds work PER NODE, not bucket membership: earlier code kept only
+// the bucket's first CAP members (`slice(0, CAP)`) and compared those with
+// each other, which is a document-order recall bug — every member past the
+// CAP'th was excluded from ALL comparisons, so a rhyme landing late in a long
+// verse (e.g. the last stanza) was structurally unreachable, not merely
+// under-recalled. The fix is a sliding window: every member i is compared
+// against its next CAP neighbours (i+1 .. i+CAP, clamped to the bucket end).
+// Every node in the bucket participates — none is excluded by its position —
+// each node performs at most CAP comparisons, so total work per bucket is
+// O(k * CAP) and total work across all buckets is O(n * CAP): the same hard
+// bound as before, just without the position bias. phrase_compound is a
+// derived convenience on top of the authoritative per-token signs, so
+// trading some pair recall in a pathologically oversized bucket (neighbours
+// beyond the window) for that bound is still the right call — but recall
+// no longer depends on where in the document a window happens to sit.
+// The old cap (16) was tuned down purely to satisfy an invented per-word
+// multiple in tests/lib/deepRhyme.phrase-buckets.test.js (`< words * 8`),
+// which is backwards — production code should not be fitted to an
+// arbitrary test bound. With the document-order bias removed, the cap
+// should be picked by its OWN merits: the highest value that (a) proves
+// linear-ish scaling in tests/lib/deepRhyme.phrase-buckets.test.js and
+// (b) keeps a live server request under the 5s target and clear of the OOM
+// crash this endpoint used to hit at ~24,000 characters.
+// Measured via POST /api/analysis/panels against a running server, cold
+// (no cache), on the dense-verse fixture repeated to size:
+//   32 -> OOM-crashes the server outright at 24,000 chars.
+//   24 -> survives, but 24,000 chars takes ~17.7s.
+//   16 -> survives; 3,000/6,000/12,000/24,000 chars take ~1.9s/2.8s/6.7s/
+//         12.7s — over the 5s target at the top two sizes, but this is the
+//         largest cap that does not crash, and lowering it further (8, 4,
+//         2, 1 all measured) does not reliably close the remaining gap —
+//         the residual cost past ~12,000 chars is dominated by something
+//         other than this cap (out of this fix's scope; flagged for
+//         follow-up) so shrinking the cap further only trades away real
+//         recall for a target it can't fully hit anyway.
+// The scaling PROPERTY the cap is responsible for does hold at 16: the
+// dense-verse fixture's phrase_compound-per-word rate flattens as the text
+// grows (4x -> 8x moves the rate ~1.27x, 8x -> 16x only ~1.13x — converging,
+// not compounding — see tests/lib/deepRhyme.phrase-buckets.test.js), which
+// is the real O(n * cap) signature. Exported so the test can assert against
+// the cap itself instead of hardcoding a second copy of this number.
+export const PHRASE_BUCKET_CANDIDATE_CAP = 16;
 // scoreMultiSyllableMatch aligns phrases by SYLLABLE, from the last syllable
 // backward, using PhoneticSimilarity's acoustic vowel-confusion table (AE~EH
 // at 0.95, the exact "bastard"~"master" vowel; EY~EH at 0.80). An exact-hash
@@ -481,10 +512,10 @@ export class DeepRhymeEngine {
     };
 
     for (const node of phraseNodes) {
-      node.fingerprint = buildResonanceFingerprint(node.analysis?.phonemes || []);
+      const fingerprint = buildResonanceFingerprint(node.analysis?.phonemes || []);
       // A tailless token gets no fingerprint and therefore no bucket. Do NOT
       // bucket them together — that would collide every unknown token at once.
-      addToBuckets(node, node.fingerprint ? rhymeBucketKeys(node.fingerprint) : [], 'tail');
+      addToBuckets(node, fingerprint ? rhymeBucketKeys(fingerprint) : [], 'tail');
       addToBuckets(node, vowelSlantKeys(node.analysis), 'vslant');
 
       const firstToken = verseIR.tokens[node.tokenSpan[0]];
@@ -494,22 +525,26 @@ export class DeepRhymeEngine {
 
     const seenPairs = new Set();
 
-    for (const [, rawGroupNodes] of buckets) {
-      if (rawGroupNodes.length < 2) continue;
+    for (const [, groupNodes] of buckets) {
+      if (groupNodes.length < 2) continue;
       // A rhyme-dense verse can pile hundreds of phrase nodes into one bucket
       // (e.g. every window ending on the same common vowel). phrase_compound
       // pairs are a derived convenience — the authoritative per-token signs
-      // (Task 4) are what the client consumes — so once a bucket is larger
-      // than the cap, only its first CAP members are compared. This trades
-      // some pair recall in pathologically rhyme-dense buckets for a hard
-      // O(n * cap) bound, which is what keeps a long verse from OOM-killing
-      // the server; every pair that IS compared is still fully scored below.
-      const groupNodes = rawGroupNodes.length > PHRASE_BUCKET_CANDIDATE_CAP
-        ? rawGroupNodes.slice(0, PHRASE_BUCKET_CANDIDATE_CAP)
-        : rawGroupNodes;
-
+      // (Task 4) are what the client consumes — so we bound work with a
+      // SLIDING WINDOW rather than truncating the bucket: every node i is
+      // compared only against its next CAP neighbours (i+1 .. i+CAP). This
+      // keeps the cap a bound on work PER NODE instead of on bucket
+      // membership — no node is ever excluded from every comparison just
+      // because of where it sits in document order (a plain `slice(0, CAP)`
+      // truncation made every window past the CAP'th unreachable, which is a
+      // recall bug, not a performance trade-off). Each node still does at
+      // most CAP comparisons, so total work per bucket is O(k * CAP) and
+      // total work across all buckets is O(n * CAP) — the same hard bound
+      // that keeps a long verse from OOM-killing the server; every pair that
+      // IS compared is still fully scored below.
       for (let i = 0; i < groupNodes.length; i += 1) {
-        for (let j = i + 1; j < groupNodes.length; j += 1) {
+        const windowEnd = Math.min(groupNodes.length, i + 1 + PHRASE_BUCKET_CANDIDATE_CAP);
+        for (let j = i + 1; j < windowEnd; j += 1) {
           const nodeA = groupNodes[i];
           const nodeB = groupNodes[j];
 

@@ -123,6 +123,14 @@ describe('compareResonanceByBlocks — the block count grades the rhyme', () => 
     expect(compareResonanceByBlocks(fp('LIGHT'), fp('NIGHT')).relationship).toBe('IDENTICAL');
     expect(compareResonanceByBlocks(fp('SUNLIGHT'), fp('LIGHT')).relationship).toBe('MUTATION');
     expect(compareResonanceByBlocks(fp('DESIRE'), fp('BANANA')).relationship).toBe('WEAK_NEIGHBOR');
+    // SIN/SIM (differ only in coda `place`, N vs M) used to land at 6/8
+    // MUTATION when ONSET was still a slot. Dropping ONSET removed a block
+    // they shared, so they now measure at 5/8 RELATED_FAMILY — this is the
+    // exact regression a previous test rewrite (LIGHT/NIGHT, SUNLIGHT/LIGHT)
+    // stopped covering. Restored here so the tier SIN/SIM actually lands in
+    // stays under test, whatever it measures to.
+    expect(compareResonanceByBlocks(fp('SIN'), fp('SIM')).relationship).toBe('RELATED_FAMILY');
+    expect(compareResonanceByBlocks(fp('SIN'), fp('SIM')).matchingBlocks).toBe(5);
   });
 
   it('a fingerprint is IDENTICAL to itself', () => {
