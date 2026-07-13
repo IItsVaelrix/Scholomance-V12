@@ -13,6 +13,7 @@ import {
   MODULE_IDS
 } from '../../pixelbrain/bytecode-error.js';
 import { createEvidence, deepFreeze, EVIDENCE_KINDS } from './contracts.js';
+import { listenerLifecycleVerifier } from './verifiers/listener-lifecycle.verifier.js';
 import { unseededRandomnessVerifier } from './verifiers/unseeded-randomness.verifier.js';
 
 // ─── Internal helpers ────────────────────────────────────────────────────────
@@ -317,6 +318,7 @@ export function validateVerifierResult(result) {
  * than silently claiming the pathology is not present.
  */
 export const DEFAULT_VERIFIERS = deepFreeze([
+  listenerLifecycleVerifier,
   unseededRandomnessVerifier
 ]);
 

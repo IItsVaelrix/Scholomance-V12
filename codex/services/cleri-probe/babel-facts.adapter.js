@@ -948,31 +948,43 @@ export function parseSourceFacts({ path, content }) {
   // Resolve effect cleanup callbacks now that every function has an id.
   for (const candidate of effectCandidates) {
     const callbackFunctionId = functionNodeToId.get(candidate.callbackNode) || null;
-    let returnFunctionId = null;
-    if (callbackFunctionId) {
-      returnFunctionId = findReturnFunctionId(candidate.callbackNode);
-    }
+    const cleanup = callbackFunctionId
+      ? findCleanup(candidate.callbackNode)
+      : { returnFunctionId: null, returnsBindingName: null };
     effects.push({
       id: makeId("effect", candidate.callNode),
       hook: candidate.hook,
       callbackFunctionId,
-      returnFunctionId,
+      returnFunctionId: cleanup.returnFunctionId,
+      // `return unsub;` is a cleanup just as much as `return () => unsub();`.
+      returnsBindingName: cleanup.returnsBindingName,
       span: makeSpan(candidate.callNode)
     });
   }
 
-  function findReturnFunctionId(callbackNode) {
-    if (isFunctionNode(callbackNode.body)) {
-      return functionNodeToId.get(callbackNode.body) || null;
+  function describeCleanup(argument) {
+    if (!argument) return { returnFunctionId: null, returnsBindingName: null };
+    if (isFunctionNode(argument)) {
+      return { returnFunctionId: functionNodeToId.get(argument) || null, returnsBindingName: null };
+    }
+    if (argument.type === "Identifier") {
+      return { returnFunctionId: null, returnsBindingName: argument.name };
+    }
+    return { returnFunctionId: null, returnsBindingName: null };
+  }
+
+  function findCleanup(callbackNode) {
+    if (callbackNode.body && callbackNode.body.type !== "BlockStatement") {
+      return describeCleanup(callbackNode.body);
     }
     if (callbackNode.body && callbackNode.body.type === "BlockStatement") {
       for (const stmt of callbackNode.body.body) {
-        if (stmt.type === "ReturnStatement" && isFunctionNode(stmt.argument)) {
-          return functionNodeToId.get(stmt.argument) || null;
+        if (stmt.type === "ReturnStatement" && stmt.argument) {
+          return describeCleanup(stmt.argument);
         }
       }
     }
-    return null;
+    return { returnFunctionId: null, returnsBindingName: null };
   }
 
   return deepFreeze({
