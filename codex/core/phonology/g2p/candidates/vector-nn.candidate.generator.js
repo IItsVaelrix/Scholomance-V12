@@ -1,33 +1,56 @@
 import { CANDIDATE_SOURCES, MIN_GRAPHEME_OVERLAP, MAX_CANDIDATES } from '../schemas.js';
 
-const VECTOR_AMP_SEED = 1337;
 const VECTOR_AMP_DIMENSION = 256;
+const NGRAM_SIZES = [2, 3];
+// Suffix graphemes decide English pronunciation far more than prefixes
+// (-IRE, -IGHT, -TION), and this generator exists to guess a pronunciation.
+const SUFFIX_WEIGHT = 2.5;
+const SUFFIX_LENGTH = 4;
 
-function seededRandom(seed) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
+function hashToken(token) {
+  let h = 2166136261;
+  for (let i = 0; i < token.length; i += 1) {
+    h ^= token.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) % VECTOR_AMP_DIMENSION;
 }
 
+/**
+ * Hashed character-n-gram embedding of a word's SPELLING.
+ *
+ * This is grapheme space, not phoneme space: its job is "this unknown word is
+ * spelled like these dictionary words, so borrow their pronunciation".
+ *
+ * The previous implementation seeded a random vector on word.LENGTH, so it
+ * carried no information about the word at all: DESIRE~BANANA scored 1.0000
+ * (both six letters) while FIRE~DESIRE scored -0.0398 (a real rhyme, different
+ * lengths). It ranked by length and called it a phoneme signature.
+ */
 export function createVectorNNPhonemeSignature(word) {
-  const rand = seededRandom(VECTOR_AMP_SEED + word.length);
-  const vec = new Array(VECTOR_AMP_DIMENSION);
-  for (let i = 0; i < VECTOR_AMP_DIMENSION; i += 1) {
-    vec[i] = rand() * 2 - 1;
+  const upper = String(word || '').toUpperCase().replace(/[^A-Z]/g, '');
+  const vec = new Array(VECTOR_AMP_DIMENSION).fill(0);
+
+  const padded = `^${upper}$`;
+  for (const n of NGRAM_SIZES) {
+    for (let i = 0; i + n <= padded.length; i += 1) {
+      const gram = padded.slice(i, i + n);
+      const isSuffix = i + n >= padded.length - SUFFIX_LENGTH;
+      vec[hashToken(gram)] += isSuffix ? SUFFIX_WEIGHT : 1;
+    }
   }
-  let sum = 0;
-  for (let i = 0; i < vec.length; i += 1) sum += vec[i] * vec[i];
-  const norm = Math.sqrt(sum) || 1;
-  const normalized = new Array(VECTOR_AMP_DIMENSION);
-  for (let i = 0; i < VECTOR_AMP_DIMENSION; i += 1) normalized[i] = vec[i] / norm;
+
+  let sumSq = 0;
+  for (let i = 0; i < VECTOR_AMP_DIMENSION; i += 1) sumSq += vec[i] * vec[i];
+  const norm = Math.sqrt(sumSq) || 1;
+  const normalized = vec.map((value) => value / norm);
+
   return {
-    word,
+    word: upper,
     vector: normalized,
-    dimension: normalized.length,
+    dimension: VECTOR_AMP_DIMENSION,
     norm: 1,
-    seed: VECTOR_AMP_SEED,
+    seed: 0,
   };
 }
 
