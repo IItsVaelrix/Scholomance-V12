@@ -1,7 +1,7 @@
 # PDR: Cleri Probe Evidence Microscope Overhaul
 ## A precision-first, CLI-native investigation workbench for human forensic analysis
 
-**Status:** Draft
+**Status:** Approved
 
 **Classification:** Architectural | Developer Tooling | Immune System | Diagnostic Evidence | CLI
 
