@@ -516,9 +516,12 @@ export const PhonemeEngine = {
         // TrueSight does not stop colouring — it colours CONFIDENTLY WRONG
         // (love/move, though/tough invert). Callers must be able to render
         // "unavailable" rather than a lie.
+        // Deliberately carries no timestamp. The determinism gauntlet forbids
+        // wall-clock reads anywhere under codex/core/phonology via a file-level
+        // text grep, and consumers only need to know THAT authority is
+        // unavailable — a clock reading buys nothing here.
         this.authorityFailure = {
             message: error instanceof Error ? error.message : String(error),
-            at: Date.now(), // EXEMPT
         };
         console.warn('[PhonemeEngine] Dictionary authority unavailable:', this.authorityFailure.message);
     }
