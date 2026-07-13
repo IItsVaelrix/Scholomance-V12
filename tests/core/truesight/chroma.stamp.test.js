@@ -29,16 +29,11 @@ describe('chroma stamp', () => {
     }
   });
 
-  it('does not change what gets painted (stamp-only)', () => {
-    // precomputed.hex is the field the renderer reads. Until Task 9 it must be
-    // exactly what it was before the kinase existed.
+  it('renders only colours the kinase committed', () => {
     const artifact = synthesizeVerse('the knight was brave and old', {});
     for (const token of tokensOf(artifact)) {
-      const expected = token.precomputed.verseIrColorHex
-        ?? (token.precomputed.sonicChroma
-          ? `hsl(${token.precomputed.sonicChroma.h}, ${token.precomputed.sonicChroma.s}%, ${token.precomputed.sonicChroma.l}%)`
-          : null);
-      expect(token.precomputed.hex).toBe(expected);
+      const chroma = token.precomputed.chroma;
+      expect(token.precomputed.hex).toBe(chroma.committed ? chroma.color : null);
     }
   });
 });

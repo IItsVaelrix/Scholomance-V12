@@ -132,12 +132,10 @@ export function synthesizeVerse(text, options = {}) {
         sonicChroma,
         decoded,
         chroma,
-        // STAMP-ONLY (Task 4): the renderer still reads `hex`, and `hex` is still
-        // whatever it was before the kinase existed. Task 9 makes `hex` obey the
-        // kinase. Do not "fix" this line early — the stamp must be proven truthful
-        // on real text before the gate is trusted to act on it.
         verseIrColorHex: verseIrColor?.hex || null,
-        hex: verseIrColor?.hex || (sonicChroma ? `hsl(${sonicChroma.h}, ${sonicChroma.s}%, ${sonicChroma.l}%)` : null)
+        // The kinase decides. A colour that cannot justify itself is not painted —
+        // the token goes grey, and its stamp says exactly why.
+        hex: chroma.committed ? chroma.color : null
       }
     };
 
