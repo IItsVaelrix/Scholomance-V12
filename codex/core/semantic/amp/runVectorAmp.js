@@ -70,7 +70,12 @@ export function runVectorAmp(input, config = {}) {
 
   try {
     // 1. Vectorize through the validated code-aware lens.
-    let vec = generateCodeAwareVector(String(input ?? ''), cfg.dimension);
+    //    cfg.idf (OPTIONAL) scales token weights by corpus inverse-document-frequency.
+    //    Without it this is a raw bag-of-tokens: `data`, `result`, `options` dominate,
+    //    so every source file resonates with every query and similarity collapses into
+    //    a narrow band with no discriminative power. Callers that pass no corpus (the
+    //    g2p semantic juror, the codebase vector index) get the previous behaviour.
+    let vec = generateCodeAwareVector(String(input ?? ''), cfg.dimension, { idf: cfg.idf });
     // 2. Delta-center normalization.
     if (cfg.center) vec = deltaCenter(vec);
 
@@ -221,7 +226,8 @@ function isConstantSignature(data) {
  */
 export function embedFloat(input, config = {}) {
   const cfg = { ...VECTOR_AMP_DEFAULTS, ...config };
-  let vec = generateCodeAwareVector(String(input ?? ''), cfg.dimension);
+  // cfg.idf (optional) — see runVectorAmp. Callers without a corpus are unaffected.
+  let vec = generateCodeAwareVector(String(input ?? ''), cfg.dimension, { idf: cfg.idf });
   if (cfg.center) vec = deltaCenter(vec);
 
   let sumSq = 0;

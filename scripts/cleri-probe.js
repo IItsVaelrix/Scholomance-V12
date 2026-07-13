@@ -10,115 +10,38 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { vectorizeHypothesis, scanSubstrate } from '../codex/core/immunity/protein-probe.engine.js';
+import { vectorizeHypothesis, scanSubstrate, buildIdfIndex } from '../codex/core/immunity/protein-probe.engine.js';
+import { scanForPrion, scanForPairedCallPrion } from '../codex/core/immunity/prion-detector.engine.js';
+import { PRION_LIBRARY, PAIRED_CALL_PRIONS } from '../codex/core/immunity/prion-library.js';
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.codex', 'Archive', 'ARCHIVE REFERENCE DOCS']);
+// The substrate is SOURCE CODE. Everything else is noise that raises the floor and
+// buries the signal. Before this list was tightened the probe scanned a Python
+// virtualenv (nlp_chatbot/ — 44,588 files) and a mirrored copy of the encyclopedia
+// (steamdeck_brain/), and duly reported a PySide6 Qt metatypes JSON as the top hit
+// for a JavaScript bug hypothesis.
+const SKIP_DIRS = new Set([
+  'node_modules', '.git', 'dist', '.codex', 'Archive', 'ARCHIVE REFERENCE DOCS',
+  // vendored / foreign-language trees
+  'nlp_chatbot', 'venv', '.venv', '__pycache__', 'site-packages',
+  'target', 'pkg', 'godot_project', 'mudlet', 'OrChat',
+  // mirrors and generated output (duplicate hits, no source of truth)
+  'steamdeck_brain', 'generated-assets', 'dict_data', 'coverage',
+  'playwright-report', 'test-results', '.superpowers', 'scratch',
+  // prose, not code — a bug does not live in a design doc
+  'docs',
+]);
 
-/**
- * PRION LIBRARY — Genetic markers for misfolded code proteins.
- * 
- * A prion is a protein that misfolds and templates its misfolding onto others.
- * In code: a structural pattern that LOOKS like normal code but carries a defect.
- * 
- * GENETIC MARKERS = rare token n-grams that ONLY appear in the buggy pattern.
- * Not "async function" (everywhere) but "async function fetch .then" (missing await).
- * Not "array[0]" (everywhere) but "array[0] .length" (access without guard).
- * 
- * Each hypothesis is a precise syntactic fingerprint — the prion's DNA.
- * Tokens are space-separated to match the code-aware tokenizer (camelCase split, stemmed).
- */
-const PRION_LIBRARY = Object.freeze({
-  'unseeded-rng-deterministic': {
-    // GENETIC MARKER: Math.random() in combat/procgen WITHOUT seedrandom/seed nearby
-    // Rare: "Math.random" + "combat" + "procgen" + "deterministic" + NO "seed"
-    hypothesis: 'Math.random combat procgen deterministic seedrandom',
-    description: 'Unseeded Math.random in deterministic combat/procgen paths'
-  },
-  'missing-null-guard-external': {
-    // GENETIC MARKER: fetch/axios .then(r => r.json()) WITHOUT ?. or ?? guard
-    // Rare: "fetch" + "response.json" + "axios" + "res.data" + NO "optional" + NO "chaining" + NO "nullish"
-    hypothesis: 'fetch response.json axios res.data optional chaining nullish',
-    description: 'External API response accessed without null/undefined guards'
-  },
-  'assumed-array-length': {
-    // GENETIC MARKER: arr[0] or arr[i] WITHOUT .length > 0 check in same scope
-    // Rare: "array[0]" + "arr[0]" + "arr[i]" + "array[index]" + NO "length" + NO "check" + NO "bounds"
-    hypothesis: 'array[0] arr[0] arr[i] array[index] length check bounds',
-    description: 'Direct array index access without preceding bounds check'
-  },
-  'async-without-await': {
-    // GENETIC MARKER: async function { fetch(); return promise; } — no await
-    // Rare: "async" + "function" + "fetch" + "axios" + "return" + "promise" + NO "await"
-    hypothesis: 'async function fetch axios return promise await',
-    description: 'Async function returns promise without awaiting fetch/axios call'
-  },
-  'mutation-during-iteration': {
-    // GENETIC MARKER: forEach/map callback containing push/splice/delete on same array
-    // Rare: "forEach" + "map" + "push" + "splice" + "delete" + "same" + "array" + "mutation"
-    hypothesis: 'forEach map push splice delete same array mutation iteration',
-    description: 'Array mutated (push/splice/delete) during forEach/map iteration'
-  },
-  'race-condition-shared-state': {
-    // GENETIC MARKER: Promise.all with shared object/array mutation
-    // Rare: "Promise.all" + "shared" + "object" + "array" + "mutation" + "concurrent" + "race"
-    hypothesis: 'Promise.all shared object array mutation concurrent race',
-    description: 'Shared mutable state mutated concurrently in Promise.all'
-  },
-  'type-assertion-without-check': {
-    // GENETIC MARKER: "as unknown as" or "as any" WITHOUT zod.parse/safeParse/validation
-    // Rare: "as" + "unknown" + "as" + "any" + "type" + "assertion" + NO "zod" + NO "safeParse" + NO "parse" + NO "validation"
-    hypothesis: 'as unknown as any type assertion zod safeParse parse validation',
-    description: 'TypeScript assertion without runtime validation (zod, etc.)'
-  },
-  'resource-leak-no-cleanup': {
-    // GENETIC MARKER: addEventListener/subscribe WITHOUT removeEventListener/unsubscribe in cleanup
-    // Rare: "addEventListener" + "removeEventListener" + "useEffect" + "cleanup" + "return" + "unsubscribe"
-    hypothesis: 'addEventListener removeEventListener useEffect cleanup return unsubscribe',
-    description: 'Event listener added without cleanup in useEffect/component unmount'
-  },
-  'circular-dependency-risk': {
-    // GENETIC MARKER: explicit circular dependency mention
-    // Rare: "circular" + "dependency" + "import" + "export" + "cycle" + "detected" + "dynamic" + "import"
-    hypothesis: 'circular dependency import export cycle detected dynamic import',
-    description: 'Explicit circular dependency patterns in code/comments'
-  },
-  'silent-failure-swallowed-error': {
-    // GENETIC MARKER: catch (e) { } OR catch (e) { console.log(e) } WITHOUT throw/rethrow
-    // Rare: "catch" + "error" + "empty" + "block" + "console.log" + "console.error" + "silent" + "swallow" + NO "throw" + NO "rethrow"
-    hypothesis: 'catch error empty block console.log console.error silent swallow throw rethrow',
-    description: 'Catch block with empty body or only console logging'
-  },
-  'hardcoded-secret-config': {
-    // GENETIC MARKER: actual secret-like strings + hardcoded assignment
-    // Rare: "api_key" + "secret" + "token" + "password" + "=" + "hardcoded" + "process.env"
-    hypothesis: 'api_key secret token password = " hardcoded process.env',
-    description: 'Hardcoded secret values assigned to variables'
-  },
-  'infinite-loop-risk': {
-    // GENETIC MARKER: while(true) or for(;;) WITHOUT break/return reachable
-    // Rare: "while" + "true" + "for" + "infinite" + "loop" + "break" + "return" + "unreachable" + "termination"
-    hypothesis: 'while true for infinite loop break return unreachable termination',
-    description: 'Infinite loop with no reachable break/return condition'
-  },
-  'floating-point-equality': {
-    // GENETIC MARKER: === or == comparison with floating point + NO epsilon
-    // Rare: "===" + "==" + "floating" + "point" + "Number.EPSILON" + "Math.abs" + "epsilon" + "precision"
-    hypothesis: '=== == floating point Number.EPSILON Math.abs epsilon precision',
-    description: 'Direct floating-point equality without epsilon comparison'
-  },
-  'time-dependent-logic': {
-    // GENETIC MARKER: Date.now/setTimeout/setInterval in test + NO fake timers
-    // Rare: "Date.now" + "Date" + "setTimeout" + "setInterval" + "flaky" + "test" + "timing" + "non-deterministic" + NO "fake" + NO "timers" + NO "jest.useFakeTimers"
-    hypothesis: 'Date.now setTimeout setInterval flaky test timing non-deterministic fake timers jest.useFakeTimers',
-    description: 'Time-dependent logic in test or flaky contexts'
-  },
-  'prototype-pollution': {
-    // GENETIC MARKER: Object.assign/merge with __proto__/constructor access
-    // Rare: "Object.assign" + "merge" + "__proto__" + "constructor" + "prototype" + "pollution"
-    hypothesis: 'Object.assign merge __proto__ constructor prototype pollution',
-    description: 'Object merge with prototype pollution vectors'
-  },
-});
+// Source only. A bug hypothesis cannot resonate with a metadata JSON or a markdown
+// file, but those files DO dilute the IDF corpus and inflate the noise floor.
+const SOURCE_FILE_RE = /\.(js|jsx|ts|tsx|mjs|cjs)$/;
+
+// The PRION LIBRARY now lives in codex/core/immunity/prion-library.js and is scored
+// by PRESENCE + ABSENCE, not cosine similarity. The old inline library expressed each
+// prion as a bag-of-words hypothesis that LISTED THE MISSING TOKEN as a search term
+// ("...silent swallow throw rethrow"). Cosine treats every token as evidence FOR a
+// match, so it ranked healthy code above the bug — on a fixture it preferred a correct
+// rethrow (42.4%) to a swallowed catch (0.1%). It hunted the cure and called it the
+// disease. Deleted rather than ported: every hypothesis in it was inverted.
 
 async function walk(dir, files = []) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
@@ -127,7 +50,7 @@ async function walk(dir, files = []) {
     const relPath = path.relative(process.cwd(), res);
     if (entry.isDirectory()) {
       if (!SKIP_DIRS.has(entry.name)) await walk(res, files);
-    } else if (/\.(js|jsx|ts|tsx|json|md)$/.test(entry.name)) {
+    } else if (SOURCE_FILE_RE.test(entry.name)) {
       files.push({
         path: relPath,
         content: fs.readFileSync(res, 'utf8')
@@ -180,11 +103,12 @@ function parseArgs() {
 
 async function runHypothesisMode(hypothesis, substrate, minResonance, limit) {
   console.log(`[probe] vectorizing hypothesis: "${hypothesis}"...`);
-  const searchProtein = vectorizeHypothesis(hypothesis);
+  const idf = buildIdfIndex(substrate);
+  const searchProtein = vectorizeHypothesis(hypothesis, { idf });
   console.log(`[probe] search protein fidelity: ${searchProtein.fidelity?.grade} (${searchProtein.fidelity?.score?.toFixed(4)})`);
 
   console.log('[probe] scanning substrate (codebase)...');
-  const heatmap = scanSubstrate(substrate, searchProtein, { minResonance });
+  const heatmap = scanSubstrate(substrate, searchProtein, { minResonance, idf });
 
   console.log('\n[probe] GENETIC HEATMAP — "Genes lighting up..."');
   console.log('--------------------------------------------------');
@@ -206,77 +130,50 @@ async function runHypothesisMode(hypothesis, substrate, minResonance, limit) {
   return heatmap;
 }
 
-async function runPrionMode(substrate, minResonance, limit) {
-  console.log('[probe] PRION SCAN — loading prion library...');
-  console.log(`[probe] ${Object.keys(PRION_LIBRARY).length} prion archetypes loaded.`);
+async function runPrionMode(substrate) {
+  console.log('[probe] PRION SCAN — presence + ABSENCE, not similarity.');
+  const total = Object.keys(PRION_LIBRARY).length + Object.keys(PAIRED_CALL_PRIONS).length;
+  console.log(`[probe] ${total} prion archetypes loaded.\n`);
 
-  // Pre-vectorize all prions
-  const prionProteins = {};
+  const findings = [];
+
+  // PAIRED-CALL prions first: they are the precise ones. `register(KEY)` present and
+  // `unregister(KEY)` absent is an exact statement about a specific key, so these
+  // produce almost no false positives. Validated against git history: this rule finds
+  // the `equipment-changed` listener leak in the pre-fix CombatArenaScene/PolarisForestScene
+  // — the defect that pinned 224 detached DOM nodes per visit and took a heap-graph walk
+  // to locate — and reports the fixed files as clean.
+  for (const [name, prion] of Object.entries(PAIRED_CALL_PRIONS)) {
+    const hits = scanForPairedCallPrion(substrate, prion);
+    if (hits.length) findings.push({ name, description: prion.description, hits, exact: true });
+  }
+
+  // TOKEN-WINDOW prions: coarser. They approximate "the same scope" with a character
+  // window, so triage these by hand.
   for (const [name, prion] of Object.entries(PRION_LIBRARY)) {
-    console.log(`[probe]   vectorizing prion: ${name} — ${prion.description}`);
-    prionProteins[name] = vectorizeHypothesis(prion.hypothesis);
+    const hits = scanForPrion(substrate, prion, { minConfidence: 1 });
+    if (hits.length) findings.push({ name, description: prion.description, hits, exact: false });
   }
 
-  console.log('\n[probe] scanning substrate for prion resonance...');
-  
-  const allHits = [];
-  for (const [prionName, protein] of Object.entries(prionProteins)) {
-    const heatmap = scanSubstrate(substrate, protein, { minResonance });
-    for (const hit of heatmap) {
-      allHits.push({ ...hit, prion: prionName, description: PRION_LIBRARY[prionName].description });
-    }
-  }
-
-  // Sort by resonance descending
-  allHits.sort((a, b) => b.resonance - a.resonance);
-
-  console.log('\n[probe] PRION HEATMAP — "Misfolded proteins lighting up..."');
+  console.log('[probe] PRION REPORT — "Misfolded proteins"');
   console.log('===============================================================');
-
-  if (allHits.length === 0) {
-    console.log('Zero prion resonance detected. The substrate is clean.');
-  } else {
-    // Group by prion for summary
-    const byPrion = {};
-    for (const hit of allHits) {
-      if (!byPrion[hit.prion]) byPrion[hit.prion] = [];
-      byPrion[hit.prion].push(hit);
-    }
-
-    for (const [prionName, hits] of Object.entries(byPrion)) {
-      const topHit = hits[0];
-      const bar = '█'.repeat(Math.floor(topHit.resonance * 20));
-      const percentage = (topHit.resonance * 100).toFixed(1);
-      console.log(`\n  ${prionName} (${hits.length} files)`);
-      console.log(`  ${percentage.padStart(5)}% ${bar.padEnd(20)} ${topHit.path}`);
-      console.log(`  → ${topHit.description}`);
-      
-      // Show top 3 files for this prion
-      hits.slice(1, 3).forEach(h => {
-        const b = '█'.repeat(Math.floor(h.resonance * 20));
-        const p = (h.resonance * 100).toFixed(1);
-        console.log(`  ${p.padStart(5)}% ${b.padEnd(20)} ${h.path}`);
-      });
-      if (hits.length > 3) {
-        console.log(`  ... and ${hits.length - 3} more files for this prion`);
-      }
-    }
-
-    // Overall top hits
-    console.log('\n[probe] TOP PRION HITS (all archetypes)');
-    console.log('--------------------------------------------------');
-    allHits.slice(0, limit).forEach(hit => {
-      const bar = '█'.repeat(Math.floor(hit.resonance * 20));
-      const percentage = (hit.resonance * 100).toFixed(1);
-      console.log(`${percentage.padStart(5)}% ${bar.padEnd(20)} [${hit.prion}] ${hit.path}`);
-    });
+  if (!findings.length) {
+    console.log('  Substrate is clean for every prion in the library.');
+    return [];
   }
 
-  if (allHits.length > limit) {
-    console.log(`\n... and ${allHits.length - limit} more total hits.`);
+  for (const f of findings) {
+    console.log(`\n  ${f.name}  (${f.hits.length} sites)  ${f.exact ? '[exact]' : '[heuristic — triage by hand]'}`);
+    console.log(`  ${f.description}`);
+    for (const h of f.hits.slice(0, 8)) {
+      const key = h.key ? ` key="${h.key}"` : '';
+      console.log(`     ${h.path}:${h.line}${key}`);
+      if (h.evidence) console.log(`        ${h.evidence.slice(0, 72)}`);
+    }
+    if (f.hits.length > 8) console.log(`     ... and ${f.hits.length - 8} more`);
   }
-
-  return allHits;
+  console.log('');
+  return findings;
 }
 
 async function main() {
@@ -294,7 +191,7 @@ async function main() {
 
   let heatmap;
   if (args.mode === 'prion') {
-    heatmap = await runPrionMode(substrate, args.minResonance, args.limit);
+    heatmap = await runPrionMode(substrate);
   } else {
     heatmap = await runHypothesisMode(args.hypothesis, substrate, args.minResonance, args.limit);
   }
