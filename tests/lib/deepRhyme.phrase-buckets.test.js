@@ -19,7 +19,25 @@ const VERSE = readFileSync('tests/fixtures/rhyme/dense-verse.txt', 'utf8');
 
 // Measured on the pre-change code. phrase_compound was 1335 — 92% of all
 // connections, from only 75 words.
-const BASELINE_COLOURED = { perfect: 34, assonance: 44, near: 29, slant: 6 };
+//
+// UPDATED 2026-07-13 by the line-proximity failsafe (MAX_CONNECTION_LINE_DISTANCE,
+// see tests/lib/deepRhyme.line-proximity.test.js). The engine had no bound on how
+// far apart two words could be and still "rhyme", so it chained an -old family at
+// the top of a poem to an -old family ninety lines down. This fixture is only
+// TWELVE lines long, and the connections that disappeared spanned 5 to 11 of them
+// — a vowel echo in the first line tinting a word in the last. That is not a
+// rhyme a reader hears; it is the over-colouring the resonance gate was already
+// fighting.
+//
+//   perfect    34 -> 34   UNCHANGED — true end rhymes are naturally close.
+//   near       29 -> 20   long-range pairs removed
+//   slant       6 ->  3   long-range pairs removed
+//   assonance  44 -> 28   long-range pairs removed
+//
+// `perfect` holding at 34 is the load-bearing part: the strong tier is untouched.
+// If perfect ever moves, the change IS wrong. The other three may only ever fall
+// by removing pairs that exceed the line window — never for any other reason.
+const BASELINE_COLOURED = { perfect: 34, assonance: 28, near: 20, slant: 3 };
 
 async function analyse(text = VERSE) {
   const engine = new DeepRhymeEngine();

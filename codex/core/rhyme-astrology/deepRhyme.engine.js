@@ -32,6 +32,34 @@ const RHYME_THRESHOLD = 0.60;
 const ASSONANCE_THRESHOLD = 0.45;
 const STRESSED_ASSONANCE_SCORE = 0.62;
 const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
+
+/**
+ * A rhyme is something a reader HEARS. By the time you reach "behold" on line
+ * 90, "bold" on line 1 is long gone from the ear — they do not rhyme in any
+ * sense the reader experiences.
+ *
+ * Every other bound in this engine is a bound on WORK, not on distance: the
+ * phrase bucket slides a window over BUCKET-MEMBERSHIP order, and the rhyme
+ * group chains CONSECUTIVE OCCURRENCES. A bucket groups by rhyme fingerprint,
+ * so "adjacent in the bucket" says nothing about "adjacent in the document" —
+ * an -old family at the top of a poem chained straight to an -old family at the
+ * bottom. That produced a wordweb that was both wrong (line 1 coloured as
+ * rhyming with line 90) and enormous (long-range pairs were the dominant term
+ * in the payload).
+ *
+ * This is the semantic failsafe those work-bounds never were: no connection of
+ * any type may span more than this many lines. It is what makes connection
+ * count genuinely O(n · window) instead of O(n · bucket-neighbours).
+ */
+export const MAX_CONNECTION_LINE_DISTANCE = 4;
+
+/** True when two words sit close enough to be heard as a rhyme. */
+function withinLineWindow(a, b) {
+  const lineA = a?.lineIndex;
+  const lineB = b?.lineIndex;
+  if (!Number.isFinite(lineA) || !Number.isFinite(lineB)) return true;
+  return Math.abs(lineA - lineB) <= MAX_CONNECTION_LINE_DISTANCE;
+}
 // Cross-line assonance: full pairwise scan for same-vowel buckets up to this
 // size; larger buckets fall back to document-adjacent pairs only, bounding the
 // pairwise work in vowel-dense text.
@@ -553,6 +581,11 @@ export class DeepRhymeEngine {
           const nodeA = groupNodes[i];
           const nodeB = groupNodes[j];
 
+          // The bucket is keyed by rhyme fingerprint, so two nodes adjacent HERE
+          // may be ninety lines apart in the document. The sliding window above
+          // bounds work; only this bounds distance.
+          if (!withinLineWindow(nodeA, nodeB)) continue;
+
           // A node sits in several bands, so the same pair can surface more than once.
           const spanA = `${nodeA.charStart}:${nodeA.charEnd}`;
           const spanB = `${nodeB.charStart}:${nodeB.charEnd}`;
@@ -726,6 +759,10 @@ export class DeepRhymeEngine {
 
   pushConnectionIfValid(wordA, wordB, out, seenPairs = new Set()) {
     if (!wordA?.analysis || !wordB?.analysis) return;
+    // The single chokepoint for every word-pair connection — end rhyme, internal
+    // rhyme, and cross-line assonance all arrive here, so the failsafe cannot be
+    // bypassed by adding another caller.
+    if (!withinLineWindow(wordA, wordB)) return;
     if (this.shouldSkipLexicalRepetition(wordA, wordB)) return;
     const normA = this.normalizeWord(wordA.word);
     const normB = this.normalizeWord(wordB.word);
