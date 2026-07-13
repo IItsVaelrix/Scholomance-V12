@@ -9,7 +9,8 @@ import { RHYME_TYPES, RHYME_SUBTYPES } from "../constants/data/rhymeScheme.patte
 import { normalizeVowelFamily } from "../phonology/vowelFamily.js";
 import { WORD_REGEX_GLOBAL } from "../constants/regex.js";
 import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.js";
-import { buildResonanceFingerprint, rhymeBucketKeys } from './resonanceFingerprint.js';
+import { buildResonanceFingerprint, rhymeBucketKeys, codaClassOf } from './resonanceFingerprint.js';
+import { PhoneticSimilarity } from "../phonology/phoneticSimilarity.js";
 
 /**
  * @typedef {object} WordPosition
@@ -35,6 +36,29 @@ const MAX_FULL_PAIR_SCAN_OCCURRENCES = 2;
 // size; larger buckets fall back to document-adjacent pairs only, bounding the
 // pairwise work in vowel-dense text.
 const ASSONANCE_BUCKET_FULL_SCAN_MAX = 16;
+// findPhraseConnections buckets multi-token windows by Resonance Fingerprint
+// (see the comment there), plus a head fingerprint and a vowel-slant key (see
+// below). A rhyme-dense verse can still pile many windows into one bucket;
+// capping how many of a bucket's members are compared keeps the scan a hard
+// O(n * cap) instead of O(bucket^2). phrase_compound is a derived
+// convenience on top of the authoritative per-token signs, so trading some
+// pair recall in an oversized bucket for that bound is the right call.
+// Tuned down from 64 -> 32 -> 16: 16 is the largest cap that still keeps the
+// dense-verse fixture's phrase_compound count under the "linear-ish" bound
+// (tests/lib/deepRhyme.phrase-buckets.test.js) once vowel-slant bucketing is
+// counted, while golden_rhymes.test.js stays at 5/6 down to a cap of 8 (not
+// used — 16 was kept for more headroom since it still met the scaling
+// target). Do not lower below what keeps golden_rhymes.test.js at >= 5/6.
+const PHRASE_BUCKET_CANDIDATE_CAP = 16;
+// scoreMultiSyllableMatch aligns phrases by SYLLABLE, from the last syllable
+// backward, using PhoneticSimilarity's acoustic vowel-confusion table (AE~EH
+// at 0.95, the exact "bastard"~"master" vowel; EY~EH at 0.80). An exact-hash
+// tail bucket can never group AE with EH — they're different phonemes — so a
+// real, scorable multi-syllable slant match is invisible to bucketing unless
+// the bucket key itself is built from the SAME confusion table. 0.75 is the
+// highest threshold that still keeps golden_rhymes.test.js's MF DOOM case
+// (EH~IH at exactly 0.75) recallable; raising it to 0.78 drops that case.
+const VOWEL_SLANT_THRESHOLD = 0.75;
 const TRUESIGHT_RHYME_TYPES = new Set([
   ...Object.values(RHYME_TYPES).map(t => t.id),
   ...Object.values(RHYME_SUBTYPES || {}).map(t => t.id)
@@ -390,24 +414,99 @@ export class DeepRhymeEngine {
     // the server past ~12,000 chars. Bucketing only changes which pairs we LOOK
     // at; every emitted connection is still scored by scoreMultiSyllableMatch,
     // so no score and no colour can move.
+    //
+    // Two fingerprints per node, not one. `node.analysis` is G2P over the
+    // WHOLE window concatenated into one pseudo-word ("bastard never" ->
+    // BASTARDNEVER), and English compound stress then shifts primary stress
+    // onto the LAST element — so extractRhymeTail (which anchors on the last
+    // stressed vowel) anchors on "never", not "Bastard". A tail-only bucket
+    // therefore only ever recalls rhymes anchored at a window's END (LINE ~
+    // MIND). It structurally cannot recall a match anchored at a window's
+    // START, e.g. "Bastard never" ~ "Master with an" — the driving rhyme is
+    // BASTARD ~ MASTER, and neither word can ever be a window's tail (each is
+    // the first token of every window it appears in, since windows only grow
+    // rightward from a line's start position). scoreMultiSyllableMatch's own
+    // sliding syllable alignment finds that match fine once the pair is a
+    // candidate; bucketing just never proposed the pair. Fingerprinting the
+    // window's FIRST TOKEN on its own (real per-word stress, untouched by the
+    // compound-stress shift) and bucketing on THAT too closes the gap: the
+    // tail fingerprint catches end-anchored rhymes, the head fingerprint
+    // catches start-anchored ones, and a node lands in both bucket sets.
+    // Exact-hash tail/head fingerprints still miss one class of real match:
+    // scoreMultiSyllableMatch aligns phrases syllable-by-syllable from the
+    // end, using an acoustic vowel-confusion table (AE~EH at 0.95 — the
+    // "bastard"~"master" vowel, EH~IH at 0.75). A hash bucket keyed on the
+    // literal nucleus phoneme can never group AE with EH; they're different
+    // phonemes, full stop. So a third bucket keys each node's LAST SYLLABLE
+    // by its vowel-confusion class (from the same PhoneticSimilarity table
+    // the scorer itself uses) crossed with its coda manner-class, instead of
+    // by exact nucleus identity — closing the gap for slant-vowel
+    // multi-syllable matches that are otherwise invisible to bucketing.
+    // scoreMultiSyllableMatch's own alignment is reverse-indexed from the last
+    // syllable, and the syllable that actually drives a >=2-syllable match is
+    // not always the very last one — e.g. "Birthdays was" ~ "champagne when"
+    // matches on BOTH the last syllable (AE~EH, but with a coda mismatch:
+    // S vs N) and the second-to-last (EY~EH, open-open coda, a clean class
+    // match). Scanning only the last syllable would miss that second,
+    // decisive position, so this checks up to the last VOWEL_SLANT_SYLLABLE_DEPTH
+    // syllables — windows are capped at 4 tokens, so this stays cheap.
+    const VOWEL_SLANT_SYLLABLE_DEPTH = 2;
+    const vowelSlantKeys = (analysis) => {
+      const syllables = Array.isArray(analysis?.syllables) ? analysis.syllables : [];
+      if (!syllables.length) return [];
+      const keys = [];
+      const depth = Math.min(VOWEL_SLANT_SYLLABLE_DEPTH, syllables.length);
+      for (let i = 0; i < depth; i += 1) {
+        const syllable = syllables[syllables.length - 1 - i];
+        const nucleusBase = String(syllable?.vowel || '').replace(/[0-9]/g, '');
+        if (!nucleusBase) continue;
+        const codaPhonemes = Array.isArray(syllable?.codaPhonemes) ? syllable.codaPhonemes : [];
+        const lastCoda = codaPhonemes.length ? codaPhonemes[codaPhonemes.length - 1] : null;
+        const cls = codaClassOf(lastCoda);
+        const confusable = PhoneticSimilarity.getVowelConfusionSet(nucleusBase, VOWEL_SLANT_THRESHOLD);
+        for (const v of confusable) keys.push(`VS${i}:${v}:${cls}`);
+      }
+      return keys;
+    };
+
     const connections = [];
     const buckets = new Map();
+
+    const addToBuckets = (node, keys, tag) => {
+      for (const key of keys) {
+        const bucketKey = `${tag}:${key}`;
+        if (!buckets.has(bucketKey)) buckets.set(bucketKey, []);
+        buckets.get(bucketKey).push(node);
+      }
+    };
 
     for (const node of phraseNodes) {
       node.fingerprint = buildResonanceFingerprint(node.analysis?.phonemes || []);
       // A tailless token gets no fingerprint and therefore no bucket. Do NOT
       // bucket them together — that would collide every unknown token at once.
-      if (!node.fingerprint) continue;
-      for (const key of rhymeBucketKeys(node.fingerprint)) {
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push(node);
-      }
+      addToBuckets(node, node.fingerprint ? rhymeBucketKeys(node.fingerprint) : [], 'tail');
+      addToBuckets(node, vowelSlantKeys(node.analysis), 'vslant');
+
+      const firstToken = verseIR.tokens[node.tokenSpan[0]];
+      const headFingerprint = buildResonanceFingerprint(firstToken?.analysis?.phonemes || []);
+      addToBuckets(node, headFingerprint ? rhymeBucketKeys(headFingerprint) : [], 'head');
     }
 
     const seenPairs = new Set();
 
-    for (const [, groupNodes] of buckets) {
-      if (groupNodes.length < 2) continue;
+    for (const [, rawGroupNodes] of buckets) {
+      if (rawGroupNodes.length < 2) continue;
+      // A rhyme-dense verse can pile hundreds of phrase nodes into one bucket
+      // (e.g. every window ending on the same common vowel). phrase_compound
+      // pairs are a derived convenience — the authoritative per-token signs
+      // (Task 4) are what the client consumes — so once a bucket is larger
+      // than the cap, only its first CAP members are compared. This trades
+      // some pair recall in pathologically rhyme-dense buckets for a hard
+      // O(n * cap) bound, which is what keeps a long verse from OOM-killing
+      // the server; every pair that IS compared is still fully scored below.
+      const groupNodes = rawGroupNodes.length > PHRASE_BUCKET_CANDIDATE_CAP
+        ? rawGroupNodes.slice(0, PHRASE_BUCKET_CANDIDATE_CAP)
+        : rawGroupNodes;
 
       for (let i = 0; i < groupNodes.length; i += 1) {
         for (let j = i + 1; j < groupNodes.length; j += 1) {

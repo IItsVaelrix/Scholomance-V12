@@ -27,6 +27,18 @@ const W = {
   ELATE:  ['IH0', 'L', 'EY1', 'T'],
   BANANA: ['B', 'AH0', 'N', 'AE1', 'N', 'AH0'],
   GLOW:   ['G', 'L', 'OW1'],
+  // GOLDEN: append-shear pairs from tests/core/phonology/golden_rhymes.test.js.
+  // CODALAST alone shears these apart (differing FINAL coda phoneme); CODAFIRST
+  // (nucleus + FIRST coda phoneme) is what makes them collide.
+  LINE:     ['L', 'AY1', 'N'],
+  MIND:     ['M', 'AY1', 'N', 'D'],
+  SWEATY:   ['S', 'W', 'EH1', 'T', 'IY0'],
+  HEAVY:    ['HH', 'EH1', 'V', 'IY0'],
+  ALREADY:  ['AO0', 'L', 'R', 'EH1', 'D', 'IY0'],
+  SPAGHETTI: ['S', 'P', 'AH0', 'G', 'EH1', 'T', 'IY0'],
+  BASTARD:  ['B', 'AE1', 'S', 'T', 'ER0', 'D'],
+  MASTER:   ['M', 'AE1', 'S', 'T', 'ER0'],
+  SUNLIGHT: ['S', 'AH1', 'N', 'L', 'AY2', 'T'],
 };
 const fp = (w) => buildResonanceFingerprint(W[w]);
 
@@ -70,6 +82,11 @@ describe('areRhymeCandidates — recall (must never miss)', () => {
     ['BRIGHT', 'LIGHT'], ['LIGHT', 'NIGHT'],
     ['STONE', 'BONE'], ['BONE', 'THRONE'],
     ['CREATE', 'ELATE'],                       // hiatus
+    // GOLDEN (tests/core/phonology/golden_rhymes.test.js): append-shear pairs
+    // where CODALAST alone misses (differing FINAL coda phoneme) but
+    // CODAFIRST (nucleus + FIRST coda phoneme) collides them.
+    ['LINE', 'MIND'], ['SWEATY', 'HEAVY'],
+    ['ALREADY', 'SPAGHETTI'], ['BASTARD', 'MASTER'],
   ];
   it.each(MUST)('%s ~ %s are candidates', (a, b) => {
     expect(areRhymeCandidates(fp(a), fp(b))).toBe(true);
@@ -96,7 +113,15 @@ describe('compareResonanceByBlocks — the block count grades the rhyme', () => 
   });
 
   it('uses the same relationship tiers as src/core/scd64/compareSCD64.ts', () => {
-    expect(compareResonanceByBlocks(fp('LIGHT'), fp('NIGHT')).relationship).toBe('MUTATION');
+    // LIGHT/NIGHT is IDENTICAL, not MUTATION, now that ONSET has been dropped
+    // from the slot set (CODAFIRST fix): an onset is irrelevant to rhyme, so
+    // once it stops being a block, two tokens with the exact same tail truly
+    // have nothing left to differ on. SUNLIGHT/LIGHT — same tail, but SUNLIGHT
+    // carries an extra stressed syllable earlier in the word — is the MUTATION
+    // example instead: everything derived from the tail matches, only STRESS
+    // (a whole-word count, not tail-derived) differs, landing at 7/8.
+    expect(compareResonanceByBlocks(fp('LIGHT'), fp('NIGHT')).relationship).toBe('IDENTICAL');
+    expect(compareResonanceByBlocks(fp('SUNLIGHT'), fp('LIGHT')).relationship).toBe('MUTATION');
     expect(compareResonanceByBlocks(fp('DESIRE'), fp('BANANA')).relationship).toBe('WEAK_NEIGHBOR');
   });
 

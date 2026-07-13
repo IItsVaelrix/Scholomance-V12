@@ -94,5 +94,34 @@ export const PhoneticSimilarity = {
     const suffixScore = totalScore / minLen;
     const excessPenalty = ((maxLen - minLen) / maxLen) * 0.25;
     return Math.max(0, suffixScore - excessPenalty);
+  },
+
+  /**
+   * The set of vowels acoustically confusable with `vowel` at or above
+   * `threshold`, per VOWEL_SIMILARITY — always including `vowel` itself.
+   * Used by phrase-level candidate bucketing (deepRhyme.engine.js) to bucket
+   * on a small, curated, deterministic confusion class (e.g. AE~EH at 0.95,
+   * "bastard"~"master") rather than exact nucleus identity: a hash-exact
+   * bucket keyed on the literal ARPABET vowel can never group AE with EH,
+   * even though scoreMultiSyllableMatch's own vowel-similarity table treats
+   * them as near-identical, so bucketing on identity alone silently drops
+   * every slant-vowel multi-syllable match before the scorer ever sees it.
+   * This reuses VOWEL_SIMILARITY as the single source of truth instead of
+   * duplicating a second confusability table that could drift from it.
+   */
+  getVowelConfusionSet(vowel, threshold = 0.75) {
+    const base = String(vowel || '').replace(/[0-9]/g, '');
+    const set = new Set([base]);
+    if (!base) return set;
+    const forward = VOWEL_SIMILARITY[base] || {};
+    for (const [neighbor, score] of Object.entries(forward)) {
+      if (score >= threshold) set.add(neighbor);
+    }
+    // The table is stored one-directional per pair; check the reverse side too.
+    for (const [candidate, neighbors] of Object.entries(VOWEL_SIMILARITY)) {
+      const score = neighbors[base];
+      if (typeof score === 'number' && score >= threshold) set.add(candidate);
+    }
+    return set;
   }
 };
