@@ -863,13 +863,14 @@ export async function createPanelAnalysisService(options = {}) {
 
     try {
       const uniqueWords = [...new Set(text.match(WORD_REGEX_GLOBAL) || [])];
+      const dictionaryAPI = options.scholomanceDictionaryAPI || buildSelfDictionaryAPI({ log });
       if (typeof PhonemeEngine.primeAuthorityBatch === 'function') {
-        await PhonemeEngine.primeAuthorityBatch(uniqueWords);
+        await PhonemeEngine.primeAuthorityBatch(uniqueWords, dictionaryAPI);
         if (typeof PhonemeEngine.primeG2PBatch === 'function') {
           await PhonemeEngine.primeG2PBatch(uniqueWords);
         }
       } else {
-        await PhonemeEngine.ensureAuthorityBatch(uniqueWords);
+        await PhonemeEngine.ensureAuthorityBatch(uniqueWords, dictionaryAPI);
       }
 
       const analyzedDoc = analyzeText(text);
@@ -891,7 +892,6 @@ export async function createPanelAnalysisService(options = {}) {
       // a family will then be classified as `perfect` regardless of local
       // phoneme thresholds. Silent failure: the engine falls back to its
       // local scorer if the API is down or returns an error.
-      const dictionaryAPI = options.scholomanceDictionaryAPI || buildSelfDictionaryAPI({ log });
       await deepRhymeEngine.primeRhymeFamilies(uniqueWords, dictionaryAPI);
       const verseIR = await enhanceVerseIRWithServerPolicy(compileVerseToIR(text, {
         phonemeEngine: PhonemeEngine,

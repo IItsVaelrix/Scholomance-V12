@@ -255,6 +255,30 @@ function createPhoneticDiagnostics({
   });
 }
 
+function normalizeAuthorityBatchPayload(payload) {
+  const source = payload && typeof payload === 'object' && payload.families && typeof payload.families === 'object'
+    ? payload.families
+    : payload;
+  if (!source || typeof source !== 'object') return {};
+
+  const normalized = {};
+  for (const [word, data] of Object.entries(source)) {
+    if (!word) continue;
+    if (data && typeof data === 'object') {
+      normalized[word.toUpperCase()] = {
+        family: typeof data.family === 'string' ? data.family : null,
+        phonemes: Array.isArray(data.phonemes) ? data.phonemes : null,
+      };
+    } else if (typeof data === 'string') {
+      normalized[word.toUpperCase()] = {
+        family: data,
+        phonemes: null,
+      };
+    }
+  }
+  return normalized;
+}
+
 
 // ── Pillar 2: Off-thread dictionary loading ──────────────────────────────────
 
@@ -498,13 +522,15 @@ export const PhonemeEngine = {
   /**
    * Pre-fetches authoritative rhyme families for a document in bulk.
    */
-  async ensureAuthorityBatch(words) {
+  async ensureAuthorityBatch(words, dictionaryAPI = ScholomanceDictionaryAPI) {
     await this.ensureInitialized();
-    if (!ScholomanceDictionaryAPI.isEnabled() || !words?.length) return;
+    const api = dictionaryAPI || ScholomanceDictionaryAPI;
+    const enabled = typeof api.isEnabled === 'function' ? api.isEnabled() : true;
+    if (!enabled || typeof api.lookupBatch !== 'function' || !words?.length) return;
     const missing = words.filter(w => !this.AUTHORITY_CACHE.has(w.toUpperCase()));
     if (!missing.length) return;
     try {
-        const batchResults = await ScholomanceDictionaryAPI.lookupBatch(missing);
+        const batchResults = normalizeAuthorityBatchPayload(await api.lookupBatch(missing));
         for (const [word, data] of Object.entries(batchResults)) {
             // data is { family: string, phonemes: string[] | null }
             this.AUTHORITY_CACHE.set(word.toUpperCase(), data);
@@ -527,7 +553,7 @@ export const PhonemeEngine = {
     }
   },
 
-  primeAuthorityBatch(words) {
+  primeAuthorityBatch(words, dictionaryAPI = ScholomanceDictionaryAPI) {
     const normalizedWords = [...new Set(
       (Array.isArray(words) ? words : [])
         .map((word) => String(word || "").trim())
@@ -553,7 +579,7 @@ export const PhonemeEngine = {
 
     if (requestWords.length > 0) {
       const requestKeys = requestWords.map((word) => word.toUpperCase());
-      const requestPromise = this.ensureAuthorityBatch(requestWords)
+      const requestPromise = this.ensureAuthorityBatch(requestWords, dictionaryAPI)
         .catch(() => {
           /* noop - authority lookup is best-effort */
         })

@@ -1,7 +1,57 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPanelAnalysisService } from '../../codex/server/services/panelAnalysis.service.js';
+import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
+import { ScholomanceDictionaryAPI } from '../../codex/core/shared/scholomanceDictionary.api.js';
 
 describe('[Server] panelAnalysis.service rhyme astrology', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    PhonemeEngine.clearCache();
+    PhonemeEngine.authorityFailure = null;
+  });
+
+  it('hydrates PhonemeEngine from the in-process dictionary provider before compiling panels', async () => {
+    const globalLookup = vi.spyOn(ScholomanceDictionaryAPI, 'lookupBatch')
+      .mockRejectedValue(new Error('global HTTP dictionary client should not be called'));
+    const dictionaryAPI = {
+      lookupBatch: vi.fn(async () => ({
+        families: {
+          SIGHT: { family: 'AY', phonemes: ['S', 'AY1', 'T'] },
+          LIGHT: { family: 'AY', phonemes: ['L', 'AY1', 'T'] },
+        },
+      })),
+    };
+
+    const service = await createPanelAnalysisService({
+      enableRhymeAstrology: false,
+      gutenbergEmotionPriors: {
+        version: 1,
+        generatedAt: '2026-03-28T00:00:00.000Z',
+        emotions: {},
+      },
+      log: {
+        warn: vi.fn(),
+        error: vi.fn(),
+      },
+    });
+
+    const result = await service.analyzePanels('sight\nlight', {
+      analysisProfile: 'editor',
+      scholomanceDictionaryAPI: dictionaryAPI,
+    });
+
+    const sight = result.analysis.wordAnalyses.find(word => word.word === 'sight');
+    const light = result.analysis.wordAnalyses.find(word => word.word === 'light');
+
+    expect(globalLookup).not.toHaveBeenCalled();
+    expect(dictionaryAPI.lookupBatch).toHaveBeenCalled();
+    expect(PhonemeEngine.AUTHORITY_CACHE.get('SIGHT')).toMatchObject({ family: 'AY', phonemes: ['S', 'AY1', 'T'] });
+    expect(sight.rhymeKey).toBe('AY-T');
+    expect(light.rhymeKey).toBe('AY-T');
+
+    service.close();
+  });
+
   it('builds compiler-native anchors, windows, and spans for panel payloads', async () => {
     const queryEngine = {
       query: vi.fn(async (input) => ({

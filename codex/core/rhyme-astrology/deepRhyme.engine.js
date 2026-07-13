@@ -241,7 +241,8 @@ export class DeepRhymeEngine {
     const families = (payload && typeof payload === 'object' && payload.families) || {};
     let resolved = 0;
     for (const word of missing) {
-      const family = families[word] || families[word.toUpperCase()] || families[word.toLowerCase()] || null;
+      const entry = families[word] || families[word.toUpperCase()] || families[word.toLowerCase()] || null;
+      const family = entry && typeof entry === 'object' ? entry.family : entry;
       this.setRhymeFamily(word, family);
       if (family) resolved += 1;
     }
