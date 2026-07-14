@@ -175,8 +175,11 @@ export default function ToolsSidebar({
         </div>
       )}
 
-      {/* ── GrimDesign ── */}
-      <GrimDesignPanel />
+      {/* ── GrimDesign — dev-only ──
+          A design/authoring surface, not a reader feature. `import.meta.env.DEV` is
+          statically false in a production build, so this branch and the panel's import
+          are dropped there rather than shipped hidden. */}
+      {import.meta.env.DEV && <GrimDesignPanel />}
 
     </div>
   );

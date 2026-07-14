@@ -37,7 +37,6 @@ import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
 import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
 import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
 import RitualPredictionTooltip from "../../components/RitualPredictionTooltip.jsx";
-import { TruesightDebugColorPanel } from "../../components/TruesightDebugColorPanel/TruesightDebugColorPanel.jsx";
 
 import ScrollEditor from "../../lib/lexical/LexicalScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
@@ -847,19 +846,6 @@ export default function ReadPage() {
     };
   }, [deepAnalysis, scrollLines]);
 
-  const truesightDebugWords = useMemo(() => {
-    if (!deepAnalysis?.verseIR?.tokens) return [];
-    return deepAnalysis.verseIR.tokens.map(token => {
-      const identityKey = `${token.lineIndex}:${token.tokenIndexInLine}:${token.charStart}`;
-      const unified = analyzedWordsByIdentity.get(identityKey) || token;
-      return {
-        text: token.word,
-        phonemes: token.phonemes || [],
-        vowelFamily: unified.vowelFamily
-      };
-    });
-  }, [deepAnalysis, analyzedWordsByIdentity]);
-
   useEffect(() => {
     if (window.requestIdleCallback) {
       window.requestIdleCallback(() => pruneOldCaches());
@@ -1397,15 +1383,6 @@ export default function ReadPage() {
                          <div className="vowel-family-placeholder">Vowel Analysis Offline</div>
                       </div>
                     )}
-{isTruesight && (
-                       <div className="sidebar-sub-panel">
-                         <TruesightDebugColorPanel
-                           analyzedWords={truesightDebugWords}
-                           activeSchool={selectedSchool}
-                           bytecodeErrors={analysisError ? [{ bytecode: analysisError, category: 'STATE', severity: 'CRIT', moduleId: '???', errorCode: 0x0301, errorCodeHex: '0x0301', context: { message: analysisError } }] : []}
-                         />
-                       </div>
-                     )}
                   </div>
                 )}
               </div>
