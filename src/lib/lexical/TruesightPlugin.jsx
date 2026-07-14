@@ -10,8 +10,14 @@ import { decodeBytecode } from '../../lib/truesight/bytecodeRenderer.js';
 // WORD_TOKEN_REGEX is anchored (^...$) - correct for "is this node exactly one
 // word?" but useless for FINDING a word inside a multi-word text node. Branch (b)
 // needs an unanchored matcher (uses match.index + splitText), or loaded
-// multi-word lines never tokenize/colour. Non-global so .exec has no lastIndex.
-const WORD_MATCH_REGEX = new RegExp(WORD_PATTERN);
+// multi-word lines never tokenize/colour.
+//
+// GLOBAL, because branch (b) must find EVERY word in the node in one pass.
+// Splitting one word per transform cycle cost one Lexical cycle per word, and
+// Lexical aborts at 100 — which capped Truesight at exactly 100 words. Built
+// fresh here rather than shared: a global regex carries lastIndex, and a shared
+// one would skip words between calls.
+const WORD_MATCH_REGEX_GLOBAL = new RegExp(WORD_PATTERN, 'g');
 
 // The tiered resonance gate is a Map<charStart, 'rhyme' | 'assonance'>.
 // 'rhyme' = full school color + glow (the historical active tier).
@@ -123,73 +129,91 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
         return;
       }
 
-      // Regular text node branch: find the first word and split. Compute the
-      // charStart on the *post-split* target node (its position in the tree
-      // has changed because we just split it). Then look up by position only.
-      const match = WORD_MATCH_REGEX.exec(textContent);
-      if (match === null) {
+      // Regular text node branch: tokenize EVERY word in this node in ONE pass.
+      //
+      // This used to split off only the FIRST word and return, leaving the rest
+      // of the line as a plain TextNode. That node came back dirty, so the next
+      // word cost another transform cycle, and the next, and the next: tokenizing
+      // N words consumed N GLOBAL transform cycles. Lexical aborts the whole
+      // update at 100 ("One or more transforms are endlessly triggering additional
+      // transforms"), so Truesight was hard-capped at 100 words — measured
+      // exactly: 100 words tokenized, 101 killed the editor and left ZERO word
+      // nodes. Any real song or poem simply did not render, which reads as "the
+      // resonance gate is censoring everything" when in fact the gate never ran.
+      //
+      // Splitting all words at once makes tokenization O(1) cycles in the word
+      // count. splitText accepts multiple offsets and returns the pieces in order.
+      const matches = [...textContent.matchAll(WORD_MATCH_REGEX_GLOBAL)];
+      if (matches.length === 0) {
         return;
       }
 
-      const word = match[0];
-      const startIndex = match.index;
-
-      let beforeNode = null;
-      let targetNode = textNode;
-      let afterNode = null;
-
-      if (startIndex > 0) {
-        [beforeNode, targetNode] = textNode.splitText(startIndex);
+      // Interior boundaries only: splitText ignores 0 and length, and a duplicate
+      // offset would desync the returned pieces from the ranges below.
+      const boundaries = [];
+      for (const m of matches) {
+        boundaries.push(m.index, m.index + m[0].length);
       }
+      const offsets = [...new Set(boundaries)]
+        .filter((offset) => offset > 0 && offset < textContent.length)
+        .sort((a, b) => a - b);
 
-      if (targetNode.getTextContent().length > word.length) {
-        [targetNode, afterNode] = targetNode.splitText(word.length);
+      const pieces = offsets.length > 0 ? textNode.splitText(...offsets) : [textNode];
+
+      // The word pieces, by exact text. A piece is a word iff it matches the
+      // anchored token regex — the gaps (spaces, punctuation) never will. Replacing
+      // a piece preserves its text length, so no later charStart shifts.
+      const wordPieces = pieces.filter((piece) => {
+        WORD_TOKEN_REGEX.lastIndex = 0;
+        return WORD_TOKEN_REGEX.test(piece.getTextContent());
+      });
+
+      const gateIsActive = resonantCharStarts instanceof Map;
+
+      for (const piece of wordPieces) {
+        const word = piece.getTextContent();
+        const globalCharStart = computeCharStartFromLexical(piece);
+        const tokenData = lookupTokenData(piece, word);
+        const tier = gateIsActive ? (resonantCharStarts.get(globalCharStart) || null) : 'rhyme';
+
+        // Compute only the analysis we actually use (see the active branch).
+        let truesight;
+        let shouldColor;
+        if (gateIsActive) {
+          shouldColor = tier !== null;
+          truesight = shouldColor ? tokenTruesight(tokenData || { token: word }, word) : wordTruesight(word);
+        } else {
+          truesight = wordTruesight(word);
+          shouldColor = Boolean(truesight);
+        }
+
+        const color = (!isQuarantined && shouldColor && truesight?.color) ? truesight.color : null;
+
+        // Class must match the active branch's classification so the freshly
+        // created TruesightWordNode is visually correct WITHOUT requiring the
+        // active branch to re-fire on it. Lexical's `replace` does not
+        // auto-mark the new node dirty, so the active branch is not guaranteed
+        // to run after a split. The "annotation per line instead of per word"
+        // regression was non-resonant words rendering with only the base
+        // `grimoire-word` class (no --grey, no --active) because the regular
+        // branch omitted the --grey fallback. This guard makes the regular
+        // branch self-sufficient. See tests/qa/features/annotation-per-line-probe.test.jsx
+        // and tests/qa/features/charStart-convention.test.jsx for the guards.
+        let truesightClass = '';
+        if (shouldColor) {
+          truesightClass = tierColorClass(truesight.school, tier);
+        } else if (truesight) {
+          truesightClass = 'grimoire-word--grey';
+        }
+
+        const bytecode = tokenData?.bytecode;
+        // The animated glow is the rhyme tier's signal; the assonance tier shows
+        // only the soft school tint.
+        const decodedStyle = (bytecode && shouldColor && tier !== 'assonance' && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
+
+        const truesightNode = $createTruesightWordNode(word, color, truesightClass, decodedStyle, false, tokenData);
+        piece.replace(truesightNode);
       }
-
-      const globalCharStart = computeCharStartFromLexical(targetNode);
-
-      const tokenData = lookupTokenData(targetNode, word);
-
-      const isGated = resonantCharStarts instanceof Map;
-      const tier = isGated ? (resonantCharStarts.get(globalCharStart) || null) : 'rhyme';
-
-      // Compute only the analysis we actually use (see the active branch).
-      let truesight;
-      let shouldColor;
-      if (isGated) {
-        shouldColor = tier !== null;
-        truesight = shouldColor ? tokenTruesight(tokenData || { token: word }, word) : wordTruesight(word);
-      } else {
-        truesight = wordTruesight(word);
-        shouldColor = Boolean(truesight);
-      }
-
-      const color = (!isQuarantined && shouldColor && truesight?.color) ? truesight.color : null;
-
-      // Class must match the active branch's classification so the freshly
-      // created TruesightWordNode is visually correct WITHOUT requiring the
-      // active branch to re-fire on it. Lexical's `replace` does not
-      // auto-mark the new node dirty, so the active branch is not guaranteed
-      // to run after a split. The "annotation per line instead of per word"
-      // regression was non-resonant words rendering with only the base
-      // `grimoire-word` class (no --grey, no --active) because the regular
-      // branch omitted the --grey fallback. This guard makes the regular
-      // branch self-sufficient. See tests/qa/features/annotation-per-line-probe.test.jsx
-      // and tests/qa/features/charStart-convention.test.jsx for the guards.
-      let truesightClass = '';
-      if (shouldColor) {
-        truesightClass = tierColorClass(truesight.school, tier);
-      } else if (truesight) {
-        truesightClass = 'grimoire-word--grey';
-      }
-
-      const bytecode = tokenData?.bytecode;
-      // The animated glow is the rhyme tier's signal; the assonance tier shows
-      // only the soft school tint.
-      const decodedStyle = (bytecode && shouldColor && tier !== 'assonance' && !isQuarantined) ? (tokenData.precomputed?.decoded || decodeBytecode(bytecode, { reducedMotion: false, theme })) : null;
-
-      const truesightNode = $createTruesightWordNode(word, color, truesightClass, decodedStyle, false, tokenData);
-      targetNode.replace(truesightNode);
     };
 
     // Register the SAME listener on both node types. Lexical dispatches
