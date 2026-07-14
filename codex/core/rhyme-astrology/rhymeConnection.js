@@ -182,12 +182,22 @@ function analyzeEndWordMatch(lineA, lineB, options = {}) {
   const rhymeKeyA = endA.rhymeKey || '';
   const rhymeKeyB = endB.rhymeKey || '';
 
-  // Authoritative dictionary check FIRST. If the Scholomance Dictionary API
-  // says these two words share a rhyme_family, that is a perfect rhyme by
-  // contract regardless of any local-phoneme math below.
+  // Dictionary check FIRST — but a shared family is NOT sufficient on its own.
+  //
+  // `rhyme_family` is the bare VOWEL family ("AY", "IH"), which thousands of
+  // unrelated words share. Promoting on it alone declared survival/liars/igniting
+  // perfect rhymes in deepRhyme.engine (see matchRhymeDomain there). This path is
+  // the same trap, armed harder: it returns score 1.0 outright, bypassing every
+  // phoneme check below. It is currently latent — nothing in production passes
+  // the callback — so this guard closes it before someone wires it up.
+  //
+  // The rhyme KEY is the rhyme domain (family + the whole tail), and its equality
+  // IS the perfect-rhyme predicate. Require both: the dictionary agrees AND the
+  // domains actually match.
   if (options.matchDictionaryFamily) {
     const sharedFamily = options.matchDictionaryFamily(wordA, wordB);
-    if (sharedFamily) {
+    const domainsMatch = Boolean(rhymeKeyA) && rhymeKeyA === rhymeKeyB;
+    if (sharedFamily && domainsMatch) {
       return {
         wordA,
         wordB,

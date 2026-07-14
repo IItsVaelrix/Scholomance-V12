@@ -7,6 +7,7 @@
 import { PhonemeEngine } from "../phonology/phoneme.engine.js";
 import { RHYME_TYPES, RHYME_SUBTYPES } from "../constants/data/rhymeScheme.patterns.js";
 import { normalizeVowelFamily } from "../phonology/vowelFamily.js";
+import { buildRhymeKey, isPerfectRhyme } from "../phonology/rhymeDomain.js";
 import { WORD_REGEX_GLOBAL } from "../constants/regex.js";
 import { compileVerseToIR } from "../shared/truesight/compiler/compileVerseToIR.js";
 import { buildResonanceFingerprint, rhymeBucketKeys, codaClassOf } from './resonanceFingerprint.js';
@@ -904,25 +905,25 @@ export class DeepRhymeEngine {
     if (!analysisA || !analysisB) return null;
     const normalizedA = this.normalizeWord(wordA.word), normalizedB = this.normalizeWord(wordB.word);
     const isIdentity = normalizedA === normalizedB;
-    // Authoritative dictionary family check FIRST. If the Scholomance
-    // Dictionary API confirmed both words share a rhyme family, that
-    // contract is a stronger `perfect` signal than any local phoneme
-    // threshold. The local scorer still runs to compute the score
-    // (heuristic for ordering), but the type is forced to perfect.
-    const dictionaryFamilyMatch = !isIdentity
-      ? this.matchDictionaryFamily(wordA.word, wordB.word)
+    // Rhyme-domain check FIRST. Two words rhyme iff their phoneme tails from the
+    // last stressed vowel are identical — that is decidable, so it outranks any
+    // similarity heuristic. This used to compare the dictionary's coarse
+    // rhyme_family (the bare VOWEL family), which made every AY word a "perfect"
+    // rhyme with every other AY word. See matchRhymeDomain.
+    const rhymeDomainMatch = !isIdentity
+      ? this.matchRhymeDomain(analysisA, analysisB)
       : null;
     const multiMatch = this.engine.scoreMultiSyllableMatch(analysisA, analysisB);
     const stressedAssonanceScore = multiMatch.syllablesMatched === 0 ? this.scoreStressedAssonance(analysisA, analysisB) : 0;
-    if (!isIdentity && multiMatch.syllablesMatched === 0 && stressedAssonanceScore <= 0 && !dictionaryFamilyMatch) return null;
+    if (!isIdentity && multiMatch.syllablesMatched === 0 && stressedAssonanceScore <= 0 && !rhymeDomainMatch) return null;
     let baseScore = Math.max(Number(multiMatch.score) || 0, stressedAssonanceScore);
     if (isIdentity) baseScore = 1.0;
-    if (dictionaryFamilyMatch) {
-      // Lift the score to PERFECT floor when the dictionary agrees. Words
-      // the lexicon considers "same family" are canonically a perfect rhyme
-      // even if local phoneme math undervalues the match (e.g. shared
-      // rhyme_family with a final consonant swap).
-      baseScore = Math.max(baseScore, RHYME_TYPES.PERFECT.minScore);
+    if (rhymeDomainMatch) {
+      // The domains are identical, so this IS a perfect rhyme — not merely one
+      // the heuristic undervalued. Score it as such. (The old code lifted a
+      // coarse family match only to PERFECT.minScore, which then sat BELOW the
+      // resonance gate's bar, so even a true rhyme could be censored.)
+      baseScore = 1.0;
     }
     const multiplier = Number(syntaxGate?.multiplier);
     const connectionScore = baseScore * (Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1);
@@ -931,14 +932,20 @@ export class DeepRhymeEngine {
     let type = 'consonance';
     let subtype = multiMatch.type;
     if (isIdentity) type = 'identity';
-    else if (dictionaryFamilyMatch) {
+    else if (rhymeDomainMatch) {
       type = 'perfect';
-      subtype = 'dictionary';
-    } else if (connectionScore >= RHYME_TYPES.PERFECT.minScore) type = 'perfect';
+      subtype = 'rhyme-domain';
+    } else if (connectionScore >= RHYME_TYPES.PERFECT.minScore) {
+      // The domains are NOT identical, so this cannot be a perfect rhyme however
+      // high the similarity heuristic runs. A near-rhyme is the strongest honest
+      // claim available. Letting the heuristic mint 'perfect' on its own is what
+      // let a shared vowel family masquerade as a rhyme.
+      type = 'near';
+    }
     else if (connectionScore >= RHYME_TYPES.NEAR.minScore) type = 'near';
     else if (connectionScore >= RHYME_TYPES.SLANT.minScore) type = 'slant';
     else if (connectionScore >= RHYME_TYPES.ASSONANCE.minScore) type = 'assonance';
-    return { type, subtype, score: connectionScore, syllablesMatched, phoneticWeight: (weightA + weightB) / 2, wordA: { lineIndex: wordA.lineIndex, wordIndex: wordA.wordIndex, charStart: wordA.charStart, charEnd: wordA.charEnd, word: wordA.word }, wordB: { lineIndex: wordB.lineIndex, wordIndex: wordB.wordIndex, charStart: wordB.charStart, charEnd: wordB.charEnd, word: wordB.word }, groupLabel: null, dictionaryFamily: dictionaryFamilyMatch || undefined, syntax: syntaxGate ? { gate: syntaxGate.gate || SYNTAX_GATES.ALLOW, multiplier: multiplier, reasons: Array.isArray(syntaxGate.reasons) ? syntaxGate.reasons : [] } : undefined };
+    return { type, subtype, score: connectionScore, syllablesMatched, phoneticWeight: (weightA + weightB) / 2, wordA: { lineIndex: wordA.lineIndex, wordIndex: wordA.wordIndex, charStart: wordA.charStart, charEnd: wordA.charEnd, word: wordA.word }, wordB: { lineIndex: wordB.lineIndex, wordIndex: wordB.wordIndex, charStart: wordB.charStart, charEnd: wordB.charEnd, word: wordB.word }, groupLabel: null, rhymeKey: rhymeDomainMatch || undefined, syntax: syntaxGate ? { gate: syntaxGate.gate || SYNTAX_GATES.ALLOW, multiplier: multiplier, reasons: Array.isArray(syntaxGate.reasons) ? syntaxGate.reasons : [] } : undefined };
   }
 
   /**
@@ -948,12 +955,60 @@ export class DeepRhymeEngine {
    * caller should fall back to local scoring) from "cache hit, no family"
    * (also null, but a different fallback story).
    */
+  /**
+   * DEPRECATED as a rhyme signal — kept only for callers that still want the
+   * coarse family. `rhyme_family` is the bare VOWEL family ("AY", "IH", "U"),
+   * which thousands of unrelated words share. See matchRhymeDomain.
+   */
   matchDictionaryFamily(wordA, wordB) {
     const a = this.getRhymeFamily(wordA);
     const b = this.getRhymeFamily(wordB);
     if (a === undefined || b === undefined) return null; // at least one was never looked up
     if (!a || !b) return null;
     return a === b ? a : null;
+  }
+
+  /**
+   * Do these two words RHYME? Compares the rhyme domain — the phoneme tail from
+   * the last stressed vowel — which is the definition of a perfect rhyme.
+   *
+   * This replaces matchDictionaryFamily as the perfect-rhyme signal. That check
+   * compared the dictionary's `rhyme_family`, i.e. the bare vowel family, and any
+   * two words sharing it were FORCED to type 'perfect' at RHYME_TYPES.PERFECT
+   * .minScore (0.92). So the engine asserted, at the strongest tier:
+   *
+   *   survival ~ liars ~ igniting   (all AY)     perfect 0.920
+   *   still ~ isn't                 (both IH)    perfect 0.920
+   *   skin ~ pretty                 (IH / IY)    perfect 0.920
+   *   steady ~ against              (both EH)    perfect 0.920
+   *
+   * None of those rhyme. 108 such pairs were emitted for one 16-line verse, all
+   * at the identical 0.920, and the only thing keeping them off the page was the
+   * resonance gate's 0.95 bar — which then also blocked the REAL rhymes scoring
+   * just under it. The gate was doing the scorer's job, badly.
+   *
+   * A shared vowel family is assonance. It is not a rhyme, and it must not be
+   * typed as one. (gene BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK: a coarse
+   * backend family must not outrank real phonology.)
+   *
+   * @returns {string|null} the shared rhyme key when they truly rhyme
+   */
+  matchRhymeDomain(analysisA, analysisB) {
+    const a = analysisA?.phonemes;
+    const b = analysisB?.phonemes;
+    if (Array.isArray(a) && Array.isArray(b) && a.length > 0 && b.length > 0) {
+      return isPerfectRhyme(a, b) ? buildRhymeKey(a) : null;
+    }
+
+    // No phonemes (a synthetic or partially-hydrated analysis). rhymeKey IS the
+    // rhyme domain in string form, so equality of the key is the same predicate.
+    // NOTE the difference from the old code: this compares the KEY (family + the
+    // whole tail, "AA-RT"), never the bare FAMILY ("AA") — which is what let
+    // every AY word rhyme with every other AY word.
+    const keyA = analysisA?.rhymeKey;
+    const keyB = analysisB?.rhymeKey;
+    if (typeof keyA === 'string' && keyA.length > 0 && keyA === keyB) return keyA;
+    return null;
   }
 
   buildRhymeGroups(lines, connections) {

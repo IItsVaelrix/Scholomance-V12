@@ -94,24 +94,33 @@ describe('A. assonance hygiene that holds (regression pins)', () => {
 });
 
 describe('B. live misattribution (documented bugs — it.fails flips when fixed)', () => {
-  // scoreMultiSyllableMatch is stress-blind, so "happy" (HH AE1 P IY0) matches
-  // on its stressed AE against the monosyllable "sat" (S AE1 T) and is emitted
-  // as PERFECT at 0.92 — a word that shares one stressed vowel and nothing else.
-  // "sat"/"happy" is not a rhyme in any register.
+  // FIXED 2026-07-14 — was it.fails, now a passing regression pin.
   //
-  // The comment here used to name tree/happy via IY. That pairing is real at the
-  // unit level but is not what the document-level engine emits once authoritative
-  // families are primed; tree/happy lands at 0.65 assonance and is correctly
-  // filtered. The stressed-vowel collision with "sat" is the live leak.
+  // "happy" (HH AE1 P IY0) used to be emitted as a PERFECT rhyme with "sat"
+  // (S AE1 T) at 0.92 — a word that shares one stressed vowel and nothing else.
+  // The cause was not the stress-blind scoreMultiSyllableMatch after all: the
+  // engine typed a connection PERFECT whenever the dictionary reported a shared
+  // `rhyme_family`, and rhyme_family is the bare VOWEL family. Every AE word was
+  // therefore a "perfect rhyme" with every other AE word, at exactly
+  // RHYME_TYPES.PERFECT.minScore.
   //
-  // Desired behaviour: no perfect-type connection should touch "happy" here.
-  it.fails('"happy" should not form a perfect connection with any open monosyllable', async () => {
+  // Perfect now requires identical rhyme DOMAINS (the phoneme tail from the last
+  // stressed vowel). happy is AE-PIY, sat is AE-T, tree is IY-open — three
+  // different domains, so neither pairing can claim the strong tier. Both are
+  // now assonance (sat 0.62, tree 0.65), which is exactly what they are.
+  it('"happy" forms no perfect connection with any open monosyllable', async () => {
     const result = await analyze('I sat beneath the tree\nthe child was so happy');
-    const perfectHappy = result.allConnections.filter(
-      (c) => c.type === 'perfect' &&
-        (c.wordA.word.toLowerCase() === 'happy' || c.wordB.word.toLowerCase() === 'happy'),
+    const touchingHappy = result.allConnections.filter(
+      (c) => c.wordA.word.toLowerCase() === 'happy' || c.wordB.word.toLowerCase() === 'happy',
     );
-    expect(perfectHappy).toHaveLength(0);
+
+    expect(touchingHappy.filter((c) => c.type === 'perfect')).toHaveLength(0);
+
+    // Present, but correctly demoted to the quiet tier rather than dropped.
+    expect(touchingHappy.length).toBeGreaterThan(0);
+    for (const conn of touchingHappy) {
+      expect(conn.type).toBe('assonance');
+    }
   });
 
   // Without a syntax layer, bare function words used to connect as perfect

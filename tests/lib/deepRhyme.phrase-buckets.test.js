@@ -63,10 +63,37 @@ const VERSE = readFileSync('tests/fixtures/rhyme/dense-verse.txt', 'utf8');
 //   near       20 -> 20   UNCHANGED
 //   slant       3 ->  3   UNCHANGED
 //
+// UPDATED 2026-07-14 again, by rhyme-domain TYPING (deepRhyme.engine scoreConnection).
+//
+// The engine typed a connection PERFECT whenever the dictionary said both words
+// shared a `rhyme_family` — which is the bare VOWEL family ("AY", "IH"), shared by
+// thousands of unrelated words. Every such pair was forced to type 'perfect' at
+// exactly RHYME_TYPES.PERFECT.minScore (0.92). In this fixture that minted:
+//
+//   entire ~ sight    AY-ER vs AY-T     -> now assonance 0.62
+//   climb  ~ higher   AY-M  vs AY-ER    -> now assonance 0.62
+//   i      ~ fire     AY-open vs AY-ER  -> now assonance 0.55
+//   light  ~ pyre     AY-T  vs AY-ER    -> now assonance 0.62
+//   in     ~ sings    IH-N  vs IH-NGZ   -> now assonance 0.57
+//
+// None of those rhyme. A shared vowel family is ASSONANCE. Perfect now requires
+// the rhyme DOMAINS to be identical, which is decidable, so the type no longer
+// depends on a similarity threshold at all.
+//
+//   perfect    33 -> 28   the five false pairs above, demoted
+//   assonance  27 -> 27   UNCHANGED
+//   near       20 -> 25   the demoted pairs that ARE near rhymes land here
+//                         (e.g. night ~ ignites, AY-T vs AY-TS, 0.88)
+//   slant       3 ->  3   UNCHANGED
+//
+// The 28 survivors are every one a true rhyme: fire/desire/entire/pyre/liar/choir,
+// sight/light/night/bright, stone/alone/throne/bone/own/overgrown, dark/spark,
+// river/shiver, pass/glass — all at 1.00.
+//
 // The guard still stands for every other kind of change: a perf/bucketing change
 // must NEVER move these numbers. Only a change to the definition of a rhyme may,
 // and only with the false pairs it removes enumerated, as above.
-const BASELINE_COLOURED = { perfect: 33, assonance: 27, near: 20, slant: 3 };
+const BASELINE_COLOURED = { perfect: 28, assonance: 27, near: 25, slant: 3 };
 
 async function analyse(text = VERSE) {
   const engine = new DeepRhymeEngine();

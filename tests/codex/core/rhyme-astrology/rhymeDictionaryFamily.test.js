@@ -160,10 +160,21 @@ describe('DeepRhymeEngine.scoreConnection with dictionary family cache', () => {
     engine = new DeepRhymeEngine();
   });
 
-  it('promotes a non-rhyming pair to "perfect" when dictionary says so', () => {
-    // Two words the local scorer would never call perfect — they have
-    // different rhymeKey, different terminalVowelFamily, different stress
-    // patterns. The dictionary, however, says they share `rhyme_family`.
+  // RENAMED 2026-07-14. Was 'promotes a non-rhyming pair to "perfect" when
+  // dictionary says so' — a title that describes the bug as a feature.
+  //
+  // The engine used to type a connection PERFECT whenever the dictionary reported
+  // a shared `rhyme_family`. That field is the bare VOWEL family ("AY", "IH"), so
+  // survival/liars/igniting were all "perfect rhymes" with each other, at exactly
+  // RHYME_TYPES.PERFECT.minScore. A shared vowel is assonance, not a rhyme, and no
+  // dictionary lookup can make it one — so nothing may promote a NON-rhyming pair.
+  //
+  // Note this fixture was never non-rhyming: heart/start share the rhyme key
+  // 'AA1 R T'. They rhyme, and they still type perfect — now because their rhyme
+  // DOMAINS are identical, not because a coarse family said so.
+  it('types a true rhyme as "perfect" from the rhyme domain, not the family', () => {
+    // heart / start: same rhyme key, i.e. the same phoneme tail from the last
+    // stressed vowel. That IS the definition of a perfect rhyme.
     const wordA = makeWord({
       word: 'heart',
       lineIndex: 0,
@@ -186,9 +197,36 @@ describe('DeepRhymeEngine.scoreConnection with dictionary family cache', () => {
     const conn = engine.scoreConnection(wordA, wordB);
     expect(conn).not.toBeNull();
     expect(conn.type).toBe('perfect');
-    expect(conn.subtype).toBe('dictionary');
-    expect(conn.dictionaryFamily).toBe('AR-STOP');
-    expect(conn.score).toBeGreaterThanOrEqual(0.92);
+    // The provenance is the rhyme DOMAIN, not the dictionary's coarse family, so
+    // the connection now reports the rhyme key it matched on.
+    expect(conn.subtype).toBe('rhyme-domain');
+    expect(conn.rhymeKey).toBe('AA1 R T');
+
+    // A true rhyme scores 1.0. The old code lifted a family match only to
+    // PERFECT.minScore (0.92), which sits BELOW the resonance gate's 0.95 bar —
+    // so a genuine rhyme could be promoted to 'perfect' and then greyed anyway.
+    expect(conn.score).toBe(1);
+  });
+
+  it('a shared vowel FAMILY is not enough — that is assonance, not a rhyme', () => {
+    // The bug in one assertion. "survival" (AY-VAHL) and "liars" (AY-ERZ) share
+    // the AY family and nothing else. The dictionary says so, loudly. They still
+    // do not rhyme, and no dictionary lookup may say otherwise.
+    const wordA = makeWord({
+      word: 'survival', lineIndex: 0, wordIndex: 0, charStart: 0,
+      rhymeKey: 'AY-VAHL', terminalVowelFamily: 'AY', stressPattern: '010',
+    });
+    const wordB = makeWord({
+      word: 'liars', lineIndex: 1, wordIndex: 0, charStart: 20,
+      rhymeKey: 'AY-ERZ', terminalVowelFamily: 'AY', stressPattern: '10',
+    });
+    engine.setRhymeFamilies({ survival: 'AY', liars: 'AY' });
+
+    const conn = engine.scoreConnection(wordA, wordB);
+    if (conn) {
+      expect(conn.type).not.toBe('perfect');
+      expect(conn.subtype).not.toBe('rhyme-domain');
+    }
   });
 
   it('does not promote identity matches to "dictionary" subtype', () => {
@@ -235,6 +273,49 @@ describe('connectLines with matchDictionaryFamily callback', () => {
           charStart: 8,
           rhymeKey: 'OW1 R T', // Different local rhymeKey from heart's
           terminalVowelFamily: 'OW1', // Different local vowel family
+        }),
+      ],
+    });
+
+    // INVERTED 2026-07-14. This test used to assert that the dictionary callback
+    // could force 'perfect' at score 1.0 even though the fixture DELIBERATELY
+    // gives the two end words different rhyme keys ("Different local rhymeKey
+    // from heart's"). That is the bug stated as a requirement: a coarse
+    // rhyme_family ("AY", "IH" — shared by thousands of unrelated words)
+    // overriding real phonology, and doing it at the strongest tier with a
+    // perfect score, bypassing every phoneme check.
+    //
+    // A dictionary cannot make two words rhyme. When the rhyme DOMAINS disagree,
+    // the answer is no, whatever the family says.
+    const conn = connectLines(lineA, lineB, {
+      matchDictionaryFamily: (a, b) =>
+        a.toLowerCase() === 'heart' && b.toLowerCase() === 'start' ? 'AR-STOP' : null,
+    });
+    expect(conn.endWord.type).not.toBe('perfect');
+  });
+
+  it('promotes the end word only when the dictionary AND the rhyme domains agree', () => {
+    const lineA = makeLine({
+      text: 'She plays the heart',
+      lineIndex: 0,
+      words: [
+        makeWord({ word: 'she', lineIndex: 0, wordIndex: 0, charStart: 0 }),
+        makeWord({ word: 'plays', lineIndex: 0, wordIndex: 1, charStart: 4 }),
+        makeWord({
+          word: 'heart', lineIndex: 0, wordIndex: 2, charStart: 14,
+          rhymeKey: 'AA1 R T', terminalVowelFamily: 'AA1',
+        }),
+      ],
+    });
+    const lineB = makeLine({
+      text: 'A brand new start',
+      lineIndex: 1,
+      words: [
+        makeWord({ word: 'a', lineIndex: 1, wordIndex: 0, charStart: 0 }),
+        makeWord({ word: 'brand', lineIndex: 1, wordIndex: 1, charStart: 2 }),
+        makeWord({
+          word: 'start', lineIndex: 1, wordIndex: 2, charStart: 8,
+          rhymeKey: 'AA1 R T', terminalVowelFamily: 'AA1', // heart/start DO rhyme
         }),
       ],
     });
