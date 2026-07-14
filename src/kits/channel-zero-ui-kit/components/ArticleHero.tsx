@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 export type ArticleHeroProps = {
   eyebrow?: string;
+  signalReadout?: string[];
   title: string;
   lede: string;
   /** In-app target for the CTA (React Router). Defaults to the Skills band filter. */
@@ -13,6 +14,7 @@ export type ArticleHeroProps = {
 
 export function ArticleHero({
   eyebrow = 'The origin feed for creative engineering doctrine',
+  signalReadout,
   title,
   lede,
   ctaHref = '/blog?kind=skill',
@@ -34,6 +36,13 @@ export function ArticleHero({
             <i className="cz-aperture__moon" />
           </span>
         </div>
+      )}
+      {signalReadout && signalReadout.length > 0 && (
+        <aside className="cz-origin-readout" aria-label="Channel Zero signal status">
+          {signalReadout.map((line) => (
+            <span key={line}>{line}</span>
+          ))}
+        </aside>
       )}
       <div className="cz-hero__eyebrow">
         <span aria-hidden="true">✦</span>

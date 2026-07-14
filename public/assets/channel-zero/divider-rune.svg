@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 64" role="img" aria-labelledby="title desc">
+  <title id="title">Channel Zero rune divider</title>
+  <desc id="desc">A thin cyan and amber rune divider for Channel Zero editorial sections.</desc>
+  <defs>
+    <linearGradient id="line" x1="0" y1="32" x2="960" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43dcf4" stop-opacity="0"/>
+      <stop offset="0.2" stop-color="#43dcf4" stop-opacity="0.6"/>
+      <stop offset="0.5" stop-color="#f89e59" stop-opacity="0.95"/>
+      <stop offset="0.8" stop-color="#ab53ee" stop-opacity="0.58"/>
+      <stop offset="1" stop-color="#ab53ee" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="glow" x="-8%" y="-120%" width="116%" height="340%">
+      <feGaussianBlur stdDeviation="2.8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke="url(#line)" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <path d="M16 32h332l28-16 28 16h152l28-16 28 16h332" stroke-width="2"/>
+    <path d="M376 16l-18 16 18 16 18-16zM584 16l-18 16 18 16 18-16z" stroke-width="1.5"/>
+    <path d="M452 32h56M480 12v40M464 20l32 24M496 20l-32 24" stroke-width="1.4" opacity="0.85"/>
+  </g>
+  <g fill="#e9f8ff" opacity="0.72">
+    <circle cx="348" cy="32" r="2.4"/>
+    <circle cx="612" cy="32" r="2.4"/>
+    <circle cx="480" cy="32" r="3"/>
+  </g>
+</svg>

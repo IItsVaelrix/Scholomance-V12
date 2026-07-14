@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-labelledby="title desc">
+  <title id="title">Channel Zero aperture</title>
+  <desc id="desc">A transparent ritual aperture made from elliptical signal rings and star points.</desc>
+  <defs>
+    <radialGradient id="core" cx="50%" cy="50%" r="52%">
+      <stop offset="0" stop-color="#e9f8ff" stop-opacity="0.95"/>
+      <stop offset="0.16" stop-color="#43dcf4" stop-opacity="0.58"/>
+      <stop offset="0.34" stop-color="#ab53ee" stop-opacity="0.34"/>
+      <stop offset="0.72" stop-color="#0b0918" stop-opacity="0.1"/>
+      <stop offset="1" stop-color="#0b0918" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="88" y1="180" x2="552" y2="460" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43dcf4" stop-opacity="0.12"/>
+      <stop offset="0.42" stop-color="#ab53ee" stop-opacity="0.78"/>
+      <stop offset="0.62" stop-color="#f89e59" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#43dcf4" stop-opacity="0.18"/>
+    </linearGradient>
+    <filter id="glow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)">
+    <ellipse cx="320" cy="320" rx="260" ry="96" stroke="url(#ring)" stroke-width="2.8"/>
+    <ellipse cx="320" cy="320" rx="238" ry="74" stroke="#43dcf4" stroke-opacity="0.22" stroke-width="1.6"/>
+    <ellipse cx="320" cy="320" rx="210" ry="44" stroke="#f89e59" stroke-opacity="0.2" stroke-width="1.2"/>
+    <path d="M93 303c62-38 143-59 227-59s165 21 227 59" stroke="#e9f8ff" stroke-opacity="0.28" stroke-width="1"/>
+    <path d="M106 344c58 32 135 50 214 50s156-18 214-50" stroke="#ab53ee" stroke-opacity="0.34" stroke-width="1"/>
+    <circle cx="320" cy="320" r="62" fill="url(#core)" stroke="#e9f8ff" stroke-opacity="0.32" stroke-width="1.3"/>
+    <circle cx="320" cy="320" r="16" fill="#e9f8ff" fill-opacity="0.74"/>
+  </g>
+  <g fill="#e9f8ff">
+    <circle cx="124" cy="298" r="2" opacity="0.58"/>
+    <circle cx="172" cy="258" r="1.5" opacity="0.42"/>
+    <circle cx="224" cy="383" r="1.7" opacity="0.5"/>
+    <circle cx="429" cy="253" r="1.9" opacity="0.46"/>
+    <circle cx="481" cy="383" r="1.5" opacity="0.42"/>
+    <circle cx="528" cy="318" r="2.2" opacity="0.58"/>
+  </g>
+</svg>

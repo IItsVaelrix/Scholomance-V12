@@ -22,14 +22,6 @@ import {
 import { PostEditor, type PostEditorValues } from './PostEditor';
 import './channel-zero-grim.css';
 
-const KIND_LABELS: Record<string, string> = {
-  featured: 'FEATURED',
-  skill: 'SKILL',
-  verdict: 'VERDICT',
-  essay: 'ESSAY',
-  whitepaper: 'WHITEPAPER',
-};
-
 const BAND_LABELS: Record<string, string> = {
   skill: 'Skills',
   whitepaper: 'White Papers',
@@ -135,6 +127,11 @@ export default function BlogIndexPage() {
       <main className="cz-page cz-grim">
         <ArticleHero
           aperture
+          signalReadout={[
+            'ORIGIN FEED ACTIVE',
+            'SIGNAL: HUMAN-FIRST',
+            'MODE: TIPS FOR AI INTEGRATION',
+          ]}
           title="The Scholomance Channel: Zero"
           lede="Free doctrine for writers, engineers, musicians, and creative operators building their own instruments instead of begging the machine for permission."
         />
@@ -183,12 +180,6 @@ export default function BlogIndexPage() {
                     }}
                   >
                     <ArticleCard {...post} />
-                    <span
-                      className="cz-card-kind"
-                      style={{ '--tag-color': `var(--cz-${post.kind})` } as React.CSSProperties}
-                    >
-                      {KIND_LABELS[post.kind] ?? post.kind.toUpperCase()}
-                    </span>
                     {isAdmin && storageStatus.ok && (
                       <div className="cz-card-admin">
                         <button

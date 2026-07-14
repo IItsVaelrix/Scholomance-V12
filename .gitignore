@@ -152,7 +152,9 @@ steamdeck_brain/vaelrix_forcefield/scdna/compiler.history.jsonl
 # Generated assets
 generated-assets/
 public/generated-assets/
-public/assets/
+public/assets/*
+!public/assets/channel-zero/
+!public/assets/channel-zero/*.svg
 *-aseprite.aseprite
 
 # Purged oversized artifacts — never commit DB backups or downloaded media (GitHub 100MB limit)

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Lexicon sigil</title>
+  <desc id="desc">An indigo essay sigil with book-spine strokes and phoneme dots.</desc>
+  <g fill="none" stroke="#7664e8" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M15 13h18c7 0 13 6 13 13v25H28c-7 0-13-6-13-13z"/>
+    <path d="M32 13v38"/>
+    <path d="M21 24h6M21 32h6M37 24h6M37 32h6M37 40h6"/>
+    <path d="M15 38c5-3 11-3 17 0 5-3 10-3 14 0"/>
+  </g>
+  <g fill="#e9f8ff">
+    <circle cx="21" cy="24" r="1.6"/>
+    <circle cx="43" cy="40" r="1.6"/>
+  </g>
+</svg>

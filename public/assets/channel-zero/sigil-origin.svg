@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Origin sigil</title>
+  <desc id="desc">A deterministic origin sigil with a central diamond and orbit lines.</desc>
+  <defs>
+    <linearGradient id="stroke" x1="10" y1="8" x2="54" y2="56" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#43dcf4"/>
+      <stop offset="0.55" stop-color="#ab53ee"/>
+      <stop offset="1" stop-color="#f89e59"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#stroke)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="32" r="24" opacity="0.35"/>
+    <ellipse cx="32" cy="32" rx="25" ry="9" opacity="0.75"/>
+    <path d="M32 9l13 23-13 23-13-23z"/>
+    <path d="M20 32h24M32 18v28"/>
+  </g>
+  <circle cx="32" cy="32" r="4" fill="#e9f8ff"/>
+</svg>

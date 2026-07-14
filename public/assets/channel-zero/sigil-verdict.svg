@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title desc">
+  <title id="title">Verdict sigil</title>
+  <desc id="desc">An amber verdict sigil shaped like a balanced blade and scale.</desc>
+  <g fill="none" stroke="#faba42" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 8v48"/>
+    <path d="M18 18h28"/>
+    <path d="M20 18l-9 18h18zM44 18l-9 18h18z"/>
+    <path d="M24 56h16M28 48h8"/>
+    <path d="M32 8l8 8-8 8-8-8z"/>
+    <circle cx="32" cy="32" r="24" opacity="0.18"/>
+  </g>
+  <circle cx="32" cy="18" r="2.5" fill="#e9f8ff"/>
+</svg>
