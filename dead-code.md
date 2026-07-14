@@ -1,6 +1,6 @@
 # Dead Code Report
 
-Generated at: 2026-07-13T05:42:36.414Z
+Generated at: 2026-07-14T12:22:25.668Z
 
 ## Unreachable Files
 Files in `src/` or `codex/` that are not imported by any entry point or reachable file.
@@ -178,11 +178,27 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/diagnostic/resonanceAntibody.js
 - [ ] codex/core/diagnostic/run-diagnostic.cli.js
 - [ ] codex/core/diagnostic/truesightImmuneProbe.js
+- [ ] codex/core/immunity/cleri-probe/canonical-report.js
+- [ ] codex/core/immunity/cleri-probe/contracts.js
+- [ ] codex/core/immunity/cleri-probe/graduation-proposal.js
+- [ ] codex/core/immunity/cleri-probe/planner.js
+- [ ] codex/core/immunity/cleri-probe/remediation.js
+- [ ] codex/core/immunity/cleri-probe/retrieval.js
+- [ ] codex/core/immunity/cleri-probe/scholomance-profile.js
+- [ ] codex/core/immunity/cleri-probe/verifier-registry.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/concurrent-mutation.verifier.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/external-response.verifier.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/listener-lifecycle.verifier.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/swallowed-error.verifier.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/unseeded-randomness.verifier.js
+- [ ] codex/core/immunity/cleri-probe/verifiers/verifier-kit.js
 - [ ] codex/core/immunity/clerical-raid.substrate.js
 - [ ] codex/core/immunity/harkov-mutation.engine.js
 - [ ] codex/core/immunity/memory-cell-osmosis.js
 - [ ] codex/core/immunity/memory-infusion.engine.js
 - [ ] codex/core/immunity/phoneme-prion.engine.js
+- [ ] codex/core/immunity/prion-detector.engine.js
+- [ ] codex/core/immunity/prion-library.js
 - [ ] codex/core/immunity/protein-probe.engine.js
 - [ ] codex/core/immunity/semantic-editor.js
 - [ ] codex/core/immunity/spatial-immune-orchestrator.js
@@ -290,10 +306,15 @@ Files in `src/` or `codex/` that are not imported by any entry point or reachabl
 - [ ] codex/core/scholotime/scholotime.pixelbrain-adapter.js
 - [ ] codex/core/shared/ambient/bytecodeAMP.js
 - [ ] codex/core/shared/workers/microprocessor.worker.js
+- [ ] codex/runtime/cleri-probe/investigation.runtime.js
 - [ ] codex/server/collab/mcp-bridge-entry.js
 - [ ] codex/server/services/rhyme-astrology/indexRepo.js
 - [ ] codex/server/services/rhyme-astrology/lexiconRepo.js
 - [ ] codex/services/adapters/index.js
+- [ ] codex/services/cleri-probe/babel-facts.adapter.js
+- [ ] codex/services/cleri-probe/context.service.js
+- [ ] codex/services/cleri-probe/index.repository.js
+- [ ] codex/services/cleri-probe/substrate.service.js
 
 ## Potentially Unused Exports
 Symbols that are exported but not referenced in any other file. (Note: May include false positives for dynamic usage or entry point exports).
@@ -648,6 +669,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `DEFAULT_MIN_RESONANCE_SCORE` in `src/lib/truesight/buildResonanceGate.js`
 - [ ] `RHYME_TIER_TYPES` in `src/lib/truesight/buildResonanceGate.js`
 - [ ] `DEFAULT_ASSONANCE_MIN_SCORE` in `src/lib/truesight/buildResonanceGate.js`
+- [ ] `DEFAULT_MULTI_MIN_SCORE` in `src/lib/truesight/buildResonanceGate.js`
 - [ ] `isHttpError` in `src/lib/truesight/synthesisErrorPolicy.js`
 - [ ] `isRateLimitError` in `src/lib/truesight/synthesisErrorPolicy.js`
 - [ ] `artifactHasConnections` in `src/lib/truesight/synthesisErrorPolicy.js`
@@ -984,6 +1006,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `sweepChromaCorpus` in `codex/core/diagnostic/chromaticImmuneProbe.js`
 - [ ] `runChromaticScan` in `codex/core/diagnostic/chromaticImmuneProbe.js`
 - [ ] `summarizeChromaReport` in `codex/core/diagnostic/chromaticImmuneProbe.js`
+- [ ] `scanChromaStamps` in `codex/core/diagnostic/chromaticImmuneProbe.js`
 - [ ] `DEFAULT_SKIP_DIRS` in `codex/core/diagnostic/diagnostic-file-source.js`
 - [ ] `DEFAULT_READABLE_EXT` in `codex/core/diagnostic/diagnostic-file-source.js`
 - [ ] `normalizeScanLimits` in `codex/core/diagnostic/diagnostic-file-source.js`
@@ -1005,6 +1028,32 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `generateGlyphVector` in `codex/core/immunity/ai-glyphs.js`
 - [ ] `GLYPH_SYSTEM_VERSION` in `codex/core/immunity/ai-glyphs.js`
 - [ ] `GLYPH_SYSTEM_ID` in `codex/core/immunity/ai-glyphs.js`
+- [ ] `fingerprintConfiguration` in `codex/core/immunity/cleri-probe/canonical-report.js`
+- [ ] `buildFindingId` in `codex/core/immunity/cleri-probe/canonical-report.js`
+- [ ] `REPORT_STATUSES` in `codex/core/immunity/cleri-probe/contracts.js`
+- [ ] `FEEDBACK_CONTRACT` in `codex/core/immunity/cleri-probe/graduation-proposal.js`
+- [ ] `GRADUATION_PROPOSAL_CONTRACT` in `codex/core/immunity/cleri-probe/graduation-proposal.js`
+- [ ] `buildFindingFeedback` in `codex/core/immunity/cleri-probe/graduation-proposal.js`
+- [ ] `buildGraduationProposal` in `codex/core/immunity/cleri-probe/graduation-proposal.js`
+- [ ] `DEFAULT_PATHOLOGY_PROFILE` in `codex/core/immunity/cleri-probe/planner.js`
+- [ ] `NOMINATION_SOURCES` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `retrieveLiteralNominations` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `retrieveStructuralNominations` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `retrieveTokenNominations` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `retrievePrionNominations` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `retrieveVectorNominations` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `mergeCandidates` in `codex/core/immunity/cleri-probe/retrieval.js`
+- [ ] `PROFILE_VERSION` in `codex/core/immunity/cleri-probe/scholomance-profile.js`
+- [ ] `SUPPORTED_EXTERNAL_CLIENTS` in `codex/core/immunity/cleri-probe/scholomance-profile.js`
+- [ ] `REGISTRATION_METHODS` in `codex/core/immunity/cleri-probe/scholomance-profile.js`
+- [ ] `REMOVAL_METHODS` in `codex/core/immunity/cleri-probe/scholomance-profile.js`
+- [ ] `IMMUNE_ALLOW_TOKENS` in `codex/core/immunity/cleri-probe/scholomance-profile.js`
+- [ ] `createVerifierRegistry` in `codex/core/immunity/cleri-probe/verifier-registry.js`
+- [ ] `registerVerifier` in `codex/core/immunity/cleri-probe/verifier-registry.js`
+- [ ] `validateVerifierResult` in `codex/core/immunity/cleri-probe/verifier-registry.js`
+- [ ] `DEFAULT_VERIFIERS` in `codex/core/immunity/cleri-probe/verifier-registry.js`
+- [ ] `createDefaultRegistry` in `codex/core/immunity/cleri-probe/verifier-registry.js`
+- [ ] `indexById` in `codex/core/immunity/cleri-probe/verifiers/verifier-kit.js`
 - [ ] `AGENT_HOOK_PLAYBOOK` in `codex/core/immunity/clerical-raid.agents.js`
 - [ ] `agentHookApplies` in `codex/core/immunity/clerical-raid.agents.js`
 - [ ] `resolveAgentIndex` in `codex/core/immunity/clerical-raid.agents.js`
@@ -1123,6 +1172,8 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `isStressShiftHomograph` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `readMeter` in `codex/core/phonology/prosodic-metronome.js`
 - [ ] `pronounceWithMeter` in `codex/core/phonology/prosodic-metronome.js`
+- [ ] `findRhymeOnsetIndex` in `codex/core/phonology/rhymeDomain.js`
+- [ ] `substitutableCodas` in `codex/core/phonology/rhymeDomain.js`
 - [ ] `TAIL_MAX_PHONEMES` in `codex/core/phonology/tailEmbedding.js`
 - [ ] `VISEME_METRICS` in `codex/core/phonology/vowelWheel.js`
 - [ ] `getAmp` in `codex/core/pixelbrain/amp-registry.js`
@@ -1335,7 +1386,6 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `decodeEnergyFieldRLE` in `codex/core/pixelbrain/qbit-field-rle.js`
 - [ ] `QBIT_RLE_INTERNALS` in `codex/core/pixelbrain/qbit-field-rle.js`
 - [ ] `MATERIAL_THRESHOLDS` in `codex/core/pixelbrain/qbit-field.js`
-- [ ] `COLLAPSE_THRESHOLD` in `codex/core/pixelbrain/qbit-phosphorylation.js`
 - [ ] `PLACEMENT_COMMIT_THRESHOLD` in `codex/core/pixelbrain/qbit-placement-memory.js`
 - [ ] `evaluatePlacementCommit` in `codex/core/pixelbrain/qbit-placement-memory.js`
 - [ ] `QBIT_WORLD_SIZE` in `codex/core/pixelbrain/qbit-world-game-loop.js`
@@ -1466,7 +1516,16 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `rhymeAstrologyConstellationSchema` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `rhymeAstrologyDiagnosticsSchema` in `codex/core/rhyme-astrology/contracts.js`
 - [ ] `rhymeAstrologyResultSchema` in `codex/core/rhyme-astrology/contracts.js`
+- [ ] `MAX_CONNECTION_LINE_DISTANCE` in `codex/core/rhyme-astrology/deepRhyme.engine.js`
 - [ ] `PHRASE_BUCKET_CANDIDATE_CAP` in `codex/core/rhyme-astrology/deepRhyme.engine.js`
+- [ ] `MIN_CHAIN_SYLLABLES` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `LINK_FLOOR` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `STRONG_LINK` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `SLANT_EARNS_ABOVE` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `MAX_LINE_DISTANCE` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `buildSyllableStream` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `linkScore` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
+- [ ] `chainIsValid` in `codex/core/rhyme-astrology/multiRhyme.engine.js`
 - [ ] `RESONANCE_SLOTS` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
 - [ ] `RESONANCE_VERSION_BYTE` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
 - [ ] `parseResonanceBlocks` in `codex/core/rhyme-astrology/resonanceFingerprint.js`
@@ -1494,6 +1553,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `getCombatScoringHeuristics` in `codex/core/scoring.defaults.js`
 - [ ] `VECTOR_AMP_DEFAULTS` in `codex/core/semantic/amp/runVectorAmp.js`
 - [ ] `VECTOR_AMP_ERRORS` in `codex/core/semantic/amp/runVectorAmp.js`
+- [ ] `compareSignatures` in `codex/core/semantic/amp/runVectorAmp.js`
 - [ ] `PHONEME_MATERIAL_MAP` in `codex/core/semantic/phonetic-materials.js`
 - [ ] `DEFAULT_MATERIAL_PROPS` in `codex/core/semantic/phonetic-materials.js`
 - [ ] `calculateSurfaceHardness` in `codex/core/semantic/phonetic-materials.js`
@@ -1514,7 +1574,13 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `WEAVE_INTENTS` in `codex/core/semantics.registry.js`
 - [ ] `LITERARY_DEVICES` in `codex/core/shared/literaryDevices.detector.js`
 - [ ] `isComplexScheme` in `codex/core/shared/rhymeScheme.detector.js`
+- [ ] `BatchLookupSchema` in `codex/core/shared/scholomanceDictionary.api.js`
 - [ ] `SyntaxAnalyzer` in `codex/core/shared/syntax.layer.js`
+- [ ] `CHROMA_AUTHORITY_LETTERS` in `codex/core/shared/truesight/color/chroma.authority.js`
+- [ ] `authorityFor` in `codex/core/shared/truesight/color/chroma.authority.js`
+- [ ] `CHROMA_BYTECODE_PREFIX` in `codex/core/shared/truesight/color/chroma.bytecode.js`
+- [ ] `CHROMA_BYTECODE_VERSION` in `codex/core/shared/truesight/color/chroma.bytecode.js`
+- [ ] `CHROMA_COLLAPSE_THRESHOLD` in `codex/core/shared/truesight/color/chroma.kinase.js`
 - [ ] `AdaptiveGridTopology` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
 - [ ] `measureTextWidth` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
 - [ ] `GridConstraint` in `codex/core/shared/truesight/compiler/adaptiveWhitespaceGrid.ts`
@@ -1561,6 +1627,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `cachePredictionArtifact` in `codex/runtime/cache.js`
 - [ ] `getPredictionArtifact` in `codex/runtime/cache.js`
 - [ ] `deleteFromCache` in `codex/runtime/cache.js`
+- [ ] `ALWAYS_EXCLUDED` in `codex/runtime/cleri-probe/investigation.runtime.js`
+- [ ] `TEST_EXCLUDED` in `codex/runtime/cleri-probe/investigation.runtime.js`
+- [ ] `createInvestigationRuntime` in `codex/runtime/cleri-probe/investigation.runtime.js`
 - [ ] `clearAllListeners` in `codex/runtime/eventBus.js`
 - [ ] `WORD_LOOKUP_EVENTS` in `codex/runtime/pipeline.js`
 - [ ] `resetRateLimit` in `codex/runtime/rateLimit.js`
@@ -1568,6 +1637,7 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `clearWordLookupCache` in `codex/runtime/wordLookupPipeline.js`
 - [ ] `getWordLookupCacheTTL` in `codex/runtime/wordLookupPipeline.js`
 - [ ] `getWordLookupRateLimit` in `codex/runtime/wordLookupPipeline.js`
+- [ ] `resetLexiconAdapterForRhyme` in `codex/server/adapters/selfDictionary.authority.js`
 - [ ] `AUDIO_ADMIN_HEADER` in `codex/server/audioAuth.js`
 - [ ] `readHeaderAsString` in `codex/server/audioAuth.js`
 - [ ] `secureTokenEquals` in `codex/server/audioAuth.js`
@@ -1617,3 +1687,9 @@ Symbols that are exported but not referenced in any other file. (Note: May inclu
 - [ ] `FreeDictionaryAdapter` in `codex/services/adapters/freeDictionary.adapter.js`
 - [ ] `createAdapterChain` in `codex/services/adapters/index.js`
 - [ ] `createDefaultAdapterChain` in `codex/services/adapters/index.js`
+- [ ] `PARSER_VERSION` in `codex/services/cleri-probe/babel-facts.adapter.js`
+- [ ] `parseSourceFacts` in `codex/services/cleri-probe/babel-facts.adapter.js`
+- [ ] `createContextService` in `codex/services/cleri-probe/context.service.js`
+- [ ] `createIndexRepository` in `codex/services/cleri-probe/index.repository.js`
+- [ ] `readSpanExcerpt` in `codex/services/cleri-probe/substrate.service.js`
+- [ ] `createSubstrateService` in `codex/services/cleri-probe/substrate.service.js`
