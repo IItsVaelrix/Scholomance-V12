@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { existsSync } from 'fs';
 import path from 'path';
 import { resolveDatabasePath } from '../utils/pathResolution.js';
+import { slantRhymeKeys } from '../../core/phonology/rhymeDomain.js';
 import { BytecodeHealth, HEALTH_CODES, encodeModuleHealth } from '../../core/diagnostic/BytecodeHealth.js';
 
 const DEFAULT_LOOKUP_LIMIT = 5;
@@ -116,6 +117,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
   let db = null;
   let stmts = null;
   let reconnectCount = 0;
+  let hasCorpusFreqColumn = false;
   let healthLog = [];
   const familyBatchStmtCache = new Map();
   const validateBatchStmtCache = new Map();
@@ -157,8 +159,23 @@ export function createLexiconAdapter(dbPath, options = {}) {
       db = new Database(resolvedPath, { readonly: true, fileMustExist: true });
       db.pragma('query_only = ON');
       db.pragma('busy_timeout = 5000');
-      
+
       emitHealth('CONNECTED', { reconnectCount });
+
+      // corpus_freq is added by scripts/backfill_rhyme_corpus_freq.js. A dict DB
+      // built before that script exists is still serviceable, so probe for the
+      // column rather than assuming it.
+      hasCorpusFreqColumn = db
+        .prepare("SELECT COUNT(*) AS n FROM pragma_table_info('rhyme_index') WHERE name = 'corpus_freq'")
+        .get().n > 0;
+      const hasCorpusFreq = hasCorpusFreqColumn;
+
+      if (!hasCorpusFreq) {
+        logger.warn?.(
+          { dbPath: resolvedPath },
+          '[LexiconAdapter] rhyme_index.corpus_freq is missing; rhymes fall back to length ordering and will surface unattested CMUdict headwords. Run: node scripts/backfill_rhyme_corpus_freq.js',
+        );
+      }
 
       stmts = {
         lookupEntries: db.prepare(`
@@ -175,14 +192,70 @@ export function createLexiconAdapter(dbPath, options = {}) {
         `),
         // Group by rhyme_key (vowel family + coda, e.g. "U-N") — NOT rhyme_family,
         // which is only the bare vowel family ("U") and lumps ~14k unrelated words
-        // into one bucket, surfacing them alphabetically ("aaron, abduct, ..."). The
-        // length/word ordering keeps results deterministic and favours concise,
-        // higher-utility rhymes when the LIMIT truncates a large key bucket.
+        // into one bucket, surfacing them alphabetically ("aaron, abduct, ...").
+        //
+        // Order by corpus_freq first. rhyme_index is derived from CMUdict, which
+        // carries pronunciations for surnames and abbreviations with no meaning
+        // ("dold", "nold", "vold"). Those are short, so ordering by LENGTH alone
+        // floated them above every real rhyme. Attestation (a WordNet lemma or a
+        // gloss) cannot be the signal either: "told" is an irregular past tense
+        // with neither, and it is one of the best rhymes for "bold". Only actual
+        // usage separates the two, so the ordering key is the word's sentence
+        // count in scholomance_corpus.sqlite. LENGTH/alpha remain as tie-breakers
+        // to keep results deterministic within a frequency band.
+        //
+        // Once rhyme_key became the true rhyme domain the buckets got SMALLER and
+        // correct, which exposed a second problem: a word with few real rhymes
+        // ("love" has 7) padded its list with CMUdict surnames — godlove, manlove,
+        // labove. Ranking alone could not push them off a 10-item list out of a
+        // 24-word bucket, so unattested candidates are excluded outright here.
+        // lookupRhymesAny is the fallback for a word whose ONLY rhymes are absent
+        // from the corpus; returning something rare beats returning nothing.
         lookupRhymes: db.prepare(`
           SELECT word_lower
           FROM rhyme_index
           WHERE rhyme_key = ? AND word_lower != ?
-          ORDER BY LENGTH(word_lower) ASC, word_lower ASC
+          ${hasCorpusFreq ? 'AND corpus_freq > 0' : ''}
+          ORDER BY ${hasCorpusFreq ? 'corpus_freq DESC, ' : ''}LENGTH(word_lower) ASC, word_lower ASC
+          LIMIT ?
+        `),
+        lookupRhymesAny: db.prepare(`
+          SELECT word_lower
+          FROM rhyme_index
+          WHERE rhyme_key = ? AND word_lower != ?
+          ORDER BY ${hasCorpusFreq ? 'corpus_freq DESC, ' : ''}LENGTH(word_lower) ASC, word_lower ASC
+          LIMIT ?
+        `),
+        // Slant rhyme = the SAME rhyme tail with a DIFFERENT nucleus. rhyme_key is
+        // "<family>-<rest>", so a slant shares the <rest> and differs in <family>:
+        // blood (AH-D) slants with good (UH-D) and food (UW-D); bold (OW-LD) with
+        // fooled (UW-LD). This is the definition of a near rhyme, and it is now
+        // COMPUTABLE from the rhyme domain rather than begged from Datamuse — whose
+        // near-rhyme channel returned "strid", "scrid", "clwyd", "clsid" for blood.
+        // Attested-only, ranked by usage, same as the perfect-rhyme query.
+        // Axis 1 — NUCLEUS substitution: same tail, different vowel.
+        lookupSlantRhymes: db.prepare(`
+          SELECT word_lower
+          FROM rhyme_index
+          WHERE rhyme_key LIKE ('%-' || ?)
+            AND rhyme_key != ?
+            AND word_lower != ?
+            ${hasCorpusFreq ? 'AND corpus_freq > 0' : ''}
+          ORDER BY ${hasCorpusFreq ? 'corpus_freq DESC, ' : ''}LENGTH(word_lower) ASC, word_lower ASC
+          LIMIT ?
+        `),
+        // Axis 2 — CODA substitution: same vowel, a neighbouring consonant. The
+        // candidate keys are computed by rhymeDomain.slantRhymeKeys (voiced
+        // fricatives interchange, voicing pairs interchange), so this just fetches
+        // them. Without this axis "believe" (IY-V) could never reach "Socrates"
+        // (IY-Z) — the most common slant move in rap was unreachable by construction.
+        lookupSlantByCoda: db.prepare(`
+          SELECT word_lower
+          FROM rhyme_index
+          WHERE rhyme_key IN (SELECT value FROM json_each(?))
+            AND word_lower != ?
+            ${hasCorpusFreq ? 'AND corpus_freq > 0' : ''}
+          ORDER BY ${hasCorpusFreq ? 'corpus_freq DESC, ' : ''}LENGTH(word_lower) ASC, word_lower ASC
           LIMIT ?
         `),
         lookupSynonyms: db.prepare(`
@@ -212,7 +285,10 @@ export function createLexiconAdapter(dbPath, options = {}) {
           FROM entry
           WHERE headword_lower LIKE ?
           LIMIT ?
-        `)
+        `),
+        wordFrequency: hasCorpusFreq
+          ? db.prepare('SELECT corpus_freq FROM rhyme_index WHERE word_lower = ?')
+          : null,
       };
       
       logger.info?.({ dbPath: resolvedPath }, '[LexiconAdapter] Connected to dictionary DB.');
@@ -235,6 +311,85 @@ export function createLexiconAdapter(dbPath, options = {}) {
     return rows.map(normalizeEntry);
   }
 
+  /**
+   * Corpus sentence-frequency for each word, from rhyme_index.corpus_freq.
+   * A word with 0 occurrences across the 115k-sentence corpus is almost always a
+   * CMUdict surname or abbreviation ("dold", "olde", "golde") rather than a word
+   * anyone can use in a line. Callers rank or filter on this.
+   *
+   * Returns an empty Map on a pre-migration DB, which callers must read as "no
+   * frequency signal available" — never as "every word is unattested".
+   */
+  function getCorpusFrequencies(words) {
+    if (!tryConnect() || !hasCorpusFreqColumn) return new Map();
+    const normalized = [...new Set((Array.isArray(words) ? words : [])
+      .map(normalizeWord)
+      .filter(Boolean))];
+    if (normalized.length === 0) return new Map();
+
+    const frequencies = new Map();
+    for (const word of normalized) {
+      const row = stmts.wordFrequency.get(word);
+      frequencies.set(word, row ? Number(row.corpus_freq) || 0 : 0);
+    }
+    return frequencies;
+  }
+
+  /**
+   * Near rhymes along BOTH axes:
+   *
+   *   1. nucleus substitution — same tail, different vowel: blood ~ good, food
+   *   2. coda substitution    — same vowel, neighbouring consonant: believe ~ Socrates
+   *
+   * Axis 2 needs the word's phonemes (to compute the substitutable coda keys), and
+   * entry.ipa carries them. Both axes are attested-only and usage-ranked, then
+   * interleaved so neither one starves the other on a short list.
+   */
+  function lookupSlantRhymes(word, limit = DEFAULT_RHYME_LIMIT) {
+    if (!tryConnect()) return [];
+    const normalized = normalizeWord(word);
+    if (!normalized) return [];
+    const familyRow = stmts.lookupRhymeFamily.get(normalized);
+    const key = familyRow?.rhyme_key;
+    if (!key) return [];
+
+    const boundedLimit = toBoundedLimit(limit, DEFAULT_RHYME_LIMIT);
+
+    // Axis 1: "AH-D" -> rest "D". A key with no separator cannot be slanted.
+    const dash = key.indexOf('-');
+    const rest = dash >= 0 ? key.slice(dash + 1) : '';
+    const byNucleus = rest
+      ? stmts.lookupSlantRhymes.all(rest, key, normalized, boundedLimit).map((r) => r.word_lower)
+      : [];
+
+    // Axis 2: needs the pronunciation to know which codas may stand in.
+    let byCoda = [];
+    const pron = stmts.lookupEntries.get?.(normalized, 1)?.pronunciation
+      ?? stmts.lookupEntries.all(normalized, 1)[0]?.pronunciation;
+    if (typeof pron === 'string' && pron.trim()) {
+      const phones = pron.trim().split(/\s+/).filter(Boolean);
+      const codaKeys = slantRhymeKeys(phones);
+      if (codaKeys.length > 0) {
+        byCoda = stmts.lookupSlantByCoda
+          .all(JSON.stringify(codaKeys), normalized, boundedLimit)
+          .map((r) => r.word_lower);
+      }
+    }
+
+    // Interleave so a long nucleus list cannot crowd the coda axis off the page.
+    const merged = [];
+    const seen = new Set();
+    for (let i = 0; i < Math.max(byCoda.length, byNucleus.length); i += 1) {
+      for (const value of [byCoda[i], byNucleus[i]]) {
+        if (!value || seen.has(value)) continue;
+        seen.add(value);
+        merged.push(value);
+        if (merged.length >= boundedLimit) return merged;
+      }
+    }
+    return merged;
+  }
+
   function lookupRhymes(word, limit = DEFAULT_RHYME_LIMIT) {
     if (!tryConnect()) return { family: null, words: [] };
     const normalized = normalizeWord(word);
@@ -244,7 +399,11 @@ export function createLexiconAdapter(dbPath, options = {}) {
       return { family: null, words: [] };
     }
     const boundedLimit = toBoundedLimit(limit, DEFAULT_RHYME_LIMIT);
-    const rows = stmts.lookupRhymes.all(familyRow.rhyme_key, normalized, boundedLimit);
+    let rows = stmts.lookupRhymes.all(familyRow.rhyme_key, normalized, boundedLimit);
+    if (rows.length === 0) {
+      // Every rhyme for this word is absent from the corpus. Rare beats empty.
+      rows = stmts.lookupRhymesAny.all(familyRow.rhyme_key, normalized, boundedLimit);
+    }
     return {
       family: familyRow.rhyme_family,
       words: rows.map((row) => row.word_lower),
@@ -374,6 +533,8 @@ export function createLexiconAdapter(dbPath, options = {}) {
   return {
     lookupWord,
     lookupRhymes,
+    lookupSlantRhymes,
+    getCorpusFrequencies,
     batchLookupFamilies,
     batchValidateWords,
     searchEntries,

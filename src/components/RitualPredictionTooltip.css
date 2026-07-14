@@ -537,6 +537,65 @@ button.rp-confidence-badge[data-static] {
   font-style: italic;
 }
 
+/* Oracle failure notice — the card must say why a rune row is empty. */
+.rp-oracle-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.3rem 0;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--rp-border-inner);
+  border-left: 2px solid var(--rp-role-unknown);
+  border-radius: 4px;
+  background: rgba(122, 112, 136, 0.08);
+  font-size: 0.66rem;
+  line-height: 1.35;
+}
+
+.rp-oracle-notice--warn {
+  border-left-color: var(--rp-role-trigger);
+  background: rgba(200, 104, 72, 0.08);
+}
+
+.rp-oracle-notice-icon {
+  flex: 0 0 auto;
+  color: var(--rp-text-muted);
+}
+
+.rp-oracle-notice--warn .rp-oracle-notice-icon {
+  color: var(--rp-role-trigger);
+}
+
+.rp-oracle-notice-text {
+  flex: 1 1 auto;
+  color: var(--rp-text-muted);
+}
+
+.rp-oracle-retry {
+  flex: 0 0 auto;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--rp-border);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--rp-gold);
+  font: inherit;
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.rp-oracle-retry:hover {
+  background: var(--rp-gold-glow);
+  color: var(--rp-gold-bright);
+}
+
+.rp-oracle-retry:focus-visible {
+  outline: 2px solid var(--rp-gold-bright);
+  outline-offset: 1px;
+}
+
 .rp-lex-pos-row {
   display: flex;
   align-items: center;

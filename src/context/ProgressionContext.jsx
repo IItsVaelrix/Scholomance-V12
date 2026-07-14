@@ -29,7 +29,9 @@ const ProgressionPayloadSchema = z.object({
   achievements: z.array(z.string()).optional(),
   discoveryHistory: z.array(z.string()).optional(),
   nexus: z.object({
-    discoveredWords: z.record(z.object({
+    // (keySchema, valueSchema) — the single-arg form is zod v3 and silently
+    // rejects every key under v4. See scholomanceDictionary.api.js.
+    discoveredWords: z.record(z.string(), z.object({
       word: z.string(),
       level: z.number(),
       exp: z.number(),

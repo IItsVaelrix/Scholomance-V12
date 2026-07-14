@@ -39,7 +39,31 @@ function safeSchoolForFamily(engine: any, family: string | null): string {
   return 'VOID';
 }
 
-/** Truesight: a content word's dominant vowel family -> school -> colour.
+/**
+ * The family a word RHYMES on, taken from its rhymeKey.
+ *
+ * Truesight colour exists to make rhyme groups visible, and a word rhymes on its
+ * FINAL syllable, not its loudest one. Keying hue off the stressed vowel broke
+ * exactly the words the feature is for: "broadband" (B R AO1 D B AE2 N D) is
+ * stressed AO but rhymes on AE, so it rendered DIVINATION-yellow while its own
+ * perfect rhymes — hand, land, bland, command, demand — rendered WILL-red. The
+ * rhyme was found, scored 1.0, and then painted out of its own group.
+ *
+ * rhymeKey is "<terminalFamily>-<coda>" ("AE-ND", "OW-LD", "AY-open"), so the
+ * prefix is the family the rhyme is actually built on. Stress may season a word
+ * (weight, glow, emphasis) but it does not get to choose the hue.
+ */
+function familyFromRhymeKey(rhymeKey: any): string | null {
+  if (typeof rhymeKey !== 'string') return null;
+  const prefix = rhymeKey.split('-')[0];
+  return safeVowelFamily(prefix);
+}
+
+/** Truesight: a content word's RHYMING vowel family -> school -> colour.
+ * Same law as tokenTruesight — hue groups rhymes, so it comes from the terminal
+ * family, and the stressed family is only the fallback. If this path used a
+ * different rule, a word would change colour depending on whether the server
+ * analysis had landed yet.
  * School resolution goes through the engine's own resolver, which normalizes
  * alias families (OO -> UH, YUW -> UW, ...) before the school lookup — a raw
  * map hit would silently disagree with every normalized consumer. */
@@ -58,7 +82,8 @@ export function wordTruesight(word: string): { color: string; school: string; an
     getSchoolFromVowelFamily?: (f: string) => string | null;
   };
   const analysis = engine.analyzeDeep?.(clean) || null;
-  const family = safeVowelFamily(analysis?.vowelFamily);
+  const family = familyFromRhymeKey(analysis?.rhymeKey)
+    || safeVowelFamily(analysis?.vowelFamily);
   const school = safeSchoolForFamily(engine, family);
   return { color: generateSchoolColor(school), school, analysis };
 }
@@ -73,17 +98,23 @@ export function tokenTruesight(tokenData: any, fallbackWord: string): { color: s
     analyzeDeep?: (w: string) => any | null;
   };
 
-  // Use the exact vowelFamily from the backend's syntax analysis if available.
-  // The safe-guard chain is critical here: if the upstream `tokenData.vowelFamily`
-  // is malformed, we fall through to the live engine, and if that also fails we
-  // land on VOID. We never let a misfire become a NaN/Infinity-poisoned color.
+  // Hue follows the RHYME, not the stress (see familyFromRhymeKey). The backend
+  // supplies rhymeKey on every wordAnalysis; `rhymeFamily` is honoured first in
+  // case a producer ever sends it directly. vowelFamily — the stressed family —
+  // is only a last resort, for a token whose rhyme could not be resolved at all.
+  //
+  // The safe-guard chain is critical: if the upstream fields are malformed we
+  // fall through to the live engine, and if that also fails we land on VOID. We
+  // never let a misfire become a NaN/Infinity-poisoned color.
   //
   // The live G2P pass is LAZY: in the common server-analyzed case the backend
   // family is present and usable, so we never run analyzeDeep at all. Computing
   // it eagerly (and discarding it) was a full G2P pass wasted per resonant word.
-  const backendFamily = safeVowelFamily(tokenData?.vowelFamily)
-    || safeVowelFamily(tokenData?.rhymeFamily);
+  const backendFamily = safeVowelFamily(tokenData?.rhymeFamily)
+    || familyFromRhymeKey(tokenData?.rhymeKey)
+    || safeVowelFamily(tokenData?.vowelFamily);
   const family = backendFamily
+    || familyFromRhymeKey(engine.analyzeDeep?.(clean)?.rhymeKey)
     || safeVowelFamily(engine.analyzeDeep?.(clean)?.vowelFamily);
   const school = safeSchoolForFamily(engine, family);
   return { color: generateSchoolColor(school), school, analysis: tokenData || null };

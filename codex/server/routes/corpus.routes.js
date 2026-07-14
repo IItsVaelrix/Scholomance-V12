@@ -84,10 +84,23 @@ export async function corpusRoutes(fastify, options) {
       }
     }
 
+    // Drop candidates the corpus has never seen. The pool comes from CMUdict via
+    // rhyme_index, which carries pronunciations for surnames and abbreviations
+    // with no meaning ("dold", "olde", "golde", "bowled"). Phoneme distance
+    // scores those every bit as highly as real words — they rhyme perfectly, they
+    // just aren't words — so they have to be excluded before ranking, not after.
+    // An empty map means the DB predates the backfill: keep every candidate
+    // rather than silently returning nothing.
+    const frequencies = typeof lexiconAdapter?.getCorpusFrequencies === 'function'
+      ? lexiconAdapter.getCorpusFrequencies([...candidates])
+      : new Map();
+    const hasFrequencySignal = frequencies.size > 0;
+
     // Score each candidate
     const scored = [];
     for (const candidateWord of candidates) {
       if (candidateWord === queryWord.toLowerCase()) continue;
+      if (hasFrequencySignal && (frequencies.get(candidateWord) || 0) === 0) continue;
 
       const candAnalysis = PhonemeEngine.analyzeWord(candidateWord);
       if (!candAnalysis.phonemes || candAnalysis.phonemes.length === 0) continue;

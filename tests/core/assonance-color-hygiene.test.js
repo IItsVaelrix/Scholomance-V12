@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DeepRhymeEngine } from '../../codex/core/rhyme-astrology/deepRhyme.engine.js';
 import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
+import { buildSelfDictionaryAPI } from '../../codex/server/adapters/selfDictionary.authority.js';
 
 // ── Assonance colour-hygiene probe ──────────────────────────────────────────
 // Question under test: does assonance contribute to colour misattribution by
@@ -27,11 +28,25 @@ import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
 
 const engine = new DeepRhymeEngine();
 
+// This probe is only meaningful against authoritative rhyme families. Unprimed,
+// DeepRhymeEngine's dictionary lookup falls back to `fetch`, which has no origin
+// under Node; words then never land in a shared family bucket and are never
+// compared. That silently HID the section-B leak — "happy" reported zero perfect
+// connections not because the engine is clean but because it never looked.
+const dictionaryAPI = buildSelfDictionaryAPI();
+
+async function analyze(text) {
+  const words = text.match(/[A-Za-z']+/g) || [];
+  await PhonemeEngine.primeAuthorityBatch(words, dictionaryAPI);
+  await engine.primeRhymeFamilies(words, dictionaryAPI);
+  return engine.analyzeDocument(text);
+}
+
 const SLANT_MIN = 0.66; // RHYME_TYPES.SLANT.minScore — colouring threshold
 const NEAR_MIN = 0.78;
 
 async function connectionBetween(text, a, b) {
-  const result = await engine.analyzeDocument(text);
+  const result = await analyze(text);
   return result.allConnections.find(
     (c) =>
       (c.wordA.word.toLowerCase() === a && c.wordB.word.toLowerCase() === b) ||
@@ -69,7 +84,7 @@ describe('A. assonance hygiene that holds (regression pins)', () => {
       'blood under the sun above',
       'hated waiting making faces',
     ].join('\n');
-    const result = await engine.analyzeDocument(assonanceRich);
+    const result = await analyze(assonanceRich);
     const assonanceConnections = result.allConnections.filter(conn => conn.type === 'assonance');
     expect(assonanceConnections.length).toBeGreaterThan(0);
     for (const conn of assonanceConnections) {
@@ -79,15 +94,19 @@ describe('A. assonance hygiene that holds (regression pins)', () => {
 });
 
 describe('B. live misattribution (documented bugs — it.fails flips when fixed)', () => {
-  // Open-syllable vowel-only matching scores a flat 1.00 PERFECT for the
-  // final "-y" of "happy" against whichever open monosyllable shares its
-  // analysed vowel family (dictionary analysis pairs it with "tree" via IY;
-  // the heuristic G2P analyses "-y" as stressed AY and pairs it with "I").
-  // Both partners have tiny real resonance with "happy", yet the connection
-  // is emitted at the strongest type and coloured. Desired behaviour: no
-  // perfect-type connection should touch "happy" in this verse.
+  // scoreMultiSyllableMatch is stress-blind, so "happy" (HH AE1 P IY0) matches
+  // on its stressed AE against the monosyllable "sat" (S AE1 T) and is emitted
+  // as PERFECT at 0.92 — a word that shares one stressed vowel and nothing else.
+  // "sat"/"happy" is not a rhyme in any register.
+  //
+  // The comment here used to name tree/happy via IY. That pairing is real at the
+  // unit level but is not what the document-level engine emits once authoritative
+  // families are primed; tree/happy lands at 0.65 assonance and is correctly
+  // filtered. The stressed-vowel collision with "sat" is the live leak.
+  //
+  // Desired behaviour: no perfect-type connection should touch "happy" here.
   it.fails('"happy" should not form a perfect connection with any open monosyllable', async () => {
-    const result = await engine.analyzeDocument('I sat beneath the tree\nthe child was so happy');
+    const result = await analyze('I sat beneath the tree\nthe child was so happy');
     const perfectHappy = result.allConnections.filter(
       (c) => c.type === 'perfect' &&
         (c.wordA.word.toLowerCase() === 'happy' || c.wordB.word.toLowerCase() === 'happy'),

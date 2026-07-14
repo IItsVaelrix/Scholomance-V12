@@ -49,11 +49,24 @@ const DEFAULT_HEALTH_TIMEOUT_MS = 1500;
 const HEALTH_CACHE_TTL_MS = 15000;
 const OFFLINE_RETRY_COOLDOWN_MS = 30000;
 
-const BatchLookupSchema = z.object({
-  families: z.record(z.object({
-    family: z.string().nullable(),
-    phonemes: z.array(z.string()).nullable()
-  }))
+// z.record MUST take (keySchema, valueSchema) under zod v4. The single-argument
+// form is a zod v3 idiom: v4 reads that lone schema as the KEY type, so this
+// validated every word ("BOLD", "TOLD") as though it had to be an object, failed
+// with invalid_key, and lookupBatch below returned {} for a perfectly good 200.
+//
+// The blast radius was total and silent: AUTHORITY_CACHE was never populated in
+// the browser, so PhonemeEngine fell back to guessing phonemes from SPELLING for
+// every word on the page — "bold" came out B AA1 L D instead of B OW1 L D. The
+// engine does not label a guess as a guess, so Truesight coloured, rhymed and
+// scored confidently wrong, and nothing anywhere reported an error.
+export const BatchLookupSchema = z.object({
+  families: z.record(
+    z.string(),
+    z.object({
+      family: z.string().nullable(),
+      phonemes: z.array(z.string()).nullable()
+    })
+  )
 });
 
 const ValidateBatchSchema = z.object({

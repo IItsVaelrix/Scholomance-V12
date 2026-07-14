@@ -25,6 +25,22 @@ import { assertTrue } from './tools/bytecode-assertions.js';
  * 4. Server is the Arbiter (No client-side combat authority)
  */
 
+/**
+ * A grep-matched line is exempt when it carries an EXEMPT marker in either
+ * comment style, with an optional reason after the keyword:
+ *
+ *   const x = Math.random(); // EXEMPT: seeded elsewhere, see foo.js
+ *   {\/* EXEMPT: glossary prose, not a call *\/}
+ *
+ * The reason is optional to the regex but not to the reviewer: a bare marker
+ * documents nothing. `{\/* ... *\/}` (JSX) is matched by the block-comment arm.
+ */
+const EXEMPT_MARKER = /(?:\/\/|\/\*)\s*EXEMPT\b/;
+
+function isExempt(line) {
+  return EXEMPT_MARKER.test(line);
+}
+
 describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
 
   describe('1) Bytecode Determinism Torture Test', () => {
@@ -136,6 +152,12 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
     it('scans runtime code for forbidden Math.random() usage', () => {
       // Directories to scan
       const dirs = ['src', 'codex'];
+      // These detectors are plain text greps, so they cannot tell a call from a
+      // sentence about a call — the determinism law quoted as prose inside a
+      // glossary component trips the very rule it is teaching. An exemption
+      // marker is the escape hatch, and it must SAY WHY: bare `/* EXEMPT */`
+      // told a future reader nothing, so a reason is now permitted (and
+      // expected) after the keyword in either comment style.
       const allowedExemptions = [
         'tests',
         'fixtures',
@@ -153,8 +175,8 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
       
       if (output) {
         const lines = output.split('\n');
-        const violations = lines.filter(line => !line.includes('// EXEMPT') && !line.includes('/* EXEMPT */') && !line.includes('.md:'));
-        
+        const violations = lines.filter(line => !isExempt(line) && !line.includes('.md:'));
+
         assertTrue(violations.length === 0, {
           testName: 'scans runtime code for forbidden Math.random() usage',
           testFile: 'vaelrix-law-architecture-gauntlet.test.js',
@@ -190,7 +212,7 @@ describe('[QA] Vaelrix Law Architecture Gauntlet', () => {
         const output = execSync(grepCommand).toString().trim();
         
         if (output) {
-          const violations = output.split('\n').filter(line => !line.includes('// EXEMPT') && !line.includes('.md:'));
+          const violations = output.split('\n').filter(line => !isExempt(line) && !line.includes('.md:'));
           
           assertTrue(violations.length === 0, {
             testName: 'scans critical paths for forbidden Date.now() or performance.now()',

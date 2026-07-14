@@ -5,8 +5,10 @@ import { useTheme } from '../hooks/useTheme.jsx';
 import { useWordLookup } from '../hooks/useWordLookup.jsx';
 import { ScholomanceCorpusAPI } from '../lib/scholomanceCorpus.api.js';
 import { buildRitualPrediction, reconcileWithLexicon } from '../lib/ritualPredictionTooltip.js';
+import { PhonemeEngine } from '../../codex/core/phonology/phoneme.engine.js';
+import { ScholomanceDictionaryAPI } from '../lib/scholomanceDictionary.api.js';
 import { resolveOverlayPlacement } from '../lib/truesight/overlay-placement.js';
-import { ArrowLeft, ArrowRight, BookOpen, ChevronDown, ChevronRight, Copy, Replace, Search, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, BookOpen, ChevronDown, ChevronRight, Copy, Replace, Search, Sparkles, X } from 'lucide-react';
 import './RitualPredictionTooltip.css';
 
 const TOOLTIP_MIN_WIDTH = 300;
@@ -76,6 +78,7 @@ function normalizeWord(value) {
   return String(value || '').trim().toLowerCase();
 }
 
+
 function ConfidenceBadge({ confidence, factors }) {
   const [open, setOpen] = useState(false);
   const pct = Math.round(confidence * 100);
@@ -119,6 +122,25 @@ function ConfidenceBadge({ confidence, factors }) {
 
 function AuraTag({ label }) {
   return <span className="rp-aura-tag">{label}</span>;
+}
+
+// A failed lookup used to render as an empty rune row, which reads as "this word
+// has no rhymes" rather than "the Oracle never answered". Name the condition and
+// offer the way out of it.
+function OracleNotice({ error, onRetry }) {
+  if (!error) return null;
+  const severity = error.severity === 'WARN' ? 'warn' : 'info';
+  return (
+    <div className={`rp-oracle-notice rp-oracle-notice--${severity}`} role="status">
+      <AlertTriangle size={11} className="rp-oracle-notice-icon" aria-hidden="true" />
+      <span className="rp-oracle-notice-text">{error.message}</span>
+      {onRetry && (
+        <button type="button" className="rp-oracle-retry" onClick={onRetry}>
+          Retry
+        </button>
+      )}
+    </div>
+  );
 }
 
 // Suggestion pills. In a poem context (onTransmute provided) the primary click
@@ -339,41 +361,104 @@ const RitualPredictionTooltip = ({
     setHistoryIndex(0);
   }, [seedWord]);
 
-  const { lookup, data: lookupData, isLoading: lookupLoading } = useWordLookup();
+  // status/error were previously discarded. useWordLookup resolves every failure
+  // (timeout, 429, disconnect, denied) to a structured state rather than
+  // throwing, so dropping them made a rate-limited lookup look exactly like a
+  // word with no rhymes: an empty list and no explanation.
+  const {
+    lookup,
+    retry: retryLookup,
+    data: lookupData,
+    isLoading: lookupLoading,
+    status: lookupStatus,
+    error: lookupError,
+  } = useWordLookup();
   useEffect(() => {
     if (activeWord) lookup(activeWord);
   }, [activeWord, lookup]);
 
   const [corpusData, setCorpusData] = useState({ semantic: [], search: [] });
   const [corpusLoading, setCorpusLoading] = useState(false);
+  const [corpusError, setCorpusError] = useState(null);
   useEffect(() => {
     if (!activeWord || !ScholomanceCorpusAPI.isEnabled()) {
       setCorpusData({ semantic: [], search: [] });
+      setCorpusError(null);
       return;
     }
     setCorpusLoading(true);
+    setCorpusError(null);
     let cancelled = false;
-    Promise.all([
-      ScholomanceCorpusAPI.semantic(activeWord, 8).catch(() => []),
-      ScholomanceCorpusAPI.search(activeWord, 3).catch(() => []),
-    ]).then(([semantic, search]) => {
+    // These used to be .catch(() => []). A timed-out or rate-limited corpus then
+    // rendered identically to a word the corpus simply has nothing for, which is
+    // most of why this panel looked like it failed at random.
+    Promise.allSettled([
+      ScholomanceCorpusAPI.semantic(activeWord, 8),
+      ScholomanceCorpusAPI.search(activeWord, 3),
+    ]).then(([semanticResult, searchResult]) => {
       if (cancelled) return;
-      setCorpusData({ semantic, search });
+      setCorpusData({
+        semantic: semanticResult.status === 'fulfilled' ? semanticResult.value : [],
+        search: searchResult.status === 'fulfilled' ? searchResult.value : [],
+      });
+      const failure = [semanticResult, searchResult].find((r) => r.status === 'rejected');
+      setCorpusError(failure ? (failure.reason?.message || 'The Corpus Oracle did not answer.') : null);
     }).finally(() => {
       if (!cancelled) setCorpusLoading(false);
     });
     return () => { cancelled = true; };
   }, [activeWord]);
 
+  // The local PhonemeEngine guesses phonemes from spelling when it has no
+  // authority for a word, and does not label the guess as one: it reported
+  // "bold" as B AA1 L D / AA-LD while the lexicon entry on the very same card
+  // read B OW1 L D. (gene BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK)
+  //
+  // Prime the WHOLE context line, not just the active word. Resonance is decided
+  // by comparing the active word's phonemes against its neighbours', so a line
+  // where one word is authoritative and the rest are guesses is WORSE than a
+  // line of uniform guesses: "bold" (real OW-LD) stops matching "told" (guessed
+  // AA-LD) and the rhyme vanishes. Correct the whole line or none of it.
+  const [authorityVersion, setAuthorityVersion] = useState(0);
+  useEffect(() => {
+    const words = [
+      ...(String(seedContextLine || '').match(/[A-Za-z']+/g) || []),
+      activeWord,
+    ].filter(Boolean);
+    if (words.length === 0) return undefined;
+
+    let cancelled = false;
+    PhonemeEngine.primeAuthorityBatch(words, ScholomanceDictionaryAPI)
+      .then(() => {
+        if (!cancelled) setAuthorityVersion((v) => v + 1);
+      })
+      .catch(() => {
+        // Authority unavailable: the engine keeps its heuristic and the card
+        // renders the guess rather than nothing.
+      });
+    return () => { cancelled = true; };
+  }, [seedContextLine, activeWord]);
+
   // Provisional, instant prediction: the precomputed one for the root word,
   // otherwise a locally-built heuristic for whatever word we've navigated to.
   const basePrediction = useMemo(() => {
     if (!activeWord) return predictionProp;
-    if (predictionProp && normalizeWord(predictionProp.word) === normalizeWord(activeWord)) {
-      return predictionProp;
-    }
-    return buildRitualPrediction({ word: activeWord, line: 0, column: 0, contextLine: seedContextLine, surroundingText: seedContextLine });
-  }, [predictionProp, activeWord, seedContextLine]);
+    const propMatches = predictionProp && normalizeWord(predictionProp.word) === normalizeWord(activeWord);
+
+    // The precomputed prediction was built before the lexicon answered, so once
+    // the engine has real phonemes it is stale — rebuild rather than render the
+    // guess. Keep its `source` so the footer still knows where the word came from.
+    if (propMatches && authorityVersion === 0) return predictionProp;
+
+    const rebuilt = buildRitualPrediction({
+      word: activeWord,
+      line: 0,
+      column: 0,
+      contextLine: seedContextLine,
+      surroundingText: seedContextLine,
+    });
+    return propMatches ? { ...rebuilt, source: predictionProp.source ?? rebuilt.source } : rebuilt;
+  }, [predictionProp, activeWord, seedContextLine, authorityVersion]);
 
   // Single prediction authority: once the lexicon lookup for the active word
   // resolves, the backend is the source of truth — role and resonance tiers are
@@ -584,16 +669,13 @@ const RitualPredictionTooltip = ({
     return lex.definition?.text ? [lex.definition.text] : [];
   })();
   const { rhymes, slantRhymes, synonyms, antonyms } = cleanWordLists(activeWord, lex);
-  const similes = corpusData.semantic
-    .map((r) => (typeof r === 'string' ? r : r?.word))
-    .filter((w) => {
-      const n = normalizeWord(w);
-      return n && n !== normalizeWord(activeWord)
-        && !rhymes.some((r) => normalizeWord(r) === n)
-        && !slantRhymes.some((r) => normalizeWord(r) === n)
-        && !synonyms.some((r) => normalizeWord(r) === n)
-        && !antonyms.some((r) => normalizeWord(r) === n);
-    }).slice(0, 8);
+  // There was a "simile" row here. It was fed from /api/corpus/semantic, which
+  // despite its name is a phoneme-distance search whose candidate pool is
+  // lookupRhymes(word, 500) — every result carries the query's own rhyme_key.
+  // The row then subtracted everything already shown as a rhyme or slant, so by
+  // construction it displayed the rhymes that were too poor to make the rhyme
+  // list, under a label promising figurative language. Nothing in this system
+  // produces similes, so the row is gone rather than renamed into a half-truth.
 
 
   const canTransmute = typeof onTransmute === 'function' && rootWord && normalizeWord(activeWord) !== normalizeWord(rootWord);
@@ -635,6 +717,9 @@ const RitualPredictionTooltip = ({
             <div className="rp-role-desc">{ROLE_DESCRIPTIONS[pred.role] || ''}</div>
             
             {lookupLoading && !lex && <div className="rp-lexicon-status">consulting the lexicon...</div>}
+            {!lookupLoading && lookupStatus !== 'ready' && (
+              <OracleNotice error={lookupError} onRetry={retryLookup} />
+            )}
             <div className="rp-definitions-group">
               {definitions.map((def, i) => <p key={i} className="rp-lex-def">{def}</p>)}
             </div>
@@ -642,7 +727,6 @@ const RitualPredictionTooltip = ({
             <RuneRow label="ant" words={antonyms} onNavigate={navigateTo} onTransmute={onTransmute} />
             <RuneRow label="rhyme" words={rhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
             <RuneRow label="slant" words={slantRhymes} onNavigate={navigateTo} onTransmute={onTransmute} />
-            <RuneRow label="simile" words={similes} onNavigate={navigateTo} onTransmute={onTransmute} />
           </section>
 
           {details.whyFactors?.length > 0 && (
@@ -683,12 +767,17 @@ const RitualPredictionTooltip = ({
             </section>
           )}
 
-          {(corpusData.semantic.length > 0 || corpusData.search.length > 0 || corpusLoading) && (
+          {(corpusData.semantic.length > 0 || corpusData.search.length > 0 || corpusLoading || corpusError) && (
             <section className="rp-section">
               <div className="rp-section-label">Scholomance Corpus</div>
               {corpusLoading && <div className="rp-lexicon-status">consulting the corpus...</div>}
+              {!corpusLoading && corpusError && (
+                <OracleNotice error={{ message: corpusError, severity: 'WARN' }} />
+              )}
+              {/* Labelled for what /api/corpus/semantic actually returns: words
+                  ranked by phoneme distance, not by meaning. */}
               <RuneRow
-                label="echo"
+                label="sound-alike"
                 words={corpusData.semantic.map((r) => (typeof r === 'string' ? r : r?.word)).filter(Boolean)}
                 onNavigate={navigateTo}
                 onTransmute={onTransmute}

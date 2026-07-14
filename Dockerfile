@@ -34,6 +34,28 @@ RUN test -s /app/data/scholomance_corpus.sqlite || (test -f /app/scholomance_cor
 RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_corpus.sqlite) \
     || echo "WARNING: No local dictionary/corpus DBs available. Ensure Turso is configured."
 
+# --- Rhyme correctness pass (MUST run after the Python build) ---
+# build_scholomance_dict.py writes rhyme_index.rhyme_key from a simplified
+# IPA->ARPAbet map that collapses AH/UH/UW into one family "U" and keys a word as
+# <firstStressedFamily>-<finalCoda> — two different syllables stitched together.
+# It ships love==move, blood==food, and "I" rhyming with "fire".
+#
+# These two steps rewrite the index from the canonical rhyme domain
+# (codex/core/phonology/rhymeDomain.js) and rank candidates by real corpus usage.
+# Measured on a 16-word x top-10 bake-off: 80.0% -> 100.0% true perfect rhymes,
+# 6.3% -> 0% junk.
+#
+# The formula deliberately lives in ONE place (JS). Porting it back into the
+# Python builder would recreate the two-producers-disagree bug that caused this.
+RUN (test -s /app/data/scholomance_dict.sqlite && test -s /app/data/scholomance_corpus.sqlite) && ( \
+      SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
+      SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
+      node scripts/rebuild_rhyme_index_keys.js \
+      && SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite \
+         SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite \
+         node scripts/backfill_rhyme_corpus_freq.js \
+    ) || echo "WARNING: rhyme index not rebuilt; rhymes fall back to the lossy legacy keys."
+
 # --- App build ---
 ENV SCHOLOMANCE_DICT_PATH=/app/data/scholomance_dict.sqlite
 ENV SCHOLOMANCE_CORPUS_PATH=/app/data/scholomance_corpus.sqlite

@@ -87,6 +87,20 @@ export function useVerseSynthesis(content, options = {}) {
           // Mapping for UI components that expect specific artifact fields
           result.verseIR = result.analysis?.compiler;
           result.syntaxLayer = result.analysis;
+
+          // The server analysis reports syllables per line and per word but
+          // never a document total, so the status bar read "SYLLABLES: 0" for
+          // every scroll once server analysis became the default. Sum whichever
+          // of the two the payload carries.
+          if (typeof result.totalSyllables !== 'number') {
+            const lineCounts = result.analysis?.lineSyllableCounts;
+            if (Array.isArray(lineCounts)) {
+              result.totalSyllables = lineCounts.reduce((sum, n) => sum + (Number(n) || 0), 0);
+            } else if (Array.isArray(result.analysis?.wordAnalyses)) {
+              result.totalSyllables = result.analysis.wordAnalyses
+                .reduce((sum, w) => sum + (Number(w?.syllableCount) || 0), 0);
+            }
+          }
         }
       }
 

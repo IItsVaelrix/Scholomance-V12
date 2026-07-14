@@ -1,15 +1,24 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PhonemeEngine } from '../../../codex/core/phonology/phoneme.engine.js';
 import { DeepRhymeEngine } from '../../../codex/core/rhyme-astrology/deepRhyme.engine.js';
+import { buildSelfDictionaryAPI } from '../../../codex/server/adapters/selfDictionary.authority.js';
 
 /**
  * GOLDEN STANDARD: PHONEME ENGINE FINAL BOSSES
- * 
+ *
  * These tests ensure the DeepRhymeEngine and PhonemeEngine can properly match
  * highly complex rap multi-syllable slant rhymes and co-articulations.
  */
 describe('Golden Standard: Rap Multi-Syllable Phrase Connections', () => {
     let rhymeEngine;
+
+    // Both engines default to a fetch-backed dictionary. Under Node there is no
+    // origin to fetch from, so every word silently drops to a spelling-based
+    // guess: "bottle" becomes B AA1 T T L rather than B AA1 T AH0 L, and the
+    // T/D slant rhyme with "model" disappears. These are golden tests of real
+    // pronunciations, so they get the real dictionary — the same in-process
+    // authority the server hands to panel analysis.
+    const dictionaryAPI = buildSelfDictionaryAPI();
 
     beforeEach(() => {
         PhonemeEngine.clearCache();
@@ -17,6 +26,9 @@ describe('Golden Standard: Rap Multi-Syllable Phrase Connections', () => {
     });
 
     async function evaluatePhrases(text) {
+        const words = text.match(/[A-Za-z']+/g) || [];
+        await PhonemeEngine.primeAuthorityBatch(words, dictionaryAPI);
+        await rhymeEngine.primeRhymeFamilies(words, dictionaryAPI);
         const result = await rhymeEngine.analyzeDocument(text);
         return result;
     }

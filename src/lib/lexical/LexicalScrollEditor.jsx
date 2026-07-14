@@ -17,6 +17,7 @@ import IntelliSense from '../../components/IntelliSense.jsx';
 import RitualPredictionTooltip from '../../components/RitualPredictionTooltip.jsx';
 import { buildRitualPrediction } from '../../lib/ritualPredictionTooltip.js';
 import { evaluateSCD64CircuitBreaker } from '../../core/scd64/circuitBreaker';
+import { resolveTokenLineIndex } from './charStart.js';
 
 const lexicalTheme = {
   paragraph: 'editor-paragraph',
@@ -309,7 +310,7 @@ function WordClickPlugin({ onWordActivate, analyzedDocument }) {
                 analysis: analysis,
                 charStart: tokenData?.charStart,
                 charEnd: tokenData?.charEnd,
-                lineIndex: tokenData?.lineNumber,
+                lineIndex: resolveTokenLineIndex(tokenData),
                 wordIndex: tokenData?.wordIndex,
                 vowelFamily: analysis?.vowelFamily,
                 terminalVowelFamily: analysis?.rhymeFamily,

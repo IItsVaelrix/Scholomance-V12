@@ -33,6 +33,11 @@ export const ORACLE_ERRORS = {
   WARMING: makeOracleError('INITIALIZING', 'ORACLE_WARMING', 'INFO', 'The Oracle is warming. Try again shortly.'),
   TIMEOUT: makeOracleError('TIMEOUT', 'ORACLE_TIMEOUT', 'WARN', 'The Oracle did not answer in time.'),
   DISCONNECTED: makeOracleError('NETWORK', 'ORACLE_DISCONNECTED', 'WARN', 'The Lexicon Oracle is disconnected.'),
+  // /api/word-lookup is capped at 30 requests/minute. Exploring rune pills fires
+  // one lookup per word, so a fast reader hits the cap in normal use. This is a
+  // distinct condition from a fault: the Oracle is healthy and the answer will
+  // arrive if you wait, so it must not be reported as a broken connection.
+  RATE_LIMITED: makeOracleError('RATE_LIMIT', 'ORACLE_RATE_LIMITED', 'INFO', 'Reading too quickly for the Oracle. Pause a moment, then retry.'),
   FAULT: makeOracleError('UNKNOWN', 'ORACLE_FAULT', 'WARN', 'The Oracle connection faltered.'),
 };
 
@@ -61,6 +66,9 @@ async function lookupWordFromServer(word) {
     }
     if (response.status === 401 || response.status === 403) {
       return { data: null, source: 'server', status: 'denied', error: ORACLE_ERRORS.DENIED };
+    }
+    if (response.status === 429) {
+      return { data: null, source: 'server', status: 'rate_limited', error: ORACLE_ERRORS.RATE_LIMITED };
     }
     if (response.status === 503) {
       // Pillar 1 gated route: the Oracle subsystem is still hydrating.

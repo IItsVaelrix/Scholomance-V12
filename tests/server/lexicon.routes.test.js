@@ -154,6 +154,11 @@ describe('[Server] lexicon.routes', () => {
       synonyms: ['mystery'],
       antonyms: ['banality'],
       rhymes: ['banana'],
+      // The local dict now COMPUTES its own near rhymes (same rhyme tail, different
+      // nucleus) instead of begging Datamuse's rel_nry, which answered "strid",
+      // "scrid", "clwyd" for "blood". Empty here because the fixture adapter has no
+      // lookupSlantRhymes — the route must still emit the key rather than omit it.
+      slantRhymes: [],
       rhymeFamily: 'AA',
       lore: { seed: 'arcana' },
     });

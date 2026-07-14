@@ -33,6 +33,7 @@
 
 import { CmuPhonemeEngine } from "./cmu.phoneme.engine.js";
 import { normalizeVowelFamily } from "./vowelFamily.js";
+import { buildRhymeKey } from "./rhymeDomain.js";
 import {
   ARPABET_VOWELS,
   VOWEL_TO_BASE_FAMILY,
@@ -140,7 +141,8 @@ async function _runG2PJury(word) {
         vowelFamily,
         phonemes: processed,
         coda,
-        rhymeKey: `${finalFamily}-${coda || "open"}`,
+        // Rhyme domain, not finalFamily+coda — see rhymeDomain.js.
+        rhymeKey: buildRhymeKey(processed) || `${finalFamily}-${coda || "open"}`,
         syllableCount: syllables.length,
       },
       diagnostics: outcome.diagnostics,
@@ -435,6 +437,27 @@ export const PhonemeEngine = {
     }
   },
 
+  /**
+   * Record authoritative data for ONE word and evict any heuristic analysis
+   * already cached for it.
+   *
+   * analyzeWord consults WORD_CACHE (a memo of whatever branch ran last) BEFORE
+   * the authority branch. So a word analysed from spelling before its authority
+   * arrived kept the guess forever — "bold" stayed B AA1 L D / AA-LD even once
+   * the dictionary had said B OW1 L D / OW-LD. Writing to AUTHORITY_CACHE alone
+   * is therefore not enough; the stale memo has to go with it. Evicting one key
+   * (rather than clearCache()) keeps every other word's analysis warm, which
+   * matters because the colouring path re-analyses the whole document.
+   */
+  setAuthority(word, data) {
+    const upper = String(word || '').trim().toUpperCase();
+    if (!upper || !data || (!data.family && !data.phonemes)) return false;
+    this.AUTHORITY_CACHE.set(upper, data);
+    this.WORD_CACHE.delete(upper);
+    this.WORD_DIAGNOSTICS_CACHE.delete(upper);
+    return true;
+  },
+
   async init() {
     if (this._initPromise) return this._initPromise;
 
@@ -533,7 +556,10 @@ export const PhonemeEngine = {
         const batchResults = normalizeAuthorityBatchPayload(await api.lookupBatch(missing));
         for (const [word, data] of Object.entries(batchResults)) {
             // data is { family: string, phonemes: string[] | null }
-            this.AUTHORITY_CACHE.set(word.toUpperCase(), data);
+            // setAuthority (not a bare AUTHORITY_CACHE.set) so a heuristic
+            // analysis already memoised for this word is evicted — otherwise
+            // WORD_CACHE shadows the authority we just fetched.
+            this.setAuthority(word, data);
         }
         this.authorityFailure = null;
     } catch (error) {
@@ -740,15 +766,31 @@ export const PhonemeEngine = {
       const stressedVowelP = stressedSyl.find(p => ARPABET_VOWELS.has(p.replace(/[0-9]/g, '')));
       const stressedBaseV = stressedVowelP ? stressedVowelP.replace(/[0-9]/g, '') : lastBaseV;
 
-      let vowelFamily = authorityData.family;
-      if (!vowelFamily) vowelFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[stressedBaseV] || 'A');
-      else vowelFamily = normalizeVowelFamily(vowelFamily);
+      // When the authority carries real PHONEMES, derive the family from them and
+      // ignore its `family` string. That string comes from rhyme_index.rhyme_family,
+      // the legacy column built by scripts/refine_rhyme_dict.py, which collapses
+      // AH/UH/UW into a single family "U" — so the server was handing the browser
+      // "U" for "love" (L AH1 V) while also handing it the correct phonemes. The
+      // phonemes are the truth; the family string is a lossy summary of them.
+      //
+      // Fall back to the supplied family only when no phonemes came with it, which
+      // is the one case where it is the best information available.
+      const hasAuthoritativePhonemes = Array.isArray(authorityData.phonemes) && authorityData.phonemes.length > 0;
+      let vowelFamily;
+      if (hasAuthoritativePhonemes) {
+        vowelFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[stressedBaseV] || 'A');
+      } else if (authorityData.family) {
+        vowelFamily = normalizeVowelFamily(authorityData.family);
+      } else {
+        vowelFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[stressedBaseV] || 'A');
+      }
 
       const codaParts = vIdx >= 0 ? lastSyl.slice(vIdx + 1).map(p => p.replace(/[0-9]/g, '')) : [];
       const coda = codaParts.length > 0 ? codaParts.join('') : null;
-      
+
       const finalFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[lastBaseV] || 'A');
-      const analysis = { vowelFamily, phonemes: processed, coda, rhymeKey: `${finalFamily}-${coda || "open"}`, syllableCount: syllables.length };
+      // Rhyme domain, not finalFamily+coda — see rhymeDomain.js.
+      const analysis = { vowelFamily, phonemes: processed, coda, rhymeKey: buildRhymeKey(processed) || `${finalFamily}-${coda || "open"}`, syllableCount: syllables.length };
       
       return cacheResult(analysis, createPhoneticDiagnostics({
         source: 'scholomance_dictionary',
@@ -793,7 +835,10 @@ export const PhonemeEngine = {
     let diagnostics;
     if (cmuResult) {
       const cmuFamily = normalizeVowelFamily(cmuResult.vowelFamily) || "A";
-      result = { ...cmuResult, vowelFamily: cmuFamily, rhymeKey: `${cmuFamily}-${cmuResult.coda || "open"}` };
+      // Keep the CMU engine's rhymeKey — it is already the rhyme domain. Rebuilding
+      // it here as `${cmuFamily}-${coda}` re-stitched the dominant vowel onto the
+      // final coda and reintroduced love/repulsive and blood/understood.
+      result = { ...cmuResult, vowelFamily: cmuFamily };
       diagnostics = createPhoneticDiagnostics({
         source: 'cmu_dictionary',
         branch: 'cmu_lookup',
@@ -830,9 +875,9 @@ export const PhonemeEngine = {
       const codaParts = vIdx >= 0 ? lastSyl.slice(vIdx + 1).map(p => p.replace(/[0-9]/g, '')) : [];
       const coda = codaParts.length > 0 ? codaParts.join('') : null;
       
-      // rhymeKey is still based on the final syllable
+      // Rhyme domain, not finalFamily+coda — see rhymeDomain.js.
       const finalFamily = normalizeVowelFamily(VOWEL_TO_BASE_FAMILY[lastBaseV] || 'A');
-      result = { vowelFamily, phonemes: processed, coda, rhymeKey: `${finalFamily}-${coda || "open"}`, syllableCount: syllables.length };
+      result = { vowelFamily, phonemes: processed, coda, rhymeKey: buildRhymeKey(processed) || `${finalFamily}-${coda || "open"}`, syllableCount: syllables.length };
       diagnostics = createPhoneticDiagnostics({
         source: WORD_PHONEME_OVERRIDES[upper] ? 'word_override' : 'heuristic_fallback',
         branch: WORD_PHONEME_OVERRIDES[upper] ? 'override_lookup' : 'rule_based_split',

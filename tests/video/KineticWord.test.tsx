@@ -32,16 +32,30 @@ const futureWord: WordTiming = {
 
 const beatDurationMs = 487.8;
 
+// KineticWord types a word out character by character and parks the unrevealed
+// tail in a visibility:hidden span so the line never reflows mid-reveal. "care"
+// therefore renders as "car" + <span hidden>e</span>, which getByText cannot
+// match — it only sees one text node at a time. Query the wrapper span instead:
+// it carries the whole word and the school colour.
+function renderWord(wordTiming: WordTiming, timeMs: number): HTMLElement {
+  const { container } = render(
+    <KineticWord wordTiming={wordTiming} clock={makeClock(timeMs)} beatDurationMs={beatDurationMs} />
+  );
+  return container.firstChild as HTMLElement;
+}
+
+// The glyph ghost is decorative and aria-hidden; it is not part of the word.
+function wordTextOf(el: HTMLElement): string {
+  return Array.from(el.childNodes)
+    .filter((node) => !(node instanceof HTMLElement && node.getAttribute("aria-hidden") === "true"))
+    .map((node) => node.textContent ?? "")
+    .join("");
+}
+
 describe("KineticWord", () => {
   it("renders word text when clock is within active window", () => {
-    const { getByText } = render(
-      <KineticWord
-        wordTiming={activeWord}
-        clock={makeClock(1100)}
-        beatDurationMs={beatDurationMs}
-      />
-    );
-    expect(getByText("care")).toBeTruthy();
+    const el = renderWord(activeWord, 1100);
+    expect(wordTextOf(el)).toBe("care");
   });
 
   it("renders nothing when clock is before active window", () => {
@@ -68,31 +82,14 @@ describe("KineticWord", () => {
   });
 
   it("applies WILL school color", () => {
-    const { getByText } = render(
-      <KineticWord
-        wordTiming={activeWord}
-        clock={makeClock(1100)}
-        beatDurationMs={beatDurationMs}
-      />
-    );
-    const el = getByText("care");
-    // jsdom normalizes hex to rgb - check the parent span which carries the color
-    expect(el.style.color).toBeTruthy(); // color is set
-    expect(el.style.color).not.toBe(""); // not empty
-    // Verify it's the WILL color (#ef4444 = rgb(239, 68, 68))
+    const el = renderWord(activeWord, 1100);
+    // jsdom normalizes hex to rgb. WILL is #ef4444 = rgb(239, 68, 68).
     expect(el.style.color).toMatch(/rgb\(239,\s*68,\s*68\)/);
   });
 
   it("falls back to VOID color for unknown school", () => {
     const voidWord: WordTiming = { ...activeWord, word: "unknown", school: "UNKNOWN" };
-    const { getByText } = render(
-      <KineticWord
-        wordTiming={voidWord}
-        clock={makeClock(1100)}
-        beatDurationMs={beatDurationMs}
-      />
-    );
-    const el = getByText("unknown");
+    const el = renderWord(voidWord, 1100);
     // VOID color is #94a3b8 = rgb(148, 163, 184)
     expect(el.style.color).toMatch(/rgb\(148,\s*163,\s*184\)/);
   });

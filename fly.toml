@@ -10,8 +10,26 @@ primary_region = "ord"
   PORT = "8080"
   TRUST_PROXY = "true"
   ENABLE_COLLAB_API = "true"
-  SCHOLOMANCE_DICT_PATH = "/var/data/scholomance_dict.sqlite"
-  SCHOLOMANCE_CORPUS_PATH = "/var/data/scholomance_corpus.sqlite"
+
+  # The dictionary and corpus are IMMUTABLE BUILD ARTIFACTS: the Dockerfile builds
+  # them into /app/data and then rewrites the rhyme index from the canonical rhyme
+  # domain. These used to point at /var/data — the mounted volume — which the image
+  # build never writes, so production was reading a dictionary that was not there.
+  # That is one of the two reasons prod silently served every word lookup from the
+  # public APIs instead of the local dict. A volume is for mutable state; this is not.
+  SCHOLOMANCE_DICT_PATH = "/app/data/scholomance_dict.sqlite"
+  SCHOLOMANCE_CORPUS_PATH = "/app/data/scholomance_corpus.sqlite"
+
+  # The other reason. wordLookup.service consults the local dictionary only when
+  # this is set; unset, resolveScholomanceDictApiUrl() returns null and every lookup
+  # falls straight through to Datamuse + Free Dictionary. Those are good at MEANING
+  # (definitions, synonyms, antonyms) and bad at SOUND (94.4% rhyme accuracy, 12.5%
+  # junk like "sarong"/"waive", 8.6% not even words: "hand in glove"). The local dict
+  # is 100% on rhymes with 0% junk. Setting this makes prod use the local dict for
+  # sound and merge the external APIs in for meaning — mergeWithExternalIfSparse.
+  SCHOLOMANCE_DICT_API_URL = "http://localhost:8080/api/lexicon"
+
+  # Mutable output still belongs on the volume.
   RHYME_ASTROLOGY_OUTPUT_DIR = "/var/data/rhyme-astrology"
   ENABLE_TURBOQUANT = "true"
 

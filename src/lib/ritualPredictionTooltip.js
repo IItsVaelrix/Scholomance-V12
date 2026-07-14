@@ -35,7 +35,18 @@ const RITUAL_FAMILIES = {
 
 // Map a lexicon part-of-speech onto a ritual role. Used by the component to
 // reconcile the heuristic guess against authoritative dictionary data.
+//
+// The single-letter keys are the WordNet/CMUdict codes the lexicon actually
+// emits (entry.pos is "a", "n", "v", "r" — never "adjective"). Without them
+// every posToRole() returned null, so reconcileWithLexicon never adopted a role
+// and the card reported "Unknown / via no_signal" for words the dictionary knew
+// perfectly well. "s" is WordNet's satellite adjective.
 const POS_TO_ROLE = {
+  n: 'anchor',
+  v: 'trigger',
+  a: 'modifier',
+  s: 'modifier',
+  r: 'modifier',
   noun: 'anchor',
   'proper noun': 'anchor',
   propn: 'anchor',

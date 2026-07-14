@@ -156,6 +156,30 @@ export function buildIdentityKey(text, charStart) {
 }
 
 /**
+ * The line a token sits on, whichever analysis produced it.
+ *
+ * Same drift as charStart, different field: the server panel analysis names this
+ * `lineIndex` and the local pipeline names it `lineNumber`. The editor read only
+ * `lineNumber`, so under the default server path it got `undefined` — and
+ * ReadPage's tooltipContextLine requires an integer, so it fell back to the empty
+ * string. An empty context line means the ritual tooltip's resonance section can
+ * never find a single partner, which read as the rhyme predictor being a stub.
+ *
+ * Both conventions are 0-based. Returns null when neither is present, so callers
+ * can tell "line 0" apart from "no line".
+ *
+ * @param {{lineIndex?: number, lineNumber?: number}|null|undefined} tokenData
+ * @returns {number|null}
+ */
+export function resolveTokenLineIndex(tokenData) {
+  if (!tokenData) return null;
+  const { lineIndex, lineNumber } = tokenData;
+  if (Number.isInteger(lineIndex)) return lineIndex;
+  if (Number.isInteger(lineNumber)) return lineNumber;
+  return null;
+}
+
+/**
  * Internal: text length of a node, with a defensive fallback for non-text
  * nodes. Paragraphs contribute their joined text (handled by the walk
  * itself, but we still need the leaf text count).

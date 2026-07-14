@@ -7,7 +7,9 @@ const oracleQuerySchema = z.object({
   query: z.string().min(1).max(2000), // ~2000 chars covers 200 words safely
   telemetry: z.object({
     hhm: z.any().nullish(),
-    tokenWeights: z.record(z.any()).nullish(),
+    // (keySchema, valueSchema) — the single-arg form is zod v3 and silently
+    // rejects every key under v4. See scholomanceDictionary.api.js.
+    tokenWeights: z.record(z.string(), z.any()).nullish(),
     verseIR: z.any().nullish(),
     emotion: z.any().nullish(),
     speculativeEnvelope: z.any().nullish()

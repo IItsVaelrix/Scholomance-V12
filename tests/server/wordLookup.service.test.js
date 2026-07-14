@@ -191,7 +191,18 @@ describe('[Server] WordLookupService', () => {
     expect(result.data?.slantRhymes).toHaveLength(1);
   });
 
-  it('keeps Scholomance lexicon rhymes authoritative when local phoneme keys disagree', async () => {
+  // Was: 'keeps Scholomance lexicon rhymes authoritative when local phoneme keys
+  // disagree'. That policy is what shipped love/move and blood/food. The dict's
+  // rhyme_index was keyed by a lossy map (scripts/refine_rhyme_dict.py), so
+  // "authoritative" meant "unverified" — and the ONE source that skipped
+  // phonological checking was the one whose key was wrong, while the external
+  // providers, which are more accurate, were the only ones being checked.
+  //
+  // The fixture below says it all: the engine puts "perfect" at EH-KT and "act"
+  // at AE-KT. They do not rhyme. "sect" (EH-KT) does. The engine is right, and it
+  // now gets to say so — "act" is demoted to slant instead of being served as a
+  // perfect rhyme on the dictionary's say-so.
+  it('demotes lexicon rhymes the phoneme engine rejects, instead of trusting the DB', async () => {
     const fetchMock = vi.fn(async (url) => {
       const href = String(url);
       if (href === 'http://dict.local/api/lexicon/lookup/perfect') {
@@ -229,9 +240,13 @@ describe('[Server] WordLookupService', () => {
 
     const result = await service.lookupWord('perfect');
     expect(result.source).toBe('scholomance-merged');
-    expect(result.data?.rhymes).toEqual(expect.arrayContaining(['act', 'sect']));
-    expect(result.data?.rhymes).toHaveLength(2);
-    expect(result.data?.slantRhymes ?? []).not.toContain('act');
+
+    // "sect" shares the rhyme key and survives as a perfect rhyme.
+    expect(result.data?.rhymes).toEqual(['sect']);
+
+    // "act" does not, so it is demoted rather than served as a perfect rhyme.
+    expect(result.data?.rhymes).not.toContain('act');
+    expect(result.data?.slantRhymes ?? []).toContain('act');
   });
 
   it('supplements slant rhymes from Datamuse when the local dict omits them', async () => {

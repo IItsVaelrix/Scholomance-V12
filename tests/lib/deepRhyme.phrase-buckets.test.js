@@ -37,7 +37,36 @@ const VERSE = readFileSync('tests/fixtures/rhyme/dense-verse.txt', 'utf8');
 // `perfect` holding at 34 is the load-bearing part: the strong tier is untouched.
 // If perfect ever moves, the change IS wrong. The other three may only ever fall
 // by removing pairs that exceed the line window — never for any other reason.
-const BASELINE_COLOURED = { perfect: 34, assonance: 28, near: 20, slant: 3 };
+//
+// UPDATED 2026-07-14 by the rhyme domain (codex/core/phonology/rhymeDomain.js).
+//
+// This is the ONE kind of change that is allowed to move `perfect`, because it
+// changes what a rhyme IS rather than which rhymes get searched. rhymeKey used to
+// be `${familyOfFirstStressedSyllable}-${codaOfLastSyllable}` — two different
+// syllables stitched together — which lumped every AY word into one AY-open
+// bucket regardless of what followed the vowel. It asserted, at the PERFECT tier:
+//
+//   i (AY1)          rhymes with  fire (F AY1 ER0)
+//   my (M AY1)       rhymes with  desire (D IH0 Z AY1 ER0)
+//   river (R IH1 V ER0) rhymes with whisper (W IH1 S P ER0)
+//   ember (EH1 M B ER0) rhymes with every (EH1 V ER0 IY0)
+//
+// Twenty such pairs existed in this fixture; every one is false. Keying on the
+// rhyme domain splits the bucket correctly — {i, my} = AY-open, {fire, pyre,
+// desire, liar, choir, entire} = AY-ER — while river/shiver (IH-VER) and the
+// fire/desire family keep rhyming, because they actually do.
+//
+// Exactly one of those false pairs fell inside the line window, so:
+//
+//   perfect    34 -> 33   the "I rhymes with fire" class, removed
+//   assonance  28 -> 27   the same split, one tier down
+//   near       20 -> 20   UNCHANGED
+//   slant       3 ->  3   UNCHANGED
+//
+// The guard still stands for every other kind of change: a perf/bucketing change
+// must NEVER move these numbers. Only a change to the definition of a rhyme may,
+// and only with the false pairs it removes enumerated, as above.
+const BASELINE_COLOURED = { perfect: 33, assonance: 27, near: 20, slant: 3 };
 
 async function analyse(text = VERSE) {
   const engine = new DeepRhymeEngine();

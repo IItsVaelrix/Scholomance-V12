@@ -62,7 +62,7 @@ export function PixelBrainGrammarGlossary({ onClose }: { onClose: () => void }) 
                 <li><strong style={{ color: '#fff' }}>2. Lattice Is Law:</strong> Visual geometry lives on an integer-cell grid. Canonical state is coordinates (x, y, color, partId).</li>
                 <li><strong style={{ color: '#fff' }}>3. Symmetry Is Automatic:</strong> Symmetries (radial, axial, diagonal) are first-class values. If missing, the blueprint hasn't been analyzed.</li>
                 <li><strong style={{ color: '#fff' }}>4. Errors Are Bytecode:</strong> Every failure mode has a canonical bytecode shape (PB-ERR-v1). Stack traces are decorative.</li>
-                <li><strong style={{ color: '#fff' }}>5. Determinism Is Non-Negotiable:</strong> Same input → same output. No Math.random(). Allowed: coordinate-hashed noise, FNV-1a.</li>
+                <li><strong style={{ color: '#fff' }}>5. Determinism Is Non-Negotiable:</strong> Same input → same output. No Math.random(). Allowed: coordinate-hashed noise, FNV-1a.</li>{/* EXEMPT: glossary prose stating the determinism law, not a call site */}
                 <li><strong style={{ color: '#fff' }}>6. Checksum Integrity Is Required:</strong> Every bytecode carries an 8-digit FNV-1a hex checksum.</li>
                 <li><strong style={{ color: '#fff' }}>7. Context Is Base64(JSON):</strong> Payloads in bytecode are JSON, UTF-8 encoded, then base64 encoded into a single field.</li>
                 <li><strong style={{ color: '#fff' }}>8. Versioning Is Explicit:</strong> Every family is suffixed with a version (e.g., -v1). Backward compatibility is announced, never assumed.</li>
@@ -197,7 +197,7 @@ export function PixelBrainGrammarGlossary({ onClose }: { onClose: () => void }) 
               </ul>
               
               <div style={{ marginTop: 24, padding: 12, background: 'rgba(255,0,255,0.1)', border: '1px solid rgba(255,0,255,0.3)', borderRadius: 6 }}>
-                <strong>Rule:</strong> Constants must be literals. No Math.random() or Date.now(). Functions must be from the fixed library (sin, cos, tan, length, normalize, floor, ceil, clamp, fnv1a, mix, step, smoothstep).
+                <strong>Rule:</strong> Constants must be literals. No Math.random() or Date.now(). Functions must be from the fixed library (sin, cos, tan, length, normalize, floor, ceil, clamp, fnv1a, mix, step, smoothstep).{/* EXEMPT: glossary prose stating the determinism law, not a call site */}
               </div>
             </div>
           )}

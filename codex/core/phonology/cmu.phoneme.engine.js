@@ -5,6 +5,7 @@
 import { ARPABET_VOWELS, VOWEL_TO_BASE_FAMILY } from "./phoneme.constants.js";
 import { Syllabifier } from "./syllabifier.js";
 import { normalizeVowelFamily } from "./vowelFamily.js";
+import { buildRhymeKey } from "./rhymeDomain.js";
 
 const isBrowser = typeof window !== "undefined";
 const WORD_VARIANT_SUFFIX = /\(\d+\)$/;
@@ -46,11 +47,21 @@ function toAnalysisFromPhones(phones) {
       : [];
   const coda = codaParts.length > 0 ? codaParts.join("") : null;
 
+  // rhymeKey comes from the rhyme domain (rhymeDomain.js), NOT from
+  // `${vowelFamily}-${coda}`. Those two fields are read off different syllables
+  // — vowelFamily from the first stressed one, coda from the last — so stitching
+  // them together produced a key that was right for monosyllables by accident
+  // and wrong for everything else: "repulsive" keyed AH-V and collided with
+  // "love", "understood" keyed AH-D and collided with "blood".
+  //
+  // vowelFamily and coda are kept as-is: they are the word's dominant vowel and
+  // its final consonant cluster, which is what their consumers (school colour,
+  // phonology panel) actually mean by them. Only the RHYME predicate moves.
   return {
     vowelFamily,
     phonemes,
     coda,
-    rhymeKey: `${vowelFamily}-${coda || "open"}`,
+    rhymeKey: buildRhymeKey(phonemes) || `${vowelFamily}-${coda || "open"}`,
     syllableCount: safeSyllables.length,
   };
 }

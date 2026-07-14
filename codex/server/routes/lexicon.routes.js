@@ -97,6 +97,13 @@ export async function lexiconRoutes(fastify, opts = {}) {
         ? adapter.lookupAntonyms(word, 20)
         : [];
       const rhymeData = adapter.lookupRhymes(word, 50);
+      // The local dict used to emit no slantRhymes key at all, so the "Shadow Echo"
+      // channel had to be begged from Datamuse's rel_nry — which answers "strid",
+      // "scrid", "clwyd" for "blood". A slant rhyme is the rhyme domain with the
+      // same tail and a different nucleus, so we can just compute it.
+      const slantRhymes = typeof adapter.lookupSlantRhymes === 'function'
+        ? adapter.lookupSlantRhymes(word, 20)
+        : [];
 
       let definition = null;
       if (entries.length > 0) {
@@ -120,6 +127,7 @@ export async function lexiconRoutes(fastify, opts = {}) {
         synonyms,
         antonyms,
         rhymes: rhymeData.words,
+        slantRhymes,
         rhymeFamily: rhymeData.family,
         lore: { seed: word.toLowerCase() },
       };

@@ -518,11 +518,26 @@ export default function ReadPage() {
       setEditorTitle(savedScroll.title);
       setActiveScrollId(savedScroll.id);
       bumpAutosaveContext(savedScroll.id, savedScroll.title, savedScroll.content);
-      setIsEditing(true);
+      issueEditorDocumentIdentity(savedScroll.id);
+
+      // A saved scroll is committed, so leave the editing state the same way
+      // handleCancelEdit does. This used to setIsEditing(true), which pinned
+      // ideMode to "EDIT" forever — and useVerseSynthesis takes `paused:
+      // ideMode === "EDIT"`, so the whole analysis pass never ran again. With no
+      // analysed document there is no token data, so the ritual tooltip had no
+      // lineIndex, no context line, and therefore no resonance partners at all.
+      setIsEditing(false);
+      setIsEditable(false);
+      setIdeMode(isTruesight ? "TRUESIGHT" : "NEUTRAL");
     },
-    [activeScrollId, activeScroll?.submittedAt, saveScroll, addXP, addToast, scoreData, bumpAutosaveContext, setActiveScrollId]
+    [activeScrollId, activeScroll?.submittedAt, saveScroll, addXP, addToast, scoreData, bumpAutosaveContext, setActiveScrollId, issueEditorDocumentIdentity, isTruesight]
   );
 
+  // Opening a scroll is a READ. Editing is opt-in via handleEditScroll.
+  // This used to setIsEditable(true), which meant handleIdeFocus could never
+  // reach its TRUESIGHT branch and pinned ideMode to "EDIT" — and
+  // useVerseSynthesis is paused in EDIT, so opening a scroll silently disabled
+  // the analysis that Truesight and the ritual tooltip's resonance depend on.
   const handleSelectScroll = useCallback((id) => {
     const scroll = getScrollById(id);
     if (!scroll) return;
@@ -532,7 +547,7 @@ export default function ReadPage() {
     setEditorContent(String(scroll.content || ""));
     issueEditorDocumentIdentity(id);
     setIsEditing(false);
-    setIsEditable(true);
+    setIsEditable(false);
     setHighlightedLines([]);
     setIdeMode(isTruesight ? "TRUESIGHT" : "NEUTRAL");
   }, [bumpAutosaveContext, getScrollById, issueEditorDocumentIdentity, setActiveScrollId, isTruesight]);
