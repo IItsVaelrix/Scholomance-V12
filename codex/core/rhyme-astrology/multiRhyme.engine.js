@@ -86,6 +86,10 @@ const REQUIRE_STRESSED_ANCHOR = true;
  * every word on one side is a function word is grammar, not rhyme: "with a" ~ "of a"
  * scores 0.89 and says nothing. This is the same hygiene the word engine applies; it
  * is restated here rather than imported so this pipeline stays free-standing.
+ *
+ * A function word may RIDE a chain — DOOM rhymes "never" against "with an" — but it
+ * may not BE one. See isGrammarLink and hasStressedAnchor for the two rules that
+ * enforce the difference.
  */
 const FUNCTION_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'than', 'as', 'so',
@@ -99,6 +103,53 @@ const FUNCTION_WORDS = new Set([
 
 function isFunctionWord(word) {
   return FUNCTION_WORDS.has(String(word || '').toLowerCase().replace(/[^a-z']/g, ''));
+}
+
+/**
+ * A GRAMMAR LINK: both syllables come from function words.
+ *
+ * English glue agrees with itself constantly. "the" against "on" is a real vowel and a
+ * real coda class and it means nothing; so is "the" ~ "of", "and" ~ "of", "as" ~ "of".
+ * These are the links that let the engine emit "makes the" ~ "stains on" (0.883),
+ * "paving the" ~ "creation of" (0.823) and "scorched as" ~ "torque of" (0.866). Each was
+ * waved through by the every-side-has-a-content-word rule on the strength of `makes` /
+ * `paving` / `scorched`, while the syllable actually doing the rhyming was the glue.
+ *
+ * Note it takes BOTH sides. A function word rhyming against a CONTENT word is one of the
+ * best things in rap — DOOM's "bastard never" ~ "master with an" is exactly that — and a
+ * blanket ban on function words in a chain kills it.
+ */
+export function isGrammarLink(a, b) {
+  return Boolean(a?.isFunction && b?.isFunction);
+}
+
+/**
+ * Glue may be carried; it may not carry.
+ *
+ * A grammar link is allowed INSIDE a chain, because real multis run straight through the
+ * connective tissue and out the other side:
+ *
+ *     death  of  divine        [EH·th] [grammar] [AY·N]
+ *     breath is  aligned       [EH·th] [grammar] [AY·N]
+ *
+ * `of` ~ `is` is pure grammar, and that couplet is still a real rhyme — the chain is
+ * anchored on death~breath and divine~aligned, and the glue merely rides between them.
+ * Breaking the chain at the glue destroyed this multi, which is how we know it is wrong.
+ *
+ * But a chain may not BEGIN or END on grammar. There the glue is not being carried, it
+ * is doing the carrying: it is the syllable that pads a one-word rhyme out to the length
+ * of a multi. "makes" ~ "stains" is a rhyme; "makes the" ~ "stains on" is that same
+ * rhyme wearing a second syllable it did not earn.
+ *
+ * Because an edge link on both ends must be content, this also guarantees a chain has at
+ * least MIN_CHAIN_SYLLABLES content links — grammar can never be what makes a run long
+ * enough to count as a multi at all.
+ */
+function grammarOnlyRides(stream, i, j, links) {
+  const last = links.length - 1;
+  if (isGrammarLink(stream[i], stream[j])) return false;
+  if (isGrammarLink(stream[i + last], stream[j + last])) return false;
+  return true;
 }
 
 function stripStress(phone) {
@@ -140,6 +191,9 @@ export function buildSyllableStream(verseIR, phonemeEngine = PhonemeEngine) {
         // The WORD this syllable belongs to. A chain reports the words it touches,
         // so the caller can highlight them without knowing about syllables.
         word: String(token.text || ''),
+        // Carried on the syllable because both grammar rules are applied per LINK, and
+        // a link joins syllables, not words.
+        isFunction: isFunctionWord(token.text),
         charStart: Number(token.charStart),
         charEnd: Number(token.charEnd),
         lineIndex: Number(token.lineIndex) || 0,
@@ -258,10 +312,21 @@ function chainScore(links) {
 /**
  * Does the chain land on a beat?
  *
- * At least one link must join two STRESSED syllables and be strong. That is the
- * anchor the ear actually hears; everything around it is the tail of the multi.
- * Without this the engine chained "with a" to "of a" — real vowel agreement between
- * syllables nobody stresses, which is grammar, not rhyme.
+ * At least one link must join two STRESSED syllables of two CONTENT words, and be
+ * strong. That is the anchor the ear actually hears; everything around it is the tail
+ * of the multi. Without the stress rule the engine chained "with a" to "of a" — real
+ * vowel agreement between syllables nobody stresses.
+ *
+ * The content requirement is not redundant with the stress one, because CMU stores
+ * function words in CITATION form, where they are all stressed:
+ *
+ *     or   AO1 R          for  F AO1 R          them  DH EH1 M
+ *     of   AH1 V          was  W AH1 Z
+ *
+ * So `or` ~ `for` is a stressed, strong (0.94), perfectly legitimate-looking anchor for
+ * a six-syllable chain — built on the two most meaningless syllables in the line. In
+ * running speech nobody stresses `or`; the dictionary simply has no way to say so. The
+ * beat a multi lands on must be a word that means something.
  */
 function hasStressedAnchor(stream, i, j, links) {
   if (!REQUIRE_STRESSED_ANCHOR) return true;
@@ -270,9 +335,29 @@ function hasStressedAnchor(stream, i, j, links) {
     const a = stream[i + k];
     const b = stream[j + k];
     if (!a || !b) return false;
+    if (a.isFunction || b.isFunction) continue;
     if (a.stress >= 1 && b.stress >= 1 && links[k] >= STRONG_LINK) return true;
   }
   return false;
+}
+
+/**
+ * The words a chain LIGHTS — the ones it is entitled to paint.
+ *
+ * A chain may legitimately contain glue ("makes the noose feel pretty"), because the
+ * ear runs straight through it. But `charStarts` is a claim: the gate paints every
+ * charStart it is handed, and a painted word reads as "this word rhymes". Handing it
+ * `the` makes exactly the assertion grammarOnlyRides just refused to make — and worse,
+ * the colour is keyed on the word's own vowel family, so every `the`, `of`, `on` and
+ * `are` in the verse lands in one bright group, as if they rhymed with each other.
+ * That is what the reader actually complains about when they say the glue is coloured.
+ *
+ * So: the chain is heard through the glue, and anchored on the content. Only the content
+ * is painted. (grammarOnlyRides guarantees both edge links are content words, so this can
+ * never empty a side.)
+ */
+function litWordsOf(stream, start, length) {
+  return wordsOf(stream, start, length).filter((w) => !isFunctionWord(w.word));
 }
 
 /** The words a run of syllables touches, in document order, deduped. */
@@ -332,11 +417,17 @@ export function findMultiRhymes(verseIR, options = {}) {
       }
 
       // Trim back to the longest run that is actually valid: a trailing weak link
-      // can make an otherwise-good chain fail the earned-slant rule.
+      // can make an otherwise-good chain fail the earned-slant rule, and a trailing
+      // GRAMMAR link is padding that must be trimmed off rather than counted.
+      //
+      // Only the tail is trimmed here. A chain that BEGINS on grammar is rejected
+      // outright — its content is found anyway, as the chain starting at (i+1, j+1),
+      // which this same loop reaches on its own.
       let best = null;
       for (let len = links.length; len >= MIN_CHAIN_SYLLABLES; len -= 1) {
         const candidate = links.slice(0, len);
         if (!chainIsValid(candidate)) continue;
+        if (!grammarOnlyRides(stream, i, j, candidate)) continue;
         if (!hasStressedAnchor(stream, i, j, candidate)) continue;
         best = candidate;
         break;
@@ -365,10 +456,19 @@ export function findMultiRhymes(verseIR, options = {}) {
         syllables: best.length,
         score: Number(chainScore(best).toFixed(3)),
         slantLinks: best.filter((s) => s < STRONG_LINK).length,
-        // charStarts are the contract: the gate lights words, and this is how it
-        // knows WHICH words the chain touches.
-        a: { charStarts: wordsA.map((w) => w.charStart), text: textA, lineIndex: wordsA[0]?.lineIndex },
-        b: { charStarts: wordsB.map((w) => w.charStart), text: textB, lineIndex: wordsB[0]?.lineIndex },
+        // charStarts are the contract: the gate lights exactly these words. `text` is
+        // the whole chain as heard (glue included); charStarts are only the words the
+        // chain is entitled to paint. See litWordsOf.
+        a: {
+          charStarts: litWordsOf(stream, i, best.length).map((w) => w.charStart),
+          text: textA,
+          lineIndex: wordsA[0]?.lineIndex,
+        },
+        b: {
+          charStarts: litWordsOf(stream, j, best.length).map((w) => w.charStart),
+          text: textB,
+          lineIndex: wordsB[0]?.lineIndex,
+        },
         // Kept off the wire but useful in tests / debugging.
         __start: { a: i, b: j },
       });

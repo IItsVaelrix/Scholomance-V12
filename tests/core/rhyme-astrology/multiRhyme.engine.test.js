@@ -154,6 +154,150 @@ describe('[Core] multi-rhyme engine', () => {
   });
 });
 
+// ── The grammar filter ───────────────────────────────────────────────────────────
+//
+// The first hygiene rule ("a run of function words is not a rhyme") only asks that
+// each SIDE contain one content word. That is too weak. It passes "makes the" ~
+// "stains on", because `makes` and `stains` are content words — while the link doing
+// the actual rhyming is `the` ~ `on`.
+//
+// And the stressed-anchor rule cannot catch it either, because CMU stores function
+// words in CITATION form: `of` is AH1 V, `or` is AO1 R, `them` is DH EH1 M. Every one
+// of them is stress-1. "Anchored on a beat" therefore anchors happily on `or`.
+//
+// So a function word may RIDE a chain (DOOM rhymes "never" against "with an"), but it
+// may not BE the chain: grammar may not link to grammar, and the beat a multi lands on
+// must be a word that means something.
+describe('[Core] multi-rhyme grammar filter', () => {
+  beforeAll(async () => {
+    await CmuPhonemeEngine.init();
+    await PhonemeEngine.init();
+  });
+
+  // Damien's verse. Before the filter this emitted 41 chains and coloured 80 words,
+  // 27 of them function words.
+  const VERSE = [
+    'Statements of saudade, they are paving the way',
+    'for the opaque flame on the sword.',
+    'Rage, and a compact hatred abhors',
+    'Absorbing disdain, a creation of war.',
+    'branded and scorched as a slave',
+    'While the mortician learned every curve of my body, of course.',
+    'porcelain skin, steady torque of the blade',
+    'carving corpses like gravestones made to reinforce.',
+    'rainbow rope makes the noose feel pretty',
+    'Stains on my soul makes the truth feel shitty',
+    'Clashing against glass ceilings really hurt',
+    'Vast emotion, the ocean inside is still the worst.',
+  ].join('\n');
+
+  it('will not rhyme grammar against grammar', () => {
+    const multis = multisIn(VERSE);
+
+    // Each of these was a real chain. Every one of them is carried by a link between
+    // two function words: the~on, the~of, and~of / a~my, as~of.
+    expect(chainPairing(multis, 'makes the', 'stains on')).toBeNull();
+    expect(chainPairing(multis, 'paving the', 'creation of')).toBeNull();
+    expect(chainPairing(multis, 'and a compact', 'of my body')).toBeNull();
+    expect(chainPairing(multis, 'scorched as', 'torque of')).toBeNull();
+  });
+
+  it('keeps the rhymes that verse is actually built on', () => {
+    const multis = multisIn(VERSE);
+
+    // The filter must cost nothing real. These are the multis a reader hears.
+    expect(chainPairing(multis, 'porcelain', 'corpses')).not.toBeNull();
+    expect(chainPairing(multis, 'noose feel pretty', 'truth feel shitty')).not.toBeNull();
+    expect(chainPairing(multis, 'abhors', 'course')).not.toBeNull();
+    expect(chainPairing(multis, 'branded', 'steady')).not.toBeNull();
+  });
+
+  it('lets a function word RIDE a chain it does not carry', () => {
+    // DOOM: "bastard never" ~ "master with an". `with an` is pure grammar, but it is
+    // rhyming against `never` — content. The rule is grammar-to-GRAMMAR, not
+    // grammar-anywhere, or this multi dies with the junk.
+    const multis = multisIn('Bastard never falls in line\nMaster with an awkward mind');
+    expect(chainPairing(multis, 'bastard', 'master')).not.toBeNull();
+  });
+
+  it('does not anchor a multi on a function word, whatever CMU says its stress is', () => {
+    // `or` (AO1 R) and `for` (F AO1 R) are a perfect stressed strong link in CMU, and
+    // also the two most meaningless syllables in the line. Before the filter this
+    // couplet emitted six 6-syllable chains — every rotation of the same glue.
+    //
+    // What survives is the rhyme that is really there: walk~talk and way~day, with
+    // `or the` ~ `for the` riding INSIDE the chain it does not carry.
+    const multis = multisIn([
+      'Or the way that you walk, or the way that you talk',
+      'For the day that they stalk, and them all in the dark',
+    ].join('\n'));
+
+    expect(multis.length).toBeGreaterThan(0);
+    expect(chainPairing(multis, 'walk or the way', 'talk for the day')).not.toBeNull();
+
+    // The invariant: glue may be interior, never an edge. A chain that begins or ends
+    // with grammar on BOTH sides is grammar padding a shorter rhyme out to multi length.
+    for (const chain of multis) {
+      const a = chain.a.text.split(' ');
+      const b = chain.b.text.split(' ');
+      const grammar = (w) => FUNCTION_WORDS_UNDER_TEST.has(w);
+
+      expect(grammar(a[0]) && grammar(b[0])).toBe(false);
+      expect(grammar(a[a.length - 1]) && grammar(b[b.length - 1])).toBe(false);
+    }
+  });
+
+  it('lights only the words the chain is entitled to paint, never the glue', () => {
+    // "makes the noose feel pretty" ~ "makes the truth feel shitty" is a real multi and
+    // it really does run through `the`. But charStarts is what the resonance gate PAINTS,
+    // and a painted word reads as "this word rhymes" — so the glue must not be in it.
+    // Without this, every `the` / `of` / `on` in the verse lit up, coloured by its own
+    // vowel family, i.e. as though the function words rhymed with each other.
+    const verseIR = compileVerseToIR(
+      'rainbow rope makes the noose feel pretty\nStains on my soul makes the truth feel shitty',
+      { phonemeEngine: PhonemeEngine },
+    );
+    const multis = findMultiRhymes(verseIR);
+    const chain = multis.find((m) => m.a.text.includes('noose') || m.b.text.includes('noose'));
+    expect(chain).toBeTruthy();
+
+    const byCharStart = new Map(verseIR.tokens.map((t) => [t.charStart, String(t.text || '')]));
+    const painted = [...chain.a.charStarts, ...chain.b.charStarts]
+      .map((cs) => byCharStart.get(cs))
+      .filter(Boolean);
+
+    expect(painted.length).toBeGreaterThan(0);
+    for (const word of painted) {
+      expect(FUNCTION_WORDS_UNDER_TEST.has(word.toLowerCase())).toBe(false);
+    }
+  });
+
+  it('collapses the flood: fewer chains, and far less grammar coloured', () => {
+    const multis = multisIn(VERSE);
+    const coloured = new Set();
+    for (const chain of multis) {
+      for (const end of [chain.a, chain.b]) {
+        for (const word of end.text.split(' ')) coloured.add(word);
+      }
+    }
+    const grammar = [...coloured].filter((w) => FUNCTION_WORDS_UNDER_TEST.has(w));
+
+    // Was 41 chains / 27 distinct function words coloured.
+    expect(multis.length).toBeLessThan(30);
+    expect(grammar.length).toBeLessThan(10);
+  });
+});
+
+const FUNCTION_WORDS_UNDER_TEST = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'than', 'as', 'so',
+  'i', 'me', 'my', 'you', 'your', 'he', 'him', 'his', 'she', 'her', 'we', 'us',
+  'our', 'they', 'them', 'their', 'it', 'its', 'this', 'that', 'these', 'those',
+  'am', 'is', 'are', 'was', 'were', 'be', 'been', 'being', "i'm", "it's",
+  'do', 'does', 'did', 'have', 'has', 'had', 'of', 'to', 'in', 'on', 'at',
+  'for', 'from', 'with', 'by', 'up', 'out', 'no', 'not', 'too', 'very',
+  'can', 'could', 'would', 'should', 'will', 'shall', 'may', 'must',
+]);
+
 describe('[Core] multi-rhyme chain validity', () => {
   it('needs at least two syllables — one is just a rhyme', () => {
     expect(chainIsValid([1.0])).toBe(false);
