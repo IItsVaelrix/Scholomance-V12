@@ -2033,6 +2033,15 @@ export function createCollabMcpServer(service = collabService) {
     return server;
 }
 
+/**
+ * Keep the event loop alive across the gap between process start and the SDK
+ * attaching its stdin listener.
+ *
+ * This timer is NOT unref'd on purpose — an unref'd timer would let the process
+ * exit during that window. The consequence is that it pins the loop open FOREVER
+ * unless something releases it, which is why every exit path below must, and why
+ * a stdio client vanishing has to be treated as an exit path (see main).
+ */
 function holdProcessOpenForStdio() {
     const interval = setInterval(() => {}, 60_000);
     return () => clearInterval(interval);
@@ -2065,17 +2074,42 @@ export async function main() {
     }
     traceMcpBridge('main:transport-connected');
 
-    const cleanup = async () => {
+    let shuttingDown = false;
+    const shutdown = async (reason) => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+        traceMcpBridge(`main:shutdown:${reason}`);
         releaseKeepAlive();
         await server.close().catch(() => {});
+        process.exit(0);
     };
 
-    process.once('SIGINT', () => {
-        void cleanup().finally(() => process.exit(0));
-    });
-    process.once('SIGTERM', () => {
-        void cleanup().finally(() => process.exit(0));
-    });
+    // THE MCP CLIENT OWNS THIS PROCESS'S LIFETIME.
+    //
+    // A stdio server with no client is an orphan: it can never be spoken to
+    // again, and it can never be reaped, because holdProcessOpenForStdio pins the
+    // event loop open and only SIGINT/SIGTERM released it. A client that dies
+    // WITHOUT signalling — killed, crashed, or simply detached — left the bridge
+    // running forever. They accumulated: 36 live daemons were found in one
+    // session, each re-registering its agent, which is what kept the server's
+    // 60-second AGENT-QA sweep reporting AGENT_DUPE violations.
+    //
+    // When the client's pipe closes, stdin hits EOF. That is the client hanging
+    // up, and it is the signal that was never being listened for.
+    const onStdioGone = (reason) => () => { void shutdown(reason); };
+    process.stdin.once('end', onStdioGone('stdin-end'));
+    process.stdin.once('close', onStdioGone('stdin-close'));
+    process.stdin.on('error', onStdioGone('stdin-error'));
+
+    // The SDK closes the transport when the peer goes away or the framing breaks.
+    const previousOnClose = transport.onclose;
+    transport.onclose = () => {
+        previousOnClose?.();
+        void shutdown('transport-closed');
+    };
+
+    process.once('SIGINT', () => { void shutdown('SIGINT'); });
+    process.once('SIGTERM', () => { void shutdown('SIGTERM'); });
     process.once('exit', () => {
         releaseKeepAlive();
     });
