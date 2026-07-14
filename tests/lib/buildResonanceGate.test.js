@@ -43,6 +43,50 @@ describe('buildResonanceGate', () => {
     expect(gate.has(10)).toBe(false);
   });
 
+  // ── MULTIS ─────────────────────────────────────────────────────────────────
+  // Multis arrive SEPARATELY (opts.multis), never inside `connections`. They come
+  // from multiRhyme.engine already structurally proven — a chain of >= 2 syllables,
+  // stressed anchor, every slant link earned — so they are judged on their own floor,
+  // not the word tier's 0.95 trust proxy.
+  const multi = (charStartsA, charStartsB, score) => ({
+    type: 'multi',
+    score,
+    a: { charStarts: charStartsA },
+    b: { charStarts: charStartsB },
+  });
+
+  it('lights EVERY word a multi chain touches, not just the first', () => {
+    // "a zero copy" ~ "a hero sloppy" spans three words a side. Lighting only the
+    // window start would show a multi-word rhyme as a single word.
+    const gate = buildResonanceGate([], { multis: [multi([29, 31, 36], [66, 68, 73], 0.93)] });
+
+    for (const cs of [29, 31, 36, 66, 68, 73]) {
+      expect(gate.get(cs)).toBe('rhyme');
+    }
+    expect(gate.size).toBe(6);
+  });
+
+  it('judges a multi on its own floor, not the word tier bar', () => {
+    // 0.78 is far below MIN_RESONANCE_SCORE (0.95) but a legitimate multi — its score
+    // is the mean link strength, and a real chain carries an honest weak tail.
+    const gate = buildResonanceGate([], { multis: [multi([0], [10], 0.78)] });
+    expect(gate.get(0)).toBe('rhyme');
+
+    // ...but a chain below the multi floor still does not colour.
+    const weak = buildResonanceGate([], { multis: [multi([0], [10], 0.55)] });
+    expect(weak.has(0)).toBe(false);
+  });
+
+  it('renders no multi when the dictionary authority is unavailable', () => {
+    // Same law as the word tier: without authoritative phonemes the chain is built on
+    // spelling guesses, and colouring from that is a confident lie.
+    const gate = buildResonanceGate([], {
+      authorityUnavailable: true,
+      multis: [multi([0], [10], 0.99)],
+    });
+    expect(gate.size).toBe(0);
+  });
+
   it('does NOT admit consonance to the rhyme tier', () => {
     const gate = buildResonanceGate([conn(0, 10, 'consonance', 0.97)]);
     expect(gate.has(0)).toBe(false);

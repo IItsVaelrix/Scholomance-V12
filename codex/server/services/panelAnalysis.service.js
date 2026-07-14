@@ -10,6 +10,7 @@ import { createDefaultScoringEngine } from '../../core/scoring.defaults.js';
 import { buildPlsPhoneticFeatures } from '../../core/rhyme-astrology/scoring.js';
 import { PhonemeEngine } from '../../core/phonology/phoneme.engine.js';
 import { DeepRhymeEngine } from '../../core/rhyme-astrology/deepRhyme.engine.js';
+import { findMultiRhymes } from '../../core/rhyme-astrology/multiRhyme.engine.js';
 import { detectScheme, analyzeMeter } from '../../core/shared/rhymeScheme.detector.js';
 import { analyzeLiteraryDevices, detectEmotionDetailed } from '../../core/shared/literaryDevices.detector.js';
 import { normalizeVowelFamily } from '../../core/phonology/vowelFamily.js';
@@ -206,6 +207,13 @@ function toMinimalAnalysisPayload(
   return {
     allConnections: toTransmittableConnections(analysis.allConnections),
     phraseWindows: toTransmittablePhraseWindows(analysis.phraseWindows),
+    // MULTIS ride alongside, never inside.
+    //
+    // A multi is a chain of rhyme families across syllables; a word connection is one
+    // rhyme on one token. Merging them would drag the multi through the word engine's
+    // buckets, tiers and score bar — which is exactly what broke every previous
+    // attempt. They stay a separate array so neither model can distort the other.
+    multis: Array.isArray(analysis.multis) ? analysis.multis : [],
     authorityUnavailable: Boolean(PhonemeEngine.authorityFailure),
     statistics: analysis.statistics || null,
     schemePattern: typeof analysis.schemePattern === 'string' ? analysis.schemePattern : '',
@@ -862,6 +870,26 @@ export async function createPanelAnalysisService(options = {}) {
         routing: { topK: isEditorProfile ? 2 : 4 },
         wordNetEnabled: !isEditorProfile,
       });
+      // MULTIS — a SEPARATE pipeline, run in parallel off the same verseIR.
+      //
+      // It reads the IR's per-token CMU phonemes, tokenizes them into SYLLABLES (its
+      // own tokenization) and finds chains of rhyme families. It never enters
+      // deepRhymeEngine: not its buckets, not its scoring, not its connection types.
+      // Every previous attempt to teach the word engine about multis broke the word
+      // engine instead — a multi rhymes on interior syllables across word boundaries,
+      // and that model does not fit a pipeline built on one rhyme per token at an edge.
+      //
+      // Failure is non-fatal: a verse with no multis is normal, and a multi failure
+      // must never take the whole analysis down with it.
+      let multis = [];
+      try {
+        multis = findMultiRhymes(verseIR, { phonemeEngine: PhonemeEngine })
+          .map(({ __start, ...chain }) => chain);
+      } catch (error) {
+        log?.warn?.({ err: error?.message || String(error) }, '[PanelAnalysisService] multi-rhyme pass failed; continuing without multis');
+      }
+      deepAnalysis.multis = multis;
+
       const amplifiedDoc = attachVerseIRAmplifier(analyzedDoc, verseIR?.verseIRAmplifier || null);
       const scoreData = await scoreEngine.calculateScore(amplifiedDoc);
       const wordAnalyses = buildAnalysisWordProfiles(deepAnalysis, syntaxLayer, verseIR);

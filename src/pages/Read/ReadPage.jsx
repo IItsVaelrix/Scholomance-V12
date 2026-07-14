@@ -439,7 +439,16 @@ export default function ReadPage() {
       deepAnalysis?.syntaxLayer?.authorityUnavailable
       ?? deepAnalysis?.analysis?.authorityUnavailable,
     );
-    return buildResonanceGate(connections, { authorityUnavailable });
+
+    // Multis arrive as their OWN array, never inside allConnections — they are a
+    // chain of rhyme families across syllables, not a word-pair connection, and
+    // merging the two models is what broke every earlier attempt. Read
+    // path-agnostically for the same reason as authorityUnavailable above.
+    const multis = deepAnalysis?.syntaxLayer?.multis
+      ?? deepAnalysis?.analysis?.multis
+      ?? [];
+
+    return buildResonanceGate(connections, { authorityUnavailable, multis });
   }, [deepAnalysis]);
 
   // True when analysis has arrived but the live synthesis path carries no

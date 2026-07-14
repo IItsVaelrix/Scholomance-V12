@@ -56,7 +56,20 @@ describe('authority gate — the wire-to-gate chain', () => {
   it('ReadPage actually passes the flag — guards against the gate call losing its second argument', () => {
     // The original bug was literally `buildResonanceGate(connections)` with no opts,
     // which made the whole authority path dead code while every unit test stayed green.
+    //
+    // The pattern used to demand the options object be EXACTLY `{ authorityUnavailable }`,
+    // which guarded the flag by forbidding every other option — so adding `multis` (the
+    // separate multi-rhyme pipeline) tripped a test about authority. Assert the INTENT:
+    // the flag must be inside the options object, whatever else is there.
     const source = readFileSync('src/pages/Read/ReadPage.jsx', 'utf8');
-    expect(source).toMatch(/buildResonanceGate\(\s*connections\s*,\s*\{\s*authorityUnavailable\s*\}\s*\)/);
+    expect(source).toMatch(/buildResonanceGate\(\s*connections\s*,\s*\{[^}]*\bauthorityUnavailable\b[^}]*\}\s*\)/);
+  });
+
+  it('ReadPage passes the multis through as their OWN option, not merged into connections', () => {
+    // A multi is a chain of rhyme families across syllables; a connection is one rhyme
+    // on one token. Merging them would drag multis through the word tier's score bar
+    // and type set. They must arrive separately.
+    const source = readFileSync('src/pages/Read/ReadPage.jsx', 'utf8');
+    expect(source).toMatch(/buildResonanceGate\(\s*connections\s*,\s*\{[^}]*\bmultis\b[^}]*\}\s*\)/);
   });
 });

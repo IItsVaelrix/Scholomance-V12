@@ -35,6 +35,26 @@ export const RHYME_TIER_TYPES = new Set(['identity', 'perfect', 'near', 'slant']
 // keep assonance from over-representing the palette.
 export const DEFAULT_ASSONANCE_MIN_SCORE = 0.60;
 
+/**
+ * A multi is trusted by its STRUCTURE, not by a similarity number.
+ *
+ * MIN_RESONANCE_SCORE (0.95) is a trust proxy for the WORD tier: a high score was the
+ * only evidence a pair rhymed. A multi arrives from multiRhyme.engine already proven —
+ * it is a chain of >= 2 syllables, anchored on a stressed strong link, with every
+ * slant link earned by the rest of the chain averaging above 0.80. Its `score` is the
+ * mean link strength, an ordering, not a verdict. Judging it by the word bar would
+ * censor every multi with an honest weak tail — which is most of them.
+ */
+export const DEFAULT_MULTI_MIN_SCORE = 0.70;
+
+/**
+ * Multis are passed SEPARATELY, never merged into `connections`.
+ *
+ * A multi is a chain of rhyme families across syllables; a word connection is one
+ * rhyme on one token. Merging them would drag multis through the word tier's score
+ * bar and type set — and every previous attempt to unify the two broke the word
+ * engine. They share only this: both end up lighting words.
+ */
 export function buildResonanceGate(connections, opts = {}) {
   // No backend authority means the phonemes behind these connections are
   // spelling-derived guesses. Rendering them is not a degraded mode, it is a
@@ -73,6 +93,27 @@ export function buildResonanceGate(connections, opts = {}) {
         gate.set(cs, RHYME_TIER); // rhyme always wins
       } else if (gate.get(cs) !== RHYME_TIER) {
         gate.set(cs, ASSONANCE_TIER);
+      }
+    }
+  }
+
+  // ── The multi pass, entirely separate from the word pass above ──────────────
+  //
+  // A multi spans several words, so it carries the charStart of EVERY word its chain
+  // touches. Lighting only one of them would show a two-word rhyme as a single word.
+  const multiMinScore = typeof opts.multiMinScore === 'number'
+    ? opts.multiMinScore
+    : DEFAULT_MULTI_MIN_SCORE;
+
+  const multis = Array.isArray(opts.multis) ? opts.multis : [];
+  for (const multi of multis) {
+    if ((Number(multi?.score) || 0) < multiMinScore) continue;
+
+    for (const end of [multi?.a, multi?.b]) {
+      const charStarts = Array.isArray(end?.charStarts) ? end.charStarts : [];
+      for (const cs of charStarts) {
+        if (!Number.isFinite(cs)) continue;
+        gate.set(cs, RHYME_TIER); // a multi is a rhyme; it wins over assonance
       }
     }
   }
