@@ -170,7 +170,31 @@ function buildSemanticAura(analysis, role) {
 
 // Surface the full structured phoneme analysis instead of flattening it to
 // stringly-typed tags. Defensive about which path the engine resolved through.
-function buildPhonology(analysis) {
+/**
+ * The engine sources a pronunciation one of two ways, and the difference matters:
+ *
+ *   LOOKED UP   cmu_dictionary / scholomance_dictionary / word_override / the
+ *               authority cache — a real pronunciation from a real dictionary.
+ *
+ *   GUESSED     heuristic_fallback / alphabet_literal — the word is not in any
+ *               dictionary, so the engine derives phonemes from the SPELLING.
+ *               "saudade" comes out S AO0 D EY1 D. That is a guess, and every
+ *               field computed from it (vowel family, coda, rhyme key) is a guess.
+ *
+ * The panel used to print both identically. This is how it tells them apart.
+ */
+const AUTHORITATIVE_PHONEME_SOURCES = new Set([
+  'cmu_dictionary',
+  'scholomance_dictionary',
+  'word_override',
+  'g2p_jury',
+]);
+
+export function isPhonemeSourceAuthoritative(source) {
+  return AUTHORITATIVE_PHONEME_SOURCES.has(String(source || ''));
+}
+
+function buildPhonology(analysis, phonemeSource = null) {
   if (!analysis) return null;
   const syllables = Array.isArray(analysis.syllables)
     ? analysis.syllables.map((s) => (typeof s === 'string' ? s : (s?.vowel || s?.nucleus || ''))).filter(Boolean)
@@ -183,6 +207,11 @@ function buildPhonology(analysis) {
     rhymeKey: analysis.rhymeKey || null,
     extendedRhymeKeys: Array.isArray(analysis.extendedRhymeKeys) ? analysis.extendedRhymeKeys : [],
     syllables,
+    // The provenance of every field above. `estimated` means the phonemes were
+    // derived from the word's LETTERS, not looked up — so the panel must say so
+    // rather than assert them.
+    source: phonemeSource || null,
+    estimated: !isPhonemeSourceAuthoritative(phonemeSource),
   };
 }
 
@@ -428,10 +457,19 @@ export function buildRitualPrediction(params) {
   const warnings = [];
   const debugTrace = [];
 
+  // WithDiagnostics, because the engine knows whether it LOOKED THE WORD UP or made
+  // the pronunciation up, and the panel has been printing both with equal confidence.
+  // "saudade" is not in CMU, so the engine guesses S AO0 D EY1 D from its letters and
+  // the Phonology panel then states a vowel, a coda and a rhyme key as fact. Carry the
+  // provenance so the panel can say which it is. (gene
+  // BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK — a frontend guess must not pass as truth.)
   let analysis = null;
+  let phonemeSource = null;
   try {
-    analysis = PhonemeEngine.analyzeWord(normalizedWord);
-    debugTrace.push(`PhonemeEngine.analyzeWord("${normalizedWord}") → OK`);
+    const resolved = PhonemeEngine.analyzeWordWithDiagnostics(normalizedWord);
+    analysis = resolved?.analysis || null;
+    phonemeSource = resolved?.diagnostics?.source || null;
+    debugTrace.push(`PhonemeEngine.analyzeWord("${normalizedWord}") → OK (${phonemeSource || 'unknown source'})`);
   } catch (err) {
     warnings.push(`Phoneme analysis unavailable: ${err?.message || 'unknown error'}`);
     debugTrace.push(`PhonemeEngine.analyzeWord("${normalizedWord}") → FAILED`);
@@ -466,7 +504,7 @@ export function buildRitualPrediction(params) {
       roleAlternatives: roleResult.alternatives,
       intent: buildIntent(role),
       semanticAura: buildSemanticAura(analysis, role),
-      phonology: buildPhonology(analysis),
+      phonology: buildPhonology(analysis, phonemeSource),
       syntacticFunction: analysis?.stressPattern || undefined,
       confidence,
       confidenceFactors,

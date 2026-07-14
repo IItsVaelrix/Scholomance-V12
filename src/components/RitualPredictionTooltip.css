@@ -232,6 +232,9 @@
 }
 
 .rp-section-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -535,6 +538,30 @@ button.rp-confidence-badge[data-static] {
   font-size: 0.66rem;
   color: var(--rp-text-dim);
   font-style: italic;
+}
+
+/* A guessed pronunciation must not LOOK like a looked-up one. */
+.rp-phon-estimated {
+  margin-left: auto;
+  padding: 0.05rem 0.35rem;
+  border: 1px dashed var(--rp-border);
+  border-radius: 3px;
+  font-size: 0.58rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--rp-text-dim);
+  cursor: help;
+}
+
+/* The whole panel is an estimate, so the whole panel reads as one. */
+.rp-section--estimated .rp-phon-grid,
+.rp-section--estimated .rp-aura-tags {
+  opacity: 0.72;
+}
+
+.rp-section--estimated .rp-phon-cell {
+  border-style: dashed;
 }
 
 /* Oracle failure notice — the card must say why a rune row is empty. */

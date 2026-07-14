@@ -739,8 +739,20 @@ const RitualPredictionTooltip = ({
           <ResonanceSection partners={details.resonancePartners} />
 
           {pred.phonology && (
-            <section className="rp-section">
-              <div className="rp-section-label"><Sparkles size={11} /> Phonology</div>
+            <section className={`rp-section ${pred.phonology.estimated ? 'rp-section--estimated' : ''}`}>
+              <div className="rp-section-label">
+                <Sparkles size={11} /> Phonology
+                {/* The engine sources a pronunciation by LOOKING IT UP or by GUESSING
+                    it from the spelling, and the panel used to print both with the
+                    same confidence. "saudade" is not in CMU, so its phonemes are
+                    invented from its letters — and the vowel, coda and rhyme key
+                    below are all invented with them. Say which it is. */}
+                {pred.phonology.estimated && (
+                  <span className="rp-phon-estimated" title="Not in the dictionary — these phonemes are derived from the spelling, so the vowel, coda and rhyme key are estimates.">
+                    estimated from spelling
+                  </span>
+                )}
+              </div>
               <div className="rp-phon-grid">
                 {pred.phonology.vowelFamily && <span className="rp-phon-cell"><b>vowel</b> {String(pred.phonology.vowelFamily).toUpperCase()}</span>}
                 {pred.phonology.syllableCount > 0 && <span className="rp-phon-cell"><b>syllables</b> {pred.phonology.syllableCount}</span>}
