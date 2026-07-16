@@ -114,16 +114,10 @@ export function WmpSpectrum({
         ctx.fillRect(0, y, W, 1);
       }
 
-      if (!reducedMotion || analysisAvailability !== 'available') {
-        raf = requestAnimationFrame(draw);
-      }
+      raf = requestAnimationFrame(draw);
     };
 
-    if (reducedMotion && analysisAvailability !== 'available') {
-      draw(0);
-    } else {
-      raf = requestAnimationFrame(draw);
-    }
+    raf = requestAnimationFrame(draw);
 
     return () => {
       cancelAnimationFrame(raf);
