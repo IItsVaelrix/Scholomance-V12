@@ -7,7 +7,20 @@ import { AlbumSidebar } from './AlbumSidebar';
 import { WmpSpectrum } from './WmpSpectrum';
 import { AlbumLyrics } from './AlbumLyrics';
 import { AlbumTransport } from './AlbumTransport';
+import type { ResolvedAlbumTrack } from './hooks/useAlbumResolver';
 import './AlbumPage.css';
+
+const EMPTY_TRACK: ResolvedAlbumTrack = {
+  albumTrack: { trackId: '', trackNumber: 0 },
+  grimoireTrack: null,
+  title: '',
+  audioUrl: '',
+  coverUrl: '',
+  duration: 0,
+  available: false,
+  lyrics: [],
+  annotations: [],
+};
 
 export default function AlbumPage() {
   const { albumId } = useParams<{ albumId: string }>();
@@ -65,7 +78,7 @@ export default function AlbumPage() {
 
   const engine = useAlbumAudioEngine({
     audioRef,
-    activeTrack: activeTrack ?? resolver.tracks[0],
+    activeTrack: activeTrack ?? resolver.tracks[0] ?? EMPTY_TRACK,
     autoplayIntent: false,
     onEnded,
   });
