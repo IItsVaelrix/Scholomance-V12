@@ -1,5 +1,7 @@
 export type { GrimoireTrack, TrackPacing } from './types';
 export { DEFAULT_PACING } from './types';
+export type { GrimoireAlbumTrack, GrimoireAlbum } from './types';
+export { GRIMOIRE_ALBUMS } from './albums';
 export { PETRICHOR } from './petrichor';
 export { BIG_FATHER } from './bigFather';
 export { POLARITY } from './polarity';

@@ -33,6 +33,34 @@ export interface GrimoireTrack {
 
 /** Generic fallback for tracks without measured pacing. Deliberately bland:
     even spread, no chorus split, no lead-in claim. */
+export interface GrimoireAlbumTrack {
+  trackId: string;
+  trackNumber: number;
+  discNumber?: number;
+  titleOverride?: string;
+  audioUrlOverride?: string;
+  coverUrlOverride?: string;
+  hidden?: boolean;
+  bonus?: boolean;
+}
+
+export interface GrimoireAlbum {
+  id: string;
+  title: string;
+  artist: string;
+  coverUrl: string;
+  description: string;
+  releaseDate: string;
+  tracks: GrimoireAlbumTrack[];
+  model?: string;
+  modelVersion?: string;
+  subtitle?: string;
+  genres?: string[];
+  totalDuration?: number;
+  featured?: boolean;
+  status?: "draft" | "released" | "archived";
+}
+
 export const DEFAULT_PACING: TrackPacing = {
   bpm: 120,
   verseSylPerBeat: 1.2,
