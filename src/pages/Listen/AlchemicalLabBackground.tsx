@@ -5,6 +5,9 @@ import { cacheBackground } from '../../lib/cache/backgroundCache';
 import { getAmbientPlayerService } from '../../lib/ambient/ambientPlayer.service.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
+import { PBShaderStage } from '../../ui/animation/pbstage';
+import { ATMOSPHERE_PACKET } from './shaders/atmospherePacket.js';
+import { getBytecodeAMP, AMP_CHANNELS } from '../../lib/ambient/bytecodeAMP.js';
 
 // Shared game reference for SignalChamberConsole to attach to
 let sharedPhaserGame: Phaser.Game | null = null;
@@ -28,20 +31,7 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
   const gameRef = useRef<Phaser.Game | null>(null);
   const bgSceneRef = useRef<any>(null);
   const [isLoaded, setIsLoaded] = useState(false);
-  // Once Phaser has faded in over the static CSS background, the static layer is
-  // fully occluded. It must be UNMOUNTED, not just set to opacity:0 — an
-  // opacity:0 element keeps running its CSS animations (the pip drop-shadow
-  // pulse, the rotating pentagram) and keeps getting composited every frame,
-  // burning GPU fill-rate behind the opaque canvas for something no one can see.
-  const [staticGone, setStaticGone] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
-
-  useEffect(() => {
-    if (!isLoaded) return;
-    // Wait for the 0.3s cross-fade to finish, then drop the layer entirely.
-    const t = setTimeout(() => setStaticGone(true), 350);
-    return () => clearTimeout(t);
-  }, [isLoaded]);
 
   useEffect(() => {
     let isMounted = true;
@@ -201,41 +191,20 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
       />
 
       {/*
-        STATIC CSS BACKGROUND - Shows initially, then fades behind Phaser and is
-        UNMOUNTED once the fade completes (staticGone). This is the LCP element -
-        pure CSS, no JS required. Keeping it mounted at opacity:0 would leave its
-        infinite animations running invisibly behind the canvas (see staticGone).
+        Tier A atmosphere - PBShaderStage renders the ambient atmosphere shader,
+        replacing the old static CSS portal subtree. Sits below the Phaser
+        canvas (zIndex 0 vs 2).
       */}
-      {!staticGone && (
-        <div
-          className="alchemical-lab-static-bg"
-          aria-hidden="true"
-          style={{
-            opacity: isLoaded ? 0 : 1,
-            transition: 'opacity 0.3s ease',
-            zIndex: 1,
-          }}
-        >
-          {/* Stone wall pattern */}
-          <div className="alchemical-stone-wall" />
-
-          {/* Central arch portal */}
-          <div className="alchemical-arch-portal">
-            <div className="arch-ring arch-ring--outer" />
-            <div className="arch-ring arch-ring--mid" />
-            <div className="arch-ring arch-ring--inner" />
-            <div className="arch-pentagram">
-              <svg viewBox="0 0 200 200" className="pentagram-svg">
-                {/* Pentagram drawn with a single continuous stroke for sharp magical look */}
-                <path d="M100 20 L147 165 L24 75 L176 75 L53 165 Z" className="pentagram-path" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Vignette overlay */}
-          <div className="alchemical-vignette" />
-        </div>
-      )}
+      <PBShaderStage
+        packet={ATMOSPHERE_PACKET}
+        reducedMotion={prefersReducedMotion}
+        style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}
+        getRuntimeInput={(elapsedMs) => ({
+          elapsedMs,
+          resonance: Math.max(0, Math.min(1, signalLevel)),
+          vowelDensity: getBytecodeAMP(elapsedMs, AMP_CHANNELS.PULSE),
+        })}
+      />
     </div>
   );
 };

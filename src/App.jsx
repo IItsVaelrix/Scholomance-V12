@@ -54,6 +54,8 @@ export default function App() {
 
   // Remove navigation bar only on the battle/combat page so the grid can fill the full viewport.
   const isBattlePage = location.pathname === '/combat' || location.pathname.startsWith('/combat/');
+  // Listen owns its own atmosphere via the PBShaderStage (Tier A); suppress the global decorative layers there.
+  const isListenPage = location.pathname === '/listen' || location.pathname.startsWith('/listen/');
 
   useEffect(() => {
     const main = document.getElementById("main-content");
@@ -75,8 +77,8 @@ export default function App() {
               <GameBackgroundMusicSync />
               <GameAudioForgeSync />
               <GameObeliskElectricSync />
-              {/* Hide global decorative layers on battle page so only the pure grid is visible */}
-              {!isBattlePage && (
+              {/* Hide global decorative layers on battle page so only the pure grid is visible; Listen renders its own atmosphere via Tier A */}
+              {!isBattlePage && !isListenPage && (
                 <>
                   <div className="aurora-background" aria-hidden="true" />
                   <div className="vignette" aria-hidden="true" />
