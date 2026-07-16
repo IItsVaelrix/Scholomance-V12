@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -11,6 +14,11 @@ function renderNav() {
   );
 }
 
+const discoNavCss = readFileSync(
+  join(dirname(fileURLToPath(import.meta.url)), '../../src/pages/Visualiser/DiscographyNav.css'),
+  'utf8',
+);
+
 describe('DiscographyNav header', () => {
   it('groups Discography title and Albums link in a left title cluster', () => {
     const { container } = renderNav();
@@ -21,6 +29,15 @@ describe('DiscographyNav header', () => {
     expect(albumsLink).toBeTruthy();
     expect(albumsLink).toHaveAttribute('href', '/visualiser/albums');
     expect(albumsLink?.textContent).toMatch(/albums/i);
+  });
+
+  it('allows title cluster to shrink while actions stay fixed', () => {
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-title\s*\{[^}]*min-width:\s*0/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*min-width:\s*0/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*text-overflow:\s*ellipsis/);
+    expect(discoNavCss).not.toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*flex-shrink:\s*0/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-albums-link\s*\{[^}]*flex-shrink:\s*0/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-actions\s*\{[^}]*flex-shrink:\s*0/);
   });
 
   it('keeps Upload and collapse in the right actions cluster', () => {

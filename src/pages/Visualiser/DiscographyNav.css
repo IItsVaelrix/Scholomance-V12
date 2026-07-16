@@ -47,7 +47,9 @@
 }
 
 .bcv-disco-header-title h2 {
-  flex-shrink: 0;
+  min-width: 0;
+  flex: 1 1 auto;
+  text-overflow: ellipsis;
 }
 
 .bcv-disco-albums-link {
