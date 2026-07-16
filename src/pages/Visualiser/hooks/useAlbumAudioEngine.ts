@@ -81,6 +81,7 @@ export function useAlbumAudioEngine({
     const el = audioRef.current;
     if (!el) return;
 
+    el.crossOrigin = 'anonymous';
     el.src = activeTrack.audioUrl;
     el.load();
     setCurrentTime(0);
@@ -153,7 +154,12 @@ export function useAlbumAudioEngine({
     if (!el) return;
     ensureGraph();
     await audioCtxRef.current?.resume().catch(() => {});
-    await el.play();
+    try {
+      await el.play();
+    } catch (err: unknown) {
+      setStatus('error');
+      setError(err instanceof Error ? err.message : 'Playback blocked');
+    }
   }, [audioRef, ensureGraph]);
 
   const pause = useCallback(() => {
