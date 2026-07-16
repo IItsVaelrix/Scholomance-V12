@@ -25,6 +25,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { selectKind } from '../../../codex/core/semantic-calculus/kind.ts';
+import { userUtterance } from '../../../codex/core/semantic-calculus/utterance.ts';
 import { emptyContext } from '../../../codex/core/semantic-calculus/trustPartition.ts';
 import './SemanticShadowOverlay.css';
 
@@ -95,7 +96,10 @@ export default function SemanticShadowOverlay() {
       // Nothing here is `untrusted` — that partition is for retrieved content, and
       // an empty partition is honest about that (F13).
       const context = { ...emptyContext(), user: { ...state } };
-      return selectKind(utterance, context);
+      // F21 — a human is typing into this box. That is the one thing that earns
+      // 'user'. When an agent drives this surface it must say derived instead,
+      // and the harness — not the agent — supplies the taint.
+      return selectKind(userUtterance(utterance), context);
     } catch (err) {
       return { error: (err as Error).message } as const;
     }
@@ -116,6 +120,10 @@ export default function SemanticShadowOverlay() {
           // system that classifies well while justifying badly stays invisible.
           clientEpistemic: decision.epistemic,
           clientPhase: decision.phase,
+          // F21 — the corpus must record WHO spoke, or it cannot tell a human
+          // request from an agent proposal when it is replayed.
+          utteranceTrust: decision.utteranceProvenance.trust,
+          utteranceTaint: decision.utteranceProvenance.taint,
           verdict,
           expectedKind,
           question: (decision as any).question?.text ?? undefined,

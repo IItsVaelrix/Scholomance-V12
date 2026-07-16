@@ -60,6 +60,17 @@ const captureSchema = z.object({
     })
     .optional(),
   clientPhase: z.enum(['atomic', 'plan', 'report']).optional(),
+  /**
+   * F21 — WHO spoke. A corpus that records only the text cannot tell a human
+   * request from an agent proposal when it is replayed, and those are different
+   * acts under law: the utterance is the outermost authority path, and 'derived'
+   * is not a trusted partition.
+   *
+   * Absent = undeclared = untrusted. There is no default-trusted path here
+   * either; an old row without provenance is a row that did not say.
+   */
+  utteranceTrust: z.enum(['user', 'derived', 'untrusted']).optional(),
+  utteranceTaint: z.array(z.string().max(200)).max(20).optional(),
   /** Optional human verdict: did the compiler get it right? */
   verdict: z.enum(['correct', 'wrong', 'unsure']).optional(),
   /**

@@ -13,6 +13,7 @@ import {
   LEXICON_ROLE_ERRORS,
 } from '../../codex/core/semantic-calculus/lexicons.ts';
 import { compileSemanticIntent, assertExecutable } from '../../codex/core/semantic-calculus/compiler.ts';
+import { userUtterance } from '../../codex/core/semantic-calculus/utterance.ts';
 import { FORMATION_FORMULAS } from '../../codex/core/semantic-calculus/formulaRegistry.ts';
 import { PROBE_FORMULAS } from '../../codex/core/semantic-calculus/probeRegistry.ts';
 
@@ -120,8 +121,10 @@ describe('P4 — diagnosis does not compete as an action target', () => {
   });
 
   it('the action lexicon still reaches Do for a real command', () => {
+    // F21 — a human typed this, so it says so. A bare string here would be an
+    // undeclared caller, which is untrusted, which never authorizes a Do.
     const { act } = compileSemanticIntent({
-      utterance: 'open albums',
+      utterance: userUtterance('open albums'),
       context: ctx(),
     });
     expect(act.kind).toBe('Do');

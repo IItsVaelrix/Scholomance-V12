@@ -73,14 +73,20 @@ candidate, so it is Theory.
 
 ---
 
-## 4. Four axes. This is the one thing to internalise.
+## 4. Five axes. This is the one thing to internalise.
 
 ```
-kind              = what you said           (Do | Probe | Clarify | Theory | Hypothesis)
+kind              = what was said           (Do | Probe | Clarify | Theory | Hypothesis)
 law.decision      = whether it may happen   (allow | clarify | block | escalate)
 epistemic.gap     = what is missing         (none | command | concept | procedure | …)
 phase             = plan or report          (atomic | plan | report)  — Probe only
+utteranceProvenance = WHO said it           (user | derived | untrusted)  — see §6.4
 ```
+
+Five questions, five sealed fields, no axis cannibalism. "What was said" and "who
+said it" are as separate as "what was said" and "whether it may happen": the same
+sentence binds the same formula whether you typed it or a model proposed it after
+reading a web page, and only `law.decision` moves.
 
 **They are separate fields and they must never be merged.** Especially: **do not
 split Theory into sub-kinds** (`TheoryUnboundCommand` etc.). That recreates rev 5's
@@ -106,9 +112,9 @@ A harvested inquiry:
 "why listen animations fail"  →  Probe  phase=plan  epistemic.gap=evidence
 ```
 
-The executor requires **three** gates: `kind === 'Do'` **and**
-`law.decision === 'allow'` **and** a capability. A `Do` is a claim about grammar
-and nothing more. Probe plans/reports never become Do via epistemic fields.
+The executor requires **four** gates: `kind === 'Do'` **and**
+`law.decision === 'allow'` **and** a capability **and** any confirmation that
+capability demands (§6.4). A `Do` is a claim about grammar and nothing more. Probe plans/reports never become Do via epistemic fields.
 
 This was rev 5's bug. `Forbidden` and `Escalate` were `law.decision` values
 hiding in the kind enum, which made `kind='Do'` with `law='block'` typecheck, and
@@ -189,6 +195,57 @@ in §6.5. The route's enums are asserted equal to `types.ts` in
 `tests/semantic-calculus/shadow.schema-drift.test.js` — drift there is silent,
 because the route keeps accepting rows while the members quietly stop meaning the
 same thing, and the corpus ends up measuring a compiler that no longer exists.
+
+---
+
+## 6.4. Who said it (F21)
+
+The partitions guard `context`. They did **not** guard the utterance — and the
+utterance is the outermost authority path there is: it selects the formula,
+resolves the slots, and produces the payload `capabilityScope` walks to mint a
+capability. Everything the partitions defend sits downstream of it.
+
+That is fine when a human types into a box. It is not when **the speaker is a
+model**. `derived` is defined as "model summaries, embeddings, inferred
+entities" and is explicitly not trusted — and a model-emitted utterance is
+definitionally derived. So the doctrine said *derived may inform, never
+authorize* while the primary input violated it by construction.
+
+```
+utterance: 'go to albums'                        -> untrusted -> escalate
+userUtterance('go to albums')                    -> user      -> allow, no confirmation
+derivedUtterance('go to albums')                 -> derived   -> allow, needs 1 confirmation
+derivedUtterance('go to albums', ['a-web-page']) -> tainted   -> escalate
+```
+
+**A bare string is untrusted.** `trustPartition.ts` already states the rule: a
+caller that cannot say where a string came from must place it in `untrusted` —
+there is no default-trusted path. A bare string is a caller that did not say.
+Compile stays total: it seals an honest act that *escalates* rather than
+throwing, so the missing declaration is visible in the act itself.
+
+**Taint is the harness's job, never the speaker's.** A speaker declaring its own
+provenance is a speaker authorizing itself. Declaring taint only ever lowers
+privilege, so omitting it is the profitable lie — the caller that ran the tools
+must supply it, not the model that read their output.
+
+**Provenance decides permission, never meaning.** The same text binds the same
+formula to the same payload no matter who said it. Only `law.decision` moves.
+That is the rev-6 separation holding under a new axis; merging them would be the
+same axis cannibalism that took κ to 0.271.
+
+The gate can speak as a machine, which is what the system is actually for:
+
+```bash
+npx tsx scripts/scholo-gate.mjs "run the build"                        # you typed it
+npx tsx scripts/scholo-gate.mjs --derived "run the build"              # a model proposed it
+npx tsx scripts/scholo-gate.mjs --taint=https://evil.example "run the build"
+```
+
+**Do only.** A Probe authorizes nothing — read-only by formula effect, commits
+nothing, plans run no observations — so provenance does not gate it. Gating
+probes would make the safe path the expensive one, which is how rails get ripped
+out.
 
 ---
 
@@ -282,6 +339,7 @@ bytes after any commit and replay identity would be a lie.
 | command | does |
 |---|---|
 | `npx tsx scripts/scholo-gate.mjs "<intent>"` | compile an intent against your npm scripts. Runs nothing. |
+| `… --derived "<intent>"` \| `--taint=<src>` | speak as a model, not as yourself (F21) |
 | `… --log "<intent>"` | also append to `bench/semantic-calculus/corpus/cli-intents.jsonl` |
 | `ENABLE_SEMANTIC_CALCULUS=1 npm run dev` | shadow overlay in the app (`◈ shadow` tab, or `Ctrl` + `;`) |
 | `npx tsx bench/semantic-calculus/compile-shadow.mjs` | full sealed compile + phenotype report |
@@ -291,7 +349,7 @@ bytes after any commit and replay identity would be a lie.
 | `… --channel warrant` \| `--channel justification` | the other two channels. Separate passes, on purpose |
 | `node bench/semantic-calculus/kappa.mjs a.jsonl b.jsonl` | agreement on all three channels; exit 1 fails the gate |
 | `… --legacy a.jsonl b.jsonl` | score the historical seven-kind labels (pre rev 6) |
-| `npx vitest run tests/semantic-calculus` | 137 tests |
+| `npx vitest run tests/semantic-calculus` | 157 tests |
 | `PYTHONPATH=steamdeck_brain .venv/bin/python steamdeck_brain/direct_brain.py --action brain --name CODE_BRAIN --query "<q>"` | ask CODE_BRAIN directly |
 
 ---
@@ -331,6 +389,7 @@ Error codes:
 | `SEMANTIC_CALCULUS_UNKNOWN_PROBE` | no such Probe formula in the inquiry lexicon |
 | `SEMANTIC_CALCULUS_INQUIRY_IS_EXECUTABLE` | an inquiry entry could reach an execution capability. It must not |
 | `SEMANTIC_CALCULUS_LEXICON_ROLE_COLLISION` | one id lives in two lexicon roles |
+| `SEMANTIC_CALCULUS_UNCONFIRMED_DO` | a Do whose capability demands confirmation nobody supplied. Provenance raises that demand — see §6.4 |
 
 ---
 

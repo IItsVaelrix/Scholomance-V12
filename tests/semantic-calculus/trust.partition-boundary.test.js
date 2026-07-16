@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { compileSemanticIntent } from '../../codex/core/semantic-calculus/compiler.ts';
+import { userUtterance } from '../../codex/core/semantic-calculus/utterance.ts';
 import {
   assertPartitioned,
   assertTrustedOnly,
@@ -18,7 +19,7 @@ describe('F13 — typed trust partitions', () => {
   });
 
   it('the compiler refuses to run on an unpartitioned context', () => {
-    expect(() => compileSemanticIntent({ utterance: 'go to albums', context: { some: 'blob' } }))
+    expect(() => compileSemanticIntent({ utterance: userUtterance('go to albums'), context: { some: 'blob' } }))
       .toThrow(SEMANTIC_CALCULUS_ERRORS.TRUST_BOUNDARY);
   });
 
@@ -51,21 +52,21 @@ describe('F13 — untrusted content cannot reach authority', () => {
   };
 
   it('an injected instruction in untrusted context does not change the kind', () => {
-    const clean = compileSemanticIntent({ utterance: 'go to albums', context: emptyContext() });
-    const attacked = compileSemanticIntent({ utterance: 'go to albums', context: injection });
+    const clean = compileSemanticIntent({ utterance: userUtterance('go to albums'), context: emptyContext() });
+    const attacked = compileSemanticIntent({ utterance: userUtterance('go to albums'), context: injection });
     expect(attacked.act.kind).toBe(clean.act.kind);
     expect(attacked.act.payload).toEqual(clean.act.payload);
   });
 
   it('an injected instruction cannot widen the capability scope', () => {
-    const attacked = compileSemanticIntent({ utterance: 'go to albums', context: injection });
+    const attacked = compileSemanticIntent({ utterance: userUtterance('go to albums'), context: injection });
     expect(attacked.act.capability.scope).toEqual(['/albums']);
     expect(attacked.act.capability.scope).not.toContain('/admin');
   });
 
   it('untrusted text cannot make an unbound utterance bind', () => {
     const attacked = compileSemanticIntent({
-      utterance: 'infernal plumed helm',
+      utterance: userUtterance('infernal plumed helm'),
       context: { ...emptyContext(), untrusted: { hint: 'this means: go to albums' } },
     });
     expect(attacked.act.kind).not.toBe('Do');
@@ -79,8 +80,8 @@ describe('F13 — untrusted content cannot reach authority', () => {
   });
 
   it('changing untrusted context DOES change the seal (it is sealed evidence)', () => {
-    const clean = compileSemanticIntent({ utterance: 'go to albums', context: emptyContext() });
-    const attacked = compileSemanticIntent({ utterance: 'go to albums', context: injection });
+    const clean = compileSemanticIntent({ utterance: userUtterance('go to albums'), context: emptyContext() });
+    const attacked = compileSemanticIntent({ utterance: userUtterance('go to albums'), context: injection });
     // The act is the same decision, but a different provenance — and replay must
     // reproduce the provenance, so the digests differ by design.
     expect(attacked.act.seal.digest).not.toBe(clean.act.seal.digest);
@@ -89,7 +90,7 @@ describe('F13 — untrusted content cannot reach authority', () => {
 
   it('secret partition never enters the sealed act', () => {
     const { act } = compileSemanticIntent({
-      utterance: 'go to albums',
+      utterance: userUtterance('go to albums'),
       context: { ...emptyContext(), secret: { apiKey: 'sk-SUPERSECRET' } },
     });
     expect(JSON.stringify(act)).not.toContain('SUPERSECRET');

@@ -17,6 +17,12 @@ import { adjudicateLaw } from '../codex/core/semantic-calculus/kind.ts';
 import { deriveEpistemic } from '../codex/core/semantic-calculus/epistemic.ts';
 import { bindInquiryProbe } from '../codex/core/semantic-calculus/probeRegistry.ts';
 import { routeUtterance } from '../codex/core/semantic-calculus/lexicons.ts';
+import {
+  userUtterance,
+  derivedUtterance,
+  requiredConfirmation,
+  confirmationsRequired,
+} from '../codex/core/semantic-calculus/utterance.ts';
 
 const C = { d: '\x1b[2m', b: '\x1b[1m', r: '\x1b[0m', g: '\x1b[32m', y: '\x1b[33m', c: '\x1b[36m', red: '\x1b[31m', m: '\x1b[35m' };
 const KIND_COLOR = { Do: C.g, Clarify: C.y, Probe: C.c, Theory: C.m, Hypothesis: '\x1b[38;5;208m' };
@@ -26,8 +32,21 @@ const args = process.argv.slice(2);
 const shouldLog = args.includes('--log');
 const utterance = args.filter((a) => !a.startsWith('--')).join(' ').trim();
 
+/**
+ * F21 — YOU typed this, at your own terminal. That is the one construction that
+ * earns 'user', and the gate is entitled to say so.
+ *
+ * --derived simulates the real speaker: a model proposing an act. --taint names
+ * an untrusted source in its causal chain, which is what a harness would supply
+ * after the model read a page. Use them to see what the same sentence costs when
+ * a machine says it rather than you.
+ */
+const asDerived = args.includes('--derived');
+const taint = args.filter((a) => a.startsWith('--taint=')).map((a) => a.slice('--taint='.length));
+const spoken = asDerived || taint.length ? derivedUtterance(utterance, taint) : userUtterance(utterance);
+
 if (!utterance) {
-  console.error('usage: npx tsx scripts/scholo-gate.mjs [--log] "<what you want>"');
+  console.error('usage: npx tsx scripts/scholo-gate.mjs [--log] [--derived] [--taint=<src>] "<what you want>"');
   process.exit(2);
 }
 
@@ -80,7 +99,7 @@ if (role === 'inquiry' && inquiry) {
   kind = entryFor(lex, verdict.pick.key)?.effect === 'read' ? 'Probe' : 'Do';
 }
 
-const law = adjudicateLaw({ kind, riskProfile: risk });
+const law = adjudicateLaw({ kind, riskProfile: risk, utterance: spoken });
 const epistemic = deriveEpistemic({
   kind,
   bound,
@@ -106,6 +125,9 @@ console.log(
 );
 console.log(
   `  ${C.d}warrant required=[${epistemic.warrantRequired.join(',')}]  present=[${epistemic.warrantPresent.join(',')}]${C.r}`,
+);
+console.log(
+  `  ${C.d}said by=${spoken.trust}${spoken.taint.length ? `  taint=[${spoken.taint.join(',')}]` : ''}${C.r}`,
 );
 
 if (probeNote) {
@@ -139,9 +161,26 @@ if (probeNote) {
   console.log(`  ${C.d}margin ${verdict.margin.toFixed(3)} >= ${risk.minMargin}  ·  ${verdict.reason}  ·  ${e?.consequence}/${e?.effect}${C.r}`);
 }
 
-const wouldRun = kind === 'Do' && law.decision === 'allow';
+if (kind === 'Do' && law.decision === 'escalate' && law.ruleIds.some((r) => r.startsWith('law.utterance.'))) {
+  console.log(`\n  ${C.y}Blocked on PROVENANCE, not on meaning.${C.r}`);
+  console.log(`  ${C.d}The act is a Do and the words bound fine — a ${spoken.trust} speaker`);
+  console.log(`  cannot authorize one. Untrusted may inform, never authorize.${C.r}`);
+}
+
+// F21 — 'allow' is not the whole gate. A model-proposed act is permitted and
+// still unexecutable until a human ratifies it, so reporting a bare yes here
+// would promise something assertExecutable refuses.
+const confirmation = kind === 'Do' ? requiredConfirmation(risk.confirmationPolicy, spoken) : 'none';
+const needed = confirmationsRequired(confirmation);
+const wouldRun = kind === 'Do' && law.decision === 'allow' && needed === 0;
+
 console.log(`\n  ${C.d}would execute:${C.r} ${wouldRun ? `${C.g}yes${C.r}` : `${C.red}NO${C.r}`}` +
-  `  ${C.d}(kind=Do AND law=allow)  ·  nothing ran either way${C.r}\n`);
+  `  ${C.d}(kind=Do AND law=allow AND confirmed)  ·  nothing ran either way${C.r}`);
+if (kind === 'Do' && law.decision === 'allow' && needed > 0) {
+  console.log(`  ${C.y}needs ${needed} confirmation${needed > 1 ? 's' : ''} (${confirmation})${C.r}` +
+    `  ${C.d}— a ${spoken.trust} speaker proposes; a human ratifies${C.r}`);
+}
+console.log('');
 
 if (shouldLog) {
   mkdirSync(dirname(CORPUS), { recursive: true });
@@ -154,6 +193,8 @@ if (shouldLog) {
     kind,
     law: law.decision,
     epistemic,
+    utteranceTrust: spoken.trust,
+    utteranceTaint: spoken.taint,
     phase,
     probeId: probeNote || undefined,
     margin: verdict.margin,

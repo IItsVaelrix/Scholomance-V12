@@ -124,6 +124,58 @@ export interface ContextDigests {
   derived: string;
 }
 
+// ─── F21: utterance provenance ──────────────────────────────────────────────
+
+/**
+ * Who authored the utterance. NOT what it says — who said it.
+ *
+ * WHY THIS EXISTS. The partitions above guard `context`: trustedOf() narrows to
+ * policy+user, cites carry taint, and untrusted text may fill a payload slot but
+ * may never select a gene. That machinery protected the EVIDENCE path while the
+ * utterance — the single input that selects the formula, resolves the slots, and
+ * produces the payload capabilityScope walks to mint a capability — arrived as a
+ * bare unpartitioned string. Everything the partitions defend sits downstream of
+ * the one field that had no provenance at all.
+ *
+ * That is survivable when a human types into a box. It is not when the speaker is
+ * a model. `derived` is defined below as "model summaries, embeddings, inferred
+ * entities" and is explicitly not trusted — and a model-emitted utterance is
+ * definitionally derived. So the doctrine said "derived may inform, never
+ * authorize" while the primary input violated it by construction. If an agent
+ * reads a hostile page and that steers what it says, the injection used to arrive
+ * as an untainted string in the position of maximum authority.
+ *
+ * trustPartition.ts already makes this argument one level down: "cite-not-become
+ * stops untrusted text from MINTING a gene, but it never stopped untrusted text
+ * from SELECTING which genes get cited. Selection is an authority path." The
+ * utterance is the outermost selection there is.
+ *
+ * TAINT IS SET BY THE HARNESS, NEVER BY THE SPEAKER. A speaker that declares its
+ * own provenance is a speaker authorizing itself. Declaring taint only ever
+ * lowers privilege, so omitting it is the profitable lie — which is exactly why
+ * the caller that ran the tools, not the model that read their output, must
+ * supply it.
+ */
+export type UtteranceTrust = Extract<TrustClass, 'user' | 'derived' | 'untrusted'>;
+
+export interface Utterance {
+  text: string;
+  trust: UtteranceTrust;
+  /** Untrusted sources in the causal chain of this text. Harness-supplied. */
+  taint: readonly string[];
+}
+
+/**
+ * Sealed provenance. The TEXT is deliberately not sealed — two phrasings that
+ * bind one formula with one payload are the same act, and the act is the meaning
+ * rather than the words. Trust and taint ARE sealed: they change law.decision, so
+ * outside the seal they would be decoration an executor could ignore.
+ */
+export interface UtteranceProvenance {
+  trust: UtteranceTrust;
+  taint: readonly string[];
+}
+
 // ─── Evidence ───────────────────────────────────────────────────────────────
 
 /** Acts cite genes; acts are not genes. Cites resolve from trusted context only. */
@@ -383,6 +435,7 @@ export interface SemanticDraft {
   principalId: string;
   epistemic: EpistemicState;
   phase: ActPhase;
+  utteranceProvenance: UtteranceProvenance;
   investigationDeposit?: InvestigationDeposit;
 }
 
@@ -411,6 +464,8 @@ export interface SemanticAct {
   theoryDeposit: { required: boolean };
   epistemic: EpistemicState;
   phase: ActPhase;
+  /** F21 — who authored the utterance. Sealed: it changes law.decision. */
+  utteranceProvenance: UtteranceProvenance;
   /** Present only when theoryDeposit.required and gap is procedure/concept. */
   investigationDeposit?: InvestigationDeposit;
   compiler: CompilerIdentity;
@@ -443,6 +498,8 @@ export const SEMANTIC_CALCULUS_ERRORS = Object.freeze({
   EPISTEMIC_KIND_COUPLING: 'SEMANTIC_CALCULUS_EPISTEMIC_KIND_COUPLING',
   UNKNOWN_PROBE: 'SEMANTIC_CALCULUS_UNKNOWN_PROBE',
   RECEIPT_MISMATCH: 'SEMANTIC_CALCULUS_RECEIPT_MISMATCH',
+  /** F21 — a Do whose capability demands confirmation that was never supplied. */
+  UNCONFIRMED_DO: 'SEMANTIC_CALCULUS_UNCONFIRMED_DO',
 } as const);
 
 export const SCHEMA_VERSION_V2 = 'SEMANTIC_ACT_v2' as const;

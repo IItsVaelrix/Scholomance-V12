@@ -52,6 +52,15 @@ describe('P6 — capture schema tracks types.ts', () => {
     expect(inRoute).toEqual(inTypes);
   });
 
+  it('UtteranceTrust members match the utteranceTrust enum', () => {
+    // F21 — provenance decides whether an act can execute, so a route that
+    // accepts a trust class types.ts does not know is a hole, not a typo.
+    const inTypes = members(TYPES, /export type UtteranceTrust =([\s\S]*?);/);
+    const inRoute = members(ROUTE, /utteranceTrust: z\.enum\(\[([^\]]+)\]/);
+    expect(inTypes).toEqual(['user', 'derived', 'untrusted']);
+    expect(inRoute).toEqual(inTypes);
+  });
+
   it('CalculusKind members match the clientKind enum', () => {
     const inTypes = members(TYPES, /export type CalculusKind =([\s\S]*?);/).filter(
       (x) => /^[A-Z]/.test(x),

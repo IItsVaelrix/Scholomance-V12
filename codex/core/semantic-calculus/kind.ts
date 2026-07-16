@@ -12,9 +12,11 @@ import { getFormation, UNBOUND_RISK } from './formulaRegistry.ts';
 import { type LexiconMatch } from './lexiconUi.ts';
 import { buildProbePlan } from './probeRegistry.ts';
 import { LEXICONS, routeUtterance, type LexiconRole } from './lexicons.ts';
+import { toUtterance, provenanceOf, type UtteranceInput } from './utterance.ts';
 import { deriveEpistemic, derivePhase } from './epistemic.ts';
 import { buildInvestigationDeposit } from './investigationDeposit.ts';
 import { trustedOf } from './trustPartition.ts';
+import { EXECUTABLE_KIND } from './types.ts';
 import type {
   ActPhase,
   CalculusKind,
@@ -23,6 +25,8 @@ import type {
   LawDecision,
   RiskProfile,
   TrustPartitionedContext,
+  Utterance,
+  UtteranceProvenance,
 } from './types.ts';
 
 /** Kinds that must reach the theory bank before the act seals (F7). */
@@ -44,6 +48,8 @@ export interface KindDecision {
   epistemic: EpistemicState;
   /** Experimental phase (rev 7). */
   phase: ActPhase;
+  /** F21 — who authored the utterance. Sealed by the compiler. */
+  utteranceProvenance: UtteranceProvenance;
   investigationDeposit?: InvestigationDeposit;
   /** Binding diagnostics for epistemic (not sealed separately). */
   unknownReferent: boolean;
@@ -54,8 +60,23 @@ export interface KindDecision {
 /**
  * Step 6 — LAW adjudication. Returns a VERDICT, never a kind (F19).
  * Cites SEMANTIC_ACT_KIND_IS_NOT_PERMISSION.
+ *
+ * F21 — provenance is adjudicated here rather than at the executor because
+ * `law.decision === 'allow'` is the gate assertExecutable already enforces.
+ * Putting it anywhere else would make it advisory.
+ *
+ * The provenance gate applies to Do ALONE, and deliberately. "Untrusted may
+ * inform, never authorize" — a Probe authorizes nothing: it is read-only by
+ * formula effect, it commits nothing, and its plan runs no observations.
+ * Escalating probes would gate the inquiry protocol on human attention and make
+ * the safe path the expensive one, which is how safety rails get removed.
  */
-export function adjudicateLaw(input: { kind: CalculusKind; riskProfile: RiskProfile }): LawDecision {
+export function adjudicateLaw(input: {
+  kind: CalculusKind;
+  riskProfile: RiskProfile;
+  /** Omitted = undeclared = untrusted. There is no default-trusted path. */
+  utterance?: Utterance;
+}): LawDecision {
   if (input.kind === 'Theory' || input.kind === 'Hypothesis') {
     return { decision: 'clarify', ruleIds: ['law.unbound.v1'] };
   }
@@ -64,6 +85,18 @@ export function adjudicateLaw(input: { kind: CalculusKind; riskProfile: RiskProf
   }
   if (input.riskProfile.consequence !== 'reversible_ui') {
     return { decision: 'escalate', ruleIds: ['law.non-reversible-requires-pdr.v1'] };
+  }
+  if (input.kind === EXECUTABLE_KIND) {
+    const utterance = toUtterance(input.utterance ?? '');
+    if (utterance.trust === 'untrusted') {
+      return { decision: 'escalate', ruleIds: ['law.utterance.untrusted-never-authorizes.v1'] };
+    }
+    if (utterance.trust === 'derived' && utterance.taint.length > 0) {
+      // A model said this after reading something untrusted. The taint is the
+      // causal chain, not the content: we cannot tell whether the page steered
+      // the sentence, which is exactly why a human decides.
+      return { decision: 'escalate', ruleIds: ['law.utterance.tainted-derived.v1'] };
+    }
   }
   return { decision: 'allow', ruleIds: ['law.ui.reversible.v1'] };
 }
@@ -87,8 +120,17 @@ function buildQuestion(match: LexiconMatch): KindDecision['question'] {
  *
  * Epistemic is derived after kind and never rewrites it.
  */
-export function selectKind(utterance: string, context: TrustPartitionedContext): KindDecision {
+export function selectKind(
+  utteranceInput: UtteranceInput,
+  context: TrustPartitionedContext,
+): KindDecision {
   trustedOf(context);
+  // F21 — a bare string is a caller that did not declare, and is therefore
+  // untrusted. Binding reads only the TEXT: provenance decides permission, never
+  // meaning. What was said and who said it are different questions, and merging
+  // them here would be the axis cannibalism rev 6 cut.
+  const spoken: Utterance = toUtterance(utteranceInput);
+  const utterance = spoken.text;
   const match = LEXICONS.action.bind(utterance, context);
   const formation = match ? getFormation(match.formulaId) : undefined;
   // P4 — an EXACT action bind is evidence and wins. Only when it misses does
@@ -169,7 +211,7 @@ export function selectKind(utterance: string, context: TrustPartitionedContext):
 
   return {
     kind,
-    law: adjudicateLaw({ kind, riskProfile }),
+    law: adjudicateLaw({ kind, riskProfile, utterance: spoken }),
     riskProfile,
     payload,
     formulaIds,
@@ -179,6 +221,7 @@ export function selectKind(utterance: string, context: TrustPartitionedContext):
     formulaId,
     epistemic,
     phase,
+    utteranceProvenance: provenanceOf(spoken),
     investigationDeposit,
     unknownReferent,
     hasUnresolvedSlots,

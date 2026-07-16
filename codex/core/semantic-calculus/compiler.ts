@@ -24,6 +24,13 @@ import { LEXICON_VERSION } from './lexiconUi.ts';
 import { probeRegistryVersion, getProbe, buildProbePlan } from './probeRegistry.ts';
 import { selectKind } from './kind.ts';
 import { deriveEpistemic, derivePhase, assertEpistemicDoesNotAlterKind } from './epistemic.ts';
+import {
+  toUtterance,
+  provenanceOf,
+  requiredConfirmation,
+  confirmationsRequired,
+  type UtteranceInput,
+} from './utterance.ts';
 import { evaluateHypotheses } from './hypothesisStatus.ts';
 import { validateReceiptsForProbe, receiptDigest } from './observationReceipt.ts';
 import { sealBody, deepFreeze, canonicalize } from './seal.ts';
@@ -37,13 +44,19 @@ import type {
   Capability,
   CompilerIdentity,
   ObservationReceipt,
+  Utterance,
 } from './types.ts';
 
 export const COMPILER_BUILD_ID = 'semantic-calculus-v2-rev7';
 export const SCHEMA_HASH = 'sc-v2-rev7-epistemic';
 
 export interface CompileInput {
-  utterance: string;
+  /**
+   * F21 — a bare string is accepted and treated as UNTRUSTED, because a caller
+   * that cannot say where the text came from has not said. Declare with
+   * userUtterance()/derivedUtterance() from utterance.ts to earn a Do.
+   */
+  utterance: UtteranceInput;
   context: TrustPartitionedContext;
   principalId?: string;
   /** Injected for determinism tests; never read from a clock. */
@@ -58,7 +71,7 @@ export interface CompileInput {
 
 export interface ProbeReportInput {
   /** Original inquiry utterance (for digests / investigation continuity). */
-  utterance: string;
+  utterance: UtteranceInput;
   context: TrustPartitionedContext;
   probeId: string;
   receipts: readonly ObservationReceipt[];
@@ -97,7 +110,11 @@ function capabilityScope(payload: Record<string, unknown>): string[] {
   return [...new Set(scope)];
 }
 
-function mintCapability(draft: Pick<SemanticDraft, 'payload' | 'riskProfile'>, logicalTime: number): Capability {
+function mintCapability(
+  draft: Pick<SemanticDraft, 'payload' | 'riskProfile'>,
+  logicalTime: number,
+  spoken: Utterance,
+): Capability {
   const scope = capabilityScope(draft.payload);
   if (scope.length === 0) {
     throw new Error(SEMANTIC_CALCULUS_ERRORS.UNCAPABLE_DO);
@@ -106,7 +123,9 @@ function mintCapability(draft: Pick<SemanticDraft, 'payload' | 'riskProfile'>, l
     id: `cap-${sealBody({ ...(draft as unknown as Omit<SemanticAct, 'seal'>) }).digest.slice(0, 16)}`,
     scope,
     expiresAtLogical: logicalTime + 1,
-    confirmation: draft.riskProfile.confirmationPolicy,
+    // F21 — provenance may only RAISE this. A reversible_ui act proposed by a
+    // model is not the same act as one a human typed, however reversible.
+    confirmation: requiredConfirmation(draft.riskProfile.confirmationPolicy, spoken),
   };
 }
 
@@ -128,12 +147,14 @@ function sealAct(body: Omit<SemanticAct, 'seal'>): SemanticAct {
  * F1 — TOTAL. Never returns null. Always returns a sealed emission (plan or atomic).
  */
 export function compileSemanticIntent(input: CompileInput): SemanticEmission {
-  const { utterance, context } = input;
+  const { context } = input;
   assertPartitioned(context);
   const logicalTime = input.logicalTime ?? 0;
   const principalId = input.principalId ?? 'anonymous';
 
-  const decision = selectKind(utterance, context);
+  const spoken = toUtterance(input.utterance);
+  const utterance = spoken.text;
+  const decision = selectKind(spoken, context);
   const cites = citeGenes(trustedOf(context), input.cites);
 
   // Re-derive epistemic with gene cite presence (still does not change kind).
@@ -166,6 +187,7 @@ export function compileSemanticIntent(input: CompileInput): SemanticEmission {
     principalId,
     epistemic,
     phase: decision.phase,
+    utteranceProvenance: provenanceOf(spoken),
     investigationDeposit: decision.investigationDeposit,
   };
 
@@ -177,7 +199,7 @@ export function compileSemanticIntent(input: CompileInput): SemanticEmission {
   const kind = draft.preliminaryKind;
   const capability =
     kind === EXECUTABLE_KIND && draft.law.decision === 'allow'
-      ? mintCapability(draft, logicalTime)
+      ? mintCapability(draft, logicalTime, spoken)
       : undefined;
 
   const body: Omit<SemanticAct, 'seal'> = {
@@ -194,6 +216,7 @@ export function compileSemanticIntent(input: CompileInput): SemanticEmission {
     theoryDeposit: draft.theoryDeposit,
     epistemic: draft.epistemic,
     phase: draft.phase,
+    utteranceProvenance: draft.utteranceProvenance,
     investigationDeposit: draft.investigationDeposit,
     compiler: compilerIdentity(input),
   };
@@ -207,8 +230,10 @@ export function compileSemanticIntent(input: CompileInput): SemanticEmission {
  * Seals a different digest from the plan — plan seal ≠ report seal.
  */
 export function compileProbeReport(input: ProbeReportInput): SemanticEmission {
-  const { utterance, context, probeId, receipts } = input;
+  const { context, probeId, receipts } = input;
   assertPartitioned(context);
+  const spoken = toUtterance(input.utterance);
+  const utterance = spoken.text;
 
   const probe = getProbe(probeId);
   if (!probe) throw new Error(SEMANTIC_CALCULUS_ERRORS.UNKNOWN_PROBE);
@@ -274,6 +299,7 @@ export function compileProbeReport(input: ProbeReportInput): SemanticEmission {
     theoryDeposit: { required: false },
     epistemic,
     phase,
+    utteranceProvenance: provenanceOf(spoken),
     compiler: compilerIdentity(input),
   };
 
@@ -285,7 +311,8 @@ export function compileProbeReport(input: ProbeReportInput): SemanticEmission {
  * Still runs nothing.
  */
 export function compileProbePlan(input: {
-  utterance: string;
+  /** Optional. The probeId is the binding; free text is only for continuity. */
+  utterance?: UtteranceInput;
   context: TrustPartitionedContext;
   probeId: string;
   principalId?: string;
@@ -293,21 +320,22 @@ export function compileProbePlan(input: {
 }): SemanticEmission {
   const probe = getProbe(input.probeId);
   if (!probe) throw new Error(SEMANTIC_CALCULUS_ERRORS.UNKNOWN_PROBE);
-  // Route through total compiler by using a binding utterance from patterns[0]
-  // if the free text did not bind — caller may pass probe patterns.
+
+  /**
+   * This is the MACHINE seam: the caller already holds a probeId. It used to
+   * fabricate an English sentence from probe.patterns[0], push it through
+   * compileSemanticIntent so the English matcher could rediscover the probe it
+   * was handed a line earlier, and fall through when that failed. A machine
+   * calling a machine laundered itself through synthetic human text to satisfy a
+   * parser that exists for the human edge — and the surface-form regexes then
+   * derived a sealed epistemic field from a sentence nobody said.
+   *
+   * A probeId binds directly. No text is invented, and the epistemic state comes
+   * from the structural facts (bound, needsEvidence), which is what they were
+   * always the honest source for.
+   */
   const plan = buildProbePlan(probe);
-  const synthetic = input.utterance || probe.patterns[0] || probe.id;
-  // Prefer natural compile if inquiry binds; else force plan payload via report-style seal
-  const first = compileSemanticIntent({
-    utterance: synthetic,
-    context: input.context,
-    principalId: input.principalId,
-    cites: input.cites,
-  });
-  if (first.act.phase === 'plan' && (first.act.payload as { probeId?: string }).probeId === probe.id) {
-    return first;
-  }
-  // Force plan seal for explicit probeId
+  const spoken = toUtterance(input.utterance ?? '');
   const cites = citeGenes(trustedOf(input.context), input.cites);
   const kind = 'Probe' as const;
   const payload = plan as unknown as Record<string, unknown>;
@@ -319,7 +347,7 @@ export function compileProbePlan(input: {
     needsEvidence: true,
     hasObservationReceipts: false,
     hasGeneCites: cites.length > 0,
-    utterance: synthetic,
+    utterance: spoken.text,
   });
   const body: Omit<SemanticAct, 'seal'> = {
     version: 'SemanticCalculus-v2',
@@ -340,6 +368,7 @@ export function compileProbePlan(input: {
     theoryDeposit: { required: false },
     epistemic,
     phase: 'plan',
+    utteranceProvenance: provenanceOf(spoken),
     compiler: compilerIdentity(input),
   };
   return { act: sealAct(body) };
@@ -350,7 +379,15 @@ export function maybeCompile(input: CompileInput): SemanticEmission | null {
   return compileSemanticIntent(input);
 }
 
-export function assertExecutable(act: SemanticAct): void {
+/**
+ * @param confirmations Human confirmations actually collected for THIS act.
+ *        Not a boolean: two_phase means two, and a caller that passes `true`
+ *        twice has confirmed once.
+ */
+export function assertExecutable(
+  act: SemanticAct,
+  opts: { confirmations?: readonly string[] } = {},
+): void {
   if (act.kind !== EXECUTABLE_KIND) {
     throw new Error(SEMANTIC_CALCULUS_ERRORS.THEORY_NOT_EXECUTABLE);
   }
@@ -359,6 +396,14 @@ export function assertExecutable(act: SemanticAct): void {
   }
   if (!act.capability) {
     throw new Error(SEMANTIC_CALCULUS_ERRORS.UNCAPABLE_DO);
+  }
+  // F21 — the capability has always CARRIED a confirmation policy and nothing
+  // ever checked it, which made it decoration. Provenance raises this policy, so
+  // leaving it unenforced would make provenance decoration too.
+  const need = confirmationsRequired(act.capability.confirmation);
+  const have = new Set(opts.confirmations ?? []).size;
+  if (have < need) {
+    throw new Error(SEMANTIC_CALCULUS_ERRORS.UNCONFIRMED_DO);
   }
 }
 

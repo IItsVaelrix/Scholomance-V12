@@ -18,6 +18,7 @@ import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compileSemanticIntent } from '../../codex/core/semantic-calculus/compiler.ts';
 import { emptyContext } from '../../codex/core/semantic-calculus/trustPartition.ts';
+import { toUtterance, userUtterance, derivedUtterance } from '../../codex/core/semantic-calculus/utterance.ts';
 import { assertSealedIntact } from '../../codex/core/semantic-calculus/seal.ts';
 import { resolveCites } from '../../codex/core/semantic-calculus/citeResolver.ts';
 import { literalKeywordProposer, stubSemanticKeywordProposer, composeProposers }
@@ -44,11 +45,25 @@ console.log(`\n${C.b}shadow corpus${C.r}  ${rows.length} real intents\n`);
 // (F18), so the compiler adjudicates evidence it is handed and never investigates.
 const proposer = composeProposers(stubSemanticKeywordProposer, literalKeywordProposer);
 
+/**
+ * F21 — replay the provenance the row RECORDED, never a convenient assumption.
+ *
+ * A row captured before provenance existed did not say who spoke, and a caller
+ * that did not say is untrusted by law. Silently replaying old rows as 'user'
+ * would be inventing the one field that decides whether the act could execute —
+ * and this report would then describe a compiler nobody is running.
+ */
+const spokenFor = (row) => {
+  if (row.utteranceTrust === 'user') return userUtterance(row.utterance);
+  if (row.utteranceTrust === 'derived') return derivedUtterance(row.utterance, row.utteranceTaint ?? []);
+  return toUtterance(row.utterance); // undeclared -> untrusted
+};
+
 const results = rows.map((row) => {
   const context = { ...emptyContext(), user: { ...row.state } };
   const resolved = resolveCites(row.utterance, ['/payload/unboundUtterance'], { proposer });
   const { act } = compileSemanticIntent({
-    utterance: row.utterance,
+    utterance: spokenFor(row),
     context,
     cites: resolved.cites,
     principalId: 'shadow',
@@ -175,7 +190,7 @@ if (unscoreable.length) {
 let identical = 0;
 for (const { row, act } of results) {
   const again = compileSemanticIntent({
-    utterance: row.utterance,
+    utterance: spokenFor(row),
     context: { ...emptyContext(), user: { ...row.state } },
     cites: act.cites,
     principalId: 'shadow',
