@@ -86,42 +86,42 @@ export const MOOD_CONSTRAINTS = Object.freeze({
 // ============ MATERIAL → MATH CONSTRAINTS ============
 export const MATERIAL_CONSTRAINTS = Object.freeze({
   metal: {
-    surface: { reflectivity: 0.8, roughness: 0.25, texture: 'smooth' },
+    surface: { material: 'metal', reflectivity: 0.8, roughness: 0.25, texture: 'smooth' },
     light: { hardness: 0.8, intensity: 0.7 },
     color: { saturation: 0.5, brightness: 0.6 },
     ditherMethod: 'ordered4x4',
     aliasStrength: 0.1,
   },
   stone: {
-    surface: { reflectivity: 0.15, roughness: 0.9, texture: 'grained' },
+    surface: { material: 'stone', reflectivity: 0.15, roughness: 0.9, texture: 'grained' },
     light: { hardness: 0.7, intensity: 0.5 },
     color: { saturation: 0.3, brightness: 0.45 },
     ditherMethod: 'ordered4x4',
     aliasStrength: 0.3,
   },
   organic: {
-    surface: { reflectivity: 0.3, roughness: 0.7, texture: 'fibrous' },
+    surface: { material: 'organic', reflectivity: 0.3, roughness: 0.7, texture: 'fibrous' },
     light: { hardness: 0.4, intensity: 0.55 },
     color: { saturation: 0.55, brightness: 0.5 },
     ditherMethod: 'floydSteinberg',
     aliasStrength: 0.2,
   },
   energy: {
-    surface: { reflectivity: 0.6, roughness: 0.35, texture: 'smooth' },
+    surface: { material: 'energy', reflectivity: 0.6, roughness: 0.35, texture: 'smooth' },
     light: { hardness: 0.5, intensity: 0.75 },
     color: { saturation: 0.75, brightness: 0.7 },
     ditherMethod: 'none',
     aliasStrength: 0.05,
   },
   crystalline: {
-    surface: { reflectivity: 0.9, roughness: 0.1, texture: 'crystalline' },
+    surface: { material: 'crystalline', reflectivity: 0.9, roughness: 0.1, texture: 'crystalline' },
     light: { hardness: 0.9, intensity: 0.85 },
     color: { saturation: 0.65, brightness: 0.75 },
     ditherMethod: 'none',
     aliasStrength: 0.0,
   },
   fabric: {
-    surface: { reflectivity: 0.2, roughness: 0.65, texture: 'fibrous' },
+    surface: { material: 'fabric', reflectivity: 0.2, roughness: 0.65, texture: 'fibrous' },
     light: { hardness: 0.3, intensity: 0.5 },
     color: { saturation: 0.5, brightness: 0.55 },
     ditherMethod: 'floydSteinberg',
@@ -305,9 +305,26 @@ function mergeConstraints(...constraints) {
  * @param {Object} entities - Extracted entities from NLU
  * @returns {Object} Merged mathematical constraints
  */
-export function entitiesToMathConstraints(entities) {
+/**
+ * The NLU parser emits UPPERCASE entity slots (MATERIAL, MOOD, COLOR, ...) while
+ * this module has always read lowercase ones. Every lookup missed silently, no
+ * constraint was ever applied, and callers fell through to their own defaults —
+ * which is why every prompt compiled to `stone` regardless of what it said.
+ * Normalize case-insensitively so either shape binds.
+ */
+function normalizeEntitySlots(entities) {
+  const normalized = {};
+  for (const [slot, value] of Object.entries(entities || {})) {
+    if (!Array.isArray(value) || value.length === 0) continue;
+    normalized[slot.toLowerCase()] = value;
+  }
+  return normalized;
+}
+
+export function entitiesToMathConstraints(rawEntities) {
+  const entities = normalizeEntitySlots(rawEntities);
   const constraints = [];
-  
+
   // Apply mood constraints
   if (entities.mood && entities.mood.length > 0) {
     const mood = entities.mood[0].toLowerCase();

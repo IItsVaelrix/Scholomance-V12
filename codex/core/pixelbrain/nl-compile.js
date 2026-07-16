@@ -30,6 +30,7 @@ import { coordsToLattice, latticeToCoords } from './lattice-coordinate-adapter.j
 import { bytecodeToPalette } from './color-byte-mapping.js';
 import { fnv1a32Hex } from './shared.js';
 import { forgePacket } from './semantic-bridge.js';
+import { selectKind } from './nl-clarify.js';
 
 // applySymmetryToLattice only mirrors these; 'none' (and anything else) is a pass-through.
 const APPLICABLE_SYMMETRY = new Set(['vertical', 'horizontal', 'radial', 'diagonal']);
@@ -210,6 +211,32 @@ export async function compilePromptToAsset(prompt, options = {}) {
     digest: Object.freeze(digest),
     checksum,
   });
+}
+
+/**
+ * Typed entry point: compile a prompt into an ACT, not an asset.
+ *
+ * compilePromptToAsset() is total in the wrong way — it answers every prompt,
+ * including ones it cannot parse, by falling through `|| 'stone'` defaults into
+ * a confident checksummed sprite. This wrapper applies the margin law first: a
+ * prompt that does not bind returns Theory or Clarify and NO asset. Only a Do
+ * proceeds to raster.
+ *
+ * Still total (never null) — but total across seven kinds instead of one.
+ *
+ * @returns {Promise<{kind: 'Do'|'Clarify'|'Theory', asset?: object, question?: string, deposit?: object, binding: object}>}
+ */
+export async function compilePromptToAct(prompt, options = {}) {
+  const text = String(prompt || '');
+  const parsed = await parseNaturalLanguagePrompt(text, {
+    dictionaryAdapter: options.dictionaryAdapter,
+  });
+
+  const act = selectKind(text, parsed, options);
+  if (act.kind !== 'Do') return act;
+
+  const asset = await compilePromptToAsset(text, options);
+  return { ...act, asset };
 }
 
 export const __test__ = { canonicalize, fnv1a8Hex, hslToHex, buildPalettes, canonicalGeometry };
