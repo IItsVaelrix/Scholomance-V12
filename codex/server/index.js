@@ -645,6 +645,14 @@ fastify.register(helmet, {
       mediaSrc: ["'self'", "https://audiocdn001.suno.ai", "https://cdn1.suno.ai", "blob:", "data:"],
     },
   },
+  // Helmet's default Referrer-Policy is `no-referrer`, which strips the Referer
+  // header entirely. The YouTube embed player (Watch page CRT iframe) rejects
+  // referrer-less loads with "Error 153 — Video player configuration error", so
+  // the video renders in dev (Vite sends no header → browser default) but goes
+  // blank in production. `strict-origin-when-cross-origin` — the modern secure
+  // browser default — sends only scheme+host cross-origin (no path, downgrade-safe),
+  // which is all the embed player needs to authorize playback.
+  referrerPolicy: { policy: "strict-origin-when-cross-origin" },
 });
 
 fastify.addContentTypeParser(
