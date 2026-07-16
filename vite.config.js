@@ -56,7 +56,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './tests/setup.js',
-    include: ['tests/**/*.{test,spec}.{js,jsx,ts,tsx}', 'src/**/__tests__/*.{test,spec}.{js,jsx,ts,tsx}', '*.{test,spec}.{js,jsx,ts,tsx}'],
+    include: ['tests/**/*.{test,spec}.{js,jsx,ts,tsx}', 'src/ui/animation/**/__tests__/*.{test,spec}.{js,jsx,ts,tsx}', 'src/pages/Listen/**/__tests__/*.{test,spec}.{js,jsx,ts,tsx}', '*.{test,spec}.{js,jsx,ts,tsx}'],
     exclude: ['**/tests/visual/**', '**/node_modules/**', 'tests/qa/e2e/**', 'tests/qa/immunity.*.test.js', 'debug_*.test.js', 'phoneme.accuracy.test.js'],
     coverage: {
       provider: 'v8',
