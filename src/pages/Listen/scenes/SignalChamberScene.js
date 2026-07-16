@@ -75,12 +75,8 @@ export function buildSignalChamberScene(Phaser) {
     }));
 
     this._wireInput(); this._redrawPlayButton(); this._redrawVolSlider(); this._redrawSignalSlider();
-    // Phaser 4: postFX→Filters; addBloom removed → Glow + brightness lift.
-    try {
-      const f = this.cameras.main?.filters?.internal;
-      const noGlow = typeof window !== 'undefined' && window.__perfNoGlow;
-      if (f && !this.reducedMotion && !noGlow) { f.addGlow(0xffffff, 1.4, 0, 1, false, 8, 15); f.addColorMatrix().brightness(1.06); }
-    } catch { /* tolerate filter API drift */ }
+    // Tier B is interaction-only: no full-screen post-processing here. Atmosphere
+    // and glow are rendered by the Tier-A PBShaderStage (one fragment pass).
     this._isCreated = true;
   }
 
