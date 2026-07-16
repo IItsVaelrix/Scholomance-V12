@@ -1,5 +1,10 @@
 import type { GrimoireAlbum } from './types';
-import { PETRICHOR, BIG_FATHER, POLARITY, DAYDREAMING_NIGHTMARES } from './index';
+// Import track modules directly — never via ./index — to avoid a circular
+// dependency (index re-exports albums; albums must not import the barrel).
+import { PETRICHOR } from './petrichor';
+import { BIG_FATHER } from './bigFather';
+import { POLARITY } from './polarity';
+import { DAYDREAMING_NIGHTMARES } from './daydreaming-nightmares';
 
 export const GRIMOIRE_ALBUMS: GrimoireAlbum[] = [
   {
