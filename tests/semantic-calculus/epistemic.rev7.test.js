@@ -373,13 +373,29 @@ describe('truesight.payload.oom — the first probe written against a real open 
   const R = (observationId, result, status = 'observed') =>
     makeReceipt({ probeId: 'truesight.payload.oom', observationId, result, status });
 
-  /** Measured 2026-07-16 against the real scholomance_dict.sqlite. */
+  /**
+   * Measured 2026-07-16: payload against the real scholomance_dict.sqlite,
+   * host memory off the live Fly machine e826491a6e3648 (512mb -> 459MB usable).
+   */
+  const AVAILABLE_BYTES = 239156 * 1024;
+  const ENTRY_BYTES_4K = 1608503;
+  const hostMemory = (maxEntries) => ({
+    memTotalKb: 469852,
+    memAvailableKb: 239156,
+    cacheMaxEntries: maxEntries,
+    entryBytesAt4kChars: ENTRY_BYTES_4K,
+    boundBytesAt4kChars: maxEntries * ENTRY_BYTES_4K,
+    boundBytesOverAvailable: +((maxEntries * ENTRY_BYTES_4K) / AVAILABLE_BYTES).toFixed(3),
+    entriesUntilExhaustion: Math.floor(AVAILABLE_BYTES / ENTRY_BYTES_4K),
+  });
+
   const evidence = {
     cache: { maxEntries: 1000, ttlMs: 300000, enabled: true, keyedOnFullDocumentSha: true },
     window: { maxLineDistance: 4, enforcedAtAllAdmissionSites: true },
     phrase: { generationGatedOff: false, wireExcluded: true },
     scaling: { bytesPerChar1k: 425.4, bytesPerChar4k: 402.1, ratio4kOver1k: 0.945 },
     error: { catchDegradesSilently: true, setsErrorState: true },
+    host: hostMemory(1000),
   };
   const receipts = [
     R('obs.cache.bound', evidence.cache),
@@ -387,7 +403,17 @@ describe('truesight.payload.oom — the first probe written against a real open 
     R('obs.phrase.server_alloc', evidence.phrase),
     R('obs.payload.scaling', evidence.scaling),
     R('obs.synthesis.error_path', evidence.error),
+    R('obs.host.memory', evidence.host),
   ];
+
+  it('the bound is not a bound: 1000 entries cannot fit a 512MB host', () => {
+    // Bounded by COUNT, entries bounded by DOCUMENT LENGTH, host bounded by
+    // BYTES. The cache cannot reach its own limit without killing the host at
+    // roughly entry 152.
+    const m = hostMemory(1000);
+    expect(m.boundBytesOverAvailable).toBeGreaterThan(6);
+    expect(m.entriesUntilExhaustion).toBeLessThan(200);
+  });
 
   const probe = getProbe('truesight.payload.oom');
 
@@ -405,11 +431,16 @@ describe('truesight.payload.oom — the first probe written against a real open 
   });
 
   it('PANEL_ANALYSIS_CACHE_MAX_SIZE=10 discriminates — the falsifier is live', () => {
-    // Named in the 2026-07-13 investigation and never run until now.
-    const bounded = receipts.map((r) =>
-      r.observationId === 'obs.cache.bound' ? R('obs.cache.bound', { ...evidence.cache, maxEntries: 10 }) : r,
-    );
+    // Named in the 2026-07-13 investigation, never run until 2026-07-16, and
+    // now actually set on the production machine. 10 x 1.6MB = 16MB against
+    // 245MB available: ratio 0.066, so the bound finally IS a bound.
+    const bounded = receipts.map((r) => {
+      if (r.observationId === 'obs.cache.bound') return R('obs.cache.bound', { ...evidence.cache, maxEntries: 10 });
+      if (r.observationId === 'obs.host.memory') return R('obs.host.memory', hostMemory(10));
+      return r;
+    });
     const e = evaluateHypotheses(probe.hypotheses, bounded);
+    expect(hostMemory(10).boundBytesOverAvailable).toBeLessThan(1);
     expect(e.eliminated).toContain('h_lru_cache');
     expect(e.supported).toEqual(['h_phrase_alloc', 'h_swallowed_error']);
   });

@@ -265,7 +265,7 @@ const STATION_VIS_PROBE: ProbeFormula = Object.freeze({
  */
 const TRUESIGHT_OOM_PROBE: ProbeFormula = Object.freeze({
   id: 'truesight.payload.oom',
-  version: '1.0.0',
+  version: '2.0.0',
   patterns: [
     'why does truesight crash after 4000 chars',
     'why does truesight crash on long documents',
@@ -304,24 +304,41 @@ const TRUESIGHT_OOM_PROBE: ProbeFormula = Object.freeze({
       harness: 'source.read.flow',
       required: true,
     },
+    {
+      id: 'obs.host.memory',
+      description:
+        'Read the PRODUCTION host memory ceiling and compute the cache bound\'s maximum footprint against it (boundBytes / availableBytes)',
+      harness: 'fly.machine.meminfo',
+      required: true,
+    },
   ],
   hypotheses: [
     {
       id: 'h_lru_cache',
       claim:
-        'The panel-analysis LRU retains up to 1000 full response payloads keyed on a SHA of the whole document. Every debounced edit is new text, so entries accumulate; at 4000 chars (~442KB each) a single session exhausts the heap.',
+        'The cache is bounded by COUNT while its entries are bounded by DOCUMENT LENGTH, on a host bounded by BYTES — so the bound is not a bound. 1000 entries x ~1.6MB at 4000 chars is ~1.6GB against ~240MB available: the cache cannot approach its own limit without killing the host first.',
       predictions: [
-        { id: 'p_cache_present', description: 'A bounded in-memory response cache exists', required: true, observationId: 'obs.cache.bound' },
+        {
+          id: 'p_bound_exceeds_host',
+          description: 'The cache bound\'s maximum footprint exceeds host available memory (ratio > 1)',
+          required: true,
+          observationId: 'obs.host.memory',
+        },
       ],
       falsifiers: [
         {
-          id: 'f_cache_bound_small',
-          description: 'The cache bound is too small to accumulate a heap-exhausting number of payloads',
-          observationId: 'obs.cache.bound',
-          predicate: { op: 'lt', path: 'maxEntries', value: 50 },
+          // v1.0.0 asked only "does a bounded cache exist", which is nearly a
+          // tautology — it holds wherever a cache exists, so `supported` meant
+          // "nothing refuted it" rather than "evidence favours it". The probe
+          // reported that faithfully, which is how the weakness was visible at
+          // all. Prod supplied the missing quantity: a 512MB host.
+          id: 'f_bound_fits_host',
+          description: 'The cache bound\'s maximum footprint fits in available host memory — it cannot be the exhaustion path',
+          observationId: 'obs.host.memory',
+          predicate: { op: 'lte', path: 'boundBytesOverAvailable', value: 1 },
         },
       ],
-      citeSeeds: ['codex/server/routes/panelAnalysis.routes.js'],
+      citeSeeds: ['codex/server/routes/panelAnalysis.routes.js', 'fly.toml'],
     },
     {
       id: 'h_rhyme_window',
