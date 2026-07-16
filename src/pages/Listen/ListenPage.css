@@ -265,6 +265,12 @@
   flex-direction: column;
   padding: 2rem;
   border-color: var(--hud-border);
+  /* Snug fit: the taller EQ can push the column past the viewport on short
+     screens — let it scroll instead of clipping the analytics block. */
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
 }
 
 .hud-sidebar--left {
@@ -280,7 +286,7 @@
 }
 
 .sidebar-header {
-  margin-bottom: 3rem;
+  margin-bottom: 1.5rem;
 }
 
 .sidebar-header h3 {
@@ -328,30 +334,6 @@
   background: rgba(45, 219, 222, 0.1);
   border-color: var(--hud-accent);
   color: var(--hud-accent);
-}
-
-.initiate-btn {
-  width: 100%;
-  padding: 1rem;
-  background: var(--hud-accent);
-  color: var(--bg-void);
-  font-weight: 800;
-  letter-spacing: 0.2em;
-  border: none;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-}
-
-.initiate-btn .material-symbols-outlined {
-  font-size: 1.2rem;
-}
-
-.initiate-btn:active {
-  transform: scale(0.98);
 }
 
 /* -- Center Core ------------------------------------------------- */
@@ -438,7 +420,7 @@
 .parameter-grid {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.5rem;
 }
 
 .param-section {
@@ -456,7 +438,9 @@
 
 .spectrum-canvas {
   width: 100%;
-  height: 80px;
+  /* Tall enough for the interactive ParaEQ: draggable band nodes span the full
+     ±24 dB gain range vertically, which was unusable at the old 80px. */
+  height: clamp(150px, 22vh, 200px);
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(0, 207, 200, 0.2);
   border-radius: 4px;
@@ -821,6 +805,8 @@
   height: 55%;
   animation: sigil-unrust 15s cubic-bezier(0.7, 0, 0.15, 1) forwards,
              sigil-rotate 30s linear infinite 15s;
+  /* Bake once, composite the rotation. */
+  will-change: transform;
 }
 
 @keyframes sigil-unrust {
@@ -845,7 +831,11 @@
   opacity: 0.35;
   stroke-dasharray: 800;
   stroke-dashoffset: 800;
+  /* Static glow — baked into the layer once. The infinite flicker below now
+     varies ONLY opacity (a composited property), so the drop-shadow is never
+     re-rasterized mid-flicker. */
   filter: drop-shadow(0 0 4px #2ddbde);
+  will-change: opacity;
   /* Bytecode AMP Flicker Logic */
   animation: pentagram-draw 3.5s cubic-bezier(0.4, 0, 0.2, 1) forwards,
              pentagram-glow-flicker 12s infinite 3.5s;
@@ -856,14 +846,16 @@
   to { stroke-dashoffset: 0; opacity: 0.35; }
 }
 
+/* Opacity-only flicker: geometry + glow are baked once; only the composited
+   opacity varies, so no per-frame repaint of the SVG filter. */
 @keyframes pentagram-glow-flicker {
-  0%, 100% { opacity: 0.35; filter: drop-shadow(0 0 4px #2ddbde); stroke-width: 2; }
-  15% { opacity: 0.45; filter: drop-shadow(0 0 8px #2ddbde); stroke-width: 2.2; }
-  17% { opacity: 0.3; filter: drop-shadow(0 0 2px #2ddbde); stroke-width: 1.8; }
-  45% { opacity: 0.4; filter: drop-shadow(0 0 6px #2ddbde); stroke-width: 2; }
-  46% { opacity: 0.8; filter: drop-shadow(0 0 15px #2ddbde); stroke-width: 3; } /* Sharp Jolt */
-  48% { opacity: 0.35; filter: drop-shadow(0 0 4px #2ddbde); stroke-width: 2; }
-  80% { opacity: 0.4; filter: drop-shadow(0 0 5px #2ddbde); stroke-width: 2.1; }
+  0%, 100% { opacity: 0.35; }
+  15% { opacity: 0.48; }
+  17% { opacity: 0.28; }
+  45% { opacity: 0.42; }
+  46% { opacity: 0.85; } /* Sharp Jolt */
+  48% { opacity: 0.35; }
+  80% { opacity: 0.42; }
 }
 
 /* Vignette overlay - darkens edges */
@@ -1141,7 +1133,13 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  filter: drop-shadow(0 0 12px rgba(26, 201, 191, 0.18));
+  /* NO ancestor filter here. A drop-shadow filter on this SVG forced the
+     browser to re-rasterize the entire schematic — including the rotating
+     sigil-rotor beneath it — on EVERY animation frame, because a filtered
+     layer cannot be cached while a descendant transforms. That per-frame
+     re-raster was the rotation stutter. Glow is now carried by the
+     individual stroked lines (wave-line has its own static drop-shadow),
+     so the rotor can be baked once and merely re-composited each frame. */
   z-index: 0;
 }
 
@@ -1189,6 +1187,16 @@
   transform-box: fill-box;
   transform-origin: 50% 50%;
   animation: signal-core-rotate 26s linear infinite;
+  /* Promote to its own compositor layer so the rotation is a pure GPU
+     composite of a texture rasterized ONCE — not a repaint each frame. */
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-core__sigil-rotor {
+    animation: none;
+    will-change: auto;
+  }
 }
 
 .signal-core__wave-line {

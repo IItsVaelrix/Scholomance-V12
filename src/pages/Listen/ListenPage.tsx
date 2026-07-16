@@ -243,12 +243,10 @@ export default function ListenPage() {
                 </button>
               </nav>
 
-              <div className="sidebar-footer">
-                <button className="initiate-btn" onClick={() => togglePlayPause()} aria-label={isPlaying ? "Pause audio" : "Play audio"}>
-                  <span className="material-symbols-outlined">{isPlaying ? "pause" : "play_arrow"}</span>
-                  <span>PLAYBACK_CONTROL</span>
-                </button>
-              </div>
+              {/* Playback is owned by the harness: the central orb ignition,
+                  the HolographicEmbed transport, and the Space hotkey. The old
+                  sidebar PLAYBACK_CONTROL button was a redundant fourth control
+                  and has been removed. */}
             </motion.aside>
 
             {/* Center: The Core 3D Console */}
@@ -313,22 +311,15 @@ export default function ListenPage() {
                     <span className="val">{isPlaying ? 'ACTIVE' : 'STANDBY'}</span>
                   </div>
                   <div className="spectrum-canvas">
-                    {import.meta.env.VITE_SCHOLOCANDY_V2 === 'true' ? (
-                      <ScholoCandy 
-                        isPlaying={isPlaying}
-                        getByteFrequencyData={getByteFrequencyData}
-                        currentSchoolId={currentSchoolId}
-                        signalLevel={signalLevel}
-                        eqNodes={getEqNodes()}
-                        onBandsChanged={setEqBands}
-                      />
-                    ) : (
-                      <div className="legacy-eq-placeholder">
-                        <p style={{ textAlign: 'center', opacity: 0.5, marginTop: '2rem' }}>
-                          [ LEGACY EQ UI ]
-                        </p>
-                      </div>
-                    )}
+                    <ScholoCandy
+                      isPlaying={isPlaying}
+                      getByteFrequencyData={getByteFrequencyData}
+                      currentSchoolId={currentSchoolId}
+                      detectedSchoolId={detectedSchoolId}
+                      signalLevel={signalLevel}
+                      eqNodes={getEqNodes()}
+                      onBandsChanged={setEqBands}
+                    />
                   </div>
                 </div>
 

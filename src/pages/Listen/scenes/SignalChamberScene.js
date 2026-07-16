@@ -78,7 +78,8 @@ export function buildSignalChamberScene(Phaser) {
     // Phaser 4: postFX→Filters; addBloom removed → Glow + brightness lift.
     try {
       const f = this.cameras.main?.filters?.internal;
-      if (f && !this.reducedMotion) { f.addGlow(0xffffff, 1.4, 0, 1, false, 8, 15); f.addColorMatrix().brightness(1.06); }
+      const noGlow = typeof window !== 'undefined' && window.__perfNoGlow;
+      if (f && !this.reducedMotion && !noGlow) { f.addGlow(0xffffff, 1.4, 0, 1, false, 8, 15); f.addColorMatrix().brightness(1.06); }
     } catch { /* tolerate filter API drift */ }
     this._isCreated = true;
   }
@@ -252,30 +253,34 @@ export function buildSignalChamberScene(Phaser) {
   }
 
   _drawControlStrip() {
-    const sx = this._sx, sy = this._sy, ms = this._ms, bx = BTN_PLAY.x * sx, by = BTN_PLAY.y * sy, br = BTN_PLAY.r * ms;
-    this._btnBg.fillStyle(0x080a0c, 1); this._btnBg.fillCircle(bx, by, br);
-    this._volTrk.fillStyle(0x030608, 1); this._volTrk.fillRoundedRect(VOL_SLD.x * sx - (VOL_SLD.w * sx)/2, VOL_SLD.y * sy - (VOL_SLD.h * sy)/2, VOL_SLD.w * sx, VOL_SLD.h * sy, (VOL_SLD.h * sy)/2);
+    /* The play button and volume slider that used to be painted here duplicated
+       the DOM HolographicEmbed transport that sits over the canvas — a redundant
+       control OUTSIDE the console harness (the "play triangle + gold bar" between
+       the station plate and the RETRACE/ADVANCE row). Playback and volume are
+       owned solely by the DOM transport (and the Space hotkey), so nothing is
+       painted here. Layers are still cleared defensively in their redraw methods. */
   }
 
   _wireInput() {
-    const sx = this._sx, sy = this._sy, ms = this._ms, bx = BTN_PLAY.x * sx, by = BTN_PLAY.y * sy, br = BTN_PLAY.r * ms;
-    const playZone = this.add.zone(bx, by, br * 2, br * 2).setInteractive({ useHandCursor: true }).setDepth(133);
-    playZone.on('pointerdown', () => this.onPlayPause?.());
+    const sx = this._sx, sy = this._sy, ms = this._ms;
+    // The on-canvas play button was removed as a redundant duplicate of the DOM
+    // transport, so its hit zone is gone too — a hidden zone that still toggled
+    // playback would be a dead click target. Only the central radar/orb remains
+    // interactive (ignition).
     const radarZone = this.add.zone(RADAR.x * sx, RADAR.y * sy, RADAR.r * 2 * ms, RADAR.r * 2 * ms).setInteractive({ useHandCursor: true, hitArea: new Phaser.Geom.Circle(0, 0, RADAR.r * ms), hitAreaCallback: Phaser.Geom.Circle.Contains }).setDepth(133);
     radarZone.on('pointerdown', () => this.onOrbClick?.());
   }
 
   _redrawPlayButton() {
-    const sx = this._sx, sy = this._sy, ms = this._ms, bx = BTN_PLAY.x * sx, by = BTN_PLAY.y * sy, br = BTN_PLAY.r * ms, col = this._col || PAL.dimGold;
-    this._btnBg.clear(); this._btnBg.fillStyle(0x080a0c, 1); this._btnBg.fillCircle(bx, by, br); this._btnBg.lineStyle(2, col, this._isPlaying ? 0.85 : 0.38); this._btnBg.strokeCircle(bx, by, br);
-    this._btnIcon.clear(); this._btnIcon.fillStyle(col, 0.9);
-    if (this._isPlaying) { this._btnIcon.fillRect(bx - 8 * ms, by - 11 * ms, 6 * ms, 22 * ms); this._btnIcon.fillRect(bx + 2 * ms, by - 11 * ms, 6 * ms, 22 * ms); }
-    else { this._btnIcon.fillTriangle(bx - 6 * ms, by - 11 * ms, bx + 10 * ms, by, bx - 6 * ms, by + 11 * ms); }
+    // Removed: the on-canvas play button is now owned by the DOM transport.
+    // Kept as a no-op clear so any stray state change can't repaint it.
+    this._btnBg.clear(); this._btnIcon.clear();
   }
 
   _redrawVolSlider() {
-    const sx = this._sx, sy = this._sy, _ms = this._ms, cx = VOL_SLD.x * sx, cy = VOL_SLD.y * sy, w = VOL_SLD.w * sx, h = VOL_SLD.h * sy;
-    this._volFill.clear(); this._volFill.fillStyle(PAL.dimGold, 0.55); this._volFill.fillRoundedRect(cx - w/2, cy - h/2, w * this._vol, h, h/2);
+    // Removed: the on-canvas volume slider (the gold bar) duplicated the DOM
+    // transport's volume control. Clear-only so it never repaints.
+    this._volFill.clear();
   }
 
   _redrawSignalSlider() {

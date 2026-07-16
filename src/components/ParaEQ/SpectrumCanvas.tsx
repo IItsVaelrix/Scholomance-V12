@@ -33,6 +33,15 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
   const dataArrayRef = useRef<Uint8Array>(new Uint8Array(1024));
   const rafIdRef = useRef<number>();
 
+  // Live values consumed by the RAF loop. Updated synchronously on every
+  // render so the animation frame always reads fresh state WITHOUT tearing
+  // down and rebuilding the requestAnimationFrame loop. Previously these were
+  // effect dependencies, so a 60fps `signalLevel` and a fresh `eqNodes` array
+  // on every parent render cancelled + restarted the loop every frame — the
+  // source of the visible animation stalling.
+  const liveRef = useRef({ isPlaying, getByteFrequencyData, eqNodes });
+  liveRef.current = { isPlaying, getByteFrequencyData, eqNodes };
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -41,6 +50,7 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
 
     const render = () => {
       if (!canvas || !ctx) return;
+      const { isPlaying, getByteFrequencyData, eqNodes } = liveRef.current;
 
       // Sync internal resolution with display size
       if (canvas.width !== canvas.clientWidth || canvas.height !== canvas.clientHeight) {
@@ -219,7 +229,9 @@ export const SpectrumCanvas: React.FC<SpectrumCanvasProps> = ({
     return () => {
       if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
     };
-  }, [isPlaying, getByteFrequencyData, currentSchoolId, signalLevel, eqNodes]);
+    // Set up the RAF loop exactly once; live inputs are read from liveRef.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <canvas 

@@ -9,6 +9,7 @@ interface ScholoCandyProps {
   isPlaying: boolean;
   getByteFrequencyData: (array: Uint8Array) => void;
   currentSchoolId: string | null;
+  detectedSchoolId?: string | null;
   signalLevel: number;
   eqNodes?: any[];
   // If the parent wants to sync to ambientPlayer.service, it can provide this callback
@@ -19,6 +20,7 @@ export const ScholoCandy: React.FC<ScholoCandyProps> = ({
   isPlaying,
   getByteFrequencyData,
   currentSchoolId,
+  detectedSchoolId,
   signalLevel,
   eqNodes,
   onBandsChanged,
@@ -69,6 +71,8 @@ export const ScholoCandy: React.FC<ScholoCandyProps> = ({
       />
       <ParaEQOverlay
         eqBands={bands}
+        isPlaying={isPlaying}
+        detectedSchoolId={detectedSchoolId}
         onAddBand={handleAddBand}
         onUpdateBand={handleUpdateBand}
         onRemoveBand={handleRemoveBand}
