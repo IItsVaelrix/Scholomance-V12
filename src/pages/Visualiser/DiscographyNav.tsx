@@ -53,8 +53,10 @@ export function DiscographyNav({ activeTrackId, onSelectTrack }: DiscographyNavP
         ) : (
           <>
             <div className="bcv-disco-header">
-              <h2>Discography</h2>
-              <Link to="/visualiser/albums" className="bcv-disco-albums-link">Albums</Link>
+              <div className="bcv-disco-header-title">
+                <h2>Discography</h2>
+                <Link to="/visualiser/albums" className="bcv-disco-albums-link">Albums</Link>
+              </div>
               <div className="bcv-disco-header-actions">
                 <button className="bcv-upload-btn" onClick={() => setIsUploadOpen(true)}>
                   + Upload
