@@ -32,8 +32,11 @@ describe('DiscographyNav header', () => {
   });
 
   it('allows title cluster to shrink while actions stay fixed', () => {
+    // jsdom does not compute 320px flex layout; assert the CSS truncation contract only.
     expect(discoNavCss).toMatch(/\.bcv-disco-header-title\s*\{[^}]*min-width:\s*0/);
     expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*min-width:\s*0/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*white-space:\s*nowrap/);
+    expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*overflow:\s*hidden/);
     expect(discoNavCss).toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*text-overflow:\s*ellipsis/);
     expect(discoNavCss).not.toMatch(/\.bcv-disco-header-title h2\s*\{[^}]*flex-shrink:\s*0/);
     expect(discoNavCss).toMatch(/\.bcv-disco-albums-link\s*\{[^}]*flex-shrink:\s*0/);
