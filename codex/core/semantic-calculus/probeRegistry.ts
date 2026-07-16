@@ -251,11 +251,157 @@ const STATION_VIS_PROBE: ProbeFormula = Object.freeze({
   citeSeeds: ['src/pages/Listen/ScholomanceStation.tsx'],
 });
 
+/**
+ * The TrueSight "crash after ~4000 chars" — open since 2026-07-13 and never
+ * reproduced. Two prior investigations left THREE live suspects and no verdict,
+ * which is exactly the shape this formula exists to hold: the suspects are not
+ * rivals for one crown. Server heap is additive, so several may hold at once,
+ * and one of them (h_swallowed_error) explains the APPEARANCE rather than the
+ * allocation and could be true alongside any other.
+ *
+ * Written before any observation ran. That ordering is the whole point of the
+ * plan/report split: hypotheses chosen after looking at the evidence are not
+ * hypotheses, they are descriptions.
+ */
+const TRUESIGHT_OOM_PROBE: ProbeFormula = Object.freeze({
+  id: 'truesight.payload.oom',
+  version: '1.0.0',
+  patterns: [
+    'why does truesight crash after 4000 chars',
+    'why does truesight crash on long documents',
+    'why does the read page go grey',
+    'diagnose truesight oom',
+  ],
+  keywords: ['truesight', 'oom', 'crash', '4000 chars', 'panel analysis', 'payload'],
+  observations: [
+    {
+      id: 'obs.cache.bound',
+      description: 'Read the panel-analysis response cache entry bound (max retained payloads)',
+      harness: 'source.read.constant',
+      required: true,
+    },
+    {
+      id: 'obs.rhyme.line_window',
+      description: 'Read the rhyme connection line-distance failsafe and whether every admission site enforces it',
+      harness: 'source.read.constant',
+      required: true,
+    },
+    {
+      id: 'obs.phrase.server_alloc',
+      description: 'Determine whether phrase_compound connections are still BUILT server-side while wire-excluded',
+      harness: 'source.read.flow',
+      required: true,
+    },
+    {
+      id: 'obs.payload.scaling',
+      description: 'Measure payload bytes-per-input-char at 1k/2k/4k chars. A ratio that GROWS is the quadratic.',
+      harness: 'measure.payload.scaling',
+      required: true,
+    },
+    {
+      id: 'obs.synthesis.error_path',
+      description: 'Determine whether the client swallows a backend failure and degrades to zero connections',
+      harness: 'source.read.flow',
+      required: true,
+    },
+  ],
+  hypotheses: [
+    {
+      id: 'h_lru_cache',
+      claim:
+        'The panel-analysis LRU retains up to 1000 full response payloads keyed on a SHA of the whole document. Every debounced edit is new text, so entries accumulate; at 4000 chars (~442KB each) a single session exhausts the heap.',
+      predictions: [
+        { id: 'p_cache_present', description: 'A bounded in-memory response cache exists', required: true, observationId: 'obs.cache.bound' },
+      ],
+      falsifiers: [
+        {
+          id: 'f_cache_bound_small',
+          description: 'The cache bound is too small to accumulate a heap-exhausting number of payloads',
+          observationId: 'obs.cache.bound',
+          predicate: { op: 'lt', path: 'maxEntries', value: 50 },
+        },
+      ],
+      citeSeeds: ['codex/server/routes/panelAnalysis.routes.js'],
+    },
+    {
+      id: 'h_rhyme_window',
+      claim:
+        'Rhyme connections span the whole document because neither bound is a bound on document distance, so connection count grows superlinearly.',
+      predictions: [
+        { id: 'p_window_absent', description: 'No line-distance failsafe is enforced', required: true, observationId: 'obs.rhyme.line_window' },
+      ],
+      falsifiers: [
+        {
+          id: 'f_window_enforced',
+          description: 'A line-distance failsafe is enforced at every admission site',
+          observationId: 'obs.rhyme.line_window',
+          predicate: { op: 'truthy', path: 'enforcedAtAllAdmissionSites' },
+        },
+      ],
+      citeSeeds: ['codex/core/rhyme-astrology/deepRhyme.engine.js'],
+    },
+    {
+      id: 'h_phrase_alloc',
+      claim:
+        'phrase_compound (~38 connections per word) is wire-excluded but still built and held server-side. The wire fix stopped the transmission, not the allocation.',
+      predictions: [
+        { id: 'p_built_anyway', description: 'phrase_compound is generated server-side despite wire exclusion', required: true, observationId: 'obs.phrase.server_alloc' },
+      ],
+      falsifiers: [
+        {
+          id: 'f_generation_gated',
+          description: 'phrase_compound generation is gated off server-side, not merely filtered at the wire',
+          observationId: 'obs.phrase.server_alloc',
+          predicate: { op: 'truthy', path: 'generationGatedOff' },
+        },
+      ],
+      citeSeeds: ['codex/server/services/panelAnalysis.service.js'],
+    },
+    {
+      id: 'h_quadratic_live',
+      claim:
+        'The payload is still superlinear in document length: bytes-per-char rises as input doubles.',
+      predictions: [
+        { id: 'p_ratio_grows', description: 'bytes-per-char at 4k exceeds bytes-per-char at 1k', required: true, observationId: 'obs.payload.scaling' },
+      ],
+      falsifiers: [
+        {
+          id: 'f_ratio_flat',
+          description: 'bytes-per-char is flat or falling as input doubles — growth is linear',
+          observationId: 'obs.payload.scaling',
+          predicate: { op: 'lte', path: 'ratio4kOver1k', value: 1.15 },
+        },
+      ],
+      citeSeeds: ['codex/server/services/panelAnalysis.service.js'],
+    },
+    {
+      id: 'h_swallowed_error',
+      claim:
+        'It is not a crash. The client catches a backend failure, degrades to local synthesis which produces no connections, the colouring gate empties, and everything greys — which is reported as a crash.',
+      predictions: [
+        { id: 'p_catch_degrades', description: 'A catch in the live path degrades silently to zero connections', required: true, observationId: 'obs.synthesis.error_path' },
+      ],
+      falsifiers: [
+        {
+          id: 'f_no_silent_catch',
+          description: 'No catch in the live path degrades silently',
+          observationId: 'obs.synthesis.error_path',
+          predicate: { op: 'falsy', path: 'catchDegradesSilently' },
+        },
+      ],
+      citeSeeds: ['src/hooks/useVerseSynthesis.js'],
+    },
+  ],
+  maxRisk: 'read_only',
+  citeSeeds: ['codex/server/routes/panelAnalysis.routes.js'],
+});
+
 export const PROBE_FORMULAS: readonly ProbeFormula[] = Object.freeze([
   CSP_PROBE,
   CDN_PROBE,
   RENDER_STACK_PROBE,
   STATION_VIS_PROBE,
+  TRUESIGHT_OOM_PROBE,
 ]);
 
 export function getProbe(id: string): ProbeFormula | undefined {

@@ -255,12 +255,30 @@ export interface Falsifier {
   predicate: PredicateSpec;
 }
 
+/**
+ * Machine-checkable predicates over an observation result.
+ *
+ * The numeric ops exist because the FIRST real probe written against this
+ * language needed "the cache bound is small enough that 1000 payloads cannot
+ * accumulate" and could not say it. The alternative — having the harness return
+ * a boolean it computed itself — moves the judgement out of the sealed formula
+ * and into the thing being observed, which is precisely the inversion the
+ * plan/report split exists to prevent. A falsifier that cannot be evaluated from
+ * the raw result is not a falsifier; it is a harness's opinion.
+ *
+ * Numeric ops treat a non-numeric value as INCONCLUSIVE rather than false: a
+ * missing field has not refuted anything.
+ */
 export type PredicateSpec =
   | { op: 'eq'; path: string; value: unknown }
   | { op: 'neq'; path: string; value: unknown }
   | { op: 'in'; path: string; values: readonly unknown[] }
   | { op: 'truthy'; path: string }
   | { op: 'falsy'; path: string }
+  | { op: 'lt'; path: string; value: number }
+  | { op: 'lte'; path: string; value: number }
+  | { op: 'gt'; path: string; value: number }
+  | { op: 'gte'; path: string; value: number }
   | { op: 'http_status_in'; values: readonly number[] }
   | { op: 'csp_blocks_host'; host: string }
   | { op: 'csp_allows_host'; host: string };

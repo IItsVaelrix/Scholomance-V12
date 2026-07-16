@@ -9,7 +9,7 @@ import {
 import { assertSealedIntact } from '../../codex/core/semantic-calculus/seal.ts';
 import { emptyContext } from '../../codex/core/semantic-calculus/trustPartition.ts';
 import { deriveEpistemic, assertEpistemicDoesNotAlterKind } from '../../codex/core/semantic-calculus/epistemic.ts';
-import { evaluateHypotheses } from '../../codex/core/semantic-calculus/hypothesisStatus.ts';
+import { evaluateHypotheses, evalPredicate } from '../../codex/core/semantic-calculus/hypothesisStatus.ts';
 import { makeReceipt, receiptDigest } from '../../codex/core/semantic-calculus/observationReceipt.ts';
 import { getProbe, listProbeIds } from '../../codex/core/semantic-calculus/probeRegistry.ts';
 import { SEMANTIC_CALCULUS_ERRORS } from '../../codex/core/semantic-calculus/types.ts';
@@ -133,12 +133,17 @@ describe('rev 7 — orthogonal epistemic fields', () => {
 });
 
 describe('rev 7 — inquiry Probe plans (no harness run)', () => {
-  it('registers four harvested probes', () => {
+  it('registers the harvested probes', () => {
+    // truesight.payload.oom was added by USING the language on a real open bug
+    // rather than by imagining one — the point of P1 was to find out whether the
+    // abstraction survives contact with the codebase. It did; it also proved the
+    // predicate language could not say "less than" until it had to.
     expect(listProbeIds()).toEqual([
       'runtime.csp.img_src',
       'cdn.asset.http',
       'render.stack.listen',
       'motion.visibility.station',
+      'truesight.payload.oom',
     ]);
   });
 
@@ -343,6 +348,79 @@ describe('rev 7 — procedure gap never becomes Do', () => {
     expect(act.kind).toBe('Theory');
     expect(act.epistemic.gap).toBe('procedure');
     expect(() => assertExecutable(act)).toThrow(SEMANTIC_CALCULUS_ERRORS.THEORY_NOT_EXECUTABLE);
+  });
+});
+
+describe('numeric predicates — added because a real probe needed them', () => {
+  it('compares numbers', () => {
+    expect(evalPredicate({ op: 'lt', path: 'n', value: 50 }, { n: 10 })).toBe(true);
+    expect(evalPredicate({ op: 'lt', path: 'n', value: 50 }, { n: 1000 })).toBe(false);
+    expect(evalPredicate({ op: 'lte', path: 'r', value: 1.15 }, { r: 0.945 })).toBe(true);
+    expect(evalPredicate({ op: 'gt', path: 'n', value: 5 }, { n: 6 })).toBe(true);
+    expect(evalPredicate({ op: 'gte', path: 'n', value: 6 }, { n: 6 })).toBe(true);
+  });
+
+  it('a missing or non-numeric field is inconclusive, never false', () => {
+    // Coercing absence to 0 would eliminate a hypothesis on evidence nobody
+    // collected — "unsearched counts as refutation", one layer down.
+    expect(evalPredicate({ op: 'lt', path: 'missing', value: 50 }, {})).toBe('inconclusive');
+    expect(evalPredicate({ op: 'lt', path: 'n', value: 50 }, { n: 'ten' })).toBe('inconclusive');
+    expect(evalPredicate({ op: 'gte', path: 'n', value: 1 }, { n: NaN })).toBe('inconclusive');
+  });
+});
+
+describe('truesight.payload.oom — the first probe written against a real open bug', () => {
+  const R = (observationId, result, status = 'observed') =>
+    makeReceipt({ probeId: 'truesight.payload.oom', observationId, result, status });
+
+  /** Measured 2026-07-16 against the real scholomance_dict.sqlite. */
+  const evidence = {
+    cache: { maxEntries: 1000, ttlMs: 300000, enabled: true, keyedOnFullDocumentSha: true },
+    window: { maxLineDistance: 4, enforcedAtAllAdmissionSites: true },
+    phrase: { generationGatedOff: false, wireExcluded: true },
+    scaling: { bytesPerChar1k: 425.4, bytesPerChar4k: 402.1, ratio4kOver1k: 0.945 },
+    error: { catchDegradesSilently: true, setsErrorState: true },
+  };
+  const receipts = [
+    R('obs.cache.bound', evidence.cache),
+    R('obs.rhyme.line_window', evidence.window),
+    R('obs.phrase.server_alloc', evidence.phrase),
+    R('obs.payload.scaling', evidence.scaling),
+    R('obs.synthesis.error_path', evidence.error),
+  ];
+
+  const probe = getProbe('truesight.payload.oom');
+
+  it('three causes hold at once — server heap is additive, not a whodunnit', () => {
+    const e = evaluateHypotheses(probe.hypotheses, receipts);
+    expect(e.supported).toEqual(['h_lru_cache', 'h_phrase_alloc', 'h_swallowed_error']);
+    expect(e.exclusive).toEqual([]);
+  });
+
+  it('the two fixed causes are eliminated ON EVIDENCE, not on memory', () => {
+    const e = evaluateHypotheses(probe.hypotheses, receipts);
+    // line window enforced at both admission sites; bytes-per-char FALLS 425->402.
+    expect(e.eliminated).toContain('h_rhyme_window');
+    expect(e.eliminated).toContain('h_quadratic_live');
+  });
+
+  it('PANEL_ANALYSIS_CACHE_MAX_SIZE=10 discriminates — the falsifier is live', () => {
+    // Named in the 2026-07-13 investigation and never run until now.
+    const bounded = receipts.map((r) =>
+      r.observationId === 'obs.cache.bound' ? R('obs.cache.bound', { ...evidence.cache, maxEntries: 10 }) : r,
+    );
+    const e = evaluateHypotheses(probe.hypotheses, bounded);
+    expect(e.eliminated).toContain('h_lru_cache');
+    expect(e.supported).toEqual(['h_phrase_alloc', 'h_swallowed_error']);
+  });
+
+  it('a crashed harness leaves the claim UNDERDETERMINED, never refuted', () => {
+    const broken = receipts.map((r) =>
+      r.observationId === 'obs.payload.scaling' ? R('obs.payload.scaling', evidence.scaling, 'error') : r,
+    );
+    const e = evaluateHypotheses(probe.hypotheses, broken);
+    expect(e.underdetermined).toContain('h_quadratic_live');
+    expect(e.eliminated).not.toContain('h_quadratic_live');
   });
 });
 

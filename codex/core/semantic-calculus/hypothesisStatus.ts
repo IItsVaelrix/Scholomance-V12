@@ -52,6 +52,20 @@ export function evalPredicate(predicate: PredicateSpec, result: unknown): boolea
       return Boolean(getPath(result, predicate.path));
     case 'falsy':
       return !getPath(result, predicate.path);
+    case 'lt':
+    case 'lte':
+    case 'gt':
+    case 'gte': {
+      const v = getPath(result, predicate.path);
+      // A missing or non-numeric field has not refuted anything. Coercing it to
+      // 0 would silently eliminate a hypothesis on absent evidence, which is the
+      // "unsearched counts as refutation" error one layer down.
+      if (typeof v !== 'number' || Number.isNaN(v)) return 'inconclusive';
+      if (predicate.op === 'lt') return v < predicate.value;
+      if (predicate.op === 'lte') return v <= predicate.value;
+      if (predicate.op === 'gt') return v > predicate.value;
+      return v >= predicate.value;
+    }
     case 'http_status_in': {
       const status = getPath(result, 'status') ?? getPath(result, 'httpStatus');
       return typeof status === 'number' && predicate.values.includes(status);
