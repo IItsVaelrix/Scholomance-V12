@@ -1,0 +1,128 @@
+{
+  "lexiconVersion": "ui-lexicon-harvested-v1",
+  "harvestedAt": "2026-07-16T17:23:54.503Z",
+  "provenance": "src/**/*.{tsx,jsx,ts} aria-label + route declarations",
+  "counts": {
+    "ariaLabels": 41,
+    "routes": 0,
+    "actions": 15,
+    "targets": 7
+  },
+  "actions": [
+    {
+      "utterance": "close",
+      "verb": "close",
+      "target": null,
+      "formulaId": "ui.collapse.v1",
+      "source": "aria-label:Close"
+    },
+    {
+      "utterance": "close panel",
+      "verb": "close",
+      "target": "panel",
+      "formulaId": "ui.collapse.v1",
+      "source": "aria-label:Close panel"
+    },
+    {
+      "utterance": "collapse discography",
+      "verb": "collapse",
+      "target": "discography",
+      "formulaId": "ui.collapse.v1",
+      "source": "aria-label:Collapse discography"
+    },
+    {
+      "utterance": "expand discography",
+      "verb": "expand",
+      "target": "discography",
+      "formulaId": "ui.collapse.v1",
+      "source": "aria-label:Expand discography"
+    },
+    {
+      "utterance": "next station",
+      "verb": "next",
+      "target": "station",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Next station"
+    },
+    {
+      "utterance": "next track",
+      "verb": "next",
+      "target": "track",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Next track"
+    },
+    {
+      "utterance": "pause transmission",
+      "verb": "pause",
+      "target": "transmission",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Pause transmission"
+    },
+    {
+      "utterance": "play transmission",
+      "verb": "play",
+      "target": "transmission",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Play transmission"
+    },
+    {
+      "utterance": "previous station",
+      "verb": "previous",
+      "target": "station",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Previous station"
+    },
+    {
+      "utterance": "previous track",
+      "verb": "previous",
+      "target": "track",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Previous track"
+    },
+    {
+      "utterance": "repeat",
+      "verb": "repeat",
+      "target": null,
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Repeat"
+    },
+    {
+      "utterance": "repeat album",
+      "verb": "repeat",
+      "target": "album",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Repeat album"
+    },
+    {
+      "utterance": "restart",
+      "verb": "restart",
+      "target": null,
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Restart"
+    },
+    {
+      "utterance": "seek",
+      "verb": "seek",
+      "target": null,
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Seek"
+    },
+    {
+      "utterance": "skip to end",
+      "verb": "skip",
+      "target": "to end",
+      "formulaId": "ui.select.v1",
+      "source": "aria-label:Skip to end"
+    }
+  ],
+  "targets": [
+    "album",
+    "discography",
+    "panel",
+    "station",
+    "to end",
+    "track",
+    "transmission"
+  ],
+  "routes": []
+}

@@ -1,0 +1,282 @@
+/**
+ * SEMANTIC CALCULUS — Core Type Contracts (Phase 0 freeze, PDR rev 3)
+ *
+ * Authoritative IR for compiling human intent into a typed, sealed act before
+ * any AI-directed operation executes. Frozen per
+ * docs/scholomance-encyclopedia/PDR-archive/2026-07-16-semantic-calculus-pdr.md
+ *
+ * Doctrine this encodes:
+ *   - Context is partitioned by trust. Untrusted content may inform, never authorize.
+ *   - Modulators may only reduce permission.
+ *   - The sealed body is a pure function of its declared inputs. Bank state is not an input.
+ *   - A valid act is not a permitted act; Do carries its capability or it does not execute.
+ */
+
+// ─── Kinds ──────────────────────────────────────────────────────────────────
+
+/**
+ * A kind is an ILLOCUTIONARY TYPE — what sort of speech act this is.
+ * It is NOT a permission. Permission lives in `law.decision` and nowhere else.
+ * Cites gene SEMANTIC_ACT_KIND_IS_NOT_PERMISSION.
+ *
+ * REV 6 CUT — `Forbidden` and `Escalate` were removed. They were never act types;
+ * they were `law.decision` values ('block', 'escalate') duplicated inside the kind
+ * enum. That duplication made illegal states representable (kind='Do' with
+ * law.decision='block') and made the taxonomy unannotatable: an annotator had to
+ * silently choose which axis to project onto, and two annotators chose differently.
+ *
+ * Measured 2026-07-16, 200 UI intents, two annotators: Cohen's kappa 0.271. The
+ * dominant disagreement was 'delete the album' -> Do (act type) vs Escalate
+ * (policy verdict). BOTH readings were correct — on different axes. The enum was
+ * the bug, not the annotators.
+ *
+ * Kind now has five members and answers one question. `law.decision` answers the
+ * other. The executor requires kind === 'Do' AND law.decision === 'allow' AND a
+ * capability — see assertExecutable.
+ */
+export type CalculusKind =
+  | 'Do' // bound + all required slots resolved + mutating effect
+  | 'Clarify' // bound, but a required slot is unresolved
+  | 'Probe' // bound + read-only effect
+  | 'Theory' // no binding in the executable lexicon (a lookup, not a judgement)
+  | 'Hypothesis'; // a testable candidate reading — see OPEN QUESTION below
+
+/**
+ * The only kind an executor may act on, and only then with law.decision === 'allow'
+ * and a capability. Everything else is non-executable by construction.
+ */
+export const EXECUTABLE_KIND: CalculusKind = 'Do';
+
+/**
+ * Every kind cites a gene that makes it derivable. There are no judgement calls
+ * left in this enum — a kind without a computable trigger is how rev 5 got to
+ * kappa 0.271.
+ *
+ *   Do         -> SEMANTIC_KIND_DO_GROUNDED
+ *   Clarify    -> SEMANTIC_KIND_CLARIFY_UNDERSPECIFIED   (aspirational: needs requiredSlots)
+ *   Probe      -> SEMANTIC_KIND_PROBE_READONLY
+ *   Theory     -> SEMANTIC_KIND_THEORY_UNBOUND
+ *   Hypothesis -> SEMANTIC_KIND_HYPOTHESIS_CANDIDATE_BINDING
+ *
+ * HYPOTHESIS (ruled an act by the repo owner, 2026-07-16). Trigger: the term does
+ * not bind AND the utterance supplies a candidate binding — "X means Y",
+ * "treat X as Y", "call X a Y". Theory is an unbound term with NO candidate;
+ * Hypothesis is an unbound term whose candidate the speaker provided. It is a
+ * Theory that arrives with its own testable answer.
+ *
+ * A hedge alone is not a trigger: "not sure what a session word is" is uncertainty
+ * with no candidate, and it is Theory. Measured on the Phase 0.5 corpus the
+ * candidate-binding trigger scored 100% precision / 65% recall — it never fires
+ * falsely, and its misses fall back to Theory, which is the safe direction. The
+ * compiler must never invent the candidate; if the candidate is not in the
+ * utterance, the machine is guessing and attributing the guess to the user.
+ *
+ * RECORDED DISAGREEMENT (see the gene): the repo owner labelled 8 of 11 trigger
+ * hits as `Do`, reading "treat the fingerprint as an id" as an instruction to
+ * comply with rather than a proposal to evaluate. Unresolved: if a user proposing
+ * a binding expects the system to ADOPT it, Hypothesis may be closer to a Do
+ * against the lexicon than to a Theory deposit. Revisit with a second annotator.
+ *
+ * Phase 1's exact lexicon cannot emit Hypothesis — detecting a candidate binding
+ * needs the proposal formation formula (Phase 2). Do not add an emit path that
+ * fabricates candidates.
+ */
+
+// ─── F13: trust partitions ──────────────────────────────────────────────────
+
+export type TrustClass = 'policy' | 'user' | 'untrusted' | 'derived' | 'secret';
+
+/** The partitions a formation formula is allowed to read from. */
+export const TRUSTED_PARTITIONS: readonly TrustClass[] = Object.freeze(['policy', 'user']);
+
+/**
+ * Context is four named partitions. There is no undifferentiated blob.
+ * If a caller cannot say where a string came from, it is `untrusted` — there is
+ * no default-trusted path.
+ */
+export interface TrustPartitionedContext {
+  /** LAW, formula registry, capability grants, authenticated identity. */
+  policy: Record<string, unknown>;
+  /** The current request and explicit user confirmations. */
+  user: Record<string, unknown>;
+  /** Emails, webpages, documents, retrieved rows, tool outputs. NEVER authority. */
+  untrusted: Record<string, unknown>;
+  /** Model summaries, embeddings, inferred entities, prior theories. */
+  derived: Record<string, unknown>;
+  /** Credentials/sensitive values. Executor-only; never enters formation. */
+  secret?: Record<string, unknown>;
+}
+
+/** One digest per partition. A single digest is insufficient for security analysis. */
+export interface ContextDigests {
+  policy: string;
+  user: string;
+  untrusted: string;
+  derived: string;
+}
+
+// ─── Evidence ───────────────────────────────────────────────────────────────
+
+/** Acts cite genes; acts are not genes. Cites resolve from trusted context only. */
+export interface GeneCite {
+  stableId: string;
+  contentHash: string;
+  whyMatched: string;
+  /** Provenance of the evidence that selected this gene. Trusted partitions only. */
+  trust: 'policy' | 'user';
+  taint: string[];
+  /** JSON pointers into payload/decision this cite actually warrants. */
+  supports: string[];
+}
+
+// ─── F15: risk-class margin law ─────────────────────────────────────────────
+
+export type Consequence = 'reversible_ui' | 'destructive' | 'financial' | 'privacy' | 'security';
+
+/** Declared per formation formula. Thresholds are per risk class, never universal. */
+export interface RiskProfile {
+  consequence: Consequence;
+  minMargin: number;
+  requiredCites: string[];
+  /** An ACT TYPE to fall back to on a thin margin. Escalating is LAW's call, not a kind. */
+  allowedFallback: Extract<CalculusKind, 'Clarify' | 'Probe'>;
+  confirmationPolicy: 'none' | 'single' | 'two_phase';
+}
+
+// ─── F14: capability-bound Do ───────────────────────────────────────────────
+
+/** A valid act does not confer tool authority. This does, narrowly. */
+export interface Capability {
+  id: string;
+  scope: string[];
+  /** Logical time — never wall-clock, which would break determinism. */
+  expiresAtLogical: number;
+  confirmation: 'none' | 'single' | 'two_phase';
+}
+
+// ─── LAW ────────────────────────────────────────────────────────────────────
+
+export interface LawDecision {
+  decision: 'allow' | 'clarify' | 'block' | 'escalate';
+  ruleIds: string[];
+}
+
+// ─── Ballistics (Phase 2; absent in the Phase 1 exact-lexicon compiler) ──────
+
+export interface Ballistics {
+  latticeMapVersion: string;
+  bucketIds: string[];
+  score: number;
+  margin: number;
+}
+
+export interface FormulaIds {
+  formation: string[];
+  modulation: string[];
+}
+
+/** What built the act. Replay is unverifiable without it. */
+export interface CompilerIdentity {
+  buildId: string;
+  schemaHash: string;
+  geneRegistrySnapshot: string;
+}
+
+// ─── The seal ───────────────────────────────────────────────────────────────
+
+/**
+ * PHASE 0 FINDING — this is NOT an SCD64.
+ *
+ * The PDR froze `seal: { algorithm: 'SCD64' }` on the assumption that SCD64 was
+ * a content-addressing seal. It is not: `generateSCD64(bugFamily)` takes a bug
+ * family name, looks it up in a fixed glossary, and hashes 8 canonical taxonomy
+ * strings into 8 semantic slots (BUGCLASS, COORDSYS, INVARIANT, ...). It is a
+ * classification code with no parameter for arbitrary content, and it therefore
+ * cannot seal an act body.
+ *
+ * A content seal and an SCD64 are both 64 uppercase hex characters, so a content
+ * digest would satisfy SCD64_REGEX and pass into parseSCD64/decodeSCD64, which
+ * would decode it into a confident, meaningless bug taxonomy. The formats
+ * collide; the meanings do not. This algorithm tag exists to make that collision
+ * unrepresentable: an act seal declares what it is and must never be handed to
+ * the SCD64 decoder.
+ *
+ * Requires a PDR amendment to F5 before Phase 4.
+ */
+export type SealAlgorithm = 'sha256-canonical-v0';
+
+export interface Seal {
+  algorithm: SealAlgorithm;
+  /** 64 uppercase hex. Content-addressed over the canonical body. */
+  digest: string;
+}
+
+// ─── Draft (pre-seal, mutable, never emitted) ───────────────────────────────
+
+export interface SemanticDraft {
+  version: 'SemanticCalculus-v0';
+  preliminaryKind: CalculusKind;
+  payload: Record<string, unknown>;
+  cites: GeneCite[];
+  law: LawDecision;
+  contextDigests: ContextDigests;
+  riskProfile: RiskProfile;
+  capability?: Capability;
+  /**
+   * F7 — deposit identity. MUST be computed at step 6.5, AFTER cites + LAW, so
+   * two drafts with identical ballistics but opposite adjudications never share
+   * an identity.
+   */
+  draftHash: string;
+  ballistics?: Ballistics;
+  formulaIds: FormulaIds;
+  /** F18 — pure function of the draft. This, not the row id, is what gets sealed. */
+  theoryDeposit: { required: boolean };
+  /** Who is asking. Support counts principals, not hits (F17). */
+  principalId: string;
+}
+
+// ─── Act (post-seal, deterministic) ─────────────────────────────────────────
+
+/**
+ * F18: contains NO bank-derived field. Deterministic under the §3.2 input list:
+ * utterance, four context digests, formula versions, lattice map version, gene
+ * registry snapshot, compiler buildId + schemaHash. Bank contents are excluded.
+ */
+export interface SemanticAct {
+  version: 'SemanticCalculus-v0';
+  kind: CalculusKind;
+  payload: Record<string, unknown>;
+  cites: GeneCite[];
+  law: LawDecision;
+  contextDigests: ContextDigests;
+  riskProfile: RiskProfile;
+  capability?: Capability;
+  ballistics?: Ballistics;
+  formulaIds: FormulaIds;
+  theoryDeposit: { required: boolean };
+  compiler: CompilerIdentity;
+  seal: Seal;
+}
+
+/**
+ * F18 — what the compiler returns. The receipt is bank-state-dependent and
+ * therefore lives OUTSIDE the seal. Losing it costs an audit pointer; it can
+ * never invalidate an act.
+ */
+export interface SemanticEmission {
+  act: SemanticAct;
+  theoryReceipt?: { theoryId: string; transactionHash: string };
+}
+
+// ─── Errors ─────────────────────────────────────────────────────────────────
+
+export const SEMANTIC_CALCULUS_ERRORS = Object.freeze({
+  SEAL_MUTATION: 'SEMANTIC_CALCULUS_SEAL_MUTATION',
+  THEORY_NOT_EXECUTABLE: 'SEMANTIC_CALCULUS_THEORY_NOT_EXECUTABLE',
+  UNCAPABLE_DO: 'SEMANTIC_CALCULUS_UNCAPABLE_DO',
+  NOT_PERMITTED: 'SEMANTIC_CALCULUS_NOT_PERMITTED',
+  TRUST_BOUNDARY: 'SEMANTIC_CALCULUS_TRUST_BOUNDARY',
+  UNTRUSTED_CITE_SOURCE: 'SEMANTIC_CALCULUS_UNTRUSTED_CITE_SOURCE',
+  PERMISSION_WIDENED: 'SEMANTIC_CALCULUS_PERMISSION_WIDENED',
+} as const);

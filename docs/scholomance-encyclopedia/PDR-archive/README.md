@@ -64,6 +64,7 @@ All Product Design Requirements (PDRs) for Scholomance are archived here. Each P
 | [`adaptive_palette_pdr.md`](./adaptive_palette_pdr.md) | Draft | UI + Color Engine + Codex Contract | High |
 | [`animation_amp_pdr.md`](./animation_amp_pdr.md) | Proposed | Architectural with behavioral impact | Unclassified |
 | [`PDR Prompt.md`](./PDR%20Prompt.md) | Template | PDR Authoring Prompt | Unclassified |
+| [`2026-07-16-semantic-calculus-pdr.md`](./2026-07-16-semantic-calculus-pdr.md) | Draft (rev 6 — kind/permission split; every kind cites a gene) | Architectural \| AI Intent IR \| LAW \| TurboQuant QBIT \| Act Seal \| SCDNA \| SQLite Theory Bank | Critical |
 | [`bug-report-ui-pdr.md`](./bug-report-ui-pdr.md) | Unclassified | Unclassified | Unclassified |
 | [`bandcamp-sweetener-pdr.md`](./bandcamp-sweetener-pdr.md) | Draft | Audio + Distribution + UI | High |
 | [`bytecode_blueprint_bridge_pdr.md`](./bytecode_blueprint_bridge_pdr.md) | Draft for implementation | Architectural | Critical |

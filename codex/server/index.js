@@ -37,6 +37,7 @@ import { wordLookupRoutes } from './routes/wordLookup.routes.js';
 import { oracleRoutes } from './routes/oracle.routes.js';
 import { panelAnalysisRoutes } from './routes/panelAnalysis.routes.js';
 import { nlCompileRoutes } from './routes/nlCompile.routes.js';
+import { semanticShadowRoutes } from './routes/semanticShadow.routes.js';
 import { grimdesignRoutes } from './routes/grimdesign.routes.js';
 import { combatRoutes } from './routes/combat.routes.js';
 import { characterEnhanceRoutes } from './routes/character-enhance.routes.js';
@@ -1142,6 +1143,8 @@ fastify.register(worldRoutes, { prefix: '/api/world', adapter: lexiconAdapter, p
 fastify.register(corpusRoutes, { prefix: '/api/corpus', adapter: corpusAdapter, lexiconAdapter });
 fastify.register(imageAnalysisRoutes, { prefix: '/api/image' });
 fastify.register(nlCompileRoutes);
+// Shadow capture — self-disables unless ENABLE_SEMANTIC_CALCULUS=1. Executes nothing.
+fastify.register(semanticShadowRoutes);
 fastify.register(registerSchoolStylesRoutes, { prefix: '/api/styles' });
 fastify.register(catalogRoutes);
 fastify.register(studioRoutes, { localAudioAdapter });

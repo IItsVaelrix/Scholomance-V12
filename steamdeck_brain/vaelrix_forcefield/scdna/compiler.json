@@ -381,7 +381,13 @@
       },
       "domain": {
         "primary": "pixel",
-        "secondary": ["architecture", "formula", "propagation", "scdl", "tactical"],
+        "secondary": [
+          "architecture",
+          "formula",
+          "propagation",
+          "scdl",
+          "tactical"
+        ],
         "activationBrains": [
           "PIXEL_BRAIN",
           "ARCHITECTURE_BRAIN",
@@ -423,6 +429,408 @@
         "shortMeaning": "Wand stroke formulas must propagate chemically via generative rules, not culinarily via batch sampling.",
         "expandedMeaning": "The Wand's core power is authoring pure mathematical models of strokes. Propagation must honor that by letting the model act as a reaction law that unfolds deterministically using the engine's existing symmetries, quantizers, and perception systems. This produces self-consistent, evolvable art instead of ad-hoc variations.",
         "operatorInstruction": "When this gene is active for a prompt involving Wand, stroke formulas, propagation, tactical art assets, or procedural pixel generation: redirect any 'try variations' thinking toward recursive application of the formula's math under PixelBrain laws. Use the formula parameters as kinetics, not as knobs for manual experimentation."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_ACT_KIND_IS_NOT_PERMISSION": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_ACT_KIND_IS_NOT_PERMISSION",
+        "contentHash": "scdna-sc-kind-vs-permission-v1",
+        "sourceKind": "architecture"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "law",
+          "intent-ir",
+          "taxonomy"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.95,
+        "confidence": 0.98,
+        "originalConfidence": 0.98,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "warn",
+        "imperative": "A SemanticAct's kind is its illocutionary type. It is NOT its permission. Permission lives in law.decision and nowhere else.",
+        "forbiddenDrift": [
+          "Do not add Forbidden or Escalate to CalculusKind - they are law.decision values, not act types",
+          "Do not read kind to decide whether something may execute; read kind AND law.decision AND capability",
+          "Do not let a policy verdict change the kind - a blocked delete is still a Do that LAW refused"
+        ],
+        "requiredChecks": [
+          "Assert CalculusKind contains no policy verdict",
+          "Assert the executor checks kind === 'Do' && law.decision === 'allow' && capability",
+          "Assert no act can be constructed with kind='Do' and law.decision='block' (illegal state must be unrepresentable)"
+        ]
+      },
+      "risk": {
+        "riskClass": "high",
+        "blastRadius": "cross_system",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.85
+      },
+      "english": {
+        "shortMeaning": "Kind answers 'what kind of speech act is this'. law.decision answers 'may it happen'. Two axes, never one enum.",
+        "expandedMeaning": "Measured 2026-07-16: two annotators labelling 200 UI intents scored Cohen's kappa 0.271. The dominant split was 'delete the album' -> Do (act type) vs Escalate (policy). Both readings were correct on different axes, because CalculusKind conflated them: Forbidden and Escalate duplicated law.decision's 'block' and 'escalate' inside the kind enum. That made illegal states representable (kind='Do' with law='block') and made the taxonomy unannotatable, because an annotator must silently pick which axis to project onto.",
+        "operatorInstruction": "If you are about to add a kind, ask: is this a TYPE of utterance, or a VERDICT about one? Verdicts go in law."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_KIND_THEORY_UNBOUND": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_KIND_THEORY_UNBOUND",
+        "contentHash": "scdna-sc-theory-unbound-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "theory-bank",
+          "lexicon",
+          "intent-ir"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN",
+          "TEST_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.95,
+        "confidence": 0.98,
+        "originalConfidence": 0.98,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "route",
+        "imperative": "Theory means exactly one thing: the utterance names a concept with no binding in the executable lexicon. It is a lookup, not a judgement.",
+        "forbiddenDrift": [
+          "Do not use Theory as a catch-all for 'the annotator felt unsure'",
+          "Do not emit Theory for a bound concept whose slots are merely missing - that is Clarify",
+          "Do not treat Theory as fact, and never let an unpromoted Theory reach an executor",
+          "Do not resolve an unbound concept to a plausible default - `|| 'stone'` is the null this gene forbids"
+        ],
+        "requiredChecks": [
+          "Assert Theory is emitted iff bindExact() returns undefined",
+          "Assert Theory is never executable (assertExecutable throws)",
+          "Assert an unbound utterance deposits to the theory bank before the final kind is sealed"
+        ]
+      },
+      "risk": {
+        "riskClass": "high",
+        "blastRadius": "cross_system",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.7
+      },
+      "english": {
+        "shortMeaning": "Theory = lexicon miss. Nothing else.",
+        "expandedMeaning": "Theory's frequency is a function of lexicon coverage, not of utterance difficulty. Measured 2026-07-16: the codebase author used Theory on 1 of 200 UI intents because he carries the Scholomance lexicon in his head, so nothing misses; the compiler binds 11 phrases, so nearly everything misses. The same utterance is Theory to the machine and Do to the author. This is why Theory cannot be established by human annotation (kappa -0.013): it is not a property of the utterance, it is a property of the utterance RELATIVE TO A LEXICON VERSION. Cite this gene and the lexicon version together, or the deposit is unreproducible.",
+        "operatorInstruction": "When a Theory deposit looks wrong, check the lexicon version before questioning the concept."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_KIND_PROBE_READONLY": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_KIND_PROBE_READONLY",
+        "contentHash": "scdna-sc-probe-readonly-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "risk",
+          "intent-ir"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN",
+          "TEST_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.85,
+        "confidence": 0.95,
+        "originalConfidence": 0.95,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "route",
+        "imperative": "Probe means the bound operation is read-only: it may gather evidence and must commit nothing.",
+        "forbiddenDrift": [
+          "Do not emit Probe for anything whose formula declares a mutating effect",
+          "Do not let a Probe carry a capability that permits writes",
+          "Do not treat 'answering a question' as automatically read-only if answering requires a fetch that mutates state"
+        ],
+        "requiredChecks": [
+          "Assert Probe is emitted iff the bound formation formula declares effect: 'read'",
+          "Assert a Probe act's capability scope contains no write verbs"
+        ]
+      },
+      "risk": {
+        "riskClass": "medium",
+        "blastRadius": "module",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.4
+      },
+      "english": {
+        "shortMeaning": "Probe = bound + read-only effect. Derived from the formula's declared effect, not from the utterance's grammar.",
+        "expandedMeaning": "Probe scored kappa 0.170 between two annotators, with 14 Probe->Do swaps, because 'is answering a question itself an action?' is not decidable from the utterance. It IS decidable from the formula: the formation formula declares whether it mutates. Read the formula, not the sentence.",
+        "operatorInstruction": "If you cannot tell whether something is a Probe, you are looking at the utterance. Look at the formula."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_KIND_CLARIFY_UNDERSPECIFIED": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_KIND_CLARIFY_UNDERSPECIFIED",
+        "contentHash": "scdna-sc-clarify-underspec-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "margin-law",
+          "intent-ir",
+          "ui"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN",
+          "TEST_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.95,
+        "confidence": 0.98,
+        "originalConfidence": 0.98,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "route",
+        "imperative": "Clarify means the formula bound but a required slot is unresolved, so exactly one bounded question would ground it.",
+        "forbiddenDrift": [
+          "Do not emit Clarify when nothing bound - that is Theory",
+          "Do not emit Clarify when the question would be unbounded ('what do you mean?') - that is Escalate via law",
+          "Do not resolve a missing slot to a default and emit Do - the soft Do is the failure this whole architecture exists to prevent"
+        ],
+        "requiredChecks": [
+          "Assert Clarify is emitted iff a bound formula has >=1 unresolved required slot",
+          "Assert the emitted question names the missing slot",
+          "Assert formation formulas declare their required slots, or Clarify is not computable"
+        ]
+      },
+      "risk": {
+        "riskClass": "high",
+        "blastRadius": "module",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.6
+      },
+      "english": {
+        "shortMeaning": "Clarify = bound formula + missing required slot. Computable ONLY if formulas declare required slots.",
+        "expandedMeaning": "Clarify scored kappa -0.087 - worse than chance - the worst kind in the taxonomy. Cause: 'narrowed enough to ask a bounded question' is prose, and deixis ('open it', 'close that') resolves instantly for anyone holding the app's state and not at all for anyone who is not. This gene makes Clarify computable by moving the test from the annotator's intuition to the formula's declared slot schema. UNTIL every formation formula declares requiredSlots, Clarify remains a judgement call and this gene is aspirational.",
+        "operatorInstruction": "If Clarify is firing unpredictably, the formula is missing a requiredSlots declaration."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_KIND_DO_GROUNDED": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_KIND_DO_GROUNDED",
+        "contentHash": "scdna-sc-do-grounded-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "capability",
+          "law",
+          "intent-ir"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN",
+          "TEST_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.95,
+        "confidence": 0.98,
+        "originalConfidence": 0.98,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "warn",
+        "imperative": "Do means bound + every required slot resolved + a mutating effect. Do is an act TYPE and confers no authority by itself.",
+        "forbiddenDrift": [
+          "Do not treat kind='Do' as permission to execute - check law.decision and capability",
+          "Do not emit Do when a required slot is missing - that is Clarify",
+          "Do not widen a Do's capability scope from untrusted context"
+        ],
+        "requiredChecks": [
+          "Assert Do is emitted iff bound && all required slots resolved && effect is mutating",
+          "Assert every Do carries a capability with a narrow scope and logical expiry",
+          "Assert assertExecutable rejects Do when law.decision !== 'allow'"
+        ]
+      },
+      "risk": {
+        "riskClass": "high",
+        "blastRadius": "cross_system",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.8
+      },
+      "english": {
+        "shortMeaning": "Do = bound + grounded + mutating. Permission is a separate check.",
+        "expandedMeaning": "A valid act is not a permitted act. This is the F14 capability rule restated as a gene, and it is the direct consequence of SEMANTIC_ACT_KIND_IS_NOT_PERMISSION: once kind stops encoding permission, kind='Do' becomes a claim about grammar, and the executor must consult law.decision and capability before doing anything at all.",
+        "operatorInstruction": "A Do that executes without a capability check is a bug, not a shortcut."
+      },
+      "lifecycle": {
+        "status": "active",
+        "contradictionCount": 0,
+        "lastContradictionAtIndex": null,
+        "degradationFactor": 0.85,
+        "recoveryIncrement": 0.02,
+        "deprecationThreshold": 0.45,
+        "supersededBy": null,
+        "quarantineReason": null
+      }
+    },
+    "SEMANTIC_KIND_HYPOTHESIS_CANDIDATE_BINDING": {
+      "version": "SCDNA-v1",
+      "identity": {
+        "stableId": "SEMANTIC_KIND_HYPOTHESIS_CANDIDATE_BINDING",
+        "contentHash": "scdna-sc-hypothesis-candidate-v1",
+        "sourceKind": "rule"
+      },
+      "domain": {
+        "primary": "architecture",
+        "secondary": [
+          "semantic-calculus",
+          "theory-bank",
+          "lexicon",
+          "intent-ir"
+        ],
+        "activationBrains": [
+          "CODE_BRAIN",
+          "RISK_BRAIN",
+          "UI_BRAIN",
+          "TEST_BRAIN"
+        ]
+      },
+      "retrieval": {
+        "lookupMode": "hybrid",
+        "priority": 0.9,
+        "confidence": 0.9,
+        "originalConfidence": 0.9,
+        "freshness": 1.0,
+        "canonical": true,
+        "minConfidence": 0.45
+      },
+      "instruction": {
+        "action": "route",
+        "imperative": "Hypothesis means the utterance supplies a CANDIDATE BINDING for a term that does not bind. Theory is an unbound term with no candidate; Hypothesis is an unbound term whose candidate the speaker provided.",
+        "forbiddenDrift": [
+          "Do not emit Hypothesis from a hedge alone - 'not sure what a session word is' is uncertainty with no candidate, which is Theory",
+          "Do not emit Hypothesis for a bound term - if it binds, the speaker's proposal is redundant and the act is Do or Clarify",
+          "Do not treat a Hypothesis as fact, and never promote one to lexicon without human authority (F10)",
+          "Do not let the compiler invent the candidate - the candidate must come from the utterance, or it is the machine guessing and calling it the user's idea"
+        ],
+        "requiredChecks": [
+          "Assert Hypothesis is emitted iff the term is unbound AND the utterance carries an explicit candidate binding",
+          "Assert an unbound utterance with no candidate falls back to Theory (fail-closed)",
+          "Assert the deposited Hypothesis records the candidate binding verbatim, so a reviewer can test it",
+          "Assert Hypothesis is never executable (assertExecutable throws)"
+        ]
+      },
+      "risk": {
+        "riskClass": "high",
+        "blastRadius": "cross_system",
+        "staleRisk": 0.05,
+        "misuseRisk": 0.7
+      },
+      "english": {
+        "shortMeaning": "Hypothesis = unbound term + a candidate binding the speaker supplied. It is a Theory that arrives with its own testable answer.",
+        "expandedMeaning": "Ruled an ACT by the repo owner, 2026-07-16. The trigger is a candidate binding: 'X means Y', 'treat X as Y', 'call X a Y', 'X might be Y'. Measured on the 200-item Phase 0.5 corpus, that trigger scored 100% precision and 65% recall against one annotator's Hypothesis labels - it never fires falsely, and the misses (hedged proposals without an explicit X-is-Y structure) fall back to Theory, which is the safe direction. RECORDED DISAGREEMENT: the repo owner labelled 8 of the 11 trigger hits as Do, reading 'treat the fingerprint as an id' as an instruction to comply with rather than a proposal to evaluate. He nonetheless ruled Hypothesis an act. Both readings are defensible and the tension is unresolved: if a user proposing a binding expects the system to ADOPT it, Hypothesis is closer to a Do against the lexicon than to a Theory deposit. Revisit when a second human annotator exists. Hypothesis scored the highest inter-annotator agreement of all seven kinds (kappa 0.505), so the distinction is real even where its consequence is not settled.",
+        "operatorInstruction": "When reviewing a Hypothesis deposit, the candidate binding is already in the record - test it, do not re-derive it. If there is no candidate, the deposit was misfiled and belongs in Theory."
       },
       "lifecycle": {
         "status": "active",

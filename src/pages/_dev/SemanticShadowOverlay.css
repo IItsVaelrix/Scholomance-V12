@@ -1,0 +1,153 @@
+/* Semantic Calculus shadow overlay — DEV ONLY. Deliberately utilitarian:
+   this is an instrument, not a surface, and it must never be mistaken for one. */
+
+.scso-tab {
+  position: fixed;
+  right: 0;
+  bottom: 18vh;
+  z-index: 9999;
+  /* Always fully visible. It used to hide off-screen and slide out on :hover,
+     which is unusable on a touchscreen (Steam Deck) — there is no hover event. */
+  background: #12121a;
+  color: #8be2f9;
+  border: 1px solid #2b2d38;
+  border-right: none;
+  border-radius: 6px 0 0 6px;
+  padding: 0.6rem 0.8rem;
+  font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  cursor: pointer;
+}
+.scso-tab:hover { border-color: #06b6d4; color: #b9f3ff; }
+
+.scso {
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 9999;
+  width: min(28rem, calc(100vw - 24px));
+  background: #0b0c12;
+  border: 1px solid #2b2d38;
+  border-radius: 10px;
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.6);
+  color: #d3ced7;
+  font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 0.7rem;
+}
+
+.scso-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.55rem; }
+.scso-title { color: #8be2f9; font-weight: 600; }
+.scso-badge {
+  margin-left: auto;
+  font-size: 10px;
+  color: #ffb84d;
+  border: 1px solid #4e412b;
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+}
+.scso-x { background: none; border: none; color: #666778; font-size: 15px; cursor: pointer; padding: 0 0.2rem; }
+.scso-x:hover { color: #d3ced7; }
+
+.scso-state { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem; }
+.scso-state code, .scso-row code {
+  background: #171820;
+  border: 1px solid #23252f;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-size: 11px;
+  color: #9fa4a8;
+}
+.scso-sel { color: #b37ad9 !important; }
+
+.scso-input {
+  width: 100%;
+  background: #12121a;
+  border: 1px solid #2b2d38;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  color: #e8e6ea;
+  font: inherit;
+  outline: none;
+}
+.scso-input:focus { border-color: #06b6d4; }
+
+.scso-err {
+  margin-top: 0.5rem;
+  color: #ff6b6b;
+  background: #1c1013;
+  border: 1px solid #4e101c;
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+}
+
+.scso-out {
+  margin-top: 0.55rem;
+  border: 1px solid #23252f;
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  background: #0e0f16;
+}
+
+.scso-kind {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.scso-hint { font-size: 10px; font-weight: 400; color: #666778; letter-spacing: 0; }
+
+/* One colour per kind, so the eye learns the taxonomy faster than the prose does. */
+.scso-kind--do          { color: #3ddc84; }
+.scso-kind--clarify     { color: #ffc15a; }
+.scso-kind--probe       { color: #8be2f9; }
+.scso-kind--theory      { color: #b37ad9; }
+.scso-kind--hypothesis  { color: #ff9a21; }
+
+.scso-row { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.2rem; }
+.scso-k { color: #4b4e5a; min-width: 6.5rem; }
+.scso-rule { color: #444651; font-size: 10px; }
+
+.scso-law--allow    { color: #3ddc84 !important; border-color: #1e4d33 !important; }
+.scso-law--clarify  { color: #ffc15a !important; border-color: #4e412b !important; }
+.scso-law--escalate { color: #ff9a21 !important; border-color: #5a3410 !important; }
+.scso-law--block    { color: #ff6b6b !important; border-color: #4e101c !important; }
+
+.scso-yes { color: #3ddc84 !important; }
+.scso-no  { color: #ff6b6b !important; font-weight: 700; }
+
+.scso-actions { display: flex; align-items: center; gap: 0.4rem; margin-top: 0.6rem; }
+.scso-actions button {
+  background: #171820;
+  border: 1px solid #2b2d38;
+  color: #9fa4a8;
+  border-radius: 5px;
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  cursor: pointer;
+}
+.scso-actions button:hover:not(:disabled) { border-color: #06b6d4; color: #d3ced7; }
+.scso-actions button:disabled { opacity: 0.35; cursor: default; }
+.scso-count { margin-left: auto; color: #4b4e5a; font-size: 10px; }
+
+.scso-foot { margin: 0.55rem 0 0; color: #444651; font-size: 10px; line-height: 1.4; }
+.scso-foot b { color: #666778; }
+
+/* Ideal-phenotype picker. Pressing ✗ without saying what it SHOULD have been
+   records an observed phenotype with no ideal — a complaint, not a measurement. */
+.scso-ideal {
+  display: flex; align-items: center; gap: 0.3rem; flex-wrap: wrap;
+  margin-top: 0.5rem; padding: 0.45rem 0.5rem;
+  background: #14101a; border: 1px solid #3a184d; border-radius: 6px;
+}
+.scso-ideal-btn {
+  background: #171820; border: 1px solid #2b2d38; border-radius: 4px;
+  padding: 0.22rem 0.45rem; font: 600 11px/1 ui-monospace, monospace; cursor: pointer;
+}
+.scso-ideal-btn:hover { border-color: currentColor; }
+.scso-why {
+  margin-top: 0.4rem; padding: 0.35rem 0.45rem;
+  background: #12121a; border-left: 2px solid #ffc15a; border-radius: 0 4px 4px 0;
+  color: #ffc15a; font-size: 11px;
+}

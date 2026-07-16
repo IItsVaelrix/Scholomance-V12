@@ -19,6 +19,15 @@ import { MotionDebugBadge } from "./ui/animation/components/MotionDebugBadge";
 import { InventoryOverlay } from "./ui/inventory/InventoryOverlay.jsx";
 import { CharacterCompendiumOverlay } from "./ui/character/CharacterCompendiumOverlay.jsx";
 
+// DEV-ONLY Semantic Calculus shadow capture (PDR §14 Shadow stage).
+// `import.meta.env.DEV` is statically false in production, so this lazy chunk is
+// never loaded and the overlay is never registered — same pattern as the
+// __immune harnesses in main.jsx. It EXECUTES NOTHING: it shows what the compiler
+// would have decided and logs the intent with its route/selection state.
+const SemanticShadowOverlay = import.meta.env.DEV
+  ? React.lazy(() => import("./pages/_dev/SemanticShadowOverlay.tsx"))
+  : null;
+
 const fullMotionVariants = {
   initial: { opacity: 0, y: 20 },
   animate: { opacity: 1, y: 0 },
@@ -121,6 +130,11 @@ export default function App() {
                       </Suspense>
                     </motion.main>
                   </AnimatePresence>
+                  {SemanticShadowOverlay && (
+                    <Suspense fallback={null}>
+                      <SemanticShadowOverlay />
+                    </Suspense>
+                  )}
                 </div>
               </div>
             </SongProvider>
