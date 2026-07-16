@@ -73,29 +73,56 @@ candidate, so it is Theory.
 
 ---
 
-## 4. Two axes. This is the one thing to internalise.
+## 4. Four axes. This is the one thing to internalise.
 
 ```
-kind          = what you said        (Do | Probe | Clarify | Theory | Hypothesis)
-law.decision  = whether it may happen (allow | clarify | block | escalate)
+kind              = what you said           (Do | Probe | Clarify | Theory | Hypothesis)
+law.decision      = whether it may happen   (allow | clarify | block | escalate)
+epistemic.gap     = what is missing         (none | command | concept | procedure | …)
+phase             = plan or report          (atomic | plan | report)  — Probe only
 ```
 
-**They are separate fields and they must never be merged.** `deploy` is a `Do` —
-it is a command, that is what you said — and LAW escalates it because it ships
-your local dist to production. Both facts are true at once:
+**They are separate fields and they must never be merged.** Especially: **do not
+split Theory into sub-kinds** (`TheoryUnboundCommand` etc.). That recreates rev 5's
+failure — a kind without a single computable question becomes an opinion and
+destroys κ. Localise ignorance on `epistemic`, not on the kind enum.
+
+`deploy` is a `Do` — it is a command, that is what you said — and LAW escalates
+it because it ships your local dist to production. Both facts are true at once:
 
 ```
 "deploy"  →  Do   law=escalate   would execute: NO
 ```
 
+A diagnostic with no probe formula:
+
+```
+"why does the flargle break"  →  Theory   epistemic.gap=procedure   would execute: NO
+```
+
+A harvested inquiry:
+
+```
+"why listen animations fail"  →  Probe  phase=plan  epistemic.gap=evidence
+```
+
 The executor requires **three** gates: `kind === 'Do'` **and**
 `law.decision === 'allow'` **and** a capability. A `Do` is a claim about grammar
-and nothing more.
+and nothing more. Probe plans/reports never become Do via epistemic fields.
 
 This was rev 5's bug. `Forbidden` and `Escalate` were `law.decision` values
 hiding in the kind enum, which made `kind='Do'` with `law='block'` typecheck, and
 made the taxonomy unannotatable — an annotator had to silently pick an axis, and
 two of them picked differently. Cites `SEMANTIC_ACT_KIND_IS_NOT_PERMISSION`.
+
+**Rev 7** adds epistemic + experimental axes. Spec:
+[`PDR-archive/2026-07-16-semantic-calculus-rev7-epistemic.md`](../PDR-archive/2026-07-16-semantic-calculus-rev7-epistemic.md).
+
+Two-phase Probe (compiler never runs harnesses):
+
+```
+utterance → Probe plan seal → external receipts → Probe report seal
+```
 
 ---
 
@@ -105,6 +132,8 @@ two of them picked differently. Cites `SEMANTIC_ACT_KIND_IS_NOT_PERMISSION`.
 $ npx tsx scripts/scholo-gate.mjs "start the dev server"
 
   Clarify   law=clarify  law.underspecified.v1
+  epistemic.gap=required_slot  method=underspecified  phase=atomic
+  warrant required=[human,lexicon]  present=[lexicon]
   margin 0.000 < 0.15 (reversible_ui) — too close to call
   Did you mean:
     dev:server    0.67 · node --env-file=.env codex/server/index.js

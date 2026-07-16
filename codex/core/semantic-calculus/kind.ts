@@ -5,19 +5,24 @@
  * type. It is pure, crypto-free, and runs unchanged in node, vitest, and the
  * browser under Vite.
  *
- * The split matters architecturally, not just for bundling. `seal.ts` needs
- * node:crypto and is node-only; a UI intent compiler that cannot run in the UI is
- * a defect. Separating the decision from the sealing lets the Visualiser shadow
- * surface show a real kind through the REAL code path — no duplicated heuristic
- * in the frontend that drifts from the compiler (COLOR_DRAGON).
- *
- * There is exactly one place where an utterance becomes a kind, and it is here.
+ * Rev 7: epistemic state is derived AFTER kind, never used to choose kind.
  */
 
 import { getFormation, UNBOUND_RISK } from './formulaRegistry.ts';
 import { bindPattern, type LexiconMatch } from './lexiconUi.ts';
+import { bindInquiryProbe, buildProbePlan } from './probeRegistry.ts';
+import { deriveEpistemic, derivePhase } from './epistemic.ts';
+import { buildInvestigationDeposit } from './investigationDeposit.ts';
 import { trustedOf } from './trustPartition.ts';
-import type { CalculusKind, LawDecision, RiskProfile, TrustPartitionedContext } from './types.ts';
+import type {
+  ActPhase,
+  CalculusKind,
+  EpistemicState,
+  InvestigationDeposit,
+  LawDecision,
+  RiskProfile,
+  TrustPartitionedContext,
+} from './types.ts';
 
 /** Kinds that must reach the theory bank before the act seals (F7). */
 const DEPOSITING_KINDS: ReadonlySet<CalculusKind> = new Set<CalculusKind>(['Theory', 'Hypothesis']);
@@ -31,9 +36,18 @@ export interface KindDecision {
   theoryDeposit: { required: boolean };
   /** Populated on Clarify: the bounded question, and what the state can offer. */
   question?: { slot: string; text: string; candidates: string[] };
-  /** Debug/telemetry only — never sealed, never authority. */
+  /** Debug/telemetry only — never sealed as authority over kind. */
   bound: boolean;
   formulaId?: string;
+  /** Orthogonal epistemic axis (rev 7). */
+  epistemic: EpistemicState;
+  /** Experimental phase (rev 7). */
+  phase: ActPhase;
+  investigationDeposit?: InvestigationDeposit;
+  /** Binding diagnostics for epistemic (not sealed separately). */
+  unknownReferent: boolean;
+  hasUnresolvedSlots: boolean;
+  needsEvidence: boolean;
 }
 
 /**
@@ -48,8 +62,6 @@ export function adjudicateLaw(input: { kind: CalculusKind; riskProfile: RiskProf
     return { decision: 'clarify', ruleIds: ['law.underspecified.v1'] };
   }
   if (input.riskProfile.consequence !== 'reversible_ui') {
-    // Nothing but reversible UI ships on this flag. Destructive/financial/privacy
-    // acts require the follow-up PDR, not a threshold tweak.
     return { decision: 'escalate', ruleIds: ['law.non-reversible-requires-pdr.v1'] };
   }
   return { decision: 'allow', ruleIds: ['law.ui.reversible.v1'] };
@@ -63,59 +75,103 @@ function buildQuestion(match: LexiconMatch): KindDecision['question'] {
 }
 
 /**
- * Steps 1-8 minus the crypto: utterance + trusted context -> act type + verdict.
+ * Steps 1-8 minus the crypto: utterance + trusted context -> act type + verdict + epistemic.
  *
- * The four-way decision:
- *   no pattern matched          -> Theory     (SEMANTIC_KIND_THEORY_UNBOUND)
- *   matched, a slot unresolved  -> Clarify    (SEMANTIC_KIND_CLARIFY_UNDERSPECIFIED)
- *   matched, all slots, read    -> Probe      (SEMANTIC_KIND_PROBE_READONLY)
- *   matched, all slots, mutate  -> Do         (SEMANTIC_KIND_DO_GROUNDED)
+ * Kind path (unchanged grammar):
+ *   no pattern matched          -> Theory     (or inquiry Probe if inquiry binds)
+ *   matched, unknown-referent   -> Theory
+ *   matched, deictic slots      -> Clarify
+ *   matched, all slots, read    -> Probe
+ *   matched, all slots, mutate  -> Do
  *
- * Hypothesis still needs the candidate-binding detector; until it exists an
- * unbound utterance is Theory, which is fail-closed — the gene forbids inventing
- * a candidate the speaker never supplied.
- *
- * Phase 2 still has no ballistics, so a pattern either matches or it does not:
- * 0 or 1 candidates, never a margin. The margin law remains untested by construction.
+ * Epistemic is derived after kind and never rewrites it.
  */
 export function selectKind(utterance: string, context: TrustPartitionedContext): KindDecision {
-  // Step 1 — formation. Trusted partitions select formulas; untrusted may not.
-  trustedOf(context); // throws TRUST_BOUNDARY on an unpartitioned context
+  trustedOf(context);
   const match = bindPattern(utterance, context);
   const formation = match ? getFormation(match.formulaId) : undefined;
 
-  // Step 4 — preliminary kind.
   let kind: CalculusKind;
+  let payload: Record<string, unknown> = match?.payload ?? { unboundUtterance: utterance };
+  let formulaId: string | undefined = formation?.id;
+  let formulaIds: KindDecision['formulaIds'] = formation
+    ? { formation: [`${formation.id}@${formation.version}`], modulation: [] }
+    : { formation: [], modulation: [] };
+  let bound = Boolean(formation);
+  let unknownReferent = false;
+  let hasUnresolvedSlots = false;
+  let needsEvidence = false;
+  let riskProfile = formation?.riskProfile ?? UNBOUND_RISK;
+  let question: KindDecision['question'];
+
   if (!match || !formation) {
-    kind = 'Theory'; // nothing bound at all
+    // Inquiry lexicon: bind read-only Probe plans without competing as Do actions.
+    const probe = bindInquiryProbe(utterance);
+    if (probe) {
+      kind = 'Probe';
+      const plan = buildProbePlan(probe);
+      payload = { ...plan };
+      formulaId = `inquiry.${probe.id}`;
+      formulaIds = { formation: [`inquiry.${probe.id}@${probe.version}`], modulation: [] };
+      bound = true;
+      needsEvidence = true;
+      riskProfile = {
+        consequence: 'reversible_ui',
+        minMargin: 0.1,
+        requiredCites: [],
+        allowedFallback: 'Clarify',
+        confirmationPolicy: 'none',
+      };
+    } else {
+      kind = 'Theory';
+    }
   } else if (match.unresolved.some((u) => u.reason === 'unknown-referent')) {
-    // The verb bound but the target names a concept the lexicon does not have.
-    // There is nothing to disambiguate — this is an unbound concept, and it
-    // deposits (SEMANTIC_KIND_THEORY_UNBOUND). Asking "which one?" about a word
-    // we do not know would be theatre.
     kind = 'Theory';
+    unknownReferent = true;
+    bound = false;
   } else if (match.unresolved.length > 0) {
-    // Deictic: the referent exists, we cannot tell which. Bounded question.
-    // NEVER resolve it from state and emit Do — that soft Do is the failure this
-    // architecture exists to prevent. State offers candidates, not answers.
     kind = 'Clarify';
+    hasUnresolvedSlots = true;
+    question = buildQuestion(match);
   } else {
     kind = formation.effect === 'read' ? 'Probe' : 'Do';
   }
 
-  const riskProfile = formation?.riskProfile ?? UNBOUND_RISK;
+  const phase = derivePhase({ kind, payload });
+  const epistemic = deriveEpistemic({
+    kind,
+    bound,
+    hasUnresolvedSlots,
+    unknownReferent,
+    needsEvidence: needsEvidence || (phase === 'plan' && kind === 'Probe'),
+    hasObservationReceipts: phase === 'report',
+    hasGeneCites: false,
+    utterance,
+    // No lexiconRole: the UI lexicon is not yet split by epistemic role (P4).
+    // unknownReferent already carries the concept signal, and asserting a role
+    // here would override the surface-form genes rather than inform them.
+  });
+
+  const investigationDeposit =
+    DEPOSITING_KINDS.has(kind) && (epistemic.gap === 'procedure' || epistemic.gap === 'concept')
+      ? buildInvestigationDeposit(utterance, context, epistemic.gap)
+      : undefined;
 
   return {
     kind,
     law: adjudicateLaw({ kind, riskProfile }),
     riskProfile,
-    payload: match?.payload ?? { unboundUtterance: utterance },
-    formulaIds: formation
-      ? { formation: [`${formation.id}@${formation.version}`], modulation: [] }
-      : { formation: [], modulation: [] },
+    payload,
+    formulaIds,
     theoryDeposit: { required: DEPOSITING_KINDS.has(kind) },
-    question: kind === 'Clarify' && match ? buildQuestion(match) : undefined,
-    bound: Boolean(formation),
-    formulaId: formation?.id,
+    question,
+    bound,
+    formulaId,
+    epistemic,
+    phase,
+    investigationDeposit,
+    unknownReferent,
+    hasUnresolvedSlots,
+    needsEvidence: needsEvidence || phase === 'plan',
   };
 }

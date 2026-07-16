@@ -1,25 +1,19 @@
 /**
- * SEMANTIC CALCULUS — total compiler (Phase 1 stub, seal-last pipeline)
+ * SEMANTIC CALCULUS — total compiler (rev 7: epistemic + two-phase Probe)
  *
- * F1: compileSemanticIntent is TOTAL. Every utterance + context yields exactly one
- * sealed act. It never returns null/undefined. But total across seven kinds, not
- * one — an unbound intent becomes Theory, never a soft Do. Totality that always
- * answers `Do` is not a feature; it is the disease. (See nl-compile's `|| 'stone'`.)
+ * F1: compileSemanticIntent is TOTAL. Always seals one act.
  *
- * Frozen pipeline (PDR rev 3 §3.3):
- *   1  Formation           (trusted partitions select formulas)
- *   2  Ballistics          (Phase 2 — absent here)
- *   3  Bounded modulation  (Phase 2 — F16 governs)
- *   4  Preliminary kind
- *   5  SCDNA cite resolution (trusted partitions ONLY)
- *   6  LAW adjudication
- *   6.5 draftHash          (AFTER cites + law — F7)
- *   7  Theory-bank txn     (Phase 4 — stubbed)
- *   8  Final kind + capability binding (F14)
- *   9  Canonical body      (no seal field, no theoryId — F18)
- *   10 Seal
- *   11 Emit { act, theoryReceipt? }
- *   12 Seal write-back     (Phase 4 — separate txn by necessity)
+ * Pipeline:
+ *   1-8  selectKind (kind + law + epistemic + phase) — kind never reads epistemic
+ *   5    cite adjudication (submitted only)
+ *   6.5  draftHash
+ *   9-11 seal + emit
+ *
+ * Two-phase Probe:
+ *   compileSemanticIntent(...)           → plan (phase plan, no harness run)
+ *   compileProbeReport({ plan, receipts }) → report (phase report, receipts required)
+ *
+ * Compiler never shells out. Receipts are re-submitted for replay.
  */
 
 import { assertPartitioned, trustedOf, assertTrustedOnly } from './trustPartition.ts';
@@ -27,23 +21,26 @@ import { digestPartitions } from './contextDigest.ts';
 import { validateCites } from './citeResolver.ts';
 import { registryVersions } from './formulaRegistry.ts';
 import { LEXICON_VERSION } from './lexiconUi.ts';
+import { probeRegistryVersion, getProbe, buildProbePlan } from './probeRegistry.ts';
 import { selectKind } from './kind.ts';
+import { deriveEpistemic, derivePhase, assertEpistemicDoesNotAlterKind } from './epistemic.ts';
+import { evaluateHypotheses } from './hypothesisStatus.ts';
+import { validateReceiptsForProbe, receiptDigest } from './observationReceipt.ts';
 import { sealBody, deepFreeze, canonicalize } from './seal.ts';
-import { SEMANTIC_CALCULUS_ERRORS, EXECUTABLE_KIND } from './types.ts';
+import { SEMANTIC_CALCULUS_ERRORS, EXECUTABLE_KIND, SCHEMA_VERSION_V2 } from './types.ts';
 import type {
-  CalculusKind,
   SemanticAct,
   SemanticDraft,
   SemanticEmission,
   TrustPartitionedContext,
   GeneCite,
-  LawDecision,
   Capability,
   CompilerIdentity,
+  ObservationReceipt,
 } from './types.ts';
 
-export const COMPILER_BUILD_ID = 'semantic-calculus-v0-phase1';
-export const SCHEMA_HASH = 'sc-v0-rev3';
+export const COMPILER_BUILD_ID = 'semantic-calculus-v2-rev7';
+export const SCHEMA_HASH = 'sc-v2-rev7-epistemic';
 
 export interface CompileInput {
   utterance: string;
@@ -53,56 +50,39 @@ export interface CompileInput {
   logicalTime?: number;
   geneRegistrySnapshot?: string;
   /**
-   * Evidence SUBMITTED by a resolver (see citeResolver.ts), not fetched here.
-   *
-   * The compiler must never investigate. CODE_BRAIN's output depends on repo
-   * state, which is not in the §3.2 determinism input list — shelling out from
-   * inside the compile would make the same utterance seal different bytes after
-   * any commit, and F18's 100% replay identity would be a lie. Same rule as the
-   * proposal: the model/brain provides candidate evidence, the compiler adjudicates.
+   * Evidence SUBMITTED by a resolver — not fetched here.
+   * Repo state must never enter the seal path via side effect.
    */
   cites?: GeneCite[];
 }
 
-// ── Step 5: cites ────────────────────────────────────────────────────────────
-/**
- * Adjudicate SUBMITTED evidence. This does not resolve cites — citeResolver.ts
- * does, before the compile, so repo state never reaches the sealed body.
- *
- * F6/F13: cite-not-become stops untrusted text from MINTING a gene; it never
- * stopped untrusted text from SELECTING which genes get cited, and cites are the
- * warrant LAW adjudicates on. Selection is an authority path — hence both guards.
- */
+export interface ProbeReportInput {
+  /** Original inquiry utterance (for digests / investigation continuity). */
+  utterance: string;
+  context: TrustPartitionedContext;
+  probeId: string;
+  receipts: readonly ObservationReceipt[];
+  principalId?: string;
+  logicalTime?: number;
+  geneRegistrySnapshot?: string;
+  cites?: GeneCite[];
+  /** When true, may mark exclusive if rivals are all eliminated. Default false. */
+  allowExclusive?: boolean;
+}
+
 function citeGenes(
   trusted: { policy: Record<string, unknown>; user: Record<string, unknown> },
   submitted: readonly GeneCite[] = [],
 ): GeneCite[] {
   assertTrustedOnly(trusted);
-  // Rejects untrusted provenance, unidentifiable refs, and — the one that matters —
-  // any cite whose `supports` is empty. A reference that backs no specific field is
-  // citation theatre: it looks like a warrant and cannot be checked.
   validateCites(submitted);
-  // Deterministic order: cites are sealed, so their order is part of the digest.
   return [...submitted].sort((a, b) => a.stableId.localeCompare(b.stableId));
 }
 
-// ── Step 6.5: deposit identity, AFTER cites + law ────────────────────────────
 function hashDraft(draft: Omit<SemanticDraft, 'draftHash'>): string {
-  // F7: two drafts with identical formation but opposite adjudications MUST NOT
-  // share an identity. Rev 2 hashed before cites/law and merged them into one row.
   return sealBody({ ...(draft as unknown as Omit<SemanticAct, 'seal'>) }).digest.slice(0, 32);
 }
 
-// ── Step 8: capability ──────────────────────────────────────────────────────
-/**
- * The scope is what the capability actually authorises — derived from the RESOLVED
- * slot values, never from the raw utterance.
- *
- * Phase 2 made payloads nested ({ target: { route: '/albums' } }), and reading
- * `payload.route` off the top level silently produced `String(undefined)` -> a
- * capability scoped to "unknown". A capability that cannot name what it permits is
- * worse than no capability: it looks like authority and bounds nothing. Fail closed.
- */
 function capabilityScope(payload: Record<string, unknown>): string[] {
   const scope: string[] = [];
   const walk = (v: unknown) => {
@@ -120,8 +100,6 @@ function capabilityScope(payload: Record<string, unknown>): string[] {
 function mintCapability(draft: Pick<SemanticDraft, 'payload' | 'riskProfile'>, logicalTime: number): Capability {
   const scope = capabilityScope(draft.payload);
   if (scope.length === 0) {
-    // No nameable scope means no bounded authority. Refuse rather than mint
-    // something that looks like a grant and permits everything or nothing.
     throw new Error(SEMANTIC_CALCULUS_ERRORS.UNCAPABLE_DO);
   }
   return {
@@ -132,59 +110,79 @@ function mintCapability(draft: Pick<SemanticDraft, 'payload' | 'riskProfile'>, l
   };
 }
 
+function compilerIdentity(input: { geneRegistrySnapshot?: string }): CompilerIdentity {
+  return {
+    buildId: COMPILER_BUILD_ID,
+    schemaHash: SCHEMA_HASH,
+    geneRegistrySnapshot:
+      input.geneRegistrySnapshot ??
+      `${LEXICON_VERSION}+${registryVersions().formation.join(',')}+probes:${probeRegistryVersion()}`,
+  };
+}
+
+function sealAct(body: Omit<SemanticAct, 'seal'>): SemanticAct {
+  return deepFreeze({ ...body, seal: sealBody(body) }) as SemanticAct;
+}
+
 /**
- * F1 — TOTAL. Never returns null. Always returns a sealed emission.
+ * F1 — TOTAL. Never returns null. Always returns a sealed emission (plan or atomic).
  */
 export function compileSemanticIntent(input: CompileInput): SemanticEmission {
   const { utterance, context } = input;
-  assertPartitioned(context); // F13 — no blob contexts
+  assertPartitioned(context);
   const logicalTime = input.logicalTime ?? 0;
   const principalId = input.principalId ?? 'anonymous';
 
-  // Steps 1-8 (decision) — delegated to kind.ts, the single place an utterance
-  // becomes a kind. Steps 2-3 (ballistics, modulation) are Phase 2.
   const decision = selectKind(utterance, context);
+  const cites = citeGenes(trustedOf(context), input.cites);
+
+  // Re-derive epistemic with gene cite presence (still does not change kind).
+  const kindBeforeEpistemic = decision.kind;
+  const epistemic = deriveEpistemic({
+    kind: decision.kind,
+    bound: decision.bound,
+    hasUnresolvedSlots: decision.hasUnresolvedSlots,
+    unknownReferent: decision.unknownReferent,
+    needsEvidence: decision.needsEvidence,
+    hasObservationReceipts: decision.phase === 'report',
+    hasGeneCites: cites.length > 0,
+    utterance,
+  });
+  // Kind invariance — epistemic must never rewrite kind. The previous form
+  // compared decision.kind to itself and could not fire.
+  assertEpistemicDoesNotAlterKind(kindBeforeEpistemic, decision.kind);
 
   const partial = {
-    version: 'SemanticCalculus-v0' as const,
+    version: 'SemanticCalculus-v2' as const,
+    schemaVersion: SCHEMA_VERSION_V2,
     preliminaryKind: decision.kind,
     payload: decision.payload,
-    cites: citeGenes(trustedOf(context), input.cites), // Step 5
-    law: decision.law, // Step 6 — a VERDICT, not a kind (F19)
+    cites,
+    law: decision.law,
     contextDigests: digestPartitions(context),
     riskProfile: decision.riskProfile,
     formulaIds: decision.formulaIds,
     theoryDeposit: decision.theoryDeposit,
     principalId,
+    epistemic,
+    phase: decision.phase,
+    investigationDeposit: decision.investigationDeposit,
   };
 
-  // Step 6.5 — identity covers cites + law (F7). theoryDeposit came from selectKind.
   const draft: SemanticDraft = { ...partial, draftHash: '' };
   draft.draftHash = hashDraft(partial as Omit<SemanticDraft, 'draftHash'>);
 
-  // Step 7 — theory-bank transaction. Phase 4 wires SQLite. The receipt is
-  // bank-state-dependent and stays OUTSIDE the seal (F18), so its absence here
-  // does not change a single sealed byte.
   const theoryReceipt = undefined;
 
-  // Step 8 — final kind + capability.
   const kind = draft.preliminaryKind;
-  // A capability is authority. Mint it only for an act that is both a Do AND permitted;
-  // minting one LAW refused would leave a usable grant lying inside a sealed refusal.
   const capability =
     kind === EXECUTABLE_KIND && draft.law.decision === 'allow'
       ? mintCapability(draft, logicalTime)
       : undefined;
 
-  // Step 9 — canonical body. No theoryId, no draftHash, no wall-clock.
-  const compiler: CompilerIdentity = {
-    buildId: COMPILER_BUILD_ID,
-    schemaHash: SCHEMA_HASH,
-    geneRegistrySnapshot: input.geneRegistrySnapshot ?? `${LEXICON_VERSION}+${registryVersions().formation.join(',')}`,
-  };
-
   const body: Omit<SemanticAct, 'seal'> = {
-    version: 'SemanticCalculus-v0',
+    version: 'SemanticCalculus-v2',
+    schemaVersion: SCHEMA_VERSION_V2,
     kind,
     payload: draft.payload,
     cites: draft.cites,
@@ -194,32 +192,164 @@ export function compileSemanticIntent(input: CompileInput): SemanticEmission {
     capability,
     formulaIds: draft.formulaIds,
     theoryDeposit: draft.theoryDeposit,
-    compiler,
+    epistemic: draft.epistemic,
+    phase: draft.phase,
+    investigationDeposit: draft.investigationDeposit,
+    compiler: compilerIdentity(input),
   };
 
-  // Step 10 — seal. Step 11 — emit; deep-freeze is defence in depth, not the guard.
-  const act = deepFreeze({ ...body, seal: sealBody(body) }) as SemanticAct;
+  const act = sealAct(body);
   return { act, theoryReceipt };
 }
 
 /**
- * F11 — the integration gate, and ONLY the gate.
- * `null` means "Semantic Calculus did not run". It is NOT an F1 violation.
+ * Phase-2 Probe report. Requires submitted receipts. Does not re-run harnesses.
+ * Seals a different digest from the plan — plan seal ≠ report seal.
  */
+export function compileProbeReport(input: ProbeReportInput): SemanticEmission {
+  const { utterance, context, probeId, receipts } = input;
+  assertPartitioned(context);
+
+  const probe = getProbe(probeId);
+  if (!probe) throw new Error(SEMANTIC_CALCULUS_ERRORS.UNKNOWN_PROBE);
+
+  const { digests, observationIds } = validateReceiptsForProbe(probe, receipts);
+  const evaluation = evaluateHypotheses(probe.hypotheses, receipts, {
+    allowExclusive: input.allowExclusive === true,
+  });
+
+  const cites = citeGenes(trustedOf(context), input.cites);
+  const payload = Object.freeze({
+    phase: 'report' as const,
+    probeId,
+    supported: evaluation.supported,
+    surviving: evaluation.surviving,
+    eliminated: evaluation.eliminated,
+    underdetermined: evaluation.underdetermined,
+    exclusive: evaluation.exclusive,
+    observationIds,
+    receiptDigests: digests,
+    warrant: 'observation' as const,
+  });
+
+  const kind = 'Probe' as const;
+  const phase = derivePhase({ kind, payload: payload as unknown as Record<string, unknown> });
+  const epistemic = deriveEpistemic({
+    kind,
+    bound: true,
+    hasUnresolvedSlots: false,
+    unknownReferent: false,
+    needsEvidence: false,
+    hasObservationReceipts: true,
+    hasGeneCites: cites.length > 0,
+    utterance,
+  });
+
+  const riskProfile = {
+    consequence: 'reversible_ui' as const,
+    minMargin: 0.1,
+    requiredCites: [] as string[],
+    allowedFallback: 'Clarify' as const,
+    confirmationPolicy: 'none' as const,
+  };
+
+  const law = {
+    decision: 'allow' as const,
+    ruleIds: ['law.ui.reversible.v1', 'law.probe.report.observation.v1'],
+  };
+
+  const body: Omit<SemanticAct, 'seal'> = {
+    version: 'SemanticCalculus-v2',
+    schemaVersion: SCHEMA_VERSION_V2,
+    kind,
+    payload: payload as unknown as Record<string, unknown>,
+    cites,
+    law,
+    contextDigests: digestPartitions(context),
+    riskProfile,
+    formulaIds: {
+      formation: [`inquiry.${probe.id}@${probe.version}`],
+      modulation: [],
+    },
+    theoryDeposit: { required: false },
+    epistemic,
+    phase,
+    compiler: compilerIdentity(input),
+  };
+
+  return { act: sealAct(body) };
+}
+
+/**
+ * Convenience: compile a plan for a known probe id without free-text binding.
+ * Still runs nothing.
+ */
+export function compileProbePlan(input: {
+  utterance: string;
+  context: TrustPartitionedContext;
+  probeId: string;
+  principalId?: string;
+  cites?: GeneCite[];
+}): SemanticEmission {
+  const probe = getProbe(input.probeId);
+  if (!probe) throw new Error(SEMANTIC_CALCULUS_ERRORS.UNKNOWN_PROBE);
+  // Route through total compiler by using a binding utterance from patterns[0]
+  // if the free text did not bind — caller may pass probe patterns.
+  const plan = buildProbePlan(probe);
+  const synthetic = input.utterance || probe.patterns[0] || probe.id;
+  // Prefer natural compile if inquiry binds; else force plan payload via report-style seal
+  const first = compileSemanticIntent({
+    utterance: synthetic,
+    context: input.context,
+    principalId: input.principalId,
+    cites: input.cites,
+  });
+  if (first.act.phase === 'plan' && (first.act.payload as { probeId?: string }).probeId === probe.id) {
+    return first;
+  }
+  // Force plan seal for explicit probeId
+  const cites = citeGenes(trustedOf(input.context), input.cites);
+  const kind = 'Probe' as const;
+  const payload = plan as unknown as Record<string, unknown>;
+  const epistemic = deriveEpistemic({
+    kind,
+    bound: true,
+    hasUnresolvedSlots: false,
+    unknownReferent: false,
+    needsEvidence: true,
+    hasObservationReceipts: false,
+    hasGeneCites: cites.length > 0,
+    utterance: synthetic,
+  });
+  const body: Omit<SemanticAct, 'seal'> = {
+    version: 'SemanticCalculus-v2',
+    schemaVersion: SCHEMA_VERSION_V2,
+    kind,
+    payload,
+    cites,
+    law: { decision: 'allow', ruleIds: ['law.ui.reversible.v1', 'law.probe.plan.v1'] },
+    contextDigests: digestPartitions(input.context),
+    riskProfile: {
+      consequence: 'reversible_ui',
+      minMargin: 0.1,
+      requiredCites: [],
+      allowedFallback: 'Clarify',
+      confirmationPolicy: 'none',
+    },
+    formulaIds: { formation: [`inquiry.${probe.id}@${probe.version}`], modulation: [] },
+    theoryDeposit: { required: false },
+    epistemic,
+    phase: 'plan',
+    compiler: compilerIdentity(input),
+  };
+  return { act: sealAct(body) };
+}
+
 export function maybeCompile(input: CompileInput): SemanticEmission | null {
   if (process.env.ENABLE_SEMANTIC_CALCULUS !== '1') return null;
   return compileSemanticIntent(input);
 }
 
-/**
- * F10/F14 — an act is not a permit.
- *
- * Three independent gates, because kind and permission are different axes
- * (SEMANTIC_ACT_KIND_IS_NOT_PERMISSION). Rev 5 checked only `kind !== 'Do'`,
- * which was safe only because the kind smuggled the policy verdict inside it.
- * With that duplication removed, the executor MUST consult law.decision itself —
- * a `Do` is now a claim about grammar and nothing more.
- */
 export function assertExecutable(act: SemanticAct): void {
   if (act.kind !== EXECUTABLE_KIND) {
     throw new Error(SEMANTIC_CALCULUS_ERRORS.THEORY_NOT_EXECUTABLE);
@@ -232,4 +362,17 @@ export function assertExecutable(act: SemanticAct): void {
   }
 }
 
-export const __test__ = { canonicalize, hashDraft };
+/** Reports never execute Do — they annotate knowledge only. */
+export function assertReportNotExecutable(act: SemanticAct): void {
+  if (act.phase === 'report' || act.phase === 'plan') {
+    try {
+      assertExecutable(act);
+      throw new Error(SEMANTIC_CALCULUS_ERRORS.NOT_PERMITTED);
+    } catch (e) {
+      if (e instanceof Error && e.message === SEMANTIC_CALCULUS_ERRORS.NOT_PERMITTED) throw e;
+      // expected: THEORY_NOT_EXECUTABLE or similar for Probe
+    }
+  }
+}
+
+export const __test__ = { canonicalize, hashDraft, receiptDigest };

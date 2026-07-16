@@ -1,15 +1,24 @@
 /**
- * SEMANTIC CALCULUS — Core Type Contracts (Phase 0 freeze, PDR rev 3)
+ * SEMANTIC CALCULUS — Core Type Contracts (PDR rev 7 — epistemic + experimental axes)
  *
  * Authoritative IR for compiling human intent into a typed, sealed act before
- * any AI-directed operation executes. Frozen per
+ * any AI-directed operation executes.
  * docs/scholomance-encyclopedia/PDR-archive/2026-07-16-semantic-calculus-pdr.md
+ * docs/scholomance-encyclopedia/PDR-archive/2026-07-16-semantic-calculus-rev7-epistemic.md
  *
- * Doctrine this encodes:
+ * Four calculi, four sealed field groups (never merged into kind):
+ *   kind       — semantic: what sort of thing was said (five members only)
+ *   law        — deontic: whether it may happen
+ *   epistemic  — what is missing / how bound the method is
+ *   phase      — experimental: atomic | plan | report (Probe plans/reports)
+ *
+ * Doctrine:
  *   - Context is partitioned by trust. Untrusted content may inform, never authorize.
  *   - Modulators may only reduce permission.
  *   - The sealed body is a pure function of its declared inputs. Bank state is not an input.
  *   - A valid act is not a permitted act; Do carries its capability or it does not execute.
+ *   - Epistemic fields MUST NOT alter kind. Kind genes do not read epistemic.gap.
+ *   - Path existence alone is never causal warrant.
  */
 
 // ─── Kinds ──────────────────────────────────────────────────────────────────
@@ -129,6 +138,142 @@ export interface GeneCite {
   supports: string[];
 }
 
+// ─── Rev 7: epistemic + experimental axes (orthogonal to kind and law) ─────
+
+/**
+ * What kind of ignorance is present. NOT a kind. NOT a permission.
+ * Theory stays Theory; gap says *why* the lexicon/method did not ground.
+ */
+export type EpistemicGap =
+  | 'none'
+  | 'command'
+  | 'concept'
+  | 'procedure'
+  | 'required_slot'
+  | 'evidence';
+
+/** How fully a method is available for this utterance. */
+export type EpistemicMethod = 'bound' | 'underspecified' | 'absent';
+
+/**
+ * What could justify treating a conclusion as knowledge.
+ * Present warrants are derived from sealed body contents — never free-written ambition.
+ */
+export type WarrantKind =
+  | 'lexicon'
+  | 'model'
+  | 'observation'
+  | 'human'
+  | 'gene';
+
+export interface EpistemicState {
+  gap: EpistemicGap;
+  method: EpistemicMethod;
+  warrantRequired: readonly WarrantKind[];
+  warrantPresent: readonly WarrantKind[];
+}
+
+/** Atomic acts need no experimental phase; Probe plans/reports do. */
+export type ActPhase = 'atomic' | 'plan' | 'report';
+
+/**
+ * Competitive causal claim inside a Probe — distinct from CalculusKind 'Hypothesis'
+ * (which is an unbound term *with* a speaker-supplied binding candidate).
+ */
+export type CausalHypothesisStatus =
+  | 'untested'
+  | 'supported'
+  | 'surviving'
+  | 'eliminated'
+  | 'underdetermined'
+  | 'exclusive';
+
+export interface Prediction {
+  id: string;
+  description: string;
+  required: boolean;
+  observationId: string;
+}
+
+export interface Falsifier {
+  id: string;
+  description: string;
+  observationId: string;
+  /** Machine-checkable predicate over the observation result. */
+  predicate: PredicateSpec;
+}
+
+export type PredicateSpec =
+  | { op: 'eq'; path: string; value: unknown }
+  | { op: 'neq'; path: string; value: unknown }
+  | { op: 'in'; path: string; values: readonly unknown[] }
+  | { op: 'truthy'; path: string }
+  | { op: 'falsy'; path: string }
+  | { op: 'http_status_in'; values: readonly number[] }
+  | { op: 'csp_blocks_host'; host: string }
+  | { op: 'csp_allows_host'; host: string };
+
+export interface CausalHypothesis {
+  id: string;
+  claim: string;
+  predictions: readonly Prediction[];
+  falsifiers: readonly Falsifier[];
+  citeSeeds: readonly string[];
+}
+
+export interface ObservationRequest {
+  id: string;
+  description: string;
+  /** How the external harness should collect this — never run by the compiler. */
+  harness: string;
+  required: boolean;
+}
+
+/**
+ * Signed/hashed evidence re-submitted into compile. Compiler never re-runs tools.
+ * status distinguishes refuted / refused / error / inconclusive (not all zero-evidence).
+ */
+export interface ObservationReceipt {
+  probeId: string;
+  observationId: string;
+  inputHash: string;
+  environmentHash: string;
+  result: unknown;
+  resultHash: string;
+  status: 'observed' | 'refused' | 'error' | 'inconclusive';
+}
+
+export interface ProbePlanPayload {
+  phase: 'plan';
+  probeId: string;
+  observations: readonly ObservationRequest[];
+  hypotheses: readonly CausalHypothesis[];
+  maxRisk: 'read_only';
+  expectedReceipts: readonly string[];
+}
+
+export interface ProbeReportPayload {
+  phase: 'report';
+  probeId: string;
+  supported: readonly string[];
+  surviving: readonly string[];
+  eliminated: readonly string[];
+  underdetermined: readonly string[];
+  exclusive: readonly string[];
+  observationIds: readonly string[];
+  receiptDigests: readonly string[];
+  warrant: Extract<WarrantKind, 'observation'>;
+}
+
+/** Theory/procedure gap deposits an investigation skeleton — not a bare token. */
+export interface InvestigationDeposit {
+  utterance: string;
+  context: { route?: string; selection?: string };
+  candidateHypotheses: readonly { id: string; claim: string }[];
+  missingSlots: readonly string[];
+  status: 'open';
+}
+
 // ─── F15: risk-class margin law ─────────────────────────────────────────────
 
 export type Consequence = 'reversible_ui' | 'destructive' | 'financial' | 'privacy' | 'security';
@@ -214,7 +359,9 @@ export interface Seal {
 // ─── Draft (pre-seal, mutable, never emitted) ───────────────────────────────
 
 export interface SemanticDraft {
-  version: 'SemanticCalculus-v0';
+  /** @deprecated Prefer schemaVersion; kept for transitional tooling. */
+  version: 'SemanticCalculus-v0' | 'SemanticCalculus-v2';
+  schemaVersion: 'SEMANTIC_ACT_v2';
   preliminaryKind: CalculusKind;
   payload: Record<string, unknown>;
   cites: GeneCite[];
@@ -234,6 +381,9 @@ export interface SemanticDraft {
   theoryDeposit: { required: boolean };
   /** Who is asking. Support counts principals, not hits (F17). */
   principalId: string;
+  epistemic: EpistemicState;
+  phase: ActPhase;
+  investigationDeposit?: InvestigationDeposit;
 }
 
 // ─── Act (post-seal, deterministic) ─────────────────────────────────────────
@@ -242,9 +392,13 @@ export interface SemanticDraft {
  * F18: contains NO bank-derived field. Deterministic under the §3.2 input list:
  * utterance, four context digests, formula versions, lattice map version, gene
  * registry snapshot, compiler buildId + schemaHash. Bank contents are excluded.
+ *
+ * Rev 7 seals epistemic + phase. They influence presentation and policy gates
+ * for reports; if they are outside the seal they are decoration.
  */
 export interface SemanticAct {
-  version: 'SemanticCalculus-v0';
+  version: 'SemanticCalculus-v2';
+  schemaVersion: 'SEMANTIC_ACT_v2';
   kind: CalculusKind;
   payload: Record<string, unknown>;
   cites: GeneCite[];
@@ -255,6 +409,10 @@ export interface SemanticAct {
   ballistics?: Ballistics;
   formulaIds: FormulaIds;
   theoryDeposit: { required: boolean };
+  epistemic: EpistemicState;
+  phase: ActPhase;
+  /** Present only when theoryDeposit.required and gap is procedure/concept. */
+  investigationDeposit?: InvestigationDeposit;
   compiler: CompilerIdentity;
   seal: Seal;
 }
@@ -279,4 +437,12 @@ export const SEMANTIC_CALCULUS_ERRORS = Object.freeze({
   TRUST_BOUNDARY: 'SEMANTIC_CALCULUS_TRUST_BOUNDARY',
   UNTRUSTED_CITE_SOURCE: 'SEMANTIC_CALCULUS_UNTRUSTED_CITE_SOURCE',
   PERMISSION_WIDENED: 'SEMANTIC_CALCULUS_PERMISSION_WIDENED',
+  /** Report compile without valid receipts cannot claim observation warrant. */
+  REPORT_WITHOUT_RECEIPTS: 'SEMANTIC_CALCULUS_REPORT_WITHOUT_RECEIPTS',
+  /** Epistemic fields must never rewrite kind. */
+  EPISTEMIC_KIND_COUPLING: 'SEMANTIC_CALCULUS_EPISTEMIC_KIND_COUPLING',
+  UNKNOWN_PROBE: 'SEMANTIC_CALCULUS_UNKNOWN_PROBE',
+  RECEIPT_MISMATCH: 'SEMANTIC_CALCULUS_RECEIPT_MISMATCH',
 } as const);
+
+export const SCHEMA_VERSION_V2 = 'SEMANTIC_ACT_v2' as const;

@@ -3,16 +3,10 @@
  * SCHOLO GATE — Semantic Calculus in front of the CLI. SHADOW ONLY: runs nothing.
  *
  *   npx tsx scripts/scholo-gate.mjs "run the tests"
- *   npx tsx scripts/scholo-gate.mjs --log "fix the jitters"     # append to corpus
+ *   npx tsx scripts/scholo-gate.mjs --log "fix the jitters"
  *
- * Why here and not the Visualiser: the utterances exist (typing is the only way to
- * use a CLI), the lexicon is a manifest you already wrote (package.json), the risk
- * classes are real (lint reads, deploy ships), and the margin is real ("run the
- * tests" has six candidates). On the UI every one of those was decoration.
- *
- * The model — any model — plugs in at ONE seam: it ranks the closed set of scripts
- * that exist. It cannot invent a key, it cannot decide, and it never sees untrusted
- * context. Everything downstream is the compiler's, deterministically.
+ * Rev 7: prints orthogonal epistemic fields (gap / method / warrants) without
+ * splitting Theory into sub-kinds.
  */
 
 import { appendFileSync, mkdirSync } from 'node:fs';
@@ -20,6 +14,8 @@ import { dirname } from 'node:path';
 import { loadCliLexicon, knownKeys, entryFor, riskFor } from '../codex/core/semantic-calculus/cliLexicon.ts';
 import { lexicalProposer, validateProposal, assessMargin } from '../codex/core/semantic-calculus/proposer.ts';
 import { adjudicateLaw } from '../codex/core/semantic-calculus/kind.ts';
+import { deriveEpistemic } from '../codex/core/semantic-calculus/epistemic.ts';
+import { bindInquiryProbe } from '../codex/core/semantic-calculus/probeRegistry.ts';
 
 const C = { d: '\x1b[2m', b: '\x1b[1m', r: '\x1b[0m', g: '\x1b[32m', y: '\x1b[33m', c: '\x1b[36m', red: '\x1b[31m', m: '\x1b[35m' };
 const KIND_COLOR = { Do: C.g, Clarify: C.y, Probe: C.c, Theory: C.m, Hypothesis: '\x1b[38;5;208m' };
@@ -37,36 +33,84 @@ if (!utterance) {
 const lex = loadCliLexicon();
 const known = knownKeys(lex);
 
-// ── The one seam a model is allowed into: rank what exists. ─────────────────
-// Swap lexicalProposer for an LLM proposer and NOTHING below changes. That is the
-// harness: the model reaches, the gate refuses, neither can overrule the other.
 const proposal = { proposerId: lexicalProposer.id, slot: 'script', candidates: lexicalProposer.propose(utterance, 'script', known) };
-validateProposal(proposal, known); // throws if the proposer minted a key
+validateProposal(proposal, known);
 
-// Risk comes from the TOP candidate's real command, so a thin margin on `deploy`
-// is judged by deploy's bar (0.5), not by lint's (0.15).
 const top = [...proposal.candidates].sort((a, b) => b.score - a.score)[0];
 const topEntry = top ? entryFor(lex, top.key) : undefined;
 const risk = riskFor(topEntry?.consequence ?? 'security');
 
 const verdict = assessMargin(proposal, risk);
 
+// Inquiry probe may bind as Probe (read-only plan) without competing as a Do script.
+const inquiry = bindInquiryProbe(utterance);
+
 let kind;
-if (verdict.reason === 'no-candidates') kind = 'Theory';
-else if (!verdict.decided) kind = 'Clarify';
-else kind = entryFor(lex, verdict.pick.key)?.effect === 'read' ? 'Probe' : 'Do';
+let bound = false;
+let unknownReferent = false;
+let hasUnresolvedSlots = false;
+let needsEvidence = false;
+let phase = 'atomic';
+let probeNote = '';
+
+if (inquiry && verdict.reason === 'no-candidates') {
+  kind = 'Probe';
+  bound = true;
+  needsEvidence = true;
+  phase = 'plan';
+  probeNote = inquiry.id;
+} else if (verdict.reason === 'no-candidates') {
+  kind = 'Theory';
+} else if (!verdict.decided) {
+  kind = 'Clarify';
+  hasUnresolvedSlots = true;
+  bound = true;
+} else {
+  bound = true;
+  kind = entryFor(lex, verdict.pick.key)?.effect === 'read' ? 'Probe' : 'Do';
+}
 
 const law = adjudicateLaw({ kind, riskProfile: risk });
+const epistemic = deriveEpistemic({
+  kind,
+  bound,
+  hasUnresolvedSlots,
+  unknownReferent,
+  needsEvidence,
+  hasObservationReceipts: false,
+  hasGeneCites: false,
+  utterance,
+  // The gate's only lexicon is package.json scripts, but a miss against it does
+  // not make the utterance a command request. Asserting lexiconRole:'action' here
+  // forced gap='command' onto every unbound Theory and buried concept/procedure.
+  // Let the surface-form genes decide; they are the computable trigger.
+});
 
 // ── Report ──────────────────────────────────────────────────────────────────
 console.log(`\n  ${C.d}${utterance}${C.r}`);
 console.log(`  ${C.d}${'─'.repeat(Math.min(60, utterance.length + 2))}${C.r}`);
 console.log(`  ${KIND_COLOR[kind]}${C.b}${kind}${C.r}   ${C.d}law=${law.decision}  ${law.ruleIds.join(',')}${C.r}`);
+console.log(
+  `  ${C.d}epistemic.gap=${epistemic.gap}  method=${epistemic.method}  phase=${phase}${C.r}`,
+);
+console.log(
+  `  ${C.d}warrant required=[${epistemic.warrantRequired.join(',')}]  present=[${epistemic.warrantPresent.join(',')}]${C.r}`,
+);
 
-if (verdict.reason === 'no-candidates') {
+if (probeNote) {
+  console.log(`\n  ${C.c}Probe plan${C.r}  ${C.b}${probeNote}${C.r}`);
+  console.log(`  ${C.d}Sealed method only — no observations ran. Submit receipts for a report.${C.r}`);
+} else if (verdict.reason === 'no-candidates') {
   console.log(`\n  ${C.m}Nothing in package.json binds this.${C.r}`);
-  console.log(`  ${C.d}Not a vocabulary gap — you have no command for it. That is a`);
-  console.log(`  feature request, and Theory is the correct answer.${C.r}`);
+  if (epistemic.gap === 'procedure') {
+    console.log(`  ${C.d}Epistemic gap is procedure — this looks like a diagnosis, not a missing script.`);
+    console.log(`  Prefer a Probe formula (inquiry lexicon) over inventing a Do.${C.r}`);
+  } else if (epistemic.gap === 'command') {
+    console.log(`  ${C.d}Epistemic gap is command — you have no npm script for this.`);
+    console.log(`  That is a feature request; Theory is the correct kind.${C.r}`);
+  } else {
+    console.log(`  ${C.d}Epistemic gap is ${epistemic.gap}. Theory remains the kind.${C.r}`);
+  }
 } else if (!verdict.decided) {
   console.log(`\n  ${C.y}margin ${verdict.margin.toFixed(3)} < ${risk.minMargin} (${risk.consequence}) — too close to call${C.r}`);
   console.log(`  ${C.b}Did you mean:${C.r}`);
@@ -94,7 +138,11 @@ if (shouldLog) {
     candidates: proposal.candidates,
     kind,
     law: law.decision,
+    epistemic,
+    phase,
+    probeId: probeNote || undefined,
     margin: verdict.margin,
+    schemaVersion: 'SEMANTIC_ACT_v2',
     capturedAt: new Date().toISOString(),
   }) + '\n');
   console.log(`  ${C.d}logged -> ${CORPUS}${C.r}\n`);

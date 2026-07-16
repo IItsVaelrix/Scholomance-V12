@@ -100,6 +100,17 @@ export const FORMATION_FORMULAS: Readonly<Record<string, FormationFormula>> = Ob
     effect: 'read',
     riskProfile: UI_INSPECT_RISK,
   },
+  /**
+   * Inquiry probes (rev 7). Bound via probeRegistry, not as Do actions.
+   * Listed so registryVersions includes the inquiry family for compiler identity.
+   */
+  'inquiry.probe.v1': {
+    id: 'inquiry.probe.v1',
+    version: '1.0.0',
+    owner: 'codex',
+    effect: 'read',
+    riskProfile: UI_INSPECT_RISK,
+  },
 });
 
 /** Phase 1 ships no modulators. F16 governs them when Phase 2 adds them. */
