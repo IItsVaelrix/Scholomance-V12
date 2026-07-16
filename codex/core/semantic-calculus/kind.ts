@@ -9,8 +9,9 @@
  */
 
 import { getFormation, UNBOUND_RISK } from './formulaRegistry.ts';
-import { bindPattern, type LexiconMatch } from './lexiconUi.ts';
-import { bindInquiryProbe, buildProbePlan } from './probeRegistry.ts';
+import { type LexiconMatch } from './lexiconUi.ts';
+import { buildProbePlan } from './probeRegistry.ts';
+import { LEXICONS, routeUtterance, type LexiconRole } from './lexicons.ts';
 import { deriveEpistemic, derivePhase } from './epistemic.ts';
 import { buildInvestigationDeposit } from './investigationDeposit.ts';
 import { trustedOf } from './trustPartition.ts';
@@ -88,8 +89,14 @@ function buildQuestion(match: LexiconMatch): KindDecision['question'] {
  */
 export function selectKind(utterance: string, context: TrustPartitionedContext): KindDecision {
   trustedOf(context);
-  const match = bindPattern(utterance, context);
+  const match = LEXICONS.action.bind(utterance, context);
   const formation = match ? getFormation(match.formulaId) : undefined;
+  // P4 — an EXACT action bind is evidence and wins. Only when it misses does
+  // the inquiry lexicon get to claim the utterance.
+  const role: LexiconRole = routeUtterance({
+    utterance,
+    exactActionBind: Boolean(match && formation),
+  });
 
   let kind: CalculusKind;
   let payload: Record<string, unknown> = match?.payload ?? { unboundUtterance: utterance };
@@ -106,7 +113,7 @@ export function selectKind(utterance: string, context: TrustPartitionedContext):
 
   if (!match || !formation) {
     // Inquiry lexicon: bind read-only Probe plans without competing as Do actions.
-    const probe = bindInquiryProbe(utterance);
+    const probe = role === 'inquiry' ? LEXICONS.inquiry.bind(utterance) : undefined;
     if (probe) {
       kind = 'Probe';
       const plan = buildProbePlan(probe);
@@ -147,9 +154,12 @@ export function selectKind(utterance: string, context: TrustPartitionedContext):
     hasObservationReceipts: phase === 'report',
     hasGeneCites: false,
     utterance,
-    // No lexiconRole: the UI lexicon is not yet split by epistemic role (P4).
-    // unknownReferent already carries the concept signal, and asserting a role
-    // here would override the surface-form genes rather than inform them.
+    // Only 'inquiry' is forwarded, and only when the inquiry lexicon actually
+    // claimed the utterance and missed — that is real evidence the missing unit
+    // is a method. 'action'/'surface' stay out: unknownReferent already carries
+    // the concept signal, and a role hint must inform the surface-form genes,
+    // never override them.
+    lexiconRole: role === 'inquiry' && !bound ? 'inquiry' : undefined,
   });
 
   const investigationDeposit =

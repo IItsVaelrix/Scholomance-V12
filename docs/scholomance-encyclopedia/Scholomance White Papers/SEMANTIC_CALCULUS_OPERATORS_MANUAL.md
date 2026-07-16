@@ -182,6 +182,66 @@ Gives you: frontend/backend drift (must be 0), kinds emitted, **lexicon
 coverage**, phenotype fitness, a phenotypic-error confusion matrix, and replay
 identity (must be 100%).
 
+The capture records `clientEpistemic` and `clientPhase` alongside the kind. It
+has to: κ_warrant cannot be computed from rows that never recorded a warrant, and
+a corpus that only stores kinds can only ever answer one of the three questions
+in §6.5. The route's enums are asserted equal to `types.ts` in
+`tests/semantic-calculus/shadow.schema-drift.test.js` — drift there is silent,
+because the route keeps accepting rows while the members quietly stop meaning the
+same thing, and the corpus ends up measuring a compiler that no longer exists.
+
+---
+
+## 6.5. Three lexicons, three channels
+
+**The lexicons are split by epistemic role** (`lexicons.ts`):
+
+| lexicon | answers | source |
+|---|---|---|
+| `action` | what this app can **do** | aria-labels, routes, npm scripts |
+| `surface` | what this app can **name** | referents for the `{target}` slot |
+| `inquiry` | what this app can **investigate** | Probe formulas |
+
+The routing rule is the whole point:
+
+```
+an EXACT action bind wins        — evidence beats shape
+a FUZZY action score never wins  — a guess must not outrank a diagnosis
+```
+
+So a diagnosis is routed to the inquiry lexicon *before* the fuzzy proposer is
+consulted at all. Measured: `"why is the build broken"` scores `build` at 0.25 —
+a thin margin — and the gate used to render **Clarify: "did you mean `build` or
+`build:app`?"**, asking you to pick a script to run in answer to a question. It
+is now `Theory · gap=procedure`: the missing unit is a method, not a script.
+
+The cost is real and accepted. A script named for a symptom (`debug:jank`) is
+reachable only by command-shaped phrasing (`run debug:jank`), never by "why is
+there jank". Worst case is Theory — nothing executes — which is the safe
+direction.
+
+**Agreement is measured on three channels, never averaged:**
+
+| channel | asks |
+|---|---|
+| `κ_kind` | what sort of thing was said |
+| `κ_warrant` | what could justify treating the conclusion as knowledge |
+| `κ_justification` | would **these** cites justify **this** conclusion |
+
+A system can hold an excellent κ_kind while κ_justification craters. That is a
+system classifying confidently and justifying decoratively — and a single
+averaged score would hide it, which is the same failure the per-kind gate exists
+to prevent one level down. `kappa.mjs` prints them separately and refuses to
+combine them.
+
+Annotate them as **separate passes**. Answering all three on one screen lets each
+answer anchor the next: you pick the warrant that suits the kind you just chose,
+and the channels stop being independent measurements.
+
+An **unmeasured channel is never a pass** — it is reported `UNMEASURED`. A
+category *neither* rater used is `absent from corpus` and is not scored at all; a
+category only *one* rater used is a collapsed category and still fails.
+
 ---
 
 ## 7. The two model seams
@@ -228,8 +288,10 @@ bytes after any commit and replay identity would be a lie.
 | `node bench/semantic-calculus/harvest-lexicon.mjs [--write]` | derive a UI lexicon from your own aria-labels |
 | `node bench/semantic-calculus/build-corpus.mjs` | regenerate the 200-item κ corpus (seeded) |
 | `node bench/semantic-calculus/annotate.mjs --as <name>` | label the corpus, one keypress per item |
-| `node bench/semantic-calculus/kappa.mjs a.jsonl b.jsonl` | inter-annotator agreement; exit 1 fails the gate |
-| `npx vitest run tests/semantic-calculus` | 78 tests |
+| `… --channel warrant` \| `--channel justification` | the other two channels. Separate passes, on purpose |
+| `node bench/semantic-calculus/kappa.mjs a.jsonl b.jsonl` | agreement on all three channels; exit 1 fails the gate |
+| `… --legacy a.jsonl b.jsonl` | score the historical seven-kind labels (pre rev 6) |
+| `npx vitest run tests/semantic-calculus` | 137 tests |
 | `PYTHONPATH=steamdeck_brain .venv/bin/python steamdeck_brain/direct_brain.py --action brain --name CODE_BRAIN --query "<q>"` | ask CODE_BRAIN directly |
 
 ---
@@ -263,6 +325,12 @@ Error codes:
 | `SEMANTIC_CALCULUS_UNTRUSTED_CITE_SOURCE` | a cite from untrusted context, or one that `supports` nothing |
 | `SEMANTIC_CALCULUS_PROPOSER_INVENTED_CANDIDATE` | the model proposed a command that does not exist |
 | `SEMANTIC_CALCULUS_PERMISSION_WIDENED` | a modulator raised permission without a LAW grant |
+| `SEMANTIC_CALCULUS_EPISTEMIC_KIND_COUPLING` | an epistemic field rewrote `kind`. This is the rev 5 failure returning |
+| `SEMANTIC_CALCULUS_REPORT_WITHOUT_RECEIPTS` | a Probe report tried to claim observation warrant with no receipts |
+| `SEMANTIC_CALCULUS_RECEIPT_MISMATCH` | a receipt does not belong to the probe it was submitted for |
+| `SEMANTIC_CALCULUS_UNKNOWN_PROBE` | no such Probe formula in the inquiry lexicon |
+| `SEMANTIC_CALCULUS_INQUIRY_IS_EXECUTABLE` | an inquiry entry could reach an execution capability. It must not |
+| `SEMANTIC_CALCULUS_LEXICON_ROLE_COLLISION` | one id lives in two lexicon roles |
 
 ---
 

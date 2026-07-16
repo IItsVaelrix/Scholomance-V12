@@ -114,6 +114,15 @@
 .scso-law--escalate { color: #ff9a21 !important; border-color: #5a3410 !important; }
 .scso-law--block    { color: #ff6b6b !important; border-color: #4e101c !important; }
 
+/* The epistemic axis reads as "how much is missing", not as permission —
+   green is a closed gap, never an allowance. Kind and law carry those. */
+.scso-gap--none          { color: #3ddc84 !important; border-color: #1e4d33 !important; }
+.scso-gap--evidence      { color: #8be2f9 !important; border-color: #1e3d4d !important; }
+.scso-gap--required_slot { color: #ffc15a !important; border-color: #4e412b !important; }
+.scso-gap--procedure     { color: #b37ad9 !important; border-color: #3d2b4e !important; }
+.scso-gap--concept       { color: #b37ad9 !important; border-color: #3d2b4e !important; }
+.scso-gap--command       { color: #ff9a21 !important; border-color: #5a3410 !important; }
+
 .scso-yes { color: #3ddc84 !important; }
 .scso-no  { color: #ff6b6b !important; font-weight: 700; }
 

@@ -16,6 +16,7 @@ import { lexicalProposer, validateProposal, assessMargin } from '../codex/core/s
 import { adjudicateLaw } from '../codex/core/semantic-calculus/kind.ts';
 import { deriveEpistemic } from '../codex/core/semantic-calculus/epistemic.ts';
 import { bindInquiryProbe } from '../codex/core/semantic-calculus/probeRegistry.ts';
+import { routeUtterance } from '../codex/core/semantic-calculus/lexicons.ts';
 
 const C = { d: '\x1b[2m', b: '\x1b[1m', r: '\x1b[0m', g: '\x1b[32m', y: '\x1b[33m', c: '\x1b[36m', red: '\x1b[31m', m: '\x1b[35m' };
 const KIND_COLOR = { Do: C.g, Clarify: C.y, Probe: C.c, Theory: C.m, Hypothesis: '\x1b[38;5;208m' };
@@ -42,8 +43,13 @@ const risk = riskFor(topEntry?.consequence ?? 'security');
 
 const verdict = assessMargin(proposal, risk);
 
-// Inquiry probe may bind as Probe (read-only plan) without competing as a Do script.
-const inquiry = bindInquiryProbe(utterance);
+// P4 — route by epistemic role BEFORE the proposer gets a vote. This gate's
+// action lexicon is package.json scored fuzzily, so without this a diagnosis
+// sharing one token with a script ("listen", "build") would arrive as a Do
+// candidate. exactActionBind is false here because this proposer never binds
+// exactly; it only ever scores.
+const role = routeUtterance({ utterance, exactActionBind: false });
+const inquiry = role === 'inquiry' ? bindInquiryProbe(utterance) : undefined;
 
 let kind;
 let bound = false;
@@ -53,12 +59,16 @@ let needsEvidence = false;
 let phase = 'atomic';
 let probeNote = '';
 
-if (inquiry && verdict.reason === 'no-candidates') {
+if (role === 'inquiry' && inquiry) {
   kind = 'Probe';
   bound = true;
   needsEvidence = true;
   phase = 'plan';
   probeNote = inquiry.id;
+} else if (role === 'inquiry') {
+  // Claimed by inquiry, bound by nothing in it: the method is missing, not the
+  // script. Never fall through to the action proposer here.
+  kind = 'Theory';
 } else if (verdict.reason === 'no-candidates') {
   kind = 'Theory';
 } else if (!verdict.decided) {
@@ -80,10 +90,11 @@ const epistemic = deriveEpistemic({
   hasObservationReceipts: false,
   hasGeneCites: false,
   utterance,
-  // The gate's only lexicon is package.json scripts, but a miss against it does
-  // not make the utterance a command request. Asserting lexiconRole:'action' here
-  // forced gap='command' onto every unbound Theory and buried concept/procedure.
-  // Let the surface-form genes decide; they are the computable trigger.
+  // Only the inquiry role informs the gap, and only because it means a real
+  // lexicon claimed and missed. 'action' is NOT passed: a miss against
+  // package.json says which lexicon failed to bind, never what the speaker
+  // asked for, and asserting it forced gap='command' onto every unbound Theory.
+  lexiconRole: role === 'inquiry' ? 'inquiry' : undefined,
 });
 
 // ── Report ──────────────────────────────────────────────────────────────────
@@ -100,6 +111,10 @@ console.log(
 if (probeNote) {
   console.log(`\n  ${C.c}Probe plan${C.r}  ${C.b}${probeNote}${C.r}`);
   console.log(`  ${C.d}Sealed method only — no observations ran. Submit receipts for a report.${C.r}`);
+} else if (role === 'inquiry') {
+  console.log(`\n  ${C.m}The inquiry lexicon claimed this and has no formula for it.${C.r}`);
+  console.log(`  ${C.d}Not scored against package.json: a diagnosis is not a script to run.`);
+  console.log(`  Write a Probe formula (observations + falsifiers) — that is the missing unit.${C.r}`);
 } else if (verdict.reason === 'no-candidates') {
   console.log(`\n  ${C.m}Nothing in package.json binds this.${C.r}`);
   if (epistemic.gap === 'procedure') {

@@ -112,6 +112,10 @@ export default function SemanticShadowOverlay() {
           state,
           clientKind: decision.kind,
           clientLaw: decision.law.decision,
+          // P6 — without these the corpus can only ever answer kappa_kind, and a
+          // system that classifies well while justifying badly stays invisible.
+          clientEpistemic: decision.epistemic,
+          clientPhase: decision.phase,
           verdict,
           expectedKind,
           question: (decision as any).question?.text ?? undefined,
@@ -185,6 +189,26 @@ export default function SemanticShadowOverlay() {
           <div className="scso-row">
             <span className="scso-k">bound</span>
             <code>{(decision as any).bound ? (decision as any).formulaId : '— nothing bound'}</code>
+          </div>
+          {/* The epistemic axis is orthogonal to kind and law: what is MISSING. */}
+          <div className="scso-row">
+            <span className="scso-k">gap</span>
+            <code className={`scso-gap scso-gap--${(decision as any).epistemic.gap}`}>
+              {(decision as any).epistemic.gap}
+            </code>
+            <span className="scso-rule">
+              method={(decision as any).epistemic.method}
+              {(decision as any).phase !== 'atomic' ? ` · phase=${(decision as any).phase}` : ''}
+            </span>
+          </div>
+          <div className="scso-row">
+            <span className="scso-k">warrant</span>
+            <code>
+              {(decision as any).epistemic.warrantPresent.join(', ') || '— none'}
+            </code>
+            <span className="scso-rule">
+              needs {(decision as any).epistemic.warrantRequired.join(', ')}
+            </span>
           </div>
           {(decision as any).question && (
             <div className="scso-why">{(decision as any).question.text}</div>

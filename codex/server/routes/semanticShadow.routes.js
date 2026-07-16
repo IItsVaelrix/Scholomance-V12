@@ -42,6 +42,24 @@ const captureSchema = z.object({
   /** What kind.ts said in the browser. Recorded to detect frontend/backend drift. */
   clientKind: z.enum(['Do', 'Clarify', 'Probe', 'Theory', 'Hypothesis']).optional(),
   clientLaw: z.enum(['allow', 'clarify', 'block', 'escalate']).optional(),
+  /**
+   * REV 7 / P6 — the epistemic axis, captured because kappa_warrant cannot be
+   * measured from rows that never recorded a warrant. Capturing kind alone made
+   * the corpus able to answer only one of the three questions, so a system that
+   * classified well and justified badly would have looked healthy forever.
+   *
+   * Sealed field names mirror EpistemicState exactly. If they drift from
+   * types.ts, the corpus stops describing the compiler that produced it.
+   */
+  clientEpistemic: z
+    .object({
+      gap: z.enum(['none', 'command', 'concept', 'procedure', 'required_slot', 'evidence']),
+      method: z.enum(['bound', 'underspecified', 'absent']),
+      warrantRequired: z.array(z.enum(['lexicon', 'model', 'observation', 'human', 'gene'])).max(5),
+      warrantPresent: z.array(z.enum(['lexicon', 'model', 'observation', 'human', 'gene'])).max(5),
+    })
+    .optional(),
+  clientPhase: z.enum(['atomic', 'plan', 'report']).optional(),
   /** Optional human verdict: did the compiler get it right? */
   verdict: z.enum(['correct', 'wrong', 'unsure']).optional(),
   /**
@@ -50,6 +68,10 @@ const captureSchema = z.object({
    * so a bare complaint cannot be scored.
    */
   expectedKind: z.enum(['Do', 'Clarify', 'Probe', 'Theory', 'Hypothesis']).optional(),
+  /** The ideal on the epistemic axis. Same argument as expectedKind. */
+  expectedGap: z
+    .enum(['none', 'command', 'concept', 'procedure', 'required_slot', 'evidence'])
+    .optional(),
   /** The bounded question, if it asked one. Recorded to judge the question itself. */
   question: z.string().max(400).optional(),
   unresolved: z.array(z.object({ slot: z.string(), reason: z.string(), raw: z.string() })).optional(),

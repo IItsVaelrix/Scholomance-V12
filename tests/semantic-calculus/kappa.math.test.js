@@ -50,10 +50,19 @@ describe("Cohen's kappa — verified against known worked examples", () => {
   });
 
   it('kappa is symmetric', () => {
+    // 'Escalate' here until rev 6 cut it — a law.decision, never an act type.
     const a = ['Do', 'Theory', 'Clarify', 'Do', 'Probe', 'Theory'];
-    const b = ['Do', 'Clarify', 'Clarify', 'Escalate', 'Probe', 'Theory'];
+    const b = ['Do', 'Clarify', 'Clarify', 'Hypothesis', 'Probe', 'Theory'];
     const [ma, mb] = raters(a, b);
     expect(cohensKappa(ma, mb).kappa).toBeCloseTo(cohensKappa(mb, ma).kappa, 10);
+  });
+
+  it('a label outside the category set is named, not a TypeError', () => {
+    // Three channels now share this function with different category sets, so
+    // handing it the wrong ones is a live mistake. It used to die on
+    // `matrix[x][y]` with "cannot read properties of undefined".
+    const [ma, mb] = raters(['Do', 'Escalate'], ['Do', 'Do']);
+    expect(() => cohensKappa(ma, mb)).toThrow(/Escalate/);
   });
 
   it('only scores overlapping items', () => {
