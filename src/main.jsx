@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import LandingPage from "./pages/Landing/LandingPage.jsx";
 import BytecodeVisualiserPage from "./pages/Visualiser/BytecodeVisualiserPage.tsx";
+import AlbumIndexPage from "./pages/Visualiser/AlbumIndexPage.tsx";
+import AlbumPage from "./pages/Visualiser/AlbumPage.tsx";
 import ResonanceCardPage from "./pages/Visualiser/ResonanceCard.tsx";
 import "./lib/config/zod.config.js";
 import App from "./App.jsx";
@@ -127,6 +129,8 @@ const router = createBrowserRouter([
           { path: "blog", element: <BlogIndexPage /> },
           { path: "blog/:slug", element: <BlogArticlePage /> },
           { path: "visualiser", element: <BytecodeVisualiserPage /> },
+          { path: "visualiser/albums", element: <AlbumIndexPage /> },
+          { path: "visualiser/album/:albumId", element: <AlbumPage /> },
           { path: "card", element: <ResonanceCardPage /> },
           { path: "video-forge", element: <VideoForgePage /> },
           { path: "release", element: <VisualizerReleasePage /> },

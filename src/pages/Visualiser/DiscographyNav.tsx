@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { UploadModal } from './UploadModal';
 import { type GrimoireTrack, GRIMOIRE_TRACKS } from './tracks';
 import { generateSchoolColor } from '../../lib/engine.adapter.js';
@@ -53,6 +54,7 @@ export function DiscographyNav({ activeTrackId, onSelectTrack }: DiscographyNavP
           <>
             <div className="bcv-disco-header">
               <h2>Discography</h2>
+              <Link to="/visualiser/albums" className="bcv-disco-albums-link">Albums</Link>
               <div className="bcv-disco-header-actions">
                 <button className="bcv-upload-btn" onClick={() => setIsUploadOpen(true)}>
                   + Upload

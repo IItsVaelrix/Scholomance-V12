@@ -427,3 +427,96 @@
     transition: none;
   }
 }
+
+.alb-index {
+  padding: 2rem;
+}
+
+.alb-index__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+}
+
+.alb-index__header h1 {
+  font-family: var(--alb-display);
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  color: var(--alb-gold);
+  margin: 0;
+}
+
+.alb-index__back {
+  color: var(--alb-dim);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+.alb-index__back:hover {
+  color: var(--alb-accent);
+}
+
+.alb-index__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.alb-index__card {
+  display: flex;
+  flex-direction: column;
+  background: var(--alb-surface);
+  border: 1px solid var(--alb-border);
+  border-radius: 6px;
+  overflow: hidden;
+  text-decoration: none;
+  color: var(--alb-ink);
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.alb-index__card:hover {
+  border-color: var(--alb-accent);
+  transform: translateY(-2px);
+}
+
+.alb-index__card:focus-visible {
+  outline: 2px solid var(--alb-accent);
+  outline-offset: 2px;
+}
+
+.alb-index__cover {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.alb-index__info {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.alb-index__title {
+  font-family: var(--alb-display);
+  font-size: 1.1rem;
+  color: var(--alb-gold);
+  margin: 0;
+}
+
+.alb-index__artist {
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.alb-index__meta {
+  font-size: 0.75rem;
+  color: var(--alb-dim);
+  margin: 0;
+}
+
+.alb-index__genres {
+  font-size: 0.7rem;
+  color: var(--alb-dim);
+  margin: 0.25rem 0 0;
+}
