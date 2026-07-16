@@ -31,8 +31,6 @@ export interface GrimoireTrack {
   pacing?: TrackPacing;
 }
 
-/** Generic fallback for tracks without measured pacing. Deliberately bland:
-    even spread, no chorus split, no lead-in claim. */
 export interface GrimoireAlbumTrack {
   trackId: string;
   trackNumber: number;
@@ -61,6 +59,8 @@ export interface GrimoireAlbum {
   status?: "draft" | "released" | "archived";
 }
 
+/** Generic fallback for tracks without measured pacing. Deliberately bland:
+    even spread, no chorus split, no lead-in claim. */
 export const DEFAULT_PACING: TrackPacing = {
   bpm: 120,
   verseSylPerBeat: 1.2,
