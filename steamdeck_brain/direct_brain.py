@@ -17,6 +17,7 @@ child_process / execSync for native tool access by every connected model.
 """
 
 import argparse
+import dataclasses
 import json
 import sys
 from pathlib import Path
@@ -38,6 +39,24 @@ try:
 except ImportError as e:
     print(json.dumps({"error": f"Failed to import vaelrix_forcefield: {e}", "hint": "Set PYTHONPATH=steamdeck_brain"}))
     sys.exit(1)
+
+
+def _json_default(obj: Any) -> Any:
+    """
+    Serialize dataclasses structurally instead of via str().
+
+    `default=str` turned every EvidenceRef into a Python repr:
+
+        "EvidenceRef(source='a.ts:4', snippet=\"x\", relevance=0.7)"
+
+    Any consumer wanting the source or relevance had to regex a Python repr out
+    of a JSON string — from JavaScript. That is a parser waiting to break on the
+    first snippet containing a quote or a paren, and snippets are source code.
+    Emitting real objects costs nothing: no caller parsed the reprs.
+    """
+    if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+        return dataclasses.asdict(obj)
+    return str(obj)
 
 
 def _direct_noop_llm(prompt: str) -> str:
@@ -201,7 +220,7 @@ def main():
     else:
         out = {"error": "unknown action"}
 
-    print(json.dumps(out, indent=2, default=str))
+    print(json.dumps(out, indent=2, default=_json_default))
 
 
 if __name__ == "__main__":

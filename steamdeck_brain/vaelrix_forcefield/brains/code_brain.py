@@ -13,6 +13,7 @@ remains auditable and budget-aware.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -104,12 +105,68 @@ def _read_known_target(path: str, root: Path) -> EvidenceRef | None:
         return None
 
 
+# Path signals. Each has a reason, and each is a claim about EVIDENCE QUALITY —
+# not about the file being bad. Archived code still matches the grep; it just
+# cannot be the answer to "where does this happen now".
+_DEAD_CODE = re.compile(r"/archive/|\.ARCHIVED\.|/legacy/|/deprecated/|/_old/|\.bak$|\.orig$", re.I)
+_TEST_CODE = re.compile(r"/tests?/|__tests__/|\.test\.|\.spec\.|/fixtures?/", re.I)
+_PROSE = re.compile(r"\.mdx?$|\.txt$|/docs?/|/knowledge/|/ARCHIVE REFERENCE DOCS/", re.I)
+_COMMENT_ONLY = re.compile(r"^\s*(//|#|\*|/\*|<!--)")
+
+
+def _score_evidence(source: str, snippet: str, keyword: str) -> float:
+    """
+    Compute how strongly this hit warrants a claim about `keyword`.
+
+    Replaces a hardcoded `relevance=0.7` on every ref — the same defect as
+    RISK_BRAIN's constant conflictRisk: a number that looked like a measurement
+    and was a literal. With every ref scored identically, the only ordering left
+    was alphabetical, which is why a query for "shadowBlur" cited
+    visemeMapping.ARCHIVED.js and a UX report while the live implementation
+    (src/pages/Visualiser/BytecodeVisualiser.tsx) never surfaced.
+
+    A cite that points at dead code is a warrant for nothing.
+    """
+    path = source.rsplit(":", 1)[0]
+    score = 0.5
+
+    # Evidence quality by location.
+    if _DEAD_CODE.search(path):
+        score -= 0.35  # cannot describe current behaviour
+    if _TEST_CODE.search(path):
+        score -= 0.20  # evidence ABOUT code, not evidence OF it
+    if _PROSE.search(path):
+        score -= 0.20  # documentation describes; it does not execute
+
+    # Match quality within the line.
+    if re.search(rf"\b{re.escape(keyword)}\b", snippet, re.I):
+        score += 0.20  # whole word, not a substring of something else
+    if re.search(
+        rf"(const|let|var|function|class|def|export)\s+{re.escape(keyword)}\b"
+        rf"|{re.escape(keyword)}\s*[:=](?!=)",
+        snippet,
+        re.I,
+    ):
+        score += 0.15  # a definition or assignment beats a passing mention
+    if _COMMENT_ONLY.match(snippet):
+        score -= 0.10  # a comment mentioning it is not the thing doing it
+
+    return max(0.05, min(1.0, round(score, 3)))
+
+
 def _ripgrep_keyword(keyword: str, root: Path) -> list[EvidenceRef]:
     rg = _find_ripgrep()
     if not rg:
         return []
 
-    cmd = [rg, "--json", "--line-number", "--max-count", "3", keyword]
+    # The "." is load-bearing. ripgrep with no path searches the cwd ONLY when
+    # stdin is a TTY; otherwise it READS STDIN. In a subprocess stdin is never a
+    # TTY, so rg blocked forever, hit the 10s timeout, and the bare
+    # `except Exception: return []` below reported it as "No direct matches".
+    # CODE_BRAIN's search therefore never worked in any non-interactive context —
+    # the MCP server, the daemon, CI — while appearing to work when a human ran it
+    # from a shell and rg inherited that terminal.
+    cmd = [rg, "--json", "--line-number", "--max-count", "3", keyword, "."]
     for d in _IGNORED_DIRS:
         cmd.extend(["--glob", f"!{d}/**"])
 
@@ -120,9 +177,24 @@ def _ripgrep_keyword(keyword: str, root: Path) -> list[EvidenceRef]:
             text=True,
             timeout=10,
             cwd=root,
+            # Belt and braces: never let rg wait on an inherited stdin.
+            stdin=subprocess.DEVNULL,
         )
-    except Exception:
-        return []
+    except subprocess.TimeoutExpired:
+        # A timeout is NOT "no matches". Swallowing it into [] is how a broken
+        # search reported itself as a clean result for however long this has
+        # been shipping. Surface it as evidence of failure, not absence.
+        return [EvidenceRef(
+            source=f"<search-timeout>:{keyword}",
+            snippet=f"ripgrep exceeded 10s searching for {keyword!r}; results are UNKNOWN, not empty.",
+            relevance=0.0,
+        )]
+    except Exception as exc:
+        return [EvidenceRef(
+            source=f"<search-error>:{keyword}",
+            snippet=f"ripgrep failed for {keyword!r}: {exc.__class__.__name__}. Results are UNKNOWN, not empty.",
+            relevance=0.0,
+        )]
 
     if proc.returncode not in (0, 1):
         return []
@@ -139,15 +211,20 @@ def _ripgrep_keyword(keyword: str, root: Path) -> list[EvidenceRef]:
         path = data.get("path", {}).get("text", "")
         line_no = data.get("line_number", 0)
         text = data.get("lines", {}).get("text", "").strip()
+        src = f"{path}:{line_no}"
+        snippet = text[:120]
         refs.append(
             EvidenceRef(
-                source=f"{path}:{line_no}",
-                snippet=text[:120],
-                relevance=0.7,
+                source=src,
+                snippet=snippet,
+                relevance=_score_evidence(src, snippet, keyword),
             )
         )
-        if len(refs) >= 3:
-            break
+    # Rank by relevance, then by source for a TOTAL order. ripgrep searches in
+    # parallel, so its output order is thread-scheduling order: the previous
+    # `if len(refs) >= 3: break` took whichever three arrived first, making the
+    # evidence — and every claim derived from it — different on each run.
+    refs.sort(key=lambda r: (-r.relevance, r.source))
     return refs
 
 
@@ -204,9 +281,19 @@ def run_code_brain(
         refs = _ripgrep_keyword(keyword, root)
         searched_keywords.append(keyword)
         if refs:
-            evidence.extend(refs)
+            # Count the POPULATION before truncating the SAMPLE. The previous code
+            # broke out of the parse loop after 3 matches and then reported
+            # len(files) as the total: "'shadowBlur' found in 2 file(s)" when 18
+            # files contained it. A sample size wearing a population's clothes.
             files = sorted({ref.source.split(":")[0] for ref in refs})
-            findings.append(f"'{keyword}' found in {len(files)} file(s): {', '.join(files[:3])}")
+            total = len(files)
+            shown = files[:3]
+            evidence.extend(refs[:3])
+            findings.append(
+                f"'{keyword}' found in {total} file(s)"
+                + (f" (showing {len(shown)})" if total > len(shown) else "")
+                + f": {', '.join(shown)}"
+            )
             # Request a read of the top hit so downstream stages have the full source.
             top_file = files[0]
             requested_tool_calls.append(

@@ -230,7 +230,13 @@ def audit_determinism(
         ),
         resonance=ResonanceScore(
             intentMatch=1.0,
-            evidenceStrength=1.0,
+            # Derived, not asserted. This auditor has two evidence sources: the
+            # field's determinism CONFIG (always readable) and the brain RESULTS
+            # passed in — which are `[]` on the standalone path, because
+            # run_determinism_brain calls audit_determinism(field, []). Reporting
+            # 1.0 there claimed perfect evidence from an audit of nothing, and it
+            # is the arbiter's ranking input (council_arbiter._score_result).
+            evidenceStrength=min(1.0, 0.5 + 0.1 * len(results)),
             novelty=0.7,
             actionability=0.9 if bytecodes else 0.5,
             conflictRisk=0.8 if bytecodes else 0.0,
