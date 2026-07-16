@@ -1,0 +1,315 @@
+# Semantic Calculus — Operator's Manual
+
+**Bytecode Search Code:** `SCHOL-ENC-MANUAL-SEMANTIC-CALCULUS-2026-07-16`
+**Spec:** [`PDR-archive/2026-07-16-semantic-calculus-pdr.md`](../PDR-archive/2026-07-16-semantic-calculus-pdr.md) (rev 6)
+**Status:** flag-gated, `ENABLE_SEMANTIC_CALCULUS` default `0`. **Nothing executes.**
+
+This is the *how to use it* guide. The PDR is the *why*. Read this one first;
+it is shorter and every command in it has been run.
+
+---
+
+## 1. What this is
+
+A compiler that turns something you say into a **typed act** before anything
+happens, and refuses when it cannot.
+
+```
+utterance ──▶ proposal ──▶ margin ──▶ kind ──▶ LAW ──▶ cites ──▶ seal
+              (a model)   (per risk)          (verdict)  (evidence)
+```
+
+The point is not that it understands you. It is that when it *doesn't*, it says
+so instead of guessing. Every other layer in this repo, when asked something it
+could not answer, returned a confident default — `|| 'stone'`, `color_1`,
+`conflictRisk=0.2`, `found in 2 file(s)`. This one returns `Theory`.
+
+**What it is not:** it does not eliminate ambiguity. That is not available —
+`"open it"` has a referent that exists only in your head, and no formalism
+recovers it. What it does is **localise** ambiguity: detect it, name it, bound
+it, and turn it into one question.
+
+---
+
+## 2. Quick start
+
+```bash
+# 1. Ask the CLI gate what it would do. It runs nothing.
+npx tsx scripts/scholo-gate.mjs "start the dev server"
+
+# 2. Capture real intents from the app (shadow mode).
+ENABLE_SEMANTIC_CALCULUS=1 npm run dev
+#    -> open the Visualiser, click the "◈ shadow" tab (right edge), type.
+
+# 3. Run what you captured through the full sealed compiler.
+npx tsx bench/semantic-calculus/compile-shadow.mjs
+```
+
+That is the whole loop: **ask → capture → measure.**
+
+---
+
+## 3. The five kinds
+
+A kind is **what sort of thing you said**. It is not permission.
+
+| kind | fires when | gene |
+|---|---|---|
+| **Do** | bound + every required slot resolved + it mutates something | `SEMANTIC_KIND_DO_GROUNDED` |
+| **Probe** | bound + the formula declares a read-only effect | `SEMANTIC_KIND_PROBE_READONLY` |
+| **Clarify** | bound, but a required slot is unresolved | `SEMANTIC_KIND_CLARIFY_UNDERSPECIFIED` |
+| **Theory** | nothing bound — the lexicon has no such concept | `SEMANTIC_KIND_THEORY_UNBOUND` |
+| **Hypothesis** | unbound **and** you supplied a candidate binding | `SEMANTIC_KIND_HYPOTHESIS_CANDIDATE_BINDING` |
+
+Every kind cites a gene that **computes** it. There are no judgement calls left
+in the enum — that is deliberate, and it is what fixed κ. A kind without a
+computable trigger is an opinion, and opinions do not reproduce (measured: κ =
+0.271 when the enum had two axes in it).
+
+**Theory vs Hypothesis:** Theory is *"I have never heard of that word."*
+Hypothesis is *"I have never heard of it, but you told me what it might mean."*
+A hedge alone is not a Hypothesis — `"not sure what a session word is"` has no
+candidate, so it is Theory.
+
+---
+
+## 4. Two axes. This is the one thing to internalise.
+
+```
+kind          = what you said        (Do | Probe | Clarify | Theory | Hypothesis)
+law.decision  = whether it may happen (allow | clarify | block | escalate)
+```
+
+**They are separate fields and they must never be merged.** `deploy` is a `Do` —
+it is a command, that is what you said — and LAW escalates it because it ships
+your local dist to production. Both facts are true at once:
+
+```
+"deploy"  →  Do   law=escalate   would execute: NO
+```
+
+The executor requires **three** gates: `kind === 'Do'` **and**
+`law.decision === 'allow'` **and** a capability. A `Do` is a claim about grammar
+and nothing more.
+
+This was rev 5's bug. `Forbidden` and `Escalate` were `law.decision` values
+hiding in the kind enum, which made `kind='Do'` with `law='block'` typecheck, and
+made the taxonomy unannotatable — an annotator had to silently pick an axis, and
+two of them picked differently. Cites `SEMANTIC_ACT_KIND_IS_NOT_PERMISSION`.
+
+---
+
+## 5. Reading the gate
+
+```
+$ npx tsx scripts/scholo-gate.mjs "start the dev server"
+
+  Clarify   law=clarify  law.underspecified.v1
+  margin 0.000 < 0.15 (reversible_ui) — too close to call
+  Did you mean:
+    dev:server    0.67 · node --env-file=.env codex/server/index.js
+    start:server  0.67 · node codex/server/index.js
+  would execute: NO
+```
+
+- **margin** — the gap between the top two candidates. Below the risk class's
+  bar, it is a *question*, not a weak Do.
+- **the bar is per risk class** (`reversible_ui` 0.15, `destructive` 0.5). The
+  same proposal decides for `lint` and asks for `deploy`. A destructive act may
+  never borrow a navigation threshold.
+- **would execute** — is always `NO`. Nothing runs. Ever, currently.
+
+The lexicon is **`package.json` scripts** — 81 of them, written by you,
+content-hashed into `lexiconVersion`. Nothing was invented. So `Theory` here
+means *"you have no command for that"* — a feature request, not a vocabulary gap.
+
+```bash
+npx tsx scripts/scholo-gate.mjs --log "fix the jitters"   # append to the corpus
+```
+
+---
+
+## 6. The shadow loop
+
+The overlay is **DEV-only** (`import.meta.env.DEV`, statically dead in prod) and
+posts to a route that self-disables without the flag. It shows what the compiler
+*would* have decided and logs the intent **with the route and selection it was
+said in**.
+
+That state is the whole point. `"open it"` is unlabelable without knowing what
+"it" was — the synthetic Phase 0.5 corpus scored κ=0.159 largely because it
+captured naked strings.
+
+**Marking `✗ wrong` asks what it *should* have been.** Do not skip that. A bare
+"wrong" is an observed phenotype with no ideal, and phenotypic error is
+*ideal − observed* — without the ideal there is nothing to subtract from. The
+report counts those separately as *"complaints, not measurements."*
+
+```bash
+npx tsx bench/semantic-calculus/compile-shadow.mjs
+```
+
+Gives you: frontend/backend drift (must be 0), kinds emitted, **lexicon
+coverage**, phenotype fitness, a phenotypic-error confusion matrix, and replay
+identity (must be 100%).
+
+---
+
+## 7. The two model seams
+
+Any LLM drops into either. Everything downstream is unchanged — that is the
+harness.
+
+**`proposer.ts` — CLOSED world.** Rank the npm scripts that exist. An invented
+key is rejected: `SEMANTIC_CALCULUS_PROPOSER_INVENTED_CANDIDATE`. The model may
+not mint a command.
+
+**`keywordProposer.ts` — OPEN world.** The model *must* invent — `"stutter"` has
+to become `shadowBlur` or nothing is gained. **ripgrep is the refusal**: a
+keyword that matches nothing produces no cite. The guess is a hypothesis and the
+grep is the experiment.
+
+Both are pluggable by construction:
+
+```ts
+resolveCites(utterance, ['/payload/unboundUtterance'], { proposer: yourLLM })
+```
+
+Measured, changing only the proposer:
+
+```
+literal-tokens-v1                     "Why the visualizer has stutters?" → theme.css
++ stub-semantic-keywords-v1           → src/pages/Visualiser/BytecodeVisualiser.tsx:39
+```
+
+**The compiler never calls a model.** Proposals and cites are *submitted*. If
+`compileSemanticIntent()` shelled out, the same utterance would seal different
+bytes after any commit and replay identity would be a lie.
+
+---
+
+## 8. Command reference
+
+| command | does |
+|---|---|
+| `npx tsx scripts/scholo-gate.mjs "<intent>"` | compile an intent against your npm scripts. Runs nothing. |
+| `… --log "<intent>"` | also append to `bench/semantic-calculus/corpus/cli-intents.jsonl` |
+| `ENABLE_SEMANTIC_CALCULUS=1 npm run dev` | shadow overlay in the app (`◈ shadow` tab, or `Ctrl` + `;`) |
+| `npx tsx bench/semantic-calculus/compile-shadow.mjs` | full sealed compile + phenotype report |
+| `node bench/semantic-calculus/harvest-lexicon.mjs [--write]` | derive a UI lexicon from your own aria-labels |
+| `node bench/semantic-calculus/build-corpus.mjs` | regenerate the 200-item κ corpus (seeded) |
+| `node bench/semantic-calculus/annotate.mjs --as <name>` | label the corpus, one keypress per item |
+| `node bench/semantic-calculus/kappa.mjs a.jsonl b.jsonl` | inter-annotator agreement; exit 1 fails the gate |
+| `npx vitest run tests/semantic-calculus` | 78 tests |
+| `PYTHONPATH=steamdeck_brain .venv/bin/python steamdeck_brain/direct_brain.py --action brain --name CODE_BRAIN --query "<q>"` | ask CODE_BRAIN directly |
+
+---
+
+## 9. Signal quick reference
+
+Three different zeros. **Never conflate them** — this is where every bug in this
+repo has lived.
+
+| signal | means | it is a finding about |
+|---|---|---|
+| **refuted** | the keyword was searched and your repo has never heard of it | **the model** |
+| **unsearched** | the governor declined to search (budget, or a gene answers it) | **the governor** |
+| **errors** | the search failed — timeout, crash, unparseable | **the tool** |
+
+All three produce zero evidence. Only the first says the model was wrong.
+Measured: asking about button colours proposed `palette` and `color`, and the
+governor blocked both (`BUGPATTERN_COLOR_DRAGON_FRONTEND_FALLBACK resolves this
+query`). Reading that zero as refutation claimed this codebase has never heard of
+the word "color".
+
+Error codes:
+
+| code | meaning |
+|---|---|
+| `SEMANTIC_CALCULUS_SEAL_MUTATION` | a sealed field changed. Caught by **re-verifying the seal**, not by `Object.isFrozen` — freezing is shallow and does not survive `structuredClone`. |
+| `SEMANTIC_CALCULUS_THEORY_NOT_EXECUTABLE` | kind ≠ Do |
+| `SEMANTIC_CALCULUS_NOT_PERMITTED` | kind = Do but `law.decision ≠ allow` |
+| `SEMANTIC_CALCULUS_UNCAPABLE_DO` | a Do with no capability, or one whose scope cannot be named |
+| `SEMANTIC_CALCULUS_TRUST_BOUNDARY` | context is not partitioned into policy/user/untrusted/derived |
+| `SEMANTIC_CALCULUS_UNTRUSTED_CITE_SOURCE` | a cite from untrusted context, or one that `supports` nothing |
+| `SEMANTIC_CALCULUS_PROPOSER_INVENTED_CANDIDATE` | the model proposed a command that does not exist |
+| `SEMANTIC_CALCULUS_PERMISSION_WIDENED` | a modulator raised permission without a LAW grant |
+
+---
+
+## 10. Traps
+
+Each of these cost real time. They are not hypothetical.
+
+**`vite build` passing proves nothing about the browser.** Rollup tree-shakes an
+unused `node:crypto` out of the production bundle, so the build is green while
+the dev server — which serves modules unbundled — dies on
+`__vite-browser-external:node:crypto`. `tests/semantic-calculus/isomorphic.test.js`
+walks the real import graph. Trust it, not the build.
+
+**Green tests can test what you built instead of what you claimed.** 46 tests
+passed while 3 of 5 kinds had no code path. None of them asserted *"Probe is
+reachable"*. If you add a kind, add that test.
+
+**Cites are sealed, so replay must re-submit them.** `act.cites` goes back in;
+do not re-resolve. Re-resolving consults the repo, and repo state is not a
+declared determinism input. An act carries everything needed to reproduce itself.
+
+**Never cite the question.** Retrieval over a corpus containing the queries will
+always match the queries — the shadow log scored as a whole-word hit in a live
+file. `SELF_REFERENTIAL` and `INSTRUMENT_SOURCE` in `citeResolver.ts` exclude the
+corpus *and* the SC tooling. **Known blind spot: SC cannot cite its own bugs.**
+That is the right trade — a measurement contaminated by its instrument is worse
+than one with a documented gap.
+
+**A deictic never resolves from state.** `"open it"` on an album page will not
+become `Do` even though the album ID is right there. That is not a limitation; it
+is the entire architecture. State supplies candidates for the question, never the
+answer.
+
+**Do not `git stash` to A/B test on this tree.** Use a detached worktree.
+
+---
+
+## 11. What is real, and what is not
+
+**Real, tested, and honest:**
+CLI gate · parametric lexicon · the margin law (per risk class) · four of five
+kinds reachable · trust partitions · capability-bound Do · the seal (verified,
+not frozen) · 100% replay identity · cites with checkable `file:line` and
+enforced `supports` · both proposer seams · shadow capture with real state.
+
+**Not built:**
+Ballistics (the margin is exercised only on the CLI lexicon) · the SQLite theory
+bank (Phase 4 — `theoryDeposit.required` is sealed, the receipt is stubbed) ·
+`Promote` · modulators · **Hypothesis has a trigger but no emit path.**
+
+**Open, and honest about it:**
+- **Phase 0.5's real gate needs a second human annotator.** κ(claude, damien)
+  cannot separate *"the kinds are bad"* from *"the model labels weirdly"*.
+- **Phase 6 owns the DoD and has no data.** Phenotype fitness on the five real
+  captures is **1/5**.
+- Nothing executes. Not one thing.
+
+---
+
+## 12. Playbook
+
+**Use it for a week.** Every time you would reach for a script, ask the gate
+first and `--log` it. If it changes how you work, this is real. If you stop by
+Thursday, it was a well-tested demo. That is a question a week answers and no
+amount of architecture can.
+
+**Watch `refuted`.** It is the machine's world model failing against yours,
+measured, for free. It is the only number here that gets more useful the more you
+use it.
+
+**When it says Theory, believe it.** It means you have no command for that. Add
+one, or accept that the request is a feature.
+
+**When you add a kind, add its gene first.** A kind without a computable trigger
+is an opinion, and this taxonomy has measured what opinions do to κ.
+
+**Do not grow the lexicon by imagination.** Every entry authored that way was
+wrong. Harvest it (`harvest-lexicon.mjs`) or promote it from real Theory
+deposits. The manifest and the shadow log are the only two honest sources.
