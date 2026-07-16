@@ -40,9 +40,18 @@ export function useAnimationIntent(
   // Track current intent to avoid redundant runs
   const lastIntentRef = useRef<string | null>(null);
 
+  // Keep the latest resolved motion available to the effect without making
+  // it a dependency: reading `motion` directly and listing it as a dep
+  // causes the effect to re-run every time setMotion(...) inside it
+  // resolves, since that state update is itself the dependency change.
+  // The ref lets the effect observe the current value on each run while
+  // only re-running when the intent (or enabled) actually changes.
+  const motionRef = useRef(motion);
+  motionRef.current = motion;
+
   useEffect(() => {
     if (!augmentedIntent || !enabled) {
-      if (motion) setMotion(null);
+      if (motionRef.current) setMotion(null);
       return;
     }
 
@@ -56,19 +65,19 @@ export function useAnimationIntent(
       constraints: augmentedIntent.constraints
     });
 
-    if (intentHash === lastIntentRef.current && motion) {
+    if (intentHash === lastIntentRef.current && motionRef.current) {
       return;
     }
 
     lastIntentRef.current = intentHash;
-    
+
     let isMounted = true;
-    
+
     const processIntent = async () => {
       try {
         // V12 PERFORMANCE: Submit intent which correctly bridges Main Thread lighting and WebWorker composition
         const result = await submitAmpIntent(augmentedIntent);
-        
+
         // Ensure component is still mounted
         if (isMounted && lastIntentRef.current === intentHash) {
           setMotion(result as ResolvedMotionOutput);
@@ -83,7 +92,7 @@ export function useAnimationIntent(
     return () => {
       isMounted = false;
     };
-  }, [augmentedIntent, enabled, motion]);
+  }, [augmentedIntent, enabled]);
 
   return motion;
 }
