@@ -102,13 +102,15 @@ export function BytecodeVisualiser({
         ctx.arc(0, 0, rr, 0, Math.PI * 2);
         ctx.strokeStyle = hsl(hue + k * 10, 85, 64, 0.32 + energy * 0.3);
         ctx.lineWidth = 1.6;
-        ctx.shadowBlur = 16;
-        ctx.shadowColor = hsl(hue, 92, 68, 0.7);
         ctx.stroke();
       }
 
       // Radial spectral bars - the WMP-style graph, wrapped to the circle.
-      ctx.shadowBlur = 10;
+      // NOTE: no per-shape ctx.shadowBlur here. Canvas shadowBlur is a full
+      // gaussian blur PER stroke; ~100 of them per frame (5 rings + 96 bars)
+      // was the entire /listen fill-rate stutter (measured 25%->0.4% of frames
+      // >20ms with shadowBlur removed). The additive 'lighter' composite still
+      // produces glow where strokes overlap.
       for (let i = 0; i < binCount; i += 1) {
         const mag = data[i] / 255;
         const ang = (i / binCount) * Math.PI * 2 + rot * 0.3;
@@ -125,7 +127,6 @@ export function BytecodeVisualiser({
       // Sacred geometry: hexagram (merkaba) + nested triangles + hexagon + square.
       // Skipped in minimal mode (the Phaser orb already draws its own geometry).
       if (!minimal) {
-        ctx.shadowBlur = 22;
         const gr = R * 0.42 * pulse;
         strokePolygon(ctx, gr, 3, rot, hsl(hue + 24, 92, 66, 0.85), 2.4);
         strokePolygon(ctx, gr, 3, rot + Math.PI, hsl(hue - 30, 92, 66, 0.85), 2.4);
