@@ -1,0 +1,46 @@
+.alb-page {
+  width: 100%;
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.alb-page--not-found,
+.alb-page--empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.alb-spread {
+  display: flex;
+  gap: 2rem;
+}
+
+.alb-experience {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.alb-experience__spectrum {
+  width: 100%;
+}
+
+.alb-experience__lyrics {
+  width: 100%;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
