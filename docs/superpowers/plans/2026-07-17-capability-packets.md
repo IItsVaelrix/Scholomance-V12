@@ -1439,8 +1439,17 @@ python3 scripts/replay_capabilities.py \
   --domain phonology
 ```
 
-Expected (already measured while writing this plan — treat any deviation as a
-regression in the surfaces or the extractor, not as new truth):
+**The corpus is LIVE — the totals will drift and that is not a bug.** This
+transcript is the session doing the work: every edit made while executing this
+plan appends to it (measured: 74 edits at 07:0x, 83 by 07:29, as the packet's
+surfaces also widened in Task 4). Do not "fix" a drifting total.
+
+The stable, load-bearing numbers are the ones in the past: **first hit #14**,
+**`_span_weight` at #51**, a **37-edit gap** — those cannot move unless someone
+edits `align_lyrics.py` again. Judge the harness on those, not on the totals:
+
+Expected (measured while writing this plan; totals are a snapshot, the gap is the
+acceptance criterion):
 
 ```
 edits in transcript      : 74

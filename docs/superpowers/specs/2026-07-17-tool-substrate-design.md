@@ -285,6 +285,49 @@ embedding retrieval (`codebase_hybrid_search` exists — a later option if
 glob-matching proves too coarse); authoring phoneme-domain genes for the existing
 word path (cheap and independent — a candidate follow-up, not this plan).
 
+## 10.1 Outcome (recorded 2026-07-17, after implementation)
+
+**Implemented and live.** Commits `d03ba68c..76a11a66` on V13. 237 tests pass;
+`verify:capabilities` and `verify:bpm` both exit 0.
+
+**Acceptance criterion met.** Replay of session `56188e89`: first hit **edit #14**
+(`scripts/align_lyrics.py`), the `_span_weight` duplication **edit #51**, gap **37
+edits**. `RE_ARM_EDITS = 10` serves at #14/#33/#51 — landing on the duplication.
+
+**Verified live in the same session as the mistake.** Editing `align_lyrics.py`
+injected the phonology table, containing verbatim:
+
+> DO NOT: hand-rolling a vowel-group syllable counter — 'strength' is 1 syllable
+> and 7 phonemes
+
+delivered without anyone typing "phoneme". The next edit to the same file was
+silent (re-arm holds); an off-surface write was silent (anti-wallpaper).
+
+**The corpus is alive — a plan defect found in execution.** The pinned transcript
+is the session doing the work: it grew 7.25MB→8.11MB and 74→84 edits *while the
+plan ran*. The plan said "treat any deviation as a bug in your extractor, not as
+new truth" — wrong. Only the past gap (#14/#51) is stable. Running the project
+mutates the corpus that accepts it.
+
+**Defects the review loop caught in this project's own code** (each verified live,
+not argued):
+- `capability_inject.main()` raised `AttributeError` on a non-dict `tool_input`,
+  and the shim's `exit 0` masked it — the module written to invert
+  `except Exception: block = ""` had reproduced it at the shell level.
+- `replay_capabilities` whitelisted `NotebookEdit` but read `input["file_path"]`;
+  NotebookEdit's schema uses `notebook_path`, so every one was silently dropped —
+  a notebook-only domain would have got a confident, wrong NO HIT.
+- `scan_bpm.declared_bpm_for` matched a **commented-out** `//  bpm: 0` in
+  `maze-screensaver.ts`, which shares a track id with `polarity.ts` (real 93).
+  `Path.glob` is filesystem-ordered, so which won was luck, and `period_for(0)`
+  raises — `npm run verify:bpm` would have crashed non-deterministically elsewhere.
+
+**§8.1 stands, unresolved by any of this.** Every result above proves the packet is
+PRESENT. None proves it will be HEEDED. `WAND_CHEMICAL_STROKE_PROPAGATION` fired
+four times in this session and was acted on zero times. Reachability is fixed and
+measured; attention is not. The verdict is longitudinal: does duplication recur in
+the next session that touches phonology?
+
 ## 10. Open questions
 
 1. ~~**Dedupe cadence**~~ — **ANSWERED by replay, 2026-07-17.** Session
