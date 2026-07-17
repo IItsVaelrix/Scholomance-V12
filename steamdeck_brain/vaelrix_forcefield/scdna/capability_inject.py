@@ -10,7 +10,6 @@ hookSpecificOutput.additionalContext. systemMessage does NOT reach the model.
 from __future__ import annotations
 
 import json
-import os
 import sys
 import tempfile
 from pathlib import Path
@@ -108,7 +107,18 @@ def main(argv: list[str] | None = None) -> int:
     if not isinstance(payload, dict):
         payload = {}
 
-    file_path = str((payload.get("tool_input") or {}).get("file_path", "") or "")
+    tool_input = payload.get("tool_input")
+    if not isinstance(tool_input, dict):
+        if tool_input is not None:
+            # A crash disguised as "nothing to serve" is the exact bug this
+            # module exists to invert — say so on stderr, then proceed as if
+            # tool_input were absent. Still exits 0: never costs the user work.
+            print(f"[scdna] tool_input was {type(tool_input).__name__}, not an "
+                  f"object — skipping capability injection for this call",
+                  file=sys.stderr)
+        tool_input = {}
+
+    file_path = str(tool_input.get("file_path", "") or "")
     session_id = str(payload.get("session_id", "") or "nosession")
     if not file_path:
         return 0

@@ -98,3 +98,29 @@ def test_internal_failure_is_reported_not_swallowed(tmp_path, monkeypatch, capsy
     assert rc == 0
     captured = capsys.readouterr()
     assert "store exploded" in (captured.out + captured.err)
+
+
+def test_main_with_string_tool_input_does_not_raise(tmp_path, monkeypatch, capsys):
+    """Finding 1: tool_input:"oops-a-string" -> AttributeError in current code."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path)
+    payload = {"tool_name": "Edit", "session_id": "s", "tool_input": "oops-a-string"}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    rc = capability_inject.main([])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "permissionDecision" not in captured.out
+    assert (captured.out + captured.err).strip() != "", \
+        "malformed tool_input must be visible, not silently ignored"
+
+
+def test_main_with_list_tool_input_does_not_raise(tmp_path, monkeypatch, capsys):
+    """Finding 1: tool_input:[1,2,3] -> AttributeError in current code."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path)
+    payload = {"tool_name": "Edit", "session_id": "s", "tool_input": [1, 2, 3]}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    rc = capability_inject.main([])
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "permissionDecision" not in captured.out
+    assert (captured.out + captured.err).strip() != "", \
+        "malformed tool_input must be visible, not silently ignored"
