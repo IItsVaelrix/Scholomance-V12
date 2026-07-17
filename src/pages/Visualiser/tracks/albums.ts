@@ -5,6 +5,9 @@ import { PETRICHOR } from './petrichor';
 import { BIG_FATHER } from './bigFather';
 import { POLARITY } from './polarity';
 import { DAYDREAMING_NIGHTMARES } from './daydreaming-nightmares';
+import { SCHOLOMANCER } from './scholomancer';
+import { SONIC_THAUMATURGY } from './sonic-thaumaturgy';
+import { REGRET } from './regret';
 
 export const GRIMOIRE_ALBUMS: GrimoireAlbum[] = [
   {
@@ -21,6 +24,24 @@ export const GRIMOIRE_ALBUMS: GrimoireAlbum[] = [
       { trackId: BIG_FATHER.id, trackNumber: 2 },
       { trackId: POLARITY.id, trackNumber: 3 },
       { trackId: DAYDREAMING_NIGHTMARES.id, trackNumber: 4 },
+    ],
+  },
+  {
+    id: 'scholomancer',
+    title: 'Scholomancer',
+    artist: 'Vaelrix',
+    // Damien's own cover art, not the Suno-generated image the tracks carry.
+    // BASE_URL-relative so it survives a deploy under a subpath, matching how
+    // useLyricAlignment resolves its artifacts.
+    coverUrl: `${import.meta.env.BASE_URL}media/scholomancer-cover.png`,
+    description: 'Dense internal rhyme over a custom Suno model.',
+    releaseDate: '2026-07-15',
+    status: 'released',
+    genres: ['Hip-Hop', 'Rap'],
+    tracks: [
+      { trackId: SCHOLOMANCER.id, trackNumber: 1 },
+      { trackId: SONIC_THAUMATURGY.id, trackNumber: 2 },
+      { trackId: REGRET.id, trackNumber: 3 },
     ],
   },
 ];

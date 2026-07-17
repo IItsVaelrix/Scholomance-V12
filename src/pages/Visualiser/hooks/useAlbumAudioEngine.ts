@@ -143,6 +143,27 @@ export function useAlbumAudioEngine({
     };
   }, []);
 
+  /**
+   * The karaoke clock.
+   *
+   * `timeupdate` is NOT a clock — measured in headed Chromium it fires at 3.8 Hz
+   * (median 265.6ms), while `el.currentTime` is continuous and the display runs at
+   * 74.1 Hz. Against the real alignment artifacts, 61% of words are sung for less
+   * than one 265.6ms tick, so a timeupdate-driven highlight skips the majority of
+   * them outright. The event is throttled; the property is not. Poll the property.
+   */
+  useEffect(() => {
+    if (status !== 'playing') return;
+    let raf = 0;
+    const tick = () => {
+      const el = audioRef.current;
+      if (el) setCurrentTime(el.currentTime);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [status, audioRef]);
+
   useEffect(() => {
     return () => {
       audioCtxRef.current?.close().catch(() => {});

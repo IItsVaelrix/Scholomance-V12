@@ -274,6 +274,13 @@
   text-underline-offset: 3px;
 }
 
+/* The aligner interpolated this word's span between its confident neighbours —
+   we know it is sung, not exactly when. A dotted rule says "about here" where a
+   solid one would claim a precision nobody measured. */
+.alb-lyrics__word[data-timing="estimated"] {
+  text-decoration-style: dotted;
+}
+
 .alb-transport {
   display: flex;
   align-items: center;

@@ -169,12 +169,17 @@ export default function ListenPage() {
       className={`listen-chamber ${prefersReducedMotion ? "is-reduced-motion" : ""} ${entropyClass}`}
       style={{ '--entropy': entropyLevel / 100 } as React.CSSProperties}
     >
-      {/* ── Layer 0: 3D Environment (Phaser + Three.js) ────────────────── */}
-      <AlchemicalLabBackground signalLevel={signalLevel} />
+      {/* ── Layer 0: 3D Environment (Phaser + Tier-A shader) ───────────── */}
+      {/* Pause chamber GPU work while Scholomance Station is open so only
+          the station orb animates. Station CrystalBall is unmounted when closed. */}
+      <AlchemicalLabBackground
+        signalLevel={signalLevel}
+        paused={viewMode === 'STATION'}
+      />
       <div className="chamber-scanlines" />
 
       <AnimatePresence>
-        {viewMode === 'CHAMBER' ? (
+        {viewMode === 'CHAMBER' && (
           <motion.div
             key="chamber-view"
             className="view-layer"
@@ -455,25 +460,29 @@ export default function ListenPage() {
               </div>
             </motion.aside>
           </motion.div>
-        ) : (
-          <div
-            key="station-view"
-            className="scholomance-station-wrapper"
-          >
-            <ScholomanceStation
-              activeStation={activeStation}
-              signalLevel={signalLevel}
-              isPlaying={isPlaying}
-              isTuning={isTuning}
-              trackUrl={trackUrl}
-              onClose={() => setViewMode('CHAMBER')}
-              onSelectTrack={(url, schoolId) => {
-                void tuneToSchool(schoolId, { trackUrl: url, forceRetune: true });
-              }}
-            />
-          </div>
         )}
       </AnimatePresence>
+
+      {/* Station mounts only when ignited — CrystalBall Phaser cannot run off-screen. */}
+      {viewMode === 'STATION' && (
+        <div
+          key="station-view"
+          className="scholomance-station-wrapper"
+        >
+          <ScholomanceStation
+            active
+            activeStation={activeStation}
+            signalLevel={signalLevel}
+            isPlaying={isPlaying}
+            isTuning={isTuning}
+            trackUrl={trackUrl}
+            onClose={() => setViewMode('CHAMBER')}
+            onSelectTrack={(url, schoolId) => {
+              void tuneToSchool(schoolId, { trackUrl: url, forceRetune: true });
+            }}
+          />
+        </div>
+      )}
 
       {/* Global Hud Noise/Grit Overlay */}
       <div className="hud-noise" />

@@ -25,11 +25,17 @@ export function getSharedPhaserGame(): Phaser.Game | null {
  * - First visit: Shows CSS background, loads Phaser, caches rendered static layer
  * - Subsequent: Shows cached image instantly, hydrates with Phaser in background
  */
-export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ signalLevel = 0 }) => {
+export const AlchemicalLabBackground: React.FC<{
+  signalLevel?: number;
+  /** When true, freeze Phaser + Tier-A shader (e.g. while Scholomance Station is open). */
+  paused?: boolean;
+}> = ({ signalLevel = 0, paused = false }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const phaserRef = useRef<HTMLDivElement>(null);
   const gameRef = useRef<Phaser.Game | null>(null);
   const bgSceneRef = useRef<any>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
   const [isLoaded, setIsLoaded] = useState(false);
   const prefersReducedMotion = usePrefersReducedMotion();
 
@@ -105,9 +111,16 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
           setIsLoaded(true);
         }
 
+        // Honor current pause flag if station opened before Phaser finished booting.
+        if (pausedRef.current) {
+          try {
+            (game.loop as { sleep?: () => void }).sleep?.();
+          } catch { /* ignore */ }
+        }
+
         // Cache the static background for next visit (after a delay to not block render)
         setTimeout(() => {
-          if (controller.signal.aborted) return;
+          if (controller.signal.aborted || pausedRef.current) return;
           cacheStaticBackground(bgScene);
         }, 1000);
       });
@@ -157,11 +170,24 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
 
   useEffect(() => {
     // Sync React state to Phaser background scene
-    if (bgSceneRef.current) {
+    if (bgSceneRef.current && !paused) {
       const bpm = getAmbientPlayerService()?.getBPM?.() || 90;
       bgSceneRef.current.updateState({ signalLevel, bpm });
     }
-  }, [signalLevel]);
+  }, [signalLevel, paused]);
+
+  // Freeze chamber GPU while Scholomance Station is open (avoids dual Phaser).
+  useEffect(() => {
+    const game = gameRef.current;
+    if (!game?.loop) return;
+    try {
+      const loop = game.loop as { sleep?: () => void; wake?: () => void };
+      if (paused) loop.sleep?.();
+      else loop.wake?.();
+    } catch {
+      /* tolerate Phaser loop API drift */
+    }
+  }, [paused]);
 
   return (
     <div
@@ -174,6 +200,8 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
         zIndex: 0,
         pointerEvents: 'none',
         overflow: 'hidden',
+        // Hide chamber canvas while station owns the screen (saves composite work).
+        visibility: paused ? 'hidden' : 'visible',
       }}
     >
       {/* Phaser canvas container - must be FIRST so it has lower stacking context */}
@@ -183,21 +211,22 @@ export const AlchemicalLabBackground: React.FC<{ signalLevel?: number }> = ({ si
         style={{
           position: 'absolute',
           inset: 0,
-          opacity: isLoaded ? 1 : 0,
+          opacity: isLoaded && !paused ? 1 : 0,
           transition: 'opacity 0.3s ease',
           zIndex: 2,
-          pointerEvents: 'auto',
+          pointerEvents: paused ? 'none' : 'auto',
         }}
       />
 
       {/*
         Tier A atmosphere - PBShaderStage renders the ambient atmosphere shader,
         replacing the old static CSS portal subtree. Sits below the Phaser
-        canvas (zIndex 0 vs 2).
+        canvas (zIndex 0 vs 2). Paused while station is open.
       */}
       <PBShaderStage
         packet={ATMOSPHERE_PACKET}
         reducedMotion={prefersReducedMotion}
+        paused={paused}
         style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}
         getRuntimeInput={(elapsedMs) => ({
           elapsedMs,

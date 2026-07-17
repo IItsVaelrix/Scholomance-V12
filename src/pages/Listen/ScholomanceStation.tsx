@@ -26,6 +26,8 @@ interface ScholomanceStationProps {
   isPlaying: boolean;
   isTuning: boolean;
   trackUrl?: string;
+  /** When false, CrystalBall Phaser is not mounted and does not animate. */
+  active?: boolean;
   onClose: () => void;
   onSelectTrack: (url: string, schoolId: string) => void;
 }
@@ -36,6 +38,7 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
   isPlaying,
   isTuning,
   trackUrl,
+  active = true,
   onClose,
   onSelectTrack,
 }) => {
@@ -103,7 +106,9 @@ export const ScholomanceStation: React.FC<ScholomanceStationProps> = ({
             <div className="orb-centerpiece__ring-layer">
               <div className="orb-ring-decoration" style={{ '--accent': activeStation.color } as React.CSSProperties} />
             </div>
+            {/* Crystal ball WebGL runs only while the station overlay is open. */}
             <CrystalBallVisualizer
+              active={active}
               size={420}
               schoolId={activeStation.id}
               schoolColor={activeStation.color}

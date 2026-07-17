@@ -755,10 +755,118 @@
   .tesla-base { width: 28px; height: 60px; }
 }
 
+/* ─── MOBILE: sit at the desk ────────────────────────────────────────────────
+ *
+ * Desktop surveys the shed — you see the whole room, and the furniture reads at
+ * room scale. A phone cannot hold that shot: the shed is a LANDSCAPE space and a
+ * phone is portrait, so shrinking the room to fit left a 109px video adrift in
+ * 844px of ceiling.
+ *
+ * Measured on a 390x844 phone, the old chain:
+ *
+ *   .shed-desk-area  96%              374px
+ *   .desk-surface    padding 20px  →  334px
+ *   two TeslaCoils   48px each     →  238px   <- 26% of the phone, decorative
+ *   .crt-cabinet     padding 22px  →  194px
+ *   16:9                           →  109px tall  =  13% of the screen
+ *
+ * The coils sit INSIDE .desk-surface's flex row, so `flex: 1` on .crt-tv handed
+ * the video whatever the furniture left over. Two thirds of the width was going
+ * to bezel and props.
+ *
+ * So this is not a shrink — it is a camera move. On a phone you are not looking
+ * at the shed, you are sitting at the desk: the CRT fills your view, the coils
+ * are beside you and cropped by the frame, and the ceiling is out of shot
+ * because you are looking at the screen, not up. That is the room's own logic,
+ * not a breakpoint compromise.
+ *
+ * Every rule below is inside the query. No base rule is touched; desktop cannot
+ * change.
+ * ────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .shed-desk-area { width: 96%; }
-  .watch-info-bar { width: 96%; }
+  /* Full bleed. The 4% margin was framing a room; up close there is no room. */
+  .shed-desk-area { width: 100%; }
+  .watch-info-bar { width: calc(100% - 20px); }
   .shed-shelf { display: none; }
+
+  /* The coils leave the flex row and become what they are up close: objects at
+   * the edge of vision, cropped by the frame. Out of flow, they stop taxing the
+   * video 96px, and the shed keeps its character. */
+  .desk-surface > .tesla-coil-wrap {
+    position: absolute;
+    bottom: 0;
+    width: 30px;
+    opacity: 0.5;
+    z-index: 0;
+  }
+  .desk-surface > [aria-label="Tesla coil left"]  { left: -8px; }
+  .desk-surface > [aria-label="Tesla coil right"] { right: -8px; }
+  .tesla-base { width: 16px; height: 34px; }
+  .tesla-canvas { opacity: 0.6; }
+
+  /* Bezel is furniture seen from across the room. At arm's length it is a
+   * border, not a cabinet — 84px of nested padding reclaimed as picture. */
+  .desk-surface { padding: 6px 8px 0; }
+  .crt-cabinet  { padding: 9px 10px 7px; border-radius: 9px 9px 6px 6px; }
+  .crt-cabinet::before { font-size: 7px; letter-spacing: 3px; top: 3px; }
+
+  /* The screen may now use the height it was never given. */
+  .crt-screen-wrapper { max-height: clamp(180px, calc(100vh - 200px), 900px); }
+
+  /* Ceiling out of shot. A first pass cropped it to 20% and that was wrong: it
+   * did not fill the space, it made the space emptier — 450px of faint ceiling
+   * grid above the CRT read as unfinished rather than as a dark room. Take it
+   * to a sliver and let darkness do the work instead of geometry. */
+  .shed-ceiling { height: 10%; }
+  .shed-ceiling-arch { display: none; }
+
+  /* The video is width-bound at this size — 352px wide is 198px tall and no CSS
+   * changes that on a 390px portrait screen. So this is composition, not sizing:
+   * put the CRT on the upper third where the eye lands, and give the room below
+   * to the desk it is standing on. */
+  .shed-desk-area { bottom: 34%; }
+
+  /* Candlelight pulls in with the camera, and the top of the frame goes to true
+   * black. Emptiness you can SEE is a void; emptiness you cannot is a room. */
+  .shed-vignette {
+    background:
+      linear-gradient(180deg, #050309 0%, rgba(5,3,9,0.85) 12%, transparent 32%),
+      radial-gradient(ellipse 88% 42% at 50% 40%,
+        transparent 22%,
+        rgba(3,2,8,0.5) 58%,
+        rgba(2,1,6,0.94) 100%
+      );
+  }
+
+  /* Put the candlelight back.
+   *
+   * The candles are children of <Shelf>, and .shed-shelf is display:none here —
+   * so hiding the shelves silently extinguished every candle in the room. That
+   * is why the space above the CRT read as a void: it was not "dark", it was
+   * UNLIT. A candlelit shed with no candles is just a box.
+   *
+   * The ambient pools are separate elements and survive, but they sit at top:45%
+   * — directly behind the CRT, lighting nothing. Raise them to flank the screen
+   * and lift them: up close, the candle is beside you, not across the room. */
+  .candle-light-left,
+  .candle-light-right {
+    width: 210px; height: 190px;
+    top: 26%;
+    background: radial-gradient(ellipse, rgba(255,160,40,0.22) 0%, rgba(255,120,20,0.06) 55%, transparent 75%);
+  }
+  .candle-light-left  { left: -70px; }
+  .candle-light-right { right: -70px; }
+
+  /* Info bar: three columns do not fit 370px — IGNITE was clipping off the
+   * right edge. Stack the signal over the title, keep the action on its own
+   * line, and clear the floating shadow/AMP tabs that live bottom-right. */
+  .watch-info-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+    margin-bottom: 76px;
+  }
 }
 
 /* ─── REDUCED MOTION ─────────────────────────────────── */

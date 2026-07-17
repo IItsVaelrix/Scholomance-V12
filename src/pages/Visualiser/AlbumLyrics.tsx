@@ -140,6 +140,11 @@ export function AlbumLyrics({ track, currentTime, status, reducedMotion }: Album
                   className={tok.color ? 'alb-lyrics__word' : undefined}
                   style={tok.color ? ({ '--w': tok.color } as CSSProperties) : undefined}
                   data-sung={sung ? 'true' : undefined}
+                  // Timing confidence is orthogonal to which word is sung, so it
+                  // rides its own attribute: an interpolated span is a guess the
+                  // aligner drew between confident neighbours, and must not wear
+                  // the same certainty as a measured one.
+                  data-timing={sung && sungWord.interpolated ? 'estimated' : undefined}
                 >
                   {tok.word}
                 </span>

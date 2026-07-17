@@ -23,6 +23,8 @@ export interface PBShaderStageProps {
   packet: PBShaderPacket;
   getRuntimeInput: (elapsedMs: number) => RuntimeStateInput;
   reducedMotion?: boolean;
+  /** Host-driven pause (e.g. another view owns the GPU). Combined with IO/tab visibility. */
+  paused?: boolean;
   className?: string;
   style?: React.CSSProperties;
   children?: React.ReactNode;
@@ -40,12 +42,27 @@ export interface PBShaderStageProps {
  * The brief's assumed `{ program }`/`{ error }` shape does not match — this
  * component wraps the call in try/catch instead.
  */
-export function PBShaderStage({ packet, getRuntimeInput, reducedMotion = false, className, style, children }: PBShaderStageProps) {
+export function PBShaderStage({
+  packet,
+  getRuntimeInput,
+  reducedMotion = false,
+  paused = false,
+  className,
+  style,
+  children,
+}: PBShaderStageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const pausedRef = useRef(false);
+  // Host pause + viewport/tab visibility — any true means skip draw.
+  const hostPausedRef = useRef(paused);
+  const offscreenRef = useRef(false);
+  const tabHiddenRef = useRef(typeof document !== 'undefined' ? document.hidden : false);
+  hostPausedRef.current = paused;
+
   const clock = useDeterministicClock({ reducedMotion, frozenAt: 0 });
   const inputRef = useRef(getRuntimeInput);
   inputRef.current = getRuntimeInput;
+
+  const isPaused = () => hostPausedRef.current || offscreenRef.current || tabHiddenRef.current;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -82,19 +99,19 @@ export function PBShaderStage({ packet, getRuntimeInput, reducedMotion = false, 
     // Pause when the element leaves the viewport (no wasted GPU behind other views)
     const io = new IntersectionObserver(
       ([entry]) => {
-        pausedRef.current = !entry.isIntersecting;
+        offscreenRef.current = !entry.isIntersecting;
       },
       { threshold: 0 },
     );
     io.observe(canvas);
     const onVis = () => {
-      pausedRef.current = document.hidden;
+      tabHiddenRef.current = document.hidden;
     };
     document.addEventListener('visibilitychange', onVis);
 
     let raf = 0;
     const frame = () => {
-      if (!pausedRef.current) {
+      if (!isPaused()) {
         const elapsed = clock.getElapsedMs();
         const runtimeState = buildRuntimeState({
           ...inputRef.current(elapsed),
@@ -133,7 +150,12 @@ export function PBShaderStage({ packet, getRuntimeInput, reducedMotion = false, 
   }, [packet.fragmentSource]);
 
   return (
-    <canvas ref={canvasRef} aria-hidden="true" className={className} style={{ display: 'block', ...style }}>
+    <canvas
+      ref={canvasRef}
+      aria-hidden="true"
+      className={className}
+      style={{ display: 'block', visibility: paused ? 'hidden' : 'visible', ...style }}
+    >
       {children}
     </canvas>
   );

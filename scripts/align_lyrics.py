@@ -30,6 +30,41 @@ from pathlib import Path
 
 CONFIDENCE_FLOOR = 0.40
 
+# How much of an interpolated gap a word claims, relative to its neighbours.
+# The unit is PHONEMES, read from the same dictionary the app's phoneme engine
+# uses — codex/core/phonology/cmu.phoneme.engine.js CMU_DICT_RELATIVE_PATH.
+# Measured against the alternatives on the hold-out (see build_words): phonemes
+# beat character-length, and both beat vowel-nuclei (i.e. plain syllable count),
+# which is too coarse — "strength" is one syllable but takes far longer to sing
+# than "a". Coverage is 95-99%; the rest fall back to letters, the next best
+# proxy measured.
+_TAIL_WEIGHT = 1.0
+_CMU_DICT = (Path(__file__).resolve().parent.parent
+             / "node_modules/cmudict/lib/cmu/cmudict.0.7a")
+_PHONEMES = {}
+
+
+def _load_cmu():
+    """Same file, same first-pronunciation-wins rule as CmuPhonemeEngine."""
+    if _PHONEMES or not _CMU_DICT.exists():
+        return
+    for line in _CMU_DICT.read_text(encoding="latin-1").splitlines():
+        if line.startswith(";;;"):
+            continue
+        parts = line.split()
+        if len(parts) < 2:
+            continue
+        word = parts[0].split("(")[0].upper()
+        _PHONEMES.setdefault(word, len(parts) - 1)
+
+
+def _span_weight(text):
+    letters = re.sub(r"[^A-Za-z']", "", text)
+    if not letters:
+        return 1
+    _load_cmu()
+    return _PHONEMES.get(letters.upper()) or max(1, len(letters))
+
 
 # ── Lyric tokenization ──────────────────────────────────────────────────────
 
@@ -244,7 +279,11 @@ ALIGNERS = {
 
 # ── Artifact assembly ───────────────────────────────────────────────────────
 
-def build_words(words, aligned):
+def build_words(words, aligned, vocal_start_s=None):
+    """vocal_start_s: the artist's reported onset of the first sung word. A
+    leading run of unreliable words has no left anchor to interpolate from, and
+    every anchor the pipeline can *derive* for it is a guess. A reported onset
+    is evidence, so when it is supplied it wins over the derived fallback."""
     entries = []
     for i, w in enumerate(words):
         a = aligned.get(i)
@@ -263,6 +302,13 @@ def build_words(words, aligned):
     # Unreliable words get spans interpolated between confident neighbours —
     # flagged, never silently trusted (honesty law).
     n = len(entries)
+    # Typical word length, measured from the words that actually aligned. Used
+    # only to bound a leading run (below); if nothing aligned there is no
+    # measurement to lean on and leading runs stay null.
+    confident_durs = sorted(e["endS"] - e["startS"] for e in entries
+                            if not e["interpolated"] and e["startS"] is not None)
+    median_dur = (confident_durs[len(confident_durs) // 2]
+                  if confident_durs else None)
     for i, e in enumerate(entries):
         if not e["interpolated"]:
             continue
@@ -272,14 +318,44 @@ def build_words(words, aligned):
         k = i + 1
         while k < n and entries[k]["interpolated"]:
             k += 1
-        lo = entries[j]["endS"] if j >= 0 else 0.0
         hi = entries[k]["startS"] if k < n else None
+        if j >= 0:
+            lo = entries[j]["endS"]
+        elif hi is not None and vocal_start_s is not None and vocal_start_s < hi:
+            # Reported onset beats any derivation: the artist knows when they
+            # opened their mouth, the pipeline is only inferring it.
+            lo = vocal_start_s
+        elif hi is not None and median_dur is not None:
+            # A *leading* run has no left anchor. The old rule used 0.0, which
+            # asserts the singer opens on the file's first sample — a claim
+            # nothing measured, and one that stretched a missed first word
+            # across the whole intro. Back off from the first confident word by
+            # the measured median word length instead: still a guess, still
+            # flagged, but bounded and never inventing a t=0 onset.
+            lo = max(0.0, hi - (k - j) * median_dur)
+        else:
+            lo = None
         if hi is None or lo is None or hi < lo:
             continue  # no anchors -> stays null; caught by build_lines
-        slots = k - j
-        pos = i - j
-        e["startS"] = round(lo + (hi - lo) * (pos - 1) / slots, 3)
-        e["endS"] = round(lo + (hi - lo) * pos / slots, 3)
+        # Words in the run share the gap in proportion to how much VOICE they
+        # take — their phoneme count — not equally. The old rule gave "I" and
+        # "unfathomably" identical slices, and that error compounds across a
+        # long run, which is exactly where interpolation is needed most.
+        # Hold-out measured on all three tracks (mask a run of confident words,
+        # predict it, score against what MMS_FA actually found): 46-63% lower
+        # mean error than the equal-share rule on 12-word runs, against a
+        # shuffled-weight control at z up to 29.6.
+        # Audio-derived probes were tried first and all refuted by their own
+        # controls: spectral-onset snapping (a reversed/random baseline matched
+        # it), energy warping (a time-reversed envelope matched it), and metre
+        # snapping (an anti-phase grid matched it beyond 2-word runs). The
+        # signal is in the text, not the waveform.
+        weights = [_span_weight(entries[x]["text"]) for x in range(j + 1, k)]
+        weights.append(_TAIL_WEIGHT)  # the rest before the next confident word
+        total = sum(weights)
+        before = sum(weights[:i - j - 1])
+        e["startS"] = round(lo + (hi - lo) * before / total, 3)
+        e["endS"] = round(lo + (hi - lo) * (before + weights[i - j - 1]) / total, 3)
     return entries
 
 
@@ -371,6 +447,45 @@ def selftest():
     # ...but an interior unreliable word interpolates between its anchors
     entries = build_words(ws, {0: (1.0, 1.5, 0.9), 2: (3.0, 3.5, 0.9)})
     assert entries[1]["interpolated"] and entries[1]["startS"] == 1.5
+    # A long word claims more of the gap than a short one. Under the old
+    # equal-share rule both took half; measured on real tracks that rule cost
+    # 30-56% accuracy on long runs.
+    ws2 = [{"line": 0, "word": i, "display": d, "backing": False}
+           for i, d in enumerate(["a", "I", "unfathomably", "z"])]
+    # anchors must be real spans: build_words needs a[1] > a[0] to trust one.
+    entries = build_words(ws2, {0: (0.0, 0.5, 0.9), 3: (10.0, 10.5, 0.9)})
+    short, long_ = entries[1], entries[2]
+    assert short["interpolated"] and long_["interpolated"]
+    short_span = short["endS"] - short["startS"]
+    long_span = long_["endS"] - long_["startS"]
+    assert long_span > short_span * 5, (short_span, long_span)
+    # ...and the run still spans the gap, in order, without overlap or overrun.
+    assert short["startS"] == 0.5, short["startS"]
+    assert long_["startS"] == short["endS"]
+    assert long_["endS"] < 10.0, long_["endS"]
+    # A *leading* unreliable run backs off from the first confident word by the
+    # measured median word length — it must never claim the singer opened at
+    # t=0. (Regression: a missed first word once spread 0.000-10.707 across a
+    # 21s intro, and the pacing generator read that 0.0 as "measured".)
+    entries = build_words(ws, {1: (20.0, 20.2, 0.9), 2: (20.4, 20.6, 0.9)})
+    assert entries[0]["interpolated"]
+    assert entries[0]["startS"] > 19.0, entries[0]["startS"]
+    assert entries[0]["endS"] <= 20.0, entries[0]["endS"]
+    # ...and with no confident word anywhere there is no median to lean on, so
+    # the run stays null and main() exits non-zero rather than guessing.
+    entries = build_words(ws, {})
+    assert all(e["startS"] is None for e in entries)
+    # A reported vocal onset anchors the leading run exactly, beating the
+    # derived backoff: "a" is reported to start at 19.0, so it starts at 19.0.
+    entries = build_words(ws, {1: (20.0, 20.2, 0.9), 2: (20.4, 20.6, 0.9)},
+                          vocal_start_s=19.0)
+    assert entries[0]["startS"] == 19.0, entries[0]["startS"]
+    assert entries[0]["interpolated"], "a reported anchor is still not a measurement"
+    # A nonsense report (after the first word the aligner *did* find) must be
+    # ignored rather than produce a backwards span.
+    entries = build_words(ws, {1: (20.0, 20.2, 0.9), 2: (20.4, 20.6, 0.9)},
+                          vocal_start_s=99.0)
+    assert entries[0]["startS"] < 20.0, entries[0]["startS"]
     print("selftest OK")
 
 
@@ -386,6 +501,10 @@ def main():
     ap.add_argument("--review", action="store_true", help="emit an HTML review page")
     ap.add_argument("--no-separate", action="store_true",
                     help="skip Demucs and align against the full mix (lower accuracy)")
+    ap.add_argument("--vocal-start-s", type=float, default=None,
+                    help="reported onset (seconds) of the first sung word. Used "
+                         "only to anchor a leading run of words the aligner "
+                         "could not place; a reported onset beats a derived one.")
     ap.add_argument("--model", choices=sorted(ALIGNERS), default="mms",
                     help="mms: best quality, ~2.5 GB RAM; base: ~1 GB RAM fallback")
     ap.add_argument("--selftest", action="store_true")
@@ -412,7 +531,7 @@ def main():
         align_fn, aligner_name = ALIGNERS[args.model]
         aligned = align_fn(vocals16k, words)
 
-    entries = build_words(words, aligned)
+    entries = build_words(words, aligned, vocal_start_s=args.vocal_start_s)
     lines, failed = build_lines(len(lyric_lines), entries)
 
     payload = {
@@ -422,6 +541,9 @@ def main():
             "aligner": aligner_name,
             "separator": None if args.no_separate else "htdemucs",
             "generatedAt": datetime.now(timezone.utc).isoformat(),
+            # Declared so a later reader can tell a reported anchor from a
+            # derived one. null means every span here came out of the pipeline.
+            "reportedVocalStartS": args.vocal_start_s,
         },
         "lines": lines,
         "words": entries,

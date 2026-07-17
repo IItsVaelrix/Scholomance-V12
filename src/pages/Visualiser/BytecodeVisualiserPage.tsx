@@ -472,6 +472,11 @@ export default function BytecodeVisualiserPage() {
                               className={tok.color ? 'bcv-tsword' : undefined}
                               style={tok.color ? ({ '--w': tok.color } as CSSProperties) : undefined}
                               data-sung={sung ? (sungWord?.backing ? 'backing' : 'true') : undefined}
+                              // Orthogonal to data-sung's vocal kind: this marks how
+                              // much the *timing* can be trusted. An interpolated span
+                              // was guessed between confident neighbours, so it may not
+                              // wear a measured word's spotlight.
+                              data-timing={sung && sungWord?.interpolated ? 'estimated' : undefined}
                               onMouseEnter={tok.color ? () => setHoveredWord({ word: tok.word, color: tok.color!, school: tok.school!, line: i, analysis: tok.analysis }) : undefined}
                               onMouseLeave={tok.color ? () => setHoveredWord(null) : undefined}
                             >{tok.word}</span>

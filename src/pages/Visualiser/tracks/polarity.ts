@@ -9,7 +9,7 @@ export const POLARITY: GrimoireTrack = {
   duration: 254,
   sunoUrl: 'https://suno.com/song/0ff1c2ee-6951-4f65-9204-4cbb2baf16fa',
   audioUrl: 'https://cdn1.suno.ai/0ff1c2ee-6951-4f65-9204-4cbb2baf16fa.mp3',
-  coverUrl: 'https://cdn2.suno.ai/video_gen_0ff1c2ee-6951-4f65-9204-4cbb2baf16fa_video_upload_cover_snapshot_image.jpeg',
+  coverUrl: 'https://cdn2.suno.ai/image_0ff1c2ee-6951-4f65-9204-4cbb2baf16fa.jpeg',
   meta: [
     ['Duration', '4:14'],
     ['Persona', 'Vaelrix'],

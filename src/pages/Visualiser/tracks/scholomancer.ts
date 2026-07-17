@@ -1,0 +1,158 @@
+import type { GrimoireTrack } from './types';
+
+// Scholomancer — a real Suno incantation by Vaelrix. Every value below is taken
+// from the published track (no invented BPM/key claims — VAELRIX honesty law).
+// id, creation date and lyrics come from the file's own ID3 tags; the three URLs
+// were each verified live before being written here.
+export const SCHOLOMANCER: GrimoireTrack = {
+  id: '8aa6dea3-0ba7-4f36-a419-9ee34fa16211',
+  title: 'Scholomancer',
+  artist: 'Vaelrix',
+  model: 'Scholomance V2',
+  modelVersion: 'custom',
+  duration: 174, // 2:54, measured from the master
+  sunoUrl: 'https://suno.com/song/8aa6dea3-0ba7-4f36-a419-9ee34fa16211',
+  audioUrl: 'https://cdn1.suno.ai/8aa6dea3-0ba7-4f36-a419-9ee34fa16211.mp3',
+  coverUrl: 'https://cdn2.suno.ai/image_8aa6dea3-0ba7-4f36-a419-9ee34fa16211.jpeg',
+  meta: [
+    ['Duration', '2:54'],
+    ['Model', 'Custom Suno model · Scholomance V2'],
+    ['Persona', 'Vaelrix'],
+    ['Style', 'Hip-Hop · Rap'],
+    ['Released', 'July 15, 2026'],
+    ['Source', 'suno.com'],
+  ],
+  provenance: {
+    statement: 'Crafted with human intention and AI assistance.',
+    tools: ['Suno · custom model — Scholomance V2', 'Persona — Vaelrix'],
+    assistance: 'Hip-hop · rap',
+  },
+  // Fallback only — the alignment artifact takes precedence wherever it loads.
+  // Honesty law: every value here is measured or reported, none invented.
+  //   bpm .............. 95, from Damien. It cancels out of beatS in lyricLineAt
+  //                      (nominalBeatS divides straight back out), so it cannot
+  //                      move the fallback lyric timing — but it is NOT inert,
+  //                      and an earlier draft of this note wrongly implied it was
+  //                      vestigial: computeFingerprint seeds the entire visual off
+  //                      `trackId|bpm|key`, useBeatClock drives the video renders
+  //                      from it, and RitualSyncCard prints it. Change this number
+  //                      and the artwork changes with it, silently.
+  //   leadInS .......... Damien reported a 12s intro; the forced aligner then put
+  //                      the first word ("Verbal") at 12.33s, independently.
+  //   tailS ............ last aligned word ends 168.09s of 174.42s.
+  //   *SylPerBeat ...... DEFAULT_PACING's bland even spread. Nobody measured the
+  //                      syllable density, and a default is not a claim.
+  pacing: {
+    bpm: 95,
+    leadInS: 12,
+    verseSylPerBeat: 1.2,
+    chorusSylPerBeat: 1.2,
+    tailS: 6.3,
+    coupletCostMax: 0.75,
+  },
+  // Verbatim from the master's embedded lyrics-eng tag. The forced aligner
+  // (scripts/align_lyrics.py) counts word indices over exactly these lines —
+  // edit one without re-running it and alignmentArtifactContract fails.
+  lyrics: [
+    "Verbal tetrahedron",
+    "Hurtful heaven's demon",
+    "Zelda's secret",
+    "Triforce bleeding",
+    "from the deadly speech",
+    "The head is ready to infest with legions",
+    "Medics left in devastation",
+    "Headache to a hectic",
+    "Heretic that's lacking reason",
+    "American master speaker",
+    "Character, assassin teacher",
+    "Comparing craft to either one of these",
+    "Bastards is like comparing",
+    "Eradication meteors to flashes in the pan",
+    "The magistrate of Ether",
+    "Mastered fate like Peter Pan",
+    "Calculated heat",
+    "Machine learning algorithm pulses poetry",
+    "Through ghostly hands",
+    "Supposed to be the Golden standard",
+    "Couldn't cope or stand",
+    "To the potent pen, exposing sin",
+    "with every dose that lands",
+    "Mogging like I'm Mogwai",
+    "Lyrical carbine, shoot and the stars die",
+    "Student of art fries a hard guy",
+    "Beautiful mind, funeral dark eyes",
+    "Unusual raw rhymes",
+    "I'm Suited to blow minds with a hand sign (HAND SIGN!!!)",
+    "Scholomancer, cold as cancer",
+    "The stanzas",
+    "A mythical extravaganza",
+    "My Ativan focus",
+    "Black Lotus with a wrath brush, (PANDA!!!!)",
+    "Black eyes staring through your soul",
+    "Just to peel your top off like I'm eating a banana",
+    "Mr magic devil forms",
+    "Hits the track with deadly force",
+    "Kicks will crack a head of horns",
+    "Sniffing packs of metaphors",
+    "Misery inside, the mystery green like",
+    "A Scooby-Doo van, The voodoo will land",
+    "I'm a YouTube secret, causing seppuku",
+    "To delulu view stans",
+    "When I'm choosing to span",
+    "Wingspan is states long",
+    "One wing can bring harm by flapping it",
+    "The wind like an iron fist from King Kong",
+    "Drive is intercontinental, mind a Madagascar",
+    "Lines are ravenous,",
+    "stay with rock like I'm Pat Star",
+    "Wrath bars, poetic justice, now that's art",
+    "Big Father stays smoking black tar",
+    "Bubonic phonics, pontificating pollution",
+    "Proof I'm tunnel vision",
+    "Stay with ocular occlusion",
+    "Botulinum toxin through the rhythm I'm using",
+    "Mr Utonium makes an ex to build a new skin",
+    "Coalesced sanguine with shadowy obsidian",
+    "Go against pain",
+    "turn your city to a crater",
+    "You're not privy to the danger,",
+    "I'm the prettiest disdain",
+    "Type of hatred that glistens in the rain",
+    "Like a silk road",
+    "Milk toast rappers getting roasted",
+    "Using real quotes",
+    "Verbal alchemy making plutonium from pluto",
+    "Printing opium, imagery Nickelodeon",
+    "Mentally kicking podiums",
+    "Penalty for the penning a penmanship thick in sodium",
+    "Heavy scripts, I’m toasting them",
+    "Deadly disses disposing them",
+    "Heavy resistance, hope getting choked",
+    "I'm always poisoning….",
+    "I'm harder than Graphene.",
+    "Machine being, a rap fiend",
+    "I out rap the meter in a taxi",
+    "Sitting in the back seat",
+    "The gauge reaches infinity",
+    "Affinity, emitting heat like fire Pokemon",
+    "Liken throat to bombs",
+    "Mighty flow, ignites a poet,",
+    "inviting your soul to God",
+    "Your photograph glows inside my open palm",
+    "Close it and your body crushed",
+    "Frozen stiff bullets travel through the wind",
+    "Leaving exit wounds the size of hockey pucks",
+    "Try to stop the fire",
+    "Spread inferno, painted cosmic dust",
+    "Van Halen shredding up a rapper",
+    "With demonic touch",
+    "Indigo waves drowning a pitiful face",
+    "Frown and the menu decays",
+    "Lightning like Eneru's gaze",
+    "Mighty, the pen is a blaze",
+    "frying the venue and stage.",
+    "Scholomancer.",
+    "Scholomancer.",
+  ],
+  annotations: [],
+};

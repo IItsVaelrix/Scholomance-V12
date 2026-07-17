@@ -640,7 +640,10 @@ fastify.register(helmet, {
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:"],
+      // Visualiser / discography cover art is hotlinked from Suno's image CDN
+      // (cdn2). Audio already allows cdn1 via mediaSrc. Without cdn2 here, covers
+      // load in Vite dev (no CSP) but are blocked in production by img-src.
+      imgSrc: ["'self'", "data:", "https://cdn2.suno.ai"],
       frameSrc: ["'self'", "https://www.youtube.com", "https://suno.com", "https://www.suno.com"],
       connectSrc: ["'self'", "https://api.datamuse.com", "https://api.dictionaryapi.dev"],
       mediaSrc: ["'self'", "https://audiocdn001.suno.ai", "https://cdn1.suno.ai", "blob:", "data:"],

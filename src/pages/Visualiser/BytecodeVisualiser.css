@@ -581,6 +581,14 @@
   text-shadow: 0 0 8px currentColor;
   font-style: italic;
 }
+/* The aligner guessed this word's span between confident neighbours. Brightness
+   marks time, so an uncertain time gets an uncertain edge: the glow diffuses
+   instead of striking. Orthogonal to the vocal kind above — a backing word that
+   was also interpolated keeps its italic and merely loses its hard edge. */
+.bcv-lyrics .bcv-lyric-text span[data-timing='estimated'] {
+  text-shadow: 0 0 18px currentColor;
+  opacity: 0.85;
+}
 
 /* ── Library shelf ─────────────────────────────────────────────────────── */
 .bcv-library {
