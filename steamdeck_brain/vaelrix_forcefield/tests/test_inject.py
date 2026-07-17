@@ -1,3 +1,4 @@
+import io
 import json
 import subprocess
 import sys
@@ -135,7 +136,7 @@ def test_main_survives_stdin_read_error(monkeypatch, capsys):
             raise OSError("stdin exploded")
 
     monkeypatch.setattr("sys.stdin", _Boom())
-    rc = inject.main()
+    rc = inject.main([])
     assert rc == 0
     assert capsys.readouterr().out.strip() == ""
 
@@ -145,3 +146,23 @@ def test_hook_survives_non_object_json():
         proc = _run_hook(body)
         assert proc.returncode == 0, f"non-zero for {body!r}"
         assert proc.stdout.strip() == "", f"unexpected output for {body!r}"
+
+
+def test_build_injection_failure_is_reported_not_swallowed(monkeypatch, capsys):
+    """A crashed retriever must not be indistinguishable from an empty corpus.
+
+    Before this fix, `except Exception: block = ""` made both produce identical
+    output on exit 0 — the reason nobody noticed SCDNA was unreachable.
+    """
+    import json as _json
+    from vaelrix_forcefield.scdna import inject
+
+    def _boom(_task):
+        raise RuntimeError("registry exploded")
+
+    monkeypatch.setattr(inject, "build_injection", _boom)
+    monkeypatch.setattr("sys.stdin", io.StringIO(_json.dumps({"prompt": "render the sprite"})))
+    rc = inject.main([])
+    assert rc == 0, "the hook must never break the user's turn"
+    err = capsys.readouterr().err
+    assert "registry exploded" in err, "the failure must be visible somewhere"

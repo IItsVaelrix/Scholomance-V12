@@ -63,12 +63,11 @@ def distill_query(task: str) -> str:
     return " ".join(out)
 
 
-# Tuning knob passed to detect_gene_matches. NOTE: the detector also enforces an
-# internal floor (_BASE_SCORE_MINIMUM = 0.5 on the raw overlap ratio), which
-# dominates this value — so the *effective* match floor is 0.5, not 0.35.
-# This constant only binds if that internal floor is ever lowered. Kept as the
-# documented loosen-matching surface; raising it above 0.5 would tighten matching.
-INJECT_SCORE_THRESHOLD = 0.35  # NOTE: effective floor is detector's hardcoded _BASE_SCORE_MINIMUM (0.5); this only further filters final_score, so values <=0.5 are inert
+# Passed to detect_gene_matches as the final_score floor. It MUST stay above the
+# detector's own _BASE_SCORE_MINIMUM (detector.py: 0.5) or it is inert — a knob
+# that does nothing is worse than no knob, because it invites tuning that has no
+# effect. Raise this to tighten matching; lowering it below 0.5 does nothing.
+INJECT_SCORE_THRESHOLD = 0.5
 MIN_FRESHNESS = 0.5
 MAX_GENES = 3
 
@@ -136,24 +135,29 @@ def build_injection(task: str, registry: GeneRegistry | None = None) -> str:
     return format_context(select_genes(task, registry=registry))
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """UserPromptSubmit hook entrypoint or CLI. Never raises.
 
-    Usage as hook: pipe JSON {"prompt": "..."}
-    Usage as CLI: python -m ... --prompt "your task here" [--agent grok|codex|gemini|opencode]
+    argv is injected for testability: the module's callers pass None (argparse
+    then reads sys.argv), but a test harness must be able to hand in its own
+    list. Without this, pytest's own argv leaks into parse_args.
     """
     import argparse
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--prompt", type=str, default=None, help="Direct prompt string for CLI use")
     parser.add_argument("--agent", type=str, default=None, help="Target agent for context formatting (grok, codex, gemini, opencode)")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.prompt:
         task = args.prompt
         try:
             block = build_injection(task)
-        except Exception:
+        except Exception as exc:  # never raise into the user's turn...
+            # ...but never pretend a crash is an empty corpus either. Both used to
+            # print nothing and exit 0, so an unreachable retriever looked exactly
+            # like a quiet one.
+            print(f"[scdna] injection failed: {exc!r}", file=sys.stderr)
             block = ""
         if block.strip():
             if args.agent:
@@ -177,7 +181,11 @@ def main() -> int:
     task = str(payload.get("prompt", "") or "")
     try:
         block = build_injection(task)
-    except Exception:
+    except Exception as exc:  # never raise into the user's turn...
+        # ...but never pretend a crash is an empty corpus either. Both used to
+        # print nothing and exit 0, so an unreachable retriever looked exactly
+        # like a quiet one.
+        print(f"[scdna] injection failed: {exc!r}", file=sys.stderr)
         block = ""
 
     if block.strip():
