@@ -41,16 +41,36 @@ function getPath(result: unknown, path: string): unknown {
 }
 
 export function evalPredicate(predicate: PredicateSpec, result: unknown): boolean | 'inconclusive' {
+  /**
+   * A path the harness never reported is UNSEARCHED, not false.
+   *
+   * Found by using this: a falsifier asked for `phaserCanvasCount` and the
+   * harness returned `canvasCount`. `eq` on the absent path returned false, the
+   * falsifier read as "did not fire", and the hypothesis survived — on evidence
+   * nobody had collected. That is the same error the numeric ops already guard
+   * ("unsearched counts as refutation", mirrored): here absence silently
+   * PROTECTED a claim instead of eliminating one. Both directions are lies.
+   *
+   * `falsy` is deliberately included: a missing field is not a false field. The
+   * harness declining to answer must never satisfy a predicate about the answer.
+   */
+  const missing = (path: string) => getPath(result, path) === undefined;
+
   switch (predicate.op) {
     case 'eq':
+      if (missing(predicate.path)) return 'inconclusive';
       return getPath(result, predicate.path) === predicate.value;
     case 'neq':
+      if (missing(predicate.path)) return 'inconclusive';
       return getPath(result, predicate.path) !== predicate.value;
     case 'in':
+      if (missing(predicate.path)) return 'inconclusive';
       return predicate.values.includes(getPath(result, predicate.path));
     case 'truthy':
+      if (missing(predicate.path)) return 'inconclusive';
       return Boolean(getPath(result, predicate.path));
     case 'falsy':
+      if (missing(predicate.path)) return 'inconclusive';
       return !getPath(result, predicate.path);
     case 'lt':
     case 'lte':
@@ -95,14 +115,21 @@ function receiptFor(
   return receipts.find((r) => r.observationId === observationId);
 }
 
-function predictionHolds(p: Prediction, receipts: readonly ObservationReceipt[]): boolean | 'missing' | 'bad' {
+function predictionHolds(
+  p: Prediction,
+  receipts: readonly ObservationReceipt[],
+): boolean | 'missing' | 'bad' | 'inconclusive' {
   const rec = receiptFor(receipts, p.observationId);
   if (!rec) return 'missing';
   if (rec.status !== 'observed') return 'bad';
-  // Predictions default to "observation was successfully observed" unless a
-  // path is encoded in the id as path:...  For harvested probes, presence of
-  // observed receipt for required prediction is enough; detailed checks use falsifiers.
-  return true;
+  // A prediction WITHOUT a predicate can only assert "the observation
+  // succeeded". That is honest but nearly vacuous, and it is how a prediction
+  // reading "a bounded cache exists" reported as support. Formulas should carry
+  // a predicate; this branch stays for the ones whose evidence really is the
+  // observation's mere success.
+  if (!p.predicate) return true;
+  const v = evalPredicate(p.predicate, rec.result);
+  return v;
 }
 
 function falsifierTriggered(f: Falsifier, receipts: readonly ObservationReceipt[]): boolean | 'missing' | 'bad' | 'inconclusive' {
@@ -165,7 +192,12 @@ export function evaluateHypotheses(
     if (elim) {
       byId[h.id] = 'eliminated';
       eliminated.push(h.id);
-    } else if (undetermined && !allPredOk) {
+    } else if (undetermined) {
+      // A falsifier we could not EVALUATE (harness refused, errored, or never
+      // reported the path it asks about) means we cannot say the claim survived
+      // its own test. Previously this required `&& !allPredOk`, so an
+      // untestable falsifier next to a holding prediction reported SUPPORTED —
+      // support resting on the one check nobody managed to run.
       byId[h.id] = 'underdetermined';
       underdetermined.push(h.id);
     } else if (allPredOk && !incomplete) {

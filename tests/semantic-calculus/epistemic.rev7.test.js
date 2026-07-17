@@ -144,6 +144,7 @@ describe('rev 7 — inquiry Probe plans (no harness run)', () => {
       'render.stack.listen',
       'motion.visibility.station',
       'truesight.payload.oom',
+      'listen.hidden.animation',
     ]);
   });
 

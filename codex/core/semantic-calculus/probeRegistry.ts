@@ -413,12 +413,165 @@ const TRUESIGHT_OOM_PROBE: ProbeFormula = Object.freeze({
   citeSeeds: ['codex/server/routes/panelAnalysis.routes.js'],
 });
 
+/**
+ * An animation is visibly running where nobody can see it: a glowing arc clipped
+ * into the top-left of /listen, behind the APERTURE panel, in CHAMBER mode.
+ *
+ * CONTAMINATION DECLARED. This formula was written AFTER reading
+ * AlchemicalLabScene (cx = W*0.5, cy = H*0.50) and the Phaser config
+ * (width: el.offsetWidth || window.innerWidth). That is structure, not runtime:
+ * every observation below is a runtime fact no one has collected, and the
+ * hypotheses are about runtime. A formula written after seeing the ANSWER would
+ * be a description wearing a hypothesis costume — this one is written after
+ * seeing the MAP.
+ *
+ * The rival that must stay on the table: the background is a background. Seeing
+ * a corner of it may be the design working. h_intended exists so that answer can
+ * win.
+ */
+const LISTEN_HIDDEN_ANIM_PROBE: ProbeFormula = Object.freeze({
+  id: 'listen.hidden.animation',
+  version: '2.0.0',
+  patterns: [
+    'why is there an arc in the top left corner',
+    'exponential processing of animations',
+    'is an animation running hidden behind z layering',
+    'diagnose listen hidden animation',
+    'why is the background off centre',
+  ],
+  keywords: ['animation', 'z layering', 'hidden', 'top left', 'off centre', 'off center', 'occluded', 'hexagram'],
+  observations: [
+    {
+      id: 'obs.canvas.inventory',
+      description: 'Count canvases on /listen and report each one\'s internal resolution, CSS box, and parent',
+      harness: 'dom.canvas.inventory',
+      required: true,
+    },
+    {
+      id: 'obs.scene.center',
+      description: 'Where the scene believes the viewport centre is (scale.width/height at runtime) vs the element it renders into',
+      harness: 'phaser.scene.metrics',
+      required: true,
+    },
+    {
+      id: 'obs.raf.occluded',
+      description: 'Whether the background game still ticks while CHAMBER occludes it, and at what rate',
+      harness: 'phaser.loop.tick_rate',
+      required: true,
+    },
+  ],
+  hypotheses: [
+    {
+      id: 'h_orphan_canvas',
+      claim:
+        'A second Phaser canvas is orphaned on the page (StrictMode double-mount), drawing its own centred scene at a size nobody laid out — so its arc lands in the corner while the live canvas draws correctly.',
+      predictions: [
+        {
+          id: 'p_multiple_canvases',
+          description: 'More than one canvas is mounted on /listen',
+          required: true,
+          observationId: 'obs.canvas.inventory',
+          predicate: { op: 'gt', path: 'canvasCount', value: 1 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_single_canvas',
+          description: 'Exactly one canvas is mounted — nothing was orphaned',
+          observationId: 'obs.canvas.inventory',
+          predicate: { op: 'eq', path: 'canvasCount', value: 1 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen/AlchemicalLabBackground.tsx', 'src/ui/animation/phaser-runtime.adapter'],
+    },
+    {
+      id: 'h_stale_size',
+      claim:
+        'The game was sized from el.offsetWidth before layout, so the scene centres on a stale/fallback size. cx = W*0.5 is correct arithmetic over a wrong W, which puts the hexagram in the corner.',
+      predictions: [
+        {
+          id: 'p_size_mismatch',
+          description: 'The scene centre lands away from the element centre',
+          required: true,
+          observationId: 'obs.scene.center',
+          predicate: { op: 'gt', path: 'centerOffsetPx', value: 2 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_size_matches',
+          description: 'Scene dimensions match the rendered element within a pixel or two',
+          observationId: 'obs.scene.center',
+          predicate: { op: 'lte', path: 'centerOffsetPx', value: 2 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen/AlchemicalLabBackground.tsx', 'src/pages/Listen/scenes/AlchemicalLabScene.js'],
+    },
+    {
+      id: 'h_occluded_burn',
+      claim:
+        'Independent of position: the background game runs a full-rate WEBGL loop while CHAMBER occludes nearly all of it, so the GPU fills pixels no one sees. Wasteful whether or not the centring is wrong.',
+      predictions: [
+        {
+          id: 'p_ticks_occluded',
+          description: 'The loop ticks above 30fps while occluded',
+          required: true,
+          observationId: 'obs.raf.occluded',
+          predicate: { op: 'gt', path: 'fpsWhileOccluded', value: 30 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_throttled',
+          description: 'The loop is paused or throttled while occluded',
+          observationId: 'obs.raf.occluded',
+          predicate: { op: 'lte', path: 'fpsWhileOccluded', value: 5 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen/ListenPage.tsx'],
+    },
+    {
+      id: 'h_intended',
+      claim:
+        'No bug. One correctly-sized canvas, centred, and the arc is the atmosphere layer showing at the edge of the chamber exactly as designed.',
+      predictions: [
+        {
+          id: 'p_centred',
+          description: 'The scene centre matches the element centre',
+          required: true,
+          observationId: 'obs.scene.center',
+          predicate: { op: 'lte', path: 'centerOffsetPx', value: 2 },
+        },
+        {
+          id: 'p_uniform_scale',
+          description: 'The canvas is not distorted — an intended background is not squeezed on one axis',
+          required: true,
+          observationId: 'obs.scene.center',
+          predicate: { op: 'falsy', path: 'nonUniformScale' },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_off_centre',
+          description: 'The scene centre is materially off from the element centre',
+          observationId: 'obs.scene.center',
+          predicate: { op: 'gt', path: 'centerOffsetPx', value: 2 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen/AlchemicalLabBackground.tsx'],
+    },
+  ],
+  maxRisk: 'read_only',
+  citeSeeds: ['src/pages/Listen/AlchemicalLabBackground.tsx'],
+});
+
 export const PROBE_FORMULAS: readonly ProbeFormula[] = Object.freeze([
   CSP_PROBE,
   CDN_PROBE,
   RENDER_STACK_PROBE,
   STATION_VIS_PROBE,
   TRUESIGHT_OOM_PROBE,
+  LISTEN_HIDDEN_ANIM_PROBE,
 ]);
 
 export function getProbe(id: string): ProbeFormula | undefined {

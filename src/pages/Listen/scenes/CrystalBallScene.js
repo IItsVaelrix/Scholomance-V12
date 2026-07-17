@@ -157,13 +157,26 @@ export function buildCrystalBallScene(Phaser) {
       align: 'center',
     }).setOrigin(0.5).setAlpha(0.18).setDepth(20);
 
-    const maskShape = this.make.graphics({ add: false });
-    maskShape.fillStyle(0xffffff);
-    maskShape.fillCircle(this._cx, this._cy, this._r);
-    const mask = maskShape.createGeometryMask();
-    this.coreLayer.setMask(mask);
-    this.patternLayer.setMask(mask);
-    this.glyphText.setMask(mask);
+    // Clip the orb layers to the ball. Same Phaser 4 trap as
+    // SignalChamberScene._applyRadarMask: setMask is a silent no-op under WebGL
+    // (it warns and returns), so these three layers rendered unclipped. This one
+    // never showed in the console because STATION mounts CrystalBall only when
+    // ignited — the bug was latent, not absent.
+    //
+    // _orbMasks is retained: the Mask holds the only reference to its shape, and
+    // dropping it lets the shape be collected and the mask stop working.
+    this._orbMasks = Phaser.Actions.AddMaskShape(
+      [this.coreLayer, this.patternLayer, this.glyphText].filter(Boolean),
+      {
+        shape: 'circle',
+        region: new Phaser.Geom.Rectangle(
+          this._cx - this._r,
+          this._cy - this._r,
+          this._r * 2,
+          this._r * 2,
+        ),
+      },
+    );
 
     // Phaser 4: postFX→Filters; addBloom removed → Glow + brightness lift.
     try {

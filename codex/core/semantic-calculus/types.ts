@@ -240,11 +240,25 @@ export type CausalHypothesisStatus =
   | 'underdetermined'
   | 'exclusive';
 
+/**
+ * A prediction the hypothesis makes about an observation.
+ *
+ * `predicate` is what makes this a prediction rather than a wish. Without one,
+ * "holds" degrades to "the observation came back at all" — which is how a claim
+ * whose prediction was literally "a bounded cache exists" reported as SUPPORTED
+ * against a cache that existed everywhere. The description is prose for humans;
+ * only the predicate is checked, so a description promising more than its
+ * predicate tests is theatre.
+ *
+ * Optional for back-compat with formulas whose evidence is the observation's
+ * mere success (e.g. "the CSP header is present"). Prefer a predicate.
+ */
 export interface Prediction {
   id: string;
   description: string;
   required: boolean;
   observationId: string;
+  predicate?: PredicateSpec;
 }
 
 export interface Falsifier {

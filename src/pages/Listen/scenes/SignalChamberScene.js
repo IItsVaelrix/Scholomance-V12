@@ -124,12 +124,32 @@ export function buildSignalChamberScene(Phaser) {
     this._rdGrid.lineStyle(1, 0xd5b34b, 0.09); for (let i = 1; i <= 4; i++) this._rdGrid.strokeCircle(cx, cy, (r / 4) * i);
   }
 
+  /**
+   * Clip the radar layers to the radar dial.
+   *
+   * Phaser 4 DROPPED setMask under WebGL. It does not throw — it logs
+   * "Mask.setMask: This method is not supported in WebGL. Create a Mask filter
+   * instead." and returns, so the four calls below silently did nothing and the
+   * layers rendered unclipped. Four targets, four warnings, no mask, no error.
+   * This game is `type: 2` (WEBGL), so it was never masked at runtime.
+   *
+   * v4's replacement is a Mask FILTER. AddMaskShape fits a unit shape to a
+   * region, so the circle is expressed as the dial's bounding box rather than a
+   * centre+radius.
+   *
+   * The returned Mask holds the only reference to its shape GameObject (the
+   * shape is removed from the display list on creation), so `_radarMasks` is
+   * retained deliberately: drop it and the shapes are collected and the masks
+   * stop working.
+   */
   _applyRadarMask() {
     const cx = this._radarCX, cy = this._radarCY, r = this._radarR;
-    const maskGfx = this.make.graphics({ add: false });
-    maskGfx.fillStyle(0xffffff); maskGfx.fillCircle(cx, cy, r);
-    const mask = maskGfx.createGeometryMask();
-    [this._rdPattern, this._rdGeo, this._rdWave, this._rdScan].forEach(g => g.setMask(mask));
+    const targets = [this._rdPattern, this._rdGeo, this._rdWave, this._rdScan].filter(Boolean);
+    if (!targets.length) return;
+    this._radarMasks = Phaser.Actions.AddMaskShape(targets, {
+      shape: 'circle',
+      region: new Phaser.Geom.Rectangle(cx - r, cy - r, r * 2, r * 2),
+    });
   }
 
   _bakeRadarTextures() {
