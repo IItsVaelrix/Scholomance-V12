@@ -188,7 +188,7 @@ Resolved by experiment, because the local docs do not state it:
    resolve, or exit 1. A capability claim that cannot be falsified does not ship.
 
 4. **Trigger hook** — `scripts/scdna-capability-inject.sh` → a new module.
-   `file_path` → glob match → dedupe on `(session_id, domain)` → emit
+   `file_path` → glob match → cadence gate (re-arm after 10 edits) → emit
    `additionalContext`. Never denies. Never silently swallows.
 
 5. **Plumbing repair (A)** — the two defects in §2.3 only. `distill_query` is
@@ -205,7 +205,7 @@ AUTHOR     duplication -> candidate surfaced -> DAMIEN REVIEWS -> validate
            -> checksum -> commit -> history preserved
 VERIFY     npm run verify:capabilities -> every path resolves -> exit 1 if not
 RETRIEVE   PreToolUse(Write|Edit) -> file_path -> glob match surfaces
-           -> dedupe(session_id, domain) -> additionalContext -> Claude's turn
+           -> cadence gate (RE_ARM_EDITS=10) -> additionalContext -> Claude's turn
 REPLAY     transcript JSONL -> ordered paths -> simulate -> assert fired-before
 ```
 
@@ -240,14 +240,15 @@ ageing capability packet is a machine for producing exactly that.
 
 Acceptance is the **replay harness** against the 2026-07-17 transcript: would
 `phonology.capability.json` have fired before `_span_weight` was written? It also
-settles the **dedupe cadence** empirically (fire-once vs fire-always: did it land
+settles the **cadence** empirically (fire-once vs fire-always vs re-arm: did it land
 before the mistake, and how noisy was it?) rather than by intuition.
 
 Selftests (`--selftest`, dependency-free, per repo convention), each written to
 be capable of failing:
 
 - **glob match** — a path outside `surfaces` must not fire (anti-wallpaper).
-- **dedupe** — once per `(session_id, domain)`.
+- **cadence** — quiet on the next edit; re-arms after `RE_ARM_EDITS` (=10). Fire-once
+  is refuted by the replay (§10.1) and must not be re-introduced.
 - **checksum** — mutate a byte, assert refusal.
 - **stale path** — dead path is marked STALE, not served as fact.
 - **anti-swallow** — force an exception, assert it reaches `additionalContext`.
@@ -286,9 +287,16 @@ word path (cheap and independent — a candidate follow-up, not this plan).
 
 ## 10. Open questions
 
-1. **Dedupe cadence** — fire-once risks landing hours early (today's first
-   `align_lyrics.py` edit was the zero-anchor fix, long before `_span_weight`);
-   fire-always risks wallpaper. Decided by replay, not by argument.
+1. ~~**Dedupe cadence**~~ — **ANSWERED by replay, 2026-07-17.** Session
+   `56188e89`: 74 edits, 14 on phonology surfaces, first hit **#14**, the
+   `_span_weight` duplication **#51**. Fire-once is **refuted** — it serves 37
+   edits early, during a task about anchor rules, and is long stale by the moment
+   it exists to prevent. Fire-always lands but serves 14×. A **re-arm window of
+   10 edits** serves at #14/#33/#51: three times, and it lands on the
+   duplication. `RE_ARM_EDITS = 10`. Re-measure with
+   `scripts/replay_capabilities.py` before changing it.
+   *The guess in the design review ("fire-once may land hours early") was right,
+   and would have shipped anyway had the harness not been run first.*
 2. **Which domains after `phonology`** — candidates: `resonance` (three schemas),
    `alignment` (two aligners), `visualiser-pacing` (bpm seeds the fingerprint).
 3. **Does `verify:capabilities` block CI or only warn** on a dead path?
