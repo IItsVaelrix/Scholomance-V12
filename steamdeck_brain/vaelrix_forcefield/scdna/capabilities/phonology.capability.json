@@ -1,0 +1,64 @@
+{
+  "contract": "SCDNA-CAPABILITY-v1",
+  "version": "1.0.0",
+  "domain": "phonology",
+  "surfaces": [
+    "scripts/align_lyrics.py",
+    "scripts/scan_bpm.py",
+    "codex/core/phonology/**",
+    "src/pages/Visualiser/AlbumLyrics.tsx",
+    "src/pages/Visualiser/BytecodeVisualiserPage.tsx",
+    "src/kits/scholomance-visualizer-kit/utils/lyricAlignment.ts"
+  ],
+  "capabilities": [
+    {
+      "need": "word duration / syllable weight / how long a word occupies the voice",
+      "canonical": "CmuPhonemeEngine (codex/core/phonology/cmu.phoneme.engine.js) reads this file; align_lyrics.py _span_weight reads it directly",
+      "path": "node_modules/cmudict/lib/cmu/cmudict.0.7a",
+      "coverage": "95-99% of lyric words; fall back to letter count, the next best proxy measured",
+      "evidence": "phoneme-weighted interpolation cut mean placement error 46-63% on 12-word runs across three tracks vs equal shares; beat character-length at nearly every run length; vowel-nuclei (plain syllable count) was worst of the three",
+      "forbidden": [
+        "hand-rolling a vowel-group syllable counter — 'strength' is 1 syllable and 7 phonemes",
+        "melismaBonus as a model of sung stretch: it matches /([aeiou])\\1{2,}/ in the SPELLING and returned 0 for all 577 words of a real lyric",
+        "spreading interpolated words evenly across a gap — 'I' and 'unfathomably' do not take the same time"
+      ]
+    },
+    {
+      "need": "syllabification",
+      "canonical": "Syllabifier",
+      "path": "codex/core/phonology/syllabifier.js",
+      "forbidden": [
+        "graphemic vowel-group heuristics outside a documented pre-init fallback"
+      ]
+    },
+    {
+      "need": "grapheme-to-phoneme for words absent from cmudict",
+      "canonical": "runG2PJury",
+      "path": "codex/core/phonology/g2p/g2p.adapter.js",
+      "forbidden": [
+        "guessing a pronunciation inline"
+      ]
+    },
+    {
+      "need": "lyric timing / forced alignment",
+      "canonical": "align_lyrics.py (MMS_FA + demucs) — produces alignment-v1 artifacts the frontend consumes",
+      "path": "scripts/align_lyrics.py",
+      "evidence": "NOTE: scripts/align-track.mts is a SECOND, WhisperX-based aligner producing a different sidecar format. Which one wins has never been decided; align_lyrics.py is the one wired to public/data/alignment and the visualiser.",
+      "forbidden": [
+        "adding a third aligner",
+        "assuming align-track.mts output is interchangeable"
+      ]
+    },
+    {
+      "need": "is a declared bpm real, or a DEFAULT_PACING placeholder?",
+      "canonical": "scan_bpm.py — Rayleigh lock of confident word onsets against a 16th grid, judged against a shuffled-gap noise ceiling",
+      "path": "scripts/scan_bpm.py",
+      "evidence": "caught a fabricated bpm 120 on Sonic Thaumaturgy (audio says 90.00, later confirmed); bpm seeds computeFingerprint, so a wrong tempo renders the wrong visual silently",
+      "forbidden": [
+        "writing a bpm with no stated provenance",
+        "treating DEFAULT_PACING's 120 as measured"
+      ]
+    }
+  ],
+  "checksum": "scd64:d6c27c43a92c199ea122b7e9da91e86df14149874a8185227624dd49bc1cd06a"
+}
