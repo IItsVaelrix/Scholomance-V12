@@ -25,13 +25,9 @@ def test_declared_bpm_for_picks_the_real_track_not_the_commented_stub():
 
 
 class _ForcedOrderDir:
-    """Stands in for TRACKS_DIR but yields glob() results in a fixed,
-    deliberately adversarial order -- buggy file first. This is what an
-    unlucky filesystem ordering looks like: Path.glob's real order is
-    filesystem-dependent, so on THIS machine the naive old implementation
-    happens to see polarity.ts before maze-screensaver.ts and gets the
-    right answer by luck (see the finding's own measurement). Forcing the
-    order removes the luck and makes the bug reproducible on any machine."""
+    """Stands in for TRACKS_DIR but yields glob() results in a fixed order.
+    Path.glob's real order is filesystem-dependent, so forcing it is the only
+    way to make an ordering bug reproducible on any machine."""
 
     def __init__(self, real_dir, ordered_names):
         self._real_dir = real_dir
@@ -41,19 +37,53 @@ class _ForcedOrderDir:
         return [self._real_dir / name for name in self._ordered_names]
 
 
-def test_declared_bpm_for_is_immune_to_filesystem_glob_order():
-    """Regardless of the order Path.glob happens to hand files back in,
-    declared_bpm_for must deterministically prefer the real declaration.
-    This is the test that fails deterministically against the old code
-    (which trusted raw glob order and matched the first bpm: it saw,
-    comment or not) -- see the RED run captured in the task report."""
+def test_declared_bpm_for_resolves_the_real_track_under_any_glob_order():
+    """The real polarity.ts / maze-screensaver.ts pair, in BOTH glob orders.
+
+    Note what this does and does not prove: because maze-screensaver.ts's only
+    bpm: line is commented out, comment-stripping alone settles this pair, so
+    the answer is 93 either way. That makes this a test of comment-stripping
+    under adversarial order -- NOT a test of sorted(). The sorted() coverage
+    lives in the next test, which needs two LIVE declarations to have anything
+    for an ordering rule to decide between.
+    """
     real_dir = scan_bpm.TRACKS_DIR
-    forced = _ForcedOrderDir(real_dir, ["maze-screensaver.ts", "polarity.ts"])
-    scan_bpm.TRACKS_DIR = forced
+    for order in (["maze-screensaver.ts", "polarity.ts"],
+                  ["polarity.ts", "maze-screensaver.ts"]):
+        scan_bpm.TRACKS_DIR = _ForcedOrderDir(real_dir, order)
+        try:
+            assert scan_bpm.declared_bpm_for(SHARED_ID) == (93.0, "polarity.ts"), order
+        finally:
+            scan_bpm.TRACKS_DIR = real_dir
+
+
+def test_declared_bpm_for_is_deterministic_when_two_files_both_declare(tmp_path):
+    """Two files, same id, BOTH with a live positive bpm: only an ordering rule
+    can decide which wins. This is the test the old 'adversarial glob order'
+    one was meant to be: its order (["maze-screensaver.ts", "polarity.ts"]) was
+    already sorted() order, so sorted() -- the actual determinism fix -- had
+    zero coverage and could have been deleted with the suite still green.
+
+    Here the answer is order-dependent by construction, so feeding glob() the
+    REVERSED order fails unless declared_bpm_for imposes sorted() itself.
+    """
+    track_id = "aaaaaaaa-0000-0000-0000-000000000000"
+    for name, bpm in (("a-first.ts", 93), ("z-last.ts", 145)):
+        (tmp_path / name).write_text(
+            f"export const T = {{ id: '{track_id}', pacing: {{ bpm: {bpm} }} }};\n",
+            encoding="utf-8",
+        )
+    reversed_order = ["z-last.ts", "a-first.ts"]
+    assert reversed_order != sorted(reversed_order), (
+        "the forced order must NOT already equal sorted() order, or sorted() goes untested"
+    )
+    orig = scan_bpm.TRACKS_DIR
+    scan_bpm.TRACKS_DIR = _ForcedOrderDir(tmp_path, reversed_order)
     try:
-        assert scan_bpm.declared_bpm_for(SHARED_ID) == (93.0, "polarity.ts")
+        # sorted() must beat the glob order it was handed: a-first.ts wins.
+        assert scan_bpm.declared_bpm_for(track_id) == (93.0, "a-first.ts")
     finally:
-        scan_bpm.TRACKS_DIR = real_dir
+        scan_bpm.TRACKS_DIR = orig
 
 
 def test_commented_out_bpm_is_never_returned(tmp_path):
@@ -113,6 +143,55 @@ def test_period_for_and_assess_never_see_a_zero_bpm():
     # assess() must be callable with the declared bpm without blowing up.
     verdict, *_rest = scan_bpm.assess(times, declared=bpm)
     assert verdict in {"CONSISTENT", "REFUTED", "NOT ESTABLISHED", "MEASURED"}
+
+
+def _sung_at_96(seed=1, n=400):
+    """Word onsets provably locked to a 16th grid at 96bpm, with human jitter,
+    at irregular subdivisions (evenly-spaced words would lock to sub-harmonics
+    just as hard and prove nothing). Mirrors scan_bpm.selftest's generator."""
+    import random
+    period = (60.0 / 96.0) / 4
+    r = random.Random(seed)
+    t, k = [], 0
+    for _ in range(n):
+        k += r.choice([1, 2, 2, 3, 4, 6])
+        t.append(k * period + r.gauss(0, period * 0.12))
+    return sorted(t)
+
+
+def test_declared_harmonic_is_not_blessed_as_consistent():
+    """The confirmation-bias bug: onsets provably at 96bpm, declared 192.
+
+    192 is 96's harmonic, so it locks weakly but still clears the shuffled-gap
+    noise ceiling (R=0.346 vs bar 0.299). The old assess() tested `declared`
+    BEFORE `peak` and returned on the first hit, so it blessed 192 CONSISTENT
+    while a peak more than twice as strong (96 at R=0.775) sat unexamined.
+    bpm seeds computeFingerprint(trackId|bpm|key) -- 96 and 192 render
+    different visuals -- so this was a confident wrong answer in the tool whose
+    docstring calls that the worst possible outcome.
+    """
+    times = _sung_at_96()
+    verdict, peak, peak_R, ceiling, r_dec = scan_bpm.assess(times, declared=192.0)
+
+    # The premise must hold, or the test is not exercising what it claims.
+    assert abs(peak - 96.0) < 1.0, f"generator did not produce a 96bpm peak: {peak}"
+    assert r_dec > ceiling * scan_bpm.MARGIN, (
+        "premise: the harmonic DOES clear the noise ceiling — that is exactly why "
+        "clearing the ceiling cannot be sufficient on its own"
+    )
+    assert r_dec < peak_R * scan_bpm.DECLARED_SHARE, (r_dec, peak_R)
+    assert verdict == "REFUTED", (
+        f"a declared harmonic at R={r_dec:.3f} must not be blessed while the peak "
+        f"sits at R={peak_R:.3f}; got {verdict}"
+    )
+
+
+def test_declared_true_tempo_is_still_consistent():
+    """The other side of the fix: tightening assess() must not make it refuse
+    the truth. The same onsets, declared 96, must still read CONSISTENT."""
+    times = _sung_at_96()
+    verdict, peak, peak_R, _ceiling, r_dec = scan_bpm.assess(times, declared=96.0)
+    assert verdict == "CONSISTENT", (verdict, peak, peak_R, r_dec)
 
 
 def test_selftest_still_passes_in_process():

@@ -53,6 +53,20 @@ SUBDIVISION = 4
 BPM_LO, BPM_HI, BPM_STEP = 60.0, 200.0, 0.25
 # How far above the shuffled-gap ceiling R must sit to count as evidence.
 MARGIN = 1.3
+# Clearing the noise ceiling is necessary but NOT sufficient to bless a declared
+# bpm. A 2x/0.5x harmonic of the true tempo also locks -- weakly, but often well
+# clear of the floor -- so a test that only asks "does declared beat the noise?"
+# prefers to CONFIRM: it blesses 192 for a 96bpm track and never looks at the
+# peak sitting twice as high elsewhere. bpm seeds computeFingerprint, so 96 and
+# 192 render different visuals; blessing the wrong one is the confident wrong
+# answer this tool exists to prevent.
+#
+# So a declared value must ALSO explain most of the best lock available.
+# MEASURED on this catalogue (2026-07-17): every genuinely consistent
+# declaration scores R_declared/R_peak = 1.000 (declared IS the peak), while the
+# strongest false harmonic measured scores 0.446 (192 declared, true tempo 96).
+# 0.7 sits in the empty gap between those two populations.
+DECLARED_SHARE = 0.7
 
 
 def rayleigh(times, period):
@@ -106,13 +120,23 @@ def confident_onsets(artifact):
 
 
 def assess(times, declared=None):
-    """-> (verdict, peak_bpm, peak_R, ceiling, R_at_declared)"""
+    """-> (verdict, peak_bpm, peak_R, ceiling, R_at_declared)
+
+    A declared bpm is CONSISTENT only if it clears the noise ceiling AND is not
+    substantially weaker than the peak (see DECLARED_SHARE). Both conditions,
+    because the first alone lets a harmonic pass: the question is not "is the
+    declared value better than nothing?" but "is it the best account of this
+    audio?". A declared value that merely beats noise while a far stronger lock
+    sits elsewhere is REFUTED by that stronger lock, not confirmed by the floor.
+    """
     ranked = scan(times)
     peak_R, peak_bpm = ranked[0]
     ceiling = noise_ceiling(times)
     r_declared = rayleigh(times, period_for(declared)) if declared else None
 
-    if declared is not None and r_declared > ceiling * MARGIN:
+    if (declared is not None
+            and r_declared > ceiling * MARGIN
+            and r_declared >= peak_R * DECLARED_SHARE):
         return "CONSISTENT", peak_bpm, peak_R, ceiling, r_declared
     if peak_R > ceiling * MARGIN:
         return ("REFUTED" if declared is not None else "MEASURED",

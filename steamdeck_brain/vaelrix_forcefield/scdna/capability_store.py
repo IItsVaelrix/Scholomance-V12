@@ -68,13 +68,11 @@ def _relativize(path: str) -> str:
 
 def matches_surface(rel_path: str, packet: dict) -> bool:
     rel = _relativize(rel_path)
-    for surface in packet.get("surfaces", []):
-        if fnmatch.fnmatch(rel, surface):
-            return True
-        # fnmatch's * crosses separators, but "a/**" should also match "a/b/c".
-        if surface.endswith("/**") and rel.startswith(surface[:-3] + "/"):
-            return True
-    return False
+    # fnmatch's `*` crosses separators, so "a/**" already matches "a/b/c" and
+    # "a/b/c/d" while correctly rejecting "ab/c". No separator-aware special
+    # case is needed; one was removed here after measurement refuted the
+    # premise that it was.
+    return any(fnmatch.fnmatch(rel, surface) for surface in packet.get("surfaces", []))
 
 
 def packets_for_path(path: str, packets: list[dict]) -> list[dict]:
