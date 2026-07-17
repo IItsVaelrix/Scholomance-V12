@@ -28,6 +28,55 @@ function tierColorClass(school, tier) {
   return `grimoire-word--${school} ${tierClass}`;
 }
 
+/**
+ * Above this many moved positions the per-node range scan is more expensive than
+ * just dirtying everything, so the sweep falls back. Editing near the top of a
+ * document re-keys every charStart downstream and legitimately lands here.
+ */
+export const FULL_SWEEP_THRESHOLD = 200;
+
+/**
+ * charStarts whose resonance tier actually MOVED between two gates.
+ *
+ * Both directions matter and each is a real bug if dropped:
+ *  - a position whose tier changed (grey -> rhyme, rhyme -> assonance)
+ *  - a position that VANISHED from the gate (rhyme -> grey), which only shows up
+ *    by walking the previous gate's keys
+ *
+ * A missing entry here leaves a word painted with a resonance it no longer has,
+ * so this errs toward reporting change.
+ */
+export function changedCharStarts(prev, next) {
+  const before = prev instanceof Map ? prev : new Map();
+  const after = next instanceof Map ? next : new Map();
+  const changed = new Set();
+  for (const [charStart, tier] of after) {
+    if (before.get(charStart) !== tier) changed.add(charStart);
+  }
+  for (const charStart of before.keys()) {
+    if (!after.has(charStart)) changed.add(charStart);
+  }
+  return changed;
+}
+
+/**
+ * Dirty a node iff a moved position falls inside its text.
+ *
+ * A TextNode may hold several words (branch (b) finds them by index), so an
+ * exact charStart match is not enough — the node's whole range must be tested.
+ * A TruesightWordNode holds exactly one word, and the range test covers it too.
+ */
+function markDirtyIfTouched(node, changed) {
+  const start = computeCharStartFromLexical(node);
+  const end = start + node.getTextContentSize();
+  for (const charStart of changed) {
+    if (charStart >= start && charStart < end) {
+      node.markDirty();
+      return;
+    }
+  }
+}
+
 export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, isTruesight, isQuarantined, analyzedWordsByCharStart, analyzedWordsByIdentity, theme, resonantCharStarts }) {
   const [editor] = useLexicalComposerContext();
 
@@ -246,18 +295,53 @@ export default function TruesightPlugin({ analyzedDocument: _analyzedDocument, i
 
   const prevResonantRef = useRef(resonantCharStarts);
   useEffect(() => {
-    if (prevResonantRef.current !== resonantCharStarts) {
-      prevResonantRef.current = resonantCharStarts;
-      // The gate changed (e.g. async analysis filled the resonant Set after
-      // first render). Re-run the transform over EVERY word-bearing node so
-      // existing words re-evaluate against the new Set. Marking only
-      // $nodesOfType(TextNode) skips already-coloured TruesightWordNodes
-      // (__type 'truesight-word'), which left late-arriving resonance grey.
-      editor.update(() => {
+    const prev = prevResonantRef.current;
+    const next = resonantCharStarts;
+    if (prev === next) return;
+    prevResonantRef.current = next;
+
+    // WHY A CONTENT DIFF AND NOT `prev !== next`.
+    //
+    // buildResonanceGate returns a NEW Map on every call, and this effect's dep
+    // is memoized on the upstream analysis object in ReadPage, so every debounced
+    // analysis minted a fresh identity. The old check was ALWAYS TRUE: it swept and
+    // replaced every word-bearing node in the document on every analysis,
+    // whether or not a single word's resonance had actually moved.
+    //
+    // That is not merely wasted work. The transform's move is
+    // `piece.replace(truesightNode)`, so a full sweep mints an entirely new node
+    // for every word — which defeats Lexical's structural sharing between editor
+    // states. Each sweep then pushes a full, non-shared copy of the document onto
+    // the history stack, and @lexical/history's maxDepth defaults to `null`
+    // (unbounded — see its own docstring). Retained nodes grew as
+    // analyses x document-size until the renderer died. Appending one character
+    // to a 5k track replaced ~1000 nodes; it now replaces the few that changed.
+    //
+    // Under-dirtying is the real hazard here, so the diff is deliberately
+    // conservative: a charStart counts as changed if its tier moved OR vanished,
+    // and a node is dirtied if ANY changed position falls inside its text range.
+    // Missing one leaves late-arriving resonance grey — the exact regression
+    // guarded by tests/qa/features/annotation-per-line-probe.test.jsx.
+    const changed = changedCharStarts(prev, next);
+
+    // The identity churned but the meaning did not. Nothing to re-evaluate.
+    if (changed.size === 0) return;
+
+    editor.update(() => {
+      // When most of the gate moved (e.g. an edit near the top re-keys every
+      // charStart downstream), the per-node range scan costs more than it saves.
+      // Fall back to the full sweep: no worse than the previous behaviour.
+      if (changed.size > FULL_SWEEP_THRESHOLD) {
         for (const node of $nodesOfType(TextNode)) node.markDirty();
         for (const node of $nodesOfType(TruesightWordNode)) node.markDirty();
-      });
-    }
+        return;
+      }
+      // Both node types, for the same reason the full sweep needed both:
+      // $nodesOfType(TextNode) filters on exact __type === 'text', so it
+      // excludes already-tokenized TruesightWordNodes ('truesight-word').
+      for (const node of $nodesOfType(TextNode)) markDirtyIfTouched(node, changed);
+      for (const node of $nodesOfType(TruesightWordNode)) markDirtyIfTouched(node, changed);
+    });
   }, [editor, resonantCharStarts]);
 
   return null;
