@@ -6,6 +6,7 @@
  * Compiler never executes harnesses — only seals plans/reports.
  */
 
+import { SEMANTIC_CALCULUS_ERRORS } from './types.ts';
 import type {
   CausalHypothesis,
   ObservationRequest,
@@ -573,6 +574,46 @@ export const PROBE_FORMULAS: readonly ProbeFormula[] = Object.freeze([
   TRUESIGHT_OOM_PROBE,
   LISTEN_HIDDEN_ANIM_PROBE,
 ]);
+
+/**
+ * THE FALSIFIABILITY LAW — a hypothesis without a falsifier is not a hypothesis.
+ *
+ * `falsifiers` is an array, so the type system happily permits an empty one. Feed
+ * evaluateHypotheses such a claim and it never sets `elim` or `undetermined`, so
+ * the moment its predictions hold it reports SUPPORTED — always, on every corpus,
+ * forever. A claim that cannot lose.
+ *
+ * That is the same shape as every defect this repo produced today:
+ * `decision.kind !== decision.kind`; an identity check on an object rebuilt every
+ * call; a prediction with no predicate; Phaser's setMask warning and returning.
+ * Four checks that could not fail. This law makes the fifth unrepresentable in the
+ * one place that exists to kill claims — rejected at construction, not at review,
+ * because review is what already missed the other four.
+ *
+ * Every falsifier carries a predicate by type. The hole was only ever the count.
+ */
+export function assertFalsifiable(probe: ProbeFormula): void {
+  for (const h of probe.hypotheses) {
+    if (!h.falsifiers.length) {
+      throw new Error(
+        `${SEMANTIC_CALCULUS_ERRORS.UNFALSIFIABLE_HYPOTHESIS}: ${probe.id}/${h.id} — ` +
+        'no falsifier. Name the observation that would kill it, or it is not a claim.',
+      );
+    }
+    for (const f of h.falsifiers) {
+      if (!probe.observations.some((o) => o.id === f.observationId)) {
+        throw new Error(
+          `${SEMANTIC_CALCULUS_ERRORS.UNFALSIFIABLE_HYPOTHESIS}: ${probe.id}/${h.id}/${f.id} — ` +
+          `falsifier asks for "${f.observationId}", which this probe never collects. ` +
+          'A falsifier aimed at evidence nobody gathers cannot fire.',
+        );
+      }
+    }
+  }
+}
+
+/** Enforced at module load: an unfalsifiable formula never reaches a seal. */
+for (const probe of PROBE_FORMULAS) assertFalsifiable(probe);
 
 export function getProbe(id: string): ProbeFormula | undefined {
   return PROBE_FORMULAS.find((p) => p.id === id);

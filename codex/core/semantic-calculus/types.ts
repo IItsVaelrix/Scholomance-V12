@@ -532,6 +532,8 @@ export const SEMANTIC_CALCULUS_ERRORS = Object.freeze({
   RECEIPT_MISMATCH: 'SEMANTIC_CALCULUS_RECEIPT_MISMATCH',
   /** F21 — a Do whose capability demands confirmation that was never supplied. */
   UNCONFIRMED_DO: 'SEMANTIC_CALCULUS_UNCONFIRMED_DO',
+  /** A hypothesis with no falsifier is a claim that cannot lose. Not a claim. */
+  UNFALSIFIABLE_HYPOTHESIS: 'SEMANTIC_CALCULUS_UNFALSIFIABLE_HYPOTHESIS',
 } as const);
 
 export const SCHEMA_VERSION_V2 = 'SEMANTIC_ACT_v2' as const;
