@@ -120,14 +120,35 @@ def assess(times, declared=None):
     return "NOT ESTABLISHED", peak_bpm, peak_R, ceiling, r_declared
 
 
+def _strip_line_comments(src):
+    """Drop `// ...` line comments so a placeholder like `//   bpm: 0` in an
+    unfinished track module can never be mistaken for a real declaration."""
+    return re.sub(r"//[^\n]*", "", src)
+
+
 def declared_bpm_for(track_id):
-    """The bpm a track module declares, if any track module claims this id."""
-    for ts in TRACKS_DIR.glob("*.ts"):
-        src = ts.read_text(encoding="utf-8")
-        if f"'{track_id}'" not in src:
+    """The bpm a track module declares, if any track module claims this id.
+
+    Scans track modules in sorted (deterministic) order -- Path.glob's order
+    is filesystem-dependent, and two files can legitimately share an id (a
+    finished track and its not-yet-measured stub). Comments are stripped
+    before matching, and the bpm: match is scoped to this id's own object
+    literal (up to the next `id:` in the file) so a multi-track file can't
+    leak a sibling track's bpm. A non-positive bpm is never returned as
+    declared: 0 is always a fill-me-in placeholder, never a measurement, and
+    period_for(0) is a ZeroDivisionError downstream.
+    """
+    id_needle = f"'{track_id}'"
+    for ts in sorted(TRACKS_DIR.glob("*.ts")):
+        src = _strip_line_comments(ts.read_text(encoding="utf-8"))
+        idx = src.find(id_needle)
+        if idx == -1:
             continue
-        m = re.search(r"\bbpm:\s*([0-9.]+)", src)
-        if m:
+        scope_start = idx + len(id_needle)
+        next_id = re.search(r"\bid:\s*['\"]", src[scope_start:])
+        scope_end = scope_start + next_id.start() if next_id else len(src)
+        m = re.search(r"\bbpm:\s*([0-9.]+)", src[scope_start:scope_end])
+        if m and float(m.group(1)) > 0:
             return float(m.group(1)), ts.name
     return None, None
 
