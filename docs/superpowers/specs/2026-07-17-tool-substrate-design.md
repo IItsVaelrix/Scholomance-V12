@@ -60,7 +60,32 @@ is irrelevant when the query distills to `'audio'`.
 This refutes the intuition we started with ("coverage first, then retrieval").
 Retrieval is primary; coverage is downstream of it.
 
-### 2.2 Pre-existing defects in the gene path
+### 2.2 Root cause: the query is filtered through a closed vocabulary
+
+`distill_query` drops every token not in `_LEXICON_ALL`:
+
+```python
+if token in STOPWORDS or token not in _LEXICON_ALL:
+    continue
+```
+
+`_LEXICON_ALL` is the union of `DOMAIN_LEXICON` — a **hand-maintained closed
+vocabulary of ~70 words**. `spectral`, `vocals`, `align`, `duration`, `onset`,
+`tempo`, `cmudict` are all absent, so every content word of the real question is
+deleted before matching. The retriever cannot *represent* "how should I weight
+word durations?", let alone answer it.
+
+The lexicon is not an accident — it is **load-bearing**. The detector scores
+`overlap / len(query_tokens)`, so an unfiltered query dilutes to zero and nothing
+matches. The lexicon exists to compensate for the scoring. The two cannot be
+fixed independently.
+
+Note the irony that proves §2.1: `DOMAIN_LEXICON` **already has a `phoneme`
+domain** — `{"phoneme", "syllable", "pronounce", "pronunciation", "sound", "ipa"}`.
+The vocabulary knew. There are simply no phoneme-domain genes for it to reach.
+Both halves are half-built, and neither is useful alone.
+
+### 2.3 Other defects in the gene path
 
 - `INJECT_SCORE_THRESHOLD = 0.35` is **inert** — the detector's hardcoded
   `_BASE_SCORE_MINIMUM` (0.5) dominates. A tuning knob that does nothing, with a
@@ -90,9 +115,8 @@ One inversion: **the query is the file being touched, not the words being typed.
 You cannot name what you do not know exists; you *do* touch the files.
 
 ```
-A. PLUMBING   inject.py / detector.py — distill_query stops annihilating the
-              query; the inert threshold removed or made real; the bare except
-              reports instead of swallowing.
+A. PLUMBING   inject.py — the inert threshold removed or made real; the bare
+              except reports instead of swallowing. NOT distill_query: see 4.1.
 
 B. TRIGGER    PreToolUse(Write|Edit) — fires when authoring on a surface.
               tool_input.file_path glob-matched against packet surfaces.
@@ -102,7 +126,24 @@ C. PACKETS    capability -> canonical implementation -> forbidden drift.
               territory, so there is no separate file->domain map to rot.
 ```
 
-### 4.1 Verified hook contract (spike, 2026-07-17)
+### 4.1 Why `distill_query` is deliberately NOT repaired
+
+An earlier draft of this spec listed "distill_query stops annihilating the query"
+as hygiene. That was wrong, and the correction matters:
+
+- It cannot be fixed alone. The closed lexicon compensates for the
+  `overlap / len(query_tokens)` scoring (§2.2); removing the filter dilutes every
+  query to zero. Fixing it means redesigning the word-based retriever.
+- That retriever serves **five agents** (claude, grok, codex, gemini, opencode).
+  Its blast radius is the whole multi-agent surface.
+- **We are replacing its role, not repairing it.** Rebuilding the path we are
+  routing around is scope creep. YAGNI.
+
+The word path stays as-is, known-broken and now documented. If glob-matching
+proves too coarse, redesigning it (or adopting `codebase_hybrid_search`) is a
+later, separately-scoped decision.
+
+### 4.2 Verified hook contract (spike, 2026-07-17)
 
 Resolved by experiment, because the local docs do not state it:
 
@@ -150,7 +191,8 @@ Resolved by experiment, because the local docs do not state it:
    `file_path` → glob match → dedupe on `(session_id, domain)` → emit
    `additionalContext`. Never denies. Never silently swallows.
 
-5. **Plumbing repair (A)** — the three defects in §2.2.
+5. **Plumbing repair (A)** — the two defects in §2.3 only. `distill_query` is
+   left alone by design (§4.1).
 
 6. **Replay harness** — reads a transcript JSONL, extracts ordered `Write|Edit`
    paths, simulates the hook, and answers: *would the packet have fired before
@@ -234,11 +276,13 @@ not for a test suite.
 **In:** the three layers; one seed packet (`phonology`) drawn from today's
 measured evidence; the verifier; the replay harness.
 
-**Out:** auto-generated genes (PDR non-goal); reconciling the two aligners or
-three resonance schemas (the packets *document* the split; deciding a winner is a
-separate call); renaming the overloaded "gene" (noted, not fixed); semantic /
+**Out:** auto-generated genes (PDR non-goal); **repairing `distill_query` or the
+detector's scoring** (§4.1 — replaced, not repaired); reconciling the two aligners
+or three resonance schemas (the packets *document* the split; deciding a winner is
+a separate call); renaming the overloaded "gene" (noted, not fixed); semantic /
 embedding retrieval (`codebase_hybrid_search` exists — a later option if
-glob-matching proves too coarse).
+glob-matching proves too coarse); authoring phoneme-domain genes for the existing
+word path (cheap and independent — a candidate follow-up, not this plan).
 
 ## 10. Open questions
 
