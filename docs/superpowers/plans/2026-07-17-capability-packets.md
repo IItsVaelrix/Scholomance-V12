@@ -148,7 +148,9 @@ cd steamdeck_brain && PYTHONPATH=. ../.venv/bin/python -m pytest vaelrix_forcefi
 
 Expected: `16 passed`.
 
-- [ ] **Step 8: Delete the inert threshold**
+- [ ] **Step 8: Make the inert threshold real (do NOT delete the constant)**
+
+`select_genes` passes `INJECT_SCORE_THRESHOLD` to `detect_gene_matches`; removing it breaks the call. Keep the name, fix the value.
 
 `INJECT_SCORE_THRESHOLD = 0.35` is dominated by the detector's hardcoded `_BASE_SCORE_MINIMUM = 0.5` (`detector.py:14`), so any value `<= 0.5` changes nothing. Its own comment says so. Replace the constant and its comment block in `inject.py` with:
 
@@ -1126,11 +1128,16 @@ def main(argv: list[str] | None = None) -> int:
     """PreToolUse entrypoint. Never raises, never denies, always exits 0."""
     try:
         raw = sys.stdin.read()
-    except Exception:
+    except Exception as exc:
+        # Report, never swallow — shipping inject.py's bug inside the module
+        # built to invert it would be indefensible. stderr keeps it out of the
+        # hook's JSON contract while still leaving a trace.
+        print(f"[scdna] stdin unreadable: {exc!r}", file=sys.stderr)
         raw = ""
     try:
         payload = json.loads(raw) if raw.strip() else {}
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as exc:
+        print(f"[scdna] hook payload was not JSON: {exc!r}", file=sys.stderr)
         payload = {}
     if not isinstance(payload, dict):
         payload = {}
