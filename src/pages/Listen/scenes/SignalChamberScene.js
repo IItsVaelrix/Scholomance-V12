@@ -75,8 +75,8 @@ export function buildSignalChamberScene(Phaser) {
     }));
 
     this._wireInput(); this._redrawPlayButton(); this._redrawVolSlider(); this._redrawSignalSlider();
-    // Tier B is interaction-only: no full-screen post-processing here. Atmosphere
-    // and glow are rendered by the Tier-A PBShaderStage (one fragment pass).
+    // Interaction + console chrome live here. Full-scene atmosphere is
+    // AlchemicalLabScene (single Phaser WebGL). Tier-A PBShaderStage was removed.
     this._isCreated = true;
   }
 

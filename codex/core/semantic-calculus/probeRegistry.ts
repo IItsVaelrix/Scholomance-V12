@@ -1,7 +1,7 @@
 /**
  * SEMANTIC CALCULUS — harvested Probe formulas (rev 7 P1)
  *
- * Four real inquiry formulas. Not a generic probe language.
+ * Harvested inquiry formulas. Not a generic probe language.
  * effect is always read-only; maxRisk is always read_only.
  * Compiler never executes harnesses — only seals plans/reports.
  */
@@ -566,6 +566,171 @@ const LISTEN_HIDDEN_ANIM_PROBE: ProbeFormula = Object.freeze({
   citeSeeds: ['src/pages/Listen/AlchemicalLabBackground.tsx'],
 });
 
+/**
+ * Auditor: "performance sucks." Candidate: excessive painting / per-frame
+ * animation instances. Written before receipts — rivals stay on the table.
+ *
+ * Two failure shapes that must not collapse:
+ *   1. Overpaint — GPU/CSS paints pixels that don't change or aren't visible
+ *   2. Frame fan-out — each tick mints its own rAF / motion instance / tween
+ *      instead of one shared loop
+ */
+const PAINT_OVERDRAW_PROBE: ProbeFormula = Object.freeze({
+  id: 'render.paint.overdraw',
+  version: '1.0.0',
+  patterns: [
+    'why do we have performance issues',
+    'why excessive painting',
+    'why is performance slow because of painting',
+    'why paint jank',
+    'diagnose excessive painting',
+    'why are animation frames created individually',
+    'why does each frame spawn its own animation',
+    'diagnose per frame animation allocation',
+  ],
+  keywords: [
+    'paint',
+    'painting',
+    'overpaint',
+    'overdraw',
+    'raf',
+    'requestanimationframe',
+    'per frame',
+    'animation frame',
+    'frame budget',
+    'layout thrash',
+  ],
+  observations: [
+    {
+      id: 'obs.paint.rect_rate',
+      description:
+        'PerformanceObserver (or CDP) paint/layout counts: paint rects per second and % of viewport covered while idle on the hot route',
+      harness: 'perf.paint.rect_rate',
+      required: true,
+    },
+    {
+      id: 'obs.raf.callback_inventory',
+      description:
+        'Count concurrent requestAnimationFrame callbacks and whether new callbacks are registered every tick vs one shared loop',
+      harness: 'perf.raf.callback_inventory',
+      required: true,
+    },
+    {
+      id: 'obs.anim.instance_spawn',
+      description:
+        'Spawn rate of animation/tween/motion instances per second (WAAPI, Framer, GSAP, Phaser tweens) while the UI is visually idle',
+      harness: 'perf.anim.instance_spawn',
+      required: true,
+    },
+  ],
+  hypotheses: [
+    {
+      id: 'h_overpaint',
+      claim:
+        'Performance cost is excessive painting: large or full-viewport paint rects fire every frame even when content is unchanged.',
+      predictions: [
+        {
+          id: 'p_paint_hot',
+          description: 'Paint rect rate stays high while the page is visually idle',
+          required: true,
+          observationId: 'obs.paint.rect_rate',
+          predicate: { op: 'gt', path: 'paintsPerSecondIdle', value: 30 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_paint_quiet',
+          description: 'Idle paint rate is low — painting is not the hot path',
+          observationId: 'obs.paint.rect_rate',
+          predicate: { op: 'lte', path: 'paintsPerSecondIdle', value: 5 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen', 'src/index.css'],
+    },
+    {
+      id: 'h_per_frame_anim_spawn',
+      claim:
+        'Animation frames are created individually: each tick (or each element) mints a new rAF callback / tween / motion instance instead of one shared loop, so work grows with frame count rather than scene complexity.',
+      predictions: [
+        {
+          id: 'p_spawn_per_tick',
+          description: 'New animation or rAF registrations appear every frame while idle',
+          required: true,
+          observationId: 'obs.anim.instance_spawn',
+          predicate: { op: 'gt', path: 'spawnsPerSecondIdle', value: 10 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_shared_loop',
+          description: 'One stable shared loop; spawn rate near zero while idle',
+          observationId: 'obs.anim.instance_spawn',
+          predicate: { op: 'lte', path: 'spawnsPerSecondIdle', value: 1 },
+        },
+      ],
+      citeSeeds: [
+        'src/ui/animation',
+        'src/pages/Listen/AlchemicalLabBackground.tsx',
+      ],
+    },
+    {
+      id: 'h_raf_fanout',
+      claim:
+        'Multiple independent rAF chains run at once (fan-out), so frame budget is spent coordinating loops rather than drawing once.',
+      predictions: [
+        {
+          id: 'p_many_callbacks',
+          description: 'More than one long-lived rAF callback is active',
+          required: true,
+          observationId: 'obs.raf.callback_inventory',
+          predicate: { op: 'gt', path: 'activeCallbackCount', value: 1 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_single_callback',
+          description: 'At most one active rAF callback — no fan-out',
+          observationId: 'obs.raf.callback_inventory',
+          predicate: { op: 'lte', path: 'activeCallbackCount', value: 1 },
+        },
+      ],
+      citeSeeds: ['src/pages/Listen', 'src/ui/animation/pbstage'],
+    },
+    {
+      id: 'h_not_paint',
+      claim:
+        'Not a paint/frame-spawn problem: idle paint and spawn rates are quiet; the auditor cost lives elsewhere (JS main thread, network, memory).',
+      predictions: [
+        {
+          id: 'p_paint_quiet',
+          description: 'Idle paint rate is low',
+          required: true,
+          observationId: 'obs.paint.rect_rate',
+          predicate: { op: 'lte', path: 'paintsPerSecondIdle', value: 5 },
+        },
+        {
+          id: 'p_spawn_quiet',
+          description: 'Idle animation spawn rate is low',
+          required: true,
+          observationId: 'obs.anim.instance_spawn',
+          predicate: { op: 'lte', path: 'spawnsPerSecondIdle', value: 1 },
+        },
+      ],
+      falsifiers: [
+        {
+          id: 'f_paint_or_spawn_hot',
+          description: 'Either paint or spawn stays hot while idle',
+          observationId: 'obs.paint.rect_rate',
+          predicate: { op: 'gt', path: 'paintsPerSecondIdle', value: 30 },
+        },
+      ],
+      citeSeeds: ['docs/scholomance-encyclopedia'],
+    },
+  ],
+  maxRisk: 'read_only',
+  citeSeeds: ['src/pages/Listen', 'src/ui/animation'],
+});
+
 export const PROBE_FORMULAS: readonly ProbeFormula[] = Object.freeze([
   CSP_PROBE,
   CDN_PROBE,
@@ -573,6 +738,7 @@ export const PROBE_FORMULAS: readonly ProbeFormula[] = Object.freeze([
   STATION_VIS_PROBE,
   TRUESIGHT_OOM_PROBE,
   LISTEN_HIDDEN_ANIM_PROBE,
+  PAINT_OVERDRAW_PROBE,
 ]);
 
 /**

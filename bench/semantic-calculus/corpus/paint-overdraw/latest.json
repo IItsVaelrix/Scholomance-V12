@@ -1,0 +1,227 @@
+{
+  "collectedAt": "2026-07-17T12:24:44.435Z",
+  "base": "http://127.0.0.1:4173",
+  "route": "/listen",
+  "sampleMs": 3000,
+  "raw": {
+    "elapsedMs": 37188.59999999404,
+    "elapsedSec": 37.18859999999404,
+    "paintsPerSecondIdle": 3.8183744480841644,
+    "paintSource": "raf.fires",
+    "phaserFpsAvg": null,
+    "phaserFpsSamples": 0,
+    "paintMarks": 22,
+    "rafRegistrations": 140,
+    "rafFires": 142,
+    "activeCallbackCount": 4,
+    "peakActiveCallbacks": 6,
+    "registrationsPerSecond": 3.7645945262801623,
+    "spawnsPerSecondIdle": 0.05377992180400232,
+    "animSampleCount": 30,
+    "animCounts": [
+      17,
+      17,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      7,
+      7,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      7,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "canvasCount": 4,
+    "canvases": [
+      {
+        "w": 1280,
+        "h": 672,
+        "cssW": 1280,
+        "cssH": 672
+      },
+      {
+        "w": 300,
+        "h": 150,
+        "cssW": 300,
+        "cssH": 150
+      },
+      {
+        "w": 462,
+        "h": 462,
+        "cssW": 480,
+        "cssH": 480
+      },
+      {
+        "w": 221,
+        "h": 156,
+        "cssW": 221,
+        "cssH": 156
+      }
+    ],
+    "visibilityState": "visible",
+    "path": "/listen"
+  },
+  "receipts": [
+    {
+      "probeId": "render.paint.overdraw",
+      "observationId": "obs.paint.rect_rate",
+      "inputHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "environmentHash": "C353CB655798608564657D2A4595E10350EFBAB7C6FB03E403D2F7DDCE498EC7",
+      "result": {
+        "paintsPerSecondIdle": 3.82,
+        "paintSource": "raf.fires",
+        "paintMarks": 22,
+        "canvasCount": 4,
+        "elapsedSec": 37.189,
+        "note": "Idle paint rate prefers Phaser loop FPS when visible; else instrumented rAF fire rate (headless may throttle)."
+      },
+      "resultHash": "F877C9CDA5AE3F89044D9F4C146800B5F12D580DF7F88F0FBFE192AE9DC0B884",
+      "status": "observed"
+    },
+    {
+      "probeId": "render.paint.overdraw",
+      "observationId": "obs.raf.callback_inventory",
+      "inputHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "environmentHash": "C353CB655798608564657D2A4595E10350EFBAB7C6FB03E403D2F7DDCE498EC7",
+      "result": {
+        "activeCallbackCount": 4,
+        "peakActiveCallbacks": 6,
+        "rafRegistrations": 140,
+        "rafFires": 142,
+        "registrationsPerSecond": 3.76,
+        "elapsedSec": 37.189
+      },
+      "resultHash": "3F9933991979820C7A0DD6E8083C8D612310FBAF91A206562378D54BDB9A8E13",
+      "status": "observed"
+    },
+    {
+      "probeId": "render.paint.overdraw",
+      "observationId": "obs.anim.instance_spawn",
+      "inputHash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "environmentHash": "C353CB655798608564657D2A4595E10350EFBAB7C6FB03E403D2F7DDCE498EC7",
+      "result": {
+        "spawnsPerSecondIdle": 0.05,
+        "animCounts": [
+          17,
+          17,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          7,
+          7,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          7,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        "canvasCount": 4,
+        "elapsedSec": 37.189
+      },
+      "resultHash": "EA0FE742F5F9DBE14C0AD2141CED02259382272AF31E01AF76D921DBE44F726A",
+      "status": "observed"
+    }
+  ],
+  "evaluation": {
+    "supported": [
+      "h_raf_fanout",
+      "h_not_paint"
+    ],
+    "surviving": [],
+    "eliminated": [
+      "h_overpaint",
+      "h_per_frame_anim_spawn"
+    ],
+    "underdetermined": [],
+    "exclusive": [],
+    "byId": {
+      "h_overpaint": "eliminated",
+      "h_per_frame_anim_spawn": "eliminated",
+      "h_raf_fanout": "supported",
+      "h_not_paint": "supported"
+    }
+  },
+  "report": {
+    "kind": "Probe",
+    "phase": "report",
+    "epistemic": {
+      "gap": "none",
+      "method": "bound",
+      "warrantRequired": [
+        "lexicon",
+        "observation"
+      ],
+      "warrantPresent": [
+        "lexicon",
+        "observation"
+      ]
+    },
+    "payload": {
+      "phase": "report",
+      "probeId": "render.paint.overdraw",
+      "supported": [
+        "h_raf_fanout",
+        "h_not_paint"
+      ],
+      "surviving": [],
+      "eliminated": [
+        "h_overpaint",
+        "h_per_frame_anim_spawn"
+      ],
+      "underdetermined": [],
+      "exclusive": [],
+      "observationIds": [
+        "obs.anim.instance_spawn",
+        "obs.paint.rect_rate",
+        "obs.raf.callback_inventory"
+      ],
+      "receiptDigests": [
+        "8FFEDBAC510AA3F8F88A6BBB22C573B598B1FCCDBE2C82F4E9ED9634CC11ACE6",
+        "A1363BE0B99C62AF83309C6099CC05D7EF1AEB5A586E2813B1DD3D428E890D76",
+        "D0B7C42837CF4F4B7435BEA8BF133334492EA90CB4BCBD27EF836F85D3BBEF81"
+      ],
+      "warrant": "observation"
+    },
+    "seal": {
+      "algorithm": "sha256-canonical-v0",
+      "digest": "280768303AA5F8CBE7E6785CA7B1A111AE2EE7E031A59BA0278D5F6FE17AB1F3"
+    }
+  }
+}

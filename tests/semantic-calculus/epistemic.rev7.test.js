@@ -145,7 +145,31 @@ describe('rev 7 — inquiry Probe plans (no harness run)', () => {
       'motion.visibility.station',
       'truesight.payload.oom',
       'listen.hidden.animation',
+      'render.paint.overdraw',
     ]);
+  });
+
+  it('binds excessive painting inquiry to a Probe plan', () => {
+    const { act } = compileSemanticIntent({
+      utterance: 'why excessive painting',
+      context: ctx(),
+    });
+    expect(act.kind).toBe('Probe');
+    expect(act.phase).toBe('plan');
+    expect(act.payload.probeId).toBe('render.paint.overdraw');
+    expect(act.epistemic.gap).toBe('evidence');
+    expect(act.epistemic.warrantRequired).toContain('observation');
+    expect(() => assertExecutable(act)).toThrow();
+  });
+
+  it('binds per-frame animation spawn inquiry to the paint overdraw Probe', () => {
+    const { act } = compileSemanticIntent({
+      utterance: 'why are animation frames created individually',
+      context: ctx(),
+    });
+    expect(act.kind).toBe('Probe');
+    expect(act.payload.probeId).toBe('render.paint.overdraw');
+    expect(act.epistemic.gap).toBe('evidence');
   });
 
   it('binds listen stutter inquiry to a Probe plan', () => {

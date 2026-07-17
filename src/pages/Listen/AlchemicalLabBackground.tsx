@@ -5,9 +5,6 @@ import { cacheBackground } from '../../lib/cache/backgroundCache';
 import { getAmbientPlayerService } from '../../lib/ambient/ambientPlayer.service.js';
 import { usePrefersReducedMotion } from '../../hooks/usePrefersReducedMotion.js';
 import { mountPhaserGame } from '../../lib/phaser/phaser-runtime.adapter.js';
-import { PBShaderStage } from '../../ui/animation/pbstage';
-import { ATMOSPHERE_PACKET } from './shaders/atmospherePacket.js';
-import { getBytecodeAMP, AMP_CHANNELS } from '../../lib/ambient/bytecodeAMP.js';
 
 // Shared game reference for SignalChamberConsole to attach to
 let sharedPhaserGame: Phaser.Game | null = null;
@@ -21,13 +18,18 @@ export function getSharedPhaserGame(): Phaser.Game | null {
  * - AlchemicalLabScene (zIndex: 0) - Background atmosphere with rotating hexagram
  * - SignalChamberScene (zIndex: 10) - Console UI (mounted by SignalChamberConsole)
  *
+ * Atmosphere is Phaser-owned. The former Tier-A PBShaderStage was removed: it
+ * stuck at the HTML canvas default 300×150, burned a second WebGL2 context, and
+ * duplicated what AlchemicalLabScene already paints. The FFT mandala overlay
+ * (BytecodeVisualiser) remains on the chamber console.
+ *
  * Performance: Cache + Hydrate pattern for instant LCP
  * - First visit: Shows CSS background, loads Phaser, caches rendered static layer
  * - Subsequent: Shows cached image instantly, hydrates with Phaser in background
  */
 export const AlchemicalLabBackground: React.FC<{
   signalLevel?: number;
-  /** When true, freeze Phaser + Tier-A shader (e.g. while Scholomance Station is open). */
+  /** When true, freeze Phaser (e.g. while Scholomance Station is open). */
   paused?: boolean;
 }> = ({ signalLevel = 0, paused = false }) => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -204,7 +206,6 @@ export const AlchemicalLabBackground: React.FC<{
         visibility: paused ? 'hidden' : 'visible',
       }}
     >
-      {/* Phaser canvas container - must be FIRST so it has lower stacking context */}
       <div
         className="alchemical-lab-phaser"
         ref={phaserRef}
@@ -216,23 +217,6 @@ export const AlchemicalLabBackground: React.FC<{
           zIndex: 2,
           pointerEvents: paused ? 'none' : 'auto',
         }}
-      />
-
-      {/*
-        Tier A atmosphere - PBShaderStage renders the ambient atmosphere shader,
-        replacing the old static CSS portal subtree. Sits below the Phaser
-        canvas (zIndex 0 vs 2). Paused while station is open.
-      */}
-      <PBShaderStage
-        packet={ATMOSPHERE_PACKET}
-        reducedMotion={prefersReducedMotion}
-        paused={paused}
-        style={{ position: 'absolute', inset: 0, zIndex: 0, pointerEvents: 'none' }}
-        getRuntimeInput={(elapsedMs) => ({
-          elapsedMs,
-          resonance: Math.max(0, Math.min(1, signalLevel)),
-          vowelDensity: getBytecodeAMP(elapsedMs, AMP_CHANNELS.PULSE),
-        })}
       />
     </div>
   );

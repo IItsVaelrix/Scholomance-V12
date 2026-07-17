@@ -169,7 +169,7 @@ export default function ListenPage() {
       className={`listen-chamber ${prefersReducedMotion ? "is-reduced-motion" : ""} ${entropyClass}`}
       style={{ '--entropy': entropyLevel / 100 } as React.CSSProperties}
     >
-      {/* ── Layer 0: 3D Environment (Phaser + Tier-A shader) ───────────── */}
+      {/* ── Layer 0: 3D Environment (Phaser atmosphere) ───────────── */}
       {/* Pause chamber GPU work while Scholomance Station is open so only
           the station orb animates. Station CrystalBall is unmounted when closed. */}
       <AlchemicalLabBackground
