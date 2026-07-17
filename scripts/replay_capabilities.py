@@ -28,20 +28,18 @@ from pathlib import Path
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT / "steamdeck_brain"))
 
+from vaelrix_forcefield.scdna.capability_inject import (  # noqa: E402
+    EDIT_TOOL_PATH_KEYS, serve_log_path,
+)
 from vaelrix_forcefield.scdna.capability_store import load_packets, packets_for_path  # noqa: E402
 
-_EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
-
-# Each edit tool's target lives under a different input key. NotebookEdit has
-# no `file_path` — its schema uses `notebook_path`. Getting this mapping wrong
-# for a tool must never look the same as that tool simply not appearing in
-# the transcript (see the missing_by_tool warning below).
-_PATH_KEYS = {
-    "Edit": "file_path",
-    "Write": "file_path",
-    "MultiEdit": "file_path",
-    "NotebookEdit": "notebook_path",
-}
+# IMPORTED, never restated. A harness that models a different set of tools than
+# the hook is wired to can report a HIT production would never have fired for —
+# and a replay is only worth reading if it is a claim about production. This
+# import is what makes the agreement checkable instead of asserted; the matcher
+# in .claude/settings.json is generated from the same dict's keys.
+_PATH_KEYS = EDIT_TOOL_PATH_KEYS
+_EDIT_TOOLS = set(EDIT_TOOL_PATH_KEYS)
 
 
 def edits_from_transcript(path: Path) -> list[dict]:
@@ -98,12 +96,63 @@ def first_hit(edits: list[dict], packets: list[dict], domain: str) -> int | None
     return None
 
 
+def summarise_serve_log(path: Path | None = None) -> str:
+    """What the hook actually DID, from the serve log the hook appends to.
+
+    Read this for what it is. It reports SERVES, not attention: it can say the
+    phonology packet was served 3 times in a session, and cannot say anyone
+    read it. That gap is the honest state of the art here — spec §8.1's
+    4-fired/0-heeded is the measurement this instrument exists to make
+    repeatable, not one it closes. Counting serves is the first half; pairing
+    a session's serves against whether the duplication still happened is the
+    second, and that needs sessions this log has not collected yet.
+    """
+    path = path or serve_log_path()
+    if not path.exists():
+        return (f"no serve log at {path} — the hook has not run since the "
+                f"instrument was added, or it has never fired.")
+    rows = []
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if not line.strip():
+            continue
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    if not rows:
+        return f"serve log at {path} is empty."
+
+    sessions = {r.get("session_id") for r in rows}
+    served = [r for r in rows if r.get("served")]
+    lines = [f"serve log            : {path}",
+             f"decisions recorded   : {len(rows)}",
+             f"sessions             : {len(sessions)}",
+             f"served               : {len(served)}",
+             f"suppressed (re-arm)  : {len(rows) - len(served)}"]
+    by_domain: dict[str, list[int]] = {}
+    for r in served:
+        by_domain.setdefault(str(r.get("domain")), []).append(r.get("edit_index"))
+    for domain, idxs in sorted(by_domain.items()):
+        lines.append(f"  {domain}: served {len(idxs)}x  at edit-counter {idxs}")
+    lines.append("NOTE: this counts SERVES, not attention. A served packet that "
+                 "nobody read looks identical here to one that changed the outcome.")
+    return "\n".join(lines)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--transcript", required=True)
+    ap.add_argument("--transcript")
     ap.add_argument("--domain", default="phonology")
+    ap.add_argument("--serve-log", action="store_true",
+                    help="summarise what the live hook actually served (no transcript needed)")
     args = ap.parse_args(argv)
+
+    if args.serve_log:
+        print(summarise_serve_log())
+        return 0
+    if not args.transcript:
+        ap.error("--transcript is required unless --serve-log is given")
 
     packets, errors = load_packets()
     for e in errors:

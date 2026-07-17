@@ -84,6 +84,37 @@ def test_edit_still_extracts_file_path(tmp_path):
     assert [e["file_path"] for e in edits] == ["a.py"]
 
 
+def test_replay_models_exactly_the_tools_production_reads():
+    """The harness must not restate the contract — it must import it. A replay
+    is a claim ABOUT production; if it models a different tool set, the claim
+    is unverifiable, which is the rot this branch exists to prevent."""
+    from vaelrix_forcefield.scdna.capability_inject import EDIT_TOOL_PATH_KEYS
+    assert replay._PATH_KEYS is EDIT_TOOL_PATH_KEYS
+    assert replay._EDIT_TOOLS == set(EDIT_TOOL_PATH_KEYS)
+
+
+def test_summarise_serve_log_counts_serves_and_suppressions(tmp_path):
+    log = tmp_path / "serves.jsonl"
+    log.write_text("\n".join(json.dumps(r) for r in [
+        {"session_id": "s1", "domain": "phonology", "edit_index": 0, "served": True},
+        {"session_id": "s1", "domain": "phonology", "edit_index": 1, "served": False},
+        {"session_id": "s2", "domain": "phonology", "edit_index": 0, "served": True},
+    ]), encoding="utf-8")
+    out = replay.summarise_serve_log(log)
+    assert "decisions recorded   : 3" in out
+    assert "sessions             : 2" in out
+    assert "served               : 2" in out
+    assert "suppressed (re-arm)  : 1" in out
+    assert "not attention" in out, "the instrument must state what it cannot measure"
+
+
+def test_summarise_serve_log_says_so_when_absent(tmp_path):
+    """An absent log must never be reported as 'served 0 times' — that is a
+    measurement, and there isn't one."""
+    out = replay.summarise_serve_log(tmp_path / "nope.jsonl")
+    assert "no serve log" in out
+
+
 def test_recognised_tool_with_no_usable_path_warns_not_silent(tmp_path, capsys):
     # A row IS one of _EDIT_TOOLS (NotebookEdit) but has no value under its
     # expected key (`notebook_path`). This is a schema assumption failing,

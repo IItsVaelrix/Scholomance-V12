@@ -75,6 +75,88 @@ def test_main_emits_additionalContext(tmp_path, monkeypatch, capsys):
     assert "CmuPhonemeEngine" in out["hookSpecificOutput"]["additionalContext"]
 
 
+def test_the_live_matcher_matches_the_tools_the_hook_can_read():
+    """The harness/production agreement, made mechanical.
+
+    replay_capabilities modelled NotebookEdit while the live matcher was
+    Write|Edit|MultiEdit and main() read only `file_path` — so the harness
+    could report a HIT for a tool production never sees, and its answer about
+    production was unverifiable. Three things must agree: the settings.json
+    matcher, EDIT_TOOL_PATH_KEYS, and what main() reads. This test is the
+    thing that makes "they agree" checkable instead of asserted — if someone
+    adds a tool to the matcher without teaching the hook its path key, this
+    fails rather than going quietly blind.
+    """
+    import json as _json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[3]
+    settings = _json.loads((root / ".claude/settings.json").read_text())
+    pre = [h for h in settings["hooks"]["PreToolUse"]
+           if "capability-inject" in _json.dumps(h)]
+    assert len(pre) == 1, "expected exactly one capability-inject PreToolUse entry"
+    matcher_tools = set(pre[0]["matcher"].split("|"))
+    assert matcher_tools == set(capability_inject.EDIT_TOOL_PATH_KEYS), (
+        f"the live matcher fires for {matcher_tools}, but the hook knows path keys "
+        f"for {set(capability_inject.EDIT_TOOL_PATH_KEYS)}. A tool in the matcher "
+        f"with no known path key serves nothing and says nothing."
+    )
+
+
+def test_notebook_edit_target_is_read_from_notebook_path(tmp_path, monkeypatch, capsys):
+    """NotebookEdit carries `notebook_path`, not `file_path`. Now that the
+    matcher fires for it, main() must be able to see its target."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path)
+    monkeypatch.setattr(capability_inject, "load_packets", lambda *a, **k: ([_packet()], []))
+    payload = {"tool_name": "NotebookEdit", "session_id": "sess-nb",
+               "tool_input": {"notebook_path": "scripts/align_lyrics.py",
+                              "cell_id": "1", "new_source": "x = 1"}}
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    rc = capability_inject.main([])
+    assert rc == 0
+    out = json.loads(capsys.readouterr().out)
+    assert "CmuPhonemeEngine" in out["hookSpecificOutput"]["additionalContext"]
+
+
+def test_serve_log_records_both_serves_and_suppressions(tmp_path, monkeypatch):
+    """The attention instrument. It must record the DECISION either way: a log
+    of serves only could never distinguish 'served once, ignored' from
+    'suppressed by re-arm' — the question it exists to make answerable."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path / "state")
+    packets = [_packet()]
+    for _ in range(3):
+        capability_inject.build_block("scripts/align_lyrics.py", "sess-log", packets)
+
+    log = capability_inject.serve_log_path()
+    rows = [json.loads(l) for l in log.read_text().splitlines() if l.strip()]
+    assert len(rows) == 3
+    assert [r["served"] for r in rows] == [True, False, False]
+    assert {r["session_id"] for r in rows} == {"sess-log"}
+    assert {r["domain"] for r in rows} == {"phonology"}
+    assert [r["edit_index"] for r in rows] == [0, 1, 2]
+
+
+def test_serve_log_failure_never_costs_the_user_work(tmp_path, monkeypatch, capsys):
+    """The instrument may never break the hook. If the log cannot be written,
+    the packet must still be served and the failure must still be visible."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path / "state")
+
+    def _boom():
+        raise OSError("disk gone")
+
+    monkeypatch.setattr(capability_inject, "serve_log_path", _boom)
+    block = capability_inject.build_block("scripts/align_lyrics.py", "s-boom", [_packet()])
+    assert "CmuPhonemeEngine" in block, "a broken log must not suppress the packet"
+    assert "disk gone" in capsys.readouterr().err, "the failure must not be silent"
+
+
+def test_serve_log_follows_the_state_dir(tmp_path, monkeypatch):
+    """A log frozen at import time would write real rows into /tmp during the
+    test suite — manufactured instrument readings."""
+    monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path / "state")
+    assert tmp_path in capability_inject.serve_log_path().parents
+
+
 def test_main_never_denies(tmp_path, monkeypatch, capsys):
     """The hook must never cost the user work, whatever happens."""
     monkeypatch.setattr(capability_inject, "_STATE_DIR", tmp_path)

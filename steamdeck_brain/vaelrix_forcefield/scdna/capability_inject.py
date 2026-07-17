@@ -18,6 +18,25 @@ from .capability_store import REPO_ROOT, load_packets, packets_for_path
 
 _STATE_DIR = Path(tempfile.gettempdir()) / "scdna-capability-served"
 
+# The edit tools this hook is wired to, and the tool_input key each one carries
+# its target under. NotebookEdit has no `file_path` — its schema uses
+# `notebook_path`.
+#
+# THIS IS THE CONTRACT, and three things must agree with it or the system lies:
+#   - .claude/settings.json's PreToolUse matcher (which tools invoke the hook)
+#   - main() below (which key it reads the target from)
+#   - scripts/replay_capabilities.py (which tools the harness replays)
+# The harness imports this dict rather than restating it, because a harness
+# that models a tool production never sees can report a HIT the hook would
+# never have fired for — an unverifiable claim rotting into a confident wrong
+# answer, which is the failure this whole branch exists to prevent.
+EDIT_TOOL_PATH_KEYS = {
+    "Edit": "file_path",
+    "Write": "file_path",
+    "MultiEdit": "file_path",
+    "NotebookEdit": "notebook_path",
+}
+
 # Edits on a domain's surface that must pass before the packet may speak again.
 # MEASURED, not chosen: replaying session 56188e89 (2026-07-17), the first
 # align_lyrics.py edit was #14 and the _span_weight duplication was #51 — so
@@ -33,6 +52,39 @@ def _state_file(session_id: str, domain: str) -> Path:
     return _STATE_DIR / safe
 
 
+# One JSONL row per decision, next to the state dir. This is the ATTENTION
+# instrument, and it exists because of a self-refutation: this branch's own
+# argument is that unverifiable claims rot into confident wrong answers, and it
+# concedes it fixes reachability, not attention (the existing genes fired 4x in
+# one session and were heeded 0x) — then shipped with no way to ever find out
+# whether serving helped. That is the same shape as the failure it diagnoses.
+# It is an instrument, not a feature: it records what was decided, never why,
+# and answers nothing on its own. read_serve_log() is where it becomes evidence.
+_SERVE_LOG_NAME = "scdna-capability-serves.jsonl"
+
+
+def serve_log_path() -> Path:
+    """Derived from _STATE_DIR at call time, not frozen at import: tests
+    redirect _STATE_DIR, and a log that ignored that would write real rows
+    into /tmp during a test run — instrument readings manufactured by the
+    test suite are exactly the kind of evidence this branch is against."""
+    return _STATE_DIR.parent / _SERVE_LOG_NAME
+
+
+def _log_serve(session_id: str, domain: str, counter: int, served: bool) -> None:
+    """Append one decision. Never raises: the instrument may never cost the
+    user work, and a logger that can break the hook is worse than no logger."""
+    try:
+        log = serve_log_path()
+        log.parent.mkdir(parents=True, exist_ok=True)
+        with log.open("a", encoding="utf-8") as fh:
+            fh.write(json.dumps({"session_id": session_id, "domain": domain,
+                                 "edit_index": counter, "served": served}) + "\n")
+    except Exception as exc:
+        # Report, never swallow — but never propagate either.
+        print(f"[scdna] serve log unwritable: {exc!r}", file=sys.stderr)
+
+
 def should_serve(session_id: str, domain: str) -> bool:
     """True on first sight, then once every RE_ARM_EDITS matching edits.
 
@@ -45,11 +97,14 @@ def should_serve(session_id: str, domain: str) -> bool:
         since = int(path.read_text(encoding="utf-8").strip())
     except Exception:
         path.write_text("0", encoding="utf-8")   # first sight -> serve, reset
+        _log_serve(session_id, domain, 0, True)
         return True
     if since + 1 >= RE_ARM_EDITS:
         path.write_text("0", encoding="utf-8")
+        _log_serve(session_id, domain, since + 1, True)
         return True
     path.write_text(str(since + 1), encoding="utf-8")
+    _log_serve(session_id, domain, since + 1, False)
     return False
 
 
@@ -118,7 +173,16 @@ def main(argv: list[str] | None = None) -> int:
                   file=sys.stderr)
         tool_input = {}
 
-    file_path = str(tool_input.get("file_path", "") or "")
+    # Read every key the contract knows about, not just `file_path`: a
+    # NotebookEdit reaching this hook and finding nothing under `file_path`
+    # would serve silently nothing, which is the anti-wallpaper result and the
+    # blind result wearing the same face.
+    file_path = ""
+    for key in dict.fromkeys(EDIT_TOOL_PATH_KEYS.values()):
+        value = tool_input.get(key)
+        if value:
+            file_path = str(value)
+            break
     session_id = str(payload.get("session_id", "") or "nosession")
     if not file_path:
         return 0
