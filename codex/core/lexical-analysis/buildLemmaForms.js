@@ -55,6 +55,8 @@ export function computeLemmaSourceDigest(pairs) {
 }
 
 function upsertMeta(db, key, value) {
+  // Offline CLI transaction: no server request can race this build.
+  // eslint-disable-next-line no-restricted-syntax
   db.prepare(`
     INSERT INTO meta(key, value) VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value
@@ -92,6 +94,8 @@ export function buildLemmaForms(db, { timestamp } = {}) {
 
   db.transaction(() => {
     upsertMeta(db, 'lemma_form_status', 'partial');
+    // Offline CLI transaction: this preflight marker must commit synchronously.
+    // eslint-disable-next-line no-restricted-syntax
     db.prepare(`
       DELETE FROM meta WHERE key IN (${COMPLETE_KEYS.map(() => '?').join(',')})
     `).run(...COMPLETE_KEYS);
@@ -109,6 +113,8 @@ export function buildLemmaForms(db, { timestamp } = {}) {
   `);
 
   db.transaction(() => {
+    // Offline CLI transaction: the inverse index is replaced atomically.
+    // eslint-disable-next-line no-restricted-syntax
     db.prepare('DELETE FROM lemma_form').run();
     for (const row of edges) {
       insert.run(

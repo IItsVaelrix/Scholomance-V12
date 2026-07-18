@@ -357,6 +357,7 @@ function getCaretViewportCoords(measurement, textarea, prefix = "", topology = n
  *   onSave?: () => void,
  *   onCancel?: () => void,
  *   onCursorChange?: (pos: { line: number, col: number }) => void,
+ *   onSelectionTextChange?: (selection: string) => void,
  *   onWordActivate?: (token: object) => void,
  *   onScrollChange?: (top: number) => void,
  *   analyzedDocument?: object | null,
@@ -415,6 +416,7 @@ const ScrollEditor = forwardRef(/**
   onSave,
   onCancel,
   onCursorChange,
+  onSelectionTextChange,
   onWordActivate,
   onScrollChange,
   analyzedDocument = null,
@@ -1146,6 +1148,14 @@ const ScrollEditor = forwardRef(/**
     emitCursorChange(event.target);
   }, [emitCursorChange]);
 
+  const handleSelectionChange = useCallback((event) => {
+    const textarea = event.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    onSelectionTextChange?.(start === end ? "" : textarea.value.slice(start, end));
+    emitCursorChange(textarea);
+  }, [emitCursorChange, onSelectionTextChange]);
+
   const handleTextareaClick = useCallback((event) => {
     const textarea = event.currentTarget;
     emitCursorChange(textarea);
@@ -1708,6 +1718,7 @@ const ScrollEditor = forwardRef(/**
             onChange={handleContentChange}
             onKeyDown={isEditable ? handleKeyDown : undefined}
             onKeyUp={handleCursorChange}
+            onSelect={handleSelectionChange}
             onClick={handleTextareaClick}
             onBlur={() => {
               setIntellisenseSuggestions([]);

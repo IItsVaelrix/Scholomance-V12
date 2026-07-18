@@ -6,9 +6,11 @@ export function useLexicalAnalyze() {
   const [error, setError] = useState(null);
   const abortRef = useRef(null);
 
-  const submit = useCallback(async (query) => {
-    const q = String(query || '').trim();
-    if (!q) return;
+  const submit = useCallback(async (context) => {
+    if (!context || typeof context !== 'object' || Array.isArray(context)) return;
+    if (typeof context.scope !== 'string' || typeof context.surface !== 'string' || !context.surface.trim()) {
+      return;
+    }
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -17,7 +19,7 @@ export function useLexicalAnalyze() {
       const res = await fetch('/api/lexical/analyze', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ query: q }),
+        body: JSON.stringify({ context }),
         signal: ac.signal,
       });
       if (!res.ok) throw new Error(`Analyze failed (${res.status})`);

@@ -28,7 +28,7 @@ import type { RiskProfile } from './types.ts';
 import {
   assessCandidateMargin,
   validateClosedCandidates,
-} from '../candidate-lattice/index.ts';
+} from '../candidate-lattice/index.js';
 
 export interface Candidate {
   /** MUST be a key the lexicon already knows. Inventing one is a hard error. */

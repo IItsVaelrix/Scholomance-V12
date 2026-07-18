@@ -44,13 +44,23 @@ export function createLexicalAnalyzeService({
       .filter((entry) => posMatches(entry?.pos, candidate.pos));
   }
 
-  function meaning(candidate) {
+  function meaning(candidate, candidateSenses) {
+    const senseItems = (Array.isArray(candidateSenses) ? candidateSenses : [])
+      .filter((sense) => typeof sense?.definition === 'string' && sense.definition.trim())
+      .map((sense) => ({
+        text: sense.definition,
+        source: 'wordnet:sense',
+        sourceUrl: sense.sourceUrl,
+        confidence: 0.92,
+        ref: { kind: 'synset', id: String(sense.synsetId) },
+      }));
+    if (senseItems.length > 0) return group('meaning', 'Meaning', senseItems);
+
     const entries = candidateEntries(candidate);
     const primary = entries[0] || null;
     const glosses = entries
       .flatMap((entry) => (Array.isArray(entry?.senses) ? entry.senses : []))
-      .flatMap((sense) => (Array.isArray(sense?.glosses) ? sense.glosses : []))
-      .slice(0, 8);
+      .flatMap((sense) => (Array.isArray(sense?.glosses) ? sense.glosses : []));
     return group('meaning', 'Meaning', glosses.map((text) => ({
       text,
       source: 'entry:gloss',
@@ -174,10 +184,12 @@ export function createLexicalAnalyzeService({
     return group('symbols', 'Symbols', rows, 'No symbol ingest yet; loose links only.');
   }
 
-  function corpus(candidate) {
-    const examples = candidateEntries(candidate)
+  function corpus(candidate, candidateSenses) {
+    const senseExamples = (Array.isArray(candidateSenses) ? candidateSenses : [])
+      .flatMap((sense) => (Array.isArray(sense?.examples) ? sense.examples : []));
+    const examples = (senseExamples.length > 0 ? senseExamples : candidateEntries(candidate)
       .flatMap((entry) => (Array.isArray(entry?.senses) ? entry.senses : []))
-      .flatMap((sense) => (Array.isArray(sense?.examples) ? sense.examples : []))
+      .flatMap((sense) => (Array.isArray(sense?.examples) ? sense.examples : [])))
       .slice(0, 6);
     return group('corpus', 'Corpus examples', examples.map((text) => ({
       text,
@@ -215,16 +227,19 @@ export function createLexicalAnalyzeService({
       phrases(),
       literary(context),
     ]);
-    const candidateResults = Object.freeze(ranked.resolution.candidates.map((candidate) => ({
-      candidateId: candidate.id,
-      groups: Object.freeze([
-        meaning(candidate),
-        related(candidate),
-        oppositions(candidate),
-        symbols(candidate),
-        corpus(candidate),
-      ]),
-    })));
+    const candidateResults = Object.freeze(ranked.resolution.candidates.map((candidate) => {
+      const candidateSenses = sensesByCandidate.get(candidate.id) ?? [];
+      return {
+        candidateId: candidate.id,
+        groups: Object.freeze([
+          meaning(candidate, candidateSenses),
+          related(candidate),
+          oppositions(candidate),
+          symbols(candidate),
+          corpus(candidate, candidateSenses),
+        ]),
+      };
+    }));
 
     return Object.freeze({
       context: Object.freeze({

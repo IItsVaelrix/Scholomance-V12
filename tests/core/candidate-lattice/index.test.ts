@@ -3,7 +3,7 @@ import {
   assessCandidateMargin,
   stableCandidates,
   validateClosedCandidates,
-} from '../../../codex/core/candidate-lattice/index.ts';
+} from '../../../codex/core/candidate-lattice/index.js';
 
 describe('candidate lattice', () => {
   it('rejects invented keys and invalid scores', () => {

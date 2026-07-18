@@ -849,8 +849,8 @@ export async function createPanelAnalysisService(options = {}) {
       const deepAnalysis = await deepRhymeEngine.analyzeDocument(
         text,
         syntaxLayer
-          ? { syntaxLayer, authorityMode: 'background' }
-          : { authorityMode: 'background' }
+          ? { syntaxLayer, authorityMode: 'background', dictionaryAPI }
+          : { authorityMode: 'background', dictionaryAPI }
       );
 
       // Authoritative rhyme-family pass: if the Scholomance Dictionary API

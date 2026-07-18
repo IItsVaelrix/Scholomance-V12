@@ -1,4 +1,4 @@
-import { assessCandidateMargin } from '../candidate-lattice/index.ts';
+import { assessCandidateMargin } from '../candidate-lattice/index.js';
 import {
   LEMMA_RANK_FORMULA_VERSION,
   MORPHOLOGY_VERSION,

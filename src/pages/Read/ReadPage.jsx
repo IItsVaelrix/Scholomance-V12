@@ -28,7 +28,7 @@ import { patternColor } from "../../lib/patternColor.js";
 import { resolveResonanceConnections } from "../../lib/truesight/resolveResonanceConnections.js";
 import { buildResonanceGate } from "../../lib/truesight/buildResonanceGate.js";
 import { getCachedWord, setCachedWord, pruneOldCaches } from "../../lib/platform/wordCache.js";
-import { getAuroraLevel, cycleAuroraLevel, useAuroraLevel } from "../../lib/atmosphere/aurora.ts";
+import { getAuroraLevel, cycleAuroraLevel, useAuroraLevel, AURORA_FACTORS } from "../../lib/atmosphere/aurora.ts";
 import { useAutoSave } from "../../hooks/useAutoSave.js";
 import { useAdaptivePalette } from "../../hooks/useAdaptivePalette.js";
 import { useAnimationSubmitter } from "../../ui/animation/hooks/useAnimationSubmitter.ts";
@@ -47,7 +47,8 @@ import { TopBar, StatusBar } from "./IDEChrome.jsx";
 import { encodeBytecodeHealth, CELL_IDS } from "../../lib/diagnostic.adapter.js";
 
 const USE_SERVER_ANALYSIS = parseBooleanEnvFlag(import.meta.env.VITE_USE_SERVER_PANEL_ANALYSIS, true);
-import ToolsSidebar from "./ToolsSidebar.jsx";
+import ControlConsole from "./ControlConsole.jsx";
+import { usePrefersReducedMotion } from "../../hooks/usePrefersReducedMotion.js";
 import AmbienceTray from './AmbienceTray.jsx';
 import FocusModeButton from './FocusModeButton.jsx';
 import { useFocusMode } from './useFocusMode.js';
@@ -154,6 +155,7 @@ export default function ReadPage() {
   const editorDocumentSerialRef = useRef(0);
   const [editorDocumentIdentity, setEditorDocumentIdentity] = useState("new:0");
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const [editorSelectionText, setEditorSelectionText] = useState("");
   const [selectedSchool, setSelectedSchool] = useState("SONIC");
   const [infoBeamEnabled, setInfoBeamEnabled] = useState(false);
   const [infoBeamFamily, setInfoBeamFamily] = useState(null);
@@ -261,6 +263,24 @@ export default function ReadPage() {
   }, []);
 
   useFocusMode(focusMode, setFocusMode);
+
+  // Console-driven display settings. These three were persisted but inert; the
+  // Control Console wires them into real CSS levers on the layout wrapper.
+  const osReducedMotion = usePrefersReducedMotion();
+  const fontSizeSetting = settings?.fontSize ?? "medium";
+  const compactMode = settings?.compactMode ?? false;
+  const reducedMotionSetting = settings?.reducedMotion ?? false;
+  const reducedMotionActive = osReducedMotion || reducedMotionSetting;
+  const fontScale = fontSizeSetting === "small" ? 0.92 : fontSizeSetting === "large" ? 1.12 : 1;
+
+  // Drive a specific aurora level using only the atmosphere module's public API
+  // (it exposes a cycle, not a setter); bounded to the 3 known levels.
+  const handleSetAurora = useCallback((target) => {
+    let level = getAuroraLevel();
+    for (let i = 0; i < AURORA_FACTORS.length && level !== target; i += 1) {
+      level = cycleAuroraLevel();
+    }
+  }, []);
 
   const schoolColorHex = useMemo(() => {
     return SCHOOLS[selectedSchool]?.color || "#d5b34b";
@@ -910,26 +930,51 @@ export default function ReadPage() {
     return <span className="material-symbols-outlined">edit_note</span>;
   };
 
-  const toolsBlock = (
-    <ToolsSidebar
-      isTruesight={isTruesight}
-      onToggleTruesight={handleToggleTruesight}
-      isLatticeGrid={isLatticeGrid}
-      onToggleLatticeGrid={handleToggleLatticeGrid}
-      isPredictive={isPredictive}
-      onTogglePredictive={handleTogglePredictive}
-      mirrored={mirrored}
-      onToggleMirrored={handleToggleMirrored}
-      analysisMode={analysisMode}
-      onModeChange={handleModeChange}
-      isAnalyzing={isAnalyzing}
-      showScorePanel={showScorePanel}
-      onToggleScorePanel={() => setShowScorePanel(!showScorePanel)}
-      selectedSchool={selectedSchool}
-      onSchoolChange={setSelectedSchool}
-      schoolList={getSchoolsByUnlock(progression)}
-    />
-  );
+  // One prop contract, consumed by both the desktop TOOLS tab and the mobile
+  // tools sheet. Every field maps to real Scribe state or a persisted setting.
+  const controlConsoleProps = {
+    isTruesight,
+    onToggleTruesight: handleToggleTruesight,
+    isLatticeGrid,
+    onToggleLatticeGrid: handleToggleLatticeGrid,
+    mirrored,
+    onToggleMirrored: handleToggleMirrored,
+    isPredictive,
+    onTogglePredictive: handleTogglePredictive,
+    showScorePanel,
+    onToggleScorePanel: () => setShowScorePanel((v) => !v),
+    analysisMode,
+    onModeChange: handleModeChange,
+    isAnalyzing,
+    predictorReady,
+    resonanceDegraded,
+    selectedSchool,
+    onSchoolChange: setSelectedSchool,
+    schoolList: getSchoolsByUnlock(progression),
+    auroraLevel,
+    onSetAurora: handleSetAurora,
+    focusMode,
+    onToggleFocus: () => setFocusMode((v) => !v),
+    showOraclePanel,
+    onToggleOracle: () => setShowOraclePanel((v) => !v),
+    fontSize: fontSizeSetting,
+    onFontSizeChange: (size) => updateSettings({ fontSize: size }),
+    compactMode,
+    onToggleCompact: () => updateSettings({ compactMode: !compactMode }),
+    reducedMotion: reducedMotionSetting,
+    onToggleReducedMotion: () => updateSettings({ reducedMotion: !reducedMotionSetting }),
+    hapticEnabled: settings?.hapticEnabled ?? false,
+    onToggleHaptic: () => updateSettings({ hapticEnabled: !(settings?.hapticEnabled ?? false) }),
+    telemetry: {
+      line: cursorPos.line,
+      col: cursorPos.col,
+      syllables: totalSyllables ?? 0,
+      lines: lineCount ?? 0,
+      power: Math.round(scoreData?.totalScore || 0),
+    },
+  };
+
+  const toolsBlock = <ControlConsole {...controlConsoleProps} />;
 
   const scoreBlock = (
     <HeuristicScorePanel
@@ -1128,6 +1173,7 @@ export default function ReadPage() {
                 theme={theme}
                 onWordActivate={handleWordActivate}
                 onCursorChange={setCursorPos}
+                onSelectionTextChange={setEditorSelectionText}
                 mirrored={mirrored}
                 ideMode={ideMode}
                 onFocus={handleIdeFocus}
@@ -1237,8 +1283,9 @@ export default function ReadPage() {
 
   /* ── DESKTOP RENDER ── */
   return (
-    <div 
-      className={`ide-layout-wrapper${focusMode ? ' ide-layout-wrapper--focus' : ''}`}
+    <div
+      className={`ide-layout-wrapper${focusMode ? ' ide-layout-wrapper--focus' : ''}${compactMode ? ' ide-layout-wrapper--compact' : ''}`}
+      data-reduced-motion={reducedMotionActive ? 'true' : 'false'}
       style={{
         '--ritual-abyss': ritualPalette.abyss,
         '--ritual-panel': ritualPalette.panel,
@@ -1252,6 +1299,7 @@ export default function ReadPage() {
         '--ritual-aurora-start': ritualPalette.aurora_start,
         '--ritual-aurora-end': ritualPalette.aurora_end,
         '--active-school-glow': ritualPalette.glow_40,
+        '--ide-font-scale': fontScale,
       }}
     >
       <TopBar
@@ -1266,7 +1314,7 @@ export default function ReadPage() {
         progression={progression}
         auroraLevel={auroraLevel}
         onCycleAuroraLevel={cycleAuroraLevel}
-        onSettingsClick={() => setShowSettingsPanel((p) => !p)}
+        onSettingsClick={() => setSidebarTab('TOOLS')}
         focusMode={focusMode}
         onToggleFocus={() => setFocusMode((v) => !v)}
       />
@@ -1303,7 +1351,7 @@ export default function ReadPage() {
                 className="activity-item icon-only"
                 title="Settings"
                 aria-label="Settings"
-                onClick={() => setShowSettingsPanel((p) => !p)}
+                onClick={() => setSidebarTab('TOOLS')}
               >
                 <SettingsIcon size={24} />
               </button>
@@ -1360,22 +1408,7 @@ export default function ReadPage() {
                 )}
                 {sidebarTab === 'TOOLS' && (
                   <div className="sidebar-tools">
-                    <ToolsSidebar
-                      isTruesight={isTruesight}
-                      onToggleTruesight={handleToggleTruesight}
-                      isPredictive={isPredictive}
-                      onTogglePredictive={handleTogglePredictive}
-                      mirrored={mirrored}
-                      onToggleMirrored={handleToggleMirrored}
-                      analysisMode={analysisMode}
-                      onModeChange={handleModeChange}
-                      isAnalyzing={isAnalyzing}
-                      showScorePanel={showScorePanel}
-                      onToggleScorePanel={() => setShowScorePanel(!showScorePanel)}
-                      selectedSchool={selectedSchool}
-                      onSchoolChange={setSelectedSchool}
-                      schoolList={schoolList}
-                    />
+                    <ControlConsole {...controlConsoleProps} />
                     {analysisMode === ANALYSIS_MODES.RHYME && (
                       <div className="sidebar-sub-panel">
                         <RhymeDiagramPanel
@@ -1444,6 +1477,7 @@ export default function ReadPage() {
                     selectedSchool={selectedSchool}
                     onWordActivate={handleWordActivate}
                     onCursorChange={setCursorPos}
+                    onSelectionTextChange={setEditorSelectionText}
                     mirrored={mirrored}
                     ideMode={ideMode}
                     onFocus={handleIdeFocus}
@@ -1506,6 +1540,11 @@ export default function ReadPage() {
                           <AnalyzePanel
                             initialQuery={currentLineText?.split(/\s+/)[0] || ''}
                             onCraftAction={handleAnalyzeCraft}
+                            selection={editorSelectionText}
+                            currentLineText={currentLineText}
+                            scrollLines={scrollLines}
+                            currentLineIndex={Math.max(0, cursorPos.line - 1)}
+                            documentContext={truesightContent}
                           />
                         ) : (
                           <AnalysisPanel
@@ -1714,6 +1753,11 @@ export default function ReadPage() {
             <AnalyzePanel
               initialQuery={currentLineText?.split(/\s+/)[0] || ''}
               onCraftAction={handleAnalyzeCraft}
+              selection={editorSelectionText}
+              currentLineText={currentLineText}
+              scrollLines={scrollLines}
+              currentLineIndex={Math.max(0, cursorPos.line - 1)}
+              documentContext={truesightContent}
             />
           ) : (
             <AnalysisPanel

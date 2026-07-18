@@ -32,14 +32,20 @@ function fixtures({ morphologyIndex = completeIndex, literaryResults = [] } = {}
     ['leaf/noun', [{ synsetId: 'leaf.n', definition: 'a flat green plant organ', examples: [] }]],
     ['leave/verb', [{ synsetId: 'leave.v', definition: 'go away from a place', examples: [] }]],
     ['saw/noun', [{ synsetId: 'saw.n', definition: 'a tool for cutting wood', examples: [] }]],
-    ['see/verb', [{ synsetId: 'see.v', definition: 'perceive with the eyes', examples: [] }]],
+    ['see/verb', Array.from({ length: 10 }, (_, index) => ({
+      synsetId: `see.v.${index + 1}`,
+      definition: index === 0 ? 'perceive with the eyes' : `additional see sense ${index + 1}`,
+      examples: [],
+    }))],
     ['dark/adjective', [{ synsetId: 'dark.a', definition: 'having little light', examples: [] }]],
   ]);
   const entries = new Map([
     ['leaf', [{ id: 1, pos: 'n', senses: [{ glosses: ['a flat green plant organ'], examples: ['a leaf fell'] }] }]],
     ['leave', [{ id: 2, pos: 'v', senses: [{ glosses: ['go away from a place'], examples: ['leave now'] }] }]],
     ['saw', [{ id: 3, pos: 'n', senses: [{ glosses: ['a tool for cutting wood'], examples: [] }] }]],
-    ['see', [{ id: 4, pos: 'v', senses: [{ glosses: ['perceive with the eyes'], examples: ['I see light'] }] }]],
+    // Legacy entry rows collapse a headword to one POS even when WordNet has
+    // senses in several POS partitions. Candidate data must not trust this tag.
+    ['see', [{ id: 4, pos: 'n', senses: [{ glosses: ['the seat of a bishop'], examples: [] }] }]],
     ['dark', [{ id: 5, pos: 'a', senses: [{ glosses: ['having little light'], examples: [] }] }]],
   ]);
 
@@ -108,6 +114,17 @@ describe('lexicalAnalyze.service', () => {
         (evidence) => evidence.channel === 'semantics' || evidence.channel === 'pos',
       )).toBe(false);
     }
+    const seeResult = result.candidateResults.find((entry) => entry.candidateId === 'see/verb');
+    expect(seeResult.groups.find((group) => group.key === 'meaning').items)
+      .toContainEqual(expect.objectContaining({ text: 'perceive with the eyes' }));
+  });
+
+  it('returns every available candidate definition without an arbitrary display cap', () => {
+    const { service } = fixtures();
+    const result = service.analyze(resolveAnalysisContext({ scope: 'word', surface: 'saw' }));
+    const seeResult = result.candidateResults.find((entry) => entry.candidateId === 'see/verb');
+
+    expect(seeResult.groups.find((group) => group.key === 'meaning').items).toHaveLength(10);
   });
 
   it('does not treat a lone candidate from partial coverage as clear', () => {
