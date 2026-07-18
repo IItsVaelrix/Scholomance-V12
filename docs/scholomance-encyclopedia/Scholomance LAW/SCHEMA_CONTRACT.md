@@ -7,11 +7,179 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.32** | Last updated: 2026-07-13
+**Version: 1.33** | Last updated: 2026-07-18
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Lexical Graph Foundation (Analyze substrate)
+- Version: 1.32 -> 1.33
+- Date: 2026-07-18
+- Changed fields: added `LexicalEntry`, `LexicalRelation`, `LiteraryDevice`, `DetectionSignal`, `Definition`, `EmotionalProfile`, `SemanticCoordinates`, `SourceReference`, `CraftPurpose`, `DeviceExample`, `LexicalEmbedding`, `FtsCursor`; relation enum includes `commonly_confused_with` and `related_device`
+- Breaking: no — additive overlay; Oracle `entry` unchanged
+- Owner: Codex
+- Claude impact: none this slice (Analyze UI later)
+- Gemini impact: dict migration/seed/adapter tests; fixture DBs may include overlay tables
+- Error codes: reuse VALUE/STATE PB-ERR patterns for corrupt JSON / missing DB
+
+---
+
+## Lexical Graph Foundation — Core Schemas
+
+Additive graph overlay for `scholomance_dict.sqlite`. The Oracle adapter `LexicalEntry` in the shared Core Schemas block below remains the Lexicon Oracle authority shape; this section defines graph-node contracts for `lexicalGraph.sqlite.adapter.js`.
+
+JSDoc mirrors live in `codex/core/lexical-graph/types.js`.
+
+```ts
+export const LEXICAL_GRAPH_SCHEMA_VERSION = "1";
+export const LITERARY_DEVICE_SEED_VERSION = "1";
+export const DEVICE_EMBEDDING_KIND = "phonosemantic_mock";
+export const DEVICE_EMBEDDING_VERSION = "tq-js-v1";
+export const DEVICE_EMBEDDING_DIMENSIONS = 256;
+export const LEGACY_EMBEDDING_KIND = "legacy_turboquant";
+
+interface LexicalEntry {
+  id: string;
+  type: "word" | "phrase" | "device" | "idiom" | "symbol" | "allusion" | "motif";
+  canonicalText: string;
+  definitions: Definition[];
+  phonemes?: string[];
+  syllableCount?: number;
+  stressPattern?: string;
+  emotionalProfile: EmotionalProfile;
+  semanticCoordinates: SemanticCoordinates;
+  register: string[];
+  domains: string[];
+  provenance: SourceReference[];
+  entryId?: number | null;
+  embedding?: {
+    blob: Uint8Array;
+    kind: string;
+    version: string;
+    dimensions: number;
+    source: string;
+  } | null;
+}
+
+interface LexicalRelation {
+  sourceId: string;
+  targetId: string;
+  relation:
+    | "synonym" | "antonym" | "rhymes_with" | "sounds_like"
+    | "symbolizes" | "evokes" | "intensifies" | "contrasts_with"
+    | "commonly_follows" | "example_of" | "used_with"
+    | "commonly_confused_with" | "related_device";
+  strength: number;
+  context?: string[];
+}
+
+interface LiteraryDevice {
+  id: string;
+  name: string;
+  aliases: string[];
+  definition: string;
+  detectionSignals: DetectionSignal[];
+  purposes: CraftPurpose[];
+  compatibleStructures: string[];
+  examples: DeviceExample[];
+  /** Hydrated from lexical_relation; not persisted on literary_device */
+  relatedDevices: string[];
+  /** Hydrated from lexical_relation; not persisted on literary_device */
+  commonlyConfusedWith: string[];
+}
+
+interface DetectionSignal {
+  id: string;
+  kind:
+    | "token_repeat"
+    | "syntactic_parallel"
+    | "semantic_opposition"
+    | "comparison_marker"
+    | "line_position"
+    | "semantic_incongruity"
+    | "custom";
+  description: string;
+  weight: number;
+  parameters: Record<string, unknown>;
+  scope?: "token" | "line" | "stanza" | "document";
+}
+
+interface Definition {
+  text: string;
+  sense?: string;
+  register?: string;
+  source?: string;
+}
+
+interface EmotionalProfile {
+  valence?: number;       // [-1, 1]
+  intensity?: number;     // [0, 1]
+  tension?: number;       // [0, 1]
+  vulnerability?: number; // [0, 1]
+  hostility?: number;     // [0, 1]
+}
+
+interface SemanticCoordinates {
+  [key: string]: unknown;
+}
+
+interface SourceReference {
+  source: string;
+  url?: string;
+  license?: string;       // required on seeded device definitions/examples
+}
+
+interface CraftPurpose {
+  id: string;
+  description: string;
+}
+
+interface DeviceExample {
+  text: string;
+  license: string;
+  source?: string;
+  note?: string;
+}
+
+interface LexicalEmbedding {
+  blob: Uint8Array;
+  kind: string;
+  version: string;
+  dimensions: number;
+  source: string;
+  /** Adapter view: false when version === 'unknown' (retrievable but not comparable) */
+  comparable: boolean;
+}
+
+interface FtsCursor {
+  rank: number;
+  rowid: number;
+}
+
+/*
+Lexical Graph embedding invariants:
+- Similarity-eligible rows share embedding_kind, embedding_version (not 'unknown'), and embedding_dimensions.
+- Refuse comparison across kind/version/dimension mismatches or when either side is unknown.
+- getEmbedding() exposes comparable: false when version === 'unknown'.
+*/
+```
+
+### Identity rules
+
+| Node kind | id form |
+|-----------|---------|
+| Word (mirrored) | `le:word:<entry_id>` — one node per legacy entry row; identity ≠ spelling; never `le:word:<headword_lower>` |
+| Device | `le:device:<slug>` |
+| Future types | `le:<type>:<stable_key>` |
+
+`lexical_relation` is the sole persisted edge store; device `relatedDevices` / `commonlyConfusedWith` are hydrated only.
+
+`DetectionSignal` shapes are schema-valid and machine-addressable; no evaluator runtime in this schema slice.
 
 ---
 
@@ -2406,6 +2574,7 @@ Backward compatible until: [date or "immediate breaking change"]
 | 1.28 | 2026-06-19 | Registered `PB-SILH-BLUEPRINT-v1`, ratified the `.silh` grammar, and extended PixelBrain craft gate audits for silhouette blueprint and animation lockstep verification | no |
 | 1.29 | 2026-06-20 | Added Memory Cell Osmosis TurboQuant receptor contracts for diagnostic-memory anomaly evaluation | no |
 | 1.30 | 2026-06-29 | Added the internal PixelBrain pipeline golden corpus report contract for mutation and finish-suite corpus execution | no |
+| 1.33 | 2026-07-18 | Added Lexical Graph Foundation overlay schemas (`LexicalEntry`, relations, literary devices, embeddings, FTS cursor) | no |
 
 ---
 

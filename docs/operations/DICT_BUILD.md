@@ -100,3 +100,12 @@ JOIN entry e ON e.id = f.rowid
 WHERE entry_fts MATCH 'unit NEAR/3 time'
 LIMIT 25;
 ```
+
+## Lexical graph overlay (Analyze foundation)
+
+```bash
+npm run lexical-graph -- migrate --db scholomance_dict.sqlite --timestamp 2026-07-18T00:00:00.000Z
+npm run lexical-graph -- all --db scholomance_dict.sqlite --timestamp 2026-07-18T00:00:00.000Z
+```
+
+Does not replace Oracle `entry` tables. See `docs/superpowers/specs/2026-07-18-lexical-graph-foundation-design.md`.
