@@ -37,8 +37,9 @@ import AnalysisPanel from "./AnalysisPanel.jsx";
 import AnalyzePanel from "./AnalyzePanel.jsx";
 import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
 import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
-import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
+import SongStatsPanel from "../../components/SongStatsPanel.jsx";
 import RitualPredictionTooltip from "../../components/RitualPredictionTooltip.jsx";
+import { useSongStats } from "../../hooks/useSongStats.js";
 
 import ScrollEditor from "../../lib/lexical/LexicalScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
@@ -331,6 +332,10 @@ export default function ReadPage() {
   const narrativeAMP = deepAnalysis?.narrativeAMP || null;
   const oracle = deepAnalysis?.oracle || null;
   const genreProfile = deepAnalysis?.genreProfile || null;
+  const {
+    songStats,
+    computeFailed: songStatsComputeFailed,
+  } = useSongStats(truesightContent, deepAnalysis);
 
   // Word colour authority is wordTruesight (school colour) inside ScrollEditor;
   // the adaptive palette only feeds the ambient blended-HSL animation intent.
@@ -976,14 +981,15 @@ export default function ReadPage() {
 
   const toolsBlock = <ControlConsole {...controlConsoleProps} />;
 
-  const scoreBlock = (
-    <HeuristicScorePanel
-      scoreData={scoreData}
-      genreProfile={genreProfile}
-      visible={true}
-      isEmbedded={true}
-    />
-  );
+  const songStatsSlot = songStats ? (
+    <SongStatsPanel stats={songStats} visible={true} isEmbedded={true} />
+  ) : songStatsComputeFailed ? (
+    <div className="song-stats-panel is-embedded song-stats-unavailable" role="status">
+      Song stats unavailable — recompute failed for the current lyrics.
+    </div>
+  ) : null;
+
+  const scoreBlock = songStatsSlot;
 
   const schoolList = getSchoolsByUnlock(progression);
 
@@ -1227,12 +1233,7 @@ export default function ReadPage() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.12, ease: 'easeOut' }}
             >
-              <HeuristicScorePanel
-                scoreData={scoreData}
-                genreProfile={genreProfile}
-                visible={true}
-                isEmbedded={true}
-              />
+              {songStatsSlot}
             </motion.div>
           )}
         </main>
@@ -1515,12 +1516,7 @@ export default function ReadPage() {
                             aria-label="Close CODEx Metrics"
                           >×</button>
                         </div>
-                        <HeuristicScorePanel
-                          scoreData={scoreData}
-                          genreProfile={genreProfile}
-                          visible={true}
-                          isEmbedded={true}
-                        />
+                        {songStatsSlot}
                       </div>
                     )}
 
@@ -1823,12 +1819,7 @@ export default function ReadPage() {
           maxWidth={500}
           maxHeight={700}
         >
-          <HeuristicScorePanel
-            scoreData={scoreData}
-            genreProfile={genreProfile}
-            visible={true}
-            isEmbedded={true}
-          />
+          {songStatsSlot}
         </FloatingPanel>
       )}
 

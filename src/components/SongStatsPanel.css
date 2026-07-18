@@ -19,6 +19,16 @@
   width: 100%;
 }
 
+.song-stats-unavailable {
+  padding: var(--space-3, 0.75rem);
+  border: 1px dashed var(--stats-line);
+  border-radius: var(--radius-md, 0.5rem);
+  color: var(--stats-muted);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
 .song-stats-surface {
   position: relative;
   overflow: hidden;
