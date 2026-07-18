@@ -214,13 +214,13 @@ export default function AnalyzePanel({
             className="az-search__input"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Analyze a word or surface form…"
-            aria-label="Analyze query"
+            placeholder="Leximancy: a word or surface form…"
+            aria-label="Leximancy query"
           />
           <button className="az-search__go" type="submit" disabled={loading || !query.trim() || scopeUnavailable[scope]}>
             {loading ? 'Analyzing…' : 'Search'}
           </button>
-          {result && <button type="button" className="az-search__clear" onClick={handleClear} aria-label="Clear analysis">×</button>}
+          {result && <button type="button" className="az-search__clear" onClick={handleClear} aria-label="Clear leximancy">×</button>}
         </div>
 
         <fieldset className="az-scopes">
@@ -259,7 +259,7 @@ export default function AnalyzePanel({
       {loading && <div className="az-loading" role="status">Ranking the closed morphology lattice…</div>}
 
       {pins.length > 0 && (
-        <div className="az-pins" aria-label="Pinned Analyze results">
+        <div className="az-pins" aria-label="Pinned Leximancy results">
           {pins.map((pin) => (
             <span key={pin.text} className="az-pin">
               {pin.text}

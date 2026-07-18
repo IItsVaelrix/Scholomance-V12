@@ -11,10 +11,10 @@ test('Read Analyze ranks the live lemma lattice only after explicit scoped submi
 
   await page.getByRole('button', { name: 'HEX TOOLS' }).click();
   await page.locator('button[title="Reveal phonemic coloring"]').click();
-  await page.locator('.console-seg', { hasText: 'Analyze' }).click();
+  await page.locator('.console-seg', { hasText: 'Leximancy' }).click();
 
   const panel = page.locator('.az-panel');
-  const input = panel.getByLabel('Analyze query');
+  const input = panel.getByLabel('Leximancy query');
   await expect(panel).toBeVisible();
 
   await panel.locator('label[for="az-scope-word"]').click();

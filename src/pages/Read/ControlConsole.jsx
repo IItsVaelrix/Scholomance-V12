@@ -121,7 +121,7 @@ export default function ControlConsole(props) {
           options: [
             { id: ANALYSIS_MODES.NONE, label: 'Idle' },
             { id: ANALYSIS_MODES.ASTROLOGY, label: 'Astrology', icon: AstrologyIcon },
-            { id: ANALYSIS_MODES.ANALYZE, label: 'Analyze', icon: AnalyzeIcon },
+            { id: ANALYSIS_MODES.ANALYZE, label: 'Leximancy', icon: AnalyzeIcon },
           ],
           onSelect: onModeChange,
         },
