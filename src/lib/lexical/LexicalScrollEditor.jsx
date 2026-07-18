@@ -18,6 +18,7 @@ import RitualPredictionTooltip from '../../components/RitualPredictionTooltip.js
 import { buildRitualPrediction } from '../../lib/ritualPredictionTooltip.js';
 import { evaluateSCD64CircuitBreaker } from '../../core/scd64/circuitBreaker';
 import { resolveTokenLineIndex } from './charStart.js';
+import { extractPreviousWord } from '../../../codex/core/spellcheckContext.js';
 
 const lexicalTheme = {
   paragraph: 'editor-paragraph',
@@ -547,7 +548,8 @@ const LexicalScrollEditor = forwardRef(({
       try {
         const valid = await checkSpelling(prefix);
         if (!valid) {
-          const corrections = await getSpellingSuggestions(prefix, null, 3);
+          const prevWord = extractPreviousWord(textBeforeCursor, prefix);
+          const corrections = await getSpellingSuggestions(prefix, prevWord, 3);
           if (corrections && corrections.length) {
             suggestionsList = corrections.map((word) => ({
               token: word, type: 'correction', isRhyme: false, badges: ['spelling'],

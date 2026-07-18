@@ -128,7 +128,7 @@ export function computeRhymeDensity(words, options = {}) {
   return {
     id: 'rhyme_density',
     value: codexDensity,
-    unit: 'rd_c',
+    unit: 'rd',
     secondary: {
       malmiDensity,
       longestChain,

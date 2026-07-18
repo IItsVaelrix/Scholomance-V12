@@ -9,6 +9,7 @@ import {
 import { buildComposite } from './composite.js';
 import { buildSourceFingerprint } from './fingerprint.js';
 import { computeFlowAlignment } from './flowAlignment.js';
+import { collectSongStatsTokens } from './lyricTokens.js';
 import { computeRhymeDensity } from './rhymeDensity.js';
 import { computeUniqueVocabulary } from './uniqueVocabulary.js';
 
@@ -27,7 +28,7 @@ function stubRhymeDensityPillar(extraDiagnostics = []) {
   return {
     id: 'rhyme_density',
     value: 0,
-    unit: 'rd_c',
+    unit: 'rd',
     normalized01: 0,
     fidelity: 'exact',
     confidence01: 0,
@@ -43,7 +44,7 @@ function stubUniqueVocabularyPillar() {
   return {
     id: 'unique_vocabulary',
     value: 0,
-    unit: '/100w',
+    unit: '/100t',
     normalized01: 0,
     fidelity: 'exact',
     confidence01: 0,
@@ -81,7 +82,17 @@ export function computeSongStats(doc, options = {}) {
   const beatsPerLine = Number.isFinite(options.beatsPerLine) && options.beatsPerLine > 0
     ? options.beatsPerLine
     : DEFAULT_BEATS_PER_LINE;
-  const wordCount = doc.allWords?.length ?? 0;
+
+  const {
+    rawWordCount,
+    analyzedTokens,
+    analyzedTokenCount,
+    excludedTokenCount,
+  } = collectSongStatsTokens(doc);
+
+  // Canonical denominator for gates, composite, and UI — analyzed lyric tokens.
+  const wordCount = analyzedTokenCount;
+
   const sourceFingerprint = buildSourceFingerprint({
     raw: doc.raw ?? '',
     rhymeWindow,
@@ -98,6 +109,9 @@ export function computeSongStats(doc, options = {}) {
     sourceFingerprint,
     rhymeWindow,
     fidelitySummary: 'estimated',
+    rawWordCount,
+    analyzedTokenCount,
+    excludedTokenCount,
     assumptions: {
       estimatedBpm: bpm,
       beatsPerLine,
@@ -109,7 +123,7 @@ export function computeSongStats(doc, options = {}) {
     /** @type {Diagnostic} */
     const needMoreLyrics = {
       code: 'need_more_lyrics',
-      message: `At least ${MIN_WORDS_FOR_STATS} words are required for song stats.`,
+      message: `At least ${MIN_WORDS_FOR_STATS} analyzed lyric tokens are required for song stats.`,
       severity: 'warning',
     };
 
@@ -130,8 +144,8 @@ export function computeSongStats(doc, options = {}) {
   }
 
   const pillars = {
-    rhymeDensity: computeRhymeDensity(doc.allWords, { rhymeWindow }),
-    uniqueVocabulary: computeUniqueVocabulary(doc.allWords),
+    rhymeDensity: computeRhymeDensity(analyzedTokens, { rhymeWindow }),
+    uniqueVocabulary: computeUniqueVocabulary(analyzedTokens),
     flowAlignment: computeFlowAlignment(doc, {
       ...options,
       bpm,
@@ -154,6 +168,11 @@ export function computeSongStats(doc, options = {}) {
 export { buildComposite } from './composite.js';
 export { buildSourceFingerprint } from './fingerprint.js';
 export { computeFlowAlignment } from './flowAlignment.js';
+export {
+  collectSongStatsTokens,
+  isSectionHeadingLine,
+  normalizeLyricToken,
+} from './lyricTokens.js';
 export { computeRhymeDensity, longestVowelMatchLength } from './rhymeDensity.js';
 export { computeUniqueVocabulary } from './uniqueVocabulary.js';
 export * from './constants.js';

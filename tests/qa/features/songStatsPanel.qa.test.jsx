@@ -12,7 +12,7 @@ const songStatsFixture = {
     rhymeDensity: {
       id: 'rhyme_density',
       value: 1.42,
-      unit: 'rd_c',
+      unit: 'rd',
       secondary: { malmiDensity: 0.71 },
       normalized01: 0.71,
       fidelity: 'exact',
@@ -23,7 +23,12 @@ const songStatsFixture = {
     uniqueVocabulary: {
       id: 'unique_vocabulary',
       value: 54.17,
-      unit: '/100w',
+      unit: '/100t',
+      secondary: {
+        uniqueLemmaCount: 26,
+        surfaceTypeCount: 28,
+        tokenCount: 48,
+      },
       normalized01: 0.9,
       fidelity: 'exact',
       confidence01: 1,
@@ -59,6 +64,9 @@ const songStatsFixture = {
     sourceFingerprint: 'sha256:qa-fixture',
     rhymeWindow: 24,
     fidelitySummary: 'estimated',
+    rawWordCount: 52,
+    analyzedTokenCount: 48,
+    excludedTokenCount: 4,
     assumptions: {
       estimatedBpm: 90,
       beatsPerLine: 4,

@@ -13,7 +13,7 @@ describe('uniqueVocabulary', () => {
       normalized: text,
     }));
     const pillar = computeUniqueVocabulary(words);
-    expect(pillar.unit).toBe('/100w');
+    expect(pillar.unit).toBe('/100t');
     expect(pillar.secondary.tokenCount).toBe(5);
     expect(pillar.secondary.surfaceTypeCount).toBe(5);
     expect(pillar.secondary.uniqueLemmaCount).toBeLessThanOrEqual(5);
@@ -53,9 +53,13 @@ describe('uniqueVocabulary', () => {
   });
 
   it('wires computed lexical diversity into computeSongStats for N >= 8', () => {
-    const allWords = Array.from({ length: 8 }, (_, index) => word(`token-${index}`));
-    const result = computeSongStats({ raw: 'eight words', lines: [], allWords });
+    // Alphabetic suffixes only — normalizeLyricToken strips digits.
+    const labels = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot', 'golf', 'hotel'];
+    const allWords = labels.map((text) => word(text));
+    const result = computeSongStats({ raw: labels.join(' '), lines: [], allWords });
 
+    expect(result.meta.analyzedTokenCount).toBe(8);
+    expect(result.wordCount).toBe(8);
     expect(result.pillars.uniqueVocabulary.value).toBe(100);
     expect(result.pillars.uniqueVocabulary.secondary.uniqueLemmaCount).toBe(8);
     expect(result.pillars.uniqueVocabulary.secondary.tokenCount).toBe(8);

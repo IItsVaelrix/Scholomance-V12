@@ -50,12 +50,15 @@
  * @property {string} sourceFingerprint
  * @property {number} rhymeWindow
  * @property {'estimated' | 'aligned'} fidelitySummary
+ * @property {number} rawWordCount
+ * @property {number} analyzedTokenCount
+ * @property {number} excludedTokenCount
  * @property {{ estimatedBpm: number, beatsPerLine: number, lineRepresentsBar: boolean }} assumptions
  */
 
 /**
  * @typedef {Object} SongStatsResult
- * @property {number} wordCount
+ * @property {number} wordCount analyzed lyric token count (canonical denominator)
  * @property {{ rhymeDensity: SongStatPillar, uniqueVocabulary: SongStatPillar, flowAlignment: SongStatPillar }} pillars
  * @property {SongStatsComposite} composite
  * @property {SongStatsMeta} meta

@@ -51,7 +51,7 @@ describe('Song Stats QA checklist', () => {
     expect(pillar.secondary.malmiDensity).toBeCloseTo((0 + 2) / 2, 10);
     expect(pillar.value).toBeCloseTo((0 + 2 ** 2) / 2, 10);
     expect(pillar.value).toBeGreaterThan(pillar.secondary.malmiDensity);
-    expect(pillar.unit).toBe('rd_c');
+    expect(pillar.unit).toBe('rd');
   });
 
   it('exposes repetitionContribution so identical tokens cannot silently inflate RD', () => {

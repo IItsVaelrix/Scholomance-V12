@@ -4,6 +4,7 @@ import {
   MIN_WORDS_FOR_STABLE_COMPOSITE,
   VOCAB_CEILING,
 } from './constants.js';
+import { normalizeLyricToken } from './lyricTokens.js';
 
 /** @typedef {import('./types.js').SongStatPillar} SongStatPillar */
 
@@ -16,16 +17,8 @@ function clamp01(value) {
 }
 
 /**
- * @param {Record<string, unknown>} word
- * @returns {string}
- */
-function normalizedToken(word) {
-  const normalized = String(word?.normalized ?? word?.text ?? '').trim().toLowerCase();
-  return normalized;
-}
-
-/**
- * CODEx song-level lexical diversity: unique lemmas per 100 words.
+ * CODEx song-level lexical diversity: unique lemmas per 100 analyzed tokens.
+ * Expects canonical tokens from collectSongStatsTokens (already filtered).
  *
  * @param {Array<Record<string, unknown>>} words
  * @returns {SongStatPillar}
@@ -33,7 +26,7 @@ function normalizedToken(word) {
 export function computeUniqueVocabulary(words) {
   const sourceWords = Array.isArray(words) ? words : [];
   const tokens = sourceWords
-    .map(normalizedToken)
+    .map((word) => normalizeLyricToken(word))
     .filter((token) => token.length >= 2);
 
   const tokenCount = tokens.length;
@@ -55,7 +48,7 @@ export function computeUniqueVocabulary(words) {
   return {
     id: 'unique_vocabulary',
     value,
-    unit: '/100w',
+    unit: '/100t',
     secondary: {
       uniqueLemmaCount,
       surfaceTypeCount,

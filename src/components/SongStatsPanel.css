@@ -115,19 +115,21 @@
   display: inline-flex;
   align-items: center;
   min-height: 1.25rem;
-  padding: 0.1rem 0.45rem;
+  padding: 0.15rem 0.5rem;
   border: 1px solid var(--stats-line);
-  border-radius: 999px;
+  border-radius: 0.4rem;
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 0.56rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
 }
 
 .song-stats-provisional {
   color: var(--stats-brass);
   background: rgba(201, 168, 64, 0.08);
+  text-transform: none;
+  max-width: 22rem;
 }
 
 .song-stats-explanation {
@@ -276,6 +278,44 @@
   letter-spacing: 0.015em;
 }
 
+.song-stats-subtitle {
+  display: block;
+  margin: 0.1rem 0 0.2rem;
+  color: var(--stats-soft);
+  font-family: var(--font-display, "Cinzel", Georgia, serif);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.song-stats-header-explanation,
+.song-stats-card-explanation,
+.song-stats-card-meta {
+  margin: 0.35rem 0 0;
+  color: var(--stats-muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+
+.song-stats-header-explanation {
+  max-width: 22rem;
+}
+
+.song-stats-card-meta {
+  color: var(--stats-soft);
+  font-family: var(--font-mono, "JetBrains Mono", monospace);
+  font-size: 0.62rem;
+}
+
+.song-stats-card-explanation {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid var(--stats-line-soft);
+}
+
 .song-stats-card-value {
   margin: 0.7rem 0 0;
   color: var(--stats-brass);
@@ -289,6 +329,13 @@
   color: var(--stats-muted);
   font-family: var(--font-mono, "JetBrains Mono", monospace);
   font-size: 0.64rem;
+}
+
+.song-stats-fidelity {
+  max-width: 11rem;
+  white-space: normal;
+  text-align: right;
+  text-transform: none;
 }
 
 .song-stats-fidelity.is-estimated {

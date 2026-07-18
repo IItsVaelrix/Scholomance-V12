@@ -17,6 +17,9 @@ describe('computeSongStats empty / short', () => {
     };
     const result = computeSongStats(doc);
     expect(result.wordCount).toBe(3);
+    expect(result.meta.rawWordCount).toBe(3);
+    expect(result.meta.analyzedTokenCount).toBe(3);
+    expect(result.meta.excludedTokenCount).toBe(0);
     expect(result.composite.total0to100).toBeNull();
     expect(result.composite.label).toBe('technical_density');
     expect(result.meta.engineVersion).toBe('song-stats-v1');

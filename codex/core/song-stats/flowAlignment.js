@@ -7,6 +7,7 @@ import {
   FLOW_SYNC_WEIGHT,
   SPS_CEILING,
 } from './constants.js';
+import { isSectionHeadingLine } from './lyricTokens.js';
 
 const VOWEL_PHONEME = /^(?:A[AEHOWY]|E[HRY]|I[HY]|O[HOWY]|U[HW])\d?$/;
 
@@ -29,23 +30,6 @@ function median(values) {
 
 function lineWords(line) {
   return Array.isArray(line?.words) ? line.words : [];
-}
-
-/**
- * v1 recognizes named section prefixes, plus short all-uppercase labels.
- * Title-case lyric lines remain lyrics unless they use a named prefix.
- */
-function isSectionHeading(line) {
-  const text = String(line?.text ?? '').trim();
-  if (/^(verse|chorus|bridge|intro|outro|hook|section)\b/i.test(text)) {
-    return true;
-  }
-
-  const wordCount = text.split(/\s+/u).filter(Boolean).length;
-  return (
-    wordCount <= 3
-    && /^[A-Z][A-Z0-9 ]{0,24}$/u.test(text)
-  );
 }
 
 function vowelCount(word) {
@@ -184,7 +168,7 @@ export function computeFlowAlignment(doc, options = {}) {
 
 function estimatedFlow(doc, bpm, beatsPerLine) {
   const lyricLines = (doc.lines ?? []).filter((line) => (
-    String(line?.text ?? '').trim().length > 0 && !isSectionHeading(line)
+    String(line?.text ?? '').trim().length > 0 && !isSectionHeadingLine(line)
   ));
   const profiles = lyricLines.map(lineSyllableProfile);
   const bars = lyricLines.length;
