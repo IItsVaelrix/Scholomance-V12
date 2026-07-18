@@ -5,8 +5,8 @@ import {
   DEFAULT_RHYME_WINDOW,
   ENGINE_VERSION,
   MIN_WORDS_FOR_STATS,
-  WEIGHTS,
 } from './constants.js';
+import { buildComposite } from './composite.js';
 import { buildSourceFingerprint } from './fingerprint.js';
 import { computeFlowAlignment } from './flowAlignment.js';
 import { computeRhymeDensity } from './rhymeDensity.js';
@@ -16,7 +16,6 @@ import { computeUniqueVocabulary } from './uniqueVocabulary.js';
 /** @typedef {import('./types.js').ComputeSongStatsOptions} ComputeSongStatsOptions */
 /** @typedef {import('./types.js').Diagnostic} Diagnostic */
 /** @typedef {import('./types.js').SongStatPillar} SongStatPillar */
-/** @typedef {import('./types.js').SongStatsComposite} SongStatsComposite */
 /** @typedef {import('./types.js').SongStatsMeta} SongStatsMeta */
 /** @typedef {import('./types.js').SongStatsResult} SongStatsResult */
 
@@ -88,8 +87,8 @@ export function computeSongStats(doc, options = {}) {
     rhymeWindow,
     bpm,
     beatsPerLine,
-    alignmentId: options.alignment?.id ?? null,
-    beatGridId: options.beatGrid?.id ?? null,
+    alignmentFingerprint: options.alignment?.fingerprint ?? options.alignment?.id ?? null,
+    beatGridFingerprint: options.beatGrid?.fingerprint ?? options.beatGrid?.id ?? null,
   });
 
   /** @type {SongStatsMeta} */
@@ -106,15 +105,6 @@ export function computeSongStats(doc, options = {}) {
     },
   };
 
-  /** @type {SongStatsComposite} */
-  const composite = {
-    label: 'technical_density',
-    total0to100: null,
-    band: null,
-    provisional: true,
-    weights: { ...WEIGHTS },
-  };
-
   if (wordCount < MIN_WORDS_FOR_STATS) {
     /** @type {Diagnostic} */
     const needMoreLyrics = {
@@ -123,34 +113,45 @@ export function computeSongStats(doc, options = {}) {
       severity: 'warning',
     };
 
+    const shortTextPillars = {
+      rhymeDensity: stubRhymeDensityPillar([needMoreLyrics]),
+      uniqueVocabulary: stubUniqueVocabularyPillar(),
+      flowAlignment: stubFlowAlignmentPillar(),
+    };
     return {
       wordCount,
-      pillars: {
-        rhymeDensity: stubRhymeDensityPillar([needMoreLyrics]),
-        uniqueVocabulary: stubUniqueVocabularyPillar(),
-        flowAlignment: stubFlowAlignmentPillar(),
-      },
-      composite,
+      pillars: shortTextPillars,
+      composite: buildComposite(shortTextPillars, {
+        wordCount,
+        flowFidelity: shortTextPillars.flowAlignment.fidelity,
+      }),
       meta,
     };
   }
 
+  const pillars = {
+    rhymeDensity: computeRhymeDensity(doc.allWords, { rhymeWindow }),
+    uniqueVocabulary: computeUniqueVocabulary(doc.allWords),
+    flowAlignment: computeFlowAlignment(doc, {
+      ...options,
+      bpm,
+      beatsPerLine,
+    }),
+  };
+  meta.fidelitySummary = pillars.flowAlignment.fidelity;
+
   return {
     wordCount,
-    pillars: {
-      rhymeDensity: computeRhymeDensity(doc.allWords, { rhymeWindow }),
-      uniqueVocabulary: computeUniqueVocabulary(doc.allWords),
-      flowAlignment: computeFlowAlignment(doc, {
-        ...options,
-        bpm,
-        beatsPerLine,
-      }),
-    },
-    composite,
+    pillars,
+    composite: buildComposite(pillars, {
+      wordCount,
+      flowFidelity: pillars.flowAlignment.fidelity,
+    }),
     meta,
   };
 }
 
+export { buildComposite } from './composite.js';
 export { buildSourceFingerprint } from './fingerprint.js';
 export { computeFlowAlignment } from './flowAlignment.js';
 export { computeRhymeDensity, longestVowelMatchLength } from './rhymeDensity.js';

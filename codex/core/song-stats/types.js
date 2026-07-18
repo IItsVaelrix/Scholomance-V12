@@ -83,12 +83,14 @@
 
 /**
  * @typedef {Object} SongStatsAlignment
- * @property {string} id
+ * @property {string} [id]
+ * @property {string} [fingerprint]
  */
 
 /**
  * @typedef {Object} SongStatsBeatGrid
- * @property {string} id
+ * @property {string} [id]
+ * @property {string} [fingerprint]
  */
 
 /**
