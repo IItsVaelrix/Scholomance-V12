@@ -95,6 +95,7 @@ function createEmptyAdapter(resolvedPath, logger) {
     lookupRhymes() { logWait(); return emptyRhyme; },
     batchLookupFamilies() { logWait(); return {}; },
     batchValidateWords() { logWait(); return []; },
+    batchLookupPos() { logWait(); return {}; },
     searchEntries() { logWait(); return []; },
     suggestEntries() { logWait(); return []; },
     lookupSynonyms() { logWait(); return []; },
@@ -123,6 +124,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
   let healthLog = [];
   const familyBatchStmtCache = new Map();
   const validateBatchStmtCache = new Map();
+  const posBatchStmtCache = new Map();
 
   function emitHealth(checkId, context = {}) {
     const h = encodeModuleHealth(resolvedPath, 'CONNECTION_HEALTH', checkId, context);
@@ -261,14 +263,14 @@ export function createLexiconAdapter(dbPath, options = {}) {
           LIMIT ?
         `),
         lookupSynonyms: db.prepare(`
-          SELECT l2.lemma AS lemma
+          SELECT l2.lemma AS lemma, l2.pos AS pos
           FROM wordnet_lemma l1
           JOIN wordnet_lemma l2 ON l1.synset_id = l2.synset_id
           WHERE l1.lemma_lower = ?
           LIMIT ?
         `),
         lookupAntonyms: db.prepare(`
-          SELECT l2.lemma AS lemma
+          SELECT l2.lemma AS lemma, l2.pos AS pos
           FROM wordnet_lemma l1
           JOIN wordnet_rel r ON l1.synset_id = r.synset_id
           JOIN wordnet_lemma l2 ON r.target_synset_id = l2.synset_id
@@ -276,7 +278,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
           LIMIT ?
         `),
         lookupRelated: db.prepare(`
-          SELECT r.rel AS rel, l2.lemma AS lemma
+          SELECT r.rel AS rel, l2.lemma AS lemma, l2.pos AS pos
           FROM wordnet_lemma l1
           JOIN wordnet_rel r ON l1.synset_id = r.synset_id
           JOIN wordnet_lemma l2 ON r.target_synset_id = l2.synset_id
@@ -284,7 +286,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
           LIMIT ?
         `),
         lookupSymbolsLoose: db.prepare(`
-          SELECT r.rel AS rel, l2.lemma AS lemma
+          SELECT r.rel AS rel, l2.lemma AS lemma, l2.pos AS pos
           FROM wordnet_lemma l1
           JOIN wordnet_rel r ON l1.synset_id = r.synset_id
           JOIN wordnet_lemma l2 ON r.target_synset_id = l2.synset_id
@@ -481,6 +483,35 @@ export function createLexiconAdapter(dbPath, options = {}) {
       .filter((word) => typeof word === 'string' && word.length > 0);
   }
 
+  function batchLookupPos(words) {
+    if (!tryConnect()) return {};
+    const normalized = [...new Set((Array.isArray(words) ? words : [])
+      .map(normalizeWord)
+      .filter(Boolean))].sort();
+    if (normalized.length === 0) return {};
+    const placeholderCount = normalized.length;
+    let statement = posBatchStmtCache.get(placeholderCount);
+    if (!statement) {
+      const placeholders = normalized.map(() => '?').join(', ');
+      statement = db.prepare(`
+        SELECT lemma_lower, pos
+        FROM wordnet_lemma
+        WHERE lemma_lower IN (${placeholders}) AND pos IS NOT NULL
+      `);
+      posBatchStmtCache.set(placeholderCount, statement);
+    }
+    const rows = statement.all(...normalized);
+    const sets = new Map();
+    for (const row of rows) {
+      if (!row?.lemma_lower || typeof row.pos !== 'string' || !row.pos.trim()) continue;
+      if (!sets.has(row.lemma_lower)) sets.set(row.lemma_lower, new Set());
+      sets.get(row.lemma_lower).add(row.pos.trim());
+    }
+    const out = {};
+    for (const [wordLower, posSet] of sets) out[wordLower] = [...posSet].sort();
+    return out;
+  }
+
   function lookupSynonyms(word, limit = 20) {
     if (!tryConnect()) return [];
     const normalized = normalizeWord(word);
@@ -506,8 +537,8 @@ export function createLexiconAdapter(dbPath, options = {}) {
     const boundedLimit = toBoundedLimit(limit * 3, 60);
     const rows = stmts.lookupRelated.all(normalized, boundedLimit);
     const bucket = { hypernym: [], hyponym: [], similar: [] };
-    for (const row of rows) if (bucket[row.rel]) bucket[row.rel].push(row.lemma);
-    const dedupe = (arr) => sanitizeLemmaRows(arr.map((lemma) => ({ lemma })), normalized, limit);
+    for (const row of rows) if (bucket[row.rel]) bucket[row.rel].push(row);
+    const dedupe = (arr) => sanitizeLemmaRows(arr, normalized, limit);
     return { broader: dedupe(bucket.hypernym), narrower: dedupe(bucket.hyponym), akin: dedupe(bucket.similar) };
   }
 
@@ -516,16 +547,25 @@ export function createLexiconAdapter(dbPath, options = {}) {
     const normalized = normalizeWord(word);
     if (!normalized) return [];
     const rows = stmts.lookupSymbolsLoose.all(normalized, toBoundedLimit(limit * 2, 30));
-    const seen = new Set();
+    const seen = new Map();
     const out = [];
     for (const row of rows) {
       const lemma = typeof row.lemma === 'string' ? row.lemma.trim() : '';
-      if (!lemma || lemma.toLowerCase() === normalized || seen.has(lemma.toLowerCase())) continue;
-      seen.add(lemma.toLowerCase());
-      out.push({ lemma, via: row.rel.includes('domain') ? 'domain' : 'exemplifies' });
-      if (out.length >= limit) break;
+      if (!lemma || lemma.toLowerCase() === normalized) continue;
+      const existing = seen.get(lemma.toLowerCase());
+      if (existing) {
+        if (typeof row.pos === 'string' && row.pos.trim()) existing.pos.add(row.pos.trim());
+        continue;
+      }
+      const entry = {
+        lemma,
+        via: row.rel.includes('domain') ? 'domain' : 'exemplifies',
+        pos: new Set(typeof row.pos === 'string' && row.pos.trim() ? [row.pos.trim()] : []),
+      };
+      seen.set(lemma.toLowerCase(), entry);
+      if (out.length < limit) out.push(entry);
     }
-    return out;
+    return out.map((entry) => ({ lemma: entry.lemma, via: entry.via, pos: [...entry.pos].sort() }));
   }
 
   function searchEntries(query, limit = DEFAULT_SEARCH_LIMIT) {
@@ -556,18 +596,22 @@ export function createLexiconAdapter(dbPath, options = {}) {
   function sanitizeLemmaRows(rows, word, limit = 20) {
     const boundedLimit = toBoundedLimit(limit, 20);
     const target = normalizeWord(word);
-    const seen = new Set();
-    const out = [];
+    const byLower = new Map();
     for (const row of rows) {
       const lemma = typeof row?.lemma === 'string' ? row.lemma.trim() : '';
       if (!lemma) continue;
       const lower = lemma.toLowerCase();
-      if (lower === target || seen.has(lower)) continue;
-      seen.add(lower);
-      out.push(lemma);
-      if (out.length >= boundedLimit) break;
+      if (lower === target) continue;
+      let entry = byLower.get(lower);
+      if (!entry) {
+        entry = { lemma, pos: new Set() };
+        byLower.set(lower, entry);
+      }
+      if (typeof row?.pos === 'string' && row.pos.trim()) entry.pos.add(row.pos.trim());
     }
-    return out;
+    return [...byLower.values()]
+      .slice(0, boundedLimit)
+      .map((entry) => ({ lemma: entry.lemma, pos: [...entry.pos].sort() }));
   }
 
   function close() {
@@ -584,6 +628,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
     getCorpusFrequencies,
     batchLookupFamilies,
     batchValidateWords,
+    batchLookupPos,
     searchEntries,
     suggestEntries,
     lookupSynonyms,
