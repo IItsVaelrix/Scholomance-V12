@@ -1,5 +1,6 @@
 import { useId } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion.js';
 import { AnimatedSurface } from './AnimatedSurface';
 import './SongStatsPanel.css';
 
@@ -47,7 +48,7 @@ export default function SongStatsPanel({
   isEmbedded = false,
   onClose = null,
 }) {
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = usePrefersReducedMotion();
   const densityExplanationId = useId();
 
   if (!visible || !stats) return null;

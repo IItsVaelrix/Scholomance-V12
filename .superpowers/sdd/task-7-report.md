@@ -41,3 +41,10 @@ Implemented and corrected the standalone `SongStatsPanel` surface and its focuse
 
 - Changed only `src/components/SongStatsPanel.jsx`, `src/components/SongStatsPanel.css`, `tests/components/SongStatsPanel.test.jsx`, and this report.
 - No ReadPage, schema, engine, hook, or unrelated dirty file was changed.
+
+## Workspace-Law Follow-Up — 2026-07-18
+
+- Replaced Framer Motion's `useReducedMotion` with the project-owned `usePrefersReducedMotion` hook for every panel animation decision.
+- Added `tests/qa/features/songStatsPanel.qa.test.jsx` with a typed `SongStatsResult` fixture and a `jest-axe` accessibility assertion.
+- Verification: component tests passed 4/4; SongStatsPanel QA passed 1/1; focused ESLint passed.
+- Scope remained limited to `SongStatsPanel.jsx`, its new QA test, and this report; ReadPage and unrelated dirty files were not touched.
