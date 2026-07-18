@@ -472,9 +472,13 @@ const LexicalScrollEditor = forwardRef(({
     get clientHeight() { 
       return editorContainerRef.current?.clientHeight || 0; 
     },
-    get scrollHeight() { 
-      return editorContainerRef.current?.scrollHeight || 0; 
+    get scrollHeight() {
+      return editorContainerRef.current?.scrollHeight || 0;
     },
+    // Exposes the underlying Lexical editor instance for callers that need
+    // direct editor.update()/$getSelection() access (e.g. Analyze panel
+    // craft actions). Returns null until the editor has mounted.
+    getEditor: () => lexicalEditorRef.current,
   }));
 
   const initialConfig = {

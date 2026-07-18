@@ -6,8 +6,14 @@ import './AnalyzePanel.css';
 export default function AnalyzePanel({ initialQuery = '', onCraftAction }) {
   const [query, setQuery] = useState(initialQuery);
   const { result, loading, error, submit, clear } = useLexicalAnalyze();
+  const [pins, setPins] = useState([]);
 
   const onSubmit = (e) => { e.preventDefault(); submit(query); }; // submit-only
+
+  const handleAction = ({ action, item }) => {
+    if (action === 'pin') { setPins((p) => (p.some((x) => x.text === item.text) ? p : [...p, item])); return; }
+    onCraftAction?.({ action, item });
+  };
 
   return (
     <div className="az-panel">
@@ -24,6 +30,17 @@ export default function AnalyzePanel({ initialQuery = '', onCraftAction }) {
       </form>
 
       {error && <div className="az-error">{error}</div>}
+      {pins.length > 0 && (
+        <div className="az-pins">
+          {pins.map((p) => (
+            <span key={p.text} className="az-pin">
+              {p.text}
+              <button type="button" onClick={() => onCraftAction?.({ action: 'insert', item: p })} title="Insert">⤵</button>
+              <button type="button" onClick={() => setPins((x) => x.filter((y) => y.text !== p.text))} title="Unpin">×</button>
+            </span>
+          ))}
+        </div>
+      )}
       {result && (
         <div className="az-groups">
           {result.groups.map((g) => (
@@ -41,9 +58,9 @@ export default function AnalyzePanel({ initialQuery = '', onCraftAction }) {
                         {it.derived && <span className="az-chip az-chip--loose">loose</span>}
                       </span>
                       <span className="az-actions">
-                        <button type="button" onClick={() => onCraftAction?.({ action: 'insert', item: it })} title="Insert at cursor">⤵</button>
-                        <button type="button" onClick={() => onCraftAction?.({ action: 'replace', item: it })} title="Replace selection">⇄</button>
-                        <button type="button" onClick={() => onCraftAction?.({ action: 'pin', item: it })} title="Pin">📌</button>
+                        <button type="button" onClick={() => handleAction({ action: 'insert', item: it })} title="Insert at cursor">⤵</button>
+                        <button type="button" onClick={() => handleAction({ action: 'replace', item: it })} title="Replace selection">⇄</button>
+                        <button type="button" onClick={() => handleAction({ action: 'pin', item: it })} title="Pin">📌</button>
                       </span>
                     </li>
                   ))}

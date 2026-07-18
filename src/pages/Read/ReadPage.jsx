@@ -13,6 +13,7 @@ import {
 } from "react-resizable-panels";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
+import { $getSelection } from "lexical";
 
 import { useTheme } from "../../hooks/useTheme.jsx";
 import { useScrolls } from "../../hooks/useScrolls.jsx";
@@ -630,6 +631,20 @@ export default function ReadPage() {
 
   const handleEditorTitleChange = useCallback((newTitle) => {
     setEditorTitle(newTitle);
+  }, []);
+
+  // Craft actions (insert/replace/pin) from AnalyzePanel results. 'pin' is
+  // handled locally inside AnalyzePanel and never reaches here. No-ops
+  // safely if the Lexical editor isn't mounted (e.g. no active scroll).
+  const handleAnalyzeCraft = useCallback(({ action, item }) => {
+    if (action === 'pin') return;
+    const editor = editorRef.current?.getEditor?.();
+    if (!editor) return;
+    editor.update(() => {
+      const selection = $getSelection();
+      if (!selection) return;
+      selection.insertText(item.text);
+    });
   }, []);
 
   const [tooltipState, setTooltipState] = useState({
