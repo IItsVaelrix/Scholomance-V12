@@ -99,6 +99,8 @@ function createEmptyAdapter(resolvedPath, logger) {
     suggestEntries() { logWait(); return []; },
     lookupSynonyms() { logWait(); return []; },
     lookupAntonyms() { logWait(); return []; },
+    lookupRelated() { logWait(); return { broader: [], narrower: [], akin: [] }; },
+    lookupSymbolsLoose() { logWait(); return []; },
     close() {},
     __unsafe: {
       connected: false,

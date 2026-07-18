@@ -18,4 +18,19 @@ describe('lexicon relations', () => {
     for (const r of rows) expect(['domain', 'exemplifies']).toContain(r.via);
     a.close();
   });
+  it('empty adapter stubs for lookupRelated and lookupSymbolsLoose', () => {
+    const emptyA = createLexiconAdapter(null);
+    expect(emptyA.__unsafe.connected).toBe(false);
+
+    // lookupRelated should return empty shape without throwing
+    const relResult = emptyA.lookupRelated('test', 20);
+    expect(relResult).toEqual({ broader: [], narrower: [], akin: [] });
+
+    // lookupSymbolsLoose should return empty array without throwing
+    const symbolsResult = emptyA.lookupSymbolsLoose('test', 12);
+    expect(Array.isArray(symbolsResult)).toBe(true);
+    expect(symbolsResult.length).toBe(0);
+
+    emptyA.close();
+  });
 });
