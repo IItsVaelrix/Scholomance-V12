@@ -30,8 +30,10 @@ test('Read Analyze ranks the live lemma lattice only after explicit scoped submi
   await expect(panel.getByRole('status')).toContainText(/Ambiguous|Clear lead/);
   for (let index = 0; index < candidateCount; index += 1) {
     await candidateTabs.nth(index).click();
+    // The `has` locator is re-scoped inside each candidate group, so it must be
+    // a single-segment selector — a panel-rooted chain can never match here.
     const meaning = panel.locator('.az-group').filter({
-      has: panel.locator('.az-group__title', { hasText: /^Meaning / }),
+      has: page.locator('.az-group__title', { hasText: /^Meaning / }),
     });
     await meaning.locator('.az-item').first().scrollIntoViewIfNeeded();
     await expect(meaning.locator('.az-item').first()).toBeVisible();
