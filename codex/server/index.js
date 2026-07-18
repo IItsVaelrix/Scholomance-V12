@@ -69,6 +69,9 @@ import {
 
 const BYTECODE_MOD = MODULE_IDS.SHARED;
 import { createLexiconAdapter } from './adapters/lexicon.sqlite.adapter.js';
+import { createLexicalGraphAdapter } from './adapters/lexicalGraph.sqlite.adapter.js';
+import { createLexicalAnalyzeService } from './services/lexicalAnalyze.service.js';
+import { lexicalAnalyzeRoutes } from './routes/lexicalAnalyze.routes.js';
 import { createCorpusAdapter } from './adapters/corpus.sqlite.adapter.js';
 import { createCorpusService } from './services/corpus.service.js';
 import { ScholomanceDictionaryAPI } from '../core/shared/scholomanceDictionary.api.js';
@@ -221,6 +224,8 @@ fastify.decorate('featureFlags', Object.freeze({
   rhymeAstrology: ENABLE_RHYME_ASTROLOGY,
 }));
 const lexiconAdapter = createLexiconAdapter(SCHOLOMANCE_DICT_PATH, { log: fastify.log });
+const lexicalGraphAdapter = createLexicalGraphAdapter(SCHOLOMANCE_DICT_PATH, { log: fastify.log });
+const lexicalAnalyzeService = createLexicalAnalyzeService({ lexiconAdapter, lexicalGraphAdapter });
 const corpusAdapter = createCorpusAdapter(SCHOLOMANCE_CORPUS_PATH, { log: fastify.log });
 const corpusService = createCorpusService({ dbPath: SCHOLOMANCE_CORPUS_PATH, log: fastify.log });
 
@@ -1134,6 +1139,7 @@ fastify.addHook('onSend', async (request, _reply, payload) => {
 
 fastify.register(wordLookupRoutes);
 fastify.register(oracleRoutes, { prefix: '/api/oracle' });
+fastify.register(lexicalAnalyzeRoutes, { prefix: '/api/lexical', service: lexicalAnalyzeService });
 fastify.register(grimdesignRoutes);
 await fastify.register(panelAnalysisRoutes, {
     enableRhymeAstrology: fastify.featureFlags?.rhymeAstrology,
