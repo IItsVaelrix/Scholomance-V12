@@ -95,7 +95,7 @@ function stressDisplacement(profiles, beatsPerLine) {
     for (const syllableIndex of profile.primaryStressIndexes) {
       const position = (syllableIndex + 0.5) / profile.syllables;
       const nearestGridPosition = (
-        Math.round(position * beatsPerLine) / beatsPerLine
+        (Math.round(position * beatsPerLine - 0.5) + 0.5) / beatsPerLine
       );
       const distance = Math.abs(position - nearestGridPosition);
       displacementSum += clamp01(distance / halfSubdivision);

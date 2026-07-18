@@ -93,6 +93,19 @@ describe('flowAlignment estimated', () => {
     expect(pillar.normalized01).toBeCloseTo(expectedNormalized, 10);
   });
 
+  it('scores evenly spaced stresses at subdivision centers as on-grid', () => {
+    const stressedWords = ['one', 'two', 'three', 'four'].map((text) => (
+      word(text, 1, '1', ['AH1'])
+    ));
+    const doc = documentWithLines([
+      { text: 'one two three four', number: 0, words: stressedWords },
+    ]);
+
+    const pillar = computeFlowAlignment(doc, { beatsPerLine: 4 });
+
+    expect(pillar.secondary.stressDisplacementProxy).toBeCloseTo(0, 10);
+  });
+
   it('falls back to vowel phoneme counts and warns for one-bar estimates', () => {
     const fallbackWords = [
       word('echo', undefined, '10', ['EH1', 'K', 'OW0']),
@@ -139,5 +152,19 @@ describe('flowAlignment estimated', () => {
       beatsPerLine: 3,
       lineRepresentsBar: true,
     });
+  });
+
+  it('changes the source fingerprint when estimated pacing assumptions change', () => {
+    const doc = documentWithLines([
+      { text: 'hello world from cadence', number: 0, words: firstLineWords },
+      { text: 'another solid lyric line here', number: 1, words: secondLineWords },
+    ]);
+
+    const baseline = computeSongStats(doc, { bpm: 90, beatsPerLine: 4 });
+    const changedBpm = computeSongStats(doc, { bpm: 120, beatsPerLine: 4 });
+    const changedBeats = computeSongStats(doc, { bpm: 90, beatsPerLine: 3 });
+
+    expect(changedBpm.meta.sourceFingerprint).not.toBe(baseline.meta.sourceFingerprint);
+    expect(changedBeats.meta.sourceFingerprint).not.toBe(baseline.meta.sourceFingerprint);
   });
 });

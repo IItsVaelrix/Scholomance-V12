@@ -86,6 +86,8 @@ export function computeSongStats(doc, options = {}) {
   const sourceFingerprint = buildSourceFingerprint({
     raw: doc.raw ?? '',
     rhymeWindow,
+    bpm,
+    beatsPerLine,
     alignmentId: options.alignment?.id ?? null,
     beatGridId: options.beatGrid?.id ?? null,
   });
