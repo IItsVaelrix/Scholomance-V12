@@ -52,7 +52,9 @@ export function longestVowelMatchLength(leftPhonemes, rightPhonemes) {
  */
 function phonemesOf(word) {
   const phonetics = /** @type {{ phonemes?: unknown[] } | undefined} */ (word?.phonetics);
-  if (Array.isArray(phonetics?.phonemes)) return phonetics.phonemes;
+  if (Array.isArray(phonetics?.phonemes) && phonetics.phonemes.length > 0) {
+    return phonetics.phonemes;
+  }
 
   const deepPhonetics = /** @type {{ phonemes?: unknown[] } | undefined} */ (word?.deepPhonetics);
   return Array.isArray(deepPhonetics?.phonemes) ? deepPhonetics.phonemes : [];
@@ -82,6 +84,7 @@ export function computeRhymeDensity(words, options = {}) {
   for (let index = 0; index < wordCount; index += 1) {
     let maxLength = 0;
     let maxIncludesRepetition = false;
+    let maxIncludesNonRepetition = false;
     const currentToken = String(sourceWords[index]?.normalized ?? '');
     const windowStart = Math.max(0, index - rhymeWindow);
 
@@ -95,15 +98,20 @@ export function computeRhymeDensity(words, options = {}) {
       if (matchLength > maxLength) {
         maxLength = matchLength;
         maxIncludesRepetition = isRepetition;
-      } else if (matchLength === maxLength && matchLength > 0 && isRepetition) {
-        maxIncludesRepetition = true;
+        maxIncludesNonRepetition = !isRepetition;
+      } else if (matchLength === maxLength && matchLength > 0) {
+        if (isRepetition) {
+          maxIncludesRepetition = true;
+        } else {
+          maxIncludesNonRepetition = true;
+        }
       }
     }
 
     totalLSum += maxLength;
     totalLSquaredSum += maxLength * maxLength;
     longestChain = Math.max(longestChain, maxLength);
-    if (maxIncludesRepetition) repetitionLSum += maxLength;
+    if (maxIncludesRepetition && !maxIncludesNonRepetition) repetitionLSum += maxLength;
   }
 
   const malmiDensity = wordCount > 0 ? totalLSum / wordCount : 0;

@@ -42,7 +42,11 @@ describe('rhymeDensity', () => {
 
   it('uses deepPhonetics and reports phoneme coverage', () => {
     const words = [
-      { normalized: 'deep-a', deepPhonetics: { phonemes: ['EY1'] } },
+      {
+        normalized: 'deep-a',
+        phonetics: { phonemes: [] },
+        deepPhonetics: { phonemes: ['EY1'] },
+      },
       { normalized: 'missing' },
       { normalized: 'deep-b', deepPhonetics: { phonemes: ['EY0'] } },
     ];
@@ -52,6 +56,22 @@ describe('rhymeDensity', () => {
     expect(pillar.value).toBeCloseTo(1 / 3);
     expect(pillar.secondary.phonemeCoverage).toBeCloseTo(2 / 3);
     expect(pillar.coverage01).toBeCloseTo(2 / 3);
+  });
+
+  it('does not attribute tied non-identical rhymes to repetition', () => {
+    const words = [
+      word('day', ['D', 'EY1']),
+      word('say', ['S', 'EY1']),
+      word('day', ['D', 'EY1']),
+      word('say', ['S', 'EY1']),
+    ];
+
+    const pillar = computeRhymeDensity(words, { rhymeWindow: 24 });
+
+    expect(pillar.secondary.repetitionContribution).toBeCloseTo(0);
+    expect(pillar.diagnostics).not.toContainEqual(
+      expect.objectContaining({ code: 'rhyme_repetition_heavy' }),
+    );
   });
 
   it('counts identical tokens and diagnoses repetition-heavy density', () => {
