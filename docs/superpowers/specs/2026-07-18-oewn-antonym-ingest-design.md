@@ -117,15 +117,58 @@ Verification must include:
 1. Stream-parse lexicon metadata; read OEWN release/version.
 2. Confirm it equals `--expected-release`.
 3. Compute SHA-256 of the source file; store for provenance.
-4. After projection, verify each projected synset ID exists in `wordnet_synset`.
-5. Compute:
-   - `asserted_count` — directed sense/synset antonym edges found in XML (pre-closure)
-   - `projected_count` — unique synset pairs after projection + reciprocal + dedupe that resolve in DB
-   - `unresolved_count` — edges/pairs dropped for missing sense map or missing synset
-   - `resolution_ratio` — `projected_count / max(asserted_count_after_projection_attempt, 1)` (exact formula documented in implementation; must be abort-gated)
-6. Abort if release incompatible **or** unresolved coverage exceeds `--max-unresolved-ratio`.
+4. For each **asserted** directed edge (SenseRelation and/or SynsetRelation antonym, pre-closure), attempt sense→synset resolution and confirm both synsets exist in `wordnet_synset`.
+5. Keep metrics **separate** (do not fold reciprocal closure into the resolution formula):
+
+| Metric | Definition |
+|--------|------------|
+| `asserted_count` | Directed antonym edges found in XML (pre-closure) |
+| `resolved_asserted_count` | Asserted edges whose both ends resolve to existing synsets |
+| `unresolved_asserted_count` | Asserted edges dropped (missing sense map and/or missing synset) |
+| `projected_count_after_closure` | Unique directed synset pairs **after** reciprocal closure + dedupe (output statistic only) |
+
+Formulas:
+
+```
+resolution_ratio =
+  resolved_asserted_count / max(asserted_count, 1)
+
+unresolved_ratio =
+  unresolved_asserted_count / max(asserted_count, 1)
+```
+
+Gate on:
+
+```
+unresolved_ratio <= max_unresolved_ratio
+```
+
+`projected_count_after_closure` may exceed `asserted_count` because one asserted edge can become two directed rows after reciprocal closure. It is **not** used in the resolution/unresolved formulas.
+
+6. Abort if release incompatible **or** `unresolved_ratio` exceeds `--max-unresolved-ratio`.
 
 No silent projection of OEWN 2025 (or other) onto a 2024-tied synset set.
+
+### Uniqueness contract (measured 2026-07-18)
+
+Inspected live `scholomance_dict.sqlite` and `scripts/build_scholomance_dict.py`:
+
+- `wordnet_rel` has **no UNIQUE / PRIMARY KEY** on `(synset_id, rel, target_synset_id)` or including `source`.
+- Only index: non-unique `idx_wordnet_rel_synset(synset_id)`.
+
+**This slice must not alter that uniqueness constraint** without auditing every `wordnet_rel` consumer.
+
+Even without a DB UNIQUE, insert policy is application-enforced so future schema tightening (or duplicate lemma rows) cannot silently overwrite stronger provenance:
+
+| Situation | Behavior |
+|-----------|----------|
+| Existing row `antonym` for same `(synset_id, target_synset_id)` with `source='oewn'` | Removed by scoped delete, then re-inserted from this run |
+| Existing row `antonym` for same pair with **other** `source` (e.g. `manual`) | **Preserve** the non-OEWN row; **skip** the OEWN insert for that directed pair |
+| No existing non-OEWN row for the pair | Insert OEWN row |
+
+Never replace manual / stronger provenance merely to stamp `source='oewn'`. Skips are counted and reported separately (`oewn_antonym_skipped_existing_count`).
+
+If a future schema adds `UNIQUE(synset_id, rel, target_synset_id)`, this same skip policy avoids insert conflicts. If uniqueness includes `source`, both rows may coexist; then `lookupAntonyms` (or the Analyze layer) must **deduplicate identical antonym lemmas** — adapter change only if that case is introduced; not required while the live schema has no UNIQUE.
 
 ### Meta stamps
 
@@ -135,19 +178,23 @@ No silent projection of OEWN 2025 (or other) onto a 2024-tied synset set.
 | `oewn_antonym_source_url` | pinned download URL or file URI |
 | `oewn_antonym_source_sha256` | hex digest of source bytes |
 | `oewn_antonym_asserted_count` | integer |
-| `oewn_antonym_projected_count` | integer |
-| `oewn_antonym_unresolved_count` | integer |
-| `oewn_antonym_resolution_ratio` | decimal string |
+| `oewn_antonym_resolved_asserted_count` | integer |
+| `oewn_antonym_unresolved_asserted_count` | integer |
+| `oewn_antonym_resolution_ratio` | `resolved_asserted_count / max(asserted_count, 1)` |
+| `oewn_antonym_unresolved_ratio` | `unresolved_asserted_count / max(asserted_count, 1)` |
+| `oewn_antonym_projected_count` | `projected_count_after_closure` (post-reciprocal unique directed pairs prepared) |
+| `oewn_antonym_inserted_count` | rows actually inserted this run |
+| `oewn_antonym_skipped_existing_count` | OEWN pairs skipped because a non-OEWN antonym already exists for the pair |
 | `oewn_antonym_ingested_at` | caller `--timestamp` only |
 
 ### Transaction order
 
 1. Parse and validate source **outside** transaction (two streaming passes; reopen gzip/XML per pass).
-2. Verify release + synset coverage + resolution ratio; abort → **no DB writes**.
+2. Verify release + synset coverage + `unresolved_ratio` gate; abort → **no DB writes**.
 3. `BEGIN IMMEDIATE`
 4. `DELETE … rel='antonym' AND source='oewn'`
-5. Insert projected reciprocal set
-6. Write meta
+5. For each directed pair in the projected reciprocal set: if a non-OEWN `antonym` row already exists for `(synset_id, target_synset_id)`, skip and count; else insert
+6. Write meta (including inserted vs skipped counts)
 7. `COMMIT`
 
 Parsing before `BEGIN` avoids holding a write lock across two full XML passes. The validated result set exists before any deletion.
@@ -207,13 +254,16 @@ After ingestion: only the old OEWN antonym set is replaced; `manual` antonym and
 |---|-----------|
 | 1 | Reciprocal lookup: `hot`↔`cold` (fixture or live after ingest) |
 | 2 | Non-OEWN antonyms (`source='manual'`) survive re-ingestion |
+| 2b | When a manual antonym already covers the same synset pair, OEWN insert is **skipped** (not replaced); `skipped_existing_count` increments |
 | 3 | Release mismatch fails **before** writes |
-| 4 | Excessive unresolved synsets fail **before** writes |
+| 4 | Excessive `unresolved_ratio` fails **before** writes |
+| 4b | `resolution_ratio` / `unresolved_ratio` use asserted metrics only (not `projected_count_after_closure`) |
 | 5 | Malformed XML leaves the database unchanged |
 | 6 | Missing `--timestamp` rejects write mode |
 | 7 | Builder and additive CLI produce **identical** antonym sets from the same fixture |
 | 8 | Repeated execution produces identical rows and counts |
 | 9 | Existing non-antonym relation counts remain byte-for-byte stable (count + checksum of non-antonym `wordnet_rel` rows, or equivalent) |
+| 10 | This slice does not add/alter a `wordnet_rel` UNIQUE constraint |
 
 Live smoke (post-ingest on real DB): Analyze Oppositions for antonym-bearing lemmas is non-empty.
 
@@ -234,6 +284,9 @@ Live smoke (post-ingest on real DB): Analyze Oppositions for antonym-bearing lem
 ## Success criteria
 
 - [ ] Additive CLI lands with scoped delete, reciprocal closure, release gates, caller timestamp
+- [ ] Resolution metrics use asserted counts only; gate on `unresolved_ratio`
+- [ ] Manual antonyms preserved; conflicting OEWN pairs skipped and counted
+- [ ] No `wordnet_rel` UNIQUE constraint change in this slice
 - [ ] Shared projection module used by CLI and full builder
 - [ ] Live DB has non-zero OEWN `antonym` rows; manual antonyms (if any) untouched
 - [ ] `lookupAntonyms` works bidirectionally for known pairs without adapter signature changes
