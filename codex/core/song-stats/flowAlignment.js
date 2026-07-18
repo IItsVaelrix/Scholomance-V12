@@ -143,7 +143,12 @@ function hasIrregularLineStructure(profiles) {
  *     coverage01?: number,
  *     activeDurationSeconds?: number,
  *     timestampsMonotonic?: boolean,
- *     words?: Array<{ startSec?: number, endSec?: number, text?: string }>,
+ *     words?: Array<{
+ *       startSec?: number,
+ *       endSec?: number,
+ *       text?: string,
+ *       normalized?: string,
+ *     }>,
  *   },
  *   beatGrid?: { coverage01?: number, timesSec?: number[] },
  * }} [options]
@@ -253,13 +258,49 @@ function wordStressWeight(word) {
   return 0;
 }
 
-function syncopationIndex(onsets, gridTimes, analyzedWords) {
+function normalizedWordText(word) {
+  const text = word?.normalized ?? word?.text ?? '';
+  return String(text)
+    .normalize('NFKC')
+    .toLocaleLowerCase('en-US')
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
+function correspondAlignedWords(alignmentWords, analyzedWords) {
+  const correspondences = [];
+  let nextAnalyzedIndex = 0;
+
+  for (const alignedWord of alignmentWords) {
+    const alignedText = normalizedWordText(alignedWord);
+    if (alignedText.length === 0) continue;
+
+    let matchedIndex = -1;
+    for (let index = nextAnalyzedIndex; index < analyzedWords.length; index += 1) {
+      if (normalizedWordText(analyzedWords[index]) === alignedText) {
+        matchedIndex = index;
+        break;
+      }
+    }
+    if (matchedIndex < 0) continue;
+
+    correspondences.push({
+      onset: alignedWord.startSec,
+      analyzedWord: analyzedWords[matchedIndex],
+    });
+    nextAnalyzedIndex = matchedIndex + 1;
+  }
+
+  return correspondences;
+}
+
+function syncopationIndex(correspondences, gridTimes) {
   const toleranceSeconds = 0.05;
+  const onsets = correspondences.map(({ onset }) => onset);
   let weightedSyncopation = 0;
   let stressWeightTotal = 0;
 
-  onsets.forEach((onset, index) => {
-    const stressWeight = wordStressWeight(analyzedWords[index]);
+  correspondences.forEach(({ onset, analyzedWord }) => {
+    const stressWeight = wordStressWeight(analyzedWord);
     if (stressWeight === 0) return;
     stressWeightTotal += stressWeight;
 
@@ -283,6 +324,7 @@ function syncopationIndex(onsets, gridTimes, analyzedWords) {
 function alignedFlow(doc, alignment, beatGrid) {
   const onsets = alignment.words.map((word) => word.startSec);
   const analyzedWords = Array.isArray(doc.allWords) ? doc.allWords : [];
+  const correspondences = correspondAlignedWords(alignment.words, analyzedWords);
   const signedDeviationsSeconds = onsets.map((onset) => {
     const nearest = beatGrid.timesSec[nearestGridIndex(onset, beatGrid.timesSec)];
     return onset - nearest;
@@ -295,7 +337,7 @@ function alignedFlow(doc, alignment, beatGrid) {
   const pocketConsistencyMs = median(
     absoluteDeviationsMs.map((deviation) => Math.abs(deviation - gridDeviationMs)),
   );
-  const syncopation = syncopationIndex(onsets, beatGrid.timesSec, analyzedWords);
+  const syncopation = syncopationIndex(correspondences, beatGrid.timesSec);
   const totalSyllables = analyzedWords.reduce(
     (sum, word) => sum + syllableCount(word),
     0,

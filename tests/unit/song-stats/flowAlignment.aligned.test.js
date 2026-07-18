@@ -73,6 +73,52 @@ describe('flowAlignment aligned', () => {
     expect(pillar.secondary.pocketConsistencyMs).toBeCloseTo(20, 10);
   });
 
+  it('preserves syncopation when alignment omits a leading document word', () => {
+    const remainingWord = word('pulse');
+    const remainingDoc = {
+      raw: 'pulse',
+      lines: [{ text: 'pulse', number: 0, words: [remainingWord] }],
+      allWords: [remainingWord],
+    };
+    const alignedRemaining = {
+      alignment: {
+        coverage01: 0.85,
+        activeDurationSeconds: 1,
+        timestampsMonotonic: true,
+        words: [{ startSec: 0.5, endSec: 0.7, text: 'pulse' }],
+      },
+      beatGrid: {
+        coverage01: 1,
+        timesSec: [0, 0.5, 1],
+      },
+    };
+    const baseline = computeFlowAlignment(remainingDoc, alignedRemaining);
+    const leadingUnalignedWord = {
+      text: 'and',
+      normalized: 'and',
+      syllableCount: 1,
+      stressPattern: '0',
+      phonetics: { phonemes: ['AH0', 'N', 'D'] },
+    };
+    const docWithLeadingUnalignedWord = {
+      raw: 'and pulse',
+      lines: [{
+        text: 'and pulse',
+        number: 0,
+        words: [leadingUnalignedWord, remainingWord],
+      }],
+      allWords: [leadingUnalignedWord, remainingWord],
+    };
+
+    const pillar = computeFlowAlignment(docWithLeadingUnalignedWord, alignedRemaining);
+
+    expect(baseline.secondary.syncopationIndex).toBeCloseTo(0.5, 10);
+    expect(pillar.secondary.syncopationIndex).toBeCloseTo(
+      baseline.secondary.syncopationIndex,
+      10,
+    );
+  });
+
   it('accepts exact eligibility thresholds', () => {
     const pillar = computeFlowAlignment(doc, {
       alignment: { ...eligibleOptions.alignment, coverage01: 0.85 },
