@@ -21,11 +21,11 @@ export function useLexicalAnalyze() {
         signal: ac.signal,
       });
       if (!res.ok) throw new Error(`Analyze failed (${res.status})`);
-      setResult(await res.json());
+      if (abortRef.current === ac) setResult(await res.json());
     } catch (e) {
       if (e.name !== 'AbortError') setError(e.message || 'Analyze failed');
     } finally {
-      setLoading(false);
+      if (abortRef.current === ac) setLoading(false);
     }
   }, []);
 
