@@ -116,6 +116,8 @@ function createFixtureDb(dbPath) {
   lemmas.run('mystery', 'mystery', 'syn.arcana', 2, 'noun');
   lemmas.run('enigma', 'enigma', 'syn.arcana', 3, 'noun');
   lemmas.run('banality', 'banality', 'syn.banal', 1, 'noun');
+  // banality has a second POS in the same synset to test lookupSymbolsLoose's POS union
+  lemmas.run('banality', 'banality', 'syn.banal', 2, 'verb');
   // arcana + mystery share a second, verb-POS synset so synonym results carry
   // a multi-POS set and batchLookupPos has a multi-POS word to classify.
   lemmas.run('arcana', 'arcana', 'syn.arcana2', 1, 'verb');
@@ -126,6 +128,8 @@ function createFixtureDb(dbPath) {
     VALUES (?, ?, ?, 'oewn', 'https://en-word.net/')
   `);
   rels.run('syn.arcana', 'antonym', 'syn.banal');
+  // exemplifies relation to test lookupSymbolsLoose's POS union (banality has noun+verb in syn.banal)
+  rels.run('syn.arcana', 'exemplifies', 'syn.banal');
 
   db.close();
 }
@@ -327,8 +331,13 @@ describe('[Server] lexicon.sqlite.adapter', () => {
     // never itself, still deduped
     expect(synonyms.map((entry) => entry.lemma)).not.toContain('arcana');
 
+    // banality now has two POS in syn.banal, so antonyms show the union
     expect(adapter.lookupAntonyms('arcana'))
-      .toEqual([{ lemma: 'banality', pos: ['noun'] }]);
+      .toEqual([{ lemma: 'banality', pos: ['noun', 'verb'] }]);
+
+    // lookupSymbolsLoose also unions POS across seen-set (banality reached via exemplifies)
+    expect(adapter.lookupSymbolsLoose('arcana'))
+      .toEqual([{ lemma: 'banality', via: 'exemplifies', pos: ['noun', 'verb'] }]);
 
     const pos = adapter.batchLookupPos(['Arcana', 'mystery', 'unknown']);
     expect(pos).toEqual({
