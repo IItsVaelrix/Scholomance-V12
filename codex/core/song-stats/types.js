@@ -70,9 +70,19 @@
  */
 
 /**
+ * @typedef {Object} SongStatsAlignment
+ * @property {string} id
+ */
+
+/**
+ * @typedef {Object} SongStatsBeatGrid
+ * @property {string} id
+ */
+
+/**
  * @typedef {Object} ComputeSongStatsOptions
- * @property {unknown} [alignment]
- * @property {unknown} [beatGrid]
+ * @property {SongStatsAlignment} [alignment]
+ * @property {SongStatsBeatGrid} [beatGrid]
  * @property {number} [rhymeWindow]
  */
 

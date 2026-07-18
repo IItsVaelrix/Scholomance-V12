@@ -1,3 +1,4 @@
+/** @type {'song-stats-v1'} */
 export const ENGINE_VERSION = 'song-stats-v1';
 export const CALIBRATION_VERSION = 'cal-2026-07-18';
 export const DEFAULT_RHYME_WINDOW = 24;

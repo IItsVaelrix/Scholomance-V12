@@ -13,6 +13,8 @@ import { buildSourceFingerprint } from './fingerprint.js';
 /** @typedef {import('./types.js').ComputeSongStatsOptions} ComputeSongStatsOptions */
 /** @typedef {import('./types.js').Diagnostic} Diagnostic */
 /** @typedef {import('./types.js').SongStatPillar} SongStatPillar */
+/** @typedef {import('./types.js').SongStatsComposite} SongStatsComposite */
+/** @typedef {import('./types.js').SongStatsMeta} SongStatsMeta */
 /** @typedef {import('./types.js').SongStatsResult} SongStatsResult */
 
 /**
@@ -79,6 +81,7 @@ export function computeSongStats(doc, options = {}) {
     beatGridId: options.beatGrid?.id ?? null,
   });
 
+  /** @type {SongStatsMeta} */
   const meta = {
     engineVersion: ENGINE_VERSION,
     calibrationVersion: CALIBRATION_VERSION,
@@ -92,6 +95,7 @@ export function computeSongStats(doc, options = {}) {
     },
   };
 
+  /** @type {SongStatsComposite} */
   const composite = {
     label: 'technical_density',
     total0to100: null,
@@ -101,6 +105,7 @@ export function computeSongStats(doc, options = {}) {
   };
 
   if (wordCount < MIN_WORDS_FOR_STATS) {
+    /** @type {Diagnostic} */
     const needMoreLyrics = {
       code: 'need_more_lyrics',
       message: `At least ${MIN_WORDS_FOR_STATS} words are required for song stats.`,
