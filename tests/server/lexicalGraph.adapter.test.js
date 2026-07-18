@@ -301,6 +301,76 @@ describe('[Server] lexicalGraph.sqlite.adapter', () => {
     expect(() => adapter.close()).not.toThrow();
   });
 
+  it('searchFts degrades to empty (no throw) when lexical_entry exists but FTS tables are missing', () => {
+    tempDir = mkdtempSync(path.join(os.tmpdir(), 'lexical-graph-adapter-no-fts-'));
+    const dbPath = path.join(tempDir, 'no-fts.sqlite');
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      CREATE TABLE lexical_entry (
+        id TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        canonical_text TEXT NOT NULL,
+        canonical_lower TEXT NOT NULL,
+        definitions_json TEXT,
+        emotional_profile_json TEXT,
+        semantic_coordinates_json TEXT,
+        register_json TEXT,
+        domains_json TEXT,
+        provenance_json TEXT,
+        entry_id INTEGER,
+        phonemes_json TEXT,
+        syllable_count INTEGER,
+        stress_pattern TEXT,
+        embeddings_tq BLOB,
+        embedding_kind TEXT,
+        embedding_version TEXT,
+        embedding_dimensions INTEGER,
+        embedding_source TEXT,
+        created_at TEXT,
+        updated_at TEXT
+      );
+      CREATE TABLE literary_device (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        aliases_json TEXT,
+        definition TEXT,
+        detection_signals_json TEXT,
+        purposes_json TEXT,
+        compatible_structures_json TEXT,
+        examples_json TEXT
+      );
+    `);
+    db.close();
+
+    const adapter = createLexicalGraphAdapter(dbPath);
+    expect(adapter.searchFts('antithesis')).toEqual({ results: [], nextCursor: null });
+    expect(() => adapter.close()).not.toThrow();
+  });
+
+  it('does not 500 when overlay tables are missing after a failed connect (prod Leximancy path)', () => {
+    tempDir = mkdtempSync(path.join(os.tmpdir(), 'lexical-graph-adapter-no-overlay-'));
+    const dbPath = path.join(tempDir, 'legacy-only.sqlite');
+    const db = new Database(dbPath);
+    db.exec(`
+      CREATE TABLE entry (
+        id INTEGER PRIMARY KEY,
+        headword TEXT NOT NULL,
+        headword_lower TEXT NOT NULL
+      );
+      CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    `);
+    db.close();
+
+    const adapter = createLexicalGraphAdapter(dbPath);
+    // First call fails prepare of lexical_entry; second call must still degrade.
+    expect(adapter.searchFts('leaves')).toEqual({ results: [], nextCursor: null });
+    expect(adapter.listLiteraryDevices()).toEqual({ results: [], nextCursor: null });
+    expect(adapter.getLiteraryDevice(ANTITHESIS_ID)).toBeNull();
+    expect(adapter.getEntryById('le:word:1')).toBeNull();
+    expect(() => adapter.close()).not.toThrow();
+  });
+
   it('degrades to empty results when no dbPath is provided at all', () => {
     const adapter = createLexicalGraphAdapter(null);
     expect(adapter.getEntryById('le:word:1')).toBeNull();

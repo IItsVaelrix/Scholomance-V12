@@ -155,12 +155,35 @@ export function createLexicalGraphAdapter(dbPath, options = {}) {
 
   let db = null;
   let stmts = null;
+  let hasFts = false;
+
+  function tableExists(name) {
+    return Boolean(
+      db
+        .prepare(`SELECT 1 FROM sqlite_master WHERE type IN ('table', 'view') AND name = ?`)
+        .get(name),
+    );
+  }
 
   function tryConnect() {
-    if (db && db.open) return true;
+    // Only treat as connected when prepare of overlay stmts succeeded.
+    // A prior failed open can leave `db` open with null `stmts`; returning
+    // true here made listLiteraryDevices 500 on missing lexical_entry.
+    if (db && db.open && stmts) return true;
     if (!resolvedPath || !existsSync(resolvedPath)) return false;
 
     try {
+      if (db) {
+        try {
+          if (db.open) db.close();
+        } catch {
+          // ignore close errors on a half-open handle
+        }
+        db = null;
+        stmts = null;
+        hasFts = false;
+      }
+
       db = new Database(resolvedPath, { readonly: true, fileMustExist: true });
       db.pragma('query_only = ON');
       db.pragma('busy_timeout = 5000');
@@ -170,11 +193,26 @@ export function createLexicalGraphAdapter(dbPath, options = {}) {
         entryByEntryId: db.prepare(`SELECT * FROM lexical_entry WHERE entry_id = ?`),
         literaryDeviceById: db.prepare(`SELECT * FROM literary_device WHERE id = ?`),
       };
+      hasFts = tableExists('lexical_entry_fts') && tableExists('lexical_entry_fts_map');
+      if (!hasFts) {
+        logger.warn?.(
+          { dbPath: resolvedPath },
+          '[LexicalGraphAdapter] lexical_entry_fts missing — searchFts degrades to empty (run lexical-graph migrate).',
+        );
+      }
 
       logger.info?.({ dbPath: resolvedPath }, '[LexicalGraphAdapter] Connected to dictionary DB.');
       return true;
     } catch (error) {
       logger.warn?.({ err: error.message, dbPath: resolvedPath }, '[LexicalGraphAdapter] Failed to open dictionary DB.');
+      try {
+        if (db?.open) db.close();
+      } catch {
+        // ignore
+      }
+      db = null;
+      stmts = null;
+      hasFts = false;
       return false;
     }
   }
@@ -215,6 +253,7 @@ export function createLexicalGraphAdapter(dbPath, options = {}) {
 
   function searchFts(query, { types, limit, cursor } = {}) {
     if (!tryConnect()) return { ...EMPTY_PAGE };
+    if (!hasFts) return { ...EMPTY_PAGE };
     const sanitized = sanitizeFtsQuery(query);
     if (!sanitized) return { ...EMPTY_PAGE };
 
