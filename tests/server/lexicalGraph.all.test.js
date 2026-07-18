@@ -33,6 +33,16 @@ function createFixtureDb(dbPath) {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+
+    CREATE TABLE wordnet_lemma (
+      lemma TEXT NOT NULL,
+      lemma_lower TEXT NOT NULL,
+      synset_id TEXT NOT NULL,
+      sense_rank INTEGER,
+      pos TEXT,
+      source TEXT NOT NULL,
+      source_url TEXT
+    );
   `);
 
   const insert = db.prepare(`
@@ -83,7 +93,7 @@ describe('[Server] lexicalGraph.all', () => {
     return new Database(dbPath);
   }
 
-  it('runs migrate → mirror → seed-devices → embed-devices on a same-headword fixture', () => {
+  it('runs the full graph and lemma pipeline on a same-headword fixture', () => {
     const db = openFixture();
     const entryBefore = db.prepare(`SELECT * FROM entry ORDER BY id`).all();
 
@@ -92,6 +102,14 @@ describe('[Server] lexicalGraph.all', () => {
     expect(result.mirrored).toBe(2);
     expect(result.seeded).toBe(10);
     expect(result.embedded).toBe(10);
+    expect(result.lemmaForms).toBe(1);
+
+    expect(db.prepare(
+      "SELECT value FROM meta WHERE key = 'lemma_form_status'",
+    ).get().value).toBe('complete');
+    expect(db.prepare(
+      "SELECT value FROM meta WHERE key = 'lemma_form_indexed_lemma_count'",
+    ).get().value).toBe('1');
 
     const wordCount = db.prepare(`SELECT COUNT(*) AS n FROM lexical_entry WHERE type = 'word'`).get().n;
     expect(wordCount).toBe(2);

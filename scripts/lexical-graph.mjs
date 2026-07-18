@@ -6,6 +6,7 @@
  *   node scripts/lexical-graph.mjs mirror --db <path> --timestamp <ISO8601>
  *   node scripts/lexical-graph.mjs seed-devices --db <path> --timestamp <ISO8601>
  *   node scripts/lexical-graph.mjs embed-devices --db <path> --timestamp <ISO8601>
+ *   node scripts/lexical-graph.mjs build-lemma-forms --db <path> --timestamp <ISO8601>
  *   node scripts/lexical-graph.mjs all --db <path> --timestamp <ISO8601>
  *
  * `--timestamp` is required for every write command (no system-clock reads
@@ -19,6 +20,7 @@ import { migrateLexicalGraph } from '../codex/core/lexical-graph/migrate.js';
 import { mirrorEntries } from '../codex/core/lexical-graph/mirror.js';
 import { seedLiteraryDevices } from '../codex/core/lexical-graph/seedDevices.js';
 import { embedDevices } from '../codex/core/lexical-graph/embedDevices.js';
+import { buildLemmaForms } from '../codex/core/lexical-analysis/buildLemmaForms.js';
 
 const USAGE = `usage: node scripts/lexical-graph.mjs <command> --db <path> --timestamp <ISO8601>
 
@@ -27,7 +29,8 @@ Commands:
   mirror           Mirror legacy \`entry\` rows into \`lexical_entry\` (idempotent)
   seed-devices     Seed the curated literary-device catalog (idempotent)
   embed-devices    Generate TurboQuant embeddings for device nodes (idempotent)
-  all              Run migrate, mirror, seed-devices, embed-devices in order
+  build-lemma-forms Build the complete inverse morphology relation (idempotent)
+  all              Run migrate, mirror, seed-devices, embed-devices, lemma forms
 `;
 
 /**
@@ -56,7 +59,14 @@ export function parseArgs(argv) {
   return { command, options };
 }
 
-const WRITE_COMMANDS = new Set(['migrate', 'mirror', 'seed-devices', 'embed-devices', 'all']);
+const WRITE_COMMANDS = new Set([
+  'migrate',
+  'mirror',
+  'seed-devices',
+  'embed-devices',
+  'build-lemma-forms',
+  'all',
+]);
 
 /**
  * Open an existing scholomance_dict.sqlite for offline write ops.
@@ -74,14 +84,15 @@ export function openWriteDatabase(dbPath) {
  *
  * @param {import('better-sqlite3').Database} db
  * @param {{ timestamp: string }} options
- * @returns {{ mirrored: number, seeded: number, embedded: number }}
+ * @returns {{ mirrored: number, seeded: number, embedded: number, lemmaForms: number }}
  */
 export function runLexicalGraphAll(db, { timestamp }) {
   migrateLexicalGraph(db, { timestamp });
   const { mirrored } = mirrorEntries(db, { timestamp });
   const { seeded } = seedLiteraryDevices(db, { timestamp });
   const { embedded } = embedDevices(db, { timestamp });
-  return { mirrored, seeded, embedded };
+  const { indexedLemmaCount: lemmaForms } = buildLemmaForms(db, { timestamp });
+  return { mirrored, seeded, embedded, lemmaForms };
 }
 
 export async function runCli(argv) {
@@ -129,10 +140,23 @@ export async function runCli(argv) {
       console.log(`lexical-graph embed-devices: embedded ${embedded} devices on ${options.db}`);
       return 0;
     }
-    if (command === 'all') {
-      const { mirrored, seeded, embedded } = runLexicalGraphAll(db, { timestamp: options.timestamp });
+    if (command === 'build-lemma-forms') {
+      migrateLexicalGraph(db, { timestamp: options.timestamp });
+      const state = buildLemmaForms(db, { timestamp: options.timestamp });
       console.log(
-        `lexical-graph all: mirrored ${mirrored}, seeded ${seeded}, embedded ${embedded} on ${options.db}`,
+        `lexical-graph build-lemma-forms: indexed ${state.indexedLemmaCount} lemmas on ${options.db}`,
+      );
+      return 0;
+    }
+    if (command === 'all') {
+      const {
+        mirrored,
+        seeded,
+        embedded,
+        lemmaForms,
+      } = runLexicalGraphAll(db, { timestamp: options.timestamp });
+      console.log(
+        `lexical-graph all: mirrored ${mirrored}, seeded ${seeded}, embedded ${embedded}, indexed ${lemmaForms} lemmas on ${options.db}`,
       );
       return 0;
     }
