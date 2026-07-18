@@ -17,13 +17,14 @@
 import Database from 'better-sqlite3';
 import { migrateLexicalGraph } from '../codex/core/lexical-graph/migrate.js';
 import { mirrorEntries } from '../codex/core/lexical-graph/mirror.js';
+import { seedLiteraryDevices } from '../codex/core/lexical-graph/seedDevices.js';
 
 const USAGE = `usage: node scripts/lexical-graph.mjs <command> --db <path> --timestamp <ISO8601>
 
 Commands:
   migrate         Create the lexical-graph overlay tables (idempotent)
   mirror           Mirror legacy \`entry\` rows into \`lexical_entry\` (idempotent)
-  seed-devices     [not yet implemented]
+  seed-devices     Seed the curated literary-device catalog (idempotent)
   embed-devices    [not yet implemented]
   all              [not yet implemented]
 `;
@@ -55,7 +56,7 @@ export function parseArgs(argv) {
 }
 
 const WRITE_COMMANDS = new Set(['migrate', 'mirror', 'seed-devices', 'embed-devices', 'all']);
-const NOT_YET_IMPLEMENTED = new Set(['seed-devices', 'embed-devices', 'all']);
+const NOT_YET_IMPLEMENTED = new Set(['embed-devices', 'all']);
 
 export async function runCli(argv) {
   const { command, options } = parseArgs(argv);
@@ -95,6 +96,11 @@ export async function runCli(argv) {
     if (command === 'mirror') {
       const { mirrored } = mirrorEntries(db, { timestamp: options.timestamp });
       console.log(`lexical-graph mirror: mirrored ${mirrored} entries on ${options.db}`);
+      return 0;
+    }
+    if (command === 'seed-devices') {
+      const { seeded } = seedLiteraryDevices(db, { timestamp: options.timestamp });
+      console.log(`lexical-graph seed-devices: seeded ${seeded} devices on ${options.db}`);
       return 0;
     }
     console.error(`Unhandled command: ${command}`);
