@@ -39,7 +39,7 @@ describe('useSongStats', () => {
   });
 
   it('falls back to the last good result when a later compute fails but content is unchanged', () => {
-    const raw = 'some lyrics';
+    const raw = 'hello world cadence lyric solid another pulse meter';
     const stats = songStatsResult(fingerprintFor(raw));
     const { result, rerender } = renderHook(
       ({ text, deepAnalysis }) => useSongStats(text, deepAnalysis),
@@ -47,15 +47,16 @@ describe('useSongStats', () => {
     );
     expect(result.current.songStats).toBe(stats);
 
-    // Same content, but this round's deepAnalysis carries no songStats
-    // (server-side computeSongStats failed for this pass).
+    // Same content, but this round's deepAnalysis carries no songStats.
+    // Client fallback recomputes from raw text rather than marking failed.
     rerender({ text: raw, deepAnalysis: { songStats: null } });
 
-    expect(result.current.songStats).toBe(stats);
+    expect(result.current.songStats).not.toBeNull();
+    expect(result.current.songStats.meta.sourceFingerprint).toBe(fingerprintFor(raw));
     expect(result.current.computeFailed).toBe(false);
   });
 
-  it('shows stats_compute_failed (null) when a failed compute follows edited content', () => {
+  it('returns null pending (not computeFailed) when text changes but old songStats remains', () => {
     const originalText = 'some lyrics';
     const stats = songStatsResult(fingerprintFor(originalText));
     const { result, rerender } = renderHook(
@@ -64,10 +65,19 @@ describe('useSongStats', () => {
     );
     expect(result.current.songStats).toBe(stats);
 
-    // Content changed and the new round's compute failed.
-    rerender({ text: 'completely different lyrics now', deepAnalysis: { songStats: null } });
+    // Content changed; stale server payload still present until re-analysis.
+    rerender({ text: 'completely different lyrics now', deepAnalysis: { songStats: stats } });
 
     expect(result.current.songStats).toBeNull();
-    expect(result.current.computeFailed).toBe(true);
+    expect(result.current.computeFailed).toBe(false);
+  });
+
+  it('computes client-side songStats when deepAnalysis omits songStats', () => {
+    const raw = 'hello world cadence lyric solid another pulse meter';
+    const { result } = renderHook(() => useSongStats(raw, { songStats: null, scheme: {} }));
+
+    expect(result.current.songStats).not.toBeNull();
+    expect(result.current.songStats.meta.sourceFingerprint).toBe(fingerprintFor(raw));
+    expect(result.current.computeFailed).toBe(false);
   });
 });

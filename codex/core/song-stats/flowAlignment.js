@@ -162,6 +162,13 @@ export function computeFlowAlignment(doc, options = {}) {
   }
 
   const estimated = estimatedFlow(doc, bpm, beatsPerLine);
+  // alignment_incomplete only when timing inputs were supplied but failed
+  // eligibility — not on the pure estimated path (alignment/beatGrid absent).
+  const alignmentAttempted = options.alignment != null || options.beatGrid != null;
+  if (!alignmentAttempted) {
+    return estimated;
+  }
+
   return {
     ...estimated,
     diagnostics: [

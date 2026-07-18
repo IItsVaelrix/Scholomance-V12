@@ -317,6 +317,18 @@
   text-transform: uppercase;
 }
 
+.song-stats-diagnostic.is-warning {
+  color: var(--stats-brass);
+}
+
+.song-stats-diagnostic.is-error {
+  color: #d47a7a;
+}
+
+.song-stats-diagnostic.is-info {
+  color: var(--stats-cyan);
+}
+
 @media (min-width: 720px) {
   .song-stats-panel.is-embedded .song-stats-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));

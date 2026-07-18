@@ -1,10 +1,19 @@
 import { useId } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion.js';
+import { MIN_WORDS_FOR_STATS } from '../../codex/core/song-stats/constants.js';
 import { AnimatedSurface } from './AnimatedSurface';
 import './SongStatsPanel.css';
 
-function formatNumber(value, digits = 2) {
+const SEVERITY_RANK = { error: 3, warning: 2, info: 1 };
+
+/**
+ * @param {unknown} value
+ * @param {number} [digits]
+ * @param {{ empty?: boolean }} [options]
+ */
+function formatNumber(value, digits = 2, { empty = false } = {}) {
+  if (empty) return '—';
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(digits) : '—';
 }
@@ -13,6 +22,26 @@ function formatTechnicalDensity(value) {
   if (value == null) return '—';
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(1) : '—';
+}
+
+/**
+ * Highest-severity diagnostic across all pillars (error > warning > info).
+ * @param {import('../../codex/core/song-stats/types.js').SongStatsResult} stats
+ * @returns {import('../../codex/core/song-stats/types.js').Diagnostic | null}
+ */
+function topDiagnostic(stats) {
+  const diagnostics = [
+    ...(stats.pillars?.rhymeDensity?.diagnostics ?? []),
+    ...(stats.pillars?.uniqueVocabulary?.diagnostics ?? []),
+    ...(stats.pillars?.flowAlignment?.diagnostics ?? []),
+  ];
+  if (diagnostics.length === 0) return null;
+
+  return diagnostics.reduce((best, candidate) => {
+    const bestRank = SEVERITY_RANK[best?.severity] ?? 0;
+    const candidateRank = SEVERITY_RANK[candidate?.severity] ?? 0;
+    return candidateRank > bestRank ? candidate : best;
+  });
 }
 
 function PillarCard({ title, value, secondary, fidelity }) {
@@ -57,11 +86,16 @@ export default function SongStatsPanel({
   const rhyme = pillars.rhymeDensity;
   const vocabulary = pillars.uniqueVocabulary;
   const flow = pillars.flowAlignment;
+  const pillarsEmpty = wordCount < MIN_WORDS_FOR_STATS;
   const isAligned = flow.fidelity === 'aligned';
   const flowSecondary = isAligned
-    ? `Syncopation index ${formatNumber(flow.secondary?.syncopationIndex)}`
-    : `Syncopation proxy ${formatNumber(flow.secondary?.stressDisplacementProxy)}`;
+    ? `Syncopation index ${formatNumber(flow.secondary?.syncopationIndex, 2, { empty: pillarsEmpty })}`
+    : `Syncopation proxy ${formatNumber(flow.secondary?.stressDisplacementProxy, 2, { empty: pillarsEmpty })}`;
+  const vocabSecondary = vocabulary.secondary
+    ? `${vocabulary.secondary.uniqueLemmaCount ?? '—'} lemmas · ${vocabulary.secondary.surfaceTypeCount ?? '—'} types · ${vocabulary.secondary.tokenCount ?? '—'} tokens`
+    : null;
   const weights = composite.weights;
+  const diagnostic = topDiagnostic(stats);
 
   const content = (
     <AnimatedSurface className="song-stats-surface">
@@ -116,16 +150,17 @@ export default function SongStatsPanel({
       <div className="song-stats-grid">
         <PillarCard
           title="CODEx Rhyme Density"
-          value={`RD_C ${formatNumber(rhyme.value)}`}
-          secondary={`Malmi baseline ${formatNumber(rhyme.secondary?.malmiDensity)}`}
+          value={`RD_C ${formatNumber(rhyme.value, 2, { empty: pillarsEmpty })}`}
+          secondary={`Malmi baseline ${formatNumber(rhyme.secondary?.malmiDensity, 2, { empty: pillarsEmpty })}`}
         />
         <PillarCard
           title="CODEx Lexical Diversity"
-          value={`${formatNumber(vocabulary.value)} per 100 words`}
+          value={`${formatNumber(vocabulary.value, 2, { empty: pillarsEmpty })} per 100 words`}
+          secondary={vocabSecondary}
         />
         <PillarCard
           title="Flow"
-          value={`SPS ${formatNumber(flow.value)}`}
+          value={`SPS ${formatNumber(flow.value, 2, { empty: pillarsEmpty })}`}
           secondary={flowSecondary}
           fidelity={flow.fidelity}
         />
@@ -141,13 +176,18 @@ export default function SongStatsPanel({
         </span>
         <span>{meta.engineVersion}</span>
         <span>{meta.calibrationVersion}</span>
+        {diagnostic && (
+          <span className={`song-stats-diagnostic is-${diagnostic.severity}`} title={diagnostic.message}>
+            {diagnostic.code}
+          </span>
+        )}
       </footer>
     </AnimatedSurface>
   );
 
   if (isEmbedded) {
     return (
-      <aside className="song-stats-panel is-embedded" aria-label="CODEx song statistics">
+      <aside className="song-stats-panel is-embedded" aria-label="CODEx Song Stats">
         {content}
       </aside>
     );
@@ -161,7 +201,7 @@ export default function SongStatsPanel({
         animate={{ opacity: 1, x: 0 }}
         exit={reduceMotion ? undefined : { opacity: 0, x: 32 }}
         transition={{ duration: reduceMotion ? 0 : 0.3, ease: 'easeOut' }}
-        aria-label="CODEx song statistics"
+        aria-label="CODEx Song Stats"
       >
         {content}
       </motion.aside>

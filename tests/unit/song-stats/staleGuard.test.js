@@ -11,7 +11,7 @@ function resultWithFingerprint(sourceFingerprint) {
 }
 
 describe('resolveSongStatsDisplay', () => {
-  it('returns the next result when compute did not fail', () => {
+  it('returns the next result only when its fingerprint matches current', () => {
     const nextResult = resultWithFingerprint('fp-a');
     expect(resolveSongStatsDisplay({
       computeFailed: false,
@@ -19,6 +19,17 @@ describe('resolveSongStatsDisplay', () => {
       currentFingerprint: 'fp-a',
       nextResult,
     })).toBe(nextResult);
+  });
+
+  it('returns null (pending) when nextResult fingerprint mismatches current', () => {
+    const lastGood = resultWithFingerprint('fp-old');
+    const nextResult = resultWithFingerprint('fp-old');
+    expect(resolveSongStatsDisplay({
+      computeFailed: false,
+      lastGood,
+      currentFingerprint: 'fp-new',
+      nextResult,
+    })).toBeNull();
   });
 
   it('returns the next result on success even when it differs from lastGood', () => {

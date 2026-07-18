@@ -21,6 +21,11 @@ const estimatedStats = {
       id: 'unique_vocabulary',
       value: 54.17,
       unit: '/100w',
+      secondary: {
+        uniqueLemmaCount: 26,
+        surfaceTypeCount: 28,
+        tokenCount: 48,
+      },
       normalized01: 0.9,
       fidelity: 'exact',
       confidence01: 1,
@@ -81,6 +86,7 @@ describe('SongStatsPanel', () => {
     expect(screen.getByText(/Malmi baseline 0\.71/)).toBeTruthy();
     expect(screen.getByText('CODEx Lexical Diversity')).toBeTruthy();
     expect(screen.getByText(/54\.17 per 100 words/)).toBeTruthy();
+    expect(screen.getByText(/26 lemmas · 28 types · 48 tokens/)).toBeTruthy();
     expect(screen.getByText('Flow')).toBeTruthy();
     expect(screen.getByText(/SPS 3\.28/)).toBeTruthy();
     expect(screen.getByText(/Syncopation proxy 0\.34/)).toBeTruthy();
@@ -90,10 +96,58 @@ describe('SongStatsPanel', () => {
     expect(screen.getByText(/weights 40\/35\/25/)).toBeTruthy();
     expect(screen.getByText(/song-stats-v1/)).toBeTruthy();
     expect(screen.getByText(/cal-2026-07-18/)).toBeTruthy();
+    expect(screen.getByLabelText('CODEx Song Stats')).toBeTruthy();
 
     expect(screen.queryByText('Phoneme Density')).toBeNull();
     expect(screen.queryByText('Alliteration')).toBeNull();
     expect(screen.queryByText('Rhyme Quality')).toBeNull();
+  });
+
+  it('renders em dashes for N<8 empty pillars and shows the top diagnostic', () => {
+    const shortStats = {
+      ...estimatedStats,
+      wordCount: 3,
+      pillars: {
+        rhymeDensity: {
+          ...estimatedStats.pillars.rhymeDensity,
+          value: 0,
+          secondary: { malmiDensity: 0 },
+          diagnostics: [{
+            code: 'need_more_lyrics',
+            message: 'At least 8 words are required for song stats.',
+            severity: 'warning',
+          }],
+        },
+        uniqueVocabulary: {
+          ...estimatedStats.pillars.uniqueVocabulary,
+          value: 0,
+          secondary: { uniqueLemmaCount: 0, surfaceTypeCount: 0, tokenCount: 0 },
+        },
+        flowAlignment: {
+          ...estimatedStats.pillars.flowAlignment,
+          value: 0,
+          secondary: { stressDisplacementProxy: 0 },
+          diagnostics: [{
+            code: 'estimated_one_bar_per_line',
+            message: 'Estimated flow assumes one bar for each nonempty lyric source line.',
+            severity: 'info',
+          }],
+        },
+      },
+      composite: {
+        ...estimatedStats.composite,
+        total0to100: null,
+        band: null,
+      },
+    };
+
+    render(<SongStatsPanel stats={shortStats} visible />);
+
+    expect(screen.getByText('RD_C —')).toBeTruthy();
+    expect(screen.getByText(/— per 100 words/)).toBeTruthy();
+    expect(screen.getByText('SPS —')).toBeTruthy();
+    expect(screen.queryByText(/RD_C 0\.00/)).toBeNull();
+    expect(screen.getByText('need_more_lyrics')).toBeTruthy();
   });
 
   it('renders aligned syncopation and invokes close', () => {

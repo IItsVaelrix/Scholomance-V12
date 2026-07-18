@@ -1,12 +1,12 @@
 /**
  * Stale-result guard for CODEx Song Stats.
  *
- * Decides what the panel should display when a compute attempt fails,
- * comparing the last known-good result's source fingerprint against the
- * fingerprint of the content currently on screen. A stale result is only
- * ever shown when it still matches the live content identity; otherwise
- * the panel must show an explicit `stats_compute_failed` empty state
- * rather than silently displaying results for different lyrics.
+ * Only accepts a result when its source fingerprint matches the live content
+ * identity. A mismatched payload is treated as pending/empty — never shown as
+ * current — and must not be confused with a compute failure.
+ *
+ * When compute truly fails, last-good may be shown only if its fingerprint
+ * still matches the live content.
  */
 
 /** @typedef {import('./types.js').SongStatsResult} SongStatsResult */
@@ -21,7 +21,16 @@
  * @returns {SongStatsResult | null}
  */
 export function resolveSongStatsDisplay({ computeFailed, lastGood, currentFingerprint, nextResult }) {
-  if (!computeFailed) return nextResult;
-  if (lastGood?.meta?.sourceFingerprint === currentFingerprint) return lastGood;
-  return null; // empty → panel shows stats_compute_failed
+  if (nextResult?.meta?.sourceFingerprint === currentFingerprint) {
+    return nextResult;
+  }
+
+  // Mismatched or absent nextResult: never display a fingerprint that does not
+  // match the current editor identity. Fall back to last-good only on a true
+  // compute failure for the same content.
+  if (computeFailed && lastGood?.meta?.sourceFingerprint === currentFingerprint) {
+    return lastGood;
+  }
+
+  return null;
 }

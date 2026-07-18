@@ -55,6 +55,20 @@ describe('flowAlignment estimated', () => {
       code: 'estimated_one_bar_per_line',
       severity: 'info',
     }));
+    expect(pillar.diagnostics.some((d) => d.code === 'alignment_incomplete')).toBe(false);
+  });
+
+  it('does not emit alignment_incomplete on the pure estimated path', () => {
+    const doc = documentWithLines([
+      { text: 'hello world from cadence', number: 0, words: firstLineWords },
+      { text: 'another solid lyric line here', number: 1, words: secondLineWords },
+    ]);
+
+    const omitted = computeFlowAlignment(doc);
+    const explicitNull = computeFlowAlignment(doc, { alignment: null, beatGrid: null });
+
+    expect(omitted.diagnostics.some((d) => d.code === 'alignment_incomplete')).toBe(false);
+    expect(explicitNull.diagnostics.some((d) => d.code === 'alignment_incomplete')).toBe(false);
   });
 
   it('uses source line breaks rather than visual wrapping', () => {

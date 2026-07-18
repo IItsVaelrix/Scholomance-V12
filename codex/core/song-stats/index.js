@@ -43,7 +43,7 @@ function stubUniqueVocabularyPillar() {
   return {
     id: 'unique_vocabulary',
     value: 0,
-    unit: 'per_100w',
+    unit: '/100w',
     normalized01: 0,
     fidelity: 'exact',
     confidence01: 0,
