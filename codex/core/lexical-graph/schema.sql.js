@@ -110,6 +110,22 @@ CREATE INDEX IF NOT EXISTS idx_lexical_relation_target
 CREATE INDEX IF NOT EXISTS idx_lexical_relation_relation_source
   ON lexical_relation(relation, source_id);
 
+CREATE TABLE IF NOT EXISTS lemma_form (
+  surface_lower TEXT NOT NULL,
+  lemma_lower TEXT NOT NULL,
+  pos TEXT NOT NULL,
+  transform_id TEXT NOT NULL,
+  source TEXT NOT NULL,
+  irregular INTEGER NOT NULL CHECK (irregular IN (0, 1)),
+  morphological_confidence REAL NOT NULL CHECK (
+    morphological_confidence >= 0 AND morphological_confidence <= 1
+  ),
+  PRIMARY KEY (surface_lower, lemma_lower, pos, transform_id, source)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lemma_form_surface
+  ON lemma_form(surface_lower, lemma_lower, pos);
+
 CREATE TABLE IF NOT EXISTS literary_device (
   id TEXT PRIMARY KEY REFERENCES lexical_entry(id) ON DELETE CASCADE,
   name TEXT NOT NULL,

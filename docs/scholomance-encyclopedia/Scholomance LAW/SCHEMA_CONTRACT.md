@@ -20,7 +20,7 @@
 - Schema: Multi-Candidate Lemmatization and Analyze Context
 - Version: 1.33 -> 1.34
 - Date: 2026-07-18
-- Changed fields: added `AnalysisContextInput`, `AnalysisContextIdentity`, `AnalysisContext`, `MorphologyIndexState`, `LemmaForm`, `CandidateEvidence`, `SenseCandidate`, `LemmaCandidate`, `LemmaResolution`, `AnalysisDegradation`, `CandidateAnalyzeResult`, and deterministic `AnalyzeResult`
+- Changed fields: added the `lemma_form` relation and manifest, `AnalysisContextInput`, `AnalysisContextIdentity`, `AnalysisContext`, `MorphologyIndexState`, `LemmaForm`, `CandidateEvidence`, `SenseCandidate`, `LemmaCandidate`, `LemmaResolution`, `AnalysisDegradation`, `CandidateAnalyzeResult`, and deterministic `AnalyzeResult`
 - Breaking: Analyze request/result path changes from an unscoped query to a strict context envelope; additive dictionary overlay remains non-destructive
 - Owner: Codex
 - Claude impact: render explicit scope, candidate ambiguity, evidence, and candidate-specific groups; never author `contextHash`
@@ -122,6 +122,15 @@ interface AnalyzeResult {
 /* AnalyzeResult is deterministic and contains no generatedAt or other wall-clock field. */
 ```
 
+`lemma_form` has logical identity
+`(surface_lower, lemma_lower, pos, transform_id, source)` and an index beginning
+with `surface_lower`. The five manifest keys are `lemma_form_version`,
+`lemma_form_status`, `lemma_form_source_digest`,
+`lemma_form_expected_lemma_count`, and `lemma_form_indexed_lemma_count`.
+Migration creates no manifest claim. Only the offline builder may write
+`status=complete`, and only after the source digest and expected/indexed counts
+agree. A failed or interrupted rebuild leaves `status=partial`.
+
 ---
 
 ## SCHEMA CHANGE NOTICE
@@ -145,7 +154,7 @@ Additive graph overlay for `scholomance_dict.sqlite`. The Oracle adapter `Lexica
 JSDoc mirrors live in `codex/core/lexical-graph/types.js`.
 
 ```ts
-export const LEXICAL_GRAPH_SCHEMA_VERSION = "1";
+export const LEXICAL_GRAPH_SCHEMA_VERSION = "2";
 export const LITERARY_DEVICE_SEED_VERSION = "1";
 export const DEVICE_EMBEDDING_KIND = "phonosemantic_mock";
 export const DEVICE_EMBEDDING_VERSION = "tq-js-v1";

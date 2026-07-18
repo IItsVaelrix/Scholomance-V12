@@ -6,7 +6,21 @@ import path from 'path';
 import { migrateLexicalGraph } from '../../codex/core/lexical-graph/migrate.js';
 import { LEXICAL_GRAPH_SCHEMA_VERSION } from '../../codex/core/lexical-graph/types.js';
 
-const OVERLAY_TABLES = ['lexical_entry', 'lexical_relation', 'literary_device', 'lexical_entry_fts_map'];
+const OVERLAY_TABLES = [
+  'lexical_entry',
+  'lexical_relation',
+  'literary_device',
+  'lexical_entry_fts_map',
+  'lemma_form',
+];
+
+const LEMMA_MANIFEST_KEYS = [
+  'lemma_form_version',
+  'lemma_form_status',
+  'lemma_form_source_digest',
+  'lemma_form_expected_lemma_count',
+  'lemma_form_indexed_lemma_count',
+];
 
 function createFixtureDb(dbPath) {
   const db = new Database(dbPath);
@@ -122,6 +136,42 @@ describe('[Server] lexicalGraph.migrate', () => {
 
     const row = db.prepare(`SELECT value FROM meta WHERE key = 'lexical_graph_schema_version'`).get();
     expect(row.value).toBe(LEXICAL_GRAPH_SCHEMA_VERSION);
+
+    db.close();
+  });
+
+  it('creates a multi-candidate lemma relation without claiming a built manifest', () => {
+    const db = openFixture();
+    migrateLexicalGraph(db, { timestamp: NOW });
+
+    const insert = db.prepare(`
+      INSERT INTO lemma_form (
+        surface_lower, lemma_lower, pos, transform_id, source,
+        irregular, morphological_confidence
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    const ax = ['axes', 'ax', 'noun', 'noun.plural.x_to_es', 'LEMMA_FORM_v1', 0, 0.85];
+    expect(() => insert.run(...ax)).not.toThrow();
+    expect(() => insert.run(...ax)).toThrow();
+    expect(() => insert.run(
+      'axes', 'axis', 'noun', 'noun.plural.is_to_es', 'LEMMA_FORM_v1', 0, 0.85,
+    )).not.toThrow();
+
+    const candidates = db.prepare(`
+      SELECT lemma_lower, pos FROM lemma_form
+      WHERE surface_lower = 'axes'
+      ORDER BY lemma_lower, pos
+    `).all();
+    expect(candidates).toEqual([
+      { lemma_lower: 'ax', pos: 'noun' },
+      { lemma_lower: 'axis', pos: 'noun' },
+    ]);
+
+    const manifest = db.prepare(`
+      SELECT key FROM meta
+      WHERE key IN (${LEMMA_MANIFEST_KEYS.map(() => '?').join(',')})
+    `).all(...LEMMA_MANIFEST_KEYS);
+    expect(manifest).toEqual([]);
 
     db.close();
   });
