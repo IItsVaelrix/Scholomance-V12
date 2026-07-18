@@ -73,6 +73,7 @@
     "start": "node scripts/ritual-init.js --detach && node codex/server/index.js",
     "start:server": "node codex/server/index.js",
     "db:setup": "node scripts/setup_database.cjs",
+    "dict:ingest-antonyms": "python3 scripts/ingest_oewn_antonyms.py --db scholomance_dict.sqlite --oewn_path dict_data/english-wordnet-2024.xml.gz --expected-release 2024",
     "track:add:suno": "node scripts/add_suno_track.js",
     "mcp:collab": "node --env-file=.env codex/server/collab/mcp-bridge-entry.js",
     "mcp:probe": "node --env-file=.env scripts/debug-mcp-bridge.js",

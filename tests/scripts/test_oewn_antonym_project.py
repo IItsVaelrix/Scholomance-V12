@@ -1,6 +1,8 @@
 import os
 import sqlite3
+import subprocess
 import sys
+import tempfile
 import unittest
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
@@ -104,6 +106,67 @@ class TestApply(unittest.TestCase):
 
         after = list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
         self.assertEqual(before, after)
+
+
+class TestCLI(unittest.TestCase):
+    def _run_cli(self, *args):
+        return subprocess.run(
+            [
+                sys.executable,
+                os.path.join(ROOT, "scripts", "ingest_oewn_antonyms.py"),
+                *args,
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_missing_timestamp_rejects(self):
+        result = self._run_cli(
+            "--db", ":memory:",
+            "--oewn_path", FIXTURE,
+            "--expected-release", "2024",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("timestamp", (result.stderr + result.stdout).lower())
+
+    def test_release_mismatch_aborts_before_writes(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            db_path = os.path.join(tempdir, "dictionary.sqlite")
+            source = _make_db()
+            target = sqlite3.connect(db_path)
+            try:
+                source.backup(target)
+            finally:
+                target.close()
+                source.close()
+
+            before = sqlite3.connect(db_path)
+            try:
+                relations_before = list(before.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
+                meta_before = list(before.execute("SELECT * FROM meta ORDER BY key"))
+            finally:
+                before.close()
+
+            result = self._run_cli(
+                "--db", db_path,
+                "--oewn_path", FIXTURE,
+                "--expected-release", "2025",
+                "--timestamp", "2026-07-18T09:00:00Z",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("release", (result.stderr + result.stdout).lower())
+
+            after = sqlite3.connect(db_path)
+            try:
+                self.assertEqual(
+                    relations_before,
+                    list(after.execute("SELECT * FROM wordnet_rel ORDER BY rowid")),
+                )
+                self.assertEqual(meta_before, list(after.execute("SELECT * FROM meta ORDER BY key")))
+            finally:
+                after.close()
 
 
 if __name__ == "__main__":
