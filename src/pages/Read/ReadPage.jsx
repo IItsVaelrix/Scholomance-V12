@@ -34,6 +34,7 @@ import { useAdaptivePalette } from "../../hooks/useAdaptivePalette.js";
 import { useAnimationSubmitter } from "../../ui/animation/hooks/useAnimationSubmitter.ts";
 
 import AnalysisPanel from "./AnalysisPanel.jsx";
+import AnalyzePanel from "./AnalyzePanel.jsx";
 import InfoBeamPanel from "../../components/InfoBeamPanel.jsx";
 import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
 import HeuristicScorePanel from "../../components/HeuristicScorePanel.jsx";
@@ -1501,27 +1502,35 @@ export default function ReadPage() {
                             aria-label={analysisPanelCloseLabel}
                           >×</button>
                         </div>
-                        <AnalysisPanel
-                          scheme={schemeDetection}
-                          meter={meterDetection}
-                          statistics={deepAnalysis?.statistics}
-                          literaryDevices={literaryDevices}
-                          emotion={emotion}
-                          genreProfile={genreProfile}
-                          hhmSummary={deepAnalysis?.syntaxSummary?.hhm}
-                          scoreData={scoreData}
-                          rhymeAstrology={rhymeAstrology}
-                          narrativeAMP={narrativeAMP}
-                          oracle={oracle}
-                          onGroupHover={highlightRhymeGroup}
-                          onGroupLeave={clearHighlight}
-                          infoBeamEnabled={infoBeamEnabled}
-                          onInfoBeamToggle={() => setInfoBeamEnabled((prev) => !prev)}
-                          onGroupClick={handleInfoBeamClick}
-                          activeInfoBeamFamily={infoBeamFamily}
-                          surfaceMode={isAstrologyMode ? "astrology" : "full"}
-                          currentLineText={currentLineText}
-                          />                      </div>
+                        {isAnalyzeMode ? (
+                          <AnalyzePanel
+                            initialQuery={currentLineText?.split(/\s+/)[0] || ''}
+                            onCraftAction={handleAnalyzeCraft}
+                          />
+                        ) : (
+                          <AnalysisPanel
+                            scheme={schemeDetection}
+                            meter={meterDetection}
+                            statistics={deepAnalysis?.statistics}
+                            literaryDevices={literaryDevices}
+                            emotion={emotion}
+                            genreProfile={genreProfile}
+                            hhmSummary={deepAnalysis?.syntaxSummary?.hhm}
+                            scoreData={scoreData}
+                            rhymeAstrology={rhymeAstrology}
+                            narrativeAMP={narrativeAMP}
+                            oracle={oracle}
+                            onGroupHover={highlightRhymeGroup}
+                            onGroupLeave={clearHighlight}
+                            infoBeamEnabled={infoBeamEnabled}
+                            onInfoBeamToggle={() => setInfoBeamEnabled((prev) => !prev)}
+                            onGroupClick={handleInfoBeamClick}
+                            activeInfoBeamFamily={infoBeamFamily}
+                            surfaceMode={isAstrologyMode ? "astrology" : "full"}
+                            currentLineText={currentLineText}
+                          />
+                        )}
+                      </div>
                     )}
 
                     {infoBeamEnabled && infoBeamFamily && (
@@ -1701,27 +1710,34 @@ export default function ReadPage() {
           maxWidth={580}
           maxHeight={860}
         >
-          <AnalysisPanel
-            scheme={schemeDetection}
-            meter={meterDetection}
-            statistics={deepAnalysis?.statistics}
-            literaryDevices={literaryDevices}
-            emotion={emotion}
-            genreProfile={genreProfile}
-            hhmSummary={deepAnalysis?.syntaxSummary?.hhm}
-            scoreData={scoreData}
-            rhymeAstrology={rhymeAstrology}
-            narrativeAMP={narrativeAMP}
-            oracle={oracle}
-            onGroupHover={highlightRhymeGroup}
-            onGroupLeave={clearHighlight}
-            infoBeamEnabled={infoBeamEnabled}
-            onInfoBeamToggle={() => setInfoBeamEnabled((prev) => !prev)}
-            onGroupClick={handleInfoBeamClick}
-            activeInfoBeamFamily={infoBeamFamily}
-            surfaceMode={isAstrologyMode ? "astrology" : "full"}
-            currentLineText={currentLineText}
-          />
+          {isAnalyzeMode ? (
+            <AnalyzePanel
+              initialQuery={currentLineText?.split(/\s+/)[0] || ''}
+              onCraftAction={handleAnalyzeCraft}
+            />
+          ) : (
+            <AnalysisPanel
+              scheme={schemeDetection}
+              meter={meterDetection}
+              statistics={deepAnalysis?.statistics}
+              literaryDevices={literaryDevices}
+              emotion={emotion}
+              genreProfile={genreProfile}
+              hhmSummary={deepAnalysis?.syntaxSummary?.hhm}
+              scoreData={scoreData}
+              rhymeAstrology={rhymeAstrology}
+              narrativeAMP={narrativeAMP}
+              oracle={oracle}
+              onGroupHover={highlightRhymeGroup}
+              onGroupLeave={clearHighlight}
+              infoBeamEnabled={infoBeamEnabled}
+              onInfoBeamToggle={() => setInfoBeamEnabled((prev) => !prev)}
+              onGroupClick={handleInfoBeamClick}
+              activeInfoBeamFamily={infoBeamFamily}
+              surfaceMode={isAstrologyMode ? "astrology" : "full"}
+              currentLineText={currentLineText}
+            />
+          )}
         </FloatingPanel>
       )}
 
