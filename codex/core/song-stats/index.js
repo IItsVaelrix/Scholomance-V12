@@ -8,6 +8,7 @@ import {
   WEIGHTS,
 } from './constants.js';
 import { buildSourceFingerprint } from './fingerprint.js';
+import { computeFlowAlignment } from './flowAlignment.js';
 import { computeRhymeDensity } from './rhymeDensity.js';
 import { computeUniqueVocabulary } from './uniqueVocabulary.js';
 
@@ -75,6 +76,12 @@ function stubFlowAlignmentPillar() {
  */
 export function computeSongStats(doc, options = {}) {
   const rhymeWindow = options.rhymeWindow ?? DEFAULT_RHYME_WINDOW;
+  const bpm = Number.isFinite(options.bpm) && options.bpm > 0
+    ? options.bpm
+    : DEFAULT_BPM;
+  const beatsPerLine = Number.isFinite(options.beatsPerLine) && options.beatsPerLine > 0
+    ? options.beatsPerLine
+    : DEFAULT_BEATS_PER_LINE;
   const wordCount = doc.allWords?.length ?? 0;
   const sourceFingerprint = buildSourceFingerprint({
     raw: doc.raw ?? '',
@@ -91,8 +98,8 @@ export function computeSongStats(doc, options = {}) {
     rhymeWindow,
     fidelitySummary: 'estimated',
     assumptions: {
-      estimatedBpm: DEFAULT_BPM,
-      beatsPerLine: DEFAULT_BEATS_PER_LINE,
+      estimatedBpm: bpm,
+      beatsPerLine,
       lineRepresentsBar: true,
     },
   };
@@ -131,7 +138,11 @@ export function computeSongStats(doc, options = {}) {
     pillars: {
       rhymeDensity: computeRhymeDensity(doc.allWords, { rhymeWindow }),
       uniqueVocabulary: computeUniqueVocabulary(doc.allWords),
-      flowAlignment: stubFlowAlignmentPillar(),
+      flowAlignment: computeFlowAlignment(doc, {
+        ...options,
+        bpm,
+        beatsPerLine,
+      }),
     },
     composite,
     meta,
@@ -139,6 +150,7 @@ export function computeSongStats(doc, options = {}) {
 }
 
 export { buildSourceFingerprint } from './fingerprint.js';
+export { computeFlowAlignment } from './flowAlignment.js';
 export { computeRhymeDensity, longestVowelMatchLength } from './rhymeDensity.js';
 export { computeUniqueVocabulary } from './uniqueVocabulary.js';
 export * from './constants.js';

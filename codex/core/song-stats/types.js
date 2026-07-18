@@ -64,9 +64,21 @@
 /**
  * @typedef {Object} AnalyzedDocument
  * @property {string} raw
- * @property {Array<{ text: string, number: number, words: unknown[] }>} lines
- * @property {Array<{ text: string, normalized: string, start: number, end: number, phonetics?: { phonemes?: string[] } }>} allWords
+ * @property {Array<{ text: string, number: number, words: AnalyzedWord[] }>} lines
+ * @property {AnalyzedWord[]} allWords
  * @property {Record<string, unknown>} [stats]
+ */
+
+/**
+ * @typedef {Object} AnalyzedWord
+ * @property {string} text
+ * @property {string} normalized
+ * @property {number} [start]
+ * @property {number} [end]
+ * @property {number} [syllableCount]
+ * @property {string} [stressPattern]
+ * @property {{ phonemes?: string[] }} [phonetics]
+ * @property {{ phonemes?: string[] }} [deepPhonetics]
  */
 
 /**
@@ -84,6 +96,8 @@
  * @property {SongStatsAlignment} [alignment]
  * @property {SongStatsBeatGrid} [beatGrid]
  * @property {number} [rhymeWindow]
+ * @property {number} [bpm]
+ * @property {number} [beatsPerLine]
  */
 
 export {};
