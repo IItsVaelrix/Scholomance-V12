@@ -25,9 +25,6 @@
     "divtube_downloader",
     "nlp_chatbot",
     "tools/**/out",
-    "Scholomance OS/**",
-    "assets/aspirations/**",
-    "codex/core/manifold/**/pkg/**",
     ".eslintrc.json",
     "vst/scholo-candy/target/doc"
   ],
@@ -47,9 +44,7 @@
         "scripts/**/*.js",
         "playwright.config.js",
         "vite.config.js",
-        "mailer.adapter.js",
-        "apply_amps_to_chest.js",
-        "run_amps_bespoke_chest.js"
+        "mailer.adapter.js"
       ],
       "env": {
         "node": true
@@ -133,15 +128,6 @@
     },
     {
       "files": [
-        "src/video/Windows98Visualizer.tsx"
-      ],
-      "rules": {
-        "@typescript-eslint/ban-ts-comment": "off",
-        "react/no-unknown-property": "off"
-      }
-    },
-    {
-      "files": [
         "codex/**/*.js"
       ],
       "excludedFiles": [
@@ -200,14 +186,6 @@
         "no-undef": "off",
         "no-unused-vars": "off",
         "no-empty": "off"
-      }
-    },
-    {
-      "files": [
-        "tests/core/truesight/chroma.authority-distribution.test.js"
-      ],
-      "rules": {
-        "no-console": "error"
       }
     }
   ],
