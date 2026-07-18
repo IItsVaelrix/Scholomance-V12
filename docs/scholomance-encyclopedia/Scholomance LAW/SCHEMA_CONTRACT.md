@@ -169,6 +169,18 @@ Lexical Graph embedding invariants:
 */
 ```
 
+### Identity rules
+
+| Node kind | id form |
+|-----------|---------|
+| Word (mirrored) | `le:word:<entry_id>` — one node per legacy entry row; identity ≠ spelling; never `le:word:<headword_lower>` |
+| Device | `le:device:<slug>` |
+| Future types | `le:<type>:<stable_key>` |
+
+`lexical_relation` is the sole persisted edge store; device `relatedDevices` / `commonlyConfusedWith` are hydrated only.
+
+`DetectionSignal` shapes are schema-valid and machine-addressable; no evaluator runtime in this schema slice.
+
 ---
 
 ## SCHEMA CHANGE NOTICE
