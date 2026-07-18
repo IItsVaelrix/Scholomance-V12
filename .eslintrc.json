@@ -25,6 +25,9 @@
     "divtube_downloader",
     "nlp_chatbot",
     "tools/**/out",
+    "Scholomance OS/**",
+    "assets/aspirations/**",
+    "codex/core/manifold/**/pkg/**",
     ".eslintrc.json",
     "vst/scholo-candy/target/doc"
   ],
@@ -44,7 +47,9 @@
         "scripts/**/*.js",
         "playwright.config.js",
         "vite.config.js",
-        "mailer.adapter.js"
+        "mailer.adapter.js",
+        "apply_amps_to_chest.js",
+        "run_amps_bespoke_chest.js"
       ],
       "env": {
         "node": true
@@ -128,6 +133,15 @@
     },
     {
       "files": [
+        "src/video/Windows98Visualizer.tsx"
+      ],
+      "rules": {
+        "@typescript-eslint/ban-ts-comment": "off",
+        "react/no-unknown-property": "off"
+      }
+    },
+    {
+      "files": [
         "codex/**/*.js"
       ],
       "excludedFiles": [
@@ -136,7 +150,8 @@
         "codex/server/db/sqliteWriteQueue.js",
         "codex/server/collab/collab.persistence.js",
         "codex/server/user.persistence.js",
-        "codex/server/catalog/catalog.schema.js"
+        "codex/server/catalog/catalog.schema.js",
+        "codex/core/lexical-graph/migrate.js"
       ],
       "rules": {
         "no-restricted-syntax": [
@@ -185,6 +200,14 @@
         "no-undef": "off",
         "no-unused-vars": "off",
         "no-empty": "off"
+      }
+    },
+    {
+      "files": [
+        "tests/core/truesight/chroma.authority-distribution.test.js"
+      ],
+      "rules": {
+        "no-console": "error"
       }
     }
   ],
