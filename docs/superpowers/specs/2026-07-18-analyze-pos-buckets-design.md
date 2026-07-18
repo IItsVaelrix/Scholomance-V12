@@ -103,6 +103,28 @@ structure; POS buckets are sub-structure inside them.
   buckets omitted, pos-less groups render unchanged, distinct count in the
   group heading.
 
+## Section 3 — Rename: "Analyze" → "Leximancy" (user-facing copy only)
+
+The feature's display name becomes **Leximancy**. Code identifiers, file
+names, routes, contract keys, and test file names keep the `analyze` naming.
+
+Copy to change (name occurrences):
+- `src/pages/Read/ToolsSidebar.jsx` — mode button label `Analyze` → `Leximancy`.
+- `src/pages/Read/ControlConsole.jsx` — mode segment label `Analyze` → `Leximancy`.
+- `src/pages/Read/MobileHexSheet.jsx` — mode label `Analyze` → `Leximancy`.
+- `src/pages/Read/AnalyzePanel.jsx` — input placeholder becomes
+  "Leximancy: a word or surface form…", input `aria-label` "Leximancy query",
+  clear-button `aria-label` "Clear leximancy", pin tray `aria-label`
+  "Pinned Leximancy results".
+- `tests/visual/lexical-analyze.real.spec.js` — selectors matching the old
+  copy (`hasText: 'Analyze'`, `getByLabel('Analyze query')`).
+
+Verb usages stay: the loading button text "Analyzing…" describes the act,
+not the feature name. Also untouched (different features / engine status):
+the TrueSight engine indicator "Analyzing..." in the `ToolsSidebar.jsx`
+footer, ControlConsole engine readouts (`isAnalyzing` = document synthesis),
+and `GrimDesignPanel.jsx` "Analyzing...".
+
 ## Known trade-off
 
 Perfect rhymes are currently displayed in corpus-frequency order ("rare
