@@ -13,6 +13,10 @@ from oewn_antonym_project import (  # noqa: E402
     parse_oewn_antonyms,
     project_antonyms,
 )
+from build_scholomance_dict import (  # noqa: E402
+    apply_builder_oewn_antonyms,
+    ingest_oewn_xml,
+)
 
 FIXTURE = os.path.join(ROOT, "tests", "fixtures", "oewn-antonym-mini.xml")
 
@@ -30,6 +34,17 @@ def _make_db():
     INSERT INTO wordnet_rel VALUES ('oewn-syn-hot','antonym','oewn-syn-cold','oewn','https://en-word.net/');
     INSERT INTO wordnet_rel VALUES ('oewn-syn-hot','antonym','oewn-syn-cold','manual','manual');
     INSERT INTO wordnet_rel VALUES ('oewn-syn-hot','similar','oewn-syn-good','oewn','https://en-word.net/');
+    """)
+    return conn
+
+
+def _make_empty_oewn_db():
+    conn = sqlite3.connect(":memory:")
+    conn.executescript("""
+    CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT);
+    CREATE TABLE wordnet_synset(id TEXT PRIMARY KEY, pos TEXT, lexname TEXT, definition TEXT, examples_json TEXT, source TEXT, source_url TEXT);
+    CREATE TABLE wordnet_lemma(lemma TEXT NOT NULL, lemma_lower TEXT NOT NULL, synset_id TEXT NOT NULL, sense_rank INTEGER, pos TEXT, source TEXT NOT NULL, source_url TEXT);
+    CREATE TABLE wordnet_rel(synset_id TEXT NOT NULL, rel TEXT NOT NULL, target_synset_id TEXT NOT NULL, source TEXT NOT NULL, source_url TEXT);
     """)
     return conn
 
@@ -58,6 +73,59 @@ class TestProject(unittest.TestCase):
 
 
 class TestApply(unittest.TestCase):
+    def test_builder_helper_matches_cli_projection_set(self):
+        cli_conn = _make_empty_oewn_db()
+        builder_conn = _make_empty_oewn_db()
+        try:
+            ingest_oewn_xml(cli_conn, FIXTURE, source_url="file://fixture")
+            parsed = parse_oewn_antonyms(FIXTURE)
+            cli_projection = project_antonyms(
+                parsed,
+                {row[0] for row in cli_conn.execute("SELECT id FROM wordnet_synset")},
+            )
+            apply_oewn_antonyms(
+                cli_conn,
+                cli_projection,
+                release=parsed.release,
+                source_url="file://fixture",
+                source_sha256="abc",
+                timestamp="2026-07-18T09:00:00Z",
+                max_unresolved_ratio=0.5,
+            )
+
+            ingest_oewn_xml(builder_conn, FIXTURE, source_url="file://fixture")
+            self.assertEqual(
+                0,
+                builder_conn.execute(
+                    "SELECT COUNT(*) FROM wordnet_rel WHERE rel = 'antonym' AND source = 'oewn'"
+                ).fetchone()[0],
+            )
+            builder_result, builder_projection = apply_builder_oewn_antonyms(
+                builder_conn,
+                FIXTURE,
+                source_url="file://fixture",
+                timestamp="2026-07-18T09:00:00Z",
+                max_unresolved_ratio=0.5,
+            )
+
+            self.assertEqual(cli_projection.projected_pairs, builder_projection.projected_pairs)
+            self.assertEqual(builder_result.projected_count_after_closure, len(cli_projection.projected_pairs))
+            self.assertEqual(
+                list(cli_conn.execute(
+                    """SELECT synset_id, target_synset_id FROM wordnet_rel
+                       WHERE rel = 'antonym' AND source = 'oewn'
+                       ORDER BY synset_id, target_synset_id"""
+                )),
+                list(builder_conn.execute(
+                    """SELECT synset_id, target_synset_id FROM wordnet_rel
+                       WHERE rel = 'antonym' AND source = 'oewn'
+                       ORDER BY synset_id, target_synset_id"""
+                )),
+            )
+        finally:
+            cli_conn.close()
+            builder_conn.close()
+
     def test_scoped_delete_preserves_manual_and_similar(self):
         conn = _make_db()
         parsed = parse_oewn_antonyms(FIXTURE)
