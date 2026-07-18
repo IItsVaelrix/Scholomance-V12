@@ -273,6 +273,22 @@ export function createLexiconAdapter(dbPath, options = {}) {
           WHERE l1.lemma_lower = ? AND r.rel = 'antonym'
           LIMIT ?
         `),
+        lookupRelated: db.prepare(`
+          SELECT r.rel AS rel, l2.lemma AS lemma
+          FROM wordnet_lemma l1
+          JOIN wordnet_rel r ON l1.synset_id = r.synset_id
+          JOIN wordnet_lemma l2 ON r.target_synset_id = l2.synset_id
+          WHERE l1.lemma_lower = ? AND r.rel IN ('hypernym','hyponym','similar')
+          LIMIT ?
+        `),
+        lookupSymbolsLoose: db.prepare(`
+          SELECT r.rel AS rel, l2.lemma AS lemma
+          FROM wordnet_lemma l1
+          JOIN wordnet_rel r ON l1.synset_id = r.synset_id
+          JOIN wordnet_lemma l2 ON r.target_synset_id = l2.synset_id
+          WHERE l1.lemma_lower = ? AND r.rel IN ('has_domain_topic','domain_topic','exemplifies','is_exemplified_by')
+          LIMIT ?
+        `),
         searchEntries: db.prepare(`
           SELECT e.id, e.headword, e.pos, e.ipa AS pronunciation, e.etymology, e.senses_json, e.source, e.source_url
           FROM entry_fts f
@@ -481,6 +497,35 @@ export function createLexiconAdapter(dbPath, options = {}) {
     return sanitizeLemmaRows(rows, normalized, limit);
   }
 
+  function lookupRelated(word, limit = 20) {
+    if (!tryConnect()) return { broader: [], narrower: [], akin: [] };
+    const normalized = normalizeWord(word);
+    if (!normalized) return { broader: [], narrower: [], akin: [] };
+    const boundedLimit = toBoundedLimit(limit * 3, 60);
+    const rows = stmts.lookupRelated.all(normalized, boundedLimit);
+    const bucket = { hypernym: [], hyponym: [], similar: [] };
+    for (const row of rows) if (bucket[row.rel]) bucket[row.rel].push(row.lemma);
+    const dedupe = (arr) => sanitizeLemmaRows(arr.map((lemma) => ({ lemma })), normalized, limit);
+    return { broader: dedupe(bucket.hypernym), narrower: dedupe(bucket.hyponym), akin: dedupe(bucket.similar) };
+  }
+
+  function lookupSymbolsLoose(word, limit = 12) {
+    if (!tryConnect()) return [];
+    const normalized = normalizeWord(word);
+    if (!normalized) return [];
+    const rows = stmts.lookupSymbolsLoose.all(normalized, toBoundedLimit(limit * 2, 30));
+    const seen = new Set();
+    const out = [];
+    for (const row of rows) {
+      const lemma = typeof row.lemma === 'string' ? row.lemma.trim() : '';
+      if (!lemma || lemma.toLowerCase() === normalized || seen.has(lemma.toLowerCase())) continue;
+      seen.add(lemma.toLowerCase());
+      out.push({ lemma, via: row.rel.includes('domain') ? 'domain' : 'exemplifies' });
+      if (out.length >= limit) break;
+    }
+    return out;
+  }
+
   function searchEntries(query, limit = DEFAULT_SEARCH_LIMIT) {
     if (!tryConnect()) return [];
     const sanitized = sanitizeFtsQuery(query);
@@ -541,6 +586,8 @@ export function createLexiconAdapter(dbPath, options = {}) {
     suggestEntries,
     lookupSynonyms,
     lookupAntonyms,
+    lookupRelated,
+    lookupSymbolsLoose,
     extractGloss,
     close,
     __unsafe: {
