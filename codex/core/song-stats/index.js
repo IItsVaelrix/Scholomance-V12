@@ -9,6 +9,7 @@ import {
 } from './constants.js';
 import { buildSourceFingerprint } from './fingerprint.js';
 import { computeRhymeDensity } from './rhymeDensity.js';
+import { computeUniqueVocabulary } from './uniqueVocabulary.js';
 
 /** @typedef {import('./types.js').AnalyzedDocument} AnalyzedDocument */
 /** @typedef {import('./types.js').ComputeSongStatsOptions} ComputeSongStatsOptions */
@@ -129,7 +130,7 @@ export function computeSongStats(doc, options = {}) {
     wordCount,
     pillars: {
       rhymeDensity: computeRhymeDensity(doc.allWords, { rhymeWindow }),
-      uniqueVocabulary: stubUniqueVocabularyPillar(),
+      uniqueVocabulary: computeUniqueVocabulary(doc.allWords),
       flowAlignment: stubFlowAlignmentPillar(),
     },
     composite,
@@ -139,4 +140,5 @@ export function computeSongStats(doc, options = {}) {
 
 export { buildSourceFingerprint } from './fingerprint.js';
 export { computeRhymeDensity, longestVowelMatchLength } from './rhymeDensity.js';
+export { computeUniqueVocabulary } from './uniqueVocabulary.js';
 export * from './constants.js';
