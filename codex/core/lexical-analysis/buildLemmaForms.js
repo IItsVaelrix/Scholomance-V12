@@ -19,7 +19,7 @@ function tableExists(db, name) {
   `).get(name));
 }
 
-function sourcePairs(db) {
+export function collectLemmaSourcePairs(db) {
   if (!tableExists(db, 'wordnet_lemma') || !tableExists(db, 'entry')) {
     fail('lemma build requires wordnet_lemma and entry sources');
   }
@@ -46,6 +46,12 @@ function sourcePairs(db) {
   return [...unique.values()].sort(
     (left, right) => left.lemma.localeCompare(right.lemma) || left.pos.localeCompare(right.pos),
   );
+}
+
+export function computeLemmaSourceDigest(pairs) {
+  return `sha256:${createHash('sha256')
+    .update(JSON.stringify({ version: MORPHOLOGY_VERSION, pairs }), 'utf8')
+    .digest('hex')}`;
 }
 
 function upsertMeta(db, key, value) {
@@ -91,10 +97,8 @@ export function buildLemmaForms(db, { timestamp } = {}) {
     `).run(...COMPLETE_KEYS);
   })();
 
-  const pairs = sourcePairs(db);
-  const sourceDigest = `sha256:${createHash('sha256')
-    .update(JSON.stringify({ version: MORPHOLOGY_VERSION, pairs }), 'utf8')
-    .digest('hex')}`;
+  const pairs = collectLemmaSourcePairs(db);
+  const sourceDigest = computeLemmaSourceDigest(pairs);
 
   const edges = pairs.flatMap(({ lemma, pos }) => forwardLemmaForms(lemma, pos));
   const insert = db.prepare(`
