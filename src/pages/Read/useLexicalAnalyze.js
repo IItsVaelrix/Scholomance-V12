@@ -22,10 +22,10 @@ export function useLexicalAnalyze() {
         body: JSON.stringify({ context }),
         signal: ac.signal,
       });
-      if (!res.ok) throw new Error(`Analyze failed (${res.status})`);
+      if (!res.ok) throw new Error(`Leximancy failed (${res.status})`);
       if (abortRef.current === ac) setResult(await res.json());
     } catch (e) {
-      if (e.name !== 'AbortError') setError(e.message || 'Analyze failed');
+      if (e.name !== 'AbortError') setError(e.message || 'Leximancy failed');
     } finally {
       if (abortRef.current === ac) setLoading(false);
     }
