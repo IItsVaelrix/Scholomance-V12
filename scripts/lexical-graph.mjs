@@ -59,6 +59,17 @@ export function parseArgs(argv) {
 const WRITE_COMMANDS = new Set(['migrate', 'mirror', 'seed-devices', 'embed-devices', 'all']);
 
 /**
+ * Open an existing scholomance_dict.sqlite for offline write ops.
+ * Refuses to create a new file when `--db` is mistyped.
+ *
+ * @param {string} dbPath
+ * @returns {import('better-sqlite3').Database}
+ */
+export function openWriteDatabase(dbPath) {
+  return new Database(dbPath, { fileMustExist: true });
+}
+
+/**
  * Run the full lexical-graph overlay pipeline (each step in its own transaction).
  *
  * @param {import('better-sqlite3').Database} db
@@ -96,7 +107,7 @@ export async function runCli(argv) {
     return 2;
   }
 
-  const db = new Database(options.db);
+  const db = openWriteDatabase(options.db);
   try {
     if (command === 'migrate') {
       migrateLexicalGraph(db, { timestamp: options.timestamp });

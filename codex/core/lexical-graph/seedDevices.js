@@ -1,4 +1,5 @@
 // codex/core/lexical-graph/seedDevices.js
+// Offline ops write path — exempt from server SQLite write-queue (see .eslintrc).
 //
 // Loads the curated literary-device catalog (codex/data/literary-devices/)
 // and writes it into the lexical-graph overlay: one `lexical_entry`

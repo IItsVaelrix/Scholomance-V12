@@ -1,4 +1,5 @@
 // codex/core/lexical-graph/migrate.js
+// Offline ops write path — exempt from server SQLite write-queue (see .eslintrc).
 import { LEXICAL_GRAPH_DDL } from './schema.sql.js';
 import { LEXICAL_GRAPH_SCHEMA_VERSION } from './types.js';
 

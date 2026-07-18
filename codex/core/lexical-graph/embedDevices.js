@@ -1,4 +1,5 @@
 // codex/core/lexical-graph/embedDevices.js
+// Offline ops write path — exempt from server SQLite write-queue (see .eslintrc).
 //
 // Generates TurboQuant embeddings for literary-device nodes that don't have
 // one yet (`lexical_entry.embeddings_tq IS NULL`). Writes a complete

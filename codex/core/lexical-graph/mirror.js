@@ -1,4 +1,5 @@
 // codex/core/lexical-graph/mirror.js
+// Offline ops write path — exempt from server SQLite write-queue (see .eslintrc).
 //
 // Dual-layer word mirror: `entry` (Lexicon Oracle authority) stays untouched;
 // this writes one `lexical_entry` graph node per `entry` row into the

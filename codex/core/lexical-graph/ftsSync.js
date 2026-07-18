@@ -1,4 +1,5 @@
 // codex/core/lexical-graph/ftsSync.js
+// Offline ops write path — exempt from server SQLite write-queue (see .eslintrc).
 //
 // Shared FTS5 sync/delete helpers for `lexical_entry_fts` + its
 // `lexical_entry_fts_map`. Adapter and scripts must both route through these
