@@ -40,6 +40,7 @@ import RhymeDiagramPanel from "../../components/RhymeDiagramPanel.jsx";
 import SongStatsPanel from "../../components/SongStatsPanel.jsx";
 import RitualPredictionTooltip from "../../components/RitualPredictionTooltip.jsx";
 import { useSongStats } from "../../hooks/useSongStats.js";
+import { shouldShowMetricsPanel } from "./metricsPanelVisibility.js";
 
 import ScrollEditor from "../../lib/lexical/LexicalScrollEditor.jsx";
 import ScrollList from "./ScrollList.jsx";
@@ -989,6 +990,12 @@ export default function ReadPage() {
     </div>
   ) : null;
 
+  const metricsPanelVisible = shouldShowMetricsPanel({
+    showScorePanel,
+    songStats,
+    songStatsComputeFailed,
+  });
+
   const scoreBlock = songStatsSlot;
 
   const schoolList = getSchoolsByUnlock(progression);
@@ -1505,7 +1512,7 @@ export default function ReadPage() {
               >
                 <div className="right-panel-container">
                   <div className="right-panel-scroll">
-                    {showScorePanel && scoreData && (
+                    {metricsPanelVisible && (
                       <div className="right-panel-section">
                         <div className="right-panel-section-header">
                           <span className="right-panel-section-title">CODEx Metrics</span>
@@ -1806,7 +1813,7 @@ export default function ReadPage() {
         </FloatingPanel>
       )}
 
-      {isNarrowViewport && showScorePanel && scoreData && (
+      {isNarrowViewport && metricsPanelVisible && (
         <FloatingPanel
           id="score-panel"
           title="CODEx Metrics"
