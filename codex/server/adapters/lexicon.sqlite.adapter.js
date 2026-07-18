@@ -551,8 +551,10 @@ export function createLexiconAdapter(dbPath, options = {}) {
     const out = [];
     for (const row of rows) {
       const lemma = typeof row.lemma === 'string' ? row.lemma.trim() : '';
-      if (!lemma || lemma.toLowerCase() === normalized) continue;
-      const existing = seen.get(lemma.toLowerCase());
+      if (!lemma) continue;
+      const lower = lemma.toLowerCase();
+      if (lower === normalized) continue;
+      const existing = seen.get(lower);
       if (existing) {
         if (typeof row.pos === 'string' && row.pos.trim()) existing.pos.add(row.pos.trim());
         continue;
@@ -562,7 +564,7 @@ export function createLexiconAdapter(dbPath, options = {}) {
         via: row.rel.includes('domain') ? 'domain' : 'exemplifies',
         pos: new Set(typeof row.pos === 'string' && row.pos.trim() ? [row.pos.trim()] : []),
       };
-      seen.set(lemma.toLowerCase(), entry);
+      seen.set(lower, entry);
       if (out.length < limit) out.push(entry);
     }
     return out.map((entry) => ({ lemma: entry.lemma, via: entry.via, pos: [...entry.pos].sort() }));
