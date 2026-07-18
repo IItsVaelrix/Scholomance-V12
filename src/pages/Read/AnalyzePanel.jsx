@@ -19,8 +19,63 @@ function safeId(value) {
   return String(value).replace(/[^a-zA-Z0-9_-]/g, '-');
 }
 
+const POS_BUCKETS = [
+  ['noun', 'Nouns'],
+  ['verb', 'Verbs'],
+  ['adjective', 'Adjectives'],
+  ['adverb', 'Adverbs'],
+  ['unclassified', 'Unclassified'],
+];
+
+function bucketByPos(items) {
+  const byBucket = new Map(POS_BUCKETS.map(([key]) => [key, []]));
+  for (const entry of items) {
+    const poses = (Array.isArray(entry.pos) ? entry.pos : []).filter((pos) => byBucket.has(pos));
+    if (poses.length === 0) byBucket.get('unclassified').push(entry);
+    else for (const pos of poses) byBucket.get(pos).push(entry);
+  }
+  return POS_BUCKETS
+    .map(([key, label]) => ({
+      key,
+      label,
+      items: [...byBucket.get(key)].sort((a, b) => (
+        String(a.text).localeCompare(String(b.text), 'en', { sensitivity: 'base' })
+      )),
+    }))
+    .filter((bucket) => bucket.items.length > 0);
+}
+
+function ItemList({ groupKey, bucketKey, items, onAction }) {
+  return (
+    <ul className="az-list">
+      {items.map((item, index) => (
+        <li key={`${groupKey}-${bucketKey}-${item.text}-${index}`} className={`az-item${item.derived ? ' az-item--derived' : ''}`}>
+          <span className="az-item__text">{item.text}</span>
+          <span className="az-item__meta">
+            <span className="az-chip" title={item.note || ''}>{item.source || 'source'}</span>
+            {item.derived && <span className="az-chip az-chip--loose">derived</span>}
+          </span>
+          <span className="az-actions" aria-label={`Craft actions for ${item.text}`}>
+            <button type="button" onClick={() => onAction('insert', item)} title="Insert at cursor" aria-label={`Insert ${item.text}`}>⤵</button>
+            <button type="button" onClick={() => onAction('replace', item)} title="Replace selection" aria-label={`Replace with ${item.text}`}>⇄</button>
+            <button type="button" onClick={() => onAction('pin', item)} title="Pin" aria-label={`Pin ${item.text}`}>📌</button>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+ItemList.propTypes = {
+  groupKey: PropTypes.string.isRequired,
+  bucketKey: PropTypes.string.isRequired,
+  items: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onAction: PropTypes.func.isRequired,
+};
+
 function ResultGroup({ group, onAction }) {
   const items = Array.isArray(group?.items) ? group.items : [];
+  const bucketed = items.some((entry) => Array.isArray(entry.pos));
   return (
     <section className="az-group">
       <h3 className="az-group__title">
@@ -28,23 +83,17 @@ function ResultGroup({ group, onAction }) {
       </h3>
       {items.length === 0 ? (
         <p className="az-empty">{group?.emptyReason || 'No results in this channel.'}</p>
+      ) : bucketed ? (
+        bucketByPos(items).map((bucket) => (
+          <div key={`${group.key}-${bucket.key}`} className="az-bucket">
+            <h4 className="az-bucket__title">
+              {bucket.label} <span className="az-group__count">{bucket.items.length}</span>
+            </h4>
+            <ItemList groupKey={group.key} bucketKey={bucket.key} items={bucket.items} onAction={onAction} />
+          </div>
+        ))
       ) : (
-        <ul className="az-list">
-          {items.map((item, index) => (
-            <li key={`${group.key}-${item.text}-${index}`} className={`az-item${item.derived ? ' az-item--derived' : ''}`}>
-              <span className="az-item__text">{item.text}</span>
-              <span className="az-item__meta">
-                <span className="az-chip" title={item.note || ''}>{item.source || 'source'}</span>
-                {item.derived && <span className="az-chip az-chip--loose">derived</span>}
-              </span>
-              <span className="az-actions" aria-label={`Craft actions for ${item.text}`}>
-                <button type="button" onClick={() => onAction('insert', item)} title="Insert at cursor" aria-label={`Insert ${item.text}`}>⤵</button>
-                <button type="button" onClick={() => onAction('replace', item)} title="Replace selection" aria-label={`Replace with ${item.text}`}>⇄</button>
-                <button type="button" onClick={() => onAction('pin', item)} title="Pin" aria-label={`Pin ${item.text}`}>📌</button>
-              </span>
-            </li>
-          ))}
-        </ul>
+        <ItemList groupKey={group.key} bucketKey="all" items={items} onAction={onAction} />
       )}
     </section>
   );

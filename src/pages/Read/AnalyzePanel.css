@@ -91,6 +91,19 @@
 .az-actions button { background: none; border: none; color: #8a8fae; cursor: pointer; padding: 0 0.15rem; }
 .az-actions button:hover { color: #d6b8ff; }
 
+.az-bucket {
+  margin-top: 0.35rem;
+}
+
+.az-bucket__title {
+  margin: 0.25rem 0 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
 .az-panel[data-reduced-motion="true"] *,
 .az-panel[data-reduced-motion="true"] *::before,
 .az-panel[data-reduced-motion="true"] *::after { scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }

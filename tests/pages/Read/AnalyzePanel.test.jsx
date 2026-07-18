@@ -17,8 +17,17 @@ vi.mock('../../../src/pages/Read/useLexicalAnalyze.js', () => ({
 
 import AnalyzePanel from '../../../src/pages/Read/AnalyzePanel.jsx';
 
-const item = (text, source = 'fixture') => ({ text, source, confidence: 0.8 });
-const group = (key, label, words) => ({ key, label, items: words.map((word) => item(word)) });
+const item = (text, source = 'fixture', pos) => ({
+  text,
+  source,
+  confidence: 0.8,
+  ...(pos !== undefined ? { pos } : {}),
+});
+const group = (key, label, words) => ({
+  key,
+  label,
+  items: words.map((word) => (Array.isArray(word) ? item(word[0], 'fixture', word[1]) : item(word))),
+});
 
 function resultFixture({ scope = 'line', partial = false } = {}) {
   const candidates = [
@@ -146,5 +155,35 @@ describe('AnalyzePanel ambiguity controls', () => {
     fireEvent.click(screen.getByRole('button', { name: /ranking evidence/i }));
     expect(screen.queryByText(/closest sense/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/context suggests noun/i)).not.toBeInTheDocument();
+  });
+
+  it('buckets pos-tagged words by part of speech, alphabetized, duplicating multi-POS words', () => {
+    const result = resultFixture();
+    result.sharedGroups[0] = group('sound', 'Sound', [
+      ['weaves', ['verb']],
+      ['stress', ['noun', 'verb']],
+      ['achieves', []],
+      ['believes', ['verb']],
+    ]);
+    analyzeHook.state = { result, loading: false, error: null };
+    renderPanel();
+
+    const results = screen.getByTestId('analyze-results');
+    const soundGroup = within(results).getByRole('heading', { level: 3, name: /^Sound/ }).closest('section');
+
+    const bucketHeadings = within(soundGroup).getAllByRole('heading', { level: 4 })
+      .map((heading) => heading.textContent);
+    expect(bucketHeadings).toEqual(['Nouns 1', 'Verbs 3', 'Unclassified 1']);
+
+    // Multi-POS word appears in both buckets; alphabetized within each.
+    const texts = [...soundGroup.querySelectorAll('.az-item__text')].map((node) => node.textContent);
+    expect(texts).toEqual(['stress', 'believes', 'stress', 'weaves', 'achieves']);
+
+    // Group heading counts distinct items, not the duplicated total.
+    expect(within(soundGroup).getByRole('heading', { level: 3 })).toHaveTextContent('Sound 4');
+
+    // Groups without pos fields render flat: no h4 buckets in Meaning.
+    const meaningGroup = within(results).getByRole('heading', { level: 3, name: /^Meaning/ }).closest('section');
+    expect(within(meaningGroup).queryAllByRole('heading', { level: 4 })).toHaveLength(0);
   });
 });
