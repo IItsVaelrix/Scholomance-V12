@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-18
 
-**Status:** Awaiting written-spec review
+**Status:** Approved
 
 **Branch:** `feat/lexical-graph-foundation`
 
@@ -201,6 +201,14 @@ interface LemmaForm {
   irregular: boolean;
   morphologicalConfidence: number;
 }
+
+interface MorphologyIndexState {
+  version: string;
+  status: "complete" | "partial" | "unavailable";
+  sourceDigest: string;
+  expectedLemmaCount: number;
+  indexedLemmaCount: number;
+}
 ```
 
 The SQLite representation is an additive `lemma_form` table whose logical unique
@@ -231,6 +239,13 @@ saw    -> see/verb   verb.past.irregular
 ```
 
 Every edge records its rule/source so morphology contributes explainable evidence.
+
+The builder writes a manifest only after its transaction completes. The index is
+`complete` only when the schema/morphology versions match the runtime, the source
+digest matches the current closed lexicon, all required sources were readable,
+and `indexedLemmaCount === expectedLemmaCount`. A failed or interrupted build is
+`partial`; a missing table/manifest is `unavailable`. Request-time row count alone
+cannot upgrade either state to `complete`.
 
 ## Candidate and sense contracts
 
@@ -272,6 +287,7 @@ interface LemmaResolution {
   margin: number;
   threshold: number;
   formulaVersion: string;
+  morphologyIndex: MorphologyIndexState;
   candidates: LemmaCandidate[];
 }
 ```
@@ -299,10 +315,11 @@ the candidate's semantic channel because the ranking question is whether any
 lawful sense explains the context. Using a sum would reward candidates merely for
 having more recorded senses.
 
-For word scope, no surrounding-context vector is fabricated. The semantic channel
-is unavailable unless the surface itself has a compatible contextual embedding;
-the ranker falls back to morphology, POS evidence available from the form edge,
-and corpus priors.
+Word scope has no semantic channel. A surface-word embedding is a polysemous
+aggregate of the ambiguity being resolved and therefore cannot disambiguate it.
+Word scope also has no contextual-POS channel: it ranks through morphology and
+corpus priors only, then preserves any ambiguity those channels cannot resolve.
+This intentional scope mask is not reported as degradation or missing evidence.
 
 ### Ranking formula
 
@@ -314,7 +331,8 @@ candidate score = normalized weighted combination of:
   corpus prior
 ```
 
-`LEMMA_RANK_v1` declares these base weights:
+`LEMMA_RANK_v1` declares these contextual-scope base weights for `selection`,
+`line`, `local`, and `document`:
 
 | Channel | Weight | Normalization |
 |---|---:|---|
@@ -329,6 +347,10 @@ channels are removed from the denominator and the remaining declared weights are
 renormalized. They are not assigned zero. Every missing or used channel produces
 a `CandidateEvidence` record.
 
+For `word` scope, `LEMMA_RANK_v1` instead declares morphology `0.80` and corpus
+prior `0.20`. Semantic-ballistic and contextual-POS evidence records are omitted,
+because those channels are outside that scope rather than failed observations.
+
 Candidate ordering is descending score, then normalized lemma, then POS, then
 candidate ID. Scores are clamped to `[0,1]` and serialized to a fixed six decimal
 places at the API boundary.
@@ -339,7 +361,10 @@ The top-two score difference is compared with the declared threshold for the
 active scope:
 
 - no candidates -> `unbound`;
-- one candidate, or a top-two difference meeting the threshold -> `clear`;
+- one candidate with a `complete` morphology index -> `clear`;
+- one candidate with a `partial` or `unavailable` morphology index -> `ambiguous`
+  with margin `0.0` and an index degradation;
+- two or more candidates whose top-two difference meets the threshold -> `clear`;
 - otherwise -> `ambiguous`.
 
 All candidates survive all three statuses. `clear` selects the initial UI focus;
@@ -444,6 +469,8 @@ or candidate scores.
   reject with the repository's registered `PB-ERR-v1` VALUE pattern.
 - Missing morphology table/index: return `unbound`, preserve lawful surface-backed
   groups, and record `morphology_index_unavailable`.
+- Partial or source-stale morphology index: retain its candidates, record
+  `morphology_index_incomplete`, and prohibit lone-candidate `clear` status.
 - Unknown surface: return `unbound` and honest-empty lemma groups; do not fabricate
   stems.
 - Missing semantic embedding: rank through available channels and record
@@ -504,9 +531,14 @@ execution. The full intent compiler is not a dependency of lexical Analyze.
 - Carpentry context ranks `saw/noun` first.
 - Perception context ranks `see/verb` first.
 - Isolated `saw` preserves ambiguity.
+- Word scope emits no semantic or contextual-POS score/evidence/degradation.
 - Every sense score uses compatible embedding metadata.
 - Incompatible embedding metadata is refused and traced.
 - Missing ballistics degrades to other channels without emptying candidates.
+- A lone candidate is `clear` only with a complete, version-matching, source-current
+  morphology manifest.
+- A lone candidate from a partial index is `ambiguous` with margin `0.0` and
+  `morphology_index_incomplete`.
 - Repeated identical inputs produce identical candidate order and scores.
 
 ### Context hashing and isolation
