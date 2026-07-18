@@ -119,6 +119,32 @@ describe('flowAlignment aligned', () => {
     );
   });
 
+  it('uses unmatched aligned onsets to occupy the next stronger position', () => {
+    const pulse = word('pulse');
+    const pulseDoc = {
+      raw: 'pulse',
+      lines: [{ text: 'pulse', number: 0, words: [pulse] }],
+      allWords: [pulse],
+    };
+    const pillar = computeFlowAlignment(pulseDoc, {
+      alignment: {
+        coverage01: 0.9,
+        activeDurationSeconds: 1.2,
+        timestampsMonotonic: true,
+        words: [
+          { startSec: 0.5, endSec: 0.7, text: 'pulse' },
+          { startSec: 1, endSec: 1.2, text: 'unmatched' },
+        ],
+      },
+      beatGrid: {
+        coverage01: 1,
+        timesSec: [0, 0.5, 1],
+      },
+    });
+
+    expect(pillar.secondary.syncopationIndex).toBe(0);
+  });
+
   it('accepts exact eligibility thresholds', () => {
     const pillar = computeFlowAlignment(doc, {
       alignment: { ...eligibleOptions.alignment, coverage01: 0.85 },

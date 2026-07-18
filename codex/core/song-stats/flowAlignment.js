@@ -293,9 +293,8 @@ function correspondAlignedWords(alignmentWords, analyzedWords) {
   return correspondences;
 }
 
-function syncopationIndex(correspondences, gridTimes) {
+function syncopationIndex(correspondences, alignmentOnsets, gridTimes) {
   const toleranceSeconds = 0.05;
-  const onsets = correspondences.map(({ onset }) => onset);
   let weightedSyncopation = 0;
   let stressWeightTotal = 0;
 
@@ -309,7 +308,7 @@ function syncopationIndex(correspondences, gridTimes) {
     if (metricalStrength === 1) return;
 
     const nextStrongerTime = gridTimes[gridIndex + 1];
-    const strongerPositionHasOnset = nextStrongerTime !== undefined && onsets.some(
+    const strongerPositionHasOnset = nextStrongerTime !== undefined && alignmentOnsets.some(
       (candidate) => Math.abs(candidate - nextStrongerTime) <= toleranceSeconds,
     );
     const displaced = strongerPositionHasOnset ? 0 : 1;
@@ -337,7 +336,7 @@ function alignedFlow(doc, alignment, beatGrid) {
   const pocketConsistencyMs = median(
     absoluteDeviationsMs.map((deviation) => Math.abs(deviation - gridDeviationMs)),
   );
-  const syncopation = syncopationIndex(correspondences, beatGrid.timesSec);
+  const syncopation = syncopationIndex(correspondences, onsets, beatGrid.timesSec);
   const totalSyllables = analyzedWords.reduce(
     (sum, word) => sum + syllableCount(word),
     0,
