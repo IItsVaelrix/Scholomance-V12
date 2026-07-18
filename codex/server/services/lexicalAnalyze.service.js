@@ -36,13 +36,13 @@ function posMatches(entryPos, candidatePos) {
 const CANONICAL_POS = Object.freeze(['noun', 'verb', 'adjective', 'adverb']);
 
 function normalizePosSet(rawList) {
-  const canonical = new Set(CANONICAL_POS);
+  const allowed = new Set(CANONICAL_POS);
   const out = [];
   const seen = new Set();
   for (const raw of Array.isArray(rawList) ? rawList : []) {
     try {
       const normalized = normalizeLemmaPos(raw);
-      if (!seen.has(normalized) && canonical.has(normalized)) {
+      if (!seen.has(normalized) && allowed.has(normalized)) {
         out.push(normalized);
         seen.add(normalized);
       }

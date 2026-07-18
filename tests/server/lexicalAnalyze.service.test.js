@@ -56,7 +56,7 @@ function fixtures({ morphologyIndex = completeIndex, literaryResults = [] } = {}
     lookupAntonyms: (word) => (word === 'dark' ? [{ lemma: 'light', pos: ['adjective', 'noun'] }] : []),
     lookupRhymes: (word) => ({ words: word === 'leaves' ? ['weaves', 'thieves'] : [], family: 'IYVZ' }),
     lookupSlantRhymes: () => [],
-    lookupSymbolsLoose: () => [],
+    lookupSymbolsLoose: (lemma) => (lemma === 'dark' ? [{ lemma: 'shadow', via: 'exemplifies', pos: ['n'] }] : []),
     batchLookupPos: (words) => (words.includes('weaves') ? { weaves: ['verb'] } : {}),
   };
   const lexicalGraphAdapter = {
@@ -212,6 +212,12 @@ describe('lexicalAnalyze.service', () => {
     expect(oppositions.items).toContainEqual(expect.objectContaining({
       text: 'light',
       pos: ['adjective', 'noun'],
+    }));
+
+    const symbols = dark.groups.find((group) => group.key === 'symbols');
+    expect(symbols.items).toContainEqual(expect.objectContaining({
+      text: 'shadow',
+      pos: ['noun'],
     }));
   });
 });
