@@ -54,6 +54,35 @@ class TestProject(unittest.TestCase):
         parsed = parse_oewn_antonyms(FIXTURE)
         self.assertEqual(parsed.release, "2024")
 
+    def test_malformed_xml_leaves_db_unchanged(self):
+        conn = _make_db()
+        before_relations = list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
+        before_meta = list(conn.execute("SELECT * FROM meta ORDER BY key"))
+        try:
+            with tempfile.NamedTemporaryFile(
+                "w",
+                suffix=".xml",
+                delete=False,
+                encoding="utf-8",
+            ) as malformed:
+                malformed.write("<LexicalResource><Lexicon version='2024'>BROKEN")
+
+            with self.assertRaises(Exception):
+                parse_oewn_antonyms(malformed.name)
+
+            self.assertEqual(
+                before_relations,
+                list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid")),
+            )
+            self.assertEqual(
+                before_meta,
+                list(conn.execute("SELECT * FROM meta ORDER BY key")),
+            )
+        finally:
+            conn.close()
+            if "malformed" in locals():
+                os.unlink(malformed.name)
+
     def test_resolution_metrics_use_asserted_not_projected(self):
         # Fixture lock: 3 SenseRelation antonyms + 1 SynsetRelation antonym = 4 asserted.
         # good→oewn-bad-missing is unresolved → resolved=3, unresolved=1.
@@ -73,6 +102,17 @@ class TestProject(unittest.TestCase):
 
 
 class TestApply(unittest.TestCase):
+    def test_wordnet_rel_has_no_unique_index(self):
+        conn = _make_empty_oewn_db()
+        try:
+            indexes = list(conn.execute("PRAGMA index_list(wordnet_rel)"))
+            self.assertFalse(
+                any(index[2] for index in indexes),
+                "wordnet_rel must not gain a UNIQUE index",
+            )
+        finally:
+            conn.close()
+
     def test_builder_helper_matches_cli_projection_set(self):
         cli_conn = _make_empty_oewn_db()
         builder_conn = _make_empty_oewn_db()
