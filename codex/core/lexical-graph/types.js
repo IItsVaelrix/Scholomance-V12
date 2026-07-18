@@ -10,3 +10,7 @@ export const DEVICE_EMBEDDING_KIND = 'phonosemantic_mock';
 export const DEVICE_EMBEDDING_VERSION = 'tq-js-v1';
 export const DEVICE_EMBEDDING_DIMENSIONS = 256;
 export const LEGACY_EMBEDDING_KIND = 'legacy_turboquant';
+export const ANALYSIS_CONTEXT_VERSION = 'ANALYSIS_CONTEXT_v1';
+export const CONTEXT_HASH_ALGORITHM = 'sha256-canonical-v1';
+export const MORPHOLOGY_VERSION = 'LEMMA_FORM_v1';
+export const LEMMA_RANK_FORMULA_VERSION = 'LEMMA_RANK_v1';

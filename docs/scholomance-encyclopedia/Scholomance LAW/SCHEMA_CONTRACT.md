@@ -7,11 +7,120 @@
 
 ## Living Document - Owned by Codex, Read by All Agents
 
-**Version: 1.33** | Last updated: 2026-07-18
+**Version: 1.34** | Last updated: 2026-07-18
 
 > Bump the version on every schema change.
 > Notify Claude for UI-consumed field changes.
 > Notify Gemini for fixture, regression-test, and backend implementation changes.
+
+---
+
+## SCHEMA CHANGE NOTICE
+
+- Schema: Multi-Candidate Lemmatization and Analyze Context
+- Version: 1.33 -> 1.34
+- Date: 2026-07-18
+- Changed fields: added `AnalysisContextInput`, `AnalysisContextIdentity`, `AnalysisContext`, `MorphologyIndexState`, `LemmaForm`, `CandidateEvidence`, `SenseCandidate`, `LemmaCandidate`, `LemmaResolution`, `AnalysisDegradation`, `CandidateAnalyzeResult`, and deterministic `AnalyzeResult`
+- Breaking: Analyze request/result path changes from an unscoped query to a strict context envelope; additive dictionary overlay remains non-destructive
+- Owner: Codex
+- Claude impact: render explicit scope, candidate ambiguity, evidence, and candidate-specific groups; never author `contextHash`
+- Gemini impact: validate/hash context on the server, build and verify the morphology manifest, preserve ambiguity under incomplete coverage
+- Error codes: invalid context unions and limits reuse `PB-ERR-v1-VALUE`; unavailable evidence is represented as degradation data
+
+```ts
+type AnalysisContextInput =
+  | { scope: "word"; surface: string }
+  | { scope: "selection"; surface: string; selection: string }
+  | { scope: "line"; surface: string; containingLine: string }
+  | { scope: "local"; surface: string; containingLine: string; neighboringLines: string[] }
+  | { scope: "document"; surface: string; documentContext: string };
+
+interface AnalysisContextIdentity {
+  version: "ANALYSIS_CONTEXT_v1";
+  scope: "word" | "selection" | "line" | "local" | "document";
+  contextHash: string; // server-authored sha256-canonical-v1:<64 lowercase hex>
+}
+
+type AnalysisContext = AnalysisContextInput & AnalysisContextIdentity;
+
+interface MorphologyIndexState {
+  version: string;
+  status: "complete" | "partial" | "unavailable";
+  sourceDigest: string;
+  expectedLemmaCount: number;
+  indexedLemmaCount: number;
+}
+
+interface LemmaForm {
+  surface: string;
+  lemma: string;
+  pos: string;
+  transformId: string;
+  source: string;
+  irregular: boolean;
+  morphologicalConfidence: number;
+}
+
+interface CandidateEvidence {
+  channel: "morphology" | "semantics" | "pos" | "corpus";
+  score: number;
+  available: boolean;
+  source: string;
+  reason: string;
+  contextSegments?: string[];
+}
+
+interface SenseCandidate {
+  synsetId: string;
+  definition: string;
+  semanticScore?: number;
+  bucketIds?: string[];
+  embeddingKind?: string;
+  embeddingVersion?: string;
+  embeddingDimensions?: number;
+}
+
+interface LemmaCandidate {
+  id: string;
+  lemma: string;
+  pos: string;
+  rank: number;
+  score: number;
+  evidence: CandidateEvidence[];
+  senses: SenseCandidate[];
+}
+
+interface LemmaResolution {
+  surface: string;
+  status: "clear" | "ambiguous" | "unbound";
+  margin: number;
+  threshold: number;
+  formulaVersion: "LEMMA_RANK_v1";
+  morphologyIndex: MorphologyIndexState;
+  candidates: LemmaCandidate[];
+}
+
+interface AnalysisDegradation {
+  code: string;
+  channel: "morphology" | "semantics" | "pos" | "corpus" | "retrieval";
+  reason: string;
+}
+
+interface CandidateAnalyzeResult {
+  candidateId: string;
+  groups: AnalyzeGroup[];
+}
+
+interface AnalyzeResult {
+  context: AnalysisContextIdentity;
+  resolution: LemmaResolution;
+  sharedGroups: AnalyzeGroup[];
+  candidateResults: CandidateAnalyzeResult[];
+  degradation: AnalysisDegradation[];
+}
+
+/* AnalyzeResult is deterministic and contains no generatedAt or other wall-clock field. */
+```
 
 ---
 
