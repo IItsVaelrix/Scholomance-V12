@@ -66,6 +66,18 @@ class ProjectionResult:
     projected_count_after_closure: int
 
 
+@dataclass
+class ApplyResult:
+    asserted_count: int
+    resolved_asserted_count: int
+    unresolved_asserted_count: int
+    resolution_ratio: float
+    unresolved_ratio: float
+    projected_count_after_closure: int
+    inserted_count: int
+    skipped_existing_count: int
+
+
 def parse_oewn_antonyms(path: str) -> ParseResult:
     """Parse an LMF file in two streaming passes without retaining its tree."""
     release = ""
@@ -148,4 +160,82 @@ def project_antonyms(parsed: ParseResult, existing_synsets: set[str]) -> Project
         unresolved_ratio=unresolved_ratio,
         projected_pairs=projected_pairs,
         projected_count_after_closure=len(projected_pairs),
+    )
+
+
+def apply_oewn_antonyms(
+    conn,
+    proj: ProjectionResult,
+    *,
+    release: str,
+    source_url: str,
+    source_sha256: str,
+    timestamp: str,
+    max_unresolved_ratio: float = 0.02,
+) -> ApplyResult:
+    """Replace OEWN antonyms while preserving manual relations and provenance."""
+    if not timestamp:
+        raise ValueError("timestamp is required")
+    if proj.unresolved_ratio > max_unresolved_ratio:
+        raise ValueError(
+            f"unresolved_ratio {proj.unresolved_ratio} exceeds {max_unresolved_ratio}"
+        )
+
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        conn.execute(
+            "DELETE FROM wordnet_rel WHERE rel = 'antonym' AND source = 'oewn'"
+        )
+        existing_non_oewn = {
+            (row[0], row[1])
+            for row in conn.execute(
+                "SELECT synset_id, target_synset_id FROM wordnet_rel "
+                "WHERE rel = 'antonym' AND source != 'oewn'"
+            )
+        }
+        inserted = 0
+        skipped = 0
+        for source_synset, target_synset in sorted(proj.projected_pairs):
+            if (source_synset, target_synset) in existing_non_oewn:
+                skipped += 1
+                continue
+            conn.execute(
+                "INSERT INTO wordnet_rel(synset_id, rel, target_synset_id, source, source_url) "
+                "VALUES (?, 'antonym', ?, 'oewn', ?)",
+                (source_synset, target_synset, source_url),
+            )
+            inserted += 1
+
+        meta = {
+            "oewn_antonym_release": release,
+            "oewn_antonym_source_url": source_url,
+            "oewn_antonym_source_sha256": source_sha256,
+            "oewn_antonym_asserted_count": str(proj.asserted_count),
+            "oewn_antonym_resolved_asserted_count": str(proj.resolved_asserted_count),
+            "oewn_antonym_unresolved_asserted_count": str(proj.unresolved_asserted_count),
+            "oewn_antonym_resolution_ratio": repr(proj.resolution_ratio),
+            "oewn_antonym_unresolved_ratio": repr(proj.unresolved_ratio),
+            "oewn_antonym_projected_count": str(proj.projected_count_after_closure),
+            "oewn_antonym_inserted_count": str(inserted),
+            "oewn_antonym_skipped_existing_count": str(skipped),
+            "oewn_antonym_ingested_at": timestamp,
+        }
+        for key, value in meta.items():
+            conn.execute(
+                "INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)", (key, value)
+            )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+    return ApplyResult(
+        asserted_count=proj.asserted_count,
+        resolved_asserted_count=proj.resolved_asserted_count,
+        unresolved_asserted_count=proj.unresolved_asserted_count,
+        resolution_ratio=proj.resolution_ratio,
+        unresolved_ratio=proj.unresolved_ratio,
+        projected_count_after_closure=proj.projected_count_after_closure,
+        inserted_count=inserted,
+        skipped_existing_count=skipped,
     )
