@@ -215,6 +215,24 @@ class TestApply(unittest.TestCase):
         after = list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
         self.assertEqual(before, after)
 
+    def test_non_finite_unresolved_gate_aborts_before_writes(self):
+        conn = _make_db()
+        before = list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
+        parsed = parse_oewn_antonyms(FIXTURE)
+        existing = {r[0] for r in conn.execute("SELECT id FROM wordnet_synset")}
+        proj = project_antonyms(parsed, existing)
+
+        with self.assertRaises(ValueError):
+            apply_oewn_antonyms(
+                conn, proj,
+                release="2024", source_url="x", source_sha256="y",
+                timestamp="2026-07-18T09:00:00Z",
+                max_unresolved_ratio=float("nan"),
+            )
+
+        after = list(conn.execute("SELECT * FROM wordnet_rel ORDER BY rowid"))
+        self.assertEqual(before, after)
+
 
 class TestCLI(unittest.TestCase):
     def _run_cli(self, *args):
@@ -233,6 +251,17 @@ class TestCLI(unittest.TestCase):
             "--db", ":memory:",
             "--oewn_path", FIXTURE,
             "--expected-release", "2024",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("timestamp", (result.stderr + result.stdout).lower())
+
+    def test_invalid_timestamp_rejects_before_writes(self):
+        result = self._run_cli(
+            "--db", ":memory:",
+            "--oewn_path", FIXTURE,
+            "--expected-release", "2024",
+            "--timestamp", "not-a-timestamp",
         )
 
         self.assertNotEqual(result.returncode, 0)

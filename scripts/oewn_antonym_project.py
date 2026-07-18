@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import math
 import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -176,6 +177,11 @@ def apply_oewn_antonyms(
     """Replace OEWN antonyms while preserving manual relations and provenance."""
     if not timestamp:
         raise ValueError("timestamp is required")
+    if (
+        not math.isfinite(max_unresolved_ratio)
+        or not 0 <= max_unresolved_ratio <= 1
+    ):
+        raise ValueError("max_unresolved_ratio must be finite and between 0 and 1")
     if proj.unresolved_ratio > max_unresolved_ratio:
         raise ValueError(
             f"unresolved_ratio {proj.unresolved_ratio} exceeds {max_unresolved_ratio}"

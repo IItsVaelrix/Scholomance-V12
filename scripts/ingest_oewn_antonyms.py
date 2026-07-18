@@ -5,6 +5,7 @@ See docs/superpowers/specs/2026-07-18-oewn-antonym-ingest-design.md.
 """
 
 import argparse
+from datetime import datetime
 import os
 import sqlite3
 import sys
@@ -19,12 +20,22 @@ from oewn_antonym_project import (
 )
 
 
+def iso8601_timestamp(value: str) -> str:
+    try:
+        datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise argparse.ArgumentTypeError(
+            "timestamp must be an ISO-8601 timestamp"
+        ) from error
+    return value
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db", default="scholomance_dict.sqlite")
     parser.add_argument("--oewn_path", required=True)
     parser.add_argument("--expected-release", required=True)
-    parser.add_argument("--timestamp", required=True)
+    parser.add_argument("--timestamp", required=True, type=iso8601_timestamp)
     parser.add_argument("--download", action="store_true")
     parser.add_argument("--max-unresolved-ratio", type=float, default=0.02)
     return parser.parse_args()
