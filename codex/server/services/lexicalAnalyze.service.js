@@ -33,6 +33,26 @@ function posMatches(entryPos, candidatePos) {
   }
 }
 
+const CANONICAL_POS = Object.freeze(['noun', 'verb', 'adjective', 'adverb']);
+
+function normalizePosSet(rawList) {
+  const canonical = new Set(CANONICAL_POS);
+  const out = [];
+  const seen = new Set();
+  for (const raw of Array.isArray(rawList) ? rawList : []) {
+    try {
+      const normalized = normalizeLemmaPos(raw);
+      if (!seen.has(normalized) && canonical.has(normalized)) {
+        out.push(normalized);
+        seen.add(normalized);
+      }
+    } catch {
+      // Unmappable POS is dropped, never invented.
+    }
+  }
+  return out;
+}
+
 export function createLexicalAnalyzeService({
   lexiconAdapter,
   lexicalGraphAdapter,
@@ -72,34 +92,25 @@ export function createLexicalAnalyzeService({
 
   function related(candidate) {
     const synonyms = lexiconAdapter.lookupSynonyms(candidate.lemma, 12)
-      .map((word) => ({
-        text: word,
+      .map((entry) => ({
+        text: entry.lemma,
+        pos: normalizePosSet(entry.pos),
         source: 'wordnet:synonym',
         confidence: 0.8,
-        ref: { kind: 'word', id: word },
+        ref: { kind: 'word', id: entry.lemma },
       }));
     const relation = lexiconAdapter.lookupRelated(candidate.lemma, 10);
-    const broader = relation.broader.map((word) => ({
-      text: word,
-      source: 'wordnet:hypernym',
-      confidence: 0.7,
-      note: 'broader',
-      ref: { kind: 'word', id: word },
-    }));
-    const narrower = relation.narrower.map((word) => ({
-      text: word,
-      source: 'wordnet:hyponym',
-      confidence: 0.7,
-      note: 'narrower',
-      ref: { kind: 'word', id: word },
-    }));
-    const akin = relation.akin.map((word) => ({
-      text: word,
-      source: 'wordnet:similar',
-      confidence: 0.65,
-      note: 'akin',
-      ref: { kind: 'word', id: word },
-    }));
+    const relatedItem = (entry, source, note, confidence) => ({
+      text: entry.lemma,
+      pos: normalizePosSet(entry.pos),
+      source,
+      confidence,
+      note,
+      ref: { kind: 'word', id: entry.lemma },
+    });
+    const broader = relation.broader.map((entry) => relatedItem(entry, 'wordnet:hypernym', 'broader', 0.7));
+    const narrower = relation.narrower.map((entry) => relatedItem(entry, 'wordnet:hyponym', 'narrower', 0.7));
+    const akin = relation.akin.map((entry) => relatedItem(entry, 'wordnet:similar', 'akin', 0.65));
     return group(
       'related',
       'Related language',
@@ -109,26 +120,35 @@ export function createLexicalAnalyzeService({
   }
 
   function oppositions(candidate) {
-    const items = lexiconAdapter.lookupAntonyms(candidate.lemma, 12).map((word) => ({
-      text: word,
+    const items = lexiconAdapter.lookupAntonyms(candidate.lemma, 12).map((entry) => ({
+      text: entry.lemma,
+      pos: normalizePosSet(entry.pos),
       source: 'wordnet:antonym',
       confidence: 0.8,
-      ref: { kind: 'word', id: word },
+      ref: { kind: 'word', id: entry.lemma },
     }));
     return group('oppositions', 'Oppositions', items, 'No antonym source ingested yet.');
   }
 
   function sound(surface) {
     const rhymes = lexiconAdapter.lookupRhymes(surface, 14);
-    const perfect = (rhymes.words || []).map((word) => ({
+    const perfectWords = rhymes.words || [];
+    const slantWords = lexiconAdapter.lookupSlantRhymes(surface, 10) || [];
+    const posByWord = typeof lexiconAdapter.batchLookupPos === 'function'
+      ? lexiconAdapter.batchLookupPos([...perfectWords, ...slantWords])
+      : {};
+    const wordPos = (word) => normalizePosSet(posByWord[canonical(word)] ?? []);
+    const perfect = perfectWords.map((word) => ({
       text: word,
+      pos: wordPos(word),
       source: 'rhyme_index',
       confidence: 0.9,
       note: rhymes.family || undefined,
       ref: { kind: 'word', id: word },
     }));
-    const slant = (lexiconAdapter.lookupSlantRhymes(surface, 10) || []).map((word) => ({
+    const slant = slantWords.map((word) => ({
       text: word,
+      pos: wordPos(word),
       source: 'rhyme_index:slant',
       confidence: 0.6,
       derived: true,
@@ -176,6 +196,7 @@ export function createLexicalAnalyzeService({
   function symbols(candidate) {
     const rows = lexiconAdapter.lookupSymbolsLoose(candidate.lemma, 10).map((row) => ({
       text: row.lemma,
+      pos: normalizePosSet(row.pos),
       source: `wordnet:${row.via}`,
       confidence: 0.4,
       derived: true,

@@ -51,12 +51,13 @@ function fixtures({ morphologyIndex = completeIndex, literaryResults = [] } = {}
 
   const lexiconAdapter = {
     lookupWord: (word) => entries.get(word) ?? [],
-    lookupSynonyms: (word) => (word === 'leaf' ? ['foliage'] : []),
+    lookupSynonyms: (word) => (word === 'leaf' ? [{ lemma: 'foliage', pos: ['n', 'x'] }] : []),
     lookupRelated: () => ({ broader: [], narrower: [], akin: [] }),
-    lookupAntonyms: (word) => (word === 'dark' ? ['light'] : []),
-    lookupRhymes: (word) => ({ words: word === 'leaves' ? ['weaves'] : [], family: 'IYVZ' }),
+    lookupAntonyms: (word) => (word === 'dark' ? [{ lemma: 'light', pos: ['adjective', 'noun'] }] : []),
+    lookupRhymes: (word) => ({ words: word === 'leaves' ? ['weaves', 'thieves'] : [], family: 'IYVZ' }),
     lookupSlantRhymes: () => [],
     lookupSymbolsLoose: () => [],
+    batchLookupPos: (words) => (words.includes('weaves') ? { weaves: ['verb'] } : {}),
   };
   const lexicalGraphAdapter = {
     searchFts(query) {
@@ -175,5 +176,42 @@ describe('lexicalAnalyze.service', () => {
       derived: true,
       note: expect.stringMatching(/catalog fallback.*no FTS match/i),
     })]);
+  });
+
+  it('states normalized POS facts on word items and leaves non-word groups untagged', () => {
+    const { service } = fixtures();
+    const result = service.analyze(resolveAnalysisContext({
+      scope: 'line',
+      surface: 'leaves',
+      containingLine: 'The tree sheds its leaves',
+    }));
+
+    const leaf = result.candidateResults.find((entry) => entry.candidateId === 'leaf/noun');
+    const related = leaf.groups.find((group) => group.key === 'related');
+    // 'n' normalizes to noun; 'x' is unmappable and must be dropped, not invented.
+    expect(related.items).toContainEqual(expect.objectContaining({ text: 'foliage', pos: ['noun'] }));
+
+    const sound = result.sharedGroups.find((group) => group.key === 'sound');
+    expect(sound.items).toContainEqual(expect.objectContaining({ text: 'weaves', pos: ['verb'] }));
+    // 'thieves' has no WordNet row: honest empty set, never a guess.
+    expect(sound.items).toContainEqual(expect.objectContaining({ text: 'thieves', pos: [] }));
+
+    for (const group of [...leaf.groups, ...result.sharedGroups]) {
+      if (['meaning', 'phrases', 'literary', 'corpus'].includes(group.key)) {
+        for (const item of group.items) expect(item).not.toHaveProperty('pos');
+      }
+    }
+  });
+
+  it('tags oppositions with the full multi-POS set', () => {
+    const { service } = fixtures();
+    const result = service.analyze(resolveAnalysisContext({ scope: 'word', surface: 'dark' }));
+    const dark = result.candidateResults.find((entry) => entry.candidateId === 'dark/adjective');
+    const oppositions = dark.groups.find((group) => group.key === 'oppositions');
+
+    expect(oppositions.items).toContainEqual(expect.objectContaining({
+      text: 'light',
+      pos: ['adjective', 'noun'],
+    }));
   });
 });
