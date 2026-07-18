@@ -27,7 +27,7 @@ Commands:
   mirror           Mirror legacy \`entry\` rows into \`lexical_entry\` (idempotent)
   seed-devices     Seed the curated literary-device catalog (idempotent)
   embed-devices    Generate TurboQuant embeddings for device nodes (idempotent)
-  all              [not yet implemented]
+  all              Run migrate, mirror, seed-devices, embed-devices in order
 `;
 
 /**
@@ -57,7 +57,21 @@ export function parseArgs(argv) {
 }
 
 const WRITE_COMMANDS = new Set(['migrate', 'mirror', 'seed-devices', 'embed-devices', 'all']);
-const NOT_YET_IMPLEMENTED = new Set(['all']);
+
+/**
+ * Run the full lexical-graph overlay pipeline (each step in its own transaction).
+ *
+ * @param {import('better-sqlite3').Database} db
+ * @param {{ timestamp: string }} options
+ * @returns {{ mirrored: number, seeded: number, embedded: number }}
+ */
+export function runLexicalGraphAll(db, { timestamp }) {
+  migrateLexicalGraph(db, { timestamp });
+  const { mirrored } = mirrorEntries(db, { timestamp });
+  const { seeded } = seedLiteraryDevices(db, { timestamp });
+  const { embedded } = embedDevices(db, { timestamp });
+  return { mirrored, seeded, embedded };
+}
 
 export async function runCli(argv) {
   const { command, options } = parseArgs(argv);
@@ -82,11 +96,6 @@ export async function runCli(argv) {
     return 2;
   }
 
-  if (NOT_YET_IMPLEMENTED.has(command)) {
-    console.error(`Command "${command}" is not implemented yet in this slice.`);
-    return 1;
-  }
-
   const db = new Database(options.db);
   try {
     if (command === 'migrate') {
@@ -107,6 +116,13 @@ export async function runCli(argv) {
     if (command === 'embed-devices') {
       const { embedded } = embedDevices(db, { timestamp: options.timestamp });
       console.log(`lexical-graph embed-devices: embedded ${embedded} devices on ${options.db}`);
+      return 0;
+    }
+    if (command === 'all') {
+      const { mirrored, seeded, embedded } = runLexicalGraphAll(db, { timestamp: options.timestamp });
+      console.log(
+        `lexical-graph all: mirrored ${mirrored}, seeded ${seeded}, embedded ${embedded} on ${options.db}`,
+      );
       return 0;
     }
     console.error(`Unhandled command: ${command}`);
