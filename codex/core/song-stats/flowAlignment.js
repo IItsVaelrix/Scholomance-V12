@@ -1,4 +1,6 @@
 import {
+  ALIGNMENT_COVERAGE_MIN,
+  BEAT_GRID_COVERAGE_MIN,
   DEFAULT_BEATS_PER_LINE,
   DEFAULT_BPM,
   FLOW_SPS_WEIGHT,
@@ -14,6 +16,15 @@ function clamp01(value) {
 
 function positiveOption(value, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function median(values) {
+  if (values.length === 0) return 0;
+  const ordered = [...values].sort((left, right) => left - right);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 === 0
+    ? (ordered[middle - 1] + ordered[middle]) / 2
+    : ordered[middle];
 }
 
 function lineWords(line) {
@@ -121,16 +132,45 @@ function hasIrregularLineStructure(profiles) {
 }
 
 /**
- * Computes the text-only flow estimate. Aligned flow is intentionally deferred
- * until the complete alignment eligibility path is available.
+ * Computes aligned flow only for complete timing inputs, otherwise returning
+ * the complete text-only estimate without blending partial timing data.
  *
  * @param {import('./types.js').AnalyzedDocument} doc
- * @param {{ bpm?: number, beatsPerLine?: number, alignment?: unknown, beatGrid?: unknown }} [options]
+ * @param {{
+ *   bpm?: number,
+ *   beatsPerLine?: number,
+ *   alignment?: {
+ *     coverage01?: number,
+ *     activeDurationSeconds?: number,
+ *     timestampsMonotonic?: boolean,
+ *     words?: Array<{ startSec?: number, endSec?: number, text?: string }>,
+ *   },
+ *   beatGrid?: { coverage01?: number, timesSec?: number[] },
+ * }} [options]
  * @returns {import('./types.js').SongStatPillar}
  */
 export function computeFlowAlignment(doc, options = {}) {
   const bpm = positiveOption(options.bpm, DEFAULT_BPM);
   const beatsPerLine = positiveOption(options.beatsPerLine, DEFAULT_BEATS_PER_LINE);
+  if (alignmentEligible(options.alignment, options.beatGrid)) {
+    return alignedFlow(doc, options.alignment, options.beatGrid);
+  }
+
+  const estimated = estimatedFlow(doc, bpm, beatsPerLine);
+  return {
+    ...estimated,
+    diagnostics: [
+      ...estimated.diagnostics,
+      {
+        code: 'alignment_incomplete',
+        message: 'Complete alignment and beat-grid coverage are required for aligned flow.',
+        severity: 'warning',
+      },
+    ],
+  };
+}
+
+function estimatedFlow(doc, bpm, beatsPerLine) {
   const lyricLines = (doc.lines ?? []).filter((line) => (
     String(line?.text ?? '').trim().length > 0 && !isSectionHeading(line)
   ));
@@ -188,4 +228,113 @@ export function computeFlowAlignment(doc, options = {}) {
     coverage01: totalWords > 0 ? resolvedWords / totalWords : 0,
     diagnostics,
   };
+}
+
+function nearestGridIndex(timeSec, gridTimes) {
+  let nearestIndex = 0;
+  let nearestDistance = Math.abs(timeSec - gridTimes[0]);
+
+  for (let index = 1; index < gridTimes.length; index += 1) {
+    const distance = Math.abs(timeSec - gridTimes[index]);
+    if (distance < nearestDistance) {
+      nearestIndex = index;
+      nearestDistance = distance;
+    }
+  }
+
+  return nearestIndex;
+}
+
+function wordStressWeight(word) {
+  const count = syllableCount(word);
+  const stresses = stressPattern(word, count);
+  if (stresses.includes('1')) return 1;
+  if (stresses.includes('2')) return 0.5;
+  return 0;
+}
+
+function syncopationIndex(onsets, gridTimes, analyzedWords) {
+  const toleranceSeconds = 0.05;
+  let weightedSyncopation = 0;
+  let stressWeightTotal = 0;
+
+  onsets.forEach((onset, index) => {
+    const stressWeight = wordStressWeight(analyzedWords[index]);
+    if (stressWeight === 0) return;
+    stressWeightTotal += stressWeight;
+
+    const gridIndex = nearestGridIndex(onset, gridTimes);
+    const metricalStrength = gridIndex % 2 === 0 ? 1 : 0.5;
+    if (metricalStrength === 1) return;
+
+    const nextStrongerTime = gridTimes[gridIndex + 1];
+    const strongerPositionHasOnset = nextStrongerTime !== undefined && onsets.some(
+      (candidate) => Math.abs(candidate - nextStrongerTime) <= toleranceSeconds,
+    );
+    const displaced = strongerPositionHasOnset ? 0 : 1;
+    weightedSyncopation += stressWeight * (1 - metricalStrength) * displaced;
+  });
+
+  return stressWeightTotal > 0
+    ? clamp01(weightedSyncopation / stressWeightTotal)
+    : 0;
+}
+
+function alignedFlow(doc, alignment, beatGrid) {
+  const onsets = alignment.words.map((word) => word.startSec);
+  const analyzedWords = Array.isArray(doc.allWords) ? doc.allWords : [];
+  const signedDeviationsSeconds = onsets.map((onset) => {
+    const nearest = beatGrid.timesSec[nearestGridIndex(onset, beatGrid.timesSec)];
+    return onset - nearest;
+  });
+  const absoluteDeviationsMs = signedDeviationsSeconds.map(
+    (deviation) => Math.abs(deviation) * 1000,
+  );
+  const gridDeviationMs = median(absoluteDeviationsMs);
+  const pocketBiasMs = median(signedDeviationsSeconds) * 1000;
+  const pocketConsistencyMs = median(
+    absoluteDeviationsMs.map((deviation) => Math.abs(deviation - gridDeviationMs)),
+  );
+  const syncopation = syncopationIndex(onsets, beatGrid.timesSec, analyzedWords);
+  const totalSyllables = analyzedWords.reduce(
+    (sum, word) => sum + syllableCount(word),
+    0,
+  );
+  const sps = totalSyllables / alignment.activeDurationSeconds;
+  const coverage01 = Math.min(alignment.coverage01, beatGrid.coverage01);
+
+  return {
+    id: 'flow_alignment',
+    value: sps,
+    unit: 'sps',
+    secondary: {
+      syncopationIndex: syncopation,
+      gridDeviationMs,
+      pocketBiasMs,
+      pocketConsistencyMs,
+    },
+    normalized01: (
+      FLOW_SPS_WEIGHT * clamp01(sps / SPS_CEILING)
+      + FLOW_SYNC_WEIGHT * syncopation
+    ),
+    fidelity: 'aligned',
+    confidence01: coverage01,
+    coverage01,
+    diagnostics: [],
+  };
+}
+
+function alignmentEligible(alignment, beatGrid) {
+  return (
+    alignment?.coverage01 >= ALIGNMENT_COVERAGE_MIN
+    && beatGrid?.coverage01 >= BEAT_GRID_COVERAGE_MIN
+    && alignment.timestampsMonotonic === true
+    && alignment.activeDurationSeconds > 0
+    && Array.isArray(alignment.words)
+    && alignment.words.length > 0
+    && alignment.words.every((word) => Number.isFinite(word?.startSec))
+    && Array.isArray(beatGrid.timesSec)
+    && beatGrid.timesSec.length > 0
+    && beatGrid.timesSec.every(Number.isFinite)
+  );
 }
