@@ -11,7 +11,7 @@ Ingest Open English WordNet (OEWN) **antonym** relations into the existing dicti
 
 ## Problem
 
-The current OEWN ingest in `scripts/build_scholomance_dict.py` only records **`SynsetRelation`** edges under `<Synset>`. In OEWN LMF, antonyms are **`SenseRelation`** edges under `<Sense>`:
+The current OEWN ingest in `scripts/build_scholomance_dict.py` only records **`SynsetRelation`** edges under `<Synset>`. In OEWN LMF, antonyms are primarily **`SenseRelation`** edges under `<Sense>`:
 
 ```xml
 <Sense id="…" synset="oewn-…">
@@ -26,32 +26,34 @@ Measured on the live DB (2026-07-18): `wordnet_rel` has hypernym/similar/etc., b
 - Full CMU/OEWN/Kaikki dictionary rebuild
 - Sense-aware Analyze UI / multi-badge dedupe / panel chrome renames (separate follow-on)
 - New sense-relation table (deferred; this slice projects to synset pairs)
-- Fabricating antonyms from free-dictionary / Datamuse APIs
+- Fabricating antonyms from free-dictionary / Datamuse APIs (reciprocal closure of OEWN-asserted antonyms is **not** fabrication — see below)
 
 ## Approach (approved)
 
-**Synset-projected additive ingest into existing `wordnet_rel`.**
+**Synset-projected additive ingest into existing `wordnet_rel`, scoped to `source='oewn'`.**
 
-1. Download OEWN 2024 LMF XML if needed.
-2. Pass A: map `sense_id → synset_id` from every `<Sense>`.
-3. Pass B: collect `SenseRelation` with `relType="antonym"`.
-4. Project each `(sense, targetSense)` → `(synset_id, target_synset_id)`; skip unresolved ends; dedupe pairs.
-5. One transaction: delete existing `rel='antonym'` rows, then insert projected pairs.
-6. Also patch full builder so future rebuilds capture SenseRelation antonyms.
+1. Download / open the **pinned OEWN release** that matches the DB (default: 2024).
+2. Parse and validate **outside** any write transaction.
+3. Project SenseRelation (+ any SynsetRelation) antonyms to synset pairs; apply **reciprocal closure**; dedupe.
+4. Abort on release mismatch or unresolved coverage above threshold.
+5. `BEGIN IMMEDIATE` → delete **only** OEWN antonyms → insert set → write meta → `COMMIT`.
+6. Patch full builder so future rebuilds use the same shared projection rules.
 
 ## Architecture
 
 ```
-OEWN XML (.xml.gz)
-        │
+OEWN XML (.xml.gz) ──► parse+validate (no DB write lock)
+        │                 - lexicon/version metadata
+        │                 - sense→synset map
+        │                 - SenseRelation + SynsetRelation antonyms
+        │                 - reciprocal closure + dedupe
+        │                 - synset existence + resolution ratio
         ▼
-scripts/ingest_oewn_antonyms.py
-   pass1: Sense → synset map
-   pass2: SenseRelation antonym → synset pairs
-        │
-        ▼
-scholomance_dict.sqlite
-   wordnet_rel (rel='antonym', source='oewn')
+BEGIN IMMEDIATE
+  DELETE wordnet_rel WHERE rel='antonym' AND source='oewn'
+  INSERT projected reciprocal antonym set (source='oewn')
+  UPDATE meta stamps
+COMMIT
         │
         ▼
 lexicon.sqlite.adapter.lookupAntonyms
@@ -60,63 +62,167 @@ lexicon.sqlite.adapter.lookupAntonyms
 lexicalAnalyze.service → Oppositions group
 ```
 
-Builder parity: `ingest_oewn_xml` in `build_scholomance_dict.py` gains the same SenseRelation → antonym projection during LexicalEntry parsing (in addition to existing SynsetRelation handling).
+Shared projection helpers live in a module both the additive CLI and `build_scholomance_dict.py` can import (or a small shared Python module under `scripts/` / `dict_data` tooling) so builder and CLI produce **identical** antonym sets from the same fixture.
 
 ## CLI contract
 
 ```bash
 python scripts/ingest_oewn_antonyms.py \
   --db scholomance_dict.sqlite \
-  --oewn_path dict_data/english-wordnet-2024.xml.gz
+  --oewn_path dict_data/english-wordnet-2024.xml.gz \
+  --expected-release 2024 \
+  --timestamp 2026-07-18T09:00:00Z
 ```
 
-| Flag | Behavior |
-|------|----------|
-| `--db` | Target SQLite path (default: `scholomance_dict.sqlite`) |
-| `--oewn_path` | Local OEWN LMF XML or `.xml.gz` |
-| `--download` | If path missing, fetch `https://en-word.net/static/english-wordnet-2024.xml.gz` into `dict_data/` |
+| Flag | Required | Behavior |
+|------|----------|----------|
+| `--db` | yes (default path ok) | Target SQLite path |
+| `--oewn_path` | yes | Local OEWN LMF XML or `.xml.gz` |
+| `--expected-release` | **yes** | Exact OEWN release string expected in lexicon metadata (e.g. `2024`). Mismatch → abort before writes |
+| `--timestamp` | **yes** (write mode) | ISO-8601 UTC stamp for `oewn_antonym_ingested_at`. **No `Date.now()` / `time.time()` for stamped fields.** Missing → reject write mode |
+| `--download` | no | If path missing, fetch the **pinned URL for `--expected-release`** into `dict_data/` |
+| `--max-unresolved-ratio` | no | Default strict threshold (e.g. `0.02`). Abort if unresolved/asserted exceeds this |
+
+Pinned download URL for release `2024`:  
+`https://en-word.net/static/english-wordnet-2024.xml.gz`
 
 `dict_data/*` remains gitignored (except README / `.gitkeep`).
 
-### Write rules
+### Source scoping (do not erase other antonyms)
 
-- Single SQL transaction; rollback on failure.
-- `DELETE FROM wordnet_rel WHERE rel = 'antonym'` then bulk insert.
-- Row shape: `(synset_id, 'antonym', target_synset_id, 'oewn', 'https://en-word.net/')`.
-- Dedupe identical `(synset_id, target_synset_id)` before insert.
-- Do not modify other `rel` values.
-- Idempotent: re-run replaces antonym set only.
-- Meta stamps: `oewn_antonym_source`, `oewn_antonym_ingested_at`, `oewn_antonym_count` (and optionally skipped unresolved count in stdout).
+```sql
+DELETE FROM wordnet_rel
+WHERE rel = 'antonym'
+  AND source = 'oewn';
+```
+
+Never `DELETE … WHERE rel = 'antonym'` alone. Future manual / alternate-source antonyms (`source='manual'`, etc.) must survive re-ingestion.
+
+### Reciprocal closure
+
+Global WordNet documents antonym with `reverse: antonym`. For every resolved directed edge `A → B`, project:
+
+- `synset(A) → synset(B)`
+- `synset(B) → synset(A)`
+
+Then deduplicate. This is symmetric closure required by the relation definition, not invention of new antonym pairs.
+
+Verification must include:
+
+- `lookupAntonyms("hot")` contains `"cold"`
+- `lookupAntonyms("cold")` contains `"hot"`
+
+### Version / coverage gates (before any write)
+
+1. Stream-parse lexicon metadata; read OEWN release/version.
+2. Confirm it equals `--expected-release`.
+3. Compute SHA-256 of the source file; store for provenance.
+4. After projection, verify each projected synset ID exists in `wordnet_synset`.
+5. Compute:
+   - `asserted_count` — directed sense/synset antonym edges found in XML (pre-closure)
+   - `projected_count` — unique synset pairs after projection + reciprocal + dedupe that resolve in DB
+   - `unresolved_count` — edges/pairs dropped for missing sense map or missing synset
+   - `resolution_ratio` — `projected_count / max(asserted_count_after_projection_attempt, 1)` (exact formula documented in implementation; must be abort-gated)
+6. Abort if release incompatible **or** unresolved coverage exceeds `--max-unresolved-ratio`.
+
+No silent projection of OEWN 2025 (or other) onto a 2024-tied synset set.
+
+### Meta stamps
+
+| Key | Value |
+|-----|--------|
+| `oewn_antonym_release` | e.g. `2024` |
+| `oewn_antonym_source_url` | pinned download URL or file URI |
+| `oewn_antonym_source_sha256` | hex digest of source bytes |
+| `oewn_antonym_asserted_count` | integer |
+| `oewn_antonym_projected_count` | integer |
+| `oewn_antonym_unresolved_count` | integer |
+| `oewn_antonym_resolution_ratio` | decimal string |
+| `oewn_antonym_ingested_at` | caller `--timestamp` only |
+
+### Transaction order
+
+1. Parse and validate source **outside** transaction (two streaming passes; reopen gzip/XML per pass).
+2. Verify release + synset coverage + resolution ratio; abort → **no DB writes**.
+3. `BEGIN IMMEDIATE`
+4. `DELETE … rel='antonym' AND source='oewn'`
+5. Insert projected reciprocal set
+6. Write meta
+7. `COMMIT`
+
+Parsing before `BEGIN` avoids holding a write lock across two full XML passes. The validated result set exists before any deletion.
+
+### Implementation hardening (XML)
+
+- Reopen the XML or gzip stream separately for each pass.
+- Use streaming `iterparse`.
+- `elem.clear()` processed elements to bound memory.
+- Handle the LMF namespace explicitly (`{*}Sense`, `{*}SenseRelation`, etc.).
+- Full builder: collect **both** existing `SynsetRelation` antonym **and** projected `SenseRelation` antonym.
+- Deduplicate across asserted synset edges, projected sense edges, and reciprocal closure.
+
+### Row shape
+
+`(synset_id, 'antonym', target_synset_id, 'oewn', source_url)`
 
 ### Errors
 
-- Missing OEWN path (and no `--download`) → non-zero exit, clear message.
-- Missing / unreadable DB → fail before writes.
-- Parse / IO failure mid-pass → rollback; no partial antonym set left behind after delete (transaction wraps delete+insert).
+| Condition | Behavior |
+|-----------|----------|
+| Missing `--timestamp` in write mode | Reject before parse/write |
+| Missing OEWN path (no `--download`) | Non-zero exit |
+| Release ≠ `--expected-release` | Abort before writes |
+| Unresolved ratio above threshold | Abort before writes |
+| Malformed XML | Abort before writes; DB unchanged |
+| Missing / locked DB | Fail before writes |
+| Mid-transaction failure | Rollback; OEWN antonym set unchanged from pre-BEGIN state |
 
 ## Files
 
 | Path | Responsibility |
 |------|----------------|
 | `scripts/ingest_oewn_antonyms.py` | Additive CLI |
-| `scripts/build_scholomance_dict.py` | SenseRelation antonym capture in full builds |
-| `dict_data/README.md` | Ops note for antonym ingest + OEWN URL |
+| `scripts/oewn_antonym_project.py` (or equivalent shared module) | Parse, project, reciprocal, dedupe, validate — shared by CLI + builder |
+| `scripts/build_scholomance_dict.py` | Use shared module; SynsetRelation + SenseRelation antonyms |
+| `dict_data/README.md` | Ops note: pinned 2024 URL, CLI flags, provenance |
 | `package.json` | Optional `dict:ingest-antonyms` script |
-| `tests/server/lexicon.antonyms.test.js` | `lookupAntonyms` smoke against live DB or fixture |
+| `tests/server/lexicon.antonyms.test.js` (+ Python/fixture tests as needed) | QA matrix below |
+| `tests/fixtures/oewn-antonym-mini.xml` (or `.xml.gz`) | Tiny LMF fixture with sense antonyms + known synsets |
 
-## Verification
+### Regression fixture (DB seed for survival test)
 
-1. `SELECT COUNT(*) FROM wordnet_rel WHERE rel='antonym'` ≫ 0 (thousands expected).
-2. `lookupAntonyms('hot')` and `lookupAntonyms('good')` non-empty.
-3. `POST /api/lexical/analyze` with query `hot` → Oppositions group has items (not honest-empty).
-4. Second CLI run: antonym count stable; non-antonym relation counts unchanged.
-5. Vitest for antonym lookup passes.
+Preload three rows before re-ingest:
+
+| rel | source | purpose |
+|-----|--------|---------|
+| `antonym` | `oewn` | Replaced by ingest |
+| `antonym` | `manual` | **Must survive** |
+| `similar` | `oewn` | **Must survive** (non-antonym) |
+
+After ingestion: only the old OEWN antonym set is replaced; `manual` antonym and `oewn` similar remain.
+
+## QA / test matrix
+
+| # | Assertion |
+|---|-----------|
+| 1 | Reciprocal lookup: `hot`↔`cold` (fixture or live after ingest) |
+| 2 | Non-OEWN antonyms (`source='manual'`) survive re-ingestion |
+| 3 | Release mismatch fails **before** writes |
+| 4 | Excessive unresolved synsets fail **before** writes |
+| 5 | Malformed XML leaves the database unchanged |
+| 6 | Missing `--timestamp` rejects write mode |
+| 7 | Builder and additive CLI produce **identical** antonym sets from the same fixture |
+| 8 | Repeated execution produces identical rows and counts |
+| 9 | Existing non-antonym relation counts remain byte-for-byte stable (count + checksum of non-antonym `wordnet_rel` rows, or equivalent) |
+
+Live smoke (post-ingest on real DB): Analyze Oppositions for antonym-bearing lemmas is non-empty.
 
 ## Honesty / law notes
 
-- Only OEWN-asserted antonyms; never invent.
+- Only OEWN-asserted antonym pairs enter the set; reciprocal edges are the declared reverse of that relation.
 - Synset projection can slightly blur rare sense-specific antonymy; acceptable for Oppositions lighting-up. Sense-true storage may follow when Analyze moves to sense cards.
 - Analyze honesty law unchanged: if a lemma has no antonym rows, Oppositions still returns `{ items: [], emptyReason }`.
+- Caller-provided `--timestamp` only — no internal wall-clock for stamped meta (matches lexical-graph CLI law).
 
 ## Follow-ons (out of scope)
 
@@ -127,8 +233,9 @@ python scripts/ingest_oewn_antonyms.py \
 
 ## Success criteria
 
-- [ ] Additive CLI lands and is documented
-- [ ] Live DB has non-zero `antonym` rows from OEWN
-- [ ] Existing `lookupAntonyms` works without adapter signature changes
+- [ ] Additive CLI lands with scoped delete, reciprocal closure, release gates, caller timestamp
+- [ ] Shared projection module used by CLI and full builder
+- [ ] Live DB has non-zero OEWN `antonym` rows; manual antonyms (if any) untouched
+- [ ] `lookupAntonyms` works bidirectionally for known pairs without adapter signature changes
+- [ ] Full QA matrix green
 - [ ] Analyze Oppositions lights up for antonym-bearing lemmas
-- [ ] Full builder path also records SenseRelation antonyms
