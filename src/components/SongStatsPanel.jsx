@@ -1,3 +1,4 @@
+import { useId } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { AnimatedSurface } from './AnimatedSurface';
 import './SongStatsPanel.css';
@@ -8,6 +9,7 @@ function formatNumber(value, digits = 2) {
 }
 
 function formatTechnicalDensity(value) {
+  if (value == null) return '—';
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(1) : '—';
 }
@@ -46,6 +48,7 @@ export default function SongStatsPanel({
   onClose = null,
 }) {
   const reduceMotion = useReducedMotion();
+  const densityExplanationId = useId();
 
   if (!visible || !stats) return null;
 
@@ -55,7 +58,7 @@ export default function SongStatsPanel({
   const flow = pillars.flowAlignment;
   const isAligned = flow.fidelity === 'aligned';
   const flowSecondary = isAligned
-    ? `Syncopation ${formatNumber(flow.secondary?.syncopationIndex)}`
+    ? `Syncopation index ${formatNumber(flow.secondary?.syncopationIndex)}`
     : `Syncopation proxy ${formatNumber(flow.secondary?.stressDisplacementProxy)}`;
   const weights = composite.weights;
 
@@ -68,11 +71,25 @@ export default function SongStatsPanel({
           <p className="song-stats-density">
             {formatTechnicalDensity(composite.total0to100)} · {composite.band ?? 'Unscored'}
           </p>
-          {composite.provisional && (
-            <span
-              className="song-stats-provisional"
-              title="Technical Density is provisional and is not artistic quality."
+          <span className="song-stats-explanation">
+            <button
+              type="button"
+              className="song-stats-explanation-trigger"
+              aria-label="About Technical Density"
+              aria-describedby={densityExplanationId}
             >
+              ?
+            </button>
+            <span
+              id={densityExplanationId}
+              className="song-stats-explanation-tooltip"
+              role="tooltip"
+            >
+              Measures technical concentration, not artistic quality, emotional impact, or song effectiveness.
+            </span>
+          </span>
+          {composite.provisional && (
+            <span className="song-stats-provisional">
               Provisional
             </span>
           )}

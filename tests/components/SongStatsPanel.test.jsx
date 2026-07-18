@@ -72,9 +72,9 @@ describe('SongStatsPanel', () => {
 
     expect(screen.getByText('Technical Density')).toBeTruthy();
     expect(screen.getByText(/68\.4 · Adept/)).toBeTruthy();
-    expect(screen.getByText('Provisional')).toHaveAttribute(
-      'title',
-      expect.stringMatching(/not artistic quality/i),
+    expect(screen.getByText('Provisional')).toBeTruthy();
+    expect(screen.getByRole('tooltip')).toHaveTextContent(
+      'Measures technical concentration, not artistic quality, emotional impact, or song effectiveness.',
     );
     expect(screen.getByText('CODEx Rhyme Density')).toBeTruthy();
     expect(screen.getByText(/RD_C 1\.42/)).toBeTruthy();
@@ -114,10 +114,34 @@ describe('SongStatsPanel', () => {
 
     render(<SongStatsPanel stats={alignedStats} visible onClose={onClose} />);
 
-    expect(screen.getByText(/Syncopation 0\.22/)).toBeTruthy();
+    expect(screen.getByText(/Syncopation index 0\.22/)).toBeTruthy();
     expect(screen.getByText('Aligned')).toBeTruthy();
+    const explanation = screen.getByRole('button', { name: 'About Technical Density' });
+    const tooltip = screen.getByRole('tooltip');
+    expect(explanation).toHaveAttribute('aria-describedby', tooltip.id);
+    explanation.focus();
+    expect(explanation).toHaveFocus();
+    expect(tooltip).toHaveTextContent(
+      'Measures technical concentration, not artistic quality, emotional impact, or song effectiveness.',
+    );
     fireEvent.click(screen.getByRole('button', { name: 'Close song statistics' }));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('renders unavailable Technical Density as an em dash', () => {
+    const unavailableStats = {
+      ...estimatedStats,
+      composite: {
+        ...estimatedStats.composite,
+        total0to100: null,
+        band: null,
+      },
+    };
+
+    render(<SongStatsPanel stats={unavailableStats} visible />);
+
+    expect(screen.getByText('— · Unscored')).toBeTruthy();
+    expect(screen.queryByText(/0\.0 · Unscored/)).toBeNull();
   });
 
   it('stays unmounted when hidden', () => {
