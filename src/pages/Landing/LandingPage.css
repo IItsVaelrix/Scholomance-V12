@@ -36,10 +36,10 @@
     radial-gradient(ellipse 90% 70% at 50% 44%, #0b0d16 0%, #07070e 52%, #020205 100%);
 }
 
-/* Twin-gate: portal left, ledger right */
+/* Twin-gate: portal left, ledger right — above vignette so scrollbar stays clickable */
 .landing-gates {
   position: relative;
-  z-index: 2;
+  z-index: 4;
   display: grid;
   grid-template-columns:
     minmax(0, var(--landing-gate-width))
@@ -71,6 +71,11 @@
   height: min(58vh, 34rem);
   max-height: min(58vh, 34rem);
   min-height: 0;
+  /* Scene uses cursor:none for the orb; restore a real pointer for ledger chrome */
+  cursor: auto;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
 }
 
 @media (max-width: 900px) {
@@ -97,13 +102,13 @@
   }
 }
 
-/* Damp stone vignette + chamber floor */
+/* Damp stone vignette + chamber floor — below interactive gates (not over the ledger) */
 .portal-scene::before {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
-  z-index: 3;
+  z-index: 1;
   background:
     radial-gradient(ellipse 65% 55% at 50% 46%, transparent 52%, rgba(2, 2, 6, 0.72) 100%);
   mix-blend-mode: multiply;
