@@ -47,7 +47,6 @@ export default function UpdateLedgerWindow({ source } = {}) {
       className="update-ledger"
       role="region"
       aria-label="Scholomance Update Ledger"
-      tabIndex={0}
     >
       <DivLayoutRenderer
         proposal={ledgerShell}

@@ -6,7 +6,6 @@
   outline: none;
 }
 
-.update-ledger:focus-visible,
 .update-ledger__entries:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgb(var(--wand-arc-blue-rgb) / 0.45);

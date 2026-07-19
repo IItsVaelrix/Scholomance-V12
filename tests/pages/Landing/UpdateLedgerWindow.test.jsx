@@ -34,6 +34,13 @@ describe('UpdateLedgerWindow', () => {
     expect(screen.getByRole('list')).toBeTruthy();
   });
 
+  it('keeps a single keyboard focus stop on the scrollable entries', () => {
+    const { container } = render(<UpdateLedgerWindow source={SAMPLE_SOURCE} />);
+    const focusables = container.querySelectorAll('[tabindex="0"]');
+    expect(focusables).toHaveLength(1);
+    expect(focusables[0].classList.contains('update-ledger__entries')).toBe(true);
+  });
+
   it('shows empty chronicle when source is empty array', () => {
     render(<UpdateLedgerWindow source="[]" />);
     expect(screen.getByText('Chronicle awaiting first entry')).toBeTruthy();

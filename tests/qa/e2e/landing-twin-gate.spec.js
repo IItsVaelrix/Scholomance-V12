@@ -35,12 +35,13 @@ test.describe('Landing twin-gate', () => {
     expect(portalBox.y).toBeLessThan(ledgerBox.y);
   });
 
-  test('ledger region is keyboard-focusable without navigating', async ({ page }) => {
+  test('ledger scroll surface is keyboard-focusable without navigating', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     const ledger = page.getByRole('region', { name: 'Scholomance Update Ledger' });
-    await ledger.focus();
-    await expect(ledger).toBeFocused();
+    const entries = ledger.getByRole('list');
+    await entries.focus();
+    await expect(entries).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(page).toHaveURL(/\/?$/);
   });
