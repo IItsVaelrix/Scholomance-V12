@@ -38,10 +38,9 @@ export default function LandingPage() {
         <span className="portal-moon-cloud portal-moon-cloud--slow" />
         <span className="portal-moon-cloud portal-moon-cloud--thin" />
       </span>
-      <div className="portal-halo" aria-hidden="true" />
-
       <div className="landing-gates">
         <div className="landing-gate landing-gate--portal">
+          <div className="portal-halo" aria-hidden="true" />
           <WatercolorDissolve dissolving={dissolving} onDissolveComplete={handleDissolveComplete}>
             <div
               className="portal-gate"
