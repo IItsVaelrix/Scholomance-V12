@@ -1,0 +1,20 @@
+[
+  {
+    "id": "2026-07-19-wand-voice-tokens",
+    "date": "2026-07-19",
+    "title": "Shared Wand voice tokens",
+    "summary": "Extracted reusable Wand voice tokens so Update Ledger and other surfaces share one styling source."
+  },
+  {
+    "id": "2026-07-19-div-layout-renderer",
+    "date": "2026-07-19",
+    "title": "DivLayoutRenderer extraction",
+    "summary": "Moved DivWand layout rendering into a shared module ahead of the Update Ledger window work."
+  },
+  {
+    "id": "2026-07-19-update-ledger-plan",
+    "date": "2026-07-19",
+    "title": "Update Ledger implementation plan",
+    "summary": "Added the Scholomance Update Ledger design spec and task plan for the Landing twin gate."
+  }
+]
