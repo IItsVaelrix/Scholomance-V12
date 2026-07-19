@@ -1,11 +1,37 @@
-import { memo, useCallback, useRef } from 'react';
+import { lazy, memo, Suspense, useCallback, useRef } from 'react';
 import { Sparkles } from 'lucide-react';
-import { VoxelScenePortal } from '../../pages/DivWand/components/VoxelScenePortal.jsx';
-import { WorldScenePortal } from '../../pages/DivWand/components/WorldScenePortal.jsx';
 import './divwand-shared.css';
+
+const VoxelScenePortal = lazy(() =>
+  import('../../pages/DivWand/components/VoxelScenePortal.jsx').then((m) => ({
+    default: m.VoxelScenePortal,
+  }))
+);
+
+const WorldScenePortal = lazy(() =>
+  import('../../pages/DivWand/components/WorldScenePortal.jsx').then((m) => ({
+    default: m.WorldScenePortal,
+  }))
+);
 
 function snapPx(value, gridSize = 8) {
   return Math.round((Number(value) || 0) / gridSize) * gridSize;
+}
+
+/** Preorder DFS: first header/content node ids for first-only slot injection. */
+function findFirstSlotTargetIds(root) {
+  let titleId = null;
+  let contentId = null;
+
+  function walk(node) {
+    if (!node || (titleId && contentId)) return;
+    if (!titleId && node.role === 'header') titleId = node.id;
+    if (!contentId && node.role === 'content') contentId = node.id;
+    for (const child of node.children || []) walk(child);
+  }
+
+  walk(root);
+  return { titleId, contentId };
 }
 
 const LayoutNode = memo(function LayoutNode({
@@ -17,6 +43,7 @@ const LayoutNode = memo(function LayoutNode({
   onLeave,
   rootRef,
   slots,
+  slotTargetIds,
 }) {
   // mouseover/mouseout bubble, so stopPropagation makes the innermost node under
   // the cursor win without mutating the native event to dedupe handlers.
@@ -91,11 +118,19 @@ const LayoutNode = memo(function LayoutNode({
   };
 
   if (node.type === 'voxel') {
-    return <VoxelScenePortal node={node} />;
+    return (
+      <Suspense fallback={null}>
+        <VoxelScenePortal node={node} />
+      </Suspense>
+    );
   }
 
   if (node.type === 'world') {
-    return <WorldScenePortal node={node} />;
+    return (
+      <Suspense fallback={null}>
+        <WorldScenePortal node={node} />
+      </Suspense>
+    );
   }
 
   if (node.type === 'element') {
@@ -118,8 +153,8 @@ const LayoutNode = memo(function LayoutNode({
   }
 
   const slotChild =
-    slots && node.role === 'header' ? slots.title :
-    slots && node.role === 'content' ? slots.content :
+    slots && slotTargetIds?.titleId === node.id ? slots.title :
+    slots && slotTargetIds?.contentId === node.id ? slots.content :
     null;
 
   return (
@@ -136,6 +171,7 @@ const LayoutNode = memo(function LayoutNode({
           onLeave={onLeave}
           rootRef={rootRef}
           slots={slots}
+          slotTargetIds={slotTargetIds}
         />
       ))}
     </div>
@@ -152,6 +188,7 @@ export function DivLayoutRenderer({
 }) {
   const root = proposal?.proposedLayout;
   const rootRef = useRef(null);
+  const slotTargetIds = root && slots ? findFirstSlotTargetIds(root) : null;
   if (!root) return null;
   return (
     <div ref={rootRef} className="div-layout-root" style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -164,6 +201,7 @@ export function DivLayoutRenderer({
         onLeave={onLeave}
         rootRef={rootRef}
         slots={slots}
+        slotTargetIds={slotTargetIds}
       />
     </div>
   );
