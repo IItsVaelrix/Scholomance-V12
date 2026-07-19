@@ -47,7 +47,6 @@ export default function UpdateLedgerWindow({ source } = {}) {
       className="update-ledger"
       role="region"
       aria-label="Scholomance Update Ledger"
-      tabIndex={0}
     >
       <DivLayoutRenderer
         proposal={ledgerShell}
@@ -56,7 +55,7 @@ export default function UpdateLedgerWindow({ source } = {}) {
             <h2 className="update-ledger__title">Scholomance Update Ledger</h2>
           ),
           content: entries.length ? (
-            <ol className="update-ledger__entries">
+            <ol className="update-ledger__entries" tabIndex={0}>
               {entries.map((entry, index) => (
                 <LedgerEntry
                   key={entry.id}
