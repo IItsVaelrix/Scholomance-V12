@@ -1,7 +1,10 @@
 .update-ledger {
   position: relative;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   height: 100%;
+  max-height: 100%;
   min-height: 0;
   outline: none;
 }
@@ -11,10 +14,23 @@
   box-shadow: 0 0 0 2px rgb(var(--wand-arc-blue-rgb) / 0.45);
 }
 
-.update-ledger .div-layout-root,
-.update-ledger .div-layout-root > .div-node {
+.update-ledger .div-layout-root {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
   width: 100%;
   height: 100%;
+  max-height: 100%;
+  min-height: 0;
+}
+
+.update-ledger .div-layout-root > .div-node {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  max-height: 100%;
   min-height: 0;
 }
 
@@ -95,10 +111,19 @@
   text-shadow: var(--wand-title-glow);
 }
 
+#ledger-header,
+#ledger-safe-header {
+  flex: 0 0 auto;
+}
+
 #ledger-scroll,
 #ledger-safe-content {
+  flex: 1 1 0;
   min-height: 0;
+  max-height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
   background:
     linear-gradient(180deg, rgb(4 6 12 / 0.92), rgb(2 3 8 / 0.96));
 }
@@ -106,16 +131,48 @@
 .update-ledger__entries {
   list-style: none;
   margin: 0;
-  padding: 0.35rem 0.25rem 0.6rem;
+  padding: 0.35rem 0.45rem 0.6rem 0.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
+  flex: 1 1 auto;
   height: 100%;
   min-height: 0;
-  overflow-y: auto;
+  overflow-x: hidden;
+  overflow-y: scroll;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--wand-amethyst-rgb) / 0.55) rgb(8 10 18 / 0.9);
   background: rgb(3 5 10 / 0.55);
   border-radius: 6px;
+}
+
+.update-ledger__entries::-webkit-scrollbar {
+  width: 10px;
+}
+
+.update-ledger__entries::-webkit-scrollbar-track {
+  background: rgb(8 10 18 / 0.9);
+  border-radius: 999px;
+}
+
+.update-ledger__entries::-webkit-scrollbar-thumb {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--wand-amethyst-rgb) / 0.7),
+    rgb(var(--wand-arc-blue-rgb) / 0.45)
+  );
+  border-radius: 999px;
+  border: 2px solid rgb(8 10 18 / 0.9);
+}
+
+.update-ledger__entries::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    180deg,
+    rgb(var(--wand-amethyst-rgb) / 0.9),
+    rgb(var(--wand-arc-blue-rgb) / 0.65)
+  );
 }
 
 .update-ledger__entry {

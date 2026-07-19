@@ -67,6 +67,10 @@
   display: flex;
   align-items: stretch;
   justify-content: stretch;
+  /* Cap height so the chronicle scrollports instead of growing with entries */
+  height: min(58vh, 34rem);
+  max-height: min(58vh, 34rem);
+  min-height: 0;
 }
 
 @media (max-width: 900px) {
@@ -87,7 +91,9 @@
   }
 
   .landing-gate--ledger {
-    min-height: 24rem;
+    height: min(42vh, 24rem);
+    max-height: min(42vh, 24rem);
+    min-height: 0;
   }
 }
 

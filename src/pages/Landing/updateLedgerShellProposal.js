@@ -35,7 +35,6 @@ export const UPDATE_LEDGER_SHELL_PROPOSAL = {
         layout: {
           display: 'flex',
           flexDirection: 'column',
-          height: '100%',
           padding: 12,
           gap: 10,
         },
@@ -75,7 +74,7 @@ export const SAFE_LEDGER_SHELL = {
         id: 'ledger-safe-content',
         type: 'container',
         role: 'content',
-        layout: { height: '100%' },
+        layout: { display: 'flex', flexDirection: 'column' },
         style: { variant: 'transparent' },
         children: [],
       },
